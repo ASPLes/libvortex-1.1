@@ -1,0 +1,15 @@
+/* A simple test to check method name aliasing. 
+ * 
+ * Before a method is defined, a declaration using method_name
+ * attribute modifies how is generated the source code, making the API
+ * to be the same but the service name created to have the name
+ * provided.
+ */
+xml-rpc interface test {
+	/* add two integers */
+	[method_name="aritmetic-operations/basic/sum"];
+	int sum2 (int a, int b) {
+		/* sum values received */
+		return a + b;
+	}
+}

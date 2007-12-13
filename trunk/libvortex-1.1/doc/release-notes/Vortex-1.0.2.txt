@@ -1,0 +1,179 @@
+       ###########################################
+       ##  Vortex Library 1.0.2 Stable Release  ##
+       ###########################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.0.2 "echoes release" availability: an open source "BEEP
+  Core" protocol implementation written in C, mapped onto TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://vortex.aspl.es 
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://xml.aspl.es
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+
+  This new release includes an API update to the find facility
+  provided by the vortex support module, allowing to perform search
+  constrained to the path installed for a particular domain.
+
+  Updates to the internal source code, upgrading frame joining code,
+  making it more simply. 
+
+  General update to the xml-rpc-gen tool to be able now to notify the
+  user when a file to be created already exists and differs from the
+  copy produced by the tool, allowing to skip or to overwrite. Fixed
+  source code generation for the tool.
+
+  Updated the regression test to include checks for the vortex channel
+  pool module.
+
+  Bug fixing and document updates.
+
+Thanks to..
+~~~~~~~~~~~
+
+  Martin Huter (report and solve SIGPIPE handle with older glib
+  version and its appreciated comments to improve the library under
+  heavy loads).
+
+  Vicent AE Scott (report and pointed the solution for wrong
+  xml-rpc-gen source code generation).
+
+
+Changes since 1.0.1
+~~~~~~~~~~~~~~~~~~~
+
+* [new] Added new API to perform file lookups using search path added
+  constrained to a particular domain. Updated vortex support internal
+  module to make previous function to keep working the same while
+  retaining backward compatibility with the new API:
+  
+   - vortex_support_add_domain_search_path
+   - vortex_support_add_domain_search_path_ref
+   - vortex_support_domain_find_data_file
+
+* [fix] replaced all references to the glib hash, with axl hash.
+
+* [fix] Committing latest update to the libvortex.def
+
+* [fix] Microsoft Visual Studio file modified to use a relative path
+  to code instead of a full path. Also Debug information has been
+  added.
+
+* [fix] Making SIGPIPE handling to be reinstalled once triggered, avoiding
+  ancient glib implementations to restore to the default. (Reported and
+  Fixed by Martin Huter).
+
+* [fix] Fixed marshalling error at the server side component source
+  code generation, causing to trying marshall an array as an
+  struct. (Bug reported by Vicent AE Scott, and pointed its solution).
+
+* [fix] Improved marshalling error reporting at the server side
+  component produced by the tool.
+
+* [fix] Updating exarg code.
+
+* [new] General update to the source code generation model.  Now the
+  tool will detect which files have changes according to the source
+  code created, allowing the user to skip those changes or to
+  introduce them.
+
+* [fix] Replaced all calls to g_async_queue_push with QUEUE_PUSH,
+  implementing additional checks that are reported at the place they
+  could fail.
+
+* [fix] Fixed wrong reply handling for the TLS activation, using the sync mode.
+  Seems it doesn't work under heavy load circumstances.
+
+* [fix] Making vortex sequencer to check the queue before operating
+  with it.  Some race conditions under heavy load could cause to
+  access to a null reference queue.
+
+* [fix] Simplified automatic frame joining handling at the vortex
+  reader/vortex channel module, updating
+  vortex_channel_set_previous_frame/get_previous_frame/have_previous_frame
+  to use a simple implementation based in an unique pending frame to
+  be joined rather than a list.
+
+* [fix] Fixed a bug at the vortex_hash_replace function, which was
+  causing to not configure the key and data destroy function causing
+  memory leaks.
+
+* [fix] Fixed wrong handler provided to the connection status command.
+
+* [fix] committing changes to remove GList references at the vortex
+  channel module.
+
+* [fix] Updated vortex channel pool module to remove all references to
+  GList and fixed hidden bug which was causing to not properly
+  deattach a channel from the pool.
+
+* [new] Added new function which allows to check if two channel references
+  are equal. API added:
+
+   - vortex_channel_are_equal
+
+* [fix] Fixed a bug at vortex_channel_pool_close which was causing to
+  get hanged if called from outside the vortex connection context.
+
+* [fix] Making vortex_channel_set_pool to also accept a NULL reference
+  for the pool parameter allowing to remove the parent pool reference.
+
+* [fix] Updated vortex channel pool documentation.
+
+* [fix] Updating vortex-regression-client to include a minimal test to
+  check channel pool functions.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+16th mar 2007, Madrid (Spain)
+  
+

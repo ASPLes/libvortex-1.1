@@ -1,0 +1,53 @@
+<xml-rpc-interface>
+  <name>test</name>
+  <!-- Item struct declaration -->
+  <struct>
+    <name>Item</name>
+    <member>
+      <name>position</name>
+      <type>int</type>
+    </member>
+    <member>
+      <name>string_position</name>
+      <type>string</type>
+    </member>
+  </struct>
+  
+  <!-- array declaration -->
+  <array>
+    <name>ItemArray</name>
+    <type>Item</type>
+    <size>0</size>
+  </array>
+  
+  <!-- ValuesArray get_array ();              -->
+  <!-- post: Returns the sum of the provided struct values  -->
+  <service>
+    <name>get_array</name>
+    <returns>ItemArray</returns>
+    <params>
+      <!-- no param -->
+    </params>
+    <code>
+      <content><![CDATA[
+	ItemArray * result;
+	Item      * item;
+	int         iterator;
+
+	/* create the item array */
+	result = test_itemarray_new (10);
+
+	for (iterator = 0; iterator < 10; iterator++) {
+		/* create the struct */
+		item = test_item_new (iterator, "test content");
+
+		/* store it into the array */
+		test_itemarray_set (result, iterator, item);
+	}
+	
+	/* put here service content */
+	return result;
+	]]></content>
+    </code>
+  </service>
+</xml-rpc-interface>

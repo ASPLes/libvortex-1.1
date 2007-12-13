@@ -1,0 +1,139 @@
+              ######################################
+              ##       Vortex Library  1.0.6      ##
+              ##      "my generation release"     ##
+              ######################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.0.6 "my generation" release availability: an open source
+  "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://vortex.aspl.es 
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://xml.aspl.es
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+  General update to make this release more usable on Microsoft
+  Windows, using Visual Studio compilers. 
+
+  Added missing support to be able to get error codes reported by peer
+  at channel creation. 
+
+  Now xml-rpc-gen is able to include user code into the IDL definition
+  that is placed at the resulting XML-RPC server.
+    
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  None.
+
+Changes since 1.0.5
+~~~~~~~~~~~~~~~~~~~
+
+* [fix] Removed not required glib dependencies installed on
+  Makefile.win files (test and xml-rpc-gen tool).
+
+* [fix] Removing epoll API from the libvortex.def
+
+* [fix] Fixed bug inside INT64_CONSTANT and added additional
+  definitions for S_ISDIR and S_ISREG if found to be not defined.
+
+* [fix] Updating libvortex.def generation code to remove all functions
+  starting with __vortex. Updated the file itself.
+
+* [fix] Changing name for internal functions, making them not
+  available at the libvortex.def file, at the TUNNEL implementation.
+
+* [fix] Removed some included and moved some definitions for the
+  windows platform.
+
+* [new] Added missing support to get access to the error code and the
+  textual response replied by the remote BEEP peer on channel creation
+  denial. API added:
+
+    - vortex_connection_pop_channel_error
+
+* [fix] Making vortex_support_strtod to allow receiving a NULL pointer
+  for the variable to be used to set the error found.
+
+* [fix] Making vortex xml-rpc module to use new channel error
+  reporting to provide more information to the application level when
+  an error was received.
+
+* [new] Making the tool to be able to include additional content into
+  the service module header that is located in an external file.
+
+* [fix]General update to remove all warnings produced by using Visual
+  studio 2005.
+
+* [new] Added VORTEX_EINTR to define the proper value on each platform
+  rather redefining EINTR which looks problematic.
+
+* [fix] Fixed unbalanced macro declaration and included documentation
+  to include code into the xml-rpc server created by xml-rpc-gen tool.
+
+* [fix] Updating the tool to produced code that is compatible with the
+  Visual Studio (only changed internal variables starting with "__"
+  replacing that with a single "_").
+
+* [fix] Updated regression test files (xml-rpc-gen created files) due
+  to xml-rpc-gen updates.
+
+* [fix] Fixed wrong declaration inside regression not supported by
+  Visual Studio.
+
+* [fix] Fixed more compilation errors while using gcc under
+  windows. Updated nsi file.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+10h august 2007, Madrid (Spain)
+  
+

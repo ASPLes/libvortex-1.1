@@ -1,0 +1,572 @@
+              ######################################
+              ##       Vortex Library 1.0.3       ##
+              ##       "Hands open release"       ##
+              ######################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.0.3 "Hands open release" availability: an open source "BEEP
+  Core" protocol implementation written in C, mapped onto TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://vortex.aspl.es 
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://xml.aspl.es
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+  Finally, vortex library no longer depends on Glib and GThread. It
+  now includes its own abstraction layer for the threading API
+  (supporting POSIX and win32 backend).
+
+  Implemented a new general purpose filtering mechanism (Profile
+  Masks) which allows to configure and control which profiles can be
+  selected. This have been used by Turbulence to implement a powerful
+  administrative configuration which allows to mix, select, and filter
+  profiles according to serverName parameter, peer remote address,
+  profiles that are already initiated, etc.
+
+  The xml-rpc-gen tool is now fully tested, being considered as a
+  stable tool.
+
+  Updated Vortex I/O waiting API to support poll(2) and epoll(2)
+  system calls when available. The new added API allows to select each
+  mechanism at run-time even during transmission!
+
+  Implemented a fully working TUNNEL profile, allowing every BEEP
+  profile implemented on top of Vortex to be TUNNELed through a BEEP
+  proxy at run-time without any modification. Turbulence uses this
+  TUNNEL implementation to provide a general TUNNEL BEEP server, with
+  an administrative configuration.
+
+  Lot of work have been done to increase the Vortex Library run-time
+  performance, reducing its memory consumption. Client regression test
+  used at 1.0.2 was completed with 14.244 seconds, while the similar
+  test (with more checkings added) is completed in 5.832 seconds. Nice.
+  
+Thanks to..
+~~~~~~~~~~~
+  Thomas Unterleitner (reported and fixed wrong signal configuration
+  at the windows platform). 
+
+  Milton Yates (fixed warnings at vortex main header, fixed missing
+  parameter received in the validation resource function for the
+  xml-rpc implementation)
+
+  Martin Huter (provided really useful patches to integrate poll(2)
+  and epoll(2) into vortex).
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  [1] vortex-axllist-api-01
+  http://lists.aspl.es/pipermail/vortex/2007-April/000149.html
+  
+  [2] vortex-async-queue-api-01
+  http://lists.aspl.es/pipermail/vortex/2007-April/000150.html
+
+
+Changes since 1.0.2
+~~~~~~~~~~~~~~~~~~~
+
+* [fix] Added #ifdef macros to avoid exposing signal configuration
+  while compiling vortex.c under windows (Reported and fixed by Thomas
+  Unterleitner).
+
+* [fix] Fixed some warnings caused by header definitions at vortex
+  module.  (Reported and fixed by Milton Yates).
+
+* [fix] Fixed a missing parameter received in the validation resource function
+  for the xml-rpc implementation (Reported and fixed by Milton Yates).
+
+* [new] Added new module to implement a portable threading API,
+  supporting initially POSIX and windows API. The new API includes
+  basic support to create threads, support for mutex and support for
+  conditional vars. Replaced all calls to previous api g_mutex_*,
+  g_thread_* and g_cond*.  Checked that the result properly executes
+  the regression test.  API added:
+
+   - VortexThread (type)
+   - vortex_thread_create
+   - VortexThreadConf (enum)
+   - VortexMutex (type)
+   - vortex_mutex_create
+   - vortex_mutex_destroy
+   - vortex_mutex_lock
+   - vortex_mutex_unlock
+   - VortexCond (type)
+   - vortex_cond_create
+   - vortex_cond_signal
+   - vortex_cond_broadcast
+   - vortex_cond_wait
+   - vortex_cond_timedwait
+   - vortex_cond_destroy
+
+* [fix] Replaced all calls to the g_static_mutex* api with new API
+  provided.
+
+* [fix] Removed vortex semaphore modules. It is no longer required.
+
+* [new] Committing initial headers to implement a message queue, to replace
+  current implementation based on GAsyncQueue.
+
+* [new] Implemented a replacement for GAsyncQueue, with the API
+  required:
+
+   - VortexAsyncQueue (type)
+   - vortex_async_queue_new
+   - vortex_async_queue_ref
+   - vortex_async_queue_unref
+   - vortex_async_queue_push
+   - vortex_async_queue_pop
+   - vortex_async_queue_timedpop
+   - vortex_async_queue_length
+   - vortex_async_queue_waiters
+
+* [fix] replace calls to previous message queue API with the new one
+  provided: VortexAsyncQueue. Replaced all calls to previous logging
+  facilities, using new one provided by vortex_log. Ensured all
+  regression test work properly.
+
+* [fix] Updated regression test to conform with the new changes
+  introduced. Removed pkg-config reference to gthread-2.0
+  module. Removed all gthread initialization code.
+
+* [fix] Updated vortex hash handling provided by vortex connection and
+  vortex channel modules, to fully use services provided by axlHash
+  (removed previous code that was adding support to configure a
+  key_destroy and a func_destroy per item, which is supported by axl
+  hash).
+
+* [new] Added new API to replace an item into the VortexHash
+  configuring the key and value destroy function. Added also a
+  function to get and clear a data from the hash atomically. API
+  added:
+
+    - vortex_hash_replace_full
+    - vortex_hash_lookup_and_clear
+
+* [fix] Making vortex_channel_get_piggyback to use
+  vortex_hash_lookup_and_clear to avoid possible race condition.
+
+* [fix] Reimplemented vortex queue module internals to use axlList
+  rather than GQueue. Checked library status against regression test.
+
+* [new] Added support to implement a profile filtering mechanism that
+  allows to install user space handlers which are executed by vortex
+  to check if a profile could be used (in many contexts, for example
+  while producing the greetings reply, or returning remote side
+  profiles supported). Updated vortex internals, sasl and tls
+  implementation to use this new feature. Nice!  API added:
+
+   - VortexProfileMaskFunc (handler)
+   - vortex_connection_set_profile_mask
+   - vortex_connection_is_profile_filtered
+
+
+* [fix] fixed wrong conditional wait at vortex_async_queue_timedpop.
+
+* [fix] Fixed race condition causing channel module to dealloc an
+  string which is later used while closing the channel 0 acting as a
+  listener.
+
+* [fix] committing missing channel module headers for previous fix.
+
+* [new] Updated vortex-regression-client to check vortex on close
+  connection notification functions.
+
+* [fix] Simplified internal implementation for the full on close
+  connection notification, to use axlList rather than GList, storing the
+  handler and the data associated inside a single node.
+
+* [fix] Reimplemented channel closing functions, at the connection
+  close to replace GList previous implementation with axlList. Used
+  destroy notification functions from axlList to improve channel
+  closing.
+
+* [fix] Fixed bug and memory leak at the channel extended start
+  handling, causing to not use the error reply produced by the profile
+  implantation, loosing that content and the memory reference.
+
+* [fix] Fixed memory leak at the sasl implementation, causing to
+  double-allocate the password returned for the CRAM-MD5 and the
+  DIGEST-MD5.
+
+* [fix] Updated implementation for vortex_profiles_get_actual_list, to
+  use axlList rather than GList.
+
+* [fix] Fixed documentation references, and removed VortexSemaphore
+  declaration.
+
+* [fix] several fixings to make the new threading layer to properly
+  work on windows.
+
+* [fix] Updating version and configure.ac files.
+
+* [fix] Updated compilation files for windows: removed reference to
+  vortex semaphore module, added vortex thread.
+
+* [fix] Fixed race condition at __vortex_connection_set_not_connected.
+
+
+* [fix] xml-rpc-gen: replaced getline implementation with a portable
+  one, that is available on windows and linux. Updated tool headers to
+  include some definitions to avoid to make the tool available on
+  windows.
+
+* [fix] Included initial support to the poll interface, and reworked
+  race condition fixed previously on windows which was causing
+  problems on linux.
+
+* [fix] Committing update to the libvortex.def to remove function which
+  are not available on windows and updated Makefile.am to produce a
+  proper .def file.
+
+* [new] Added support to vortex library to change the I/O wait API at
+  runtime.  Integrated into regression tests, and now vortex tests
+  are changed against all available I/O API installed. GREAT!!  API
+  added:
+ 
+     - vortex_io_waiting_use
+     - vortex_io_waiting_is_available
+     - vortex_io_waiting_get_current
+  
+* [new] Added support to use poll(2) system call to perform I/O
+  waiting, which is selectable at any time. (Martin Huter reported and
+  provided really useful patches to integrate poll(2) into
+  vortex). GREAT!!
+
+* [new] Added new API to allow setting and getting run time
+  configuration used by the library. Implemented initial support to
+  get current listen backlog and socket number limit
+  configuration. Making vortex listener module to use this value while
+  allocating new listeners. API added:
+
+     - vortex_conf_get
+     - vortex_conf_set
+     - VORTEX_LISTENER_BACKLOG, VORTEX_SOFT_SOCK_LIMIT, VORTEX_HARD_SOCK_LIMIT.
+
+* [fix] Removed all references to G_OS_UNIX and G_OS_WIN32, replaced
+  by its similar macros found in axl.
+
+* [fix] Fixed bug which was causing to get a listener connection
+  locked into the situation where no more sockets could be allocated
+  (making accept call to fail) due to system limits reached, but at
+  the same time the listener completed connection queue (backlog) is
+  full and always reporting for pending events to be processed.
+
+* [fix] Finished initial implementation to configure vortex_conf_set.
+
+* [new] Added complete support for the epoll(2) interface, fully
+  tested and integrated into the regression test (Thanks for Martin
+  Huter for providing useful information and patches to integrate
+  poll and epoll).
+
+* [new] Making vortex compile configuration to detect and check the
+  better I/O waiting interface, to make it the default one. Now, the
+  library supports select(2), poll(2) and epoll(2).
+
+* [fix] Fixed a bug inside the select(2) I/O implementation which was
+  causing to overrun the file set buffer, leading to weird bugs.
+
+* [fix] Making vortex master listener connection to also have data
+  hash initialized.
+
+* [fix] Making vortex_connection_is_ok to activate free on fail
+  feature in all cases.
+
+* [new] Updated all vortex io interface to provide support for
+  automatic dispatch, allowing to improve performance one those
+  mechanism that can implement it. For now, poll(2) and epoll(2)
+  implements it. API added:
+ 
+   - VortexIoHaveDispatch
+   - VortexIoDispatchFunc
+   - VortexIODispatch
+   - vortex_io_waiting_set_have_dispatch
+   - vortex_io_waiting_set_dispatch
+   - vortex_io_waiting_invoke_have_dispatch
+   - vortex_io_waiting_invoke_dispatch
+
+* [new] Added new function to check queue items at a vortex async
+  queue.  API added:
+
+   - vortex_async_queue_items
+
+* [fix] Making vortex reader to take check result provided by
+  vortex_io_waiting_invoke_add_to_fd_group to drop the connection not
+  fully handled.
+
+* [fix] Making vortex reader to check for automatic dispatch for the
+  current I/O mechanism selected, and fallback into the default check
+  based on "is-set".
+
+* [fix] Making vortex_io_waiting_use to be callable before
+  vortex_init.
+
+* [fix] Removed G_GINT64_CONSTANT declaration for MAX_SEQ_MOD.
+
+* [fix] Fixing documentation error and updated windows definition
+  file.
+
+* [fix] Committing updates to include checkings to activate I/O support
+  from vortex. Updated version files and latest change notification.
+
+* [fix] Updated documentation to include references to the new I/O
+  support.
+  
+* [fix] Fixed bug at the SASL server side layer which was causing to
+  not allow renegotiate the sasl auth once a previous failed one was
+  done.
+
+* [fix] Making channel 0 start message handling to check if the
+  profile requested is filtered for the connection that is holding the
+  request.
+
+* [fix] Updating autoconf files to check and properly detect threading
+  installation.
+
+* [fix] Improved epoll checks to ensure it is really supported (not
+  only by checking headers).
+
+* [fix] Fixed wrong declaration for pthread flags.
+
+* [fix] Fixed and updated vortex documentation.
+
+* [new] Added initial files and modifications to support the TUNNEL
+  profile.  Updated vortex handlers and types to include some initial
+  definitions.  Added new module vortex tunnel. API added:
+
+   - VortexTunnelSettings (type)
+   - VortexTunnelItem (TUNNEL_END_CONF, TUNNEL_FQDN, TUNNEL_PORT
+                       TUNNEL_IP4, TUNNEL_IP6, TUNNEL_SRV,
+                       TUNNEL_URI, TUNNEL_ENDPOINT).
+   - vortex_tunnel_settings_new
+   - vortex_tunnel_settings_add_hop
+   - vortex_tunnel_new
+   - vortex_tunnel_settings_free
+
+* [fix] Fixed bug introduced at the xml-rpc-gen tool due to its port
+  to windows while reading lines from the user command line.
+
+* [new] Finished TUNNEL profile implementation for client, server and
+  middle hop. Great!!!
+
+* [fix] Updated several tests to check the TUNNEL profile including
+  regression tests and the client connections test.
+
+* [fix] Making vortex_cond_wait and vortex_cond_timedwait to return a
+  status value to report any error found. Used this update to ensure
+  the wait-for-pending-replies feature implemented at the BEEP close
+  to limit that operation if the session is closed not properly.
+
+* [fix] Fixed wrong SEQ frame handler which was reporting to update
+  the receiving window without waiting to be used half of the window
+  already reported.
+
+* [fix] Making vortex log handler to check only one time for the
+  environment variable, reducing the overhead due to calling getenv.
+
+* [fix] Updated vortex TLS implementation to base is tuning reset on
+  the preread handler rather than the on close connection.
+
+* [new] Added new functions to the TUNNEL api already implemented to
+  check if TUNNEL profile is available, to produce proxy settings from
+  a xml content and to make a BEEP peer to accept TUNNEL incoming
+  request and a function to set a handler which is executed to
+  resolver particular TUNNEL settings such as "endpoint", "profile"
+  and "srv".
+
+   - vortex_tunnel_is_enabled
+   - vortex_tunnel_settings_new_from_xml
+   - vortex_tunnel_accept_negotiation
+   - vortex_tunnel_set_resolver
+
+* [fix] Implemented an xml document cache for greetings parsing which
+  is shows an stable patern, allowing to reduce the greetings parsing
+  overhead from 35.17% to 10.45% (callgrind results).
+
+* [fix] Implemented a hostname resolution cache on top of
+  gethostbyname, solving its possible reentrant problems on some
+  platform and speeding up host name resolution previously done.
+
+* [fix] Making channel close reply validation to try doing a fast
+  validation by checking the common string replied rather than using
+  axl services to parse a minimal string.
+
+* [fix] Making vortex channel frame received for channel 0 to use a
+  fast check (based on inspecting payload headers) to detect the kind
+  of message avoiding to move the payload into the xml level.
+
+* [fix] Removed frame received on channel 0 validation which is
+  performed later by each handler (start, close, ok, error).
+
+* [fix] Fixed client connections (was not properly configuring proxy).
+
+* [fix] Making vortex tunnel ok reply handling to use fast string
+  checking before going into translating the reply into a xml doc.
+
+* [fix] Removed GThreadFunc definitions replaced with
+  VortexThreadFunc.
+
+* [fix] Making vortex tunnel listener implementation to check for
+  "<tunnel />" profile content, to quickly detect end point tunnel
+  request.
+
+* [fix] Making vortex channel start reply handling to use a reply
+  cache allowing to greatly improve channel creation.
+
+* [fix] Making some work at the vortex tunnel start request handling
+  to reuse references, avoiding double memory allocation patterns.
+
+* [fix] Updated vortex_greetings_send function to use an internal list
+  from the vortex profiles rather than reallocating a new one for each
+  greetings done, and removed all allocation code to build the
+  greetings message, replaced by a memcpy/strlen construction.
+  Reduced function overhead from 21.49% (total run-time cost,
+  according to callgrind results using regression tests) to
+  3.64%. Great!
+
+* [new] Making vortex_listener_set_on_connection_accepted to support
+  any number of handlers to be executed on connection accepted.
+
+* [new] Making vortex-client to allow requesting to create new
+  channels using profiles even not adviced by the listener peer.
+
+* [fix] updated profile mask support to allow notify the rest of
+  parameters that are involved in the channel creation.
+
+* [new] Added a new function to get the first channel found on a
+  connection running a profile. API added:
+  
+    - vortex_connection_get_channel_by_uri
+
+* [fix] Making vortex listener server on accept new connection event
+  to be triggered before the initial greetings is about to be sent.
+
+* [new] Updated vortex hash API to allow performing foreach operations
+  with two user defined pointers. API added:
+
+   - vortex_hash_foreach2
+
+* [fix] fixed vortex_connection_get_channel_by_uri, using previous
+  function implemented.
+
+* [new] Making vortex to allow creating channel that are even not
+  advised by the remote peer. Updated vortex conf API to allow
+  configuring this behavior which is allow creating any channel
+  requested by default. API updated:
+
+   VORTEX_CONF_ENFORCE_PROFILES_SUPPORTED (enum for vortex_conf_* API).
+
+* [new] General internal update to finally remove glib dependency.
+  Checked regression tests and memory consumed. Initial results shows
+  no problem.
+
+* [new] Added some documentation to show how to use the TUNNEL
+  profile.
+
+* [fix] general updates and fixings to make latest vortex library base
+  code to compile and properly run on windows. I can't write more
+  changes because my wife is getting annoyed!
+
+* [fix] Removed requirement to return at least one profile in the
+  initial greetings. This is now an accepted case for the vortex
+  library: sending empty greetings. This is now used by turbulence and
+  its profile path, to hide profiles according to the environment
+  context.
+
+* [fix] Moving to the public header all marks used from the sasl
+  module to make them more available while using these marks with
+  turbulence "connmark" support.
+
+* [fix] Fixed some compilation warnings at the vortex support module
+  and documented SASL marks that can be used by turbulence.
+
+* [fix] Fixing bug at vortex_support_getenv_int while getting
+  variables not defined.
+
+* [fix] Added an internal flag (__COMPILING_VORTEX__) to protect code
+  definitions that must be used while compiling vortex library, but
+  not used by vortex API consumers.
+
+* [fix] Removed MAX(a,b) definition from vortex support header because
+  it is not strongly used, and because it is causing
+  collisions. Updated vortex reader to use standard ?: statement to
+  check for the max value.
+
+* [fix] Updated documentation to reflect current dependencies and
+  installation instructions.
+
+* [fix] Removed glib dependency from the pkg-config file.
+
+* [fix] Making xml-rpc-gen tool to allow including the '%' character
+  inside the inline source code, at the IDL definition, without
+  requiring to place an escaped sequence as: %%.
+
+* [fix] Fixed bug which was causing to not properly append all content
+  found inside the source code inline declaration at IDL format.
+
+* [fix] Fixed wrong source code generation for array of ints at the
+  server interface.
+
+* [fix] Fixed wrong source code generation for array of strings.
+
+* [fix] Fixed wrong source code generation for an array of booleans.
+
+* [fix] General update to the tool to accept the type "bool" as the
+  type "boolean".
+
+* [fix] Making vortex sequencer to not flag the connection as non
+  connected, avoiding race conditions with the vortex reader and the
+  user space code.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+30th may 2007, Madrid (Spain)
+  
+

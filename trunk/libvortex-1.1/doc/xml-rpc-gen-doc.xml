@@ -1,0 +1,395 @@
+<?xml version='1.0'?>
+<!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
+
+<?rfc comments='yes'?>
+<?rfc inline='no'?>
+<?rfc compact='no'?>
+<?rfc editing='no'?>
+<?rfc header='draft-xdl-brosnan'?>
+<?rfc private='draft-xdl-brosnan'?>
+<?rfc subcompact='no'?>
+<?rfc toc='yes'?>
+<?rfc tocappendix='no'?>
+<?rfc tocindent='no'?>
+
+<rfc ipr="none" docName="draft-xdl-brosnan">
+<front>
+<title abbrev='XDL'>XDL: XML-RPC [Service] Definition Language</title>
+
+<author initials='F.B.B.' surname='Brosnan' fullname='Francis Brosnan Blázquez'>
+<organization >Advanced Software Production Line, S.L.</organization>
+
+<address>
+<postal>
+<street>C/ Dr. Michavila Nº 14</street>
+<city>Coslada</city> <region>Madrid</region> <code>28820</code>
+<country>Madrid</country>
+</postal>
+
+<phone>00 34 91 669 55 32</phone>
+<email>francis@aspl.es</email>
+<uri>http://www.aspl.es</uri>
+</address>
+</author>
+
+<date month='Apr' year='2006' />
+
+<abstract>
+
+<t>This memo describes two formats to describe the interface exposed
+by a XML-RPC (RFC3529) software component, running on top of BEEP
+(RFC3080), to be used as input for a protocol compiler. </t>
+
+</abstract>
+
+</front>
+
+<middle>
+
+<section title='Introduction'>
+
+<t>XML-RPC protocol as defined at RFC3529, only describes the
+underlying protocol required to transport remote procedure calls
+between machines on top of the BEEP protocol. However, every RPC like
+environment provides a way to define the interface that is exposed by
+the RPC component, in a way that enables software vendors to follow
+that especification, generating stubs to many languages.</t>
+
+<t>This memo describes two formats to describe the interface that has
+an XML-RPC component a XML format that enables to describe a
+complete XML-RPC interface, allowing to be compiled to generate an
+stub that is usable by software developers as they were interfacing
+with libraries.</t>
+
+</section>
+
+<section title='Some initial definitions'>
+
+<t>The XML-RPC environment only provides a mechanism to perform
+service invocations, not method invocation. The difference between
+them is that while the first is a direct invocation, the second one
+requires a reference to the remote object that receives the
+invocation.</t>
+
+<t>This environment is modeled in a way that any number of paramter
+could be send but only one parameter could be returned. This is no
+"in/out" concept, that is commonly used in many environment to refer
+the fact that some argument is a reference that will be filled (out)
+or some parameter that is only to be passed (in). </t>
+
+<t>The XML-RPC environment, although not expressed as is at the
+RFC2529, support service overloading based on the incoming parameters. This
+means that you can have diferent versions for the same service having
+different parameters.</t>
+
+<t>The environment support an small set of types and two complex
+structures, that allows to compose those basic types to even more
+complex structures. Here is the list of basic types supported: </t>
+
+<list style="numbers">
+<t>[int]: an integer definition, that represents a four-byte
+signed integer, for example, -12.</t>
+<t>[boolean]: a boolean representation built on top of the
+int value, that is modeled using the 0 (false) and 1
+(true).</t>
+
+<t>[string]: an string representation. For example: "invoke" </t>
+<t>[double]: double-precision signed floating point number, for
+example, -32,23</t>
+<t>[base64]: an base64 representation, which works like the
+string type, but holding an encoded value using the base64 format. </t>
+</list>
+
+<t>This basic types can be composed into complex structures using the
+struct and the array construction. The first one works like the C
+struct common known, that is, a set of member values that are named
+and are grouped into a single unit.</t>
+
+<t>The second one is based on a liner, integer indexes, that packs all
+items together. Both, the array and the struct construction can hold
+not basic types but also other structures and types.</t>
+
+</section>
+
+<section title='Language definition'>
+
+<section title='Design philosophy'>
+
+<t>Design philosophy for the language definition is to use a really
+simple XML representation, avoiding to use attributes and any other
+XML construction that is not a node holding other nodes that finally
+contains relevant information for the process. </t>
+
+</section><!-- Design philosophy -->
+
+<section title='XDL language'>
+
+<t>A XML-RPC component interface is composed by service, resource
+and type declarations. All of them represents the interface for a
+XML-RPC component. A XDL definition can only define one component, not
+several.</t>
+
+<t>Definition followed by this document only describes the relevant
+pieces for the language. It is assumed that you can use xml comments,
+any number of separators (in the sense of the W3C), omiting the xml
+header declaration, and so on. </t>
+
+<t>It is only required that the file produced to represent the XML-RPC
+interface, to be a valid xml document, which implies to be well-formed
+and properly built according to the DTD provided. </t>
+
+<t>The basic XDL structure is composed by the following BNF
+grammar:</t>
+
+<artwork>
+  [1] xml_rpc_interface = &lt;xml-rpc-interface> 
+                          name
+                          xml_rpc_declarations+
+                          &lt;xml-rpc-interface>
+
+  [2] xml_rpc_declarations = resource_declaration |
+                             complex_type_declaration | 
+                             service_declaration 
+</artwork>
+
+<t>These two initial productions states that XML-RPC interface is modeled
+by types, resources and services declarations that are enclosed
+between a xml root node called: xml-rpc-interface. Here is an example:</t>
+
+<artwork>
+  &lt;?xml version='1.0'>
+  &lt;xml-rpc-interface>
+    &lt;!-- XML-RPC declarations -->
+  &lt;/xml-rpc-interface>
+</artwork>
+
+<t>The grammar states that you can place any number of type, resource
+and service declarations, being at least one, with no other. The only
+restrition placed is that any item used must be declared first. So,
+using a type, a service or a resource reference requires to be
+declared first.</t>
+
+<t>Note that the XML-RPC component have an exposed name. There is no
+explicit mention at the RFC3529 about having a unique name
+representing the XML-RPC component. However, while compiling a
+stub/skeleton it is really useful to have a mechanism to differenciate
+interfaces exposed by different components.</t>
+
+<section title='Complex Type declarations'>
+
+<artwork>
+  [3] complex_type_declaration = struct_declaration |
+                                 array_declaration
+
+  [4] struct_declaration = &lt;struct> 
+                            name
+                            member_declaration+
+                           &lt;/struct>
+
+  [5] member_declaration = &lt;member> 
+                            name
+                            type
+                            &lt;value> 
+                               STRING 
+                            &lt;/value>
+                           &lt;/member>
+  
+  [6] array_declaration = &lt;array>
+                           name
+                           type
+                           &lt;size> 
+                              NUMBER
+                           &lt;/size>
+                          &lt;/array>
+</artwork>
+
+<t>The complex type declaration states that the structure definition
+could have any number of members, at least one, that are named
+values. The structure declaration is named so it could be referenced
+to make other declarations. The same happens for the array declaration. </t>
+
+<t>For the case of an array, the declaration states that they hold an
+structure that contains the same type of items. The number of items
+inside is showed by the &lt;size> declaration. If previous declaration
+have the 0 value, it is supposed that the declaration represent
+an array that could contain any number of items.</t>
+
+</section><!-- complex type declrations -->
+
+<section title='Resource declaration'>
+
+<t>An XML-RPC component exposes a set of services that could be
+grouped into resources. This is not a requirement, however, the
+resource concept is tighly coupled with the BEEP XML-RPC channel
+creation, which requires from the XML-RPC server to validate the
+resource being required.</t>
+
+<t>By default, if not resource is declared, it is assumed the resource
+"/". </t> 
+
+<t>The set of resources to be used across the XDL definition must be
+declared first. The way they are used is explained at the particular
+section. Here is the resource declaration grammar.</t>
+
+<artwork>
+  [7] resource_declaration = &lt;resource> STRING &lt;/resource>
+</artwork>
+
+<t>It is allowed to perform any number of resource declaration. A
+resource declaration mustn't be declared twice.</t>
+
+</section><!-- Resource declaration -->
+
+<section title='Service declaration'>
+
+<t>The service declaration is composed by the service name, an
+optional declaration about the resource that is holding the service,
+the service parameter type, the service return type, and an optional
+user service code that is provided to generated a fully working
+service.</t>
+
+<t>If no resource declaration is provided, it is assumed the default
+value: "/"</t>
+
+<t>Because XML-RPC could be used on several language
+environment/runtimes, the optional user service code, must meet be
+configured values, either using the &lt;language> tag (or a compiler
+option). </t>
+
+<t>By default, the language supposed is C. See the XML-RPC C
+mapping. This value could be also tweaked by allowing the software
+developer to provide the default language as options to the
+compiler. The main purpose is to enable the XML-RPC protocol compiler
+to generate the proper server stub, according to the language
+configuration.</t>
+
+<t>Here is the service especification:</t>
+
+<artwork>
+  [8] service_declaration
+                     = &lt;service> 
+                         service_name return_type resource_decl?
+                         params_decl code?
+                       &lt;/service>
+  [9] service_name   = name
+
+  [10] return_type   = &lt;returns> STRING &lt;/returns>
+
+  [11] resource_decl = &lt;resource> STRING &lt;/resource>
+  
+  [12] params_decl   = &lt;params> param+ &lt;/params>
+
+  [13] code          = &lt;code> 
+                         user_code 
+                         optional_language_spec?
+                       &lt;/code>
+
+</artwork>
+
+<t>Below is the parameter declaration and the user code grammar:</t>
+
+<artwork>
+
+  [14] param         = &lt;param> param_name param_value &lt;/param>
+
+  [15] param_name    = name
+
+  [16] param_type    = type
+
+  [17] user_code     = &lt;content> 
+                        &lt;![CDATA[ data ]]>
+                       &lt;/content>
+
+  [18] optional_language_spec = &lt;language> STRING &lt;language>
+
+</artwork>
+
+<t>Note the production [17], which represents the user service
+code. All code must be enclosed by the &lt;![[CDATA[ and ]]>. Inside
+these delimiters the software developer could use any symbol allowed,
+even those one restricted by the XML 1.0 definition. This requirement
+is not optional.</t>
+
+<t>And finally some declarations that are used across the grammar that
+represents common productions:</t>
+  
+<artwork>
+  [19] name = &lt;name> STRING &lt;/name>
+  
+  [20] type = &lt;type> STRING &lt;/type>
+
+  [21] data = (char * - (char* "]]>" char*))
+
+  [22] char = #x0 - #xFF /* any utf-8 character */
+</artwork>
+
+<t>Note that the production [21] only represents all characters that
+are allowed in a single UTF-8 element without the terminator ]]>. In
+the case of the production [22], it states that productions using it
+are allowed to use any value that is inside a single UTF-8 element
+(not character), that is, all possible values inside an octet.</t>
+</section><!-- Service declaration -->
+
+</section><!-- XDL language -->
+
+<appendix title='XDL DTD Definition'>
+
+<t>Document type definition to validate XDL documents:</t>
+
+<artwork>
+&lt;!-- 
+  Document root declaration, 
+  complex types, resources and services.
+ -->
+&lt;!ELEMENT xml-rpc-interface (name, (struct   | array | 
+                                       resource | service )+)>
+
+&lt;!-- 
+    XML-RPC struct declaration, including 
+    its members.
+ -->
+&lt;!ELEMENT struct (name, member+)>
+
+&lt;!ELEMENT member (name, type)>
+
+&lt;!ELEMENT name (#PCDATA)>
+
+&lt;!ELEMENT value (#PCDATA)>
+
+&lt;!--
+   XML-RPC array declaration.
+ -->
+&lt;!ELEMENT array (name, type, size)>
+
+&lt;!ELEMENT type (#PCDATA)>
+
+&lt;!ELEMENT size (#PCDATA)>
+
+&lt;!-- 
+  XML-RPC service declaration.
+ -->
+&lt;!ELEMENT service (name, returns, resource?, params, code?)>
+
+&lt;!ELEMENT returns (#PCDATA)>
+
+&lt;!ELEMENT resource (#PCDATA)>
+
+&lt;!ELEMENT params (param)+>
+
+&lt;!ELEMENT param (name, type)>
+
+&lt;!ELEMENT code (content, language?)>
+
+&lt;!ELEMENT content (#PCDATA)>
+
+&lt;!ELEMENT language (#PCDATA)>
+                          
+</artwork>
+
+</appendix> <!-- XDL DTD Definition -->
+
+</section><!-- Language definition -->
+
+</middle>
+
+</rfc>

@@ -1,0 +1,94 @@
+CC       = gcc.exe -g -Wall
+OBJ      = vortex-listener.o \
+           vortex-client.o \
+	   vortex-omr-server.o \
+	   vortex-sasl-listener.o \
+	   vortex-tls-listener.o \
+	   vortex-simple-listener.o \
+	   vortex-xml-rpc-listener.o \
+	   vortex-regression-client.o \
+	   vortex-regression-listener.o \
+	   vortex-file-transfer-client.o \
+	   vortex-file-transfer-server.o \
+	   vortex-client-connections.o 
+
+PROGRAMS = vortex-listener.exe \
+           vortex-client.exe \
+	   vortex-omr-server.exe \
+	   vortex-sasl-listener.exe \
+	   vortex-tls-listener.exe \
+	   vortex-simple-listener.exe \
+	   vortex-xml-rpc-listener.exe \
+	   vortex-regression-client.exe \
+	   vortex-regression-listener.exe \
+	   vortex-file-transfer-client.exe \
+	   vortex-file-transfer-server.exe \
+	   vortex-client-connections.exe
+
+LIBS     = -Wall -g \
+	-lws2_32 $(search_lib_path) \
+	-L../src -L../../libaxl/src -L$(DEPEND_DIR)/bin -laxl -lvortex \
+	-lreadline5
+
+INCS =  -I"." -I"../src" -I"../../libaxl/src" -I$(DEPEND_DIR)/include
+
+CFLAGS   = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" -Wall -g
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before $(PROGRAMS) all-after links
+
+all-before:
+	cd ../src;make -f Makefile.win
+
+clean: clean-custom
+	${RM} $(OBJ) $(PROGRAMS) *.dll
+
+vortex-client.exe: vortex-client.o 
+	$(CC) -mconsole $< -o $@ $(LIBS)
+
+vortex-listener.exe: vortex-listener.o 
+	$(CC) -mconsole $< -o $@ $(LIBS)
+
+vortex-omr-server.exe: vortex-omr-server.o
+	$(CC) -mconsole $< -o $@ $(LIBS)
+
+vortex-sasl-listener.exe: vortex-sasl-listener.o
+	$(CC) -mconsole $< -o $@ $(LIBS)
+
+vortex-simple-listener.exe: vortex-simple-listener.o
+	$(CC) -mconsole $< -o $@ $(LIBS)
+
+vortex-tls-listener.exe: vortex-tls-listener.o
+	$(CC) -mconsole $< -o $@ $(LIBS)
+
+vortex-xml-rpc-listener.exe: vortex-xml-rpc-listener.o
+	$(CC) -mconsole $< -o $@ $(LIBS)
+
+vortex-file-transfer-client.exe: vortex-file-transfer-client.o
+	$(CC) -mconsole $< -o $@ $(LIBS)
+
+vortex-file-transfer-server.exe: vortex-file-transfer-server.o
+	$(CC) -mconsole $< -o $@ $(LIBS)
+
+client_depends = vortex-regression-client.o test_xml_rpc.o test_struct_values_xml_rpc.o test_struct_item_xml_rpc.o test_array_itemarray_xml_rpc.o test_struct_node_xml_rpc.o 
+vortex-regression-client.exe: $(client_depends)
+	$(CC) -mconsole $(client_depends) -o $@ $(LIBS)
+
+listener_depends = vortex-regression-listener.o service_dispatch.o test_sum_int_int.o test_operate_int_int.o test_get_the_string.o test_get_the_bool_1.o test_get_the_bool_2.o test_get_double_sum_double_double.o test_struct_values_xml_rpc.o test_get_struct_values_values.o test_struct_item_xml_rpc.o test_array_itemarray_xml_rpc.o test_get_array.o test_get_list.o test_struct_node_xml_rpc.o test_sum2_int_int.o
+vortex-regression-listener.exe: $(listener_depends)
+	$(CC) -mconsole $(listener_depends) -o $@ $(LIBS)
+
+vortex-client-connections.exe: vortex-client-connections.o
+	$(CC) -mconsole $< -o $@ $(LIBS)
+
+links:
+	cp $(READLINE_LIBS) .
+	cp ../src/libvortex.dll .
+	cp ../data/*.dtd .
+	cp ../../libaxl/src/libaxl.dll .
+	cp $(OPENSSL_LIBS) .
+
+%.o: %.c
+	$(CC) -c $< -o $@ $(CFLAGS)
+

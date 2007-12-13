@@ -1,0 +1,378 @@
+       ###########################################
+       ## Vortex Library 0.8.10 Stable Release  ##
+       ###########################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 0.8.10 availability: an open source "BEEP Core" protocol
+  implementation written in C, mapped into TCP/IP.
+
+  Vortex Library is a powerful toolkit to write new application
+  protocols and application over the well-defined "BEEP Core" protocol
+  defined at RFC3080/RFC3081. 
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://vortex.aspl.es 
+      [Vortex Library homepage]
+
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+
+  A new, not planned, Vortex release have been reached. It comes
+  mainly to give better support for people developing under the Win32
+  platform.
+ 
+  A new windows installer have been created to deliver Vortex Library
+  into win32 platforms in the form of SDK. It includes an already
+  prepared Vortex Library with all features enabled such as TLS, SASL,
+  vortex-client tool, the ongoing XML-RPC implementation, development
+  headers, import libraries and all dependencies required.
+
+  This new installer is great not only for those interested on testing
+  a the library under Windows but also for those ones developing BEEP
+  based applications under this platform. We hope you find it helpful!
+
+  Several Win32 bugs where squashed on this release as well as other
+  non platform specific bugs.
+
+  A new IO abstraction layer have been added to support other APIs,
+  such as epoll, for people interested on making vortex library to use
+  different interfaces than socket "select" call.
+
+
+Changes since 0.8.9
+~~~~~~~~~~~~~~~~~~~
+
+* [fix] adding initial implementation for vortex client to implement
+  XML-RPC invocations.
+
+* [new] adding two new functions to get current method invocator name
+  and method param numbers from a XmlRpcMethodCall object. Also added
+  a function to get current params number added to a invocator
+  object. API added:
+
+   - vortex_xml_rpc_method_call_get_name
+   - vortex_xml_rpc_method_call_get_num_params
+   - vortex_xml_rpc_method_call_get_current_num_params
+
+* [new] adding initial implementation for a marshalling function from
+  object into xml representation for a invocator object. API added:
+   
+   - vortex_xml_rpc_method_call_marshall
+
+* [fix] updating VortexXmlRpcValidateResource async handler to also
+  include the channel number where the XML-RPC boot request was
+  received.
+
+* [fix] fixing a bug on vortex_channel_validate_err. It was not
+  properly reading error message code and textual diagnostics.
+
+
+* [new] adding a new section to the vortex library manual explaining
+  how to properly implement the request/response pattern. Updated
+  documentation for the function vortex_channel_set_receive_handler to
+  notify about this new section added.
+
+* [new] adding more function to the XML-RPC API:
+
+   - vortex_xml_rpc_method_call_get_param_value: which allows to get
+   current param name from a given method call object.
+ 
+   - vortex_xml_rpc_method_value_get_type: which allows to get current
+   method value type.
+
+   - vortex_xml_rpc_method_value_get_as_int: which allows to get
+   current integer and boolean value for a method value object.
+
+* [fix] implemented vortex_xml_rpc_method_call_marshall to marshall a
+  method call into the corresponding XML format.
+
+* [fix] making vortex client to report fault code and fault string
+  while performing XML-RPC invocations. Making also to report method
+  value returned in the case the XML-RPC invocation have finished.
+
+* [new] added support to the method call object to be not deallocable
+  according to API configuration. API added:
+    
+     - vortex_xml_rpc_method_call_release_after_invoke
+     - vortex_xml_rpc_method_call_must_release
+
+* [fix] adding missing xml-rpc method value XML_RPC_DOUBLE_VALUE
+
+* [new] adding new API to manage method response object.
+    
+     - vortex_xml_rpc_method_response_new
+     - vortex_xml_rpc_method_response_free
+     - vortex_xml_rpc_method_response_get_status
+     - vortex_xml_rpc_method_response_stringify
+     - vortex_xml_rpc_method_response_get_fault_code
+     - vortex_xml_rpc_method_response_get_fault_string
+
+* [fix] making error codes to use negative values to allow positive
+  integer comparisons. Added new XML-RPC error codes:
+
+     - XML_RPC_CHANNEL_NOT_READY
+     - XML_RPC_NOT_XML_RPC_CHANNEL
+     - XML_RPC_WAITING_PREVIOUS
+     - XML_RPC_INVOCATION_FAILURE
+     - XML_RPC_TIMEOUT_ERROR
+
+* [new] uploading first XML-RPC implementation that is able to at
+  least perform the invocation, marshall the object invocator into the
+  xml-rpc and keep on waiting for its reply.
+
+* [fix] making vortex channel close operation to keep attention to the
+  connection status to avoid infinite blockings while waiting for
+  remining replies that will never arrive because the connection is
+  broken.
+
+* [fix] reimplemented internal XmlRpcMethodValue representation to use
+  union struct. Modified all internal source code to conform previous
+  change.
+
+* [new] added new API to create XmlRpcMethodValue objects from an
+  string. Also added convenience function for method call. API added:
+   
+   - vortex_xml_rpc_method_value_new_from_string
+   - vortex_xml_rpc_method_call_create_value_from_string
+
+* [fix] now xml-rpc implementation is able to parse incoming method
+  calls into a a XmlRpcMethodCall object.
+
+* [new] modifying XmlRpcMethodCall internal representation to include
+  the channel and the message number to be used while performing a
+  reply to the method call received. API added:
+   
+   - vortex_xml_rpc_notify_reply
+   - __vortex_xml_rpc_method_call_set_reply_data
+   - __vortex_xml_rpc_method_call_get_reply_data
+
+  This allows to defer the reply rather than replying at the time the
+  method call was received.
+
+* [new] adding a new function to perform comparisons with the given
+  XmlRpcMethodCall with some selected criteria. API added:
+   
+  - vortex_xml_rpc_method_call_is
+
+* [new] adding initial header to implement XmlRpcMethodResponse
+  marshalling into XML.
+  
+  - vortex_xml_rpc_method_response_marshall
+
+* [fix] updated internal frame received handler for the xml-rpc module
+  to implement and initial general service dispatch invocation,
+  getting its result and making a reply at the time or just returning
+  if the invocation have decided to defer the reply.
+
+* [fix] extended vortex_xml_rpc_accept_negociation function to include
+  the possibility to define user space pointers that will be passed in
+  to the resource validation and the service dispatch function.
+
+
+* [fix] updating vortex documentation center to differentiate section
+  titles inside the Vortex Library documentation.
+
+
+* [new] added an abstraction IO layer to implement blocking waits in
+  an abstract configurable manner. Now vortex writer and vortex reader
+  will invoke vortex_io module to get access to blocking interface
+  rather than calling to the default implementation based on BSD
+  select. API added:
+
+    - VortexIoCreateFdGroup [handler]
+    - VortexIoDestroyFdGroup [handler]
+    - VortexIoClearFdGroup [handler]
+    - VortexIoWaitOnFdGroup [handler]
+    - VortexIoAddToFdGroup [handler]
+    - VortexIoIsSetFdGroup [handler]
+
+    - __vortex_io_waiting_default_create [private]: default
+      implementation to create a fd group descriptor.
+
+    - __vortex_io_waiting_default_destroy [private]: default internal
+      implementation to release fd set created.
+
+    - __vortex_io_waiting_default_clear [private]: default internal
+      clear implementation.
+
+    - __vortex_io_waiting_add_to_default [private]: default internal
+      add to fd set implementation.
+
+    - __vortex_io_waiting_is_set_default [private]: default internal is
+      set socket descriptor inside the fd set implementation.
+    
+    - vortex_io_waiting_set_create_fd_group [public] allows to set
+      current create handler.
+
+    - vortex_io_waiting_invoke_create_fd_group [private] allows to
+      invoke current create handler.
+
+    - vortex_io_waiting_set_destroy_fd_group [public] allows to set
+      current destroy handler.
+
+    - vortex_io_waiting_invoke_destroy_fd_group [private] allows to
+      invoke current destroy handler.
+    
+    - vortex_io_waiting_set_clear_fd_group [public] allows to set
+      current clear handler.
+
+    - vortex_io_waiting_invoke_clear_fd_group [private] allows to invoke
+      current clear handler.
+
+    - vortex_io_waiting_set_add_to_fd_group [public] allows to set
+      current add to handler.
+
+    - vortex_io_waiting_invoke_add_to_fd_group [private] allows to
+      invoke current add to handler.
+  
+    - vortex_io_waiting_set_is_set_fd_group [public] allows to set
+      current is set handler.
+
+    - vortex_io_waiting_invoke_is_set_fd_group [private] allows to
+      invoke current is set handler.
+  
+    - vortex_io_waiting_set_wait_on_fd_group [public] allows to set
+      current wait handler.
+
+    - vortex_io_waiting_invoke_wait [private] allows to invoke current
+      wait handler.
+
+* [new] adding a new section explaining how to use new abstraction
+  mechanism implemented.
+  
+* [fix] modified vortex reader and vortex writer to no longer perform
+  a direct reference to the select based API and to use services
+  provided by the vortex_io module.
+
+* [fix] fixing typo errors inside the vortex manual.
+
+* [fix] adding a reference to the latest documentation inside the SVN
+  repository.
+
+* [fix] fixing a race condition inside the first level invocation for
+  the frame receive event.
+
+* [fix] fixing type signature checking inside
+  vortex_xml_rpc_method_call_is.  Now, the function not only checks
+  for method name and method parameter number but also check type
+  signature for parameters received.
+
+* [new] adding a helper macro called REPLY_FAULT which fills the fault
+  code, the fault string and return with the provided value to make
+  more easy write XML-RPC services using C language.
+
+* [new] making vortex-client to be able to parse uri style host to
+  connect information.  Now vortex client is able to use the connect
+  connect using uri-style scheme.
+
+* [fix] starting to produce support to unmarshall XML-RPC replies into
+  an appropriate type so the reply could be passed to upper
+  levels. Currently we are stuck on making libxml to work while
+  parsing XmlRpcMethodValue arguments. This library is a complete
+  mess. We are spending more time on making libxml to work rather than
+  working on Vortex profiles. It is time to solve this issue.
+
+* [new] adding new API to allow getting (already unmarshalled)
+  parameter values received inside method call objects
+  (XmlRpcMethodCall). API added:
+   
+     - vortex_xml_rpc_method_call_get_param_value_as_int
+     - vortex_xml_rpc_method_call_get_param_value_as_double
+     - vortex_xml_rpc_method_call_get_param_value_as_string
+
+* [new] adding new API to create method response object
+  (XmlRpcMethodResponse) by only providing the XmlRpcMethodValue that
+  will contain.
+  
+     - vortex_xml_rpc_method_response_create
+
+* [fix] fixing vortex_xml_rpc_method_response_marshall function, it
+  was producing xml representation that weren't using <value> inside
+  <param>. Making this function to also use services provided by
+  __vortex_xml_rpc_parse_value, so request and response could reuse
+  the same piece of code to parse value element.
+
+* [new] adding new API to produce replies while receiving xml-rpc
+  method calls:
+     
+     - CREATE_OK_REPLY
+     - CREATE_FAULT_REPLY
+
+* [fix] making vortex_win32.[ch] to be included on make dist command
+  (previous releases) wasn't being including this file.
+
+* [fix] making some variable declaration to be at the top of the
+  function before any sentence and the vortex tls and vortex channel
+  module. ANSI compilers doesn't like too much this.
+
+* [fix] fixing a bug found on code that makes a connection to be
+  blocking on windows platform: it wasn't properly setting default
+  value.
+
+* [fix] fixing a compile error inside the vortex io module (a variable
+  declaration the called the same as the time).
+
+* [fix] making fixing vortex-client "new channel" command.
+
+* [fix] adding support for Makefile.win inside the test directory to
+  compile test, not only vortex-client, but also listeners.
+
+* [fix] fixing vortex-client tool, under some circumstances, while
+  providing uri data for the host to connect to, it generates NULL
+  strings that are not properly implemented by windows printf
+  implementation. Ensuring that this function don't receive a NULL
+  reference.
+
+* [fix] adding the nsi definition file and the Win32 readme for Vortex
+  Library package.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services on how organization can introduce GNU/Linux
+  inside its process, making other platforms to interact with
+  GNU/Linux.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!
+         
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+7th Mar 2006, Madrid (Spain)
+  
+

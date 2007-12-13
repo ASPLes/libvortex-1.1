@@ -1,0 +1,33 @@
+<xml-rpc-interface>
+  <name>test</name>
+  <service>
+    <!-- bool get_the_bool_1 ();    -->
+    <!-- post: Always returns false  -->
+    <name>get_the_bool_1</name>
+    <returns>boolean</returns>
+    <params>
+      <!-- not parameters -->
+    </params>
+    <code>
+      <content><![CDATA[
+	/* return false */
+	return FALSE;
+]]></content>
+ </code>
+  </service>
+  <service>
+    <!-- bool get_the_bool_2 ();    -->
+    <!-- post: Always returns true  -->
+    <name>get_the_bool_2</name>
+    <returns>boolean</returns>
+    <params>
+      <!-- not parameters -->
+    </params>
+    <code>
+      <content><![CDATA[
+	/* return true */
+	return TRUE;
+]]></content>
+ </code>
+  </service>
+</xml-rpc-interface>

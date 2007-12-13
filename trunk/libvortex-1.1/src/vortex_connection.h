@@ -1,0 +1,311 @@
+/*
+ *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
+ *  Copyright (C) 2005 Advanced Software Production Line, S.L.
+ *
+ *  This program is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public License
+ *  as published by the Free Software Foundation; either version 2.1 of
+ *  the License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the  
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this program; if not, write to the Free
+ *  Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+ *  02111-1307 USA
+ *  
+ *  You may find a copy of the license under this software is released
+ *  at COPYING file. This is LGPL software: you are welcome to
+ *  develop proprietary applications using this library without any
+ *  royalty or fee but returning back any change, improvement or
+ *  addition in the form of source code, project image, documentation
+ *  patches, etc. 
+ *
+ *  For commercial support on build BEEP enabled solutions contact us:
+ *          
+ *      Postal address:
+ *         Advanced Software Production Line, S.L.
+ *         C/ Dr. Michavila Nº 14
+ *         Coslada 28820 Madrid
+ *         Spain
+ *
+ *      Email address:
+ *         info@aspl.es - http://fact.aspl.es
+ */
+#ifndef __VORTEX_CONNECTION_H__
+#define __VORTEX_CONNECTION_H__
+
+#include <vortex.h>
+
+/**
+ * \addtogroup vortex_connection
+ * @{
+ */
+
+/** 
+ * @brief Allows to get the associated serverName value under which
+ * the connection is working. The serverName value is a centric
+ * concept inside BEEP and defines under which name is acting the
+ * connection. In general, this value is used to implement resource
+ * separation based on the serverName configured.
+ *
+ * A key concept is that the serverName value is negociated, accepted
+ * and fixed for the rest of the session on the first successful
+ * channel created on the connection. Once done, no diferent
+ * serverName can be negociated.
+ *
+ * @param channel The channel that is requested to return the
+ * serverName associated to the connection holding the channel.
+ * 
+ * @return The serverName associated or NULL if none is defined.
+ */
+#define SERVER_NAME_FROM_CHANNEL(channel) (vortex_connection_get_server_name (vortex_channel_get_connection (channel)))
+
+VortexConnection  * vortex_connection_new                    (const char  * host, 
+							      const char  * port,
+							      VortexConnectionNew on_connected, 
+							      axlPointer user_data);
+
+bool                vortex_connection_reconnect              (VortexConnection * connection,
+							      VortexConnectionNew on_connected,
+							      axlPointer user_data);
+
+bool                vortex_connection_close                  (VortexConnection * connection);
+
+bool                vortex_connection_close_all_channels     (VortexConnection * connection, 
+							      bool     also_channel_0);
+
+bool                vortex_connection_ref                    (VortexConnection * connection,
+							      char             * who);
+
+void                vortex_connection_unref                  (VortexConnection * connection,
+							      char             * who);
+
+int                 vortex_connection_ref_count              (VortexConnection * connection);
+
+VortexConnection  * vortex_connection_new_empty              (int                 session,
+							      VortexPeerRole      role);
+
+VortexConnection  * vortex_connection_new_empty_from_connection (VORTEX_SOCKET socket, 
+								 VortexConnection * __connection,
+								 VortexPeerRole role);
+
+void                vortex_connection_timeout                (long int miliseconds_to_wait);
+void                vortex_connection_connect_timeout        (long int seconds_to_wait);
+
+long int            vortex_connection_get_timeout            ();
+long int            vortex_connection_get_connect_timeout    ();
+
+bool                vortex_connection_is_ok                  (VortexConnection * connection, 
+							      bool     free_on_fail);
+
+char              * vortex_connection_get_message            (VortexConnection * connection);
+
+bool                vortex_connection_pop_channel_error      (VortexConnection  * connection, 
+							      int               * code,
+							      char             ** msg);
+
+void                vortex_connection_push_channel_error     (VortexConnection  * connection, 
+							      int                 code,
+							      char              * msg);
+
+void                vortex_connection_free                   (VortexConnection * connection);
+
+axlList           * vortex_connection_get_remote_profiles    (VortexConnection * connection);
+
+int                 vortex_connection_set_profile_mask       (VortexConnection      * connection,
+							      VortexProfileMaskFunc   mask,
+							      axlPointer              user_data);
+
+bool                vortex_connection_is_profile_filtered    (VortexConnection      * connection,
+							      int                     channel_num,
+							      const char            * uri,
+							      const char            * profile_content,
+							      const char            * serverName);
+
+bool                vortex_connection_is_profile_supported   (VortexConnection * connection, 
+							      char  * uri);
+
+bool                vortex_connection_channel_exists         (VortexConnection * connection, 
+							      int  channel_num);
+
+int                 vortex_connection_channels_count         (VortexConnection * connection);
+
+void                vortex_connection_foreach_channel        (VortexConnection   * connection,
+							      axlHashForeachFunc   func,
+							      axlPointer           user_data);
+
+int                 vortex_connection_get_next_channel       (VortexConnection * connection);
+
+VortexChannel     * vortex_connection_get_channel            (VortexConnection * connection, 
+							      int  channel_num);
+
+VortexChannel     * vortex_connection_get_channel_by_uri     (VortexConnection * connection,
+							      const char       * profile);
+
+VortexChannel     * vortex_connection_get_channel_by_func    (VortexConnection     * connection,
+							      VortexChannelSelector  selector,
+							      axlPointer             user_data);
+
+int                 vortex_connection_get_channel_count      (VortexConnection     * connection,
+							      const char           * profile);
+
+VORTEX_SOCKET       vortex_connection_get_socket             (VortexConnection * connection);
+
+void                vortex_connection_set_close_socket       (VortexConnection * connection,
+							      bool     action);
+
+void                vortex_connection_add_channel            (VortexConnection * connection, 
+							      VortexChannel * channel);
+
+void                vortex_connection_remove_channel         (VortexConnection * connection, 
+							      VortexChannel * channel);
+
+const char        * vortex_connection_get_host               (VortexConnection * connection);
+
+const char        * vortex_connection_get_port               (VortexConnection * connection);
+
+int                 vortex_connection_get_id                 (VortexConnection * connection);
+
+const char        * vortex_connection_get_server_name        (VortexConnection * connection);
+
+void                vortex_connection_set_server_name        (VortexConnection * connection,
+							      const       char * serverName);
+
+bool                vortex_connection_set_blocking_socket    (VortexConnection * connection);
+
+bool                vortex_connection_set_nonblocking_socket (VortexConnection * connection);
+
+bool                vortex_connection_set_sock_tcp_nodelay   (VORTEX_SOCKET socket,
+							      bool          enable);
+
+bool                vortex_connection_set_sock_block         (VORTEX_SOCKET socket,
+							      bool          enable);
+
+void                vortex_connection_set_data               (VortexConnection * connection,
+							      char             * key,
+							      axlPointer         value);
+
+void                vortex_connection_set_data_full          (VortexConnection * connection,
+							      char             * key,
+							      axlPointer         value,
+							      axlDestroyFunc     key_destroy,
+							      axlDestroyFunc     value_destroy);
+
+void                vortex_connection_set_auto_tls           (bool               enabled,
+							      bool               allow_tls_failures,
+							      char             * serverName);
+
+axlPointer          vortex_connection_get_data               (VortexConnection * connection,
+							      char             * key);
+							      
+
+VortexChannelPool * vortex_connection_get_channel_pool       (VortexConnection * connection,
+							      int                pool_id);
+
+int                 vortex_connection_get_pending_msgs       (VortexConnection * connection);
+
+VortexPeerRole      vortex_connection_get_role               (VortexConnection * connection);
+
+const char        * vortex_connection_get_features           (VortexConnection * connection);
+
+const char        * vortex_connection_get_localize           (VortexConnection * connection);
+
+int                 vortex_connection_get_opened_channels    (VortexConnection * connection);
+
+VortexConnection  * vortex_connection_get_listener           (VortexConnection * connection);
+
+VortexSendHandler      vortex_connection_set_send_handler    (VortexConnection * connection,
+							      VortexSendHandler  send_handler);
+
+VortexReceiveHandler   vortex_connection_set_receive_handler (VortexConnection * connection,
+							      VortexReceiveHandler receive_handler);
+
+void                   vortex_connection_set_default_io_handler (VortexConnection * connection);
+								 
+
+VortexConnectionOnClose vortex_connection_set_on_close       (VortexConnection * connection,
+							      VortexConnectionOnClose on_close_handler);
+
+VortexConnectionOnCloseFull vortex_connection_set_on_close_full  (VortexConnection * connection,
+								  VortexConnectionOnCloseFull on_close_handler,
+								  axlPointer data);
+
+axlPointer                 vortex_connection_remove_on_close_full (VortexConnection              * connection, 
+								   VortexConnectionOnCloseFull     on_close_handler);
+
+int                 vortex_connection_invoke_receive         (VortexConnection * connection,
+							      char             * buffer,
+							      int                buffer_len);
+
+int                 vortex_connection_invoke_send            (VortexConnection * connection,
+							      const char       * buffer,
+							      int                buffer_len);
+
+void                vortex_connection_sanity_socket_check    (bool     enable);
+
+bool                vortex_connection_parse_greetings_and_enable (VortexConnection * connection, 
+								  VortexFrame      * frame);
+
+void                vortex_connection_set_preread_handler        (VortexConnection * connection, 
+								  VortexConnectionOnPreRead pre_accept_handler);
+
+bool                vortex_connection_is_defined_preread_handler (VortexConnection * connection);
+
+void                vortex_connection_invoke_preread_handler     (VortexConnection * connection);
+
+void                vortex_connection_set_tlsfication_status     (VortexConnection * connection,
+								  bool               status);
+
+bool                vortex_connection_is_tlsficated              (VortexConnection * connection);
+
+void                vortex_connection_shutdown                   (VortexConnection * connection);
+
+void                vortex_connection_set_channel_added_handler   (VortexConnection                * connection,
+								   VortexConnectionOnChannelUpdate   added_handler,
+								   axlPointer                        user_data);
+
+void                vortex_connection_set_channel_removed_handler  (VortexConnection                * connection,
+								    VortexConnectionOnChannelUpdate   removed_handler,
+								    axlPointer                        user_data);
+
+void                vortex_connection_notify_new_connections       (VortexConnectionNotifyNew         notify_new,
+								    axlPointer                        user_data);
+
+void                vortex_connection_notify_created               (VortexConnection                * conn);
+
+/** 
+ * @internal
+ * Do not use the following functions, internal Vortex Library purposes.
+ */
+
+void                vortex_connection_init                   (VortexCtx        * ctx);
+
+void                vortex_connection_cleanup                (VortexCtx        * ctx);
+
+void                __vortex_connection_set_not_connected    (VortexConnection * connection, 
+							      char             * message);
+
+int                 vortex_connection_do_a_sending_round     (VortexConnection * connection);
+
+void                vortex_connection_lock_channel_pool      (VortexConnection * connection);
+
+void                vortex_connection_unlock_channel_pool    (VortexConnection * connection);
+
+int                 vortex_connection_next_channel_pool_id   (VortexConnection * connection);
+
+void                vortex_connection_add_channel_pool       (VortexConnection  * connection,
+							      VortexChannelPool * pool);
+
+void                vortex_connection_remove_channel_pool    (VortexConnection  * connection,
+							      VortexChannelPool * pool);
+
+bool                __vortex_connection_parse_greetings      (VortexConnection * connection, 
+							      VortexFrame * frame);
+
+#endif
+
+/* @} */

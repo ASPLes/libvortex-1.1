@@ -1,0 +1,82 @@
+<?xml version="1.0" ?>
+<xml-rpc-interface>
+<struct>
+  <name>Value</name>
+  <member>
+     <name>value_1</name>
+     <type>string</type>
+  </member>
+  <member>
+     <name>value_2</name>
+     <type>string</type>
+  </member>
+</struct>
+<struct>
+  <name>Test</name>
+  <member>
+     <name>a</name>
+     <type>int</type>
+  </member>
+  <member>
+     <name>b</name>
+     <type>int</type>
+  </member>
+  <member>
+     <name>c</name>
+     <type>Value</type>
+  </member>
+</struct>
+<array>
+  <name>an_array</name>
+  <type>Value</type>
+  <size>0</size>
+</array>
+<resource>
+  <name>"/test"</name>
+  <service>
+    <name>sum</name>
+    <returns>int</returns>
+    <params>
+       <param>
+         <name>a</name>
+         <type>int</type>
+       </param>
+       <param>
+         <name>b</name>
+         <type>int</type>
+       </param>
+    </params>
+    <code><![CDATA[/* insert your code here */]]></code>
+  </service>
+  <service>
+    <name>sum</name>
+    <returns>int</returns>
+    <params>
+       <param>
+         <name>a</name>
+         <type>int</type>
+       </param>
+       <param>
+         <name>b</name>
+         <type>int</type>
+       </param>
+       <param>
+         <name>c</name>
+         <type>int</type>
+       </param>
+    </params>
+    <code><![CDATA[/* insert your code here */]]></code>
+  </service>
+  <service>
+    <name>sum_from_array</name>
+    <returns>int</returns>
+    <params>
+       <param>
+         <name>array</name>
+         <type>int []</type>
+       </param>
+    </params>
+    <code><![CDATA[/* insert your code here */]]></code>
+  </service>
+</resource>
+</xml-rpc-interface> 

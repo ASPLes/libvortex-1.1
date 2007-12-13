@@ -1,0 +1,490 @@
+       ##########################################
+       ## Vortex Library 0.8.8 Stable Release  ##
+       ##########################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 0.8.8 availability: an open source "BEEP Core" protocol
+  implementation written in C, mapped into TCP/IP.
+
+  Vortex Library is a powerful toolkit to write new application
+  protocols and application over the well-defined "BEEP Core" protocol
+  defined at RFC3080/RFC3081. 
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://vortex.aspl.es 
+      [Vortex Library homepage]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+   
+    - http://www.beepcore.org
+      [BEEP Core official web page]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+  TLS and SASL profiles (ANONYMOUS, PLAIN, EXTERNAL, CRAM-MD5 and
+  PLAIN) have been implemented.
+
+  And many more minor features, keep on reading..
+
+Changes since 0.8.7
+~~~~~~~~~~~~~~~~~~~
+
+* [new] added support to allow Vortex programmers to define the
+  handlers to be used while sending and receiving data. This will
+  allow to implement any required features which needs to modify how
+  data is send and received inside the Vortex including those profiles
+  which use other function than send and recv. API added was:
+
+   - vortex_connection_set_send_handler.
+   - vortex_connection_set_receive_handler.
+   - Handler: VortexSendHandler.
+   - Handler: VortexReceiveHandler.
+   - vortex_connection_default_send (private function)
+   - vortex_connection_default_receive (private function)
+   - vortex_connection_invoke_send (private function)
+   - vortex_connection_invoke_send (private function)
+
+* [improve] making vortex library to allow programers to configure if
+  it is going to be built with TLS support or not. API exported in
+  both cases will be the same, allowing the undefined error due to not
+  found API. API exported for TLS will report to app level if the
+  library being used have enabled TLS support.  Modified autotools
+  files and source code to support this issue.
+
+* [fix] adding a memset to 0 at vortex_frame_readline function.
+
+* [new] adding support to vortex client tool to be able to support
+  enabling TLS profile support.
+
+* [new] adding support to notify when a connection have being closed
+  through a VortexConnectionOnClose handler. This allows to perform
+  some especific operations over connection closed. Connection Close
+  is executed just before its resouces are deallocated. Added API to
+  allow setting the on close handler:
+
+  - vortex_connection_set_on_close [public]
+
+* [fix] making vortex_connection_close_all_channels to be public so
+  profile implementators could use it.
+
+* [new] adding support for implicit piggyback support. Now, piggyback
+  message sent at the start message or on its reply, is notified to
+  the user space as a received frame. This allows to support with the
+  same source code replies with piggyback or withtout it. Added API:
+
+  - vortex_channel_have_piggyback [public]
+  - vortex_channel_get_piggyback  [public]
+  - vortex_channel_set_piggyback  [private]
+
+* [new] added a new top level mechanism to receive frames in a
+  synchroumos manner without using wait reply which is more especific
+  and expensive. This method is based on two functions:
+
+  - vortex_channel_queue_reply [public]: which just queue any frame
+    received into a user space queue.
+
+  - vortex_channel_get_reply [public]: which fetch the next frame
+    recevied on the selected queue, including support to fetch the
+    optional piggyback received.
+
+* [new] added new function to create VortexFrame instances from user
+  space data:
+
+  - vortex_frame_create [public]
+
+* [fix] add to vortex connection creation a socket sanity check to
+  avoid creation socket connections using OS reserved file descriptors
+  which could only cause problems.  However, a function is provided to
+  avoid executing the sanity check:
+
+   - vortex_connection_sanity_socket_check
+
+* [new] added new vortex-tls-listener.c example TLS profile server.
+
+* [fix] updating extended start handler definition to allow app level
+  to define a piggyback at the start reply
+  (profile_content_reply). Updating source code which where invoking
+  start extended definition.
+
+* [fix] while closing the channel 0, as a last step for closing a
+  connection, on some system there were producting a race condition
+  between the code flagging the channel as being closed and the code
+  that use that flag on the channel close reply to know that the
+  connection has been closed properly. Reordered vortex_channel_close
+  flagging code to execute in the proper position.
+
+* [fix] fixing vortex_channel_get_reply, it was calling to
+  vortex_channel_get_reply instead for vortex_channel_get_piggyback
+  inside it.
+
+* [new] starting to add support for TLS server side
+  configuration. Currently this is done by using
+  vortex_tls_accept_negociation which signal vortex library that TLS
+  negociation is supported. This function also install all default
+  handlers to be called to enable, negociate and notify for the user
+  app all incoming TLS requests.
+
+* [fix] fixing vortex_profile_invoke_start to use the new API, which
+  provides access to the profile_content_reply to be used as a
+  piggyback.
+
+* [fix] adding a getpid portable definition vortex_getpid which maps
+  correctly to the right function on gnu/linux and windows platforms.
+
+* [new] adding a new definition VORTEX_SOCKET which maps to the right
+  value on windows plantform and gnu/linux ones. Modifying
+  VortexConnection definition to use this value.
+
+* [fix] making vortex library to be Visual Studio 2005 compatible.
+  Modified source code so it could be compiled on both platforms:
+  windows and gnu/linux.
+
+* [fix] fixing a wrong new line implementation. Portable way to write
+  new lines to detect \r\n is to use \x0D\x0A.
+
+* [fix] fixing an API bug at vortex_init function. It wasn't returning
+  any initialization error code so, if something gos wrong application
+  level couldn't check that status.
+
+* [fix] updating vortex-client to use the vortex_init return value to
+  check library initialization status.
+
+* [new] adding support to vortex connection module to configure if the
+  underlaying connection should be closed or not when a vortex
+  connection instance is closed (actually when the channel 0 is
+  closed). Added new API to allow configure this:
+
+   - vortex_connection_set_close_socket
+
+* [fix] fixing vortex channel implicit piggyback process and
+  notification.
+
+* [fix] moved all BEEP channel definition messages (start, ok, error,
+  ..) to be generated only from vortex frame factory
+  module. Implemented new functions to produce this messages:
+
+   - vortex_frame_get_ok_message
+   - vortex_frame_get_error_message
+   - vortex_frame_get_start_message
+   - vortex_frame_get_close_message
+   - vortex_frame_get_start_rpy_message
+
+* [fix] updating Vortex Library source due to previous change. Now,
+  every channel management message used is build and created by the
+  vortex frame module.
+
+* [fix] adding client side TLS profile prototype mostly completed. It
+  starts TLS channel negociation, process reply (either implicit or
+  explicit) closes channels opened and call to TLS-ficate.
+
+* [fix] adding some memory cleanups before using xmlValidCtx stack
+  activated values.
+
+* [new] updating vortex_connection_new_empty function to be public and
+  able to create a new connection starting from an already connected
+  socket and a role. Updating listener internal implementation to
+  conform the change introduced.
+
+* [fix] updating vortex_connection_ref/unref documentation.
+
+* [new] adding support to VortexConnection instance to store user
+  space data especifying a key/value destroy data functions per item
+  stored. API added:
+
+  - vortex_connection_data_set_full
+
+* [new] adding new public function to support greetings reply
+  processing and connection activation. This will be useful to
+  implement profiles that require tunning reset. API added:
+
+  - vortex_connection_parse_greetings_and_enable
+
+* [new] adding 3 new handlers to support TLS profile at listener peer
+  side.
+
+  - VortexTlsAcceptQuery: allows applications level to allow or deny
+    incoming TLS negocation request.
+
+  - VortexTlsCertificateFileLocator: allows application level to
+    especify the certificate file to be used.
+
+  - VortexTlsPrivateKeyFileLocator: allows application level to
+    especify the private key to be used.
+
+* [new] moved common location files function from vortex dtd module to
+  vortex support so it could be also used by other modules, and at
+  this moment, by the vortex tls module. API added:
+
+  - vortex_support_find_data_file.
+
+* [new] vortex library client side implementation for the TLS profile
+  is now complete.
+
+* [fix] fixing extended channel start definition: user space parameter
+  was missing in the definition.
+
+* [fix] updating vortex_connection_reconnect documentation. Added an
+  code example.
+
+* [fix] updating vortex library documentation, fixing broken
+  references.
+
+* [new] added new function to support in an abstract manner how files
+  are found inside the Vortex library:
+
+     - vortex_support_add_search_path
+     - vortex_support_add_search_path_ref
+
+  Updated vortex_support_find_data_file to use file paths installed by
+  previous functions.
+
+* [new] added cleanup function to vortex support module:
+
+     - vortex_support_cleanup 
+
+  This function is automatically called by the vortex_exit function.
+
+* [fix] udpating vortex_init function to install default path to
+  lookup for data files.
+
+* [fix] added some additional checks while client TLS request is
+  enabled to avoid suposing a transport session is already
+  tls-ficated.
+
+* [fix] fixing vortex_init call to add path to search data file
+  definitions.
+
+* [fix] fixing bug on vortex_connection_set_data_full, it was swapping
+  key and value.
+  
+* [fix] fixing wrong error checking inside the vortex-client tool for
+  open/connect command.
+
+* [fix] fixing wrong socket declarations not using VORTEX_SOCKET.
+
+* [fix] making vortex_support_find_data_file to just return the file
+  name found if search path used is "."
+
+* [new] adding initial full working Vortex Library with TLS
+  support. Current test have been done to vortex-client tool which now
+  support "enable tls" command. API added:
+
+   - vortex_tls_start_negociation [public]
+   - vortex_tls_accept_negociation [public]
+   - vortex_connection_set_tlsfication_status [private]
+   - vortex_connection_is_tlsficated [public]
+
+* [fix] making vortex greetings module to now show TLS profile, even
+  if it is registered for those connections already TLS-ficated.
+
+* [fix] on close connection event now works even if several threads
+  calls to close the same connection. This event have been used to
+  implement the piece of the TLS profile which starts the TLS
+  handshake.
+
+* [new] added support to perform pre-read operations inside the vortex
+  reader process. This allows to establish user space handlers which
+  could perform previous operations to read frames. API added:
+
+   - vortex_connection_set_preread_handler [public]
+   - vortex_connection_is_defined_preread_handler [public]
+   - vortex_connection_invoke_preread_handler [private]
+   - VortexConnectionOnPreRead [public]
+
+* [fix] removing profile content prefix and suffix code actually done
+  by vortex_frame_get_start_message.
+
+* [fix] added profile content preffix and suffix to
+  vortex_frame_get_start_rpy_message.
+
+* [new] updating user documentation about activating TLS profile. 
+
+* [new] updated main documentation to include references to the new
+  profile implemented.
+
+* [new] updated vortex status document to reflect the TLS profile
+  implementation.
+
+* [new] added support to implement auto TLS negociation for each
+  connection created. This allows to reuse source code already
+  implemented that needs to also negociate TLS profile. Conections
+  created with vortex_connection_new are returned with TLS profile
+  already negociated if auto TLS is activated. API added:
+
+      - vortex_connection_set_auto_tls
+
+* [new] implemented initial timeout support for synchronous operations
+  based on:
+
+      - vortex_connection_timeout
+      - vortex_connection_get_timeout
+
+  Timeout support is now used to limit synchronous waiting while
+  activated TLS support at vortex_connection_new due to auto TLS
+  activation.
+
+* [fix] updated function documentation for vortex_connection_new and
+  vortex_conection_set_data to explain how to use new mechanisms added
+  and how to use a connection to store user space data.
+
+* [new] added support to implement synchronous TLS profile negociation
+  through:
+
+      - vortex_tls_start_negociation_sync
+
+  The function does the same as vortex_tls_start_negociation but doing
+  it in a synchronous way (blocking the caller).
+
+* [fix] fixing wrong #ifdef-#endif align inside vortex tls module.
+
+* [new] adding support to vortex-client tool to initialize SASL auth
+  negociations against BEEP peers.
+
+* [new] added new handler to enable application level to get notified
+  about SASL process status. API added:
+
+  -  VortexSaslAuthNotify
+
+* [new] adding new channel start function: vortex_channel_new_fullv,
+  which allows to create new channels setting the profile content to
+  be piggybacked using a printf-like format. API added:
+  
+  - vortex_channel_new_fullv
+
+* [fix] fixing a bug on vortex_channel_get_reply which was returning a
+  frame that the second level handler invocator unref just few steps
+  after. Now the function makes a copy from the frame
+  returned. Updated user documentation to advise that the frame
+  returned should be unrefered. Implemented new frame copy function to
+  perform the fix. API added:
+
+  - vortex_frame_copy
+
+* [fix] reorganizied source code at vortex dtd module to load more
+  than the channel management DTD file. Now it is include the SASL DTD
+  file. Adding TLS and SASL DTD files.
+
+* [fix] mostly finished the SASL client implementation for the Vortex
+  Library.
+
+* [fix] reimplement SASL client implementation to use GNU SASL library
+  instead of Cyrus SASL. Vortex SASL support for client side mostly
+  completed.
+
+* [fix] improving error detection for start channel error replies at
+  vortex channel module.
+
+* [new] adding new handlers to support anonymous and plain profile
+  incoming request notification and validation. API added:
+
+  - VortexSaslAuthAnonymous
+  - VortexSaslAuthPlain
+
+  Now Vortex SASL implementation invoke previous handlers to notify
+  user space that a SASL auth was received to get confirmation to deny
+  or to allow it.
+
+* [new] added new functions to allow setting previous SASL handler
+  notification:
+
+  - vortex_sasl_set_anonymous_validation
+  - vortex_sasl_set_plain_validation
+
+* [new] commiting first fully working SASL implementation for client
+  and server side. Already tested with ANONYMOUS profile.
+
+* [new] adding new sasl function to allow checking if a given
+  connection is already authenticated.
+
+  - vortex_sasl_is_authenticated
+
+* [fix] making SASL vortex implementation to remove SASL crendentials
+  on SALS negociation failures inside __vortex_sasl_notify. Fix having
+  previous credentials values mixed with new ones set from previous
+  SASL failed negociations.
+
+* [new] adding support to vortex-client tool to show current SASL auth
+  status and current SASL auth id for the "connection status" command.
+
+* [new] comming complete SASL PLAIN profile support for both sides.
+
+* [fix] adding sasl start auth sanity checks to avoid starting SASL
+  handshake for a given profile without providing all necesary
+  security props.
+
+* [fix] adding support for SASL PLAIN profile validation to
+  vortex-sasl-listener example.
+
+* [fix] making vortex-client tool to use synchronous API for TLS and
+  SASL activation. Now, vortex-client tool support perform SASL
+  operations for PLAIN, ANONYMOUS, EXTERNAL, CRAM-MD5 and DIGEST-MD5
+  profiles.
+
+* [fix] making vortex_connection_new to use synchronous version for
+  TLS activation when auto tls is enabled rather than using the
+  asynchronous one.
+
+* [fix] vortex_connection_free was not deallocating memory for
+  features and localiza items.
+
+* [new] uploading fully working Vortex version with SASL support for
+  client and server side for the following profiles: PLAIN, ANONYMOUS,
+  EXTERNAL, CRAM-MD5, DIGEST-MD5. API Added:
+
+   - VortexSaslAuthExternal
+   - VortexSaslAuthCramMd5
+   - VortexSaslAuthDigestMd5
+   - vortex_sasl_start_auth_sync
+   - vortex_sasl_set_cram_md5_validation
+   - vortex_sasl_set_digest_md5_validation
+
+* [fix] making VortexStatus definition to bind VortexError to 1 and
+  VortexOk to 2 to differenciate this values from NULL (or cero).
+
+* [new] updated Vortex manual to explain in detail how to use SASL
+  support and piggybacking.
+
+* [fix] adding timeout support for synchronous TLS and SASL negociation.
+
+* [fix] fixing a bug on vortex listener waiting code which was
+  unrefereing a queue that on Vortex Listener start up error is null.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distribuited application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distribuited nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services on how organization can introduce GNU/Linux
+  inside its process, making other platforms to interact with
+  GNU/Linux.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!
+         
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+20th Dec 2005, Madrid (Spain)
+  
+

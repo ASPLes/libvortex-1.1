@@ -1,0 +1,54 @@
+<xml-rpc-interface>
+<name>test</name>
+<!-- struct declaration -->
+<struct>
+ <name>Operation</name>
+ <member>
+  <name>Type</name>
+  <type>int</type>
+ </member>
+ <member>
+  <name>Operand1</name>
+  <type>int</type>
+ </member>
+ <member>
+  <name>Operand2</name>
+  <type>int</type>
+ </member>
+</struct>
+<!-- array declaration -->
+<array>
+ <name>OperationArray</name>
+ <type>Operation</type>
+ <size>0</size>
+</array>
+<!-- service declaration -->
+<service>
+ <name>sum</name>
+ <returns>int</returns>
+ <params>
+   <param>
+     <name>a</name>
+     <type>int</type>
+   </param>
+   <param>
+     <name>b</name>
+     <type>int</type>
+   </param>
+ </params>
+ <code>
+   <content><![CDATA[
+	/* this is a test < & */
+	return a + b;
+]]></content>
+ </code>
+</service>
+<!-- service declaration -->
+<service>
+ <name>list</name>
+ <returns>OperationArray</returns>
+ <params>
+  <!-- no parameters -->
+ </params>
+</service>
+</xml-rpc-interface>

@@ -1,0 +1,60 @@
+<xml-rpc-interface>
+  <!-- XML-RPC component name declaration -->
+  <name>test</name>
+
+  <!-- Node struct declaration --> 
+  <struct>
+     <name>Node</name>
+     <member>
+        <name>position</name>
+        <type>int</type>
+     </member>
+     <member>
+        <name>next</name>
+        <type>Node</type>
+     </member>
+  </struct>
+
+  <!-- get_list service declaration -->
+  <service>
+     <name>get_list</name>
+     <returns>Node</returns>
+     <params>
+       <!-- A service without parameters -->
+     </params>
+     <code>
+        <!-- service implementation declaration -->
+        <content><![CDATA[
+          	/* the pointer result */
+		Node * result;
+
+		/* some variables for the service */
+		Node * node;
+		Node * next;
+		int    iterator = 2;
+
+		/* create the first node */
+		result = test_node_new (1, NULL);
+		node   = result;
+		while (iterator < 10) {
+
+			/* create the next, but setting next as NULL
+			 * because we don't have it yet */
+			next = test_node_new (iterator, NULL);
+
+			/* set previous the next created */
+			node->next = next;
+
+			/* update references */
+			node = next;
+
+			/* update index */
+			iterator ++;
+		}
+		
+		/* return list created */
+		return result;
+]]></content>
+     </code>
+  </service>
+</xml-rpc-interface>

@@ -1,0 +1,111 @@
+          ############################################
+          ##          Vortex Library 1.0.10         ##
+          ##        "Behind the heap release"       ##
+          ############################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.0.10 "Behind the heap" release availability: an open
+  source "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+
+  This release solves a double deallocation error at the frame
+  received handler introduced by previous releases. It also includes a
+  new API that allows to get notifications when a channel is added or
+  removed from a particular BEEP connection. Other bugs were fixes.  
+  
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  None.
+
+Thanks to..
+~~~~~~~~~~~
+  Yourch Chris (reported and fixed wrong included inside vortex sasl
+  module, while compiling vortex with MS products and reported double
+  deallocation error at frame received handlers).
+
+Changes since 1.0.9
+~~~~~~~~~~~~~~~~~~~
+
+* [fix] Making vortex_listener_set_on_accepted to internally configure
+  the listener module if it is called before vortex_listener_new
+  family.
+
+* [fix] Finished initial tests to check removed/added channel
+  notification.
+
+* [new] Updated vortex connection API to include two new functions
+  that allows configuring a set of handlers that are called if a
+  channel is added or removed from it. API added:
+
+   - vortex_connection_set_channel_added_handler
+   - vortex_connection_set_channel_removed_handler
+   - VortexConnectionOnChannelUpdate (handler)
+
+* [fix] Making vortex_channel_is_being_closed to check reference
+  received before accessing content.
+
+* [fix] Fixed double deallocation error at the serialize code at the
+  vortex channel module.
+
+* [fix] Updated documentation.
+
+* [fix] Making unistd.h header from the vortex_sasl module to be not
+  included inside windows platform. Reported and fixed Chris Yourch.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+7th nov 2007, Madrid (Spain)

@@ -1,0 +1,203 @@
+              ######################################
+              ##       Vortex Library  1.0.7      ##
+              ##        "tarantula release"       ##
+              ######################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.0.7 "tarantula" release availability: an open source "BEEP
+  Core" protocol implementation written in C, mapped onto TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://vortex.aspl.es 
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://xml.aspl.es
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+
+  This release includes an update to the BEEP session connection,
+  which now support configuring default tcp timeout.
+
+  It is also included a missing feature that now allows to properly
+  handle cross close in transit, allowing BEEP peers to issue a
+  channel close at the same time.
+
+  The frame dispatching and send reply code have been updated to not
+  block the caller if a wrong deliver order is found, but to store
+  that frame, unlock the caller and to perform such deliver later.
+
+  Some minor bugs have been fixed and the regression test updated. A
+  set of new function have been also added...
+
+Thanks to...
+~~~~~~~~~~~~
+
+  Support to configure different timeouts on beep session connect
+  (Martin Huter). Useful comments and bug reports about using vortex
+  on Windows (Mark Kane). Comments about library initialization and
+  documentation updates (Chris Yourch).
+    
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  None.
+
+Changes since 1.0.6
+~~~~~~~~~~~~~~~~~~~
+
+* [fix] Included support to perform a non-blocking connect allow to
+  configure a different timeout than the one provided by default
+  (Martin Huter proposed and provided path). API added:
+
+    - vortex_connection_get_connect_timeout
+    - vortex_connection_connect_timeout
+
+* [new] Added two new macros VORTEX_EWOULDBLOCK and VORTEX_EINPROGRESS
+  to be defined to the proper value on each platform. Updated vortex
+  to use these new values.
+
+* [new] Added new function to produce a digest configuring the amount
+  of data to be taken from the input. API added:
+
+    - vortex_tls_get_digest_sized
+
+* [new] Added two new macros that allows to register where the call to
+  vortex_cond_wait and vortex_cond_timedwait were produced. API added:
+
+    - VORTEX_COND_WAIT
+    - VORTEX_COND_TIMEDWAIT
+
+* [new] Added two new functions to implement a second level log
+  (debug, warning and error). Updated previous first level API to
+  update its status if a call to vortex_log_enable is done more
+  times. Updating the library to not drop message content if the
+  second level is not activated.  API added:
+  
+    - vortex_log2_is_enabled
+    - vortex_log2_enable
+
+* [new] Implemented initial code to support close in transit (BEEP
+  peers sending close messages at the same time). The code tries to
+  detect that situation and perform an implicit close. Added an
+  initial regression test to check this feature.
+
+* [fix] Finished initial support for the cross close in transit. Now
+  the library support accepting an incoming close requested while a
+  reply for an outstanding close requested is waited, handling the
+  case as an implicit close. Added initial regression test but more
+  checks must be done.
+
+* [new] Added a new function to check the reference counting for a 
+  channel. API added:
+
+   - vortex_channel_ref_count
+
+* [fix] Removed some checks not required at the second level frame
+  received dispatch function.
+
+* [fix] Fixed and integrated close in transit feature (test 09). Fixed
+  some memory leaks introduced by the new channel creation error API.
+
+* [fix] Making windows definition _WIN32_WINNT to be checked before
+  being defined again (Reported by Mark Kane).
+
+* [fix] Several updates to the NSI file and Makefiles (windows version)
+  to correct files included into the installer (using old headers from
+  a wrong location. Reported by Mark Kane).
+
+* [new] Updated vortex connection API to include a function to disable
+  tcp_nodealy. API added:
+
+    - vortex_connection_set_sock_tcp_nodelay
+
+* [fix] Updated channel send reply code to not block the caller if the
+  reply order requested is wrong, and to store that reply to be used
+  later.
+
+* [fix] Making vortex channel close notification and
+  vortex_channel_close functions to detect if the application is
+  trying to close the channel that is being notified to be closed.
+
+* [fix] Making vortex channel msg and reply deliver at the second
+  level to store that messages and replies to be used later if a wrong
+  order is found rather than blocking the caller.
+
+* [fix] Documentation update.
+
+* [fix] Updated xml-rpc-gen tool to manage string declarations
+  (string) as (const char *).
+
+* [fix] Restored case MIME handling at vortex frame module.
+
+* [fix] Added some ifdef declarations to avoid including some unix
+  headers on windows.
+
+* [fix] removed appLevel flag for channel reference handling while
+  using or implementing a BEEP profile that allows both peers to
+  perform a close operation on the channel channel at the same
+  time. Moved reference counting responsibility to the application
+  level. Added some notes to explain this.  Updated regression test.
+
+* [new] Updated vortex connection API to include a function to return
+  the number of channels running on a provided connection. API added:
+
+    - vortex_connection_channels_count
+
+* [fix] restoring vortex regression client default values..
+
+* [fix] Updated vortex_init documentation and added comments provided
+  by Chris Yourch on how to make vortex library to locate its data
+  files on a different place.
+
+* [fix] Updating axl and vortex package references.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+3th sep 2007, Madrid (Spain)
+  
+

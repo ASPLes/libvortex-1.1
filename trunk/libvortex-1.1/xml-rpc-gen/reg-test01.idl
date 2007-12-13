@@ -1,0 +1,13 @@
+/* This is a test that invokes a simple service with two integers and
+ * returns its result.
+ */
+xml-rpc interface test {
+	/* add two integers */
+	int sum (int a, int b) {
+		/* sum values received */
+		return a + b;
+	}
+
+	/* empty service definition */
+	int operate (int a, int b);
+}

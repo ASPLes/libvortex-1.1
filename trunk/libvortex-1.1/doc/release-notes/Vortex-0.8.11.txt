@@ -1,0 +1,329 @@
+       ###########################################
+       ## Vortex Library 0.8.11 Stable Release  ##
+       ###########################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 0.8.11 availability: an open source "BEEP Core" protocol
+  implementation written in C, mapped onto TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://vortex.aspl.es 
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://xml.aspl.es
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+
+  A new library have been developed to disable LibXML-2.0 dependency:
+  Axl Library. Now Vortex Library have its own XML toolkit enabling to
+  produce better tailored XML solutions, especially, those profiles
+  that requires XML for its function.
+
+  A complete XML-RPC profile implementation have been added.
+
+Changes since 0.8.11
+~~~~~~~~~~~~~~~~~~~~
+
+* [fix] fixing vortex-client tool, under some circumstances, while
+  providing uri data for the host to connect to, it generates NULL
+  strings that are not properly implemented by windows printf
+  implementation. Ensuring that this function don't receive a NULL
+  reference.
+	
+* [fix] making vortex greetings module to now show SASL family
+  profiles for those connections that are already authenticated, even
+  if a TLS profiles have required to show again greetings message.
+
+* [fix] adding a new internal function, to the vortex connection
+  module, which implements previous functionality for
+  vortex_connection_new_empty but also adds supports to create new
+  connection objects keeping user data intact. API added:
+    
+    - vortex_connection_new_empty_from_connection. 
+
+* [fix] adding a new internal function, to the vortex connection
+  module, to allow configuring current profile list. (use intended for
+  profiles implementors which wants to filter current profile list for
+  a particule connection). API added:
+
+    - vortex_connection_set_remote_profiles
+
+* [fix] fixing a bug inside the TLS process which was making to not
+  release previous connection object. It was also loosing all
+  information previously stored on the connection, previous to the
+  tls-fixation.
+
+* [fix] making vortex sasl module to filter current profiles available
+  for a connection which has been SASL-fixated. Because the SASL
+  process, only involving authentication, doesn't requires to perform
+  a connection reset, a new greeting message is not sent, making
+  profile list available to be not updated. Now, the SASL module
+  updates this after a successful negotiation.
+
+* [fix] Finally, after on month of hard work, Libvortex now uses its
+  own XML 1.0 library called: LibAXL. This library will serve as a
+  fundation not only to vortex library internals but also to support
+  the whole Af-Arch project for its XML functions.  Great, Great,
+  Great!.
+
+* [fix] Updating Vortex Library code to remove libxml-2.0 dependency
+  (source code and config files).
+
+* [fix] removing references to the libxml-2.0 library and replacing it
+  with the new xml implementation (libaxl).
+
+* [fix] added support to properly stop every vortex subsystem,
+  deallocating all resources used. Making an internal API to be public
+  available to enable software developers to stop vortex library from
+  a signal handler (while developing listeners).
+  
+     - vortex_listener_unlock.
+
+* [fix] fixed a critical bug introduced on previous changes (it was
+  trying to deallocate more elements than the available, while
+  processing the start message.
+
+* [fix] updated vortex-client tool to include a general XML-RPC
+  invocator system, allowing to test XML-RPC methods that receives and
+  returns simple parameters (int, string, boolean, double..).
+
+* [fix] making all comments inside the vortex-client tool to use ANSI
+  spec (/*..*/)
+
+* [fix] fixed a memory leak inside vortex-client tool which was
+  causing to not release memory allocated for host and port data on
+  connection errors.
+
+* [new] initial XML-RPC profile implementation finished. It supports
+  all invocation types, exluding dateTime value and the array
+  type. Great!!
+
+* [new] added new function to create a new XmlRpcMethodValue using
+  strings for the type spec and its value. API added:
+   
+    - vortex_xml_rpc_method_value_new_from_string2
+
+* [new] added new functions to get the value inside the
+  XmlRpcMethodValue in the native from (int, boolean, strings..). API
+  added:
+
+    - vortex_xml_rpc_method_value_get_as_string
+    - vortex_xml_rpc_method_value_get_as_double
+    - vortex_xml_rpc_method_value_get_as_struct
+    - vortex_xml_rpc_method_value_get_as_array
+
+* [new] added a new function to enable user space to get the
+  XmlRpcMethodValue isnide a XmlRpcMethodResponse function. API added:
+   
+    - vortex_xml_rpc_method_response_get_value
+
+* [new] added complete support for XmlRpcStruct (XML-RPC <struct>
+  construction). Now the vortex XML-RPC implementation is able to
+  parse <struct> constructions. API added:
+
+    - vortex_xml_rpc_struct_new
+    - vortex_xml_rpc_struct_member_new
+    - vortex_xml_rpc_struct_add_member
+    - vortex_xml_rpc_struct_get_member_value_as_int
+    - vortex_xml_rpc_struct_get_member_value_as_string
+    - vortex_xml_rpc_struct_get_member_value_as_double
+    - vortex_xml_rpc_struct_get_member_value_as_struct
+    - vortex_xml_rpc_struct_get_member_value_as_array
+    - vortex_xml_rpc_struct_free
+    - vortex_xml_rpc_struct_member_free
+  
+* [new] added a new XmlRpcStatus code to represent that a fault reply
+  was received. API added:
+
+    - XML_RPC_FAULT_REPLY
+
+* [fix] added a properly support to stop the vortex reader, blocking
+  the caller until that operations are done.
+
+* [fix] making vortex listener module to lock and nullify the vortex
+  listener lock queue when the vortex listener bind operation has
+  failed.
+
+* [new] added initial proposals for the XDL and IDL files to support
+  XML-RPC stub and server generation. (doc/xml-rpc-gen.xdl and
+  doc/xml-rpc-gen.idl).
+
+* [fix] updating XML-RPC documentation. Added an especific manual for
+  this topic.
+
+* [fix] adding to the vortex main test the ability to launch a
+  listener that is watching on two ports. Adding more documentation to
+  the vortex_listener_new to explain these situations.
+
+* [new] making some internal functions from the vortex connection,
+  related to the ability to handle free value and free key at the
+  vortex_connection_set_data_full to enable vortex channel module to
+  have the same interface, reusing the same code. Added new API to
+  vortex channel module that uses previous function exposed, allowing
+  the vortex channel module to have a function that is able to store
+  data that is deallocated with the handlers provided:
+
+   - vortex_channel_set_data_full
+
+* [new] adding a new function to the xml-rpc API to get the resource
+  that was used to boot the channel. API added:
+
+   - vortex_xml_rpc_channel_get_resource
+
+* [new] added a complete XML-RPC manual, explaining all basic concepts
+  required to produce XML-RPC applications on top of Vortex.
+
+* [fix] adding draft that describes the XML-RPC protocol compiler.
+
+* [new] adding initial infrastructure to produce the XML-RPC protocol
+  compiler under the directory xml-rpc-gen. Added initial files, test
+  and DTD defined at the draft.
+
+* [fix] adding more new options to the configure.ac and related
+  Makefile.am files to enable/disable compiling the xml-rpc protocol
+  compiler.
+
+* [fix] adding more updates to the XML-RPC definition language draft.
+
+* [fix] making XmlRpcMethodCall object to be deallocated by the Vortex
+  XML-RPC engine when an invocation is performed by default. Updated
+  documentation to report about this behavour and how it could be
+  configured.
+
+* [fix] updated vortex-client tool to not free the method call object
+  for the "new invoke" comment.
+
+* [fix] adding missing C macros at the vortex xml rpc types API.
+
+   - method_value_get_as_string
+   - method_value_get_as_double
+   - method_value_get_as_struct
+   - method_value_get_as_array
+   - method_response_get_value
+
+* [new] adding new high level XML-RPC response notifier according to
+  the return type. Added a copy:
+
+   - XmlRpcProcessInt
+   - XmlRpcProcessString
+   - XmlRpcProcessDouble
+   - XmlRpcProcessStruct
+   - XmlRpcProcessArray
+
+* [new] adding new higher level unmarshallers used by the new
+  xml-rpc-gen protocol compiler. API added:
+   
+   - vortex_xml_rpc_unmarshall_int
+   - vortex_xml_rpc_unmarshall_string
+   - vortex_xml_rpc_unmarshall_double
+   - vortex_xml_rpc_unmarshall_struct
+   - vortex_xml_rpc_unmarshall_array
+
+* [new] added to the xml-rpc-gen tool a new module with common API to
+  handle files, directories and content dumping. API added:
+
+   - xml_rpc_support_create_dir
+   - xml_rpc_support_open_file
+   - xml_gen_support_close_file
+   - xml_rpc_support_error
+   - xml_rpc_support_move_file
+   - xml_rpc_support_push_indent
+   - xml_rpc_support_pop_indent
+   - xml_rpc_support_write
+   - xml_rpc_support_multiple_write
+   - xml_rpc_support_sl_write
+
+* [fix] updated XML-RPC definition language draft to include following
+  changes: added support to give a name to the XML-RPC component and
+  updated DTD definition to make optional the user optional code
+  production (<!ELEMENT code..>).
+
+
+* [new] adding a new set of unmarshallers function for the synchornous
+  API that is being provided by the xml-rpc-gen tool.
+
+   - vortex_xml_rpc_unmarshall_int_sync
+   - vortex_xml_rpc_unmarshall_double_sync
+   - vortex_xml_rpc_unmarshall_string_sync
+   - vortex_xml_rpc_unmarshall_struct_sync
+   - vortex_xml_rpc_unmarshall_array_sync
+
+* [fix] updated main documentation, fixing typo errors.
+
+* [fix] the xml-rpc-gen tool new generates the XML-RPC header file
+  completely. An partially the body one.
+
+* [fix] completed first C stub generation performed by xml-rpc-gen
+  tool that compiles. Great!
+
+* [new] adding support to the xml-rpc-gen tool to build autoconf files
+  and pkg-config support for products built.
+
+* [new] adding to new support functions to report messages and to make
+  a selected file to be executable:
+
+   - xml_rpc_report
+   - xml_rpc_support_make_executable
+
+* [new] adding new option to the xml-rpc-gen compiler to enable
+  developers to disable autoconf building support.
+
+* [new] uploading initial XML-RPC server code generation for
+  xml-rpc-gen tool.  Now, the xml-rpc-gen tool generates the main
+  module with all includes.  Added a new function to allow reading the
+  listener configuration. API added:
+   
+   - vortex_xml_rpc_listener_parse_conf_and_start_listeners
+   
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services on how organization can introduce GNU/Linux
+  inside its process, making other platforms to interact with
+  GNU/Linux.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+28th Apr 2006, Madrid (Spain)
+  
+

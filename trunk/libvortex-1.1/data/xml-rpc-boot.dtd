@@ -1,0 +1,8 @@
+<!--
+  DTD definition for initial boot stage while implementing XML-RPC
+  profile.
+  -->
+<!ELEMENT bootmsg     EMPTY>
+<!ATTLIST bootmsg
+          resource    CDATA       #REQUIRED>
+<!ELEMENT bootrpy     EMPTY>

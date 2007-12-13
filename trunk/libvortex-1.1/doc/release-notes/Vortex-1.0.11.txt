@@ -1,0 +1,157 @@
+          ############################################
+          ##          Vortex Library 1.0.11         ##
+          ##         "Break the loop release"       ##
+          ############################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.0.11 "Break the loop" release availability: an open source
+  "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+  Several bugs have been fixed and integrated into the regression
+  test. Updated frame joining code to reduce the alloc/realloc
+  pattern, improving speed for windows platform. Fixed ANS/NUL bug
+  which was causing to not allow sending several files (several
+  ANS/NUL exchanges over the same channel). Some new API functions has
+  been added to manage connections created (used by Turbulence),
+  profile channel counting and getting channel pool references.
+  
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  None.
+
+Thanks to..
+~~~~~~~~~~~
+  Chris Yourch (reported and provided useful information to reproduce
+  the ANS/NUL pattern problem). Thomas Unterleitner (reported and
+  provided useful information to reproduce the low transfer rate,
+  inside windows platform, while sending (really) huge frames (42MB)).
+
+Changes since 1.0.10
+~~~~~~~~~~~~~~~~~~~~
+
+* [fix] Making xml-rpc implementation to allow receiving empty arrays.
+
+* [fix] Updated libvortex.def file to include latest symbols.
+
+* [fix] Updated vortex greetings module to allow configuring features,
+  making the module to handle its own references.
+
+* [fix] Making vortex connection module to first receive greetings
+  frame, in order to allow feature checking, and then send the
+  greeting reply accepting/proposing features. Not finished. Required
+  all notification code to accept features.
+
+* [new] Added new support function to extract the difference between
+  to struct timeval instances. Updated gettimeofday windows port to
+  remove the timezone value (which is not used and won't be used by
+  the vortex core). Checked this implementation is more friendly to
+  mingw and MS VS compilers. API added:
+
+   - vortex_timeval_substract
+   - gettimeofday (updated)
+
+* [fix] Implemented workaround for a timeout bug inside the
+  vortex_async_queue_timedpop function, running on windows, caused by
+  the SignalAndWaitObject implementation which is finishing before the
+  timeout expire, causing to return NULL references. Included some
+  code to detect this fast (funny) exit to restart the wait operation.
+  Also fixes bug inside vortex_channel_get_reply.
+
+* [fix] Fixed bug which was causing to make the next transfer to a
+  ANS/NUL proper transfer to be faulty. Updated regression test to
+  check this in future release. Regression test now transfer a set of
+  files (using the same channel), checking md5 for content
+  transfered. (Thanks to Chris Yourch which reported and fully defined
+  how to reproduce the problem).
+
+* [fix] Making vortex_exit to clean up vortex tls module on exit.
+
+* [fix] Reimplemented vortex frame joining mechanism
+  (vortex_channel_set_complete_flag) allowing to greatly reduce the
+  memory allocation pattern. Updated vortex frame API to include a
+  function to create a frame representation taking as payload the
+  reference provided (owning it). API added:
+ 
+  - vortex_frame_create_full_ref
+
+* [fix] Updated vortex-file-transfer-client.c to allow transferring the
+  binary file with the proper fopen mode under windows ("wb"). Updated
+  Makefile.win to include compilation for
+  vortex-file-transfer-client.c and vortex-file-transfer-server.c.
+
+* [new] Updated vortex channel API to allow getting the number of
+  channels that are running a particular profile under a particular
+  connection:
+  
+   - vortex_connection_get_channel_count
+
+* [new] Updated vortex connection API to allow configuring a handler
+  which is called on each connection created. API added:
+
+   - vortex_connection_notify_new_connections
+   - VortexConnectionNotifyNew
+
+* [fix] Updating libvortex.def file.
+
+* [new] Updated vortex channel API to include a new function to get
+  the channel pool associated. API added:
+
+   - vortex_channel_get_pool
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+23th nov 2007, Madrid (Spain)

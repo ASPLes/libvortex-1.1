@@ -1,0 +1,136 @@
+       ##########################################
+       ## Vortex Library 0.8.6 Stable Release  ##
+       ##########################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 0.8.6 availability: an open source "BEEP Core" protocol
+  implementation written in C and mapped into TCP/IP.
+
+  Vortex Library is a powerful toolkit to write new application
+  protocols and application over the well-defined "BEEP Core" protocol
+  defined at RFC3080/RFC3081. 
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer. 
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://vortex.aspl.es - Vortex Library homepage.
+
+    - http://fact.aspl.es   - Af-Arch homepage where Vortex Library is
+      being developed.
+
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+
+  This relase is mainly focused on minor bug fixings and a long term
+  bug caused inside the interaction between the Vortex Sequencer and
+  the Vortex Writer. Project manuals and API have been updated.
+
+
+Changes since 0.8.5
+~~~~~~~~~~~~~~~~~~~
+
+   * making vortex_semaphore_down_n to just return when is requested
+     to down the semaphore 0 units.
+
+   * making vortex writer code cleanups:
+     __vortex_writer_build_set_to_watch and
+     __vortex_writer_read_pending function now uses the same code.
+
+   * making vortex writer to down one unit vortex sequencer semaphore everytime
+     is found messages flaged to be sent but not message actually was
+     sent.
+
+   * fixing a function name __vorter_listener_get_port to
+     __vortex_listener_get_port
+
+   * adding additional check to vortex_connection_is_ok (socket sanity
+     checks)
+
+   * removed code added at revision 1664 on vortex_writer to reduce
+     the vortex_sequencer_semaphore units under some circumstances. 
+
+   * fixing a bug on vortex_connection_is_ok function making to not
+     work properly if free-resources-on-fail was set.
+
+   * adding a new API to vortex_hash_table module: vortex_hash_clear
+     which allows to clear all items stored on a VortexHash.
+
+   * added a new API to vortex_connection module: vortex_connection_reconnect
+     which allows to performa a reconnection using actual connection's
+     settings. 
+
+   * making vortex_connection_close to just return is a null reference is
+     recieved.
+
+   * making vortex_channel_pool_close to not perform any channel
+     removal if it is detected there is not channel to remove.
+
+   * improved vortex_connection_close to detect if the connection
+     being close is already opened or it is not connected making
+     posible to just unref resources allocated or to perform
+     environmental operations to close opened channels and the unref
+     resources.
+
+   * improved vortex_connection_unref: fixed a posible race condition.
+
+   * added some internal notes to vortex_connection_free function,
+     fixing a typo error in the vortex_channel module.
+
+   * making vortex_queue_push function to return if the data was pushed
+     on the queue or not. vortex_queue_push now returns a gboolean
+     value to notify this status.
+
+   * making vortex_channel_queue_frame to return a boolean value to
+     notify is the packet was cleanly pushed. Making also this
+     function to check the connection status before queuing the data.
+
+   * improving vortex sequencer to be more fault tolerance on
+     connection errors.
+
+     - Now, the vortex sequencer ref and unref the connection involved
+       in the message sequencing to avoid race conditions between a
+       message being sequenced over a connection that is closed in the
+       middle of that process.
+
+     - Now, the vortex sequencer pay attention to the connection
+       status and the status returned by the package queuing. This
+       allow to not signal message that finally weren't queued due a
+       connection failure.
+
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distribuited application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distribuited nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  services and consulting on how organization can introduce GNU/Linux
+  inside its process, making other platforms to interact with
+  GNU/Linux. 
+
+  You can reach us:
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!
+
+         
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+27th Sep 2005, Madrid (Spain)
+  
+

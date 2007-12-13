@@ -1,0 +1,204 @@
+       ###########################################
+       ##  Vortex Library 1.0.1 Stable Release    ##
+       ###########################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.0.1 availability: an open source "BEEP Core" protocol
+  implementation written in C, mapped onto TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://vortex.aspl.es 
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://xml.aspl.es
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+  This new release includes a vortex listener API update to enable
+  applications to start and stop selected listeners. 
+
+  It is also included a new vortex TLS API which allows full control
+  while creating SSL context, allowing to configure any minimal detail
+  such cipher list, verification options, etc.
+
+Thanks to..
+~~~~~~~~~~~
+  Thomas Unterleitner (wrong empty struct declaration, wrong variable
+  order declaration inside vortex_channel_update_incoming_buffer).
+
+  Milton Yates (wrong -ltermcap declaration for vortex-client and for
+  its Gentoo package support).
+
+Changes since 1.0
+~~~~~~~~~~~~~~~~~
+  
+* [fix] Making frame received notification to increase channel
+  reference counting just after notifying the frame, and to decrease
+  it.
+
+* [fix] Minimal vortex internal updates to conform Axl Library API.
+
+* [fix] Removed empty struct declared but not used (Reported and Fixed
+  by Thomas Unterleitner).
+
+* [fix] Fixed wrong variable order declaration inside
+  vortex_channel_update_incoming_buffer (Reported and Fixed by Thomas
+  Unterleitner).
+
+* [fix] Removed vortex_writer_data_free function. No longer used.
+
+* [fix] Replaced previous calls to g_realloc with realloc.
+
+* [fix] General update to ensure memory handling is not done through
+  glib.
+ 
+* [fix] Updating exarg files included inside the xml-rpc-gen tool.
+
+
+* [fix] Removing vortex sequencer semaphore from the API documentation
+  and making vortex sequencer module to not create the semaphore that
+  is no longer used.
+
+* [fix] General update to the test files, ansificating them (problems
+  with comments nothing more).
+
+* [fix] Applied general change to make gint to be replaced by plain
+  int type. Also renamed GPOINTER_TO_INT and GINT_TO_POINTER to
+  PTR_TO_INT and INT_TO_PTR macros.
+
+* [fix] Global update to make gpointer and gboolean to be no longer
+  used and instead used axlPointer and bool.
+
+* [fix] Added two new internal definitions to handle function
+  pre-conditions:
+  
+   - v_return_if_fail
+   - v_return_val_if_fail
+
+* [fix] Replaced all calls to g_return_if_fail and
+  g_return_val_if_fail with the appropriate macros. Updated libvortex
+  and xml-rpc-gen tool.
+
+* [fix] Making vortex_log to not use ansi characters if compiled
+  without gnu gcc tools.
+
+* [fix] fixed bug inside vortex_io.c module (a function was returning
+  from a function returning void).
+
+* [fix] fixed some warnings exposed by visual studio. Committing visual
+  studio files to compile libvortex and its regression tests.
+
+* [new] Added new test to check new features added: closing listeners
+  created and unregistering profiles. Test file name:
+  vortex-close-listeners.c
+
+* [new] Added support to make possible to close listeners created. Now
+  vortex_listener_new, vortex_listener_new2 and
+  vortex_listener_new_full returns references to the listener created
+  (VortexConnection).
+
+* [new] Added a new function to create a listener, which provides a
+  notification with the listener created, providing the reference of
+  the listener. Also added a new associated handler. API added:
+
+   - vortex_listener_new_full
+   - VortexListenerReadyFull
+
+* [new] Added a new function to allow unregistering profiles. API
+  added:
+
+   - vortex_profiles_unregister
+
+* [fix] Replaced all calls to g_build_filename with
+  vortex_support_build_filename.
+
+* [fix] Making vortex-regression-client to not check SASL DIGEST-MD5
+  under windows platform until fixed gsasl problem.
+
+* [fix] some fixings to make Visual C 6.0 to be happy.
+
+* [fix] Fixing wrong definition of vortex_log at vortex headers while
+  compiling with Visual C 6.0.
+
+* [fix] Removed -ltermpcap link flag from vortex-client compilation
+  (Reported and Fixed by Milton Yates).
+
+* [fix] fixed minor warning inside vortex tls module.
+
+* [new] Implemented an alternative method to configure the TLS
+  process, providing all control to create the SSL_CTX object, which
+  is the element defined to drive all the process. Now the library
+  will provided a way to configure a global or per connection handler
+  to be executed to create the SSL_CTX object. API added:
+  
+   - vortex_tls_set_ctx_creation
+   - vortex_tls_set_default_ctx_creation
+   - VortexTlsCtxCreation (handler)
+
+* [new] Provided to the vortex tls module a way to install globally or
+  per connection a function to be called to perform a post-check, once
+  the TLS activation process have finished. API added:
+
+   - vortex_tls_set_post_check
+   - vortex_tls_set_default_post_check
+   - VortexTlsPostCheck (handler).
+
+* [fix] Fixed several missing "const" declaration inside vortex
+  channel, vortex frame factory and vortex xml rpc.
+
+* [fix] removing limitations found inside the status documentation,
+  about TLS.  They are now implemented. Updating version file and
+  module export.
+
+* [fix] Fixing minor warnings and wrong const declarations.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+23th Feb 2007, Madrid (Spain)
+  
+

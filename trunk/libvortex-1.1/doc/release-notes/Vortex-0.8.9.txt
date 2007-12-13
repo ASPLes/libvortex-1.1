@@ -1,0 +1,553 @@
+       ##########################################
+       ## Vortex Library 0.8.9 Stable Release  ##
+       ##########################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 0.8.9 availability: an open source "BEEP Core" protocol
+  implementation written in C, mapped into TCP/IP.
+
+  Vortex Library is a powerful toolkit to write new application
+  protocols and application over the well-defined "BEEP Core" protocol
+  defined at RFC3080/RFC3081. 
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://vortex.aspl.es 
+      [Vortex Library homepage]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+   
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+
+  This release adds a properly implemented SEQ frame support that now
+  enables Vortex Library to interop with beepcore-java. 
+
+  Added better support for mime handling. Messages generated are
+  automatically mime-tized according to the profile configuration
+  associated to the given channel. Frames read inside the Vortex
+  Library automatically separates the payload content from the mime
+  headers.
+
+  Additionally, many bug fixings, memory handling, and project
+  documentation updates.
+
+  Many thanks goes to answers received at the beepcore.org community
+  list: Peter Hall, David Blacka, David Kramer and Marshall Rose while
+  requiring information about the SEQ frame support.
+
+  An special mention goes to Paul Lacy which has provided the enough
+  java support and working examples to make Vortex Library to talk to
+  beepcore-java. 
+
+Changes since 0.8.8
+~~~~~~~~~~~~~~~~~~~
+
+* [fix] fixing compilation errors found while using Vortex Library
+  without TLS support exposed by win32 platforms.
+
+* [fix] updating user documentation for SASL, more examples and
+  examples of code.
+
+* [new] working on adding XML-RPC support (through RFC3529 definition)
+  At this moment it is implemented initial bootstrap mechanism to
+  create XML-RPC channels and type definitions to be used to define
+  method calls and its values (include method response). Added initial
+  vortex-xml-rpc-listener.c test example. API added:
+
+  Type definitions (XML-RPC spec abstract type definitions):
+    - XmlRpcMethodCall
+    - XmlRpcMethodResponse
+    - XmlRpcMethodResponseFail
+    - XmlRpcMethodValue
+    - XmlRpcStruct
+    - XmlRpcStructMember
+    - XmlRpcArray
+    - XmlRpcParamType
+    - XmlRpcResponseStatus
+    - VortexXmlRpcState
+    - vortex_xml_rpc_new_method_call
+
+  API functions:
+    - vortex_xml_rpc_is_enabled 
+    - vortex_xml_rpc_boot_channel
+    - vortex_xml_rpc_channel_status
+    - vortex_xml_rpc_accept_negociation
+    - VortexXmlRpcBootNotify (handler)
+    - VortexXmlRpcValidateResource (handler)
+    - VortexXmlRpcServiceDispatch (handler)
+
+* [fix] making error message validation to be public. It was defined
+  as a private function inside the Vortex Channel module. Renamed
+  into:
+
+    - vortex_channel_validate_err
+
+  Now the function returns not only if an error reply was found but
+  also code number and its textual diagnostic message.
+
+* [fix] fixing memory leak at close message handling function. It
+  wasn't unrefering code and message values.
+
+* [new] added new API to check if the a given profile is the one
+  running for a given channel:
+
+     - vortex_channel_is_running_profile
+
+* [fix] updated project documentation, making a conceptual separation
+  for the API found inside Vortex, fixing conclusion section for the
+  profile example tutorial,
+
+* [fix] added API to vortex frame module to check if a given frame
+  contains an error message. Makes use of the new API defined at
+  vortex channel. API added:
+
+   - vortex_frame_is_error_message
+
+* [fix] making vortex tls module to enforce providing a tls
+  notification handler if the asynchronous API is the one being used.
+
+* [fix] adding an internal parameter counting for method call object
+  inside XML-RPC invocation. This will ensure user space doesn't
+  perform wrong XML-RPC invocations with missing parameters.
+
+* [new] adding more API to handle XML-RPC abstract data types:
+
+  - vortex_xml_rpc_method_value_new: allows to create a new method
+    parameter used for method call and method response.
+
+  - vortex_xml_rpc_method_call_add_value: allows to associate a given
+    method value to a given method call following a sequential order.
+
+  - vortex_xml_rpc_method_call_set_value: allows to set at a given
+    position a given value into a given method call.
+
+  - vortex_xml_rpc_method_call_create_value: convenience function to
+    create a method value and add it to a given method call into one
+    step.
+
+  - vortex_xml_rpc_method_call_free: destructor function for method
+    call object.
+
+  - vortex_xml_rpc_method_value_free: destructor function for method
+    value.
+
+  - added several #macros to support calling previous function without
+    being required to write "vortex_xml_rpc" prefix
+
+* [fix] making vortex sequencer to not allocate memory to perform
+  frame fragmentation. This is an step required to implement full
+  support for SEQ frames. Now vortex sequencer rely on
+  vortex_frame_build_up_from_params to create frame fragments.
+
+* [new] vortex_frame_seq_build_up_from_params to create SEQ frames.
+
+* [fix] rewritten vortex_frame_build_up_from_params to support
+  building frames paying attention to the payload size rather than
+  rely on %s parameter format which seeks for then next 0x0 value to
+  delimit the payload. This is an step to support SEQ frames.
+
+* [new] adding new function to create raw frames from values to
+  replace previous vortex_frame_build_up_from_params. This new
+  function returns not only the frame built but also the size of
+  it. API added:
+
+  - vortex_frame_build_up_from_params_s
+
+* [fix] rewritten vortex_frame_build_up_from_params to use services
+  provided by vortex_frame_build_up_from_params_s. Updated function
+  documentation to advise it is deprecated.
+
+* [fix] rewritten vortex sequencer frame building code to use previous
+  function and to perform some additional checks to ensure frame
+  sequencing works properly.
+
+* [fix] fixing __vortex_channel_common_msg and
+  __vortex_channel_common_rpy to use memcpy sentences based on sizes
+  provided by user application to copy payload to be sent.
+
+* [???] found that some several critical sections placed on vortex
+  reader process are not really needed. Maybe this is an ancient code
+  that has lived within the vortex reader until now. For now, it is
+  removed and some test will be performed to ensure that they are
+  indeed not needed.
+
+* [fix] adding support to vortex_frame_get_next function to parse and
+  return SEQ frames. One step closer to SEQ frames support.
+
+* [fix] definitely, critical sections found at vortex reader wasn't
+  really necessary. Remove all code about this internal mutex, mutex
+  allocation and mutex destruction. Updated vortex reader code to not
+  perform any call to:
+
+   - vortex_channel_lock_to_update
+   - vortex_channel_unlock_to_update
+
+  Updating documentation for previous function to flag them as
+  deprecated.
+
+* [new] adding support to SEQ frames to vortex library. Now the
+  library is able to produce and accept SEQ frames to perform flow
+  control inside a BEEP session.
+
+* [fix] making vortex-client to produce raw frames using \x0D\x0A CRLF
+  representation rather than \r\n.
+
+* [fix] making vortex greetings module to use \x0D\x0A CRLF
+  representation rather than \r\n while creating greetings messages.
+
+* [fix] making vortex greetings module to update status received
+  channel to use vortex_frame_get_content_size rather than
+  vortex_frame_get_payload_size.
+
+* [new] adding new API to register mime type value to be used for
+  channels created under some selected profile at vortex profiles
+  module. Now vortex library automatically handle mime content type
+  and mime content transfer encoding values generated for every
+  message sent under a channel using a global configuration provided
+  at vortex profiles module. API added:
+
+   - vortex_profiles_set_mime_type: which allows to register for a
+     given profile, already registered, the content-type and
+     content-transfer-encoding value to be used.
+
+   - vortex_profiles_get_mime_type: returns for the given profile the
+     content type associated.
+
+   - vortex_profiles_get_transfer_encoding: returns for the given
+     profile the content transfer encoding value associated.
+
+* [new] added new API to vortex queue to enable Vortex Library
+  internals to queue new items not only at the tail but also at the
+  header of the queue.  API added:
+
+   - vortex_queue_head_push: queue a new item at the headers queue.
+  
+* [fix] written vortex sequencer module to conform SEQ frames
+  implementation. Now vortex sequencer do not sent more frames than
+  the maximum allowed by the remote peer until a new SEQ frame is
+  received.  It has also the ability to keep track on messages that
+  are pending to be sequenced while attending other message sequence
+  operations to other channel under other connections.  Added lot of
+  documentation to internal vortex sequencer structures to explain
+  which is the purpose for every element used.
+
+* [fix] now vortex sequencer uses vortex_frame_build_up_from_params_s
+  rather previous version (without _s) which supports returning
+  current frame size built. This is considered more secure and binary
+  content proof because new function implement frame building using
+  memcpy operations.
+
+* [fix] adding new API to vortex sequencer to allow vortex reader to
+  notify that the maximum allowed segment to be sent have been
+  increased due to SEQ frame reception. API added:
+
+    - vortex_sequencer_queue_and_signal_sem
+
+* [fix] fixed memory leak while parsing greetings message and an error
+  happen. It wasn't unrefering (wrong) greeting frame.
+
+* [fix] several modification to vortex channel module to include
+  support to track down maximum buffer size that is willing to accept
+  the remote peer and maximum buffer size that the channel is willing
+  to accept. Internal API added, not exposed to application level:
+
+   Management function for the M¡maximum buffer size to accept:
+
+    - vortex_channel_update_remote_incoming_buffer
+    - vortex_channel_get_max_seq_no_remote_accepted
+    - vortex_channel_update_incoming_buffer
+    - vortex_channel_get_max_seq_no_accepted
+    - vortex_channel_queue_pending_message
+
+   Pending to be re-sequence messages on a given channel, due to
+   stale state:
+
+    - vortex_channel_queue_pending_message
+    - vortex_channel_next_pending_message
+    - vortex_channel_remove_pending_message
+
+* [fix] fixing second level invocation for frame received, under some
+  circumstances it wasn't deallocating the frame delivered.
+
+* [new] added support to include mime information while sending
+  messages and replies using current configuration associated to the
+  profile. This is a transparent mechanism to the application
+  programmer, making it life easier.  Internal API added:
+
+   - __vortex_channel_get_mime_headers_size
+   - __vortex_channel_get_mime_headers
+
+* [fix] fixing memory leak while creating new channels, it wasn't
+  deallocating frame reply to a start message. Ouught!
+
+* [new] making channel 0 to be mime-tized to application/beep+xml for
+  the content-type value and "binary" for the content transfer
+  encoding.
+
+* [new] added support to allow application level to get current
+  content-type and content-transfer-encoding for a given channel. API
+  added:
+
+   - vortex_channel_get_mime_type
+   - vortex_channel_get_transfer_encoding
+
+* [fix] making vortex_init function to not initialize vortex listener
+  module. This is not required to until a call to vortex_listener_new
+  is done.
+
+* [fix] making vortex_exit function to stop and cleanup vortex reader
+  system and to cleanup vortex profiles module.
+
+* [fix] making vortex_frame_get_next to not leak while allocating a
+  frame but a poorly one was received.
+
+* [new] now vortex frames are read in a way that application
+  programmer could get only the payload size, without mime
+  information, and later get current mime information defined. API
+  have been added to manage this new situation:
+
+   - vortex_frame_get_content_type: get current content-type value for
+     the given frame.
+
+   - vortex_frame_get_content_transfer_encoding: get current
+     content-transfer-encoding.
+
+   - vortex_frame_get_mime_headers_size: get current mime headers size
+     that are kept for the mime information.
+
+   - vortex_frame_get_content_size: which returns the frame payload
+     size including mime headers information.
+
+* [fix] rewritten beep channel management function (<start />, <ok />,
+  <error />,...) to not include mime information inside the message,
+  and to allow mime automatic mechanism to generate it.
+
+* [fix] making vortex dtd module to deallocate xml rpc dtd on vortex
+  exit.
+
+* [fix] making vortex reader to not use frames that are already
+  deallocated to write log information, (using deallocated memory that
+  could lead to memory corruption problems).
+
+* [fix] making vortex_listener_new to allocate values received for
+  host and port, to allow application level to use either static or
+  dynamic values.  This values are later deallocated. Added more
+  details on you to use this function and a example on building a
+  vortex listener using this.
+
+* [fix] making vortex_listener_init to be callable from several
+  threads at the same time. Now this function is called from
+  vortex_listener_new function.
+
+* [fix] fixing autoconf files (AC_CONFIG_AUX_DIR(.) is included).
+
+* [fix] a great effort have been done to make vortex library to not
+  leak.  And now it is complete, and all source code written inside
+  the context of the vortex library do NOT leak. Great! (valgrind
+  rules!!!)
+
+* [fix] vortex documentation have been upgraded, vortex manual have
+  been splitted into sections to get them more clear. Common sections
+  and related info is now grouped.
+
+* [fix] starting the ansification process, at this moment only
+  comments are translated into the /* ansi form */ from the // modern
+  form.
+
+* [fix] fixing a really incredible bug based on a race condition
+  between building the next frame to be sent and queueing the rest of
+  the message due to remote buffer size is complete but, under some
+  circumstances the frame generated is fast enough to reach remote
+  side, be delivered into the application space, generate a new SEQ
+  frame, and make local vortex reader to start a re-sequencing process
+  but the initial !!already didn't queue the rest of the message to be
+  resequenced.!!!! Reorganized vortex sequencer code to avoid previous
+  race condition: threads, lot of fun!
+
+* [fix] fixing initial values used for the max seq no that the remote
+  peer is willing to accept and the local buffer for each channel from
+  4096 to 4095, which represent a total octet counting of 4096
+  starting from 0 up to 4095. Making vortex reader, vortex channel and
+  vortex sequencer to reorganize its operational calculus to this
+  change.
+
+* [fix] fixing vortex_channel_update_incoming_buffer to not report
+  vortex reader to send a SEQ frame if it is detected that current
+  configuration will not allow this. Making this function to directly
+  report current ackno and window size values so the vortex reader
+  completely depends on this function.
+
+* [new] adding support to vortex frame module to generate an unique
+  global identifier to uniquely identify every frame, mainly to allow
+  memory debugging but also providing application space a way to
+  identify frames. API added:
+
+    - vortex_frame_get_id 
+
+* [fix] making vortex_frame_create to use services provided by
+  vortex_frame_create_full to build new frames. This new function not
+  only uses memcpy instructions to build new frames but also adds
+  support to specify frame content type and content transfer encoding
+  values. API added:
+    
+    - vortex_frame_create_full 
+
+* [fix] fixing horrible, difficult to find bug, which was causing to
+  leak memory due to not deallocating memory for the frame received as
+  a reply containing the profile to be used for a previously start
+  message.
+
+* [fix] making __vortex_frame_get_next_id to also report which is the
+  frame module section that is allocating the next, concurrent, frame
+  identifier.
+
+* [fix] fixing vortex autoconf files. Including xml-rpc-invocation.png
+  image path into doxygen configuration file (also included into
+  af-arch doxygen file).
+
+* [fix] making vortex greetings to update message numbers to be
+  expected, rather than making an exception for the channel 0.
+
+* [fix] making vortex_channel_empty_new to set as default reply sent
+  and reply received for channel 0 values {1, 1}. This solves the
+  problem found for the message 0 that is never sent for the channel
+  0.
+
+* [fix] fixing a bug while processing start messages. If the xml
+  received contains garbage, that is spaces, tabulars, returns,
+  between the <start> element and the <profile> element, the libxml
+  library set as a child node to the <start> element the garbage!!
+  Added some additional checks to test if the node read is a profile
+  node or something else.
+
+* [fix] making vortex reader to accept first messages that starts from
+  with msgno=1.  API added to control this function:
+
+  - vortex_reader_allow_msgno_starting_from_1.
+
+  This will make vortex library to interop with beepcore-java library.
+
+* [fix] performing more code ansification. Updated vortex CSS style
+  sheet for the vortex documentation center.
+
+* [fix] making vortex library internal queue for frames to be sent, to
+  be splitted into two queues, one with normal frames, and the other
+  with SEQ frames. This last one have higher priority over the
+  messages inside the same channel. To perform this change only
+  following function were modified so, the rest of the Vortex Library
+  subsystems keeps on working the same:
+
+   - vortex_channel_queue_frame
+   - vortex_channel_queue_is_empty
+   - vortex_channel_queue_next_msg
+   - vortex_channel_queue_length
+
+* [new] adding a new function to perform a synchronous channel boot
+  for the XML-RPC profile. This will allow a blocking
+  initialization. API added:
+
+   - vortex_xml_rpc_boot_channel_sync
+
+* [new] adding two new function to the XML-RPC API to provide
+  asynchronous and synchronous invocation. API added:
+   
+   - vortex_xml_rpc_invoke
+   - vortex_xml_rpc_invoke_sync
+
+* [new] added a new asynchronous notification handler to report
+  results received for XML-RCP invocation performed. API added:
+   
+   - XmlRpcInvokeNotify
+
+* [fix] making internal __vortex_connection_set_non_connected to not
+  perform a shutdown and a close operation over the underlying socket,
+  delegating that job to the vortex_connection_free function, that is
+  called by the entity that perform the ultimate unref operation. Now,
+  allows to delay the close operation as long as possible.
+
+* [fix] fixing some error at TLS and XML-RPC building when they are
+  disabled.
+
+* [fix] working on giving XML-RPC support to vortex-client tool to
+  perform invocations.
+
+* [fix] making vortex dtd module to report an error when a dtd file is
+  not found.
+
+* [fix] reverting change done at __vortex_connection_set_not_connected
+  function which was delaying connection close to
+  vortex_connection_free. However, this has some issues causing
+  applications that do not properly implements some aspect of the BEEP
+  protocol to hang until a new connection is received.
+
+* [fix] plenty of fixing inside the vortex documentation (global spell
+  checking done).
+
+* [fix] making seq frame generation decision making code to not allow
+  it if the channel to report is being closed. This also makes to work
+  TLS implementation and any tuning profile, that requires to close
+  the session (including the channel 0 to start talking other non-beep
+  protocol).
+
+* [new] adding a new function to enable restoring default IO handler
+  used to send and received data for a given connection. API added:
+
+   - vortex_connection_set_default_io_handler
+
+* [fix] fixing TLS code to properly fall back into normal operations
+  when the TLS negotiation have failed. Making also (for listener and
+  initiators) to not flag the connection to be tls-ficated until it is
+  really done.
+
+* [fix] making vortex_channel_get_reply and vortex_channel_wait_reply
+  to not get blocked until a specific reply is received for ever. A
+  timeout mechanism has been introduced to perform a limited blocking
+  wait.
+
+* [new] adding lot of documentation explaining how
+  vortex_channel_get_reply and vortex_channel_queue_reply is used to
+  implement synchronous, blocking frame reading.  Added documentation
+  at the frame dispatch schema documentation.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services on how organization can introduce GNU/Linux
+  inside its process, making other platforms to interact with
+  GNU/Linux.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!
+         
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+20th Dec 2005, Madrid (Spain)
+  
+
