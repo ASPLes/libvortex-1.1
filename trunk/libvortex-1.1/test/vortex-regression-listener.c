@@ -457,6 +457,11 @@ int  main (int  argc, char ** argv)
 	/* init vortex library */
 	vortex_init ();
 
+	if (argc > 1 && 0 == strcmp (argv[1], "-v")) {
+		vortex_log_enable (true);
+		vortex_log2_enable (true);
+	}
+
 	/* register a profile */
 	vortex_profiles_register (REGRESSION_URI,
 				  NULL, NULL, 
@@ -498,57 +503,62 @@ int  main (int  argc, char ** argv)
 		return -1;
 	}
 
-	/* set default ANONYMOUS validation handler */
-	vortex_sasl_set_anonymous_validation (sasl_anonymous_validation);
+	if (vortex_sasl_is_enabled () ) {
+		/* set default ANONYMOUS validation handler */
+		vortex_sasl_set_anonymous_validation (sasl_anonymous_validation);
 
-	/* accept SASL ANONYMOUS incoming requests */
-	if (! vortex_sasl_accept_negociation (VORTEX_SASL_ANONYMOUS)) {
-		printf ("Unable to make Vortex Libray to accept SASL ANONYMOUS profile");
-		return -1;
+		/* accept SASL ANONYMOUS incoming requests */
+		if (! vortex_sasl_accept_negociation (VORTEX_SASL_ANONYMOUS)) {
+			printf ("Unable to make Vortex Libray to accept SASL ANONYMOUS profile");
+			return -1;
+		}
+
+		/* set default EXTERNAL validation handler */
+		vortex_sasl_set_external_validation (sasl_external_validation);
+		
+		/* accept SASL EXTERNAL incoming requests */
+		if (! vortex_sasl_accept_negociation (VORTEX_SASL_EXTERNAL)) {
+			printf ("Unable to make Vortex Libray to accept SASL EXTERNAL profile");
+			return -1;
+		}
+		
+		/* set default PLAIN validation handler */
+		vortex_sasl_set_plain_validation (sasl_plain_validation);
+		
+		/* accept SASL PLAIN incoming requests */
+		if (! vortex_sasl_accept_negociation (VORTEX_SASL_PLAIN)) {
+			printf ("Unable to make Vortex Libray to accept SASL PLAIN profile");
+			return -1;
+		}
+		
+		/* set default CRAM-MD5 validation handler */
+		vortex_sasl_set_cram_md5_validation (sasl_cram_md5_validation);
+		
+		/* accept SASL CRAM-MD5 incoming requests */
+		if (! vortex_sasl_accept_negociation (VORTEX_SASL_CRAM_MD5)) {
+			printf ("Unable to make Vortex Library to accept SASL CRAM-MD5 profile");
+			return -1;
+		}
+		
+		/* set default DIGEST-MD5 validation handler */
+		vortex_sasl_set_digest_md5_validation (sasl_digest_md5_validation);
+		
+		/* accept SASL DIGEST-MD5 incoming requests */
+		if (! vortex_sasl_accept_negociation (VORTEX_SASL_DIGEST_MD5)) {
+			printf ("Unable to make Vortex Library to accept SASL DIGEST-MD5 profile");
+			return -1;
+		} /* end if */
+
+		/* configure default realm for all connections for the DIGEST-MD5 */
+		vortex_listener_set_default_realm ("aspl.es");  
+
+	} else {
+		printf("Skipping SASL setup, since Vortex is not configured with SASL support\n");
 	}
-
-	/* set default EXTERNAL validation handler */
-	vortex_sasl_set_external_validation (sasl_external_validation);
 	
-	/* accept SASL EXTERNAL incoming requests */
-	if (! vortex_sasl_accept_negociation (VORTEX_SASL_EXTERNAL)) {
-		printf ("Unable to make Vortex Libray to accept SASL EXTERNAL profile");
-		return -1;
-	}
-
-	/* set default PLAIN validation handler */
-	vortex_sasl_set_plain_validation (sasl_plain_validation);
-	
-	/* accept SASL PLAIN incoming requests */
-	if (! vortex_sasl_accept_negociation (VORTEX_SASL_PLAIN)) {
-		printf ("Unable to make Vortex Libray to accept SASL PLAIN profile");
-		return -1;
-	}
-	
-	/* set default CRAM-MD5 validation handler */
-	vortex_sasl_set_cram_md5_validation (sasl_cram_md5_validation);
-	
-	/* accept SASL CRAM-MD5 incoming requests */
-	if (! vortex_sasl_accept_negociation (VORTEX_SASL_CRAM_MD5)) {
-		printf ("Unable to make Vortex Library to accept SASL CRAM-MD5 profile");
-		return -1;
-	}
-	
-	/* set default DIGEST-MD5 validation handler */
-	vortex_sasl_set_digest_md5_validation (sasl_digest_md5_validation);
-	
-	/* accept SASL DIGEST-MD5 incoming requests */
-	if (! vortex_sasl_accept_negociation (VORTEX_SASL_DIGEST_MD5)) {
-		printf ("Unable to make Vortex Library to accept SASL DIGEST-MD5 profile");
-		return -1;
-	} /* end if */
-
-	/* configure default realm for all connections for the DIGEST-MD5 */
-	vortex_listener_set_default_realm ("aspl.es");  
-
 	/* configure support for TUNNEL profile support */
 	vortex_tunnel_accept_negotiation (NULL, NULL);
-
+	
 	/* enable XML-RPC profile */
         vortex_xml_rpc_accept_negociation (
                 /* no resource validation function */
@@ -567,7 +577,7 @@ int  main (int  argc, char ** argv)
 				  /* just accept all channels to be closed */
 				  NULL, NULL,
 				  close_in_transit_received, NULL);
-
+	
 	/* create a vortex server */
 	vortex_listener_new ("0.0.0.0", "44010", NULL, NULL);
 
