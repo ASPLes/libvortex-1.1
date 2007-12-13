@@ -1,0 +1,67 @@
+
+       #####################################
+       ####     Change notification     ####
+       #####################################
+
+    Change Id: vortex-voidptr-update-01
+ Project name: Vortex Library
+  Included in: already included and shipped with next stable release
+               1.0.8
+       Status: NOTIFY
+       Author: Francis Brosnan Blázquez
+
+Motivation
+~~~~~~~~~~
+
+The change introduced accommodates the Vortex API dealing with sending
+data operations. Currently the type used is "const char *", and the
+change introduced replace it with a "const void *" declaration to
+enforce the fact that the API sends groups of octets without looking
+at the application data.
+
+Change Description
+~~~~~~~~~~~~~~~~~~
+
+The API update introduces a broad type (void *) which is compatible
+with (unsigned char *) and (char *), and do not require casting. It is
+expected no change to code developed with previous revisions.
+
+In addition, all function that receive these kind of pointers to refer
+to arbitrary binary content are also updated to use the type "size_t"
+rather than a plain "int". Again, no change it is supposed to be
+required.
+
+The following API function have been updated:
+
+  - vortex_channel_send_msg 
+  - vortex_channel_send_msg_and_wait
+  - vortex_channel_send_rpy
+  - vortex_channel_send_ans_rpy
+  - vortex_channel_send_err
+  - vortex_frame_get_payload
+
+Solution to incompatibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There is only one function that will produce compilation warnings due
+to the change introduced: vortex_frame_get_payload.
+
+This function was returning the payload content as "char*" but now it
+is returned as "const void *". This will allow to properly conform
+with the fact that the content could be (char *) or (unsigned char *). 
+
+However, the caller will have to include a cast to properly configure
+the kind of content, i.e:
+
+   reference = (char*) vortex_frame_get_payload (frame);
+
+References
+~~~~~~~~~~
+[1] Project link: 
+    http://vortex.aspl.es
+
+[2] Change notification published by the project:
+    http://vortex.aspl.es/doc.html
+
+[3] Change notification definition
+    http://www.aspl.es/change/change-notification.txt

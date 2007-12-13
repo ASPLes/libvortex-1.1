@@ -1,0 +1,80 @@
+# Makefile for windows (mingw)
+OBJ  = vortex.o \
+       vortex_ctx.o \
+       vortex_support.o \
+       vortex_channel.o \
+       vortex_channel_pool.o \
+       vortex_connection.o \
+       vortex_dtds.o \
+       vortex_frame_factory.o \
+       vortex_greetings.o \
+       vortex_handlers.o \
+       vortex_hash.o \
+       vortex_listener.o \
+       vortex_profiles.o \
+       vortex_queue.o \
+       vortex_io.o \
+       vortex_reader.o\
+       vortex_sequencer.o\
+       vortex_thread.o\
+       vortex_thread_pool.o\
+       vortex_errno.o \
+       vortex_sasl.o \
+       vortex_tls.o \
+       vortex_xml_rpc.o \
+       vortex_xml_rpc_types.o \
+       vortex_tunnel.o \
+       vortex_win32.o
+
+DLL        = $(vortex_dll).dll
+IMPORT_DLL = $(DLL).a
+STATIC_LIB = $(vortex_dll).a
+
+#LIBS = -Wall -g -L"$(BASE_DIR)/lib" \
+#	-L"$(BASE_DIR)/bin" \
+#	--add-stdcall-alias \
+#	-lws2_32 \
+#	-lintl  -liconv  -lm 
+LIBS = -Wall -g -L"../../libaxl/src/" -laxl -lws2_32 $(OPENSSL_LIBS) $(GSASL_LIBS) $(search_lib_path) 
+
+#INCS       =  -I"$(BASE_DIR)/include" \
+
+# build vortex with log support
+ENABLE_LOG = -DENABLE_VORTEX_LOG
+INCS = -Wall -g -I"." -I"../../libaxl/src" -DENABLE_XML_RPC_SUPPORT -DENABLE_TUNNEL_SUPPORT $(ENABLE_LOG)
+
+CFLAGS = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" \
+	-DPACKAGE_DTD_DIR=\""$(datadir)"\" -DPACKAGE_TOP_DIR=\""$(top_srcdir)"\" -Wall -g $(OPENSSL_FLAGS) $(GSASL_FLAGS)
+RM = rm -f
+
+.PHONY: all clean
+
+all: $(DLL)
+
+clean: 
+	${RM} $(OBJ) $(DLL) *.a *.dll.a *.lib *.dll
+
+install: all
+	test -d $(INSTALL_DIR) || exit -1
+	cp ../data/channel.dtd                $(INSTALL_DIR)
+	cp ../data/sasl.dtd                   $(INSTALL_DIR)
+	cp ../data/tls.dtd                    $(INSTALL_DIR)
+	cp ../data/xml-rpc-boot.dtd           $(INSTALL_DIR)
+	cp ../data/vortex-listener-conf.dtd   $(INSTALL_DIR)
+	cp ../xml-rpc-gen/xml-rpc.dtd         $(INSTALL_DIR)
+	cp ../test/*.exe	              $(INSTALL_DIR)
+	cp ../test/*.pem		      $(INSTALL_DIR)
+# tools
+	cp ../xml-rpc-gen/xml-rpc-gen.exe     $(INSTALL_DIR)
+	cp ../test/*.exe                      $(INSTALL_DIR)
+
+$(DLL): $(OBJ)
+# add the following line to create an import library. At this point this step
+# is not requiered because gcc automatically get an import library from the dll.
+# -Wl,--out-implib,libvortex.lib
+	$(CC) -m$(MODE) -shared -Wl,--out-implib,$(IMPORT_DLL) --export-all-symbols \
+		  $(OBJ) -o $(DLL)        $(LIBS)
+	lib.exe /def:libvortex.def
+
+%.o: %.c
+	$(CC) -c $< -o $@ $(CFLAGS)

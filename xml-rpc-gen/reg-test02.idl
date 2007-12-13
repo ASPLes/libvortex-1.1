@@ -1,0 +1,9 @@
+/* test interface with only one service that is called without
+ * parameters and returns an string */
+xml-rpc interface test {
+	
+	string get_the_string () {
+		/* return a test string (static version) */
+		return axl_strdup ("This is a test");
+	}
+}

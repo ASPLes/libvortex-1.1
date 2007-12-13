@@ -1,0 +1,226 @@
+          ############################################
+          ##          Vortex Library 1.0.12         ##
+          ##       "Despite the neons release"      ##
+          ############################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.0.12 "Despite the neons" release availability: an open
+  source "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+
+  Many new interesting features like allowing to defer the decision to
+  create a channel (better integration with async client notifications
+  and GUI applications), functions to shutdown listeners (and
+  connections associated due to its function) and several API
+  updates...
+  
+  Started a deep internal change to make the library to store all its
+  state (context) into an external object (VortexCtx). This will solve
+  some issues at the windows platform while using Vortex through
+  Turbulence. Moreover this change will allow to have several Vortex
+  Library context, with different states running inside the same
+  process. At this moment all changes introduced are limited to avoid
+  API changes.
+
+Special note
+~~~~~~~~~~~~
+
+  Current release will be the last one for 1.0.X series. The next
+  series will include an API update to make the library full
+  context-based. A change notification will be produced with the
+  concrete change.
+
+  The intention with this release is to finish an cycle, without
+  changing the API, providing a latest stable and tested release.
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  None.
+
+Thanks to..
+~~~~~~~~~~~
+
+  Benoit Amiaux (provided really useful comments and patches to improve
+  the library memory utilization, a portable implementation to destroy
+  threads and several minor fixings for the windows platform..thanks
+  dude, keep close ;-)
+
+Changes since 1.0.11
+~~~~~~~~~~~~~~~~~~~~
+
+* [fix] Applied Benoit Amiaux patch to make realloc functions to call
+  to axl defined implementation.
+
+* [new] Updated vortex library start channel notification to allow
+  decoupling the notification from the the reply. Now the application
+  will be able to call vortex_channel_defer_start to signal vortex
+  engine to not reply at this moment. Later, a call to
+  vortex_channel_notify_start confirms if the channel is accepted to
+  be created. API added:
+
+    - vortex_channel_notify_start_internal
+    - vortex_channel_notify_start
+
+* [new] Added a new function to the vortex connection module that
+  allows to get a reference to the listener connection that accepted a
+  particular connection instance. API added:
+
+   - vortex_connection_get_listener
+
+* [fix] Making vortex_channel_notify_start to not require providing
+  the serverName value. It is internally stored by the channel until
+  it is used for the notification.
+
+* [new] Updated vortex channel API to allow configuring a handler
+  which is called once the reference is going to be removed from the
+  connection.  This allows to detect channels not closed because the
+  connection have failed. API added:
+
+   - VortexOnClosedChannel (handler)
+   - vortex_channel_set_closed_handler
+
+* [fix] Making vortex_channel_notify_start to return a boolean value
+  reporting if the notification was done (no matter the value
+  notified).
+
+* [fix] Making vortex channel on created notification to acquire a
+  reference to the channel during the notification to avoid losing the
+  reference.
+
+* [fix] Updated vortex_listener_new/2/_full functions to include some
+  information about the references returned and the way a listener
+  could be closed (Reported by Benoit Amiaux).
+
+* [fix] Committing more updates to the vortex listener documentation.
+
+* [fix] Deep internal change to make vortex engine to hold all its
+  library state into an object. This will allow to solve some issues
+  at the windows platform and the way private data is handled inside
+  dlls.
+
+* [fix] Making vortex support module to be initialized/terminated from
+  the vortex_init and vortex_exit to allow external modules to only
+  init the support module.
+
+* [fix] More updates to make initialization of the context to be not
+  done directly from vortex_ctx_new but from each module called from
+  vortex_init.
+
+* [fix] Several updates to make vortex sequencer and vortex reader to
+  be fully driven by the VortexCtx received at vortex_reader_run and
+  vortex_sequencer_run.
+
+* [new] Added missing API to destroy threads and fixed wrong vortex
+  reader and sequencer termination. Reported and fixed by Amiaux
+  Benoit. API added:
+
+   - vortex_thread_destroy
+
+* [fix] Updated API to allow provided the VortexCtx to some functions
+  at the vortex io module:
+
+   - VortexIoIsSetFdGroup (handler) 
+   - VortexIoDispatchFunc (handler)
+   - VortexIoDispatch (handler)
+   - vortex_io_waiting_invoke_is_set_fd_group (function)
+   - vortex_io_waiting_invoke_dispatch (function)
+
+* [fix] Fixed wrong epoll set creation (twice created) making
+  allocated file sets to grow with the time reaching the process
+  limit. Fixed memory leak the vortex listener module (which wasn't
+  unreferring a queue expecting other thread to do so...). Updated
+  vortex log to not perform any operation if a context is not defined.
+
+* [fix] Making xml-rpc-gen tool to include a reference to the file
+  that was used as source inside the body header.
+
+* [new] Added to new symbols that allows to initialize the library context.
+  API added:
+
+   - vortex_init_ctx
+   - vortex_exit_ctx
+
+  Making previous API (vortex_init, vortex_exit) to relay on these
+  function to provide backward compact.
+
+* [new] Updated vortex listener module to include a function that
+  allows to shutdown a listener and all its associated connections
+  created due to its function. API added:
+
+   - vortex_listener_shutdown
+
+* [fix] Making vortex_listener_init to not acquire the mutex if it is
+  found that an initialization was already done.
+
+* [fix] More fixings to the thread implementation, missing call to
+  release thread attribute (Reported and fixed by Benoit Amiaux).
+
+* [fix] Making vortex_connection_remove_on_close_full to use
+  axl_list_remove_ptr rather axl_list_remove to *really* remove the
+  handler installed (Reported by Benoit Amiaux).
+
+* [fix] Fixed missing BEGIN_C_DECLS declaration at vortex thread
+  module. Fixings to variables inside ctx for the windows platform.
+  Updates to the libvortex.def file. (Reported and fixed by Benoit
+  Amiaux).
+
+* [fix] making vortex_init_ctx to not configure the context
+  (vortex_ctx_ctx).
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+12th dec 2007, Madrid (Spain)

@@ -1,0 +1,30 @@
+<xml-rpc-interface>
+  <!-- an example using method name to instruct the method name
+       to use rather the provided by the compiler -->
+  <!-- component name declaration -->
+  <name>test</name>
+
+  <!-- service declaration: sum (int a, int b); -->
+  <service>
+    <name>sum</name>
+    <returns>int</returns>
+    <params>
+      <param>
+         <name>a</name>
+         <type>int</type>
+      </param>
+      <param>
+         <name>b</name>
+         <type>int</type>
+      </param>
+    </params>
+    <code>
+      <content><![CDATA[
+        /* this is a test < & */
+        return a + b;
+]]></content>
+ </code>
+  <!-- configure the method name to use -->
+  <method_name>aritmetic-operations/basic/sum</method_name>
+  </service>
+</xml-rpc-interface>

@@ -1,0 +1,573 @@
+       ###########################################
+       ##  Vortex Library 1.0 Stable Release    ##
+       ###########################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.0 availability: an open source "BEEP Core" protocol
+  implementation written in C, mapped onto TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://vortex.aspl.es 
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://xml.aspl.es
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+  This new release fixes and integrates many known bugs from previous
+  stable release. It also includes the first implementation for the
+  regression test that will be used to ensure function and to upgrade
+  the library performance.
+
+  Several library improvements has been done, making it faster than
+  previous one (vortex writer loop has been removed) and vortex reader
+  handling under many connections has been updated showing an upgrade
+  from 39segs to 5segs for a test that creates 1000 connections and
+  then closes them.
+
+  Many new useful functions has been added, a new reference counting
+  support for channels and frames, xml-rpc-gen tool updates.
+
+  This is the first stable release for the 1.X series that will
+  include many interesting features like separating library into a core
+  BEEP component, the current library that provides application
+  structure, and the rest of BEEP profiles. 
+
+Thanks to..
+~~~~~~~~~~~
+
+  Milton Yates (Gentoo ebuilds, axl library wrong dependency, SASL
+  patch to solve user defined pointer at listener side and its
+  appreciated suggestions)
+
+  Attilio Drei (libssl wrong flags configuration)
+
+  Sam Roberts (fixed wrong vortex main header c++ declarations, fixed
+  documentation vortex_connection_new about reference returned, fixed
+  wrong user defined pointer passed to the close channel notify, many
+  const declarations fixes, added vortex_channel_close_full and its
+  appreciated suggestions)
+
+Changes since 0.9.0
+~~~~~~~~~~~~~~~~~~~~
+
+* [fix] fixed wrong dependency (0.9.0) with Axl Library 0.2.4 (Milton
+  Yates report).
+
+* [fix] Added to src/Makefile.am a rule to update the libvortex.def file on
+  make dist.
+
+* [fix] making server generation to split the main file into a plain
+  main file with only the main function and the service dispatcher
+  code at other file. This makes more easy to integrate source code
+  generated with other source code.
+
+* [fix] adding a new option to allow controlling where will be placed
+  the source code for the server component generated: --out-server-dir
+
+* [fix] fixed a bug at the source code generated for the deallocation
+  function created for the array API.
+
+* [fix] adding a new option which allows to disabling source code
+  generation for the main file (main.c) at the serve side component:
+  --disable-main-file
+
+* [fix] fixing a bug while choosing if the client or server component
+  was generated. Autoconf module was always activated for both.
+
+* [fix] adding an explicit reference to -lcrypto if TLS interface is
+  activated. Making configure.ac to create a vortex.pc according to
+  the TLS and SASL configuration.  Bug solved: 325.
+
+* [fix] Fixed bug 325 (-lcrypto wasn't properly configured, making
+  platform with an libssl compiled but not associated with libcrypto
+  to fail while linking).  Bug reported by Attilio Drei.
+
+
+* [new] Adding a new function to the vortex tls API to enable getting
+  the SSL object for a VortexConnection with a TLS session
+  activated. This will allow to vortex client application to implement
+  more features beyond the set already provided by the Vortex API. API
+  added:
+  
+   - vortex_tls_get_ssl_object
+
+* [new] Adding a new function to the vortex tls API to enable getting
+  the peer TLS certificate finger print. This will allow to easily
+  implement a verification code like ssh tools does. API added:
+   
+   - vortex_tls_get_peer_ssl_digest
+
+* [fix] adding additional checks to
+  vortex_channel_next_pending_message.
+
+* [fix] making vortex_channel_is_opened to check for a null reference,
+  return FALSE if that case.
+
+* [fix] Rewritten vortex_hash_destroy function to lock the hash before
+  proceding to the destroy operations.
+
+* [fix] fixed a bug inside the xml-rpc-gen activation flag
+  (configure.ac)
+
+* [fix] Fixing a bug which was causing to not generate the services_dispatch.[ch]
+  functions if --disable-main-file option is activated.
+
+* [new] Adding a new function which allows copying an
+  XmlRpcMethodValue from a previous one. API added:
+
+   - vortex_xml_rpc_method_value_copy
+   - method_value_copy
+
+* [fix] fixing a bug inside vortex_xml_rpc_boot_channel_sync it wasn't
+  properly check the presence for reporting status variable before
+  being used. Also fixed channel notification when it is not created
+  (synchronous API).
+
+* [new] Adding an new function to get current msg-no configured for a
+  given XmlRpcMethodCall object (the BEEP message that was used to
+  transport the request). API added:
+
+   - vortex_xml_rpc_method_call_get_msgno
+
+* [fix] fixing several wrong reference to the component name where the
+  lower version is required. Updated source code generation to
+  translation non allowed characters into '_'. Added two new function
+  to support this:
+
+   - xml_rpc_support_to_lower
+   - xml_rpc_support_to_upper
+
+* [new] added a new option which allows to fully configure where is
+  placed the source code for the client stub generated.
+
+* [fix]fixing several compilation errors exposed due to compiling the
+  tool inside the windows platform (it was missing -Wall) from
+  Makefile.am (xml-rpc-gen tool).
+
+* [new] Updated makefiles to include all tools and the xml-rpc-gen.exe
+  inside the installation directory. Making vortex.nsi to include
+  import libraries for windows (libvortex.def, libvortex.exp,
+  libvortex.lib).
+
+* [fix] fixing a non initialized writable inside
+  xml_rpc_c_stub_write_native_type.
+
+* [fix] updating vortex_init documentation to include some references
+  to how disable console log debug.
+
+* [fix] updated vortex_xml_rpc_invoke_sync documentation to includes some
+  examples and a reference to the automatic deallocation of the 
+  XmlRpcMethodCall received.
+
+* [new] added support to the compiler to get notification about the
+  service name to be used while performing the invocation rather than
+  supposing it from the XDL/IDL declaration. Updated dtd definition to
+  support this new feature. Added tests for this new support:
+
+    - reg-test08.xdl
+    - reg-test08.idl
+
+* [fix] making lookup path to use . before INSTALL_DIR (allows to use
+  the local copy from the development source rather than the one
+  installed).
+
+* [new] finished support for method_name attribute declaration for IDL
+  format.
+
+* [new] Added support to IDL format to detect attribute declaration,
+  initially for service declaration, even if the service has no source
+  code definition.  Used to support alternative method name
+  declaration.  Example:
+
+     [method_name="operation/aritmetic/sum"];
+     int sum (int a, int b);
+
+  Now, the api produced will be the same, but the underlying method
+  invoked is the valued provided at method_name.
+
+* [fix] making vortex_sasl_auth_method_used to return a NULL value
+  when the library isn't compiled with SASL support.
+
+* [fix] updating vortex_xml_rpc_method_value_from_string to include a
+  reference to supported types that could be translated into a string.
+
+* [fix] updated vortex_connection_ref function to return a boolean
+  status signaling that the connection reference counting was
+  increased or not. Updated source code to check this return value and
+  to not perform a vortex_connection_unref and to act according to the
+  failure. Updated function documentation.
+
+* [fix] making __vortex_channel_block_until_replies_are_received
+  function to get get blocked forever until replies are received. Now,
+  waiting process is limited with a timeout. Updated the function to
+  return the wait status value so the caller can react.
+
+* [fix] making __vortex_channel_0_frame_received_close_msg to check
+  current closing status for the channel that is receiving the
+  notification before doing any operation.  This solves the problem
+  created by a channel requested to be closed that have also received
+  a request to close from the remote peer at the same time.
+
+* [fix] using vortex_connection_ref return status code, now second
+  level and first level frame delivery handlers are not executed it a
+  failure was found.
+
+* [fix] making vortex_xml_rpc_method_value_nullify to check
+  XmlRpcMethodValue received before proceeding.
+
+* [new] added a new function that allows to nullify the method value
+  internal reference for a selected XmlRpcMethodResponse. API added:
+
+    - vortex_xml_rpc_method_response_nullify
+
+* [new] Updated channel pool API to allow managing channel that its
+  creation are more complex than just calling to
+  vortex_channel_new. The API now support an external handler that
+  allows to delegate channel creation task to the user space code. API
+  added:
+
+    - vortex_channel_pool_new_full
+    - vortex_channel_pool_add_full
+    - VortexChannelPoolCreate (creation handler)
+    - vortex_channel_pool_get_next_ready_full
+
+* [new] implemented a channel pool mechanism for the XML-RPC API,
+  allowing to create XML-RPC channels and reuse them across
+  invocations. API added:
+  
+    - vortex_xml_rpc_create_channel_pool
+    - vortex_xml_rpc_channel_pool_get_next
+
+* [fix] Fixed an internal bug inside
+  __vortex_xml_rpc_unmarshall_common_sync which wasn't allocating a
+  copy for the method response fault string causing the application
+  level to access to deallocated memory. Updated synchronous
+  invocation documentation to note that fault strings, on error cases,
+  is an allocated string that must be deallocated when no longer
+  needed.
+
+* [new] Updated xml-rpc API to include a function to get the member
+  value for a provided struct selected by name. Added also a function
+  to get the member selected by a position provided and a function to
+  get the member name at a provided position. API added:
+
+   - vortex_xml_rpc_struct_get_member_value
+   - vortex_xml_rpc_struct_get_member_value_at
+   - vortex_xml_rpc_struct_get_member_name_at
+
+* [fix] fixed a memory leak at the greetings parsing code caused by a
+  change at the libaxl API. Now axl_node_get_childs returns an
+  allocated list of nodes.
+
+* [fix] fixed a memory leak at the vortex sasl module which was
+  causing to not deallocate the gsasl_session object associated to the
+  connection.
+
+* [new] Extending XML-RPC API to include a function to stringify a
+  method value containing basic values (int, string, boolean, double)
+  and making vortex_xml_rpc_method_response_stringify to use it. API
+  added:
+  
+    - vortex_xml_rpc_method_value_stringify
+
+* [fix] making common reply code to check application level replies,
+  avoiding to reply several times to the same msgno, making
+  __vortex_channel_common_rpy to not hang but drop an error log. (only
+  done for RPY and ERR).
+
+
+* [fix] Making __vortex_channel_block_until_replies_are_received to
+  not wait for replies to be received "and processed". The last part
+  of the checking was causing to hang forever if a the user space
+  tried to close the channel from inside the frame received (including
+  the last message received). Added documentation near to the update
+  linking it to the BEEP RFC section.
+
+* [fix] Making marshalling code for XML-RPC profile, for <string> tags
+  to use <![CDATA[..]]> to enclose content, allowing to use non
+  allowed xml symbols.
+
+* [fix] added some comments to the vortex_connection_new_empty
+  function.
+
+* [fix] Added missing declarations BEGIN_C_DECLS/END_C_DECLS to main
+  vortex module. (Reported and fixed by Sam Roberts).
+
+* [fix] Committing patch that solves SASL user pointer problem at the
+  server side programming (Milton Yates patch).
+
+* [fix] adding some comments, fixing vortex writer header, making
+  doxygen to not confuse it with documentation.
+
+* [new] Added a new function to the vortex connection module to get
+  current channels opened. API added:
+
+   - vortex_connection_get_opened_channels
+
+* [fix] Removing old vortex writer implementation, that has showed to
+  not scale properly on have connection load.
+
+* [fix] Removed all references to the vortex writer module and
+  implemented inside the vortex sequencer the ability to send BEEP
+  frames produced.
+
+* [fix] making vortex main header to define by default 1024
+  connections to be handled inside one single select(2) call.
+
+* [new] Committing a new test file (vortex client) that creates many
+  connections to a single vortex server. Base test used to improve
+  vortex performance on high load.
+
+* [fix] Fixed comment inside vortex_connection_new (Sam Roberts) about
+  reference returned if threaded and non-threaded model is used.
+
+* [new] Updated VortexFrame definition to include an internal reference to the 
+  channel where the frame was received. Added new API to retrieve the channel
+  reference:
+
+   - vortex_frame_get_channel_ref
+
+* [fix] committing initial status for the regression test that will
+  check all features provided by vortex (vortex-regression-client and
+  vortex-regression-listener).
+
+* [new] Added a new example which servers as an initial step to
+  implement a main loop based vortex client application
+  (vortex-client-without-cbs.c) and updated vortex-server-without-cbs.
+
+* [new] Added a new API to handle close channels in a decoupled form
+  allowing to configure the handler to be called to get notification
+  and a function to finish the notification. API added:
+
+   - VortexOnNotifyCloseChannel (handler)
+   - vortex_channel_set_close_notify_handler
+   - vortex_channel_notify_close
+
+* [fix] committing more updates to the vortex-regression-client file.
+
+* [new] Updated regression tests to include tree initial basic tests
+  which check basic BEEP functions and data transmission (with small
+  messages and large ones). Added support to check
+  vortex_channel_set_serialize.
+
+* [fix] Fixed a bug inside vortex sequencer loop which wasn't checking
+  for the result received from vortex_sequencer_direct_send. Also
+  making that function to return a boolean value to flag if the
+  message was sent or not.
+
+* [fix] Making all vortex_channel_send_rpy* to check the connection
+  that is being used to send the reply message before performing any
+  action.  Also added a connection check for waiting threads for other
+  replies to be sent inside the same function.
+
+* [new] Added support to enforce serialization while notifying
+  incoming frames for a particular channel.
+  
+   - vortex_channel_set_serialize
+  
+* [fix] Making vortex reader process to return a status value if it
+  isn't able to notify SEQ status, making vortex reader process to
+  stop for the particular connection.
+
+* [fix] Making vortex reader to add new connections to watch using
+  prepend operations rather than append operations. Making also vortex
+  reader to check the number for descriptors changed during
+  processing.
+
+* [fix] removing all implementation inside vortex reader based on
+  GList to hold connections watched and started to use axlList,
+  allowing to better reuse memory and to perform efficient element
+  removal while traversing connection list.
+
+* [new] Added a new regression test to check vortex support for many
+  connections.
+
+* [fix] Making vortex reader to set fds to be watching taking listener
+  connections first, improving startup new connections. All
+  modifications done have improved vortex library overall efficiency
+  to run vortex-client-connections in 37.138segs using vortex 0.9.0 to
+  5.207segs using current vortex SVN. GREAT!!
+
+* [fix] fixed "being_closed" flag configured for TLS-fixated
+  connections.
+
+* [new] Added initial tests to check TLS and SASL profile support.
+
+* [fix] Updating vortex-regression-client and
+  vortex-regression-listener to use a constant to define listener port
+  to be used. Updated Makefile.win to include this new tests.
+
+* [fix] Adding missing new lines to the vortex-simple-client test
+  (patch from Sam Roberts).
+
+* [fix] Fixed a serious bug inside vortex TLS profile caused by not
+  protecting the SSL session object with a mutex, producing undefined
+  behaviors under heavy data transfered while the session is
+  TLS-fixated. Now, the library passes test_05.
+
+* [fix] making vortex connection internals to notify when it is not
+  ready the layer to send and receive data (even when it was notified
+  by the select(2) call).  This is because having data at the
+  underlying transport doesn't means directly to have data available
+  while calling to SSL_write and SSL_read.
+
+* [fix] Making vortex sequencer to queue data as pending if it isn't
+  able to send it while calling to vortex_sequencer_direct_send.
+
+* [new] Added a new function that allows to create a new listener
+  using as port configuration an integer value (Sam Roberts
+  suggestions).  API added:
+  
+   - vortex_listener_new2
+
+* [fix] Updated VortexOnChannelCloseNotify documentation to explain
+  its function, and how it relates with VortexOnChannelClose.
+
+* [fix] Updated several functions from the vortex_channel and the
+  vortex_profiles module to include "const" declaration where
+  suitable.  (Sam Roberts suggestions).
+
+* [fix] Fixed a bug inside vortex_channel_get_reply which was causing
+  to unref the queue used each time it was called.
+
+* [fix] Making SASL server side profile to use gsasl_property_fast
+  rather than gsasl_property_get to avoid infinite loop while
+  accessing to not defined properties due to a malicious auth
+  attempt. Making these checks to ensure "realm" value is defined if
+  requested DIGEST-MD5.
+
+* [fix] Fixed SASL CRAM-MD5 and DIGEST-MD5 to allow receiving empty
+  blob mainly because these mechanism are started by content at the
+  server side.
+
+* [new] Updated regression test to check SASL mechanism: PLAIN,
+  EXTERNAL, CRAM-MD5 and DIGEST-MD5.
+
+* [fix] Fixing wrong user defined pointer passed to the close channel
+  notify and the profiles module (report and patch: Sam Roberts).
+
+* [fix] Making vortex_profiles API module to use where suitable
+  "const" declaration.  (report Sam Roberts).
+
+* [new] Added a new API to the vortex listener to allow configuring
+  realm to be used at the server side for all connections. This is
+  only used, at this moment, by the SASL DIGEST-MD5 mechanism. API
+  added:
+
+     - vortex_listener_set_default_realm
+     - vortex_listener_get_default_realm
+
+* [fix] Added "const" declarations to: vortex_channel_get_mime_type
+  and vortex_channel_get_transfer_encoding.
+
+* [fix] Making SASL server side to check and properly return realm
+  configuration if available.
+
+* [fix] Now vortex library passes all tests added to the regression
+  test suite.
+
+* [fix] Several fixing to make the tool to produce source code that compiles with
+  the latest version of vortex and axl library (xml-rpc-gen)
+
+* [fix] Fixed bugs caused by mixing services and type declarations inside a single
+  file declaration (xml-rpc-gen)
+
+* [new] Added support for a new option: --to-xml, which allows to translate
+  the input .idl file into its representation .xml (xml-rpc-gen)
+
+* [fix] Minor modifications to the xml-rpc-gen tool and the library to
+  use -ansi flag.
+
+* [fix] Fixed a bug which was causing to not properly deallocate SASL
+  ctx and SASL session once the connection has gone.
+
+* [fix] Fixed a bug which was causing to not deallocate the
+  VortexConnection that was tls-fixated (once called
+  vortex_tls_start_negociation and its *_sync version).
+
+* [fix] Fixing minor code problem to implement --version inside the
+  tool when the value isn't defined.
+
+* [fix] Wrapping FD_SETSIZE and VORTEX_FD_SETSIZE definitions to avoid
+  redefinitions performed by external libraries.
+
+* [fix] Making vortex sasl module to notify an error if the SASL layer
+  don't initialize properly.
+
+* [fix] Many const fixes for the vortex channel and the vortex
+  connection API (reported and fixed by Sam Roberts
+  sroberts@universe.com).
+
+* [new] Updated vortex frame API and its internals to add support for
+  reference counting and automatic memory deallocation. API added:
+  
+    - vortex_frame_ref
+    - vortex_frame_unref
+
+* [fix] Updated vortex library internals to use new vortex frame
+  reference counting support.
+
+* [new] Updated vortex channel API to support reference counting and
+  automatic memory deallocation. API added:
+
+    - vortex_channel_ref
+    - vortex_channel_unref
+
+* [fix] Updated vortex library to use the new vortex channel reference
+  counting mechanism.
+
+* [new] Applied patch to support vortex_channel_close_full, a version
+  of vortex_channel_close with user defined pointer support. (Patch
+  Sam Roberts).
+   
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+7th Dic 2006, Madrid (Spain)
+  
+

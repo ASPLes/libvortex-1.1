@@ -1,0 +1,82 @@
+       ###########################################
+       ## Vortex Library 0.8.11 Stable Release  ##
+       ###########################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 0.8.11 availability: an open source "BEEP Core" protocol
+  implementation written in C, mapped onto TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://vortex.aspl.es 
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://xml.aspl.es
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+
+  A new library have been developed to disable LibXML-2.0 dependency:
+  Axl Library. Now Vortex Library have its own XML toolkit enabling to
+  produce better tailored XML solutions, especially, those profiles
+  that requires XML for its function.
+
+  A complete XML-RPC profile implementation have been added.
+
+Changes since 0.8.11
+~~~~~~~~~~~~~~~~~~~~
+
+  This is a short release note, for full details check: 
+
+  http://lists.aspl.es/pipermail/vortex/2006-April/000016.html
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services on how organization can introduce GNU/Linux
+  inside its process, making other platforms to interact with
+  GNU/Linux.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+28th Apr 2006, Madrid (Spain)
+  
+

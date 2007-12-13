@@ -1,0 +1,204 @@
+       ##########################################
+       ## Vortex Library 0.8.7 Stable Release  ##
+       ##########################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 0.8.7 availability: an open source "BEEP Core" protocol
+  implementation written in C, mapped into TCP/IP.
+
+  Vortex Library is a powerful toolkit to write new application
+  protocols and application over the well-defined "BEEP Core" protocol
+  defined at RFC3080/RFC3081. 
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://vortex.aspl.es 
+      [Vortex Library homepage]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+   
+    - http://www.beepcore.org
+      [BEEP Core official web page]
+
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+
+  This new relase adds support for missing features such as:
+  one-to-many full support, localize and features greetings attribute
+  full support, BEEP peer role support and extended start channel
+  handling.
+
+  This release also comes to solve some error found under heavy data
+  transfer situations, having in that context, applications failing
+  (or behaving badly) while receiving data from Vortex Library
+  servers.
+
+
+Changes since 0.8.6
+~~~~~~~~~~~~~~~~~~~
+
+* [new] adding a new enumerator to represent the connection role:
+VortexPeerRole.
+
+* [new] implemented new function vortex_connection_get_role which
+allows to get current role for a given connection. API added was: 
+ - vortex_connection_get_role
+
+* [improve] adding initialization code for global variables inside the vortex
+sequencer code.
+
+* [new] Added support for missing one-to-many message exchange style. Added
+  missing features and checkings at the vortex reader especially those
+  designed for ANS and NUL frames. API added was:
+
+  - vortex_channel_send_ans_rpy
+  - vortex_channel_send_ans_rpyv
+  - vortex_channel_finalize_ans_rpy
+
+* [improve] Upgraded vortex sequencer to support the basic case of
+  sending empty frames. Modifying vortex_frame_build_up_from_param
+  function to support building empty frames. Updating vortex reader to
+  support delivering and joining several ongoing ANS
+  replies. Implemented additional checkings for NUL frames received,
+  described at the RFC. Updating joing frame section code to simplify
+  it.
+
+* [new] adding new functions to vortex frame module:
+    - vortex_frame_are_joinable
+    - vortex_frame_are_equal
+
+* [improve] updating vortex-client tool to allow receiving events from
+  the remote peer such as frame received, close received. Added two
+  new commands "log" and "color log" which enables vortex log. Added
+  support to vortex-client to show current features and localize
+  functions recevied from the remote peer.
+
+* [new] adding a new server example which replies with one-to-many
+  exchange styles. Added lot of documentation to explain how to use
+  one-to-many message exchange under the Vortex Library.
+
+* [new] adding support to configure the features and localize
+  attributes for the initial greetings. Added new functions to vortex
+  greetings module to support this new change (documentation also
+  added):
+
+   - vortex_greetings_set_features
+   - vortex_greetings_get_features
+   - vortex_greetings_set_localize
+   - vortex_greetings_get_localize
+
+* [bug fixed] making vortex sequencer to use the ansno value rather
+  than a plain 0 as a fixed value.
+
+* [bug fixed] fixing vortex_connection_close_all_channels function
+  which is used directly by vortex_connection_close. This function was
+  not releasing properly a mutex and, under some circumstances, the
+  function was not clearly reporting the right channel closing status.
+
+* [new] adding three new function: vortex_log_enable,
+  vortex_color_log_enable and vortex_color_log_is_enabled. This
+  enables an API which allows to manage console log.
+
+* [bug fixed] making vortex listeners to *parse* greetings received.
+
+* [new] adding a new function to vortex channel module:
+  vortex_channel_new_full, which support all options available while
+  creating channels: profile content, serverName, encoding.
+
+* [improve] refactoring source for vortex_channel_new and
+  vortex_channel_new_full to use the same version.
+
+* [new] adding a new internal support function:
+  __vortex_channel_build_start_message to support building start
+  message according to values received: channel num, profile, profile
+  content, serverName, encoding, etc.
+
+* [new] added new type: VortexEncoding to support reporting which
+  encoding is being used for the profile content data.
+
+* [bug fixed] fixing wrong vortex_connection_ref and
+  vortex_connection_unref aligment inside the vortex sequencer module,
+  vortex channel module (invoke frame received code) and vortex
+  profile module (invoke frame received code) which was causing to get
+  the connection unrefered one time at some conection broken
+  escenarios having data being delivered to application level.
+
+* [bug fixed] fixing a bug at vortex_connection_ref. The function was
+  checking if the connection to ref was ok but this is not required
+  for the purpose of the function making to be unrefered the
+  connection inside the code block holded by the ref/unref pair. Now
+  the function ref and unref the connection only checking if the
+  received connection is not null.
+
+* [new] adding a new module to implement support function used across
+  vortex library.  Currently it implements only vortex the function:
+  vortex_support_free, which allows to perform several deallocation
+  operations at the same time.
+
+* [new] implemented RFC3080 required to automatically asign odd
+  channel numbers for those connections in initiator role and even
+  numbers for those acting as listener role.
+
+* [new] adding support for an extended start message reception. Now it
+  is posible to register an extended version for the start handler
+  which allows to get access to all available options received on
+  channel creation request. Previous code writed with the normal
+  start handler keeps running. This is implemented throught a new
+  function:
+
+   vortex_profiles_register_extended_start
+
+  which allows to register an extended start, which overrides the
+  start handler defined.  Added more documentation explaining how to
+  use the start handlers and how they interact.
+
+
+* [improve] modified vortex_profile_is_start_defined to return if an normal
+  start or extended one is already defined.
+
+* [improve] modified vortex_profile_invoke_start to invoke the
+  extended start defined or the normal start handler if the previous
+  wasn't being defined.
+
+* [improve] adding some additional checks to vortex_hash_foreach
+  function to avoid iterating over an empty hash.
+
+  
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distribuited application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distribuited nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services on how organization can introduce GNU/Linux
+  inside its process, making other platforms to interact with
+  GNU/Linux.
+
+  You can reach us:
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!
+         
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+18th Nov 2005, Madrid (Spain)
+  
+

@@ -1,0 +1,131 @@
+          #############################################
+          ##          Vortex Library  1.0.9          ##
+          ##   "A certain shade of green release"    ##
+          #############################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.0.9 "a certain share of green" release availability: an
+  open source "BEEP Core" protocol implementation written in C, mapped
+  onto TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+  Integration of some bug fixes affecting binary transfers. This
+  release also updates the serialize support for ANS/NUL frame types
+  making easier to transfer files. 
+  
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  None.
+
+Changes since 1.0.8
+~~~~~~~~~~~~~~~~~~~
+
+* [fix] Updated documentation and removed checking inside the vortex
+  listener module which was causing to not start a listener if no
+  profile was found registered. This is no longer required due to the
+  dynamic character provided by applications like Turbulence.
+
+* [fix] Updated documentation explaining how to use ANS/NUL frame.
+
+* [new] Updated regression test to check ANS/NUL pattern
+  (test_04a). No bug found. Test kept for future checkings.
+
+* [fix] Updated regression test to use an optimal transfer value for
+  the regression test associated to the ANS/NUL pattern.
+
+* [fix] Making vortex_channel_set_serialize to how activate frame
+  serialization for ANS/NUL pattern. Updated regression tests to check
+  this new function.
+
+* [new] Added two new examples that allows to transfer a file from a
+  server using ANS/NUL pattern and one big message. Files added:
+  
+   - vortex-file-transfer-client.c
+   - vortex-file-transfer-server.c
+
+* [fix] Updating version file and allowing
+  vortex-file-transfer-client.c to allow configuring the host and port
+  for the file server.
+
+* [fix] Updated vortex_channel_set_serialize documentation and updated
+  vortex_channel_pool_new to make profile parameter to be a const char *.
+
+* [new] Added a new test to check binary transfers for zeroed chunks.
+
+* [fix] Fixed bug which was causing to not detect previous frame
+  fragment received if the content transfered is binary content that
+  contains zeroed elements.
+
+* [fix] Making vortex sequencer and vortex reader to use an stack
+  activated variable to hold data provided
+  vortex_sequencer_direct_send, allowing to save one memory
+  allocation/deallocation pattern for each fragment sent.
+
+* [fix] Added some "const" declarations at the vortex_channel_pool_new
+  and vortex_channel_pool_new_full.
+
+* [fix] Making vortex_connection_close to check and detect those calls
+  to this function using references created by vortex_listener_new functions
+  which, at the same time, did not update reference counting, causing 
+  double deallocation patterns.
+
+* [fix] minor cleanup at the vortex listener module.
+
+* [fix] Committing changes to files to make doxygen to properly create
+  documentation.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+2th nov 2007, Madrid (Spain)

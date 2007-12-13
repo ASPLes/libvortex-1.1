@@ -1,0 +1,436 @@
+/*
+ *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
+ *  Copyright (C) 2005 Advanced Software Production Line, S.L.
+ *
+ *  This program is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public License
+ *  as published by the Free Software Foundation; either version 2.1 of
+ *  the License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the  
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this program; if not, write to the Free
+ *  Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+ *  02111-1307 USA
+ *  
+ *  You may find a copy of the license under this software is released
+ *  at COPYING file. This is LGPL software: you are welcome to
+ *  develop proprietary applications using this library without any
+ *  royalty or fee but returning back any change, improvement or
+ *  addition in the form of source code, project image, documentation
+ *  patches, etc. 
+ *
+ *  For commercial support on build BEEP enabled solutions contact us:
+ *          
+ *      Postal address:
+ *         Advanced Software Production Line, S.L.
+ *         C/ Dr. Michavila Nº 14
+ *         Coslada 28820 Madrid
+ *         Spain
+ *
+ *      Email address:
+ *         info@aspl.es - http://fact.aspl.es
+ */
+#ifndef __VORTEX_H__
+#define __VORTEX_H__
+
+/**
+ * \addtogroup vortex
+ * @{
+ */
+
+/* define default socket pool size for the VORTEX_IO_WAIT_SELECT
+ * method. If you change this value, you must change the
+ * following. This value must be synchronized with FD_SETSIZE. This
+ * has been tested on windows to work properly, but under GNU/Linux,
+ * the GNUC library just rejects providing this value, no matter where
+ * you place them. The only solutions are:
+ *
+ * [1] Modify /usr/include/bits/typesizes.h the macro __FD_SETSIZE and
+ *     update the following values: FD_SETSIZE and VORTEX_FD_SETSIZE.
+ *
+ * [2] Use better mechanism like poll or epoll which are also available 
+ *     in the platform that is giving problems.
+ * 
+ * [3] The last soluction could be the one provided by you. Please report
+ *     any solution you may find.
+ **/
+#ifndef VORTEX_FD_SETSIZE
+#define VORTEX_FD_SETSIZE 1024
+#endif
+#ifndef FD_SETSIZE
+#define FD_SETSIZE 1024
+#endif
+
+/* External header includes */
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+/* Axl library headers */
+#include <axl.h>
+
+/* Direct portable mapping definitions */
+#if defined(AXL_OS_UNIX)
+
+/* Portable definitions while using Vortex Library */
+#define VORTEX_EINTR           EINTR
+#define VORTEX_EWOULDBLOCK     EWOULDBLOCK
+#define VORTEX_EINPROGRESS     EINPROGRESS
+#define VORTEX_SOCKET          int
+#define VORTEX_INVALID_SOCKET  -1
+#define VORTEX_SOCKET_ERROR    -1
+#define vortex_close_socket    close
+#define vortex_getpid          getpid
+#define vortex_sscanf          sscanf
+#define vortex_is_disconnected (errno == EPIPE)
+#define VORTEX_FILE_SEPARATOR "/"
+
+#endif /* end defined(AXL_OS_UNIX) */
+
+#if defined(AXL_OS_WIN32)
+
+/* additional includes for the windows platform */
+
+/* _WIN32_WINNT note: If the application including the header defines
+ * the _WIN32_WINNT, it must include the bit defined by the value
+ * 0x400. */
+#ifndef _WIN32_WINNT
+#  define _WIN32_WINNT 0x400
+#endif
+#include <winsock2.h>
+#include <windows.h>
+#include <fcntl.h>
+#include <io.h>
+#include <process.h>
+#include <time.h>
+
+#define VORTEX_EINTR           WSAEINTR
+#define VORTEX_EWOULDBLOCK     WSAEWOULDBLOCK
+#define VORTEX_EINPROGRESS     WSAEINPROGRESS
+#define SHUT_RDWR              SD_BOTH
+#define VORTEX_SOCKET          SOCKET
+#define VORTEX_INVALID_SOCKET  INVALID_SOCKET
+#define VORTEX_SOCKET_ERROR    SOCKET_ERROR
+#define vortex_close_socket    closesocket
+#define vortex_getpid          _getpid
+#define vortex_sscanf          sscanf
+#define uint16_t               u_short
+#define vortex_is_disconnected ((errno == WSAESHUTDOWN) || (errno == WSAECONNABORTED) || (errno == WSAECONNRESET))
+#define VORTEX_FILE_SEPARATOR "\\"
+
+/* errno definition */
+#ifdef  errno
+#undef  errno
+#endif
+#define errno WSAGetLastError()
+
+/* a definition to avoid warnings */
+#define strlen (int) strlen
+
+/* no link support windows */
+#define S_ISLNK(m) (0)
+
+#endif /* end defined(AXL_OS_WINDOWS) */
+
+#if defined(AXL_OS_UNIX)
+#include <sys/types.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <time.h>
+#include <unistd.h>
+#endif
+
+/* additional headers for poll support */
+#if defined(VORTEX_HAVE_POLL)
+#include <sys/poll.h>
+#endif
+
+/* additional headers for linux epoll support */
+#if defined(VORTEX_HAVE_EPOLL)
+#include <sys/epoll.h>
+#endif
+
+/* Check gnu extensions, providing an alias to disable its precence
+ * when no available. */
+#if     __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 8)
+#  define GNUC_EXTENSION __extension__
+#else
+#  define GNUC_EXTENSION
+#endif
+
+/* define minimal support for int64 constants */
+#ifndef _MSC_VER 
+#  define INT64_CONSTANT(val) (GNUC_EXTENSION (val##LL))
+#else /* _MSC_VER */
+#  define INT64_CONSTANT(val) (val##i64)
+#endif
+
+/* check for missing definition for S_ISDIR */
+#ifndef S_ISDIR
+#  ifdef _S_ISDIR
+#    define S_ISDIR(x) _S_ISDIR(x)
+#  else
+#    ifdef S_IFDIR
+#      ifndef S_IFMT
+#        ifdef _S_IFMT
+#          define S_IFMT _S_IFMT
+#        endif
+#      endif
+#       ifdef S_IFMT
+#         define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#       endif
+#    endif
+#  endif
+#endif
+
+/* check for missing definition for S_ISREG */
+#if defined(_MSC_VER) && (_MSC_VER >= 1400)
+# define S_ISREG(m) (((m) & _S_IFMT) == _S_IFREG)
+#endif 
+
+BEGIN_C_DECLS
+
+/* Internal includes and external includes for Vortex API
+ * consumers. */
+#include <vortex_types.h>
+#include <vortex_ctx.h>
+#include <vortex_xml_rpc_types.h>
+#include <vortex_support.h>
+#include <vortex_thread.h>
+#include <vortex_thread_pool.h>
+#include <vortex_queue.h>
+#include <vortex_hash.h>
+#include <vortex_handlers.h>
+#include <vortex_connection.h>
+#include <vortex_listener.h>
+#include <vortex_frame_factory.h>
+#include <vortex_greetings.h>
+#include <vortex_profiles.h>
+#include <vortex_channel.h>
+#include <vortex_channel_pool.h>
+#include <vortex_io.h>
+#include <vortex_reader.h>
+#include <vortex_dtds.h>
+#include <vortex_sequencer.h>
+#include <vortex_channel_pool.h>
+#include <vortex_errno.h>
+
+/* TLS profile */
+#include <vortex_tls.h>
+
+/* SASL profile */
+#include <vortex_sasl.h>
+
+/* XML-RPC profile */
+#include <vortex_xml_rpc.h>
+
+/* TUNNEL profile */
+#include <vortex_tunnel.h>
+
+END_C_DECLS
+
+#if defined(AXL_OS_WIN32)
+#include <vortex_win32.h>
+#endif
+
+#include <errno.h>
+
+/* console debug support:
+ *
+ * If enabled, the log reporting is activated as usual. If log is
+ * stripped from vortex building all instructions are removed.
+ */
+#if defined(ENABLE_VORTEX_LOG)
+# define vortex_log   _vortex_log
+# define vortex_log2  _vortex_log2
+#else
+# if defined(AXL_OS_WIN32) && ! defined(__GNUC__)
+#   define vortex_log _vortex_log
+#   define vortex_log2 _vortex_log2
+# else
+#   define vortex_log(domain, level, message, ...) /* nothing */
+#   define vortex_log2(domain, level, message, ...) /* nothing */
+# endif
+#endif
+
+/** 
+ * @internal Allows to check a condition and return if it is not meet.
+ * 
+ * @param expr The expresion to check.
+ */
+#define v_return_if_fail(expr) \
+if (!(expr)) {vortex_log ("", VORTEX_LEVEL_CRITICAL, "Expresion '%s' have failed at %s (%s:%d)", #expr, __AXL_PRETTY_FUNCTION__, __AXL_FILE__, __AXL_LINE__); return;}
+
+/** 
+ * @internal Allows to check a condition and return the given value if it
+ * is not meet.
+ * 
+ * @param expr The expresion to check.
+ *
+ * @param val The value to return if the expression is not meet.
+ */
+#define v_return_val_if_fail(expr, val) \
+if (!(expr)) { vortex_log ("", VORTEX_LEVEL_CRITICAL, "Expresion '%s' have failed, returning: %s at %s (%s:%d)", #expr, #val, __AXL_PRETTY_FUNCTION__, __AXL_FILE__, __AXL_LINE__); return val;}
+
+
+BEGIN_C_DECLS
+
+bool     vortex_init                 ();
+
+bool     vortex_init_ctx             (VortexCtx * ctx);
+
+void     vortex_exit                 ();
+
+void     vortex_exit_ctx             (VortexCtx * ctx, 
+				      bool        free_ctx);
+
+bool     vortex_log_is_enabled       ();
+
+bool     vortex_log2_is_enabled      ();
+
+void     vortex_log_enable           (bool     status);
+
+void     vortex_log2_enable          (bool     status);
+
+bool     vortex_color_log_is_enabled ();
+
+void     vortex_color_log_enable     (bool     status);
+
+void     vortex_writer_data_free     (VortexWriterData * writer_data);
+
+/**
+ * @brief Allowed items to use for \ref vortex_conf_get.
+ */
+typedef enum {
+	/** 
+	 * @brief Gets/sets current soft limit to be used by the library,
+	 * regarding the number of connections handled. Soft limit
+	 * means it is can be moved to hard limit.
+	 *
+	 * To configure this value, use the integer parameter at \ref vortex_conf_set. Example:
+	 * \code
+	 * vortex_conf_set (VORTEX_SOFT_SOCK_LIMIT, 4096, NULL);
+	 * \endcode
+	 */
+	VORTEX_SOFT_SOCK_LIMIT = 1,
+	/** 
+	 * @brief Gets/sets current hard limit to be used by the
+	 * library, regarding the number of connections handled. Hard
+	 * limit means it is not possible to exceed it.
+	 *
+	 * To configure this value, use the integer parameter at \ref vortex_conf_set. Example:
+	 * \code
+	 * vortex_conf_set (VORTEX_HARD_SOCK_LIMIT, 4096, NULL);
+	 * \endcode
+	 */
+	VORTEX_HARD_SOCK_LIMIT = 2,
+	/** 
+	 * @brief Gets/sets current backlog configuration for listener
+	 * connections.
+	 *
+	 * Once a listener is activated, the backlog is the number of
+	 * complete connections (with the finished tcp three-way
+	 * handshake), that are ready to be accepted by the
+	 * application. The default value is 5.
+	 *
+	 * Once a listener is activated, and its backlog is
+	 * configured, it can't be changed. In the case you configure
+	 * this value, you must set it (\ref vortex_conf_set) after
+	 * calling to the family of functions to create vortex
+	 * listeners (\ref vortex_listener_new).
+	 *
+	 * To configure this value, use the integer parameter at \ref vortex_conf_set. Example:
+	 * \code
+	 * vortex_conf_set (VORTEX_LISTENER_BACKLOG, 64, NULL);
+	 * \endcode
+	 */
+	VORTEX_LISTENER_BACKLOG = 3,
+	/** 
+	 * @brief By default, vortex will allow the application layer
+	 * to request a channel creation using a profile which wasn't
+	 * adviced by the remote peer. Though it could be not
+	 * required, some BEEP peers may want to hide some profiles
+	 * until some condition is meet. 
+	 * 
+	 * Because a new BEEP &lt;greeting&gt; can't be sent advising new
+	 * profiles supported once those conditions are meet, it is
+	 * required to allow creating channels under profiles that
+	 * aren't adviced by the remote peer at the first &lt;greetings&gt;
+	 * exchange.
+	 * 
+	 * This is mainly used by Turbulence BEEP application server
+	 * for its profile path support, which allows to design a policy
+	 * to be follow while creating channels, selecting some
+	 * profiles under some conditions.
+	 *
+	 * By default, the value configured is false, that is, allows
+	 * to create channels under profiles even not adviced.
+	 */
+	VORTEX_ENFORCE_PROFILES_SUPPORTED = 4,
+} VortexConfItem;
+
+bool      vortex_conf_get             (VortexConfItem   item, 
+				       int            * value);
+
+bool      vortex_conf_set             (VortexConfItem   item, 
+				       int              value, 
+				       char           * str_value);
+
+/*
+ * @internal Debug levels to be used with \ref _vortex_log, which is used
+ * through vortex_log macro.
+ * 
+ * @param domain Domain that is registering a log.
+ *
+ * @param level Log level that is being registered.
+ *
+ * @param message Message that is being registered.
+ */
+typedef enum {
+	/** 
+	 * @internal Log a message as a debug message.
+	 */
+	VORTEX_LEVEL_DEBUG,
+	/** 
+	 * @internal Log a warning message.
+	 */
+	VORTEX_LEVEL_WARNING,
+	/** 
+	 * @internal Log a critical message.
+	 */
+	VORTEX_LEVEL_CRITICAL 
+} VortexDebugLevel;
+
+void     _vortex_log                 (const       char * domain, 
+				      VortexDebugLevel   level, 
+				      const char       * message, 
+				      ...);
+
+void     _vortex_log2                (const       char * domain, 
+				      VortexDebugLevel   level, 
+				      const char       * message, 
+				      ...);
+
+#if defined(__COMPILING_VORTEX__) && defined(__GNUC__)
+/* makes gcc happy, by prototyping functions which aren't exported
+ * while compiling with -ansi. Really uggly hack, please report
+ * any idea to solve this issue. */
+int  setenv  (const char *name, const char *value, int overwrite);
+void unsetenv(const char *name);
+#endif
+
+END_C_DECLS
+
+/* @} */
+#endif

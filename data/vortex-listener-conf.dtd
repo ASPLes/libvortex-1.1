@@ -1,0 +1,8 @@
+<!ELEMENT vortex-listener (listener+)>
+
+<!ELEMENT listener (hostname, port)>
+
+<!ELEMENT hostname (#PCDATA)>
+
+<!ELEMENT port (#PCDATA)>
+

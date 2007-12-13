@@ -1,0 +1,16 @@
+<xml-rpc-interface>
+  <name>test</name>
+  <service>
+    <name>get_the_string</name>
+    <returns>string</returns>
+    <params>
+      <!-- not parameters -->
+    </params>
+    <code>
+      <content><![CDATA[
+	/* return a test string (static version) */
+	return g_strdup ("This is a test");
+]]></content>
+ </code>
+  </service>
+</xml-rpc-interface>

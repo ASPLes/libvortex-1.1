@@ -1,0 +1,95 @@
+/*
+ *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
+ *  Copyright (C) 2005 Advanced Software Production Line, S.L.
+ *
+ *  This program is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public License
+ *  as published by the Free Software Foundation; either version 2.1 of
+ *  the License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the  
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this program; if not, write to the Free
+ *  Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+ *  02111-1307 USA
+ *  
+ *  You may find a copy of the license under this software is released
+ *  at COPYING file. This is LGPL software: you are welcome to
+ *  develop proprietary applications using this library without any
+ *  royalty or fee but returning back any change, improvement or
+ *  addition in the form of source code, project image, documentation
+ *  patches, etc. 
+ *
+ *  For commercial support on build BEEP enabled solutions contact us:
+ *          
+ *      Postal address:
+ *         Advanced Software Production Line, S.L.
+ *         C/ Dr. Michavila Nº 14
+ *         Coslada 28820 Madrid
+ *         Spain
+ *
+ *      Email address:
+ *         info@aspl.es - http://fact.aspl.es
+ */
+#ifndef __VORTEX_LISTENER_H__
+#define __VORTEX_LISTENER_H__
+
+#include <vortex.h>
+
+/**
+ * \addtogroup vortex_listener
+ * @{
+ */
+
+VortexConnection * vortex_listener_new             (const char  * host, 
+						    const char  * port, 
+						    VortexListenerReady on_ready, 
+						    axlPointer user_data);
+
+VortexConnection * vortex_listener_new2            (const char  * host,
+						    int           port,
+						    VortexListenerReady on_ready, 
+						    axlPointer user_data);
+
+VortexConnection * vortex_listener_new_full        (const char  * host,
+						    const char  * port,
+						    VortexListenerReadyFull on_ready_full, 
+						    axlPointer user_data);
+
+void          vortex_listener_accept_connections   (VortexCtx        * ctx,
+						    int                server_socket,
+						    VortexConnection * listener);
+
+void          vortex_listener_accept_connection    (VortexConnection * connection, 
+						    bool               send_greetings);
+
+void          __vortex_listener_second_step_accept (VortexFrame * frame, 
+						    VortexConnection * connection);
+void          vortex_listener_wait                 ();
+
+void          vortex_listener_unlock               ();
+
+void          vortex_listener_init                 (VortexCtx * ctx);
+
+void          vortex_listener_cleanup              (VortexCtx * ctx);
+
+bool          vortex_listener_parse_conf_and_start ();
+
+void          vortex_listener_set_default_realm (const char  * realm);
+
+const char  * vortex_listener_get_default_realm ();
+
+void          vortex_listener_set_on_connection_accepted (VortexOnAcceptedConnection on_accepted, 
+							  axlPointer data);
+
+void          vortex_listener_shutdown (VortexConnection * listener,
+					bool               also_created_conns);
+
+
+/* @} */
+
+#endif

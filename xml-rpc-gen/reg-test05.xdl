@@ -1,0 +1,51 @@
+<xml-rpc-interface>
+  <!-- component name declaration -->
+  <name>test</name>
+
+  <!-- struct declaration -->
+  <struct>
+    <name>Values</name>
+    <member>
+      <name>count</name>
+      <type>int</type>
+    </member>
+    <member>
+      <name>fraction</name>
+      <type>double</type>
+    </member>
+    <member>
+      <name>status</name>
+      <type>boolean</type>
+    </member>
+  </struct>
+
+  <!-- Values get_struct (Values a, Values b);              -->
+  <!-- post: Returns the sum of the provided struct values  -->
+  <service>
+    <name>get_struct</name>
+    <returns>Values</returns>
+    <params>
+     <param>
+       <name>a</name>
+       <type>Values</type>
+     </param>
+     <param>
+       <name>b</name>
+       <type>Values</type>
+     </param>
+    </params>
+    <code>
+      <content><![CDATA[
+	Values * result;
+
+	/* create the value to be returned */
+	result = test_values_new (a->count    +  b->count, 
+				  a->fraction +  b->fraction, 
+				  a->status   || b->status);
+	
+	/* return the result provided */
+	return result;
+]]></content>
+ </code>
+  </service>
+</xml-rpc-interface>

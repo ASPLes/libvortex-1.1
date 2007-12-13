@@ -1,0 +1,27 @@
+/** 
+ * Simple test that declares a struct Values, with some basic members
+ * and use it to invoke a service that receives two parameters,
+ * returning a newly allocated struct.
+ */
+xml-rpc interface test {
+
+	/* declare the struct Values */
+	struct Values {
+		int     count;
+		double  fraction;
+		boolean status;
+	}
+
+	/* declare the service using previous declaration */
+	Values get_struct (Values a, Values b) {
+		Values * result;
+
+		/* create the value to be returned */
+		result = test_values_new (a->count    +  b->count, 
+					  a->fraction +  b->fraction, 
+					  a->status   || b->status);
+		
+		/* return the result provided */
+		return result;
+	}
+}

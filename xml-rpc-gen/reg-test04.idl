@@ -1,0 +1,8 @@
+/* test double support, invoking a service with two double parameters,
+ * and returning as a result another double */
+xml-rpc interface test {
+	double get_double_sum (double a, double b) {
+		/* return the sum */
+		return a + b;
+	}
+}

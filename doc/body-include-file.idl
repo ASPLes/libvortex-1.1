@@ -1,0 +1,12 @@
+/* include example */
+xml-rpc interface test {
+	/* add two integers */
+	int sum (int a, int b) {
+
+		/* sum values received */
+		return do_sum_operation (a, b);
+
+	} options {
+		include on body "do_sum_operation.c";
+	}
+}

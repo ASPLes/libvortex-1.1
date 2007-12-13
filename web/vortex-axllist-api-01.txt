@@ -1,0 +1,74 @@
+
+       #####################################
+       ####     Change notification     ####
+       #####################################
+
+    Change Id: vortex-axllist-api-01
+ Project name: Vortex Library
+  Included in: already included and shipped with next stable release 1.0.3
+       Status: NOTIFY
+       Author: Francis Brosnan Blázquez
+
+Motivation
+~~~~~~~~~~
+
+Due to the ongoing work to remove the GLib dependency, previous
+releases was using the GList type as a fundation to return a list of
+items. This has been replaced with axlList.
+
+The axlList type definition, comes from the Axl Library, and includes
+a memory efficient implementation to avoid frequent allocation
+patterns which are resolved into really few.
+
+Change Description
+~~~~~~~~~~~~~~~~~~
+
+Any function returning or receiving a (GList *) type, now does the
+same but with axlList. 
+
+For all functions that have been updated, are now included a brief
+example of code showing how to use the list. 
+
+The following are the set of functions that have been updated:
+
+  - vortex_connection_get_remote_profiles
+  - vortex_profiles_get_actual_list
+
+Solution to incompatibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Previously, with both functions, it was required to done something
+similar to the following to iterate over all elements found in the
+returned list:
+
+  list = vortex_connection_get_remote_profiles (connection);
+  list = g_list_first (list)
+  for (; list; g_list_next (list)) {
+        printf ("uri found=%s\n", (char *)list->data);
+  } 
+
+Now, the same is done easily with:
+
+  iterator = 0;
+  list     = vortex_connection_get_remote_profiles (connection);
+  while (iterator < axl_list_length (list)) {
+        printf ("uri found=%s\n", axl_list_get_nth (list, iterator));
+	iterator++;	
+  } 
+  // now it is required to remove the result, allowing to have 
+  // an independent copy
+  axl_list_free (list);
+
+In both cases, the returned list is required to be deallocated.
+  
+
+References
+~~~~~~~~~~
+[1] Project link: 
+    http://vortex.aspl.es
+
+[2] Change notification published by the project:
+    http://vortex.aspl.es/doc.html
+
+[3] Change notification definition
+    http://www.aspl.es/change/change-notification.txt

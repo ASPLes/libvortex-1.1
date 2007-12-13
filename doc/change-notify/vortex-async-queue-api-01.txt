@@ -1,0 +1,59 @@
+
+       #####################################
+       ####     Change notification     ####
+       #####################################
+
+    Change Id: vortex-async-queue-api-01
+ Project name: Vortex Library
+  Included in: already included and to be shipped with next stable
+               release 1.0.3
+       Status: NOTIFY
+       Author: Francis Brosnan Blázquez
+
+Motivation
+~~~~~~~~~~
+
+Due to the ongoing work to remove the GLib dependency, previous
+releases were using the GAsyncQueue as a way to communicate several
+threads and as synchronization mechanism. This has been replaced with
+VortexAsyncQueue type.
+
+Change Description
+~~~~~~~~~~~~~~~~~~
+
+Any function returning or receiving a (GAsyncQueue *) type now does
+exactly the same function but based on VortexAsyncQueue. There is a
+perfect match between the space of functions defined by
+g_async_queue_* to vortex_async_queue_*, with one exception:
+g_async_queue_timed_pop.
+
+For all functions that have been updated, are now included a brief
+example of code showing how to use the list. 
+
+The following is only one function from the public API that has been
+updated:
+
+  - vortex_channel_get_reply
+
+Solution to incompatibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You have to do two replace operations:
+
+  - "GAsyncQueue" by "VortexAsyncQueue"
+  - "g_async_queue" by "vortex_async_queue"
+
+There is only one exception:
+
+  - "g_async_queue_timed_pop" is replaced by "vortex_async_queue_timedpop"
+
+References
+~~~~~~~~~~
+[1] Project link: 
+    http://vortex.aspl.es
+
+[2] Change notification published by the project:
+    http://vortex.aspl.es/doc.html
+
+[3] Change notification definition
+    http://www.aspl.es/change/change-notification.txt

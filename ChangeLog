@@ -1,0 +1,626 @@
+------------------------------------------------------------------------
+r1502 | acinom | 2005-06-26 22:10:09 +0200 (dom, 26 jun 2005) | 4 lines
+
+libvortex:
+* adding more documentation to vortex_hash and vortex_frame_fractory modules.
+(Actually converting documentation from gtk-doc to doxygen format).
+
+------------------------------------------------------------------------
+r1501 | acinom | 2005-06-26 21:05:56 +0200 (dom, 26 jun 2005) | 8 lines
+
+libvortex:
+* mostly documentation transformed into doxygen format.
+* fixing bug on vortex_listener_new which was making to segfault on exit
+if a error happen.
+* adding support for free_on_fail behaviour described at vortex_connection_is_ok
+documentation.
+
+
+------------------------------------------------------------------------
+r1500 | acinom | 2005-06-26 21:02:47 +0200 (dom, 26 jun 2005) | 4 lines
+
+libvortex:
+* uploading new test programs (vortex-simple-client and vortex-simple-listener) included
+and explained at vortex documentation.
+
+------------------------------------------------------------------------
+r1499 | acinom | 2005-06-26 21:01:49 +0200 (dom, 26 jun 2005) | 4 lines
+
+af-arch,libvortex:
+* making both project to be able to disable/enable readline dependency in order
+to build a libvortex with vortex-client tool support or not.
+
+------------------------------------------------------------------------
+r1498 | acinom | 2005-06-24 19:10:00 +0200 (vie, 24 jun 2005) | 3 lines
+
+libvortex:
+* updating Vortex Library documentation abou profiles and how to use them.
+
+------------------------------------------------------------------------
+r1497 | acinom | 2005-06-24 19:09:25 +0200 (vie, 24 jun 2005) | 4 lines
+
+libvortex:
+* adding a new exmaple vortex-simple-listener.c. 
+* updating Makefile.am and vortex-listener.c
+
+------------------------------------------------------------------------
+r1496 | acinom | 2005-06-24 16:55:57 +0200 (vie, 24 jun 2005) | 6 lines
+
+libvortex:
+* fixing a bug on vortex_frame_get_next function which was causing to iterate
+over and over again when a remote peer have sent a frame fragment and then
+closed the connection not properly.
+* Vortex Version still remains 0.8.3
+
+------------------------------------------------------------------------
+r1494 | acinom | 2005-06-24 13:02:35 +0200 (vie, 24 jun 2005) | 10 lines
+
+libvortex:
+* removing funny bugs causing to abort Vortex Library on close channel 0. 
+This bug have been exposed due to Windows platform slightly differences
+on thread planner implementation which gives priority to the main thread
+running vortex_channel_close agaisnt the vortex internal thread which is
+dispatch the last frame receive causing the first one to free a mutex
+not yet unlocked.
+* This version still remains 0.8.3.
+
+
+------------------------------------------------------------------------
+r1493 | acinom | 2005-06-24 11:32:29 +0200 (vie, 24 jun 2005) | 9 lines
+
+libvortex:
+* adding new function to Vortex Writer api: vortex_writer_data_free.
+* improved Vortex Writer loop to decrease Vortex Sequencer Sem on connection unfering
+so frames pending are not considered.
+* making Vortex Writer loop to wait first on Vortex Sequencer Sem and then on
+select call.
+* Updating libvortex version to 0.8.3.
+
+
+------------------------------------------------------------------------
+r1492 | acinom | 2005-06-24 11:22:26 +0200 (vie, 24 jun 2005) | 6 lines
+
+libvortex:
+* adding new function to Vortex Channel api: vortex_channel_queue_length. It allow
+to get current pending frames to be sent for a given channel.
+* improved vortex_channel_free to also free wait replies data and vortex writer data
+on those conditions where not fully deallocated.
+
+------------------------------------------------------------------------
+r1491 | acinom | 2005-06-24 11:20:19 +0200 (vie, 24 jun 2005) | 7 lines
+
+libvortex:
+* adding vortex_connection_get_pending_msgs function. This function allows to get current
+frames pending to be sent status. At this moment is used by Vortex Writer to normalize
+its Vortex Sequencer Sem for those message signaled but not sent because the connection
+is going to be unrefered.
+
+
+------------------------------------------------------------------------
+r1490 | acinom | 2005-06-23 15:49:13 +0200 (jue, 23 jun 2005) | 4 lines
+
+af-arch:
+* making get-version.pl script to update VERSION file for all modules
+everytime it is executed.
+
+------------------------------------------------------------------------
+r1488 | acinom | 2005-06-23 15:44:50 +0200 (jue, 23 jun 2005) | 9 lines
+
+libvortex:
+* fixing a bug on vortex writer which was making to loop consuming
+all CPU under some circustances trying to send frames but over a connection
+which was broken. This was causing to make vortex writer to keep on
+iterating searching for the connection the vortex sequencer have
+signaled having pending frames.
+* adding more documention for internal vortex writer functionality.
+* updating version to 0.8.2
+
+------------------------------------------------------------------------
+r1483 | acinom | 2005-06-22 14:06:53 +0200 (mié, 22 jun 2005) | 5 lines
+
+libvortex:
+* adding more debug info to second level invocation for 
+frame received.
+* fixing bug on vortex_frame_get_raw which was causing to
+show seqno and size swaped.
+------------------------------------------------------------------------
+r1480 | acinom | 2005-06-19 21:27:52 +0200 (dom, 19 jun 2005) | 7 lines
+
+libvortex:
+* removing manual.txt from doc directory so information have been integrated
+into vortex source code. Doxygen will extract into into a full manual.
+* updating vortex-status.txt and update-vortex-status.pl updater program.
+* updating documentation for vortex main module, vortex channel and vortex
+connection modules.
+
+------------------------------------------------------------------------
+r1479 | acinom | 2005-06-19 11:56:04 +0200 (dom, 19 jun 2005) | 5 lines
+
+libvortex:
+* adding rfc3080 and rfc3081 documents to vortex doc repository. 
+* implemented automatic system to update vortex library status completion. 
+* uploading initial version for vortex documentation based on doxygen.
+
+------------------------------------------------------------------------
+r1477 | acinom | 2005-06-18 13:39:28 +0200 (sáb, 18 jun 2005) | 3 lines
+
+libvortex:
+* uploading project logos.
+
+------------------------------------------------------------------------
+r1476 | acinom | 2005-06-18 13:27:21 +0200 (sáb, 18 jun 2005) | 4 lines
+
+libvortex:
+* ensuring all source files for vortex library are released under the term
+of the LGPL license.
+
+------------------------------------------------------------------------
+r1475 | acinom | 2005-06-18 13:17:34 +0200 (sáb, 18 jun 2005) | 4 lines
+
+libvortex:
+* adding configure files so libvortex can be compiled separeted from af-arch
+trunk.
+
+------------------------------------------------------------------------
+r1473 | acinom | 2005-06-16 16:24:30 +0200 (jue, 16 jun 2005) | 4 lines
+
+libvortex:
+* fixing a funny bug which was causing to generated more fragment flags 
+on messages with message size equal to window size.
+
+------------------------------------------------------------------------
+r1458 | acinom | 2005-06-10 14:10:08 +0200 (vie, 10 jun 2005) | 2 lines
+
+libvortex:
+* updating Makefile.win
+------------------------------------------------------------------------
+r1434 | acinom | 2005-06-03 13:58:51 +0200 (vie, 03 jun 2005) | 2 lines
+
+libvortex:
+* uploading last changes to Makefile.win
+------------------------------------------------------------------------
+r1387 | acinom | 2005-05-28 18:14:04 +0200 (sáb, 28 may 2005) | 7 lines
+
+af-arch:
+* Making all modules version to be controled by modules-version.txt files
+and get-version.pl. Now the configure.ac get access to modules version
+throught the previous script and set globally modules version.
+* Making all modules to use exported modules version to configure its
+source code and pkg-config files.
+
+------------------------------------------------------------------------
+r1359 | acinom | 2005-05-26 18:31:01 +0200 (jue, 26 may 2005) | 4 lines
+
+libvortex[stable]:
+* modifying vortex reader to wakeup every 500000 microseconds to watch for new connections or listeners.
+
+
+------------------------------------------------------------------------
+r1358 | acinom | 2005-05-26 18:27:16 +0200 (jue, 26 may 2005) | 7 lines
+
+libvortex:
+* adding support to vortex to control how many threads are created inside the
+vortex thread pool to thread async notification by using an environment var
+VORTEX_THREADS. At this point the vortex library initialize the system using
+5 as value of thread pool. But, that value can be tweaked by using previous
+var.
+
+------------------------------------------------------------------------
+r1357 | acinom | 2005-05-26 13:48:42 +0200 (jue, 26 may 2005) | 3 lines
+
+libvortex[stable]:
+* fixing some incompatibility code due to win32 porting.
+
+------------------------------------------------------------------------
+r1356 | acinom | 2005-05-26 13:15:33 +0200 (jue, 26 may 2005) | 2 lines
+
+libvortex:
+* adding ported test and Makefile.win to get them compiled
+------------------------------------------------------------------------
+r1355 | acinom | 2005-05-26 13:14:44 +0200 (jue, 26 may 2005) | 2 lines
+
+libvortex:
+* updating channel dtd.
+------------------------------------------------------------------------
+r1354 | acinom | 2005-05-26 13:14:13 +0200 (jue, 26 may 2005) | 3 lines
+
+libvortex[stable]:
+* Uploading first working version runing on Microsoft Windows. This port have been done by using mingw tools
+which allows to produce native binaries.
+------------------------------------------------------------------------
+r1353 | acinom | 2005-05-26 13:13:23 +0200 (jue, 26 may 2005) | 5 lines
+
+libvortex:
+* Porting to Microsoft Windows libvortex library.
+* Adding new modules vortex_win32 and vortex_errno to manage differences between windows platform
+and GNU/Linux platform. vortex_errno module allows to get message error from system.
+* Adding Makefile.win to get vortex compiled on windows.
+------------------------------------------------------------------------
+r1352 | acinom | 2005-05-26 11:00:18 +0200 (jue, 26 may 2005) | 11 lines
+
+libvortex[stable]:
+* changing accept connection model. New accept connection model have been
+splitted into 2 steps which allows to avoid DOS an increase the perfomance
+on the vortex reader process.
+* adding new function vortex_greetings_is_reply_ok to allow checking
+greetings reply inside frame (change needed by accept connection model).
+* adding more checks to vortex sequencer process to test the channel integrity
+before sending more frames.
+* adding more logs to vortex_channel_free function.
+* modifiying vortex reader process to conform new accept connection model.
+
+------------------------------------------------------------------------
+r1351 | acinom | 2005-05-24 18:01:22 +0200 (mar, 24 may 2005) | 3 lines
+
+libvortex:
+* adding automatic backtrace showing support on segmentation fault and sig abort.
+
+------------------------------------------------------------------------
+r1322 | acinom | 2005-05-04 17:33:25 +0200 (mié, 04 may 2005) | 5 lines
+
+libvortex:
+* uploading fully working version with support to channel pools which actually 
+increase throutput up to 3 times comparing previous releases which leaves the channel
+creation and closing to application space.
+
+------------------------------------------------------------------------
+r1320 | acinom | 2005-05-02 14:48:48 +0200 (lun, 02 may 2005) | 3 lines
+
+libvortex:
+* updating makefiles and main modules to include new vortex channel pool module.
+
+------------------------------------------------------------------------
+r1319 | acinom | 2005-05-02 14:48:18 +0200 (lun, 02 may 2005) | 4 lines
+
+libvortex:
+* adding new module vortex_channel_pool to allow to create a pool of channels ready
+to be used reducing the perfomance impact while creating and closing channels.
+
+------------------------------------------------------------------------
+r1318 | acinom | 2005-05-02 13:42:22 +0200 (lun, 02 may 2005) | 3 lines
+
+libvortex:
+* adding again logs to vortex_channel_free
+
+------------------------------------------------------------------------
+r1310 | acinom | 2005-04-29 16:29:55 +0200 (vie, 29 abr 2005) | 3 lines
+
+libvortex:
+* removing some console logs and adding more checkings on vortex_channel_queue_frame
+
+------------------------------------------------------------------------
+r1309 | acinom | 2005-04-28 21:08:21 +0200 (jue, 28 abr 2005) | 3 lines
+
+libvortex:
+* adding support to vortex_thread_pool to get actual created threads.
+
+------------------------------------------------------------------------
+r1303 | acinom | 2005-04-28 17:09:55 +0200 (jue, 28 abr 2005) | 3 lines
+
+libvortex:
+* reducing vortex thread pool default init to 5.
+
+------------------------------------------------------------------------
+r1302 | acinom | 2005-04-28 17:07:14 +0200 (jue, 28 abr 2005) | 3 lines
+
+libvortex:
+* uploading new version of vortex_listener using vortex thread pool
+
+------------------------------------------------------------------------
+r1301 | acinom | 2005-04-28 17:06:50 +0200 (jue, 28 abr 2005) | 3 lines
+
+libvortex:
+* modifying vortex library to use the new module vortex_thread_pool.
+
+------------------------------------------------------------------------
+r1300 | acinom | 2005-04-28 16:59:56 +0200 (jue, 28 abr 2005) | 4 lines
+
+libvortex:
+* adding support for thread pool. All receive request, new and close channel request
+and connection creation are runned inside pre-created threads.
+
+------------------------------------------------------------------------
+r1294 | acinom | 2005-04-27 15:36:56 +0200 (mié, 27 abr 2005) | 5 lines
+
+libvortex:
+* fixing a bug that was causing to free a mutex which sometimes may be blocked due
+to (some bloody strange) thread behaviour to give priority to threads which are waiting on
+async queues.
+
+------------------------------------------------------------------------
+r1293 | acinom | 2005-04-27 12:39:40 +0200 (mié, 27 abr 2005) | 3 lines
+
+libvortex:
+* bug on vortex_channel_common_send.
+
+------------------------------------------------------------------------
+r1292 | acinom | 2005-04-27 12:31:51 +0200 (mié, 27 abr 2005) | 3 lines
+
+libvortex:
+* chaging wait for reply api and implementation (kb design).
+
+------------------------------------------------------------------------
+r1291 | acinom | 2005-04-27 10:39:41 +0200 (mié, 27 abr 2005) | 3 lines
+
+libvortex:
+* working on close process (race conditions 2)
+
+------------------------------------------------------------------------
+r1290 | acinom | 2005-04-27 10:36:13 +0200 (mié, 27 abr 2005) | 3 lines
+
+libvortex:
+* working on close process.
+
+------------------------------------------------------------------------
+r1289 | acinom | 2005-04-27 10:30:09 +0200 (mié, 27 abr 2005) | 3 lines
+
+libvortex:
+* improving channel close process
+
+------------------------------------------------------------------------
+r1288 | acinom | 2005-04-26 18:20:05 +0200 (mar, 26 abr 2005) | 5 lines
+
+libvortex:
+* adding support to vortex_channel_close to wait until all message replies are
+received.
+
+
+------------------------------------------------------------------------
+r1287 | acinom | 2005-04-26 17:15:10 +0200 (mar, 26 abr 2005) | 3 lines
+
+libvortex:
+* debug information to close process.
+
+------------------------------------------------------------------------
+r1286 | acinom | 2005-04-26 17:10:38 +0200 (mar, 26 abr 2005) | 3 lines
+
+libvortex:
+* adding debug info to module vortex_reader y vortex_writer.
+
+------------------------------------------------------------------------
+r1285 | acinom | 2005-04-26 17:09:58 +0200 (mar, 26 abr 2005) | 3 lines
+
+libvortex:
+* adding new function to module vortex semaphore: vortex_semaphore_get_status.
+
+------------------------------------------------------------------------
+r1284 | acinom | 2005-04-26 17:09:13 +0200 (mar, 26 abr 2005) | 3 lines
+
+libvortex:
+* removing restriction from vortex_channel_get_number. 
+
+------------------------------------------------------------------------
+r1283 | acinom | 2005-04-26 17:08:25 +0200 (mar, 26 abr 2005) | 5 lines
+
+libvortex:
+* adding more debug information to vortex_connection.
+* added support to vortex connection to create an unique identifier for each connection
+
+
+------------------------------------------------------------------------
+r1273 | acinom | 2005-04-26 13:05:45 +0200 (mar, 26 abr 2005) | 3 lines
+
+libvortex:
+* making vortex listener to unref the connection been created if an error occur.
+
+------------------------------------------------------------------------
+r1272 | acinom | 2005-04-26 13:05:02 +0200 (mar, 26 abr 2005) | 5 lines
+
+libvortex:
+* adding support to vortex profiles frame receive handler invocation (the fist level
+invocation) to allow programer to close channels and connetions during the handler
+execution. 
+
+------------------------------------------------------------------------
+r1271 | acinom | 2005-04-26 13:03:53 +0200 (mar, 26 abr 2005) | 3 lines
+
+libvortex:
+* removing unuseful debug log from vortex writer process.
+
+------------------------------------------------------------------------
+r1270 | acinom | 2005-04-26 13:03:07 +0200 (mar, 26 abr 2005) | 7 lines
+
+libvortex:
+* remove some mutex lock/unlock not really needed at vortex_reader.
+* adding support to vortex reader process to flag channels which receive a reply
+message to notify vortex_channel_close internals to be able to not close a channel which
+still is processing the last frame received.
+
+
+------------------------------------------------------------------------
+r1269 | acinom | 2005-04-26 13:00:47 +0200 (mar, 26 abr 2005) | 4 lines
+
+libvortex:
+* adding support to vortex_frame_get_next to be able to detect when a connection have been
+closed properly.
+
+------------------------------------------------------------------------
+r1268 | acinom | 2005-04-26 13:00:00 +0200 (mar, 26 abr 2005) | 14 lines
+
+libvortex:
+* adding support to vortex library to manage console debug log throught several environment
+variables pretty much like af-arch does (actually is the same code ;-)
+  - Log output is now enable/disabled by using VORTEX_DEBUG=1
+  - In order to have log debug with color VORTEX_DEBUG_COLOR=1 must be used
+  - To filter which modules to show by the log manager VORTEX_DEBUG_FILTER="expresion" 
+    must be used. Example: VORTEX_DEBUG_FILTER="vortex-reader *connection" will show
+    all log debug from vortex-reader module and all module whose name match the expresion
+    "*connection"
+  - To filter log debug by it level (ie: debug, critical, error, warning) VORTEX_DEBUG_CLASS
+    must be used. Example: VORTEX_DEBUG_CLASS="critical error" only error and critical will
+    be showed.
+  - All this variables can be merged to get better results.
+
+------------------------------------------------------------------------
+r1267 | acinom | 2005-04-26 12:53:14 +0200 (mar, 26 abr 2005) | 15 lines
+
+libvortex:
+* freeing all resources not needed on channel creation error at vortex_channel_new.
+* fixing a bug on __vortex_channel_send_msg_common (the common message sending function)
+which was causing race conditions. First queue data to be sent and the unlock was no
+good.
+* making vortex_channel_close to flag the connection as "being_closed" while trying to
+close the channel 0. This avoids vortex reader complains about not properly closed connection
+detected.
+* adding support to frame received handler to allow programers to close a channel or a connection
+during the execution of this handler. 
+* fixing a bug which was causing a dead-lock while received a message reply throught the
+vortex_channel_wait_reply api and then receiving from remote peer a close message notification.
+The problem was causing by not setting reply_processed on this type of delivering.
+
+
+------------------------------------------------------------------------
+r1266 | acinom | 2005-04-26 12:43:57 +0200 (mar, 26 abr 2005) | 8 lines
+
+libvortex:
+* fixing a bug on vortex_connection_new which was causing to register newly created connection
+inside the vortex writer twice.
+* extending vortex connection api to manage reference counting in order to be able to track
+which modules have increased or decreased reference counting.
+* fixing a bug on vortex_connection_set_data. This function was lock a mutex (not needed) causing
+a dead-lock inside vortex.
+
+------------------------------------------------------------------------
+r1265 | acinom | 2005-04-26 12:38:00 +0200 (mar, 26 abr 2005) | 3 lines
+
+libvortex:
+* fixing a bug on vortex-client which was causing to free a semaphore on error replies.
+
+------------------------------------------------------------------------
+r1264 | acinom | 2005-04-26 11:33:31 +0200 (mar, 26 abr 2005) | 3 lines
+
+libvortex:
+* adding "quit" command to vortex client tool
+
+------------------------------------------------------------------------
+r1263 | acinom | 2005-04-23 14:43:59 +0200 (sáb, 23 abr 2005) | 3 lines
+
+libvortex:
+* improving vortex-client close command.
+
+------------------------------------------------------------------------
+r1262 | acinom | 2005-04-23 14:43:23 +0200 (sáb, 23 abr 2005) | 3 lines
+
+libvortex:
+* modifying vortex connection module to return actual status for a close connection.
+
+------------------------------------------------------------------------
+r1261 | acinom | 2005-04-23 14:42:48 +0200 (sáb, 23 abr 2005) | 7 lines
+
+libvortex:
+* adding support to vortex channel to close the channel 0.
+* adding new api function vortex_channel_set_data and vortex_channel_get_data to allow
+storing arbitrary data into a given channel.
+* adding support to vortex channel api to be able to wait for a message to be
+sent.
+
+------------------------------------------------------------------------
+r1260 | acinom | 2005-04-23 14:41:07 +0200 (sáb, 23 abr 2005) | 4 lines
+
+libvortex:
+* fixing bug on vortex_frame_factory module which was causing to not detect while a message
+is not fully sent.
+
+------------------------------------------------------------------------
+r1259 | acinom | 2005-04-23 14:40:16 +0200 (sáb, 23 abr 2005) | 3 lines
+
+libvortex:
+* fixing some debug messages on vortex_listener module.
+
+------------------------------------------------------------------------
+r1258 | acinom | 2005-04-23 14:39:45 +0200 (sáb, 23 abr 2005) | 5 lines
+
+libvortex:
+* improved error handler and added support to be able to close a channel or a
+connection during the frame receiving handler (first level) at profiles modules.
+
+
+------------------------------------------------------------------------
+r1257 | acinom | 2005-04-23 14:38:33 +0200 (sáb, 23 abr 2005) | 4 lines
+
+libvortex:
+* adding new type VortexWriterData used to communicate vortex sequencer with
+vortex writer.
+
+------------------------------------------------------------------------
+r1256 | acinom | 2005-04-23 14:37:43 +0200 (sáb, 23 abr 2005) | 5 lines
+
+libvortex:
+* adding support to vortex_connection to make a general connection close which issue
+all channel close operation for those channels already opened and softly close the
+session. 
+
+------------------------------------------------------------------------
+r1255 | acinom | 2005-04-23 14:35:58 +0200 (sáb, 23 abr 2005) | 4 lines
+
+libvortex:
+* changing vortex sequencer to vortex writer packet exchange due to enable vortex internal
+to be notified on message reply sent.
+
+------------------------------------------------------------------------
+r1254 | acinom | 2005-04-23 14:34:43 +0200 (sáb, 23 abr 2005) | 3 lines
+
+libvortex:
+* updating greetings receiving handling
+
+------------------------------------------------------------------------
+r1252 | acinom | 2005-04-22 15:50:29 +0200 (vie, 22 abr 2005) | 3 lines
+
+libvortex:
+* uploading some minor changes.
+
+------------------------------------------------------------------------
+r1251 | acinom | 2005-04-22 15:49:59 +0200 (vie, 22 abr 2005) | 5 lines
+
+libvortex:
+* adding support to vortex_reader to flag channels which have received frames
+replies. This is used to synchronize channel close process with frame replies
+reception.
+
+------------------------------------------------------------------------
+r1250 | acinom | 2005-04-22 15:48:08 +0200 (vie, 22 abr 2005) | 5 lines
+
+libvortex:
+* fixing a bug on vortex_channel while closing a channel. There was a race condition
+while closing the message and all replies for message sent. Under some circumstances
+vortex library frees the channel with frames without been delivered.
+
+------------------------------------------------------------------------
+r1249 | acinom | 2005-04-22 15:46:01 +0200 (vie, 22 abr 2005) | 3 lines
+
+libvortex:
+* adding some mutex to vortex_connection module function to create critical sections.
+
+------------------------------------------------------------------------
+r1247 | acinom | 2005-04-22 10:35:59 +0200 (vie, 22 abr 2005) | 4 lines
+
+libvortex:
+Changes on libvortex/test/vortex-client.c, libvortex/src/vortex_connection.c
+and libvortex/src/vortex_frame_factory.c to support frame fragment reception.
+
+------------------------------------------------------------------------
+r1245 | acinom | 2005-04-21 20:22:18 +0200 (jue, 21 abr 2005) | 3 lines
+
+libvortex:
+* working for a frame fragment receiving support.
+
+------------------------------------------------------------------------
+r1243 | acinom | 2005-04-21 17:53:15 +0200 (jue, 21 abr 2005) | 3 lines
+
+* fixing bug on vortex_channel_set_previous_frame. A g_return_if_fail was
+disallowing to set to NULL previous frame.
+
+------------------------------------------------------------------------
+r1229 | acinom | 2005-04-21 17:12:26 +0200 (jue, 21 abr 2005) | 10 lines
+
+Really proud and happy to write the next change log lines. 
+* Uploading first fully working version of our RFC 3080/RFC3081 implementation,
+also known as BEEP Core. This new library is called Vortex and have replaced
+RoadRunner as our tranport library for the af-arch system.
+* This BEEP implementation have fulfilled all requierements defined at the 
+RFC3080 and RFC3081 without implementing sasl and tls profiles. Both profiles
+will be implemented in future releases as they are needed by af-arch security 
+features.
+
+
+------------------------------------------------------------------------

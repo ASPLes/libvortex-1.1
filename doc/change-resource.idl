@@ -1,0 +1,7 @@
+xml-rpc interface test  {
+	
+	[resource="arimetic-operations"];
+	int sum (int a, int b) {
+		return a + b;
+	}
+} 

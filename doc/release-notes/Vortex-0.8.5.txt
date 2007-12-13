@@ -1,0 +1,96 @@
+       ##########################################
+       ## Vortex Library 0.8.5 Stable Release  ##
+       ##########################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 0.8.5 availability: an open source "BEEP Core" protocol
+  implementation written in C and mapped into TCP/IP.
+
+  Vortex Library is a powerful toolkit to write new application
+  protocols and application over the well-defined "BEEP Core" protocol
+  defined at RFC3080/RFC3081. 
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer. 
+
+  Vortex Library is a really stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.sf.net/projects/vortexlibrary - download site.
+
+    - http://fact.aspl.es - Af-Arch homepage where Vortex Library is
+      being developed.
+
+    - http://fact.aspl.es/index.php?id=36 - Vortex Library homepage.
+  
+    - http://fact.aspl.es/index.php?id=18 - Af-Arch documentation
+      section. Inside this section, Vortex Library documentation can be
+      found. 
+
+Changes
+~~~~~~~
+
+  Improved memory used by Vortex Library:
+
+  * making vortex_exit function to be reentrant (several threads can actually
+  execute this function at the same time).
+
+  * making xmlValidDtd to use a stack activated xmlValidCtxt value rather than
+  a heap allocated xmlValidCtxtPtr.
+
+  * making vortex_exit function to release resources allocated for its normal
+  function before exiting: freeing vortex sequencer buffers, freeing vortex
+  dtds and cleaning xml library.
+
+  * fixing several memory leaks on vortex_connection, vortex_channel and vortex
+  dtd modules caused by improper call to xmlParseMemory [libxml2].
+
+  * fixing memory leak on vortex_frame_factory module caused by not freeing 
+  allocated raw frame to be console outputed.
+
+  * adding a new function vortex_log_is_enabled to check when is vortex log
+  to console activated.
+
+  * making vortex_init function to call to libxml initialization and making
+  vortex_dtds module to be initialized only one time. Adding calls to
+  vortex_dtds_cleanups and xmlCleanupParser.
+
+  * fixing memory leak on vortex_frame_free function caused by not calling
+  g_free on content_type attribute.
+ 
+  * making vortex_connection_close more efficient. Connection close
+  for sessions have 0, 1 or n channels are managed in a particular
+  way.
+
+
+About Us
+~~~~~~~~
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distribuited application to manage
+  enterprise process.
+
+  As a result, the Af-Arch project relies on Vortex Library to
+  exchange data between its distribuited nodes. 
+
+  Advanced Software Production Line also provides GNU/Linux support
+  services and consulting on how organization can introduce GNU/Linux
+  inside its process, making other platforms to interact with
+  GNU/Linux. 
+
+  You can reach us:
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library may help you. Enjoy Vortex Library!
+         
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+16th Sep 2005, Madrid (Spain)
+  
+

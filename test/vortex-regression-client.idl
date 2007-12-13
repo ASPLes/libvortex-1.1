@@ -1,0 +1,143 @@
+/* -*- csharp -*- 
+ * Set of tests performed by the vortex-regression-client test.
+ */
+xml-rpc interface test {
+	/*** TEST 01 ***/
+	/* add two integers */
+	int sum (int a, int b) {
+		/* sum values received */
+		return a + b;
+	}
+
+	/* empty service definition */
+	int operate (int a, int b);
+
+	/*** TEST 02 ***/
+	string get_the_string () {
+		/* return a test string (static version) */
+		return axl_strdup ("This is a test");
+	}
+
+	/*** TEST 03 ***/
+	bool get_the_bool_1 () {
+		/* return false */
+		return false;
+	}
+
+	bool get_the_bool_2 () {
+		/* return true */
+		return true;
+	}
+
+	/*** TEST 04 ***/
+	double get_double_sum (double a, double b) {
+		/* return the sum */
+		return a + b;
+	}
+
+
+	/*** TEST 05 ***/
+	struct Values {
+		int     count;
+		double  fraction;
+		bool    status;
+	}
+
+	/* declare the service using previous declaration */
+	Values get_struct (Values a, Values b) {
+		Values * result;
+
+		/* create the value to be returned */
+		result = test_values_new (a->count    +  b->count, 
+					  a->fraction +  b->fraction, 
+					  a->status   || b->status);
+		
+		/* return the result provided */
+		return result;
+	}
+
+	/*** TEST 06 ***/
+	/* struct declaration */
+	struct Item {
+		int    position;
+		string string_position;
+	}
+	
+	/* array declaration */
+	array ItemArray of Item;
+	
+	/* service declaration which returns the array */
+	ItemArray get_array () {
+
+		ItemArray * result;
+		Item      * item;
+		int         iterator;
+		
+		/* create the item array */
+		result = test_itemarray_new (10);
+		
+		for (iterator = 0; iterator < 10; iterator++) {
+			/* create the struct */
+			item = test_item_new (iterator, "test content");
+			
+			/* store it into the array */
+			test_itemarray_set (result, iterator, item);
+		}
+		
+		/* put here service content */
+		return result;		
+	}
+
+	/*** TEST 07 ***/
+	/* declare the struct Values */
+	struct Node {
+		int  position;
+		Node next;
+	}
+
+	/* return a list, formed by nodes */
+	Node get_list () {
+		/* the pointer result */
+		Node * result;
+
+		/* some variables for the service */
+		Node * node;
+		Node * next;
+		int    iterator = 2;
+
+		/* create the first node */
+		result = test_node_new (1, NULL);
+		node   = result;
+		while (iterator < 10) {
+
+			/* create the next, but setting next as NULL
+			 * because we don't have it yet */
+			next = test_node_new (iterator, NULL);
+
+			/* set previous the next created */
+			node->next = next;
+
+			/* update references */
+			node = next;
+
+			/* update index */
+			iterator ++;
+		}
+		
+		/* return list created */
+		return result;
+	}
+
+	/*** TEST 08 ***/
+	/* Before a method is defined, a declaration using method_name
+	 * attribute modifies how is generated the source code, making the API
+	 * to be the same but the service name created to have the name
+	 * provided.
+	 * 
+	 * Add two integers */
+	[method_name="aritmetic-operations/basic/sum"];
+	int sum2 (int a, int b) {
+		/* sum values received */
+		return a + b;
+	}
+}

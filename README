@@ -1,0 +1,21 @@
+Vortex Library README:
+~~~~~~~~~~~~~~~~~~~~~~
+Please refer to Vortex Library documentation build with doxygen tool.
+To enable document building use:
+ ./configure --enable-vortex-doc
+
+Of course, you will need doxygen installed on your system.
+
+You can also check to http://vortex.aspl.es to get latest Vortex Library
+documentation.
+
+If you encounter problems building Vortex Library or you still have
+questions about Vortex Library, use the mailing lists:
+
+  <aspl-fact-users@lists.aspl.es>
+
+
+Enjoy Vortex Library software!
+--
+Francis Brosnan Blázquez
+<francis@aspl.es>

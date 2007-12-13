@@ -1,0 +1,44 @@
+/** 
+ * Test that declares a struct that makes a self reference to it.
+ */
+xml-rpc interface test {
+
+	/* declare the struct Values */
+	struct Node {
+		int  position;
+		Node next;
+	}
+
+	/* return a list, formed by nodes */
+	Node get_list () {
+		/* the pointer result */
+		Node * result;
+
+		/* some variables for the service */
+		Node * node;
+		Node * next;
+		int    iterator = 2;
+
+		/* create the first node */
+		result = test_node_new (1, NULL);
+		node   = result;
+		while (iterator < 10) {
+
+			/* create the next, but setting next as NULL
+			 * because we don't have it yet */
+			next = test_node_new (iterator, NULL);
+
+			/* set previous the next created */
+			node->next = next;
+
+			/* update references */
+			node = next;
+
+			/* update index */
+			iterator ++;
+		}
+		
+		/* return list created */
+		return result;
+	}
+}

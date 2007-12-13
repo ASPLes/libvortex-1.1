@@ -1,0 +1,180 @@
+              ######################################
+              ##       Vortex Library  1.0.5      ##
+              ##        "free bird release"       ##
+              ######################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.0.5 "free bird" release availability: an open source "BEEP
+  Core" protocol implementation written in C, mapped onto TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://vortex.aspl.es 
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://xml.aspl.es
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+
+  xml-rpc-gen updates to make it more robust. Now the tool, through
+  the IDL language allows to group services under the same
+  resource. Fixed several bugs at the code produced and included some
+  checks to avoid marshall errors for NULL strings. Now the tool
+  allows to include user defined code that is translated into the
+  output.
+
+  Included new functions to produce a peer certificate digest or
+  content digest (now with support for MD5) and added two new macros
+  that allows to get SASL auth Id easily from a channel or
+  connection. Fixed some bugs and memory leaks.
+
+  
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+
+  [1] vortex-xml-rpc-gen-dispatch-01
+  http://lists.aspl.es/pipermail/vortex/2007-July/000160.html
+
+
+Changes since 1.0.4
+~~~~~~~~~~~~~~~~~~~
+
+libvortex,xml-rpc-gen:
+
+* [fix] Updated xml-rpc-gen dispatch headers and body produced at the
+  server component to also receive a reference to the channel where
+  the invocation was received. Updated regression text to check the
+  change. Updated the following functions to receive the channel 
+  reference:
+
+   - vortex_xml_rpc_unmarshall_int_sync
+   - vortex_xml_rpc_unmarshall_string_sync
+   - vortex_xml_rpc_unmarshall_double_sync
+   - vortex_xml_rpc_unmarshall_struct_sync
+   - vortex_xml_rpc_unmarshall_array_sync
+  
+  (Change notification: vortex-xml-rpc-gen-dispatch-01.txt)
+
+xml-rpc-gen:
+
+* [new] Updated the tool to produce a "copy" function for structures
+  and arrays provided at the stub produced.
+
+* [fix] Making the tool to produce a client stub that checks for NULL
+  pointers for STRING and BASE64 types, replacing it with an empty
+  string.
+
+* [new] Updated the tool to produce an "add" API for array types at
+  the client stub, allowing to add elements as they are produced.
+
+* [new] Updated the tool to allow grouping services under resources,
+  allowing to perform an efficient dispatch, and to hide/provide
+  services as defined by the boot resource. Updated documentation to
+  explain the feature.
+
+* [new] Updated the tool to allow declaring the set of resources that
+  can be used at the IDL file. Updated documentation.
+
+* [fix] Fixed a bug at the boolean marshalling code. Now it is checked
+  the returning value to be equal to "true" to case the function to
+  return false in other cases (especially for negative values).
+
+* [new] Updated the tool to allow including user defined code at the
+  server side implementation (include on body).
+
+libvortex:
+
+* [fix] Fixed wrong default on close handler provided to a profile
+  which is registered with vortex_profiles_register_extended_start.
+  Updated implementation to also configure the default start handler.
+  Updated regression test to check this in future releases.
+
+* [fix] Updated REPLY_FAULT macro to be enclosed with do{}while;
+  construction to enable its use at if/else structures without braces.
+  Updated macro documentation to better explain its function and
+  common use.
+
+* [fix] Fixed memory leak inside vortex_connection_reconnect which was
+  causing to lost the internal message reporting the problem that is
+  causing a call to reconnect.
+
+* [fix] Fixed memory leak at vortex_xml_rpc_boot_channel process which
+  was causing to not dealloc serverName and resourceName declared.
+
+* [fix] Making xml-rpc unmarshall sync operations to automatically
+  dealloc the faultString created if the channel is closed or a new
+  fault negotiation takes place.
+
+* [fix] Restored MIME handling which was properly done. As expressed
+  in RFC2045, 5.1 section, "Content-Type" header field is defined in a
+  CASE-sensitive, and the header content in a case-insensitive.
+
+* [new] Updated vortex_tls_get_peer_ssl_digest to allow producing md5
+  digest (VORTEX_MD5) and added a new function which allows to produce
+  a digest from a provided string. API added:
+
+   - vortex_tls_get_digest
+
+* [fix] Fixed vortex_sasl_is_authenticated to better check if a
+  connection is authenticated. Now the function also checks for a sasl
+  channel to be running at the connection.
+
+* [new] Added two new macros that allows to get easily the AUTH_ID
+  from a provided connection or channel. API added:
+
+   - AUTH_ID_FROM_CONN
+   - AUTH_ID_FROM_CHANNEL
+
+* [fix] Making default io waiting add operation to check for negative
+  fds.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+30h jul 2007, Madrid (Spain)
+  
+

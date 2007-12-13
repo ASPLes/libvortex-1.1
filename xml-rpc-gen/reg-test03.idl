@@ -1,0 +1,15 @@
+/**
+ * Simple bool type check. The test declares two services that returns
+ * always TRUE or FALSE.
+ */
+xml-rpc interface test {
+	boolean get_the_bool_1 () {
+		/* return false */
+		return FALSE;
+	}
+
+	boolean get_the_bool_2 () {
+		/* return true */
+		return TRUE;
+	}
+}

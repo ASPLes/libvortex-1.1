@@ -1,0 +1,173 @@
+              ######################################
+              ##       Vortex Library  1.0.8      ##
+              ##      "lonely world release"      ##
+              ######################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.0.8 "lonely world" release availability: an open source
+  "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+
+  Several changes have been introduced into the xml-rpc-gen tool to
+  improve the output code (stub/server). API updates, including a new
+  function to perform a channel selection based on a user space
+  function. In general, this is a support release for next Turbulence
+  version.
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  [1] vortex-voidptr-update-01
+  http://lists.aspl.es/pipermail/vortex/2007-October/000205.html
+
+Changes since 1.0.7
+~~~~~~~~~~~~~~~~~~~
+
+* [fix] General update to apply the API introduced and described by
+  vortex-voidptr-update-01 change notification.
+
+* [fix] Updated test files and regression test to conform the new API.
+  Only updated calls to vortex_frame_get_payload to cast the content 
+  to the proper type.
+
+* [new] Added new function to the vortex connection module to configure
+  I/O blocking mode. API added:
+   
+   - vortex_connection_set_sock_block
+
+* [fix] Fixed memory leak inside the second level frame delivery
+  handler under the case where the channel being used for the delivery
+  is configured to be seriable.
+
+* [fix] Fixed bug inside the xml-rpc-gen compiler which was causing to
+  produce a faulty server side stub service dispatch if some of the
+  parameters received by the service were a struct or an array.
+
+* [fix] Fixed double deallocation error at the vortex sequencer
+  module.
+
+* [fix] Nullify internal reference on the queue when it is
+  deallocated.
+
+* [new] Updated vortex hash module to include a new foreach function
+  that allows to provide three user defined parameters. API added:
+  
+   - vortex_hash_foreach3
+
+* [new] Updated vortex connection module to include a new function
+  that allows to select a channel providing the function that is
+  called as a selector. API added:
+  
+   - vortex_connection_get_channel_by_func
+   - VortexChannelSelector (handler)
+
+* [fix] Some updates at the sasl doc.
+
+* [fix] Fixed syntax error while compiling vortex connection module on
+  windows.
+
+* [fix] Fixed more visual studio problems...
+
+* [new] Updated vortex connection API to provide a new macro that
+  allows to get the associated serverName on a connection:
+  
+   - SERVER_NAME_FROM_CHANNEL
+
+* [fix] Added additional missing check after TLS negotiation, to avoid
+  keep with process if something have failed with the TLS handshake
+  itself.
+
+* [fix] Added some debug code to drop log information when the TLS
+  negotiation fails.
+
+* [fix] Included support for gettimeofday function to be available on
+  windows. This function is really useful while implementing timeout
+  operations.
+
+* [fix] Updated documentation for the gettimeofday function provided
+  on windows.
+
+* [fix] committing changes to the download section, placing a direct
+  reference to the source code download.
+
+* [fix] Removed some configure.ac variables used by previous glib
+  dependency. Updated VERSION file.
+
+* [fix] Fixed lost G_OS_WIN32 inside the xml-rpc-gen tool
+
+* [fix] Fixed wrong code produced to handle boolean parameters at
+  the client stub connector (xml-rpc-gen tool).
+
+* [fix] Fixed wrong boolean handling at the unmarshalling code produced
+  at the server side (xml-rpc-gen tool).
+
+* [fix] Removed precondition at
+  vortex_xml_rpc_method_call_create_value which was causing to not
+  allow creating boolean false values.
+
+* [fix] Fixed compilation error inside the xml-rpc-gen tool at the
+  windows platform.
+
+* [fix] Added macro to the vortex xml-rpc to clearly represent an
+  empty string without meaning. API added:
+
+   - XML_RPC_EMPTY_STR
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+11th oct 2007, Madrid (Spain)
+  
+

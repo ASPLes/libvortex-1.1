@@ -1,0 +1,34 @@
+/* hey emacs this is -*- c -*- mode */
+
+xml-rpc interface test {
+	/* struct declaration */
+	struct Item {
+		int    position;
+		string string_position;
+	}
+	
+	/* array declaration */
+	array ItemArray of Item;
+	
+	/* service declaration which returns the array */
+	ItemArray get_array () {
+
+		ItemArray * result;
+		Item      * item;
+		int         iterator;
+		
+		/* create the item array */
+		result = test_itemarray_new (10);
+		
+		for (iterator = 0; iterator < 10; iterator++) {
+			/* create the struct */
+			item = test_item_new (iterator, "test content");
+			
+			/* store it into the array */
+			test_itemarray_set (result, iterator, item);
+		}
+		
+		/* put here service content */
+		return result;		
+	}
+}

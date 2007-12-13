@@ -1,0 +1,26 @@
+<xml-rpc-interface>
+  <!-- component name declaration -->
+  <name>test</name>
+
+  <!-- service declaration: sum (int a, int b); -->
+  <service>
+    <name>sum</name>
+    <returns>int</returns>
+    <params>
+      <param>
+         <name>a</name>
+         <type>int</type>
+      </param>
+      <param>
+         <name>b</name>
+         <type>int</type>
+      </param>
+    </params>
+    <code>
+      <content><![CDATA[
+  	/* this is a test < & */
+	return a + b;
+]]></content>
+ </code>
+  </service>
+</xml-rpc-interface>

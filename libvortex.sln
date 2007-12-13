@@ -1,0 +1,38 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libvortex", "src\libvortex.vcproj", "{BD4D0BE0-916C-4468-A0E5-6170CBFE6421}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libaxl", "..\libaxl\src\libaxl.vcproj", "{4AD56D01-116B-4146-B468-F4E85CFB8C7D}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vortex-regression-listener", "test\vortex-regression-listener.vcproj", "{2E4A0893-D008-45B0-97F4-B2E0AFA7250A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vortex-regression-client", "test\vortex-regression-client.vcproj", "{DCED0722-8105-4C11-A4E6-A0B487DAA3AF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BD4D0BE0-916C-4468-A0E5-6170CBFE6421}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BD4D0BE0-916C-4468-A0E5-6170CBFE6421}.Debug|Win32.Build.0 = Debug|Win32
+		{BD4D0BE0-916C-4468-A0E5-6170CBFE6421}.Release|Win32.ActiveCfg = Release|Win32
+		{BD4D0BE0-916C-4468-A0E5-6170CBFE6421}.Release|Win32.Build.0 = Release|Win32
+		{4AD56D01-116B-4146-B468-F4E85CFB8C7D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4AD56D01-116B-4146-B468-F4E85CFB8C7D}.Debug|Win32.Build.0 = Debug|Win32
+		{4AD56D01-116B-4146-B468-F4E85CFB8C7D}.Release|Win32.ActiveCfg = Release|Win32
+		{4AD56D01-116B-4146-B468-F4E85CFB8C7D}.Release|Win32.Build.0 = Release|Win32
+		{2E4A0893-D008-45B0-97F4-B2E0AFA7250A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{2E4A0893-D008-45B0-97F4-B2E0AFA7250A}.Debug|Win32.Build.0 = Debug|Win32
+		{2E4A0893-D008-45B0-97F4-B2E0AFA7250A}.Release|Win32.ActiveCfg = Release|Win32
+		{2E4A0893-D008-45B0-97F4-B2E0AFA7250A}.Release|Win32.Build.0 = Release|Win32
+		{DCED0722-8105-4C11-A4E6-A0B487DAA3AF}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DCED0722-8105-4C11-A4E6-A0B487DAA3AF}.Debug|Win32.Build.0 = Debug|Win32
+		{DCED0722-8105-4C11-A4E6-A0B487DAA3AF}.Release|Win32.ActiveCfg = Release|Win32
+		{DCED0722-8105-4C11-A4E6-A0B487DAA3AF}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

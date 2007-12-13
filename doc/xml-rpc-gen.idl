@@ -1,0 +1,7 @@
+/* IDL format for XML-RPC */
+xml-rpc interface {
+
+	int sum (int a, int b) {
+		
+	}
+}

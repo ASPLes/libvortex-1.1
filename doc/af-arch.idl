@@ -1,0 +1,27 @@
+/* af-arch service definition to invoke them easily using the idl
+ * compiler */
+xml-rpc interface af-arch {
+	
+	struct HostLocation {
+		/* logical name */
+		string name;
+
+		/* server host location */
+		string host;
+
+		/* server port location */
+		string port;
+	}
+
+	/* an array of host location items */
+	array HostLocationArray of HostLocation;
+	
+	/**
+	 * @brief Allows to get the host location for all af-arch
+	 * servers attached to the central server. The service
+	 * definition is only a stub.
+	 */
+	[method_name="af_kernel::server::get_list"];
+	HostLocationArray get_list ();
+
+} /* end af-arch interface */

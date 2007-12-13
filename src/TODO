@@ -1,0 +1,8 @@
+Vortex library TODO
+~~~~~~~~~~~~~~~~~~~
+
+* Extend vortex_channel_close to be able to receive close message
+parameters: code and message. This also means to extend the callback
+associated with channel close.
+
+
