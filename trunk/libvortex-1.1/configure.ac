@@ -276,7 +276,7 @@ logo/Makefile
 vortex.pc])
 
 echo "------------------------------------------"
-echo "--       VORTEX LIBRARY SETTINGS        --"
+echo "--     VORTEX LIBRARY 1.1 SETTINGS      --"
 echo "------------------------------------------"
 echo "   Installation prefix:            [$prefix]"
 echo "      select(2) support:           [yes]"

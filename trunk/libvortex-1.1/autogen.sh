@@ -37,7 +37,7 @@
 #         info@aspl.es - http://fact.aspl.es
 #
 
-PACKAGE="LibVortex:  A BEEP (RFC3080/RFC3081) implementation."
+PACKAGE="Vortex Library 1.1:  A BEEP (RFC3080/RFC3081) implementation."
 
 (automake --version) < /dev/null > /dev/null 2>&1 || {
 	echo;

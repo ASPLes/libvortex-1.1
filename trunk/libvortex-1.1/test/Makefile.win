@@ -27,7 +27,7 @@ PROGRAMS = vortex-listener.exe \
 
 LIBS     = -Wall -g \
 	-lws2_32 $(search_lib_path) \
-	-L../src -L../../libaxl/src -L$(DEPEND_DIR)/bin -laxl -lvortex \
+	-L../src -L../../libaxl/src -L$(DEPEND_DIR)/bin -laxl -lvortex-1.1 \
 	-lreadline5
 
 INCS =  -I"." -I"../src" -I"../../libaxl/src" -I$(DEPEND_DIR)/include
@@ -84,7 +84,7 @@ vortex-client-connections.exe: vortex-client-connections.o
 
 links:
 	cp $(READLINE_LIBS) .
-	cp ../src/libvortex.dll .
+	cp ../src/libvortex-1.1.dll .
 	cp ../data/*.dtd .
 	cp ../../libaxl/src/libaxl.dll .
 	cp $(OPENSSL_LIBS) .

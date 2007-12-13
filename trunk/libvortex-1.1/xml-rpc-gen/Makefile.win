@@ -8,7 +8,7 @@ PROGRAMS = xml-rpc-gen.exe
 LIBS     = -Wall -g \
 	-L../../libexarg/src -lexarg \
 	-L../../libaxl/src -L$(DEPEND_DIR)/bin -laxl  \
-	-L../src/ -lvortex
+	-L../src/ -lvortex-1.1
 
 INCS =  -I"." -I"../../libaxl/src" -I$(DEPEND_DIR)/include -I"../../libexarg/src" -I"../src/"
 

@@ -1,9 +1,9 @@
-dtddir = $(datadir)/libvortex
+dtddir = $(datadir)/libvortex-1.1
 dtd_DATA =  xml-rpc.dtd
 
 EXTRA_DIST = $(dtd_DATA) $(wildcard *.idl) $(wildcard *.xdl) $(wildcard *.c) _support.c 
 
-INCLUDES = -g -Wall -ansi -I. -I$(top_srcdir)/libvortex/src $(AXL_CFLAGS) $(EXARG_CFLAGS) $(PTHREAD_CFLAGS) -DVERSION=\""$(VORTEX_VERSION)"\" -DINSTALL_DIR=\"$(datadir)/libvortex\" -I../src
+INCLUDES = -g -Wall -ansi -I. -I$(top_srcdir)/libvortex-1.1/src $(AXL_CFLAGS) $(EXARG_CFLAGS) $(PTHREAD_CFLAGS) -DVERSION=\""$(VORTEX_VERSION)"\" -DINSTALL_DIR=\"$(datadir)/libvortex-1.1\" -I../src
 
 LIBS     = $(AXL_LIBS) $(EXARG_LIBS) $(PTHREAD_LIBS)
 
@@ -51,4 +51,4 @@ xml_rpc_gen_SOURCES = exarg.h exarg.c xml-rpc-gen.c xml-rpc.h \
 	xml-rpc-c-server.h xml-rpc-c-server.c \
 	xml-rpc-gen-translate.h xml-rpc-gen-translate.c
 
-xml_rpc_gen_LDADD = ../src/libvortex.la
+xml_rpc_gen_LDADD = ../src/libvortex-1.1.la
