@@ -26,9 +26,9 @@ OBJ  = vortex.o \
        vortex_tunnel.o \
        vortex_win32.o
 
-DLL        = $(vortex_dll).dll
+DLL        = $(vortex_dll)-1.1.dll
 IMPORT_DLL = $(DLL).a
-STATIC_LIB = $(vortex_dll).a
+STATIC_LIB = $(vortex_dll)-1.1.a
 
 #LIBS = -Wall -g -L"$(BASE_DIR)/lib" \
 #	-L"$(BASE_DIR)/bin" \
@@ -71,10 +71,10 @@ install: all
 $(DLL): $(OBJ)
 # add the following line to create an import library. At this point this step
 # is not requiered because gcc automatically get an import library from the dll.
-# -Wl,--out-implib,libvortex.lib
+# -Wl,--out-implib,libvortex-1.1.lib
 	$(CC) -m$(MODE) -shared -Wl,--out-implib,$(IMPORT_DLL) --export-all-symbols \
 		  $(OBJ) -o $(DLL)        $(LIBS)
-	lib.exe /def:libvortex.def
+	lib.exe /def:libvortex-1.1.def
 
 %.o: %.c
 	$(CC) -c $< -o $@ $(CFLAGS)

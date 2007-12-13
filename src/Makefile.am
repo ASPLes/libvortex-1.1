@@ -1,4 +1,4 @@
-EXTRA_DIST = Makefile.win libvortex.def libvortex.vcproj
+EXTRA_DIST = Makefile.win libvortex-1.1.def libvortex.vcproj
 
 if ENABLE_TLS_SUPPORT
 INCLUDE_TLS_SUPPORT=-DENABLE_TLS_SUPPORT
@@ -43,11 +43,11 @@ INCLUDES = -Wall -ansi -g -I$(top_srcdir) -D__COMPILING_VORTEX__ \
 	-DPACKAGE_DTD_DIR=\""$(datadir)"\" \
 	-DPACKAGE_TOP_DIR=\""$(top_srcdir)"\" $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_DEFAULT_EPOLL) $(INCLUDE_DEFAULT_POLL)
 
-libvortexincludedir = $(includedir)/vortex
+libvortex_1_1_includedir = $(includedir)/vortex-1.1
 
-lib_LTLIBRARIES = libvortex.la
+lib_LTLIBRARIES = libvortex-1.1.la
 
-libvortex_la_SOURCES =	\
+libvortex_1_1_la_SOURCES =	\
 	vortex.c \
 	vortex_ctx.c \
 	vortex_support.c \
@@ -74,7 +74,7 @@ libvortex_la_SOURCES =	\
 	vortex_errno.c \
 	vortex_thread.c \
 	vortex_tunnel.c
-libvortexinclude_HEADERS = vortex.h \
+libvortex_1_1_include_HEADERS = vortex.h \
 	vortex_ctx.h \
 	vortex_ctx_private.h \
 	vortex_support.h \
@@ -102,13 +102,13 @@ libvortexinclude_HEADERS = vortex.h \
 	vortex_errno.h \
 	vortex_thread.h \
 	vortex_tunnel.h
-libvortex_la_LIBADD = \
+libvortex_1_1_la_LIBADD = \
 	$(AXL_LIBS) $(INCLUDE_TLS_LIBS) $(SASL_LIBS) $(PTHREAD_LIBS)
 
-libvortex_la_LDFLAGS = -no-undefined -export-symbols-regex '^(vortex|__vortex|_vortex).*'
+libvortex_1_1_la_LDFLAGS = -no-undefined -export-symbols-regex '^(vortex|__vortex|_vortex).*'
 
-libvortex.def: update-def
+libvortex-1.1.def: update-def
 
 update-def:
-	echo "EXPORTS" > libvortex.def
-	cat .libs/libvortex.exp | grep -v io_waiting_poll | grep -v io_waiting_epoll | grep -v __vortex >> libvortex.def
+	echo "EXPORTS" > libvortex-1.1.def
+	cat .libs/libvortex.exp | grep -v io_waiting_poll | grep -v io_waiting_epoll | grep -v __vortex >> libvortex-1.1.def
