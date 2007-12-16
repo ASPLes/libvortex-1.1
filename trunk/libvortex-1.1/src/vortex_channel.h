@@ -365,6 +365,8 @@ void                vortex_channel_set_pool                       (VortexChannel
 
 VortexChannelPool * vortex_channel_get_pool                       (VortexChannel * channel);
 
+VortexCtx         * vortex_channel_get_ctx                        (VortexChannel * channel);
+
 void                vortex_channel_init                           (VortexCtx * ctx);
 
 void                vortex_channel_cleanup                        (VortexCtx * ctx);

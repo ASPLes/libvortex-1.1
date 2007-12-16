@@ -42,10 +42,6 @@
 
 VortexCtx * vortex_ctx_new ();
 
-VortexCtx * vortex_ctx_get ();
-
-void        vortex_ctx_set (VortexCtx * ctx);
-
 void        vortex_ctx_free (VortexCtx * ctx);
 
 #endif /* __VORTEX_CTX_H__ */

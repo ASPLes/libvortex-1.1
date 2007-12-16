@@ -41,7 +41,8 @@
 #include <vortex.h>
 
 
-void     vortex_profiles_register                (const char            * uri,
+bool     vortex_profiles_register                (VortexCtx             * ctx,
+						  const char            * uri,
 						  VortexOnStartChannel    start,
 						  axlPointer              start_user_data,
 						  VortexOnCloseChannel    close,
@@ -49,17 +50,22 @@ void     vortex_profiles_register                (const char            * uri,
 						  VortexOnFrameReceived   received,
 						  axlPointer              received_user_data);
 
-void     vortex_profiles_unregister              (const char            * uri);
+bool     vortex_profiles_unregister              (VortexCtx             * ctx,
+						  const char            * uri);
 
-void     vortex_profiles_set_mime_type           (const char            * uri,
+bool     vortex_profiles_set_mime_type           (VortexCtx             * ctx,
+						  const char            * uri,
 						  const char            * mime_type,
 						  const char            * transfer_encoding);
 
-const char   * vortex_profiles_get_mime_type           (const char  * uri);
+const char   * vortex_profiles_get_mime_type           (VortexCtx       * ctx,
+							const char      * uri);
 
-const char   * vortex_profiles_get_transfer_encoding   (const char  * uri);
+const char   * vortex_profiles_get_transfer_encoding   (VortexCtx        * ctx,
+							const char       * uri);
 
-void      vortex_profiles_register_extended_start (const char                         * uri,
+bool      vortex_profiles_register_extended_start (VortexCtx                    * ctx,
+						   const char                   * uri,
 						   VortexOnStartChannelExtended   extended_start,
 						   axlPointer                     extended_start_user_data);
 
@@ -67,28 +73,32 @@ bool      vortex_profiles_invoke_start            (char  * uri, int  channel_num
 						   char  * serverName, char  * profile_content, 
 						   char  ** profile_content_reply, VortexEncoding encoding);
 
-bool      vortex_profiles_is_defined_start        (const char  * uri);
+bool      vortex_profiles_is_defined_start        (VortexCtx   * ctx,
+						   const char  * uri);
 
 bool      vortex_profiles_invoke_close            (char  * uri,
 						   int  channel_nu,
 						   VortexConnection * connection);
 
-bool      vortex_profiles_is_defined_close        (const char  * uri);
+bool      vortex_profiles_is_defined_close        (VortexCtx   * ctx,
+						   const char  * uri);
 
 bool      vortex_profiles_invoke_frame_received   (char             * uri,
 						   int                channel_num,
 						   VortexConnection * connection,
 						   VortexFrame      * frame);
 
-bool      vortex_profiles_is_defined_received     (const char  * uri);
+bool      vortex_profiles_is_defined_received     (VortexCtx        * ctx,
+						   const char       * uri);
 
-axlList * vortex_profiles_get_actual_list         ();
+axlList * vortex_profiles_get_actual_list         (VortexCtx        * ctx);
 
-axlList * vortex_profiles_get_actual_list_ref     ();
+axlList * vortex_profiles_get_actual_list_ref     (VortexCtx        * ctx);
 
-int       vortex_profiles_registered              ();
+int       vortex_profiles_registered              (VortexCtx        * ctx);
 
-bool      vortex_profiles_is_registered           (const char  * uri);
+bool      vortex_profiles_is_registered           (VortexCtx        * ctx,
+						   const char       * uri);
 
 void      vortex_profiles_init                    (VortexCtx   * ctx);
 

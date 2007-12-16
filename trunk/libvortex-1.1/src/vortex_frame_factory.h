@@ -66,7 +66,8 @@ char  *        vortex_frame_seq_build_up_from_params (int  channel_num,
 						      int  ackno,
 						      int  window_size);
 
-VortexFrame * vortex_frame_create               (VortexFrameType   type,
+VortexFrame * vortex_frame_create               (VortexCtx       * ctx,
+						 VortexFrameType   type,
 						 int               channel,
 						 int               msgno,
 						 bool              more,
@@ -75,7 +76,8 @@ VortexFrame * vortex_frame_create               (VortexFrameType   type,
 						 int               ansno,
 						 const char      * payload);
 
-VortexFrame * vortex_frame_create_full          (VortexFrameType   type,
+VortexFrame * vortex_frame_create_full          (VortexCtx       * ctx,
+						 VortexFrameType   type,
 						 int               channel,
 						 int               msgno,
 						 bool              more,
@@ -86,7 +88,8 @@ VortexFrame * vortex_frame_create_full          (VortexFrameType   type,
 						 char            * transfer_encoding,
 						 const char      * payload);
 
-VortexFrame * vortex_frame_create_full_ref      (VortexFrameType   type,
+VortexFrame * vortex_frame_create_full_ref      (VortexCtx       * ctx,
+						 VortexFrameType   type,
 						 int               channel,
 						 int               msgno,
 						 bool              more,
@@ -158,6 +161,8 @@ int           vortex_frame_get_content_size      (VortexFrame * frame);
 int           vortex_frame_get_ansno             (VortexFrame * frame);
 
 const void *  vortex_frame_get_payload           (VortexFrame * frame);
+
+VortexCtx   * vortex_frame_get_ctx               (VortexFrame * frame);
 
 char        * vortex_frame_get_ok_message        ();
 

@@ -533,9 +533,9 @@ typedef struct _VortexWriterData {
 #define QUEUE_PUSH(queue, data)\
 do {\
     if (queue == NULL) { \
-       vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "trying to push data in a null reference queue at: %s:%d", __AXL_FILE__, __AXL_LINE__); \
+       vortex_log (VORTEX_LEVEL_CRITICAL, "trying to push data in a null reference queue at: %s:%d", __AXL_FILE__, __AXL_LINE__); \
     } else if (data == NULL) {\
-       vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "trying to push null data in a queue at: %s:%d", __AXL_FILE__, __AXL_LINE__); \
+       vortex_log (VORTEX_LEVEL_CRITICAL, "trying to push null data in a queue at: %s:%d", __AXL_FILE__, __AXL_LINE__); \
     } else { \
        vortex_async_queue_push (queue,data);\
     }\

@@ -252,15 +252,15 @@ END_C_DECLS
  * stripped from vortex building all instructions are removed.
  */
 #if defined(ENABLE_VORTEX_LOG)
-# define vortex_log   _vortex_log
-# define vortex_log2  _vortex_log2
+# define vortex_log(l, m, ...)   do{_vortex_log  (ctx, __AXL_FILE__, __AXL_LINE__, l, m, ##__VA_ARGS__);}while(0)
+# define vortex_log2(l, m, ...)   do{_vortex_log2  (ctx, __AXL_FILE__, __AXL_LINE__, l, m, ##__VA_ARGS__);}while(0)
 #else
 # if defined(AXL_OS_WIN32) && ! defined(__GNUC__)
 #   define vortex_log _vortex_log
 #   define vortex_log2 _vortex_log2
 # else
-#   define vortex_log(domain, level, message, ...) /* nothing */
-#   define vortex_log2(domain, level, message, ...) /* nothing */
+#   define vortex_log(l, m, ...) /* nothing */
+#   define vortex_log2(l, m, message, ...) /* nothing */
 # endif
 #endif
 
@@ -270,7 +270,7 @@ END_C_DECLS
  * @param expr The expresion to check.
  */
 #define v_return_if_fail(expr) \
-if (!(expr)) {vortex_log ("", VORTEX_LEVEL_CRITICAL, "Expresion '%s' have failed at %s (%s:%d)", #expr, __AXL_PRETTY_FUNCTION__, __AXL_FILE__, __AXL_LINE__); return;}
+if (!(expr)) {vortex_log (VORTEX_LEVEL_CRITICAL, "Expresion '%s' have failed at %s (%s:%d)", #expr, __AXL_PRETTY_FUNCTION__, __AXL_FILE__, __AXL_LINE__); return;}
 
 /** 
  * @internal Allows to check a condition and return the given value if it
@@ -281,31 +281,30 @@ if (!(expr)) {vortex_log ("", VORTEX_LEVEL_CRITICAL, "Expresion '%s' have failed
  * @param val The value to return if the expression is not meet.
  */
 #define v_return_val_if_fail(expr, val) \
-if (!(expr)) { vortex_log ("", VORTEX_LEVEL_CRITICAL, "Expresion '%s' have failed, returning: %s at %s (%s:%d)", #expr, #val, __AXL_PRETTY_FUNCTION__, __AXL_FILE__, __AXL_LINE__); return val;}
+if (!(expr)) { vortex_log (VORTEX_LEVEL_CRITICAL, "Expresion '%s' have failed, returning: %s at %s (%s:%d)", #expr, #val, __AXL_PRETTY_FUNCTION__, __AXL_FILE__, __AXL_LINE__); return val;}
 
 
 BEGIN_C_DECLS
 
-bool     vortex_init                 ();
-
 bool     vortex_init_ctx             (VortexCtx * ctx);
-
-void     vortex_exit                 ();
 
 void     vortex_exit_ctx             (VortexCtx * ctx, 
 				      bool        free_ctx);
 
-bool     vortex_log_is_enabled       ();
+bool     vortex_log_is_enabled       (VortexCtx * ctx);
 
-bool     vortex_log2_is_enabled      ();
+bool     vortex_log2_is_enabled      (VortexCtx * ctx);
 
-void     vortex_log_enable           (bool     status);
+void     vortex_log_enable           (VortexCtx * ctx, 
+				      bool        status);
 
-void     vortex_log2_enable          (bool     status);
+void     vortex_log2_enable          (VortexCtx * ctx, 
+				      bool        status);
 
-bool     vortex_color_log_is_enabled ();
+bool     vortex_color_log_is_enabled (VortexCtx * ctx);
 
-void     vortex_color_log_enable     (bool     status);
+void     vortex_color_log_enable     (VortexCtx * ctx, 
+				      bool        status);
 
 void     vortex_writer_data_free     (VortexWriterData * writer_data);
 
@@ -380,10 +379,12 @@ typedef enum {
 	VORTEX_ENFORCE_PROFILES_SUPPORTED = 4,
 } VortexConfItem;
 
-bool      vortex_conf_get             (VortexConfItem   item, 
+bool      vortex_conf_get             (VortexCtx      * ctx,
+				       VortexConfItem   item, 
 				       int            * value);
 
-bool      vortex_conf_set             (VortexConfItem   item, 
+bool      vortex_conf_set             (VortexCtx      * ctx,
+				       VortexConfItem   item, 
 				       int              value, 
 				       char           * str_value);
 
@@ -412,12 +413,16 @@ typedef enum {
 	VORTEX_LEVEL_CRITICAL 
 } VortexDebugLevel;
 
-void     _vortex_log                 (const       char * domain, 
+void     _vortex_log                 (VortexCtx        * ctx,
+				      const       char * file,
+				      int                line,
 				      VortexDebugLevel   level, 
-				      const char       * message, 
+				      const char       * message,
 				      ...);
 
-void     _vortex_log2                (const       char * domain, 
+void     _vortex_log2                (VortexCtx        * ctx,
+				      const       char * file,
+				      int                line,
 				      VortexDebugLevel   level, 
 				      const char       * message, 
 				      ...);

@@ -1,0 +1,137 @@
+
+       #####################################
+       ####     Change notification     ####
+       #####################################
+
+    Change Id: vortex-ctx-api-01
+ Project name: Vortex Library 1.1 series
+  Included in: already included and to be shipped with next stable
+               release 1.1.0
+       Status: NOTIFY
+       Author: Francis Brosnan Blázquez
+
+Motivation
+~~~~~~~~~~
+
+The proposed changes will provided an API that will make the library
+full stateless, storing the context into a single reference owned by
+the application caller. The change introduced is large enough to start
+a new branch to protect applications in production developed until
+now with the 1.0 series.
+
+The main advantage that will provide the change is the ability to
+create several running and independent context inside the same
+process. This is not only a more general API approach but also
+provides better portability results because the state required by the
+library for its proper function do not depends on the way the OS loads
+the application into memory.
+
+Change Description
+~~~~~~~~~~~~~~~~~~
+
+The following set of function have been removed from the 1.1 series,
+replied by a new version:
+
+ 1. Initialization:
+
+       - vortex_init
+       - vortex_exit
+    
+    Replaced by: 
+   
+       - vortex_init_ctx
+       - vortex_exit_ctx
+
+ 2. Internal context handling from previous release
+ 
+       - vortex_ctx_set (no longer exists, conceptually not requried)
+       - vortex_ctx_get (no longer exists, conceptually not requried)
+
+ 3. Functions updated (same function name, new paramter "ctx").
+       
+       [log activation]
+       - vortex_log_is_enabled 
+       - vortex_log2_is_enabled
+       - vortex_log_enable
+       - vortex_log2_enable
+       - vortex_color_log_is_enabled
+       - vortex_color_log_enable
+
+       [environment conf]
+       - vortex_conf_get
+       - vortex_conf_set
+
+       [general support to find files and local data]
+       - vortex_support_add_search_path
+       - vortex_support_add_search_path_ref
+       - vortex_support_add_domain_search_path
+       - vortex_support_add_domain_search_path_ref
+       - vortex_support_find_data_file
+       - vortex_support_domain_find_data_file
+
+       [vortex connection module]
+       - vortex_connection_new_empty
+       - vortex_connection_new
+       - vortex_connection_timeout
+       - vortex_connection_connect_timeout
+       - vortex_connection_get_timeout
+       - vortex_connection_get_connect_timeout
+       - vortex_connection_notify_new_connections
+       - vortex_connection_set_auto_tls
+       - vortex_connection_sanity_socket_check
+
+       [vortex listener module]
+       - vortex_listener_new
+       - vortex_listener_new2
+       - vortex_listener_new_full
+       - vortex_listener_wait
+       - vortex_listener_set_on_connection_accepted
+       - vortex_listener_parse_conf_and_start
+       - vortex_listener_set_default_realm
+       - vortex_listener_get_default_realm
+
+       [vortex frame factory]
+       - vortex_frame_create
+       - vortex_frame_create_full
+       - vortex_frame_create_full_ref
+  
+       [vortex greetings module]
+       - vortex_greetings_get_features
+       - vortex_greetings_set_features
+       - vortex_greetings_get_localize
+       - vortex_greetings_set_localize
+
+       [vortex profiles module]
+       - vortex_profiles_register
+       - vortex_profiles_unregister
+       - vortex_profiles_set_mime_type
+       - vortex_profiles_get_mime_type
+       - vortex_profiles_get_transfer_encoding
+       - vortex_profiles_register_extended_start
+       - vortex_profiles_is_defined_start
+       - vortex_profiles_is_defined_close
+       - vortex_profiles_is_defined_received
+       - vortex_profiles_get_actual_list
+       - vortex_profiles_get_actual_list_ref
+       - vortex_profiles_registered
+       - vortex_profiles_is_registered
+
+       [vortex channe]
+       NO CHANGES
+
+       
+
+Solution to incompatibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+References
+~~~~~~~~~~
+[1] Project link: 
+    http://vortex.aspl.es
+
+[2] Change notification published by the project:
+    http://vortex.aspl.es/doc.html
+
+[3] Change notification definition
+    http://www.aspl.es/change/change-notification.txt

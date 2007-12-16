@@ -247,11 +247,12 @@ void   vortex_support_free (int params, ...)
  *
  * @param path A new path to be added. The function will perform a copy for the given path
  */
-void     vortex_support_add_search_path (const char  * path)
+void     vortex_support_add_search_path (VortexCtx   * ctx, 
+					 const char  * path)
 {
 
 	/* call to domain implementation with default vaule */
-	vortex_support_add_domain_search_path ("default",  path);
+	vortex_support_add_domain_search_path (ctx, "default",  path);
 	return;
 }
 
@@ -272,11 +273,12 @@ void     vortex_support_add_search_path (const char  * path)
  *
  * @param path A new path to be added. Provided path reference mustn't be deallocated.
  */
-void     vortex_support_add_search_path_ref (char  * path)
+void     vortex_support_add_search_path_ref (VortexCtx * ctx,
+					     char      * path)
 {
 
 	/* call to default implementation with default domain */
-	vortex_support_add_domain_search_path_ref (axl_strdup ("default"), path);
+	vortex_support_add_domain_search_path_ref (ctx, axl_strdup ("default"), path);
 
 	return;
 }
@@ -297,12 +299,14 @@ void     vortex_support_add_search_path_ref (char  * path)
  * @param path The path to lookup for files once called \ref
  * vortex_support_domain_find_data_file.
  */
-void     vortex_support_add_domain_search_path     (const char * domain, 
+void     vortex_support_add_domain_search_path     (VortexCtx  * ctx,
+						    const char * domain, 
 						    const char * path)
 {
 
 	/* call to default implementation */
-	vortex_support_add_domain_search_path_ref (axl_strdup (domain),
+	vortex_support_add_domain_search_path_ref (ctx, 
+						   axl_strdup (domain),
 						   axl_strdup (path));
 	return;	
 }
@@ -315,13 +319,11 @@ void     vortex_support_add_domain_search_path     (const char * domain,
  * @param path The path to use to lookup for files once called \ref
  * vortex_support_domain_find_data_file.
  */
-void     vortex_support_add_domain_search_path_ref (char * domain, 
-						    char * path)
+void     vortex_support_add_domain_search_path_ref (VortexCtx * ctx,
+						    char      * domain, 
+						    char      * path)
 {
 	SearchPathNode * node;
-
-	/* get current context */
-	VortexCtx      * ctx = vortex_ctx_get ();
 
 	v_return_if_fail (path);
 	v_return_if_fail (ctx);
@@ -380,9 +382,10 @@ void     vortex_support_add_domain_search_path_ref (char * domain,
  * 
  * @return NULL or the file path. Value returned should be unrefered using axl_free when no longer needed.
  */
-char   * vortex_support_find_data_file (const char  * name)
+char   * vortex_support_find_data_file (VortexCtx   * ctx, 
+					const char  * name)
 {
-	return vortex_support_domain_find_data_file ("default", name);
+	return vortex_support_domain_find_data_file (ctx, "default", name);
 }
 
 /** 
@@ -397,14 +400,13 @@ char   * vortex_support_find_data_file (const char  * name)
  * @return A newly allocated full path reference to the item located,
  * inside the domain provided or NULL if it fails.
  */
-char   * vortex_support_domain_find_data_file      (const char * domain, 
+char   * vortex_support_domain_find_data_file      (VortexCtx  * ctx,
+						    const char * domain, 
 						    const char * name)
 {
 	axlListCursor  * cursor;
 	SearchPathNode * node;
 	char           * file_name;
-	/* get current context */
-	VortexCtx      * ctx = vortex_ctx_get ();
 
 	v_return_val_if_fail (domain, NULL);
 	v_return_val_if_fail (name,   NULL);
@@ -434,12 +436,12 @@ char   * vortex_support_domain_find_data_file      (const char * domain,
 				/* free the cursor */
 				axl_list_cursor_free (cursor);
 
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "file found at: %s", file_name);
+				vortex_log (VORTEX_LEVEL_DEBUG, "file found at: %s", file_name);
 				vortex_mutex_unlock (&ctx->search_path_mutex);	
 				return file_name;
 			} /* end if */
 			
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "unable to find file %s on %s",  name, file_name);
+			vortex_log (VORTEX_LEVEL_DEBUG, "unable to find file %s on %s",  name, file_name);
 			axl_free (file_name);
 
 		} /* end for */
@@ -489,7 +491,7 @@ int      vortex_support_getenv_int                 (const char * env_name)
 	size_returned = GetEnvironmentVariable (env_name, variable, 1023);
 
 	if (size_returned > 1023) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "trying to get an number from an environment variable which is too large: %s",
+		vortex_log (VORTEX_LEVEL_CRITICAL, "trying to get an number from an environment variable which is too large: %s",
 			    env_name);
 		return 0;
 	}
@@ -514,12 +516,12 @@ int      vortex_support_getenv_int                 (const char * env_name)
  * false is returned.
  */
 bool     vortex_support_setenv                     (const char * env_name, 
-						          const char * env_value)
+						    const char * env_value)
 {
 	/* check values received */
-	v_return_val_if_fail (env_name, false);
-	v_return_val_if_fail (env_value, false);
-
+	if (env_name == NULL || env_value == NULL)
+		return false;
+	
 #if defined (AXL_OS_WIN32)
 	/* use windows implementation */
 	return SetEnvironmentVariable (env_name, env_value);
@@ -540,8 +542,8 @@ bool     vortex_support_setenv                     (const char * env_name,
 bool     vortex_support_unsetenv                   (const char * env_name)
 {
 	/* check values received */
-	v_return_val_if_fail (env_name, false);
- 
+	if (env_name == NULL)
+		return false;
 
 #if defined (AXL_OS_WIN32)
 	/* use windows implementation */
@@ -573,7 +575,8 @@ char   * vortex_support_build_filename      (const char * name, ...)
 	char    * token;
 
 	/* do not produce a result if a null is received */
-	v_return_val_if_fail (name, NULL);
+	if (name == NULL)
+		return NULL;
 
 	/* initialize the args value */
 	va_start (args, name);
@@ -715,8 +718,6 @@ bool   vortex_support_file_test (const char * path, VortexFileTest test)
 		/* check that it is requesting for not file exists */
 		if (errno == ENOENT && (test & FILE_EXISTS) == FILE_EXISTS)
 			return false;
-
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "failed to check test on %s, stat call has failed (result=%d, error=%s)", path, result, vortex_errno_get_error (errno));
 		return false;
 	} /* end if */
 

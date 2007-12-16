@@ -47,38 +47,38 @@ struct _VortexCtx {
 	/* @internal Allows to check if the vortex library is in exit
 	 * transit.
 	 */
-	bool           vortex_exit;
+	bool                 vortex_exit;
 
 	/* global mutex */
-	VortexMutex   frame_id_mutex;
-	VortexMutex   connection_id_mutex;
-	VortexMutex   search_path_mutex;
-	VortexMutex   exit_mutex;
-	VortexMutex   tls_init_mutex;
-	VortexMutex   listener_mutex;
-	VortexMutex   listener_unlock;
+	VortexMutex          frame_id_mutex;
+	VortexMutex          connection_id_mutex;
+	VortexMutex          search_path_mutex;
+	VortexMutex          exit_mutex;
+	VortexMutex          tls_init_mutex;
+	VortexMutex          listener_mutex;
+	VortexMutex          listener_unlock;
 
 	/* default configurations */
-	int           backlog;
-	bool          enforce_profiles_supported;
+	int                  backlog;
+	bool                 enforce_profiles_supported;
 	
 	/* local log variables */
-	bool          debug_checked;
-	bool          debug;
+	bool                 debug_checked;
+	bool                 debug;
 	
-	bool          debug2_checked;
-	bool          debug2;
+	bool                 debug2_checked;
+	bool                 debug2;
 	
-	bool          debug_color_checked;
-	bool          debug_color;
+	bool                 debug_color_checked;
+	bool                 debug_color;
 
 #if defined(AXL_OS_WIN32)
 	/**
 	 * Temporal hack to support sock limits under windows until we
 	 * find a viable alternative to getrlimit and setrlimit.
 	 */
-	int           __vortex_conf_hard_sock_limit;
-	int           __vortex_conf_soft_sock_limit;
+	int                  __vortex_conf_hard_sock_limit;
+	int                  __vortex_conf_soft_sock_limit;
 #endif
 
 	/**** vortex connection module state *****/
