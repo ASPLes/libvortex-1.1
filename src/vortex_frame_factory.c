@@ -59,6 +59,11 @@
 
 
 struct _VortexFrame {
+	/**
+	 * Context where the frame was created.
+	 */ 
+	VortexCtx       * ctx;
+
 	/** 
 	 * Frame unique identifier. Every frame read have a different
 	 * frame id. This is used to track down frames that are
@@ -105,10 +110,9 @@ struct _VortexFrame {
  *
  * @return Next frame identifier available.
  */
-int  __vortex_frame_get_next_id (char  * from)
+int  __vortex_frame_get_next_id (VortexCtx * ctx, char  * from)
 {
 	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
 	int         result;
 
 	vortex_mutex_lock (&ctx->frame_id_mutex);
@@ -116,7 +120,7 @@ int  __vortex_frame_get_next_id (char  * from)
 	result = ctx->frame_id;
 	ctx->frame_id++;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "from='%s' allocating a new frame id=%d", from, result);
+	vortex_log (VORTEX_LEVEL_DEBUG, "from='%s' allocating a new frame id=%d", from, result);
 
 	vortex_mutex_unlock (&ctx->frame_id_mutex);
 
@@ -141,11 +145,13 @@ int  __vortex_frame_get_next_id (char  * from)
  *
  * @param frame the frame to get as raw text.
  * 
- * @return the raw frame or NULL if fails
+ * @return the raw frame or NULL if fails.
  **/
 char  *       vortex_frame_get_raw_frame         (VortexFrame * frame)
 {
-	v_return_val_if_fail (frame, NULL);
+	/* check reference received */
+	if (frame == NULL)
+		return NULL;
 
 	return vortex_frame_build_up_from_params_s (frame->type,
 						    frame->channel,
@@ -315,7 +321,6 @@ char  * vortex_frame_build_up_from_params_s (VortexFrameType   type,
 		/* use seq frame building function */
 		return vortex_frame_seq_build_up_from_params (channel, seqno, size);
 	default:
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "received a non-handled frame type");
 		if (frame_size != NULL)
 			(* frame_size ) = -1;
 		return NULL;
@@ -446,7 +451,8 @@ char  * vortex_frame_build_up_from_params_s (VortexFrameType   type,
  * @return A newly created \ref VortexFrame object that must be
  * unrefered using \ref vortex_frame_free when no longer needed.
  */
-VortexFrame * vortex_frame_create               (VortexFrameType   type,
+VortexFrame * vortex_frame_create               (VortexCtx       * ctx,
+						 VortexFrameType   type,
 						 int               channel,
 						 int               msgno,
 						 bool              more,
@@ -457,7 +463,7 @@ VortexFrame * vortex_frame_create               (VortexFrameType   type,
 {
 	/* create a new frame using new_full interface and return
 	 * it. */
-	return vortex_frame_create_full (type, channel, msgno, more, seqno, size, ansno, 
+	return vortex_frame_create_full (ctx, type, channel, msgno, more, seqno, size, ansno, 
 					 NULL,     /* content type value */
 					 NULL,     /* content transfer encoding value */
 					 payload); /* frame payload */
@@ -494,7 +500,8 @@ VortexFrame * vortex_frame_create               (VortexFrameType   type,
  * @return A newly created \ref VortexFrame object that must be
  * unrefered using \ref vortex_frame_free when no longer needed.
  */
-VortexFrame * vortex_frame_create_full          (VortexFrameType   type,
+VortexFrame * vortex_frame_create_full          (VortexCtx       * ctx,
+						 VortexFrameType   type,
 						 int               channel,
 						 int               msgno,
 						 bool              more,
@@ -505,9 +512,17 @@ VortexFrame * vortex_frame_create_full          (VortexFrameType   type,
 						 char            * transfer_encoding,
 						 const char      * payload)
 {
-	VortexFrame * result = axl_new (VortexFrame, 1);
+	VortexFrame * result;
+
+	/* check context received */
+	if (ctx == NULL)
+		return NULL;
+
+	/* build base object */
+	result = axl_new (VortexFrame, 1);
 	
-	result->id           = __vortex_frame_get_next_id ("create-full");
+	result->id           = __vortex_frame_get_next_id (ctx, "create-full");
+	result->ctx          = ctx;
 	result->ref_count    = 1;
 	result->type         = type;
 	result->channel      = channel;
@@ -575,7 +590,8 @@ VortexFrame * vortex_frame_create_full          (VortexFrameType   type,
  * @return A newly created \ref VortexFrame object that must be
  * unrefered using \ref vortex_frame_free when no longer needed.
  */
-VortexFrame * vortex_frame_create_full_ref      (VortexFrameType   type,
+VortexFrame * vortex_frame_create_full_ref      (VortexCtx       * ctx,
+						 VortexFrameType   type,
 						 int               channel,
 						 int               msgno,
 						 bool              more,
@@ -586,9 +602,17 @@ VortexFrame * vortex_frame_create_full_ref      (VortexFrameType   type,
 						 char            * transfer_encoding,
 						 char            * payload)
 {
-	VortexFrame * result = axl_new (VortexFrame, 1);
+	VortexFrame * result;
+
+	/* check context received */
+	if (ctx == NULL)
+		return NULL;
+
+	/* create base object */
+	result = axl_new (VortexFrame, 1);
 	
-	result->id           = __vortex_frame_get_next_id ("create-full");
+	result->id           = __vortex_frame_get_next_id (ctx, "create-full");
+	result->ctx          = ctx;
 	result->ref_count    = 1;
 	result->type         = type;
 	result->channel      = channel;
@@ -642,7 +666,8 @@ VortexFrame * vortex_frame_copy                 (VortexFrame      * frame)
 		return NULL;
 
 	/* create the frame */
-	result = vortex_frame_create (frame->type, frame->channel, frame->msgno,
+	result = vortex_frame_create (frame->ctx, 
+				      frame->type, frame->channel, frame->msgno,
 				      frame->more, frame->seqno, frame->size, 
 				      frame->ansno, frame->payload);
 	/* set same channel */
@@ -664,8 +689,9 @@ VortexFrame * vortex_frame_copy                 (VortexFrame      * frame)
  */
 int         vortex_frame_receive_raw  (VortexConnection * connection, char  * buffer, int  maxlen)
 {
-	int     nread;
-	char  * error_msg;
+	int         nread;
+	char      * error_msg;
+	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 
  __vortex_frame_readn_keep_reading:
 	/* clear buffer */
@@ -678,7 +704,7 @@ int         vortex_frame_receive_raw  (VortexConnection * connection, char  * bu
 			goto __vortex_frame_readn_keep_reading;
 		
 		error_msg = vortex_errno_get_last_error ();
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to readn=%d, error was: %s",
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to readn=%d, error was: %s",
 		       maxlen, error_msg ? error_msg : "");
 	}
 
@@ -710,9 +736,10 @@ int         vortex_frame_receive_raw  (VortexConnection * connection, char  * bu
  **/
 int          __vortex_frame_readline (VortexConnection * connection, char  * buffer, int  maxlen)
 {
-	int   n, rc;
-	char  c, *ptr;
-	char     * error_msg;
+	int         n, rc;
+	char        c, *ptr;
+	char      * error_msg;
+	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 
 	/* clear the buffer received */
 	memset (buffer, 0, maxlen * sizeof (char ));
@@ -740,13 +767,13 @@ int          __vortex_frame_readline (VortexConnection * connection, char  * buf
 			 * without logging a message */
 			if (vortex_connection_is_ok (connection, false)) {
 				error_msg = vortex_errno_get_last_error ();
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to read a line, error was: %s",
+				vortex_log (VORTEX_LEVEL_CRITICAL, "unable to read a line, error was: %s",
 					    error_msg ? error_msg : "");
 			}
 			return (-1);
 		}
 	}
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "line read from underlying transport: '%s'", buffer);
+	vortex_log (VORTEX_LEVEL_DEBUG, "line read from underlying transport: '%s'", buffer);
 	*ptr = 0;
 	return (n);
 
@@ -854,12 +881,13 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	VortexFrame * frame;
 	char          line[100];
 	char        * buffer = NULL;
+	VortexCtx   * ctx    = vortex_connection_get_ctx (connection);
 
 	/* before reading anything else, we have to check if previous
 	 * read was complete if not, we are in a frame fragment case */
 	buffer = vortex_connection_get_data (connection, "buffer");
 	if (buffer) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, 
+		vortex_log (VORTEX_LEVEL_DEBUG, 
 		       "received more data after a frame fragment, previous read isn't still complete");
 		/* get previous frame */
 		frame        = vortex_connection_get_data (connection, "frame");
@@ -867,12 +895,12 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 
 		/* get previous remaining */
 		remaining    = PTR_TO_INT (vortex_connection_get_data (connection, "remaining_bytes"));
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "remaining bytes to be read: %d", remaining);
+		vortex_log (VORTEX_LEVEL_DEBUG, "remaining bytes to be read: %d", remaining);
 		v_return_val_if_fail (remaining > 0, NULL);
 
 		/* get previous bytes read */
 		bytes_read = PTR_TO_INT (vortex_connection_get_data (connection, "bytes_read"));
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "bytes already read: %d", bytes_read);
+		vortex_log (VORTEX_LEVEL_DEBUG, "bytes already read: %d", bytes_read);
 
 		bytes_read = vortex_frame_receive_raw (connection, buffer + bytes_read, remaining);
 		if (bytes_read == 0) {
@@ -880,19 +908,19 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 			axl_free (buffer);
 			vortex_connection_set_data (connection, "buffer", NULL);
 			vortex_connection_set_data (connection, "frame", NULL);
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "remote peer have closed connection while reading the rest of the frame having received part of it");
+			vortex_log (VORTEX_LEVEL_CRITICAL, "remote peer have closed connection while reading the rest of the frame having received part of it");
 			__vortex_connection_set_not_connected (connection, "remote peer have closed connection while reading the rest of the frame");
 			return NULL;
 		}
 
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "bytes ready this time: %d", bytes_read);
+		vortex_log (VORTEX_LEVEL_DEBUG, "bytes ready this time: %d", bytes_read);
 
 		/* check data received */
 		if (bytes_read != remaining) {
 			/* add bytes read to keep on reading */
 			bytes_read += PTR_TO_INT (vortex_connection_get_data (connection, "bytes_read"));
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "the frame fragment isn't still complete, total read: %d", bytes_read);
+			vortex_log (VORTEX_LEVEL_DEBUG, "the frame fragment isn't still complete, total read: %d", bytes_read);
 			goto save_buffer;
 			
 		}
@@ -904,39 +932,39 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 		bytes_read = (frame->size + 5);
 		vortex_connection_set_data (connection, "buffer", NULL);
 		vortex_connection_set_data (connection, "frame", NULL);
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "this already complete (total size: %d", frame->size);
+		vortex_log (VORTEX_LEVEL_DEBUG, "this already complete (total size: %d", frame->size);
 		goto process_buffer;
 	}
 	
 	/* parse frame header, read the first line */
 	bytes_read = __vortex_frame_readline (connection, line, 99);
 	if (bytes_read == -2) {
-                vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "no data were waiting on this non-blocking connection (EWOULDBLOCK error)");
+                vortex_log (VORTEX_LEVEL_WARNING, "no data were waiting on this non-blocking connection (EWOULDBLOCK error)");
 		return NULL;
 	}
 
 	if (bytes_read == 0) {
 		/* check if channel is expected to be closed */
 		if (vortex_connection_get_data (connection, "being_closed")) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "properly connection close");
+			vortex_log (VORTEX_LEVEL_DEBUG, "properly connection close");
 			__vortex_connection_set_not_connected (connection, "connection properly closed");
 			return NULL;
 		}
 
 		/* check if we have a non-blocking connection */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "client have disconnected without closing properly this session id=%d",
+		vortex_log (VORTEX_LEVEL_CRITICAL, "client have disconnected without closing properly this session id=%d",
 		       vortex_connection_get_id (connection));
 		__vortex_connection_set_not_connected (connection, "client have disconnected without closing session");
 		return NULL;
 	}
 	if (bytes_read == -1) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "an error have ocurred while reading socket");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "an error have ocurred while reading socket");
 		__vortex_connection_set_not_connected (connection, "client have disconnected without closing session");
 		return NULL;
 	}
 
 	if ((line[bytes_read - 1] != '\x0A') || (line[bytes_read - 2] != '\x0D')) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
 		       "no line definition found for frame, over connection id=%d, bytes read: %d, line: \n'%s'\n, closing session",
 		       vortex_connection_get_id (connection),
 		       bytes_read, line);
@@ -951,7 +979,8 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	frame->ref_count = 1;
 
 	/* associate the next frame id available */
-	frame-> id  = __vortex_frame_get_next_id ("get-next");
+	frame-> id  = __vortex_frame_get_next_id (ctx, "get-next");
+	frame->ctx  = ctx;
 
 	/* check initial frame spec */
 	frame->type = VORTEX_FRAME_TYPE_UNKNOWN;
@@ -971,7 +1000,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	if (frame->type == VORTEX_FRAME_TYPE_UNKNOWN) {
 		/* unref frame value */
 		axl_free (frame);
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "poorly-formed frame: message type not defined");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "poorly-formed frame: message type not defined");
 		__vortex_connection_set_not_connected (connection, "poorly-formed frame: message type not defined");
 		return NULL;
 	}
@@ -988,7 +1017,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 
 	/* check bytes read */
 	if (bytes_read < 5) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
 		       "poorly-formed frame: message values are wrong  (%d < 9)", bytes_read);
 		__vortex_connection_set_not_connected (connection, "poorly-formed frame: message values are wrong (%d < 9)");
 
@@ -999,7 +1028,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 
 	/* check more flag */
 	if (frame->more_char != '.' && frame->more_char != '*') {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "poorly-formed frame: more char is wrong");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "poorly-formed frame: more char is wrong");
 		__vortex_connection_set_not_connected (connection, "poorly-formed frame: more char is wrong");
 
 		/* unref frame node allocated */
@@ -1015,7 +1044,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	
 	/* check incoming frame size */
 	if (frame->size >= MAX_BUFFER_SIZE) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "received an excessive sized frame, closing session");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "received an excessive sized frame, closing session");
 		__vortex_connection_set_not_connected (connection, "received an excessive sized frame, closing session");
 
 		/* unref frame node allocated */
@@ -1029,7 +1058,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	/* read the next frame content */
 	bytes_read = vortex_frame_receive_raw (connection, buffer, frame->size + 5);
 	if (bytes_read == 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "remote peer have closed connection while reading the rest of the frame");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "remote peer have closed connection while reading the rest of the frame");
 		__vortex_connection_set_not_connected (connection, "remote peer have closed connection while reading the rest of the frame");
 
 		/* unref frame node allocated */
@@ -1064,7 +1093,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 		vortex_connection_set_data (connection, "bytes_read", 
 					    INT_TO_PTR (bytes_read));
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, 
+		vortex_log (VORTEX_LEVEL_DEBUG, 
 		       "(ok message) received a frame fragment (expected: %d read: %d remaining: %d), storing into this connection id=%d",
 		       (frame->size + 5), bytes_read, (frame->size + 5) - bytes_read, vortex_connection_get_id (connection));
 		return NULL;
@@ -1074,7 +1103,7 @@ process_buffer:
 
 	/* check frame have ended */
 	if (! axl_stream_cmp (&buffer[bytes_read - 5], "END\x0D\x0A", 5)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
 		       "poorly formed frame: frame trailer CR LF not found, discarding content: '%s'",
 		       (buffer != NULL) ? buffer : "(null content)");
 		__vortex_connection_set_not_connected (connection, "poorly formed frame: frame trailer CR LF not found, discarding content");
@@ -1119,12 +1148,13 @@ process_buffer:
 	axl_free (buffer);
 
 	/* log frame on channel received */
-	if (vortex_log_is_enabled ())
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "Frame received on channel %d, content type=%s, transfer encoding=%s, payload size=%d, mime content size=%d", 
+	if (vortex_log_is_enabled (ctx)) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "Frame received on channel %d, content type=%s, transfer encoding=%s, payload size=%d, mime content size=%d", 
 		       frame->channel,
 		       (frame->content_type != NULL) ? frame->content_type : "" ,
 		       (frame->transfer_encoding != NULL) ? frame->transfer_encoding : "",
 		       frame->size, frame->mime_headers_size);
+	} /* end if */
 
 	return frame;
 
@@ -1144,9 +1174,10 @@ process_buffer:
  */
 bool              vortex_frame_send_raw     (VortexConnection * connection, const char  * a_frame, int  frame_size)
 {
-	bool     result = true;
-	int      bytes  = 0;
-	char   * error_msg;
+	bool        result = true;
+	int         bytes  = 0;
+	char      * error_msg;
+	VortexCtx * ctx    = vortex_connection_get_ctx (connection);
 
 	v_return_val_if_fail (connection, false);
 	v_return_val_if_fail (vortex_connection_is_ok (connection, false), false);
@@ -1158,7 +1189,7 @@ bool              vortex_frame_send_raw     (VortexConnection * connection, cons
 		if (errno == VORTEX_EINTR)
 			goto again;
 		if ((errno == VORTEX_EWOULDBLOCK) || (bytes == -2)) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "unable to write data to socket, socket not prepare to write");
+			vortex_log (VORTEX_LEVEL_WARNING, "unable to write data to socket, socket not prepare to write");
 			goto end;
 		}
 		
@@ -1170,16 +1201,16 @@ bool              vortex_frame_send_raw     (VortexConnection * connection, cons
 			return false;
 		}
 		error_msg = vortex_errno_get_last_error ();
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to write data to socket: %s",
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to write data to socket: %s",
 		       error_msg ? error_msg : "");
 		__vortex_connection_set_not_connected (connection, "unable to write data to socket:");
 		return false;
 	}
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "bytes written: %d", bytes);
+	vortex_log (VORTEX_LEVEL_DEBUG, "bytes written: %d", bytes);
 
 	if (bytes == 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, 
+		vortex_log (VORTEX_LEVEL_DEBUG, 
 		       "remote peer have closed before sending proper close connection, closing");
 		__vortex_connection_set_not_connected (connection, 
 						       "remote peer have closed before sending proper close connection, closing");
@@ -1187,11 +1218,11 @@ bool              vortex_frame_send_raw     (VortexConnection * connection, cons
 	}
 
 	if (bytes != frame_size) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "write request mismatch with write done (%d != %d)",
+		vortex_log (VORTEX_LEVEL_CRITICAL, "write request mismatch with write done (%d != %d)",
 		       bytes, frame_size);
 		return false;
 	}
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "write on socket request=%d written=%d", frame_size, bytes);
+	vortex_log (VORTEX_LEVEL_DEBUG, "write on socket request=%d written=%d", frame_size, bytes);
 	
  end:
 	return result;
@@ -1223,7 +1254,10 @@ bool              vortex_frame_send_raw     (VortexConnection * connection, cons
  */
 bool          vortex_frame_ref                   (VortexFrame * frame)
 {
-	v_return_val_if_fail (frame, false);
+
+	/* check reference received */
+	if (frame == NULL)
+		return false;
 
 	/* increase the frame counting */
 	frame->ref_count++;
@@ -1271,11 +1305,13 @@ void          vortex_frame_unref                 (VortexFrame * frame)
  **/
 void          vortex_frame_free (VortexFrame * frame)
 {
+	VortexCtx * ctx;
 	if (frame == NULL)
 		return;
 
 	/* log a frame deallocated message */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "deallocating frame id=%d", frame->id);
+	ctx = frame->ctx;
+	vortex_log (VORTEX_LEVEL_DEBUG, "deallocating frame id=%d", frame->id);
 
 	/* free content type */
 	if (frame->content_type != NULL)
@@ -1309,7 +1345,8 @@ VortexFrame * __vortex_frame_join_common (VortexFrame * a, VortexFrame * b, bool
 	result->ref_count         = 1;
 	
 	/* get next Id for this new frame */
-	result->id                = __vortex_frame_get_next_id ("frame-join");
+	result->id                = __vortex_frame_get_next_id (a->ctx, "frame-join");
+	result->ctx               = a->ctx;
 	result->type              = a->type;
 	result->channel           = a->channel;
 	result->msgno             = a->msgno;
@@ -1442,6 +1479,7 @@ bool     vortex_frame_common_string_check (char  * value_a, char  * value_b)
  */
 bool     vortex_frame_are_joinable (VortexFrame * a, VortexFrame * b) 
 {
+	VortexCtx * ctx;
 	/*
 	 * Because frames inside vortex with mime type are handled
 	 * separating payload from entity-headers (mime headers), the
@@ -1466,42 +1504,44 @@ bool     vortex_frame_are_joinable (VortexFrame * a, VortexFrame * b)
 	 * That's why this function check the seq number with the mime
 	 * type headers plus the payload size.
 	 */
+	if (a == NULL || b == NULL)
+		return false;
 
-	v_return_val_if_fail (a, false);
-	v_return_val_if_fail (b, false);
+	/* get the context */
+	ctx = a->ctx;
 	
 	if (a->type != b->type) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "frames are not joinable because type mismatch");
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not joinable because type mismatch");
 		return false;
 	}
 
 	if (!a->more && !b->more)  {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "frames are not joinable because more flag mismatch");
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not joinable because more flag mismatch");
 		return false;
 	}
 
 	if (!a->more && b->more) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "frames are not joinable because more flag mismatch 2");
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not joinable because more flag mismatch 2");
 		return false;
 	}
 
 	if (a->channel != b->channel)  {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "frames are not joinable because channel mismatch");
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not joinable because channel mismatch");
 		return false;
 	}
 
 	if (a->msgno != b->msgno)  {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "frames are not joinable because  msgno mismatch");
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not joinable because  msgno mismatch");
 		return false;
 	}
 
 	if (a->ansno != b->ansno)  {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "frames are not joinable because ansno mismatch");
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not joinable because ansno mismatch");
 		return false;
 	}
 
 	if ((a->seqno + a->size + a->mime_headers_size) != b->seqno)  {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "frames are not joinable because seqno mismatch (%d + %d + %d != %d)",
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not joinable because seqno mismatch (%d + %d + %d != %d)",
 		       a->seqno, a->size, a->mime_headers_size, b->seqno);
 		return false;
 	}
@@ -1522,75 +1562,80 @@ bool     vortex_frame_are_joinable (VortexFrame * a, VortexFrame * b)
  */
 bool     vortex_frame_are_equal (VortexFrame * a, VortexFrame * b)
 {
-	v_return_val_if_fail (a, false);
-	v_return_val_if_fail (b, false);
+	VortexCtx * ctx;
+	
+	if (a == NULL || b == NULL)
+		return false;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "checking for equality");
+	/* get the context */
+	ctx = a->ctx;
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "checking for equality");
 
 	/* check frame type */
 	if (a->type != b->type) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "frames are not equal due to type (%d != %d)",
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not equal due to type (%d != %d)",
 		       a->type, b->type);
 		return false;
 	}
 	
 	/* check more flag type */
 	if (a->more != b->more) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "frames are not equal due to more flag (%d != %d)",
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not equal due to more flag (%d != %d)",
 		       a->more, b->more);
 		return false;
 	}
 	
 	/* check channel number */
 	if (a->channel != b->channel) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "frames are not equal due to channel number (%d != %d)",
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not equal due to channel number (%d != %d)",
 		       a->channel, b->channel);
 		return false;
 	}
 
 	/* check message number */
 	if (a->msgno != b->msgno) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "frames are not equal due to message number (%d != %d)",
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not equal due to message number (%d != %d)",
 		       a->msgno, b->msgno);
 		return false;
 	}
 
 	/* check sequence number */
 	if (a->seqno != b->seqno) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "frames are not equal due to sequence number (%d != %d)",
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not equal due to sequence number (%d != %d)",
 		       a->seqno, b->seqno);
 		return false;
 	}
 	
 	/* check frame size */
 	if (a->size != b->size) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "frames are not equal due to frame size (%d != %d)",
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not equal due to frame size (%d != %d)",
 		       a->size, b->size);
 		return false;
 	}
 	
 	/* check ans number */
 	if (a->ansno != b->ansno) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "frames are not equal due to ansno name (%d != %d)",
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not equal due to ansno name (%d != %d)",
 		       a->ansno, b->ansno);
 		return false;
 	}
 
 	/* check frame content type */
 	if (!vortex_frame_common_string_check (a->content_type, b->content_type)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "frames are not equal due to content type value");
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not equal due to content type value");
 		return false;
 	}
 
 	/* check for frame transfer encoding type */
 	if (!vortex_frame_common_string_check (a->transfer_encoding, b->transfer_encoding)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "frames are not equal due to content transfer encoding value");
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not equal due to content transfer encoding value");
 		return false;
 	}
 
 	/* check payload */
 	if (!vortex_frame_common_string_check (a->payload, b->payload)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "frames are not equal due to payload");
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not equal due to payload");
 		return false;
 	}
 
@@ -1625,7 +1670,8 @@ bool     vortex_frame_are_equal (VortexFrame * a, VortexFrame * b)
  */
 int           vortex_frame_get_id                (VortexFrame * frame)
 {
-	v_return_val_if_fail (frame, -1);
+	if (frame == NULL)
+		return -1;
 	return frame->id;
 }
 
@@ -1641,7 +1687,8 @@ int           vortex_frame_get_id                (VortexFrame * frame)
  **/
 VortexFrameType vortex_frame_get_type   (VortexFrame * frame)
 {
-	v_return_val_if_fail (frame, -1);
+	if (frame == NULL)
+		return -1;
 	
 	return frame->type;
 }
@@ -1663,7 +1710,8 @@ VortexFrameType vortex_frame_get_type   (VortexFrame * frame)
  **/
 char        * vortex_frame_get_content_type (VortexFrame * frame)
 {
-	v_return_val_if_fail (frame, NULL);
+	if (frame == NULL)
+		return NULL;
 
 	return frame->content_type;
 }
@@ -1679,7 +1727,8 @@ char        * vortex_frame_get_content_type (VortexFrame * frame)
  */
 char        * vortex_frame_get_transfer_encoding (VortexFrame * frame)
 {
-	v_return_val_if_fail (frame, NULL);
+	if (frame == NULL)
+		return NULL;
 
 	return frame->transfer_encoding;
 }
@@ -1700,7 +1749,9 @@ char        * vortex_frame_get_transfer_encoding (VortexFrame * frame)
  */
 int           vortex_frame_get_mime_header_size  (VortexFrame * frame)
 {
-	v_return_val_if_fail (frame, 0);
+	if (frame == NULL)
+		return 0;
+
 	return frame->mime_headers_size;
 }
 
@@ -1715,7 +1766,8 @@ int           vortex_frame_get_mime_header_size  (VortexFrame * frame)
  **/
 int           vortex_frame_get_channel  (VortexFrame * frame)
 {
-	v_return_val_if_fail (frame, -1);
+	if (frame == NULL)
+		return -1;
 
 	return frame->channel;
 }
@@ -1732,7 +1784,8 @@ int           vortex_frame_get_channel  (VortexFrame * frame)
  */
 VortexChannel * vortex_frame_get_channel_ref (VortexFrame * frame)
 {
-	v_return_val_if_fail (frame, NULL);
+	if (frame == NULL)
+		return NULL;
 
 	/* return the channel reference */
 	return frame->channel_ref;
@@ -1747,7 +1800,8 @@ VortexChannel * vortex_frame_get_channel_ref (VortexFrame * frame)
  */
 void vortex_frame_set_channel_ref (VortexFrame * frame, VortexChannel * channel)
 {
-	v_return_if_fail (frame);
+	if (frame == NULL)
+		return;
 	
 	/* configure the channel to the frame */
 	frame->channel_ref = channel;
@@ -1766,7 +1820,8 @@ void vortex_frame_set_channel_ref (VortexFrame * frame, VortexChannel * channel)
  **/
 int           vortex_frame_get_msgno    (VortexFrame * frame)
 {
-	v_return_val_if_fail (frame, -1);
+	if (frame == NULL)
+		return -1;
 
 	return frame->msgno;
 }
@@ -1783,7 +1838,8 @@ int           vortex_frame_get_msgno    (VortexFrame * frame)
  **/
 int           vortex_frame_get_more_flag (VortexFrame * frame)
 {
-	v_return_val_if_fail (frame, -1);
+	if (frame == NULL)
+		return -1;
 
 	if (frame->more)
 		return 1;
@@ -1802,7 +1858,8 @@ int           vortex_frame_get_more_flag (VortexFrame * frame)
  **/
 int           vortex_frame_get_seqno    (VortexFrame * frame)
 {
-	v_return_val_if_fail (frame, -1);
+	if (frame == NULL)
+		return -1;
 
 	return frame->seqno;
 }
@@ -1823,7 +1880,8 @@ int           vortex_frame_get_seqno    (VortexFrame * frame)
  **/
 const void *  vortex_frame_get_payload  (VortexFrame * frame)
 {
-	v_return_val_if_fail (frame, NULL);
+	if (frame == NULL)
+		return NULL;
 
 	return frame->payload;
 }
@@ -1839,7 +1897,8 @@ const void *  vortex_frame_get_payload  (VortexFrame * frame)
  **/
 int           vortex_frame_get_ansno    (VortexFrame * frame)
 {
-	v_return_val_if_fail (frame, -1);
+	if (frame == NULL)
+		return -1;
 
 	return frame->ansno;
 }
@@ -1867,7 +1926,8 @@ int           vortex_frame_get_ansno    (VortexFrame * frame)
  **/
 int    vortex_frame_get_payload_size (VortexFrame * frame)
 {
-	v_return_val_if_fail (frame, -1);
+	if (frame == NULL)
+		return -1;
 
 	return frame->size;
 
@@ -1892,10 +1952,29 @@ int    vortex_frame_get_payload_size (VortexFrame * frame)
  */
 int           vortex_frame_get_content_size      (VortexFrame * frame)
 {
-	v_return_val_if_fail (frame, 0);
+	if (frame == NULL)
+		return 0;
 	
 	return frame->size + frame->mime_headers_size;
 	
+}
+
+/** 
+ * @brief Allows to get the context reference under which the frame
+ * was created.
+ * 
+ * @param frame The frame that is required to return its context.
+ * 
+ * @return A reference to the context (\ref VortexCtx) or NULL if it
+ * fails.
+ */
+VortexCtx   * vortex_frame_get_ctx               (VortexFrame * frame)
+{
+	if (frame == NULL)
+		return NULL;
+
+	/* return context configured */
+	return frame->ctx;
 }
 
 /* Mapping values \n -> \x0A \r -> \x0D */
@@ -1940,15 +2019,34 @@ char        * vortex_frame_get_error_message    (char  * code,
 }
 
 /** 
- * @brief Allows to check if the given frame contains an error message
- * inside the frame payload.
+ * @brief Allows to check if the given frame contains a BEEP error
+ * message inside the frame payload.
  *
  * The function not only returns if the frame is an error message but
  * also returns the error code and the textual message.
+ *
+ * This function expects to receive a BEEP error message as part of
+ * the profile being implemented. This function shouldn't be used to
+ * general error checking. The function expects a particular error
+ * reply format, that is, the BEEP error message:
+ *
+ * \code
+ *  <error code='501'>textual error reported</error>
+ * \endcode
+ *
+ * If your intention is to check a generic error message received,
+ * with a different format, you could use \ref vortex_frame_get_type,
+ * looking at \ref VORTEX_FRAME_TYPE_ERR. This is a generic
+ * recomendation because some profiles uses only MSG/RPY, implementing
+ * the error reporting inside the message content received.
  * 
  * @param frame   The frame to check for error message inside.
- * @param code    The error code the error message have (if defined)
- * @param message The textual error message (if defined)
+ *
+ * @param code The error code the error message have (if
+ * defined). This value must be deallocated by calling to axl_free.
+ *
+ * @param message The textual error message (if defined). This value
+ * must be deallocated by calling to axl_free.
  * 
  * @return true if the frame contains an error message, false if not.
  */
@@ -1956,7 +2054,8 @@ bool          vortex_frame_is_error_message      (VortexFrame * frame,
 						  char  ** code,
 						  char  ** message)
 {
-	v_return_val_if_fail (frame, false);
+	if (frame == NULL)
+		return false;
 	return vortex_channel_validate_err (frame, code, message);
 }
 

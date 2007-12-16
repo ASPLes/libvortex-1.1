@@ -52,13 +52,6 @@
  */
 
 /** 
- * @internal The following variable its to hold the current context
- * used by the vortex_ctx_set and vortex_ctx_get. In the future this
- * function won't be used.
- */
-VortexCtx * vortex_ctx_global = NULL;
-
-/** 
  * @brief Creates a new vortex execution context. This is mainly used
  * by the main module (called from vortex_init) and finished from
  * vortex_exit. This is a preparation to make the vortex a stateless
@@ -82,33 +75,6 @@ VortexCtx * vortex_ctx_new ()
 
 	/* return context created */
 	return result;
-}
-
-/** 
- * @brief Transit function that allows to get the current context
- * configured. 
- * 
- * @return A reference to the current context configured. You should
- * not release the reference returned by this function.
- */
-VortexCtx * vortex_ctx_get ()
-{
-	return vortex_ctx_global;
-}
-
-/** 
- * @brief Transit function that allows to configure the vortex ctx to
- * be used by the library. Calling to this function must be done
- * before any operation is done by the vortex library (\ref vortex_init).
- * 
- * @param ctx The new vortex context to configure.
- */
-void        vortex_ctx_set (VortexCtx * ctx)
-{
-	/* configure context */
-	vortex_ctx_global = ctx;
-	
-	return;
 }
 
 /** 

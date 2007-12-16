@@ -45,20 +45,23 @@
  * @{
  */
 
-VortexConnection * vortex_listener_new             (const char  * host, 
-						    const char  * port, 
-						    VortexListenerReady on_ready, 
-						    axlPointer user_data);
+VortexConnection * vortex_listener_new             (VortexCtx            * ctx,
+						    const char           * host, 
+						    const char           * port, 
+						    VortexListenerReady    on_ready, 
+						    axlPointer             user_data);
 
-VortexConnection * vortex_listener_new2            (const char  * host,
-						    int           port,
-						    VortexListenerReady on_ready, 
-						    axlPointer user_data);
+VortexConnection * vortex_listener_new2            (VortexCtx           * ctx,
+						    const char          * host,
+						    int                   port,
+						    VortexListenerReady   on_ready, 
+						    axlPointer            user_data);
 
-VortexConnection * vortex_listener_new_full        (const char  * host,
-						    const char  * port,
-						    VortexListenerReadyFull on_ready_full, 
-						    axlPointer user_data);
+VortexConnection * vortex_listener_new_full        (VortexCtx                * ctx,
+						    const char               * host,
+						    const char               * port,
+						    VortexListenerReadyFull    on_ready_full, 
+						    axlPointer                 user_data);
 
 void          vortex_listener_accept_connections   (VortexCtx        * ctx,
 						    int                server_socket,
@@ -69,22 +72,24 @@ void          vortex_listener_accept_connection    (VortexConnection * connectio
 
 void          __vortex_listener_second_step_accept (VortexFrame * frame, 
 						    VortexConnection * connection);
-void          vortex_listener_wait                 ();
+void          vortex_listener_wait                 (VortexCtx * ctx);
 
-void          vortex_listener_unlock               ();
+void          vortex_listener_unlock               (VortexCtx * ctx);
 
 void          vortex_listener_init                 (VortexCtx * ctx);
 
 void          vortex_listener_cleanup              (VortexCtx * ctx);
 
-bool          vortex_listener_parse_conf_and_start ();
+bool          vortex_listener_parse_conf_and_start (VortexCtx * ctx);
 
-void          vortex_listener_set_default_realm (const char  * realm);
+void          vortex_listener_set_default_realm    (VortexCtx   * ctx,
+						    const char  * realm);
 
-const char  * vortex_listener_get_default_realm ();
+const char  * vortex_listener_get_default_realm    (VortexCtx   * ctx);
 
-void          vortex_listener_set_on_connection_accepted (VortexOnAcceptedConnection on_accepted, 
-							  axlPointer data);
+void          vortex_listener_set_on_connection_accepted (VortexCtx                  * ctx,
+							  VortexOnAcceptedConnection   on_accepted, 
+							  axlPointer                   data);
 
 void          vortex_listener_shutdown (VortexConnection * listener,
 					bool               also_created_conns);

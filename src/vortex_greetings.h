@@ -51,14 +51,16 @@ bool           vortex_greetings_client_send    (VortexConnection * connection);
 
 VortexFrame *  vortex_greetings_client_process (VortexConnection * connection);
 
-void           vortex_greetings_set_features   (const char * feature);
+void           vortex_greetings_set_features   (VortexCtx        * ctx,
+						const char       * feature);
 
-const char  *  vortex_greetings_get_features   ();
+const char  *  vortex_greetings_get_features   (VortexCtx        * ctx);
 
-void           vortex_greetings_set_localize   (const char * localize);
+void           vortex_greetings_set_localize   (VortexCtx        * ctx,
+						const char       * localize);
 
-const char  *  vortex_greetings_get_localize   ();
+const char  *  vortex_greetings_get_localize   (VortexCtx        * ctx);
 
-void           vortex_greetings_cleanup        (VortexCtx * ctx);
+void           vortex_greetings_cleanup        (VortexCtx        * ctx);
 
 #endif

@@ -177,26 +177,27 @@ bool __vortex_io_waiting_default_add_to (int                fds,
 					 axlPointer         __fd_set)
 {
 	VortexSelect * select = (VortexSelect *) __fd_set;
+	VortexCtx    * ctx    = vortex_connection_get_ctx (connection);
 
 #if defined(AXL_OS_UNIX)
 	/* disable the following check on windows because it doesn't
 	 * reuse socket descriptors, using values that are higher than
 	 * VORTEX_FD_SETSIZE (actuall FD_SETSIZE) */
 	if (fds >= VORTEX_FD_SETSIZE) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
 			    "reached max amount of descriptors for socket set based on select(2). See VORTEX_FD_SETSIZE=%d, fds=%d, or other I/O mechanism, closing connection.", VORTEX_FD_SETSIZE, fds);
 		return false;
 	} /* end if */
 #endif
 
 	if (fds < 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL,
+		vortex_log (VORTEX_LEVEL_CRITICAL,
 			    "received a non valid socket (%d), unable to add to the set", fds);
 		return false;
 	}
 
 	if (select->length == (VORTEX_FD_SETSIZE - 1)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
 			    "reached max amount of descriptors for socket set based on select(2). See VORTEX_FD_SETSIZE=%d, fds=%d, or other I/O mechanism, closing connection.", VORTEX_FD_SETSIZE, fds);
 		return false;
 	} /* end if */
@@ -253,12 +254,13 @@ axlPointer __vortex_io_waiting_poll_create (VortexIoWaitingFor wait_to)
 {
 	int          max;
 	VortexPoll * poll;
+	VortexCtx  * ctx    = vortex_connection_get_ctx (connection);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "creating empty poll(2) set");
+	vortex_log (VORTEX_LEVEL_DEBUG, "creating empty poll(2) set");
 
 	/* support up to 4096 connections */
 	if (! vortex_conf_get (VORTEX_HARD_SOCK_LIMIT, &max)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to get current max hard sock limit");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get current max hard sock limit");
 		return NULL;
 	} /* end if */
 
@@ -329,16 +331,16 @@ bool __vortex_io_waiting_poll_add_to (int                fds,
 	if (poll->length == poll->max) {
 		/* support up to 4096 connections */
 		if (! vortex_conf_get (VORTEX_HARD_SOCK_LIMIT, &max)) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to get current max hard sock limit, closing socket");
+			vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get current max hard sock limit, closing socket");
 			return false;
 		} /* end if */
 
 		if (poll->max >= max) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "unable to accept more sockets, max poll set reached.");
+			vortex_log (VORTEX_LEVEL_DEBUG, "unable to accept more sockets, max poll set reached.");
 			return false;
 		} /* end if */
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "max amount of file descriptors reached, expanding");
+		vortex_log (VORTEX_LEVEL_DEBUG, "max amount of file descriptors reached, expanding");
 
 		/* limit reached */
 		poll->max          = max;
@@ -502,13 +504,13 @@ axlPointer __vortex_io_waiting_epoll_create (VortexIoWaitingFor wait_to)
 
 	/* get current max support */
 	if (! vortex_conf_get (VORTEX_HARD_SOCK_LIMIT, &max)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to get current max hard sock limit");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get current max hard sock limit");
 		return NULL;
 	} /* end if */
 
 	set = epoll_create (max);
 	if (set == -1) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "failed to create the epoll interface (epoll_create system call have failed): %s",
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to create the epoll interface (epoll_create system call have failed): %s",
 			    vortex_errno_get_last_error ());
 		return NULL;
 	} /* end if */
@@ -581,16 +583,16 @@ bool __vortex_io_waiting_epoll_add_to (int                fds,
 	if (epoll->length == epoll->max) {
 		/* support up to 4096 connections */
 		if (! vortex_conf_get (VORTEX_HARD_SOCK_LIMIT, &max)) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to get current max hard sock limit, closing socket");
+			vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get current max hard sock limit, closing socket");
 			return false;
 		} /* end if */
 
 		if (epoll->max >= max) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "unable to accept more sockets, max poll set reached (%d).", epoll->max);
+			vortex_log (VORTEX_LEVEL_DEBUG, "unable to accept more sockets, max poll set reached (%d).", epoll->max);
 			return false;
 		} /* end if */
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "max amount of file descriptors reached, expanding");
+		vortex_log (VORTEX_LEVEL_DEBUG, "max amount of file descriptors reached, expanding");
 
 		/* limit reached */
 		epoll->max          = max;
@@ -613,7 +615,7 @@ bool __vortex_io_waiting_epoll_add_to (int                fds,
 	ev.data.ptr = connection;
 	if (epoll_ctl(epoll->set, EPOLL_CTL_ADD, fds, &ev) != 0 && errno != EEXIST) {
 		
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
 			    "failed to add to the epoll fd=%d, epoll_ctl system call have failed: %s",
 			    fds, vortex_errno_get_last_error ());
 		return false;
@@ -775,27 +777,27 @@ bool                 vortex_io_waiting_use (VortexIoWaitingType type)
 	bool        do_notify;
 	char      * mech = "";
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "about to change I/O waiting API");
+	vortex_log (VORTEX_LEVEL_DEBUG, "about to change I/O waiting API");
 
 	/* check if the type is available */
 	if (! vortex_io_waiting_is_available (type)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "I/O waiting API not available");
+		vortex_log (VORTEX_LEVEL_DEBUG, "I/O waiting API not available");
 		return false;
 	}
 
 	/* check if the user is requesting to change to the same IO
 	 * API */
 	if (type == ctx->waiting_type) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "I/O waiting API requested currently installed");
+		vortex_log (VORTEX_LEVEL_DEBUG, "I/O waiting API requested currently installed");
 		return true;
 	}
 
 	/* notify the reader to stop processing and dealloc resources
 	 * with current IO api installed. */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "requesting vortex reader to change its I/O API");
+	vortex_log (VORTEX_LEVEL_DEBUG, "requesting vortex reader to change its I/O API");
 	do_notify = vortex_reader_notify_change_io_api (ctx);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "done, now vortex reader is blocked until we finish");
+	vortex_log (VORTEX_LEVEL_DEBUG, "done, now vortex reader is blocked until we finish");
 
 	switch (type) {
 	case VORTEX_IO_WAIT_SELECT:
@@ -864,7 +866,7 @@ bool                 vortex_io_waiting_use (VortexIoWaitingType type)
 		break;
 	} /* end switch */
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "I/O API changed with result=%s%s%s", 
+	vortex_log (VORTEX_LEVEL_DEBUG, "I/O API changed with result=%s%s%s", 
 		    result ? "ok" : "fail",
 		    (strlen (mech) > 0) ? ", now using: " :"",
 		    (strlen (mech) > 0) ? mech            : "");
@@ -874,7 +876,7 @@ bool                 vortex_io_waiting_use (VortexIoWaitingType type)
 		vortex_reader_notify_change_done_io_api (ctx);
 	}
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "vortex reader notified");
+	vortex_log (VORTEX_LEVEL_DEBUG, "vortex reader notified");
 
 	/* fail */
 	return result;
@@ -974,7 +976,7 @@ axlPointer           vortex_io_waiting_invoke_create_fd_group (VortexIoWaitingFo
 
 	/* check current create IO handler configuration */
 	if (ctx->waiting_create == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
 		       "critical error, found that create fd set handler is not properly set, this is critical malfunctions");
 		return NULL;
 	}
@@ -1029,7 +1031,7 @@ void                 vortex_io_waiting_invoke_destroy_fd_group (axlPointer fd_gr
 
 	/* check current destroy IO handler configuration */
 	if (ctx->waiting_destroy == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
 		       "critical error, found that destroy fd set handler is not properly set, this is critical malfunctions");
 		return;
 	}
@@ -1083,7 +1085,7 @@ void                 vortex_io_waiting_invoke_clear_fd_group (axlPointer fd_grou
 
 	/* check current clear IO handler configuration */
 	if (ctx->waiting_clear == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
 		       "critical error, found that clear fd set handler is not properly set, this is critical malfunctions");
 		return;
 	}
@@ -1228,7 +1230,7 @@ bool                  vortex_io_waiting_invoke_is_set_fd_group  (int        fds,
 	
 	/* check for properly add to handler configuration */
 	if (ctx->waiting_is_set == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "there is no \"is set\" operation defined, this will cause critical malfunctions");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "there is no \"is set\" operation defined, this will cause critical malfunctions");
 		return false;
 	}
 
@@ -1297,7 +1299,7 @@ void                 vortex_io_waiting_invoke_dispatch         (axlPointer      
 	
 	/* check for properly add to handler configuration */
 	if (ctx->waiting_dispatch == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "there is no \"dispatch\" operation defined, this will cause critical malfunctions");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "there is no \"dispatch\" operation defined, this will cause critical malfunctions");
 		return;
 	} /* end if */
 
@@ -1385,7 +1387,7 @@ int                  vortex_io_waiting_invoke_wait             (axlPointer      
 
 	/* check for NULL reference */
 	if (ctx->waiting_wait_on == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
 		       "wait handler is not defined, this is a critical error that will produce a great malfunctions");
 		return -3;
 	}

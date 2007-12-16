@@ -57,12 +57,14 @@
  */
 void vortex_writer_data_free (VortexWriterData * writer_data)
 {
-       v_return_if_fail (writer_data);
+	/* do not perform any operation if null value is received */
+	if (writer_data == NULL) 
+		return;
 
-       axl_free (writer_data->the_frame);
-       axl_free (writer_data);
+	axl_free (writer_data->the_frame);
+	axl_free (writer_data);
 
-       return;
+	return;
 }
 
 void __vortex_sigpipe_do_nothing (int _signal)
@@ -88,12 +90,9 @@ void __vortex_sigpipe_do_nothing (int _signal)
  * 
  * @return true if console debug is enabled. Otherwise false.
  */
-bool     vortex_log_is_enabled ()
+bool     vortex_log_is_enabled (VortexCtx * ctx)
 {
 #ifdef ENABLE_VORTEX_LOG	
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
 	/* no context, no log */
 	if (ctx == NULL)
 		return false;
@@ -116,14 +115,14 @@ bool     vortex_log_is_enabled ()
 /** 
  * @brief Allows to get current status for second level log debug info
  * to console.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @return true if console debug is enabled. Otherwise false.
  */
-bool     vortex_log2_is_enabled ()
+bool     vortex_log2_is_enabled (VortexCtx * ctx)
 {
 #ifdef ENABLE_VORTEX_LOG	
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
 
 	/* no context, no log */
 	if (ctx == NULL)
@@ -147,14 +146,13 @@ bool     vortex_log2_is_enabled ()
 /** 
  * @brief Enable console vortex log.
  * 
+ * @param ctx The context where the operation will be performed.
+ *
  * @param status true enable log, false disables it.
  */
-void     vortex_log_enable       (bool     status)
+void     vortex_log_enable       (VortexCtx * ctx, bool     status)
 {
 #ifdef ENABLE_VORTEX_LOG	
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
 	/* no context, no log */
 	if (ctx == NULL)
 		return;
@@ -179,13 +177,12 @@ void     vortex_log_enable       (bool     status)
  * @brief Enable console second level vortex log.
  * 
  * @param status true enable log, false disables it.
+ *
+ * @param ctx The context where the operation will be performed.
  */
-void     vortex_log2_enable       (bool     status)
+void     vortex_log2_enable       (VortexCtx * ctx, bool     status)
 {
 #ifdef ENABLE_VORTEX_LOG	
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
 	/* no context, no log */
 	if (ctx == NULL)
 		return;
@@ -208,15 +205,14 @@ void     vortex_log2_enable       (bool     status)
 
 /** 
  * @brief Allows to check if the color log is currently enabled.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @return true if enabled, false if not.
  */
-bool     vortex_color_log_is_enabled ()
+bool     vortex_color_log_is_enabled (VortexCtx * ctx)
 {
 #ifdef ENABLE_VORTEX_LOG	
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
 	/* no context, no log */
 	if (ctx == NULL)
 		return false;
@@ -246,15 +242,14 @@ bool     vortex_color_log_is_enabled ()
  *  - yellow: warnings
  *  - green: info, debug
  * 
+ * @param ctx The context where the operation will be performed.
+ *
  * @param status true enable color log, false disables it.
  */
-void     vortex_color_log_enable (bool     status)
+void     vortex_color_log_enable (VortexCtx * ctx, bool     status)
 {
 
 #ifdef ENABLE_VORTEX_LOG
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
 	/* no context, no log */
 	if (ctx == NULL)
 		return;
@@ -279,6 +274,8 @@ void     vortex_color_log_enable (bool     status)
  * 
  * The function requires the configuration item that is requried and a
  * valid reference to a variable to store the result. 
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param item The configuration item that is being returned.
  *
@@ -287,12 +284,10 @@ void     vortex_color_log_enable (bool     status)
  * @return The function returns true if the configuration item is
  * returned. 
  */
-bool      vortex_conf_get             (VortexConfItem   item, 
+bool      vortex_conf_get             (VortexCtx      * ctx,
+				       VortexConfItem   item, 
 				       int            * value)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
 #if defined(AXL_OS_WIN32)
 
 #elif defined(AXL_OS_UNIX)
@@ -300,6 +295,7 @@ bool      vortex_conf_get             (VortexConfItem   item,
 	struct rlimit _limit;
 #endif	
 	/* do common check */
+	v_return_val_if_fail (ctx,   false);
 	v_return_val_if_fail (value, false);
 
 	/* no context, no configuration */
@@ -325,7 +321,7 @@ bool      vortex_conf_get             (VortexConfItem   item,
 #elif defined (AXL_OS_UNIX)
 		/* get the limit */
 		if (getrlimit (RLIMIT_NOFILE, &_limit) != 0) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "failed to get current soft limit: %s", vortex_errno_get_last_error ());
+			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to get current soft limit: %s", vortex_errno_get_last_error ());
 			return false;
 		} /* end if */
 
@@ -341,7 +337,7 @@ bool      vortex_conf_get             (VortexConfItem   item,
 #elif defined (AXL_OS_UNIX)
 		/* get the limit */
 		if (getrlimit (RLIMIT_NOFILE, &_limit) != 0) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "failed to get current soft limit: %s", vortex_errno_get_last_error ());
+			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to get current soft limit: %s", vortex_errno_get_last_error ());
 			return false;
 		} /* end if */
 
@@ -359,7 +355,7 @@ bool      vortex_conf_get             (VortexConfItem   item,
 		return true;
 	default:
 		/* configuration found, return false */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "found a requested for a non existent configuration item");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "found a requested for a non existent configuration item");
 		return false;
 	} /* end if */
 
@@ -378,13 +374,11 @@ bool      vortex_conf_get             (VortexConfItem   item,
  * @return true if the configuration was done properly, otherwise
  * false is returned.
  */
-bool      vortex_conf_set             (VortexConfItem   item, 
+bool      vortex_conf_set             (VortexCtx      * ctx,
+				       VortexConfItem   item, 
 				       int              value, 
 				       char           * str_value)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
 #if defined(AXL_OS_WIN32)
 
 #elif defined(AXL_OS_UNIX)
@@ -392,6 +386,7 @@ bool      vortex_conf_set             (VortexConfItem   item,
 	struct rlimit _limit;
 #endif	
 	/* do common check */
+	v_return_val_if_fail (ctx,   false);
 	v_return_val_if_fail (value, false);
 
 #if defined (AXL_OS_WIN32)
@@ -414,7 +409,7 @@ bool      vortex_conf_set             (VortexConfItem   item,
 #elif defined (AXL_OS_UNIX)
 		/* get the limit */
 		if (getrlimit (RLIMIT_NOFILE, &_limit) != 0) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "failed to get current soft limit: %s", vortex_errno_get_last_error ());
+			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to get current soft limit: %s", vortex_errno_get_last_error ());
 			return false;
 		} /* end if */
 
@@ -423,7 +418,7 @@ bool      vortex_conf_set             (VortexConfItem   item,
 
 		/* set new limit */
 		if (setrlimit (RLIMIT_NOFILE, &_limit) != 0) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "failed to set current soft limit: %s", vortex_errno_get_last_error ());
+			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to set current soft limit: %s", vortex_errno_get_last_error ());
 			return false;
 		} /* end if */
 
@@ -437,7 +432,7 @@ bool      vortex_conf_set             (VortexConfItem   item,
 #elif defined (AXL_OS_UNIX)
 		/* get the limit */
 		if (getrlimit (RLIMIT_NOFILE, &_limit) != 0) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "failed to get current soft limit: %s", vortex_errno_get_last_error ());
+			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to get current soft limit: %s", vortex_errno_get_last_error ());
 			return false;
 		} /* end if */
 
@@ -452,7 +447,7 @@ bool      vortex_conf_set             (VortexConfItem   item,
 
 		/* set new limit */
 		if (setrlimit (RLIMIT_NOFILE, &_limit) != 0) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "failed to set current hard limit: %s", vortex_errno_get_last_error ());
+			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to set current hard limit: %s", vortex_errno_get_last_error ());
 			return false;
 		} /* end if */
 		
@@ -469,7 +464,7 @@ bool      vortex_conf_set             (VortexConfItem   item,
 		return true;
 	default:
 		/* configuration found, return false */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "found a requested for a non existent configuration item");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "found a requested for a non existent configuration item");
 		return false;
 	} /* end if */
 
@@ -480,12 +475,15 @@ bool      vortex_conf_set             (VortexConfItem   item,
  * @internal Internal common log implementation to support several levels
  * of logs.
  * 
- * @param domain The domain where the log was produced.
+ * @param file The file that produce the log.
+ * @param line The line that fired the log.
  * @param log_level The level of the log
  * @param message The message 
  * @param args Arguments for the message.
  */
-void _vortex_log_common (const char       * domain,
+void _vortex_log_common (VortexCtx        * ctx,
+			 const       char * file,
+			 int                line,
 			 VortexDebugLevel   log_level,
 			 const char       * message,
 			 va_list            args)
@@ -495,14 +493,16 @@ void _vortex_log_common (const char       * domain,
 	/* do no operation if not defined debug */
 	return;
 #else
+	v_return_if_fail (ctx);
+
 	/* if not VORTEX_DEBUG FLAG, do not output anything */
-	if (!vortex_log_is_enabled ()) {
+	if (!vortex_log_is_enabled (ctx)) {
 		return;
 	} /* end if */
 
 	/* printout the process pid */
 #if defined (__GNUC__)
-	if (vortex_color_log_is_enabled ()) 
+	if (vortex_color_log_is_enabled (ctx)) 
 		fprintf (stdout, "\e[1;36m(proc %d)\e[0m: ", getpid ());
 	else
 #endif
@@ -510,7 +510,7 @@ void _vortex_log_common (const char       * domain,
 
 	/* drop a log according to the level */
 #if defined (__GNUC__)
-	if (vortex_color_log_is_enabled ()) {
+	if (vortex_color_log_is_enabled (ctx)) {
 		switch (log_level) {
 		case VORTEX_LEVEL_DEBUG:
 			fprintf (stdout, "(\e[1;32mdebug\e[0m) ");
@@ -540,7 +540,7 @@ void _vortex_log_common (const char       * domain,
 #endif
 
 	/* drop a log according to the domain */
-	(domain != NULL) ? fprintf (stdout, "%s: ", domain) : fprintf (stdout, ": ");
+	(file != NULL) ? fprintf (stdout, "%s:%d ", file, line) : fprintf (stdout, ": ");
 
 	/* print the message */
 	vfprintf (stdout, message, args);
@@ -563,11 +563,15 @@ void _vortex_log_common (const char       * domain,
  * Do no use this function directly, use <b>vortex_log</b>, which is
  * activated/deactivated according to the compilation flags.
  * 
- * @param domain The domain that is being logged.
+ * @param ctx The context where the operation will be performed.
+ * @param file The file that produce the log.
+ * @param line The line that fired the log.
  * @param log_level The message severity
  * @param message The message logged.
  */
-void _vortex_log (const char       * domain,
+void _vortex_log (VortexCtx        * ctx,
+		  const       char * file,
+		  int                line,
 		  VortexDebugLevel   log_level,
 		  const char       * message,
 		  ...)
@@ -581,7 +585,7 @@ void _vortex_log (const char       * domain,
 
 	/* call to common implementation */
 	va_start (args, message);
-	_vortex_log_common (domain, log_level, message, args);
+	_vortex_log_common (ctx, file, line, log_level, message, args);
 	va_end (args);
 
 	return;
@@ -595,13 +599,17 @@ void _vortex_log (const char       * domain,
  * Do no use this function directly, use <b>vortex_log2</b>, which is
  * activated/deactivated according to the compilation flags.
  * 
- * @param domain The domain that is being logged.
+ * @param ctx The context where the log will be dropped.
+ * @param file The file that contains that fired the log.
+ * @param line The line where the log was produced.
  * @param log_level The message severity
  * @param message The message logged.
  */
-void _vortex_log2 (const char       * domain,
-		  VortexDebugLevel   log_level,
-		  const char       * message,
+void _vortex_log2 (VortexCtx        * ctx,
+		   const       char * file,
+		   int                line,
+		   VortexDebugLevel   log_level,
+		   const char       * message,
 		  ...)
 {
 
@@ -612,13 +620,13 @@ void _vortex_log2 (const char       * domain,
 	va_list   args;
 
 	/* if not VORTEX_DEBUG2 FLAG, do not output anything */
-	if (!vortex_log2_is_enabled ()) {
+	if (!vortex_log2_is_enabled (ctx)) {
 		return;
 	} /* end if */
 	
 	/* call to common implementation */
 	va_start (args, message);
-	_vortex_log_common (domain, log_level, message, args);
+	_vortex_log_common (ctx, file, line, log_level, message, args);
 	va_end (args);
 
 	return;
@@ -634,75 +642,6 @@ void _vortex_log2 (const char       * domain,
  * @{
  */
 
-
-/** 
- * \brief Init vortex library.
- *
- * You must call to this function to init all vortex library
- * internals, before calling any other function provided by the Vortex
- * Library API.
- *
- * Here is an example:
- * \code
- * if (!vortex_init ()) {
- *       // unable to initialize the Vortex Library
- *       return;
- * }
- * \endcode
- * 
- * Another issue to keep in mind is that the library uses some data
- * files (mostly DTD) for its function (channel.dtd, sasl.dtd,
- * tls.dtd, xml-rpc-bool.dtd,...). 
- *
- * This files are looked up at some default places according to the
- * platform. If your installation is not able to find those files or
- * you want to configure a new default localtion to be added to the
- * search path use the following:
- *
- * \code
- * // call to add all default paths before calling to vortex_init
- * vortex_support_add_search_path("C:\\Program Files\\VortexLibraryW32\\bin");
- * 
- * // init vortex library 
- * if (!vortex_init ()) {
- *     // unable to initialize the Vortex Library
- *     return;
- * }
- * \endcode
- *
- * NOTE: Previous example is assuming you are on a windows platform
- * and you are placing your files at: <i>"c:\Program Files\VortexLibraryW32\bin"</i>.
- *
- */
-bool     vortex_init ()
-{
-	/* create a context and configure it (it not defined) */
-	VortexCtx  * ctx;
-
-	/* avoid doing twice initialization */
-	if (vortex_ctx_get ()) {
-		return true;
-	} /* end if */
-
-	/* create the context */
-	ctx = vortex_ctx_new ();
-
-	/* To support for some time the state-based API, configure the
-	 * context created.  WARNING: this will be removed (and its
-	 * API) soon.. */
-	vortex_ctx_set (ctx);
-
-	/* call to init system */
-	if (! vortex_init_ctx (ctx)) {
-		/* remove the system reference */
-		vortex_ctx_set (NULL);
-		vortex_ctx_free (ctx);
-		return false;
-	} /* end if */
-
-	return true;
-
-}
 
 /** 
  * @brief Context based vortex library init. Allows to init the vortex
@@ -782,7 +721,7 @@ bool   vortex_init_ctx (VortexCtx * ctx)
 
 #if defined(AXL_OS_WIN32)
 	/* init winsock API */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "init winsocket for windows");
+	vortex_log (VORTEX_LEVEL_DEBUG, "init winsocket for windows");
 	vortex_win32_init ();
 #endif
 
@@ -791,22 +730,18 @@ bool   vortex_init_ctx (VortexCtx * ctx)
 
 	/* add default paths */
 #if defined(AXL_OS_UNIX)
-	vortex_support_add_search_path_ref (vortex_support_build_filename (PACKAGE_DTD_DIR, "libvortex", "data", NULL ));
-	vortex_support_add_search_path_ref (vortex_support_build_filename (PACKAGE_DTD_DIR, "libvortex", NULL ));
-	vortex_support_add_search_path_ref (vortex_support_build_filename ("libvortex", NULL ));
-	vortex_support_add_search_path_ref (vortex_support_build_filename (PACKAGE_TOP_DIR, "libvortex", "data", NULL));
-	vortex_support_add_search_path_ref (vortex_support_build_filename (PACKAGE_TOP_DIR, "data", NULL));
+	vortex_support_add_search_path_ref (ctx, vortex_support_build_filename (PACKAGE_DTD_DIR, "libvortex", "data", NULL ));
+	vortex_support_add_search_path_ref (ctx, vortex_support_build_filename (PACKAGE_DTD_DIR, "libvortex", NULL ));
+	vortex_support_add_search_path_ref (ctx, vortex_support_build_filename ("libvortex", NULL ));
+	vortex_support_add_search_path_ref (ctx, vortex_support_build_filename (PACKAGE_TOP_DIR, "libvortex", "data", NULL));
+	vortex_support_add_search_path_ref (ctx, vortex_support_build_filename (PACKAGE_TOP_DIR, "data", NULL));
 #endif
 	/* do not use the add_search_path_ref version to force vortex
 	   library to perform a local copy path */
-	vortex_support_add_search_path (".");
+	vortex_support_add_search_path (ctx, ".");
 	
 	/* init dtds */
 	if (!vortex_dtds_init (ctx)) {
-		/* free context */
-		vortex_ctx_set (NULL);
-		vortex_ctx_free (ctx);
-
 		fprintf (stderr, "VORTEX_ERROR: unable to load dtd files (this means some DTD (or all) file wasn't possible to be loaded.\n");
 		return false;
 	}
@@ -822,82 +757,43 @@ bool   vortex_init_ctx (VortexCtx * ctx)
 		/* now check if the current process soft limit is
 		 * allowed to handle more connection than
 		 * VORTEX_FD_SETSIZE */
-		vortex_conf_get (VORTEX_SOFT_SOCK_LIMIT, &soft_limit);
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "select mechanism selected, reconfiguring current socket limit: soft_limit=%d > %d..",
+		vortex_conf_get (ctx, VORTEX_SOFT_SOCK_LIMIT, &soft_limit);
+		vortex_log (VORTEX_LEVEL_DEBUG, "select mechanism selected, reconfiguring current socket limit: soft_limit=%d > %d..",
 			    soft_limit, VORTEX_FD_SETSIZE);
 		if (soft_limit > (VORTEX_FD_SETSIZE - 1)) {
 			/* decrease the limit to avoid funny
 			 * problems. it is not required to be
 			 * priviledge user to run the following
 			 * command. */
-			vortex_conf_set (VORTEX_SOFT_SOCK_LIMIT, (VORTEX_FD_SETSIZE - 1), NULL);
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, 
+			vortex_conf_set (ctx, VORTEX_SOFT_SOCK_LIMIT, (VORTEX_FD_SETSIZE - 1), NULL);
+			vortex_log (VORTEX_LEVEL_WARNING, 
 				    "found select(2) I/O configured, which can handled up to %d fds, reconfigured process with that value",
 				    VORTEX_FD_SETSIZE -1);
 		} /* end if */
 	} 
 
 	/* init reader subsystem */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "starting vortex reader..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "starting vortex reader..");
 	if (! vortex_reader_run (ctx))
 		return false;
 	
 	/* init writer subsystem */
-	/* vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "starting vortex writer..");
+	/* vortex_log (VORTEX_LEVEL_DEBUG, "starting vortex writer..");
 	   vortex_writer_run (); */
 
 	/* init sequencer subsystem */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "starting vortex sequencer..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "starting vortex sequencer..");
 	if (! vortex_sequencer_run (ctx))
 		return false;
 	
 	/* init thread pool (for query receiving) */
 	thread_num = vortex_thread_pool_get_num ();
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "starting vortex thread pool: (%d threads the pool have)..",
+	vortex_log (VORTEX_LEVEL_DEBUG, "starting vortex thread pool: (%d threads the pool have)..",
 	       thread_num);
 	vortex_thread_pool_init (thread_num);
 
 	/* register the vortex exit function */
 	return true;
-}
-
-/**
- * @brief Terminates vortex library function.
- * 
- * Stops all internal vortex process and all allocated resources. It
- * also close all channels for all connection that where not closed
- * until call this function. 
- *
- * This function is reentrant, allowing several threads to call \ref
- * vortex_exit function at the same time. Only one thread will
- * actually release resources allocated.
- *
- * NOTE: Although it isn't explicitly stated, this function shouldn't
- * be called from inside a handler notification: \ref
- * VortexOnFrameReceived "Frame Receive", \ref VortexOnCloseChannel
- * "Channel close", etc. This is because those handlers works indise
- * the context of the vortex library execution. Making a call to this
- * function in the middle of that context, will produce undefined
- * behaviours.
- *
- * NOTE2: This function isn't designed to dealloc all resources used
- * by the vortex function. According to the particular control
- * structure of your application, you must first terminate using any
- * Vortex API and then call to vortex_exit.
- *
- **/
-void vortex_exit ()
-{
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
-	/* call to terminate the library */
-	vortex_exit_ctx (ctx, true);
-
-	/* nullify current ctx */
-	vortex_ctx_set (NULL);
-	
-	return;
 }
 
 /** 
@@ -939,7 +835,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
 	if (ctx == NULL || ctx->vortex_exit)
 		return;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "shutting down vortex library");
+	vortex_log (VORTEX_LEVEL_DEBUG, "shutting down vortex library");
 
 	vortex_mutex_lock (&ctx->exit_mutex);
 	if (ctx->vortex_exit) {
@@ -975,21 +871,21 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
 
 #if defined(AXL_OS_WIN32)
 	WSACleanup ();
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "shutting down WinSock2(tm) API");
+	vortex_log (VORTEX_LEVEL_DEBUG, "shutting down WinSock2(tm) API");
 #endif
 
 	/* clean up vortex modules */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "shutting down vortex xml subsystem");
+	vortex_log (VORTEX_LEVEL_DEBUG, "shutting down vortex xml subsystem");
 
 	/* Cleanup function for the XML library. */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "shutting down xml library");
+	vortex_log (VORTEX_LEVEL_DEBUG, "shutting down xml library");
 	axl_end ();
 
 	/* unlock listeners */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "unlocking vortex listeners");
-	vortex_listener_unlock ();
+	vortex_log (VORTEX_LEVEL_DEBUG, "unlocking vortex listeners");
+	vortex_listener_unlock (ctx);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "vortex library stopped");
+	vortex_log (VORTEX_LEVEL_DEBUG, "vortex library stopped");
 
 	/* stop the vortex thread pool: 
 	 * 

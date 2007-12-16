@@ -97,9 +97,9 @@ bool               vortex_cond_wait       (VortexCond        * cond,
  * @param m The amount of microseconds to wait.
  */
 #define VORTEX_COND_TIMEDWAIT(r, c, mutex, m) do{\
-vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "called vortex_cond_timedwait from %s:%d", __AXL_FILE__, __AXL_LINE__);\
+vortex_log (VORTEX_LEVEL_DEBUG, "called vortex_cond_timedwait from %s:%d", __AXL_FILE__, __AXL_LINE__);\
 r = vortex_cond_timedwait (c, mutex, m);\
-vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "finished vortex_cond_timedwait (result: %d) from %s:%d", r, __AXL_FILE__, __AXL_LINE__);\
+vortex_log (VORTEX_LEVEL_DEBUG, "finished vortex_cond_timedwait (result: %d) from %s:%d", r, __AXL_FILE__, __AXL_LINE__);\
 }while(0)
 
 

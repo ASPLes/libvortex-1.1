@@ -63,20 +63,25 @@
  **/
 bool     vortex_greetings_send (VortexConnection * connection)
 {
-	axlList       * registered_profiles = vortex_profiles_get_actual_list_ref ();
+	
+	axlList       * registered_profiles;
 	int             iterator;
 	const char    * localize            = NULL;
 	const char    * features            = NULL;
 	char          * uri;
-	
+	VortexCtx     * ctx                 = vortex_connection_get_ctx (connection);
+
 	/* tecnically, the greetings initial message can't be larger
 	 * than 4096 initial window. */
 	char            greetings_buffer[5100];
 	int             next_index = 0;
 
+	/* get registered profiles */
+	registered_profiles = vortex_profiles_get_actual_list_ref (ctx);
+
 	/* build up supported registered profiles */
 	if (registered_profiles == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
 		       "unable to build and send greetings message: unable to found any profile registered");
 		return false;
 	}
@@ -84,7 +89,7 @@ bool     vortex_greetings_send (VortexConnection * connection)
 	/* copy greetings */
 	memcpy (greetings_buffer, "<greeting", 9);
 	next_index += 9;
-	features = vortex_greetings_get_features ();
+	features = vortex_greetings_get_features (ctx);
 	if (features) {
 		memcpy (greetings_buffer + next_index, " features='", 11);
 		next_index += 11;
@@ -96,7 +101,7 @@ bool     vortex_greetings_send (VortexConnection * connection)
 		next_index ++;
 	} /* end features */
 
-	localize = vortex_greetings_get_localize ();
+	localize = vortex_greetings_get_localize (ctx);
 	if (localize) {
 		memcpy (greetings_buffer + next_index, " localize='", 11);
 		next_index += 11;
@@ -119,7 +124,7 @@ bool     vortex_greetings_send (VortexConnection * connection)
 		/* check if the profile is masked for this particular
 		 * connection. */
 		if (vortex_connection_is_profile_filtered (connection, -1, uri, NULL, NULL)) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "profile is filtered: %s", uri);
+			vortex_log (VORTEX_LEVEL_DEBUG, "profile is filtered: %s", uri);
 			
 			/* update the iterator */
 			iterator++;
@@ -179,6 +184,7 @@ bool     vortex_greetings_send (VortexConnection * connection)
 VortexFrame *  vortex_greetings_process (VortexConnection * connection)
 {
 	VortexFrame        * frame;
+	VortexCtx          * ctx   = vortex_connection_get_ctx (connection);
 
 	/*
 	 * Because this is a really especial case where we need to get
@@ -187,7 +193,7 @@ VortexFrame *  vortex_greetings_process (VortexConnection * connection)
 	 */
 	frame = vortex_frame_get_next (connection);
 	if (frame == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "no frame received from remote peer");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "no frame received from remote peer");
 		return NULL;
 	}
 
@@ -213,6 +219,7 @@ VortexFrame *  vortex_greetings_process (VortexConnection * connection)
 bool           vortex_greetings_is_reply_ok    (VortexFrame      * frame, VortexConnection * connection)
 {
 	VortexChannel * channel;
+	VortexCtx     * ctx = vortex_connection_get_ctx (connection);
 
 	/* check greetings reply */
 	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
@@ -246,7 +253,7 @@ bool           vortex_greetings_is_reply_ok    (VortexFrame      * frame, Vortex
 					       vortex_frame_get_content_size (frame),
 					       UPDATE_SEQ_NO | UPDATE_RPY_NO);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "greetings frame header specification is ok");
+	vortex_log (VORTEX_LEVEL_DEBUG, "greetings frame header specification is ok");
 	
 	return true;	
 }
@@ -266,15 +273,16 @@ bool           vortex_greetings_is_reply_ok    (VortexFrame      * frame, Vortex
  **/
 bool          vortex_greetings_client_send     (VortexConnection * connection)
 {
-	char  * the_payload = NULL;
-	char  * features    = NULL;
-	char  * localize    = NULL;
+	char      * the_payload = NULL;
+	char      * features    = NULL;
+	char      * localize    = NULL;
+	VortexCtx * ctx         = vortex_connection_get_ctx (connection);
 	
 	/* check for features and localize */
-	if (vortex_greetings_get_features () != NULL)
-		features = axl_strdup_printf (" features='%s'", vortex_greetings_get_features ());
-	if (vortex_greetings_get_localize () != NULL)
-		localize = axl_strdup_printf (" localize='%s'", vortex_greetings_get_localize ());
+	if (vortex_greetings_get_features (ctx) != NULL)
+		features = axl_strdup_printf (" features='%s'", vortex_greetings_get_features (ctx));
+	if (vortex_greetings_get_localize (ctx) != NULL)
+		localize = axl_strdup_printf (" localize='%s'", vortex_greetings_get_localize (ctx));
 
 	the_payload = axl_strdup_printf ("<greeting %s%s/>\x0D\x0A",
 					 (features != NULL) ? features : "",
@@ -291,7 +299,7 @@ bool          vortex_greetings_client_send     (VortexConnection * connection)
 				      strlen (the_payload),
 				      0)) {
 		axl_free (the_payload);
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL,  "unable to send initial client greetings message");
+		vortex_log (VORTEX_LEVEL_CRITICAL,  "unable to send initial client greetings message");
 		__vortex_connection_set_not_connected (connection, 
 						       "unable to send initial client greetings message");
 		return false;
@@ -338,10 +346,8 @@ VortexFrame *  vortex_greetings_client_process (VortexConnection * connection)
  * @param features The string to be set as features. If provided a
  * NULL value, previous features will cleared.
  */
-void           vortex_greetings_set_features   (const char  * features)
+void           vortex_greetings_set_features   (VortexCtx * ctx, const char  * features)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
 
 	/* clear previous features installed */
 	if (ctx->greetings_features)
@@ -364,10 +370,11 @@ void           vortex_greetings_set_features   (const char  * features)
  * 
  * @return Current "features" status.
  */
-const char        *  vortex_greetings_get_features   ()
+const char        *  vortex_greetings_get_features   (VortexCtx * ctx)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	/* check context */
+	if (ctx == NULL)
+		return NULL;
 
 	return ctx->greetings_features;
 }
@@ -385,10 +392,11 @@ const char        *  vortex_greetings_get_features   ()
  * 
  * @param localize The localize value.
  */
-void           vortex_greetings_set_localize   (const char  * localize)
+void           vortex_greetings_set_localize   (VortexCtx * ctx, const char  * localize)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	/* check references */
+	if (ctx == NULL || localize == NULL)
+		return;
 
 	/* clear previous localize installed */
 	if (ctx->greetings_localize)
@@ -407,10 +415,10 @@ void           vortex_greetings_set_localize   (const char  * localize)
  * 
  * @return Current localize value.
  */
-const char        *  vortex_greetings_get_localize   ()
+const char        *  vortex_greetings_get_localize   (VortexCtx * ctx)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	if (ctx == NULL)
+		return NULL;
 
 	return ctx->greetings_localize;
 }

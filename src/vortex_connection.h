@@ -64,10 +64,11 @@
  */
 #define SERVER_NAME_FROM_CHANNEL(channel) (vortex_connection_get_server_name (vortex_channel_get_connection (channel)))
 
-VortexConnection  * vortex_connection_new                    (const char  * host, 
-							      const char  * port,
-							      VortexConnectionNew on_connected, 
-							      axlPointer user_data);
+VortexConnection  * vortex_connection_new                    (VortexCtx            * ctx,
+							      const char           * host, 
+							      const char           * port,
+							      VortexConnectionNew    on_connected, 
+							      axlPointer             user_data);
 
 bool                vortex_connection_reconnect              (VortexConnection * connection,
 							      VortexConnectionNew on_connected,
@@ -86,18 +87,22 @@ void                vortex_connection_unref                  (VortexConnection *
 
 int                 vortex_connection_ref_count              (VortexConnection * connection);
 
-VortexConnection  * vortex_connection_new_empty              (int                 session,
-							      VortexPeerRole      role);
+VortexConnection  * vortex_connection_new_empty              (VortexCtx        * ctx,
+							      int                session,
+							      VortexPeerRole     role);
 
-VortexConnection  * vortex_connection_new_empty_from_connection (VORTEX_SOCKET socket, 
+VortexConnection  * vortex_connection_new_empty_from_connection (VortexCtx        * ctx,
+								 VORTEX_SOCKET      socket, 
 								 VortexConnection * __connection,
-								 VortexPeerRole role);
+								 VortexPeerRole     role);
 
-void                vortex_connection_timeout                (long int miliseconds_to_wait);
-void                vortex_connection_connect_timeout        (long int seconds_to_wait);
+void                vortex_connection_timeout                (VortexCtx        * ctx,
+							      long int           miliseconds_to_wait);
+void                vortex_connection_connect_timeout        (VortexCtx        * ctx,
+							      long int           seconds_to_wait);
 
-long int            vortex_connection_get_timeout            ();
-long int            vortex_connection_get_connect_timeout    ();
+long int            vortex_connection_get_timeout            (VortexCtx        * ctx);
+long int            vortex_connection_get_connect_timeout    (VortexCtx        * ctx);
 
 bool                vortex_connection_is_ok                  (VortexConnection * connection, 
 							      bool     free_on_fail);
@@ -195,7 +200,8 @@ void                vortex_connection_set_data_full          (VortexConnection *
 							      axlDestroyFunc     key_destroy,
 							      axlDestroyFunc     value_destroy);
 
-void                vortex_connection_set_auto_tls           (bool               enabled,
+void                vortex_connection_set_auto_tls           (VortexCtx        * ctx,
+							      bool               enabled,
 							      bool               allow_tls_failures,
 							      char             * serverName);
 
@@ -217,6 +223,8 @@ const char        * vortex_connection_get_localize           (VortexConnection *
 int                 vortex_connection_get_opened_channels    (VortexConnection * connection);
 
 VortexConnection  * vortex_connection_get_listener           (VortexConnection * connection);
+
+VortexCtx         * vortex_connection_get_ctx                (VortexConnection * connection);
 
 VortexSendHandler      vortex_connection_set_send_handler    (VortexConnection * connection,
 							      VortexSendHandler  send_handler);
@@ -245,7 +253,7 @@ int                 vortex_connection_invoke_send            (VortexConnection *
 							      const char       * buffer,
 							      int                buffer_len);
 
-void                vortex_connection_sanity_socket_check    (bool     enable);
+void                vortex_connection_sanity_socket_check        (VortexCtx * ctx, bool     enable);
 
 bool                vortex_connection_parse_greetings_and_enable (VortexConnection * connection, 
 								  VortexFrame      * frame);
@@ -272,7 +280,8 @@ void                vortex_connection_set_channel_removed_handler  (VortexConnec
 								    VortexConnectionOnChannelUpdate   removed_handler,
 								    axlPointer                        user_data);
 
-void                vortex_connection_notify_new_connections       (VortexConnectionNotifyNew         notify_new,
+void                vortex_connection_notify_new_connections       (VortexCtx                       * ctx,
+								    VortexConnectionNotifyNew         notify_new,
 								    axlPointer                        user_data);
 
 void                vortex_connection_notify_created               (VortexConnection                * conn);

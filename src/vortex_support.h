@@ -42,20 +42,26 @@
 
 void     vortex_support_free                       (int  params, ...);
 
-void     vortex_support_add_search_path            (const char * path);
-
-void     vortex_support_add_search_path_ref        (char * path);
-
-void     vortex_support_add_domain_search_path     (const char * domain, 
+void     vortex_support_add_search_path            (VortexCtx  * ctx,
 						    const char * path);
 
-void     vortex_support_add_domain_search_path_ref (char * domain, 
-						    char * path);
+void     vortex_support_add_search_path_ref        (VortexCtx * ctx, 
+						    char      * path);
 
-char   * vortex_support_find_data_file             (const char * name);
+void     vortex_support_add_domain_search_path     (VortexCtx  * ctx,
+						    const char * domain, 
+						    const char * path);
 
-char   * vortex_support_domain_find_data_file      (const char * domain, 
-						          const char * name);
+void     vortex_support_add_domain_search_path_ref (VortexCtx  * ctx,
+						    char       * domain, 
+						    char       * path);
+
+char   * vortex_support_find_data_file             (VortexCtx  * ctx,
+						    const char * name);
+
+char   * vortex_support_domain_find_data_file      (VortexCtx  * ctx,
+						    const char * domain, 
+						    const char * name);
 
 void     vortex_support_init                       (VortexCtx * ctx);
 
