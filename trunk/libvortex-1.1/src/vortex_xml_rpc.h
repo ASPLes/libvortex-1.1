@@ -174,7 +174,7 @@ bool                vortex_xml_rpc_listener_parse_conf_and_start_listeners ();
  * Internal prototype declaration to support a reference from
  * __vortex_xml_rpc_parse_struct_value to this function.
  */
-XmlRpcMethodValue * __vortex_xml_rpc_parse_value (axlNode * value);
+XmlRpcMethodValue * __vortex_xml_rpc_parse_value (VortexCtx * ctx, axlNode * value);
 
 /* int unmarshallers */
 void vortex_xml_rpc_unmarshall_int      (VortexChannel *channel, 

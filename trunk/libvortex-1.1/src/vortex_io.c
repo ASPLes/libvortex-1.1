@@ -59,9 +59,10 @@
  */
 
 typedef struct _VortexSelect {
-	fd_set             set;
-	int                length;
-	VortexIoWaitingFor wait_to;
+	VortexCtx          * ctx;
+	fd_set               set;
+	int                  length;
+	VortexIoWaitingFor   wait_to;
 }VortexSelect;
 
 /** 
@@ -72,12 +73,13 @@ typedef struct _VortexSelect {
  *
  * @return A newly allocated fd_set reference.
  */
-axlPointer __vortex_io_waiting_default_create (VortexIoWaitingFor wait_to) 
+axlPointer __vortex_io_waiting_default_create (VortexCtx * ctx, VortexIoWaitingFor wait_to) 
 {
 	VortexSelect * select = axl_new (VortexSelect, 1);
 
 	/* set default behaviour expected for the set */
 	select->wait_to       = wait_to;
+	select->ctx           = ctx;
 	
 	/* clear the set */
 	FD_ZERO (&(select->set));
@@ -236,6 +238,7 @@ bool     __vortex_io_waiting_default_is_set (int        fds,
  */
 #if defined(VORTEX_HAVE_POLL)
 typedef struct _VortexPoll {
+	VortexCtx           * ctx;
 	int                   max;
 	int                   length;
 	struct pollfd       * set;
@@ -250,21 +253,21 @@ typedef struct _VortexPoll {
  *
  * @return A newly allocated file set reference, supporting poll(2).
  */
-axlPointer __vortex_io_waiting_poll_create (VortexIoWaitingFor wait_to) 
+axlPointer __vortex_io_waiting_poll_create (VortexCtx * ctx, VortexIoWaitingFor wait_to) 
 {
 	int          max;
 	VortexPoll * poll;
-	VortexCtx  * ctx    = vortex_connection_get_ctx (connection);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "creating empty poll(2) set");
 
 	/* support up to 4096 connections */
-	if (! vortex_conf_get (VORTEX_HARD_SOCK_LIMIT, &max)) {
+	if (! vortex_conf_get (ctx, VORTEX_HARD_SOCK_LIMIT, &max)) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get current max hard sock limit");
 		return NULL;
 	} /* end if */
 
 	poll              = axl_new (VortexPoll, 1);
+	poll->ctx         = ctx;
 	poll->max         = max;
 	poll->wait_to     = wait_to;
 	poll->set         = axl_new (struct pollfd, max);
@@ -325,12 +328,13 @@ bool __vortex_io_waiting_poll_add_to (int                fds,
 				      axlPointer         __fd_set)
 {
 	VortexPoll * poll   = (VortexPoll *) __fd_set;
+	VortexCtx  * ctx    = poll->ctx;
 	int          max;
 
 	/* check if max size reached */
 	if (poll->length == poll->max) {
 		/* support up to 4096 connections */
-		if (! vortex_conf_get (VORTEX_HARD_SOCK_LIMIT, &max)) {
+		if (! vortex_conf_get (ctx, VORTEX_HARD_SOCK_LIMIT, &max)) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get current max hard sock limit, closing socket");
 			return false;
 		} /* end if */
@@ -482,6 +486,7 @@ void     __vortex_io_waiting_poll_dispatch (axlPointer           fd_group,
  */
 #if defined(VORTEX_HAVE_EPOLL)
 typedef struct _VortexEPoll {
+	VortexCtx           * ctx;
 	int                   max;
 	int                   length;
 	int                   set;
@@ -496,14 +501,14 @@ typedef struct _VortexEPoll {
  *
  * @return A newly allocated file set reference, supporting epoll(2).
  */
-axlPointer __vortex_io_waiting_epoll_create (VortexIoWaitingFor wait_to) 
+axlPointer __vortex_io_waiting_epoll_create (VortexCtx * ctx, VortexIoWaitingFor wait_to) 
 {
 	int           max;
 	int           set;
 	VortexEPoll * epoll;
 
 	/* get current max support */
-	if (! vortex_conf_get (VORTEX_HARD_SOCK_LIMIT, &max)) {
+	if (! vortex_conf_get (ctx, VORTEX_HARD_SOCK_LIMIT, &max)) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get current max hard sock limit");
 		return NULL;
 	} /* end if */
@@ -516,6 +521,7 @@ axlPointer __vortex_io_waiting_epoll_create (VortexIoWaitingFor wait_to)
 	} /* end if */
 		
 	epoll              = axl_new (VortexEPoll, 1);
+	epoll->ctx         = ctx;
 	epoll->max         = max;
 	epoll->wait_to     = wait_to;
 	epoll->set         = set;
@@ -576,13 +582,14 @@ bool __vortex_io_waiting_epoll_add_to (int                fds,
 				       axlPointer         __fd_set)
 {
 	VortexEPoll *        epoll  = (VortexEPoll *) __fd_set;
+	VortexCtx   *        ctx    = epoll->ctx;
 	int                  max;
 	struct epoll_event   ev;
 
 	/* check if max size reached */
 	if (epoll->length == epoll->max) {
 		/* support up to 4096 connections */
-		if (! vortex_conf_get (VORTEX_HARD_SOCK_LIMIT, &max)) {
+		if (! vortex_conf_get (ctx, VORTEX_HARD_SOCK_LIMIT, &max)) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get current max hard sock limit, closing socket");
 			return false;
 		} /* end if */
@@ -769,10 +776,9 @@ void     __vortex_io_waiting_epoll_dispatch (axlPointer           fd_group,
  * @return true if the mechanism was activated, otherwise false
  * is returned.
  */
-bool                 vortex_io_waiting_use (VortexIoWaitingType type)
+bool                 vortex_io_waiting_use (VortexCtx * ctx, VortexIoWaitingType type)
 {
 	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
 	bool        result = false;
 	bool        do_notify;
 	char      * mech = "";
@@ -921,15 +927,17 @@ bool                 vortex_io_waiting_is_available (VortexIoWaitingType type)
 }
 
 /** 
- * @brief Allows to check current I/O waiting mechanism being used.
- * 
+ * @brief Allows to check current I/O waiting mechanism being used at
+ * the providec context.
+ *
+ * @param The context where the io mechanism is activated. 
  * 
  * @return The I/O mechanism used by the core.
  */
-VortexIoWaitingType  vortex_io_waiting_get_current  ()
+VortexIoWaitingType  vortex_io_waiting_get_current  (VortexCtx * ctx)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	if (ctx == NULL)
+		return 0;
 
 	/* return current implementation */
 	return ctx->waiting_type;
@@ -944,13 +952,12 @@ VortexIoWaitingType  vortex_io_waiting_get_current  ()
  * create handler is a NULL handler is provided. No handler will be
  * modified is the create handler is not provided.
  */
-void                 vortex_io_waiting_set_create_fd_group (VortexIoCreateFdGroup create)
+void                 vortex_io_waiting_set_create_fd_group (VortexCtx * ctx, 
+							    VortexIoCreateFdGroup create)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
 	/* check that the handler provided is not null */
-	v_return_if_fail (create);
+	if (ctx == NULL || create == NULL)
+		return;
 
 	/* set default create handler */
 	ctx->waiting_create = create;
@@ -969,20 +976,18 @@ void                 vortex_io_waiting_set_create_fd_group (VortexIoCreateFdGrou
  * 
  * @return Returns a reference to a new allocated fd set.
  */
-axlPointer           vortex_io_waiting_invoke_create_fd_group (VortexIoWaitingFor wait_to)
+axlPointer           vortex_io_waiting_invoke_create_fd_group (VortexCtx           * ctx,
+							       VortexIoWaitingFor    wait_to)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
 	/* check current create IO handler configuration */
-	if (ctx->waiting_create == NULL) {
+	if (ctx == NULL || ctx->waiting_create == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
 		       "critical error, found that create fd set handler is not properly set, this is critical malfunctions");
 		return NULL;
 	}
 	
 	/* return a newly allocated fd set */
-	return ctx->waiting_create (wait_to);
+	return ctx->waiting_create (ctx, wait_to);
 }
 
 
@@ -995,13 +1000,12 @@ axlPointer           vortex_io_waiting_invoke_create_fd_group (VortexIoWaitingFo
  * the provided destroy function is NULL. No operation will be
  * performed in such case.
  */
-void                 vortex_io_waiting_set_destroy_fd_group    (VortexIoDestroyFdGroup destroy)
+void                 vortex_io_waiting_set_destroy_fd_group    (VortexCtx              * ctx, 
+								VortexIoDestroyFdGroup   destroy)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
 	/* check if the destroy handler is not a NULL reference */
-	v_return_if_fail (destroy);
+	if (ctx == NULL || destroy == NULL)
+		return;
 
 	/* set default destroy handler */
 	ctx->waiting_destroy = destroy;
@@ -1021,13 +1025,12 @@ void                 vortex_io_waiting_set_destroy_fd_group    (VortexIoDestroyF
  * 
  * @param fd_group The fd group to destroy. 
  */
-void                 vortex_io_waiting_invoke_destroy_fd_group (axlPointer fd_group)
+void                 vortex_io_waiting_invoke_destroy_fd_group (VortexCtx  * ctx, 
+								axlPointer   fd_group)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
 	/* check that the received fd_group is not null */
-	v_return_if_fail (fd_group);
+	if (ctx == NULL || fd_group == NULL)
+		return;
 
 	/* check current destroy IO handler configuration */
 	if (ctx->waiting_destroy == NULL) {
@@ -1050,13 +1053,12 @@ void                 vortex_io_waiting_invoke_destroy_fd_group (axlPointer fd_gr
  * @param clear The handler to executed once Vortex internal process
  * requires to create a socket descriptor set.
  */
-void                 vortex_io_waiting_set_clear_fd_group    (VortexIoClearFdGroup clear)
+void                 vortex_io_waiting_set_clear_fd_group    (VortexCtx             * ctx, 
+							      VortexIoClearFdGroup    clear)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
 	/* check if the clear handler is not a NULL reference */
-	v_return_if_fail (clear);
+	if (clear == NULL || ctx == NULL)
+		return;
 
 	/* set default clear handler */
 	ctx->waiting_clear = clear;
@@ -1075,13 +1077,11 @@ void                 vortex_io_waiting_set_clear_fd_group    (VortexIoClearFdGro
  *
  * @param fd_group The fd_group reference to clear.
  */
-void                 vortex_io_waiting_invoke_clear_fd_group (axlPointer fd_group)
+void                 vortex_io_waiting_invoke_clear_fd_group (VortexCtx * ctx, axlPointer fd_group)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
 	/* check that the received fd_group is not null */
-	v_return_if_fail (fd_group);
+	if (fd_group == NULL || ctx == NULL)
+		return;
 
 	/* check current clear IO handler configuration */
 	if (ctx->waiting_clear == NULL) {
@@ -1104,13 +1104,12 @@ void                 vortex_io_waiting_invoke_clear_fd_group (axlPointer fd_grou
  * @param add_to The handler to be invoked when it is required to add
  * a socket descriptor into the fd set.
  */
-void                 vortex_io_waiting_set_add_to_fd_group     (VortexIoAddToFdGroup add_to)
+void                 vortex_io_waiting_set_add_to_fd_group     (VortexCtx            * ctx, 
+								VortexIoAddToFdGroup   add_to)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
 	/* check for NULL reference handlers */
-	v_return_if_fail (add_to);
+	if (add_to == NULL || ctx == NULL)
+		return;
 
 	/* set the new handler */
 	ctx->waiting_add_to = add_to;
@@ -1130,15 +1129,19 @@ void                 vortex_io_waiting_set_add_to_fd_group     (VortexIoAddToFdG
  * @param on_reading The fd set where the socket descriptor will be
  * added.
  */
-bool              vortex_io_waiting_invoke_add_to_fd_group  (int                fds, 
+bool              vortex_io_waiting_invoke_add_to_fd_group  (VortexCtx        * ctx,
+							     int                fds, 
 							     VortexConnection * connection, 
 							     axlPointer         fd_group)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	if (ctx != NULL && ctx->waiting_add_to != NULL) {
+		
+		/* invoke add to operation */
+		return ctx->waiting_add_to (fds, connection, fd_group);
+	} /* end if */
 
-	/* invoke add to operation */
-	return ctx->waiting_add_to (fds, connection, fd_group);
+	/* return false if it fails */
+	return false;
 }
 
 /** 
@@ -1149,13 +1152,12 @@ bool              vortex_io_waiting_invoke_add_to_fd_group  (int                
  * @param is_set The handler to be invoked when it is required to
  * check if a socket descriptor is set into a given fd set.
  */
-void                 vortex_io_waiting_set_is_set_fd_group     (VortexIoIsSetFdGroup is_set)
+void                 vortex_io_waiting_set_is_set_fd_group     (VortexCtx            * ctx, 
+								VortexIoIsSetFdGroup   is_set)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
 	/* check for NULL reference handlers */
-	v_return_if_fail (is_set);
+	if (is_set == NULL || ctx == NULL)
+		return;
 
 	/* set the new handler */
 	ctx->waiting_is_set = is_set;
@@ -1170,13 +1172,13 @@ void                 vortex_io_waiting_set_is_set_fd_group     (VortexIoIsSetFdG
  * module to check if the current mechanism support automatic
  * dispatch.
  */
-void                 vortex_io_waiting_set_have_dispatch       (VortexIoHaveDispatch  have_dispatch)
+void                 vortex_io_waiting_set_have_dispatch       (VortexCtx             * ctx,
+								VortexIoHaveDispatch    have_dispatch)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
 
 	/* check for NULL reference handlers */
-	v_return_if_fail (have_dispatch);
+	if (have_dispatch == NULL || ctx == NULL)
+		return;
 
 	/* set the new handler */
 	ctx->waiting_have_dispatch = have_dispatch;
@@ -1190,14 +1192,13 @@ void                 vortex_io_waiting_set_have_dispatch       (VortexIoHaveDisp
  * @param dispatch The dispatch function to be executed on every
  * socket changed.
  */
-void                 vortex_io_waiting_set_dispatch            (VortexIoDispatch     dispatch)
+void                 vortex_io_waiting_set_dispatch            (VortexCtx          * ctx,
+								VortexIoDispatch     dispatch)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
 	/* check for NULL reference handlers */
-	v_return_if_fail (dispatch);
-
+	if (dispatch == NULL || ctx == NULL)
+		return;
+	
 	/* set the new handler */
 	ctx->waiting_dispatch = dispatch;
 	return;
@@ -1218,15 +1219,13 @@ void                 vortex_io_waiting_set_dispatch            (VortexIoDispatch
  * @param user_data User defined pointer provided to the is set
  * function.
  */
-bool                  vortex_io_waiting_invoke_is_set_fd_group  (int        fds, 
-								 axlPointer fd_group, 
-								 axlPointer user_data)
+bool                  vortex_io_waiting_invoke_is_set_fd_group  (VortexCtx * ctx,
+								 int         fds, 
+								 axlPointer  fd_group, 
+								 axlPointer  user_data)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
-	v_return_val_if_fail (fds > 0,  false);
-	v_return_val_if_fail (fd_group, false);
+	if (ctx == NULL || fd_group == NULL || fds <= 0)
+		return false;
 	
 	/* check for properly add to handler configuration */
 	if (ctx->waiting_is_set == NULL) {
@@ -1254,12 +1253,12 @@ bool                  vortex_io_waiting_invoke_is_set_fd_group  (int        fds,
  * @return true if the current I/O mechanism support automatic
  * dispatch, otherwise false is returned.
  */
-bool                 vortex_io_waiting_invoke_have_dispatch    (axlPointer fd_group)
+bool                 vortex_io_waiting_invoke_have_dispatch    (VortexCtx  * ctx, 
+								axlPointer   fd_group)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
-	v_return_val_if_fail (fd_group, false);
+	/* check the references received */
+	if (ctx == NULL || fd_group == NULL)
+		return false;
 	
 	/* check for properly add to handler configuration */
 	if (ctx->waiting_have_dispatch == NULL) {
@@ -1286,17 +1285,16 @@ bool                 vortex_io_waiting_invoke_have_dispatch    (axlPointer fd_gr
  * @param user_data Reference to the user defined data to be passed to
  * the dispatch function.
  */
-void                 vortex_io_waiting_invoke_dispatch         (axlPointer           fd_group, 
-								VortexIoDispatchFunc func,
-								int                  changed,
-								axlPointer           user_data)
+void                 vortex_io_waiting_invoke_dispatch         (VortexCtx            * ctx,
+								axlPointer             fd_group, 
+								VortexIoDispatchFunc   func,
+								int                    changed,
+								axlPointer             user_data)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	/* check parameters */
+	if (ctx == NULL || fd_group == NULL || func == NULL)
+		return;
 
-	v_return_if_fail (fd_group);
-	v_return_if_fail (func);
-	
 	/* check for properly add to handler configuration */
 	if (ctx->waiting_dispatch == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "there is no \"dispatch\" operation defined, this will cause critical malfunctions");
@@ -1348,13 +1346,12 @@ void                 vortex_io_waiting_invoke_dispatch         (axlPointer      
  * @param wait_on The handler to be used. The function will fail on
  * setting the handler if it is provided a NULL reference.
  */
-void                 vortex_io_waiting_set_wait_on_fd_group    (VortexIoWaitOnFdGroup wait_on)
+void                 vortex_io_waiting_set_wait_on_fd_group    (VortexCtx             * ctx, 
+								VortexIoWaitOnFdGroup   wait_on)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
-	/* check for NULL reference received */
-	v_return_if_fail (wait_on);
+	/* check references */
+	if (ctx == NULL || wait_on == NULL)
+		return;
 
 	/* set new default handler to be used */
 	ctx->waiting_wait_on = wait_on;
@@ -1378,12 +1375,14 @@ void                 vortex_io_waiting_set_wait_on_fd_group    (VortexIoWaitOnFd
  * changed.
  * 
  */
-int                  vortex_io_waiting_invoke_wait             (axlPointer         fd_group, 
-								int                max_fds,
-								VortexIoWaitingFor wait_to)
+int                  vortex_io_waiting_invoke_wait             (VortexCtx          * ctx,
+								axlPointer           fd_group, 
+								int                  max_fds,
+								VortexIoWaitingFor   wait_to)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	/* check reference to the context */
+	if (ctx == NULL)
+		return -3;
 
 	/* check for NULL reference */
 	if (ctx->waiting_wait_on == NULL) {

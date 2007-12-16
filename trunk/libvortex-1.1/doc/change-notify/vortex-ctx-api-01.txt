@@ -116,10 +116,46 @@ replied by a new version:
        - vortex_profiles_registered
        - vortex_profiles_is_registered
 
-       [vortex channe]
-       NO CHANGES
+       [vortex io module]
+       - vortex_io_waiting_use
+       - VortexIoCreateFdGroup (handler)
+       - vortex_io_waiting_get_current
+       - vortex_io_waiting_set_create_fd_group
+       - vortex_io_waiting_set_destroy_fd_group
+       - vortex_io_waiting_set_clear_fd_group
+       - vortex_io_waiting_set_add_to_fd_group
+       - vortex_io_waiting_set_is_set_fd_group
+       - vortex_io_waiting_set_have_dispatch
+       - vortex_io_waiting_set_dispatch
+       - vortex_io_waiting_set_wait_on_fd_group
+ 
+       [vortex reader]
+       - vortex_reader_allow_msgno_starting_from_1
 
-       
+       [vortex thread pool]
+       - vortex_thread_pool_new_task
+       - vortex_thread_pool_get_running_threads
+       - vortex_thread_pool_set_exclusive_pool
+  
+       [vortex sasl module]
+       - vortex_sasl_set_external_validation
+       - vortex_sasl_set_external_validation_full
+       - vortex_sasl_set_anonymous_validation
+       - vortex_sasl_set_anonymous_validation_full
+       - vortex_sasl_set_plain_validation
+       - vortex_sasl_set_plain_validation_full
+       - vortex_sasl_set_cram_md5_validation
+       - vortex_sasl_set_cram_md5_validation_full
+       - vortex_sasl_set_digest_md5_validation
+       - vortex_sasl_set_digest_md5_validation_full
+       - vortex_sasl_accept_negociation
+       - vortex_sasl_accept_negociation_full
+
+       [vortex tls module]
+       - vortex_tls_is_enabled
+       - vortex_tls_set_default_ctx_creation
+       - vortex_tls_set_default_post_check
+       - vortex_tls_accept_negociation
 
 Solution to incompatibility
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

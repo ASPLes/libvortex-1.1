@@ -50,6 +50,9 @@ struct _VortexThreadPool {
 	/* list of threads */
 	axlList          * threads;
 
+	/* context */
+	VortexCtx        * ctx;
+
 };
 
 /* vortex thread pool struct used by vortex library to notify to tasks
@@ -67,23 +70,23 @@ typedef struct _VortexThreadPoolTask {
 axlPointer __vortex_thread_pool_dispatcher (axlPointer data)
 {
 	/* get current context */
-	VortexCtx            * ctx = vortex_ctx_get ();
 	VortexThreadPoolTask * task;
 	VortexThreadPool     * pool  = data;
+	VortexCtx            * ctx   = pool->ctx;
 	VortexAsyncQueue     * queue = pool->queue;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "thread from pool started");
+	vortex_log (VORTEX_LEVEL_DEBUG, "thread from pool started");
 
 	/* get a reference to the queue, waiting for the next work */
 	while (1) {
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "--> thread from pool waiting for jobs");
+		vortex_log (VORTEX_LEVEL_DEBUG, "--> thread from pool waiting for jobs");
 		/* get next task to process */
 		task = vortex_async_queue_pop (queue);
 
 		/* check stop in progress signal */
 		if ((PTR_TO_INT (task) == 1) && ctx->thread_pool_being_stoped) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "--> thread from pool stoping, found finish beacon");
+			vortex_log (VORTEX_LEVEL_DEBUG, "--> thread from pool stoping, found finish beacon");
 
 			/* unref the queue and return */
 			vortex_async_queue_unref (queue);
@@ -91,7 +94,7 @@ axlPointer __vortex_thread_pool_dispatcher (axlPointer data)
 			return NULL;
 		} /* end if */
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "--> thread from pool processing new job");
+		vortex_log (VORTEX_LEVEL_DEBUG, "--> thread from pool processing new job");
 
 		/* at this point we already are executing inside a thread */
 		if (! ctx->thread_pool_being_stoped)
@@ -147,18 +150,19 @@ void __vortex_thread_pool_terminate_thread (axlPointer _thread)
  * @param max_threads how many threads to start.
  *
  **/
-void vortex_thread_pool_init     (int  max_threads)
+void vortex_thread_pool_init     (VortexCtx * ctx, 
+				  int         max_threads)
 {
 	/* get current context */
-	VortexCtx    * ctx = vortex_ctx_get ();
 	VortexThread * thread;
 	int          iterator;
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "creating thread pool threads=%d", max_threads);
+	vortex_log (VORTEX_LEVEL_DEBUG, "creating thread pool threads=%d", max_threads);
 
 	/* create the thread pool and its internal values */
 	ctx->thread_pool              = axl_new (VortexThreadPool, 1);
 	ctx->thread_pool->queue       = vortex_async_queue_new ();
 	ctx->thread_pool->threads     = axl_list_new (axl_list_always_return_1, __vortex_thread_pool_terminate_thread);
+	ctx->thread_pool->ctx         = ctx;
 	
 	/* init all threads required */
 	iterator = 0;
@@ -176,9 +180,9 @@ void vortex_thread_pool_init     (int  max_threads)
 			vortex_thread_destroy (thread, true);
 			
 			/* call to stop the thread pool */
-			vortex_thread_pool_exit ();
+			vortex_thread_pool_exit (ctx);
 			
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to create a thread required for the pool");
+			vortex_log (VORTEX_LEVEL_CRITICAL, "unable to create a thread required for the pool");
 			return;
 		} /* end if */
 
@@ -203,13 +207,12 @@ void vortex_thread_pool_init     (int  max_threads)
  * vortex_thread_pool_init.
  * 
  */
-void vortex_thread_pool_exit () 
+void vortex_thread_pool_exit (VortexCtx * ctx) 
 {
 	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
 	int         iterator;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "stopping thread pool..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "stopping thread pool..");
 
 	/* flag the queue to be stoping */
 	ctx->thread_pool_being_stoped = true;
@@ -217,7 +220,7 @@ void vortex_thread_pool_exit ()
 	/* push beacons to notify eacy thread created to stop */
 	iterator = 0;
 	while (iterator < axl_list_length (ctx->thread_pool->threads)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "pushing beacon to stop thread from the pool..");
+		vortex_log (VORTEX_LEVEL_DEBUG, "pushing beacon to stop thread from the pool..");
 		/* push a notifier */
 		vortex_async_queue_push (ctx->thread_pool->queue, INT_TO_PTR (1));
 
@@ -234,17 +237,18 @@ void vortex_thread_pool_exit ()
 	/* free the node itself */
 	axl_free (ctx->thread_pool);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "thread pool is stopped..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "thread pool is stopped..");
 	return;
 }
 
 /** 
  * @internal Allows to flag the pool be in close process.
  */
-void vortex_thread_pool_being_closed        ()
+void vortex_thread_pool_being_closed        (VortexCtx * ctx)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	/* do not configure if a null reference is received */
+	if (ctx == NULL)
+		return;
 
 	/* flag the queue to be stoping */
 	ctx->thread_pool_being_stoped = true;
@@ -265,15 +269,14 @@ void vortex_thread_pool_being_closed        ()
  *
  * 
  **/
-void vortex_thread_pool_new_task (VortexThreadFunc func, axlPointer data)
+void vortex_thread_pool_new_task (VortexCtx * ctx, VortexThreadFunc func, axlPointer data)
 {
 	/* get current context */
-	VortexCtx            * ctx = vortex_ctx_get ();
 	VortexThreadPoolTask * task;
 
-	v_return_if_fail (func);
-	v_return_if_fail (ctx->thread_pool);
-	v_return_if_fail (! ctx->thread_pool_being_stoped);
+	/* check parameters */
+	if (func == NULL || ctx == NULL || ctx->thread_pool == NULL || ctx->thread_pool_being_stoped)
+		return;
 
 	/* create the task data */
 	task       = axl_new (VortexThreadPoolTask, 1);
@@ -294,12 +297,11 @@ void vortex_thread_pool_new_task (VortexThreadFunc func, axlPointer data)
  * 
  * @return the thread number or -1 if fails
  **/
-int  vortex_thread_pool_get_running_threads ()
+int  vortex_thread_pool_get_running_threads (VortexCtx * ctx)
 {
 	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-	
-	v_return_val_if_fail (ctx->thread_pool, -1);
+	if (ctx == NULL || ctx->thread_pool == NULL)
+		return -1;
 
 	return axl_list_length (ctx->thread_pool->threads);
 }
@@ -326,7 +328,10 @@ int  vortex_thread_pool_get_running_threads ()
 void vortex_thread_pool_set_num             (int  number)
 {
 	char * _number;
-	v_return_if_fail (number > 0);
+	
+	/* do not configure anything .. */
+	if (number <= 0)
+		return;
 	
 	/* translate the number into an string representation */
 	_number = axl_strdup_printf ("%d", number);
@@ -341,7 +346,7 @@ void vortex_thread_pool_set_num             (int  number)
 }
 
 /**
- * @brief Returns how many threads have the given VortexThreadPool
+ * @brief Returns how many threads have the given VortexThreadPool.
  * 
  * This function is for internal vortex library purpose. This function
  * returns how many thread must be created inside the vortex thread
@@ -380,7 +385,6 @@ int  vortex_thread_pool_get_num             ()
 	value = atoi (getenv ("VORTEX_THREADS"));
 #endif
 	if (value <= 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "VORTEX_THREAD environment var have a wrong value, exiting");
 		exit (-1);
 	} /* end if */
 	
@@ -404,11 +408,9 @@ int  vortex_thread_pool_get_num             ()
  * value is already configured to true. Set false to make the thread
  * pool to behave in a non-exclusive form.
  */
-void vortex_thread_pool_set_exclusive_pool  (bool     value)
+void vortex_thread_pool_set_exclusive_pool  (VortexCtx * ctx,
+					     bool        value)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
 	/* set the new value */
 	ctx->thread_pool_exclusive = value;
 

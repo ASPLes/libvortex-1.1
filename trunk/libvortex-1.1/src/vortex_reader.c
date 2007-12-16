@@ -124,6 +124,7 @@ bool     __vortex_reader_update_incoming_buffer_and_notify (VortexConnection  * 
 
 
 	VortexChannel     * channel0;
+	VortexCtx         * ctx = vortex_connection_get_ctx (connection);
 	int                 ackno, window;
 	VortexWriterData    writer;
 
@@ -150,7 +151,7 @@ bool     __vortex_reader_update_incoming_buffer_and_notify (VortexConnection  * 
 										  ackno,
 										  window);
 			writer.the_size  = strlen (writer.the_frame);
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "notifying remote side that current buffer status is %s",
+			vortex_log (VORTEX_LEVEL_DEBUG, "notifying remote side that current buffer status is %s",
 				    writer.the_frame);
 			/* Queue the vortex writer message to be sent with
 			 * higher priority, currently, the following function
@@ -161,7 +162,7 @@ bool     __vortex_reader_update_incoming_buffer_and_notify (VortexConnection  * 
 				/* free frame */
 				axl_free (writer.the_frame);
 
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to queue a SEQ frame");
+				vortex_log (VORTEX_LEVEL_CRITICAL, "unable to queue a SEQ frame");
 				/* deallocate memory on error, because no one
 				 * will do it. */
 				vortex_frame_unref (frame);
@@ -208,10 +209,10 @@ bool     vortex_channel_check_incoming_msgno (VortexCtx     * ctx,
 	/* compatibility test, out of the BEEP standard to interop
 	 * with BEEP implementations that uses as a starting message
 	 * the value 1. */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "about to checking expected message to be received on this channel");
+	vortex_log (VORTEX_LEVEL_DEBUG, "about to checking expected message to be received on this channel");
 	if (vortex_channel_get_next_expected_msg_no (channel) == 0 &&
 	    vortex_frame_get_msgno (frame) == 1) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, 
+		vortex_log (VORTEX_LEVEL_WARNING, 
 		       "received an starting message for the channel value that begins with 1 rather than 0");
 
 		if (ctx->reader_accept_msgno_startig_from_1) {
@@ -226,7 +227,7 @@ bool     vortex_channel_check_incoming_msgno (VortexCtx     * ctx,
 			
 			return true;
 		}
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "if you want to make vortex reader to accept message with msgno starting from 1, you can use vortex_reader_allow_msgno_starting_from_1");
+		vortex_log (VORTEX_LEVEL_WARNING, "if you want to make vortex reader to accept message with msgno starting from 1, you can use vortex_reader_allow_msgno_starting_from_1");
 		
 	}
 
@@ -235,7 +236,7 @@ bool     vortex_channel_check_incoming_msgno (VortexCtx     * ctx,
 		__vortex_connection_set_not_connected (connection, "expected message number for channel wasn't found");
 		
 		/* log a critical log */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "expected message number %d for channel %d wasn't found, but received %d",
+		vortex_log (VORTEX_LEVEL_CRITICAL, "expected message number %d for channel %d wasn't found, but received %d",
 		       vortex_channel_get_next_expected_msg_no (channel), 
 		       vortex_channel_get_number (channel),
 		       vortex_frame_get_msgno (frame));
@@ -292,7 +293,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	bool               more;
 	char             * raw_frame;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "something to read");
+	vortex_log (VORTEX_LEVEL_DEBUG, "something to read");
 
 	/* check if there are pre read handler to be executed on this 
 	   connection. */
@@ -320,9 +321,9 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	 * joining frame fragments. */
 
 	/* check for debug to throw some debug messages.*/
-	if (vortex_log2_is_enabled ()) {
+	if (vortex_log2_is_enabled (ctx)) {
 		raw_frame = vortex_frame_get_raw_frame (frame);
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "frame received (before all filters)\n%s",
+		vortex_log (VORTEX_LEVEL_DEBUG, "frame received (before all filters)\n%s",
 		       raw_frame);
 		axl_free (raw_frame);
 	}
@@ -335,13 +336,13 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		__vortex_listener_second_step_accept (frame, connection);
 		return;
 	}
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "passed initial accept stage");
+	vortex_log (VORTEX_LEVEL_DEBUG, "passed initial accept stage");
 
 	/* channel exists, get a channel reference */
 	channel = vortex_connection_get_channel (connection,
 						 vortex_frame_get_channel (frame));
 	if (channel == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "received a frame referring to a non-opened channel, closing session");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "received a frame referring to a non-opened channel, closing session");
 		__vortex_connection_set_not_connected (connection, 
 						       "received a frame referring to a non-opened channel, closing session");
 		/* free the frame */
@@ -349,7 +350,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		return;		
 	}
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "passed connection existence stage");	
+	vortex_log (VORTEX_LEVEL_DEBUG, "passed connection existence stage");	
 
 	/* check message numbers and reply numbers sequencing */
 	switch (type) {
@@ -367,7 +368,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 
 			__vortex_connection_set_not_connected (connection, "expected reply message previous to received");
 
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "expected reply message %d previous to received %d",
+			vortex_log (VORTEX_LEVEL_CRITICAL, "expected reply message %d previous to received %d",
 			       vortex_channel_get_next_expected_reply_no (channel),
 			       vortex_frame_get_msgno (frame));
 
@@ -380,12 +381,12 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		/* manage incoming SEQ frames, check if the received
 		 * ackno value is inside the seqno range for bytes
 		 * already sent. */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "received a SEQ frame: SEQ %d %d %d",
+		vortex_log (VORTEX_LEVEL_DEBUG, "received a SEQ frame: SEQ %d %d %d",
 		       vortex_frame_get_channel (frame), vortex_frame_get_seqno (frame),
 		       vortex_frame_get_payload_size (frame));
 
 		if (vortex_frame_get_seqno (frame) > vortex_channel_get_next_seq_no (channel)) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+			vortex_log (VORTEX_LEVEL_CRITICAL, 
 			       "received a SEQ frame specifying a seqno reference value that wasn't used (ackno: %d > max seq no sent: %d)",
 			       vortex_frame_get_seqno (frame), vortex_channel_get_next_seq_no (channel));
 			
@@ -400,7 +401,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		if (MAX_BUFFER_SIZE < vortex_frame_get_payload_size (frame)) {
 			__vortex_connection_set_not_connected (connection, "received a SEQ frame specifying a not allowed value for the window size");
 
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+			vortex_log (VORTEX_LEVEL_CRITICAL, 
 			       "received a SEQ frame specifying a not allowed value for the window size");
 			
 			/* unref frame due to errors */
@@ -425,7 +426,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		 * rpyno) */
 		break;
 	}
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "passed message number checking stage");
+	vortex_log (VORTEX_LEVEL_DEBUG, "passed message number checking stage");
 
 	/* Check next sequence number, this check is always applied,
 	 * for SEQ frames received this case is not reached. */
@@ -434,7 +435,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 
 		__vortex_connection_set_not_connected (connection, "expected seq no number for channel wan't found");
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "expected seq no %d for channel wasn't found, received %d",
+		vortex_log (VORTEX_LEVEL_CRITICAL, "expected seq no %d for channel wasn't found, received %d",
 		       vortex_channel_get_next_expected_seq_no (channel),
 		       vortex_frame_get_seqno (frame));
 
@@ -459,7 +460,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	 * from the frame size minus one unit. */
 	if ((vortex_frame_get_seqno (frame) + vortex_frame_get_content_size (frame) - 1) > 
 	    vortex_channel_get_max_seq_no_accepted (channel)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
 		       "Protocol violation, received a frame larger than the maximum buffer expected, your session will be closed (seq no: %d + size: %d > max seq no: %d",
 		       vortex_frame_get_seqno (frame), vortex_frame_get_content_size (frame),
 		       vortex_channel_get_max_seq_no_accepted (channel));
@@ -527,10 +528,10 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		break;
 	}
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "passed channel update status due to frame received stage");
+	vortex_log (VORTEX_LEVEL_DEBUG, "passed channel update status due to frame received stage");
 	/* now update current incoming buffers to track SEQ frames */
 	if (! __vortex_reader_update_incoming_buffer_and_notify (connection, channel, frame)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to notify SEQ channel status, connection broken or protocol violation");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to notify SEQ channel status, connection broken or protocol violation");
 		return;
 	} /* end if */
 
@@ -552,7 +553,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 			/* no previous frame found, store if the
 			 * complete flag is activated */
 			if (vortex_channel_have_complete_flag (channel)) {
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "more flag and completed flag detected, skipping to the next frame");
+				vortex_log (VORTEX_LEVEL_DEBUG, "more flag and completed flag detected, skipping to the next frame");
 
 				/* push the frame for later operation */
 				vortex_channel_store_previous_frame (channel, frame);
@@ -562,7 +563,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 			/* we have a previous frame, check to store or
 			 * deliver */
 			if (! vortex_frame_are_joinable (previous, frame)) {
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "frame fragment received is not valid, giving up for this session");
+				vortex_log (VORTEX_LEVEL_CRITICAL, "frame fragment received is not valid, giving up for this session");
 				vortex_frame_unref (frame);
 				__vortex_connection_set_not_connected (vortex_channel_get_connection (channel), 
 								       "frame fragment received is not valid, giving up for this session");
@@ -574,7 +575,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 			 * already activated because a previous frame
 			 * was found stored. Because the frame is
 			 * joinable, store. */
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "more flag and completed flag detected, skipping to the next frame");
+			vortex_log (VORTEX_LEVEL_DEBUG, "more flag and completed flag detected, skipping to the next frame");
 			
 			/* push the frame for later operation */
 			vortex_channel_store_previous_frame (channel, frame);
@@ -593,12 +594,12 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		} /* end if */
 	} /* end if */
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "passed frame checking stage");
+	vortex_log (VORTEX_LEVEL_DEBUG, "passed frame checking stage");
 
 	/* invoke frame received handler for second level and, if not
 	 * defined, the first level handler */
 	if (vortex_channel_invoke_received_handler (connection, channel, frame)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "frame delivered on second (channel) level handler channel");
+		vortex_log (VORTEX_LEVEL_DEBUG, "frame delivered on second (channel) level handler channel");
 		return; /* frame was successfully delivered */
 	}
 	
@@ -610,11 +611,11 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 						   vortex_channel_get_number     (channel),
 						   vortex_channel_get_connection (channel),
 						   frame)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "frame delivered on first (profile) level handler channel");
+		vortex_log (VORTEX_LEVEL_DEBUG, "frame delivered on first (profile) level handler channel");
 		return; /* frame was successfully delivered */
 	}
 	
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+	vortex_log (VORTEX_LEVEL_CRITICAL, 
 	       "unable to deliver incoming frame, no first or second level handler defined, dropping frame");
 
 	/* in case of a frame reply */
@@ -655,10 +656,12 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 bool     vortex_reader_register_watch (VortexReaderData * data, axlList * con_list, axlList * srv_list)
 {
 	VortexConnection * connection;
+	VortexCtx        * ctx;
 
 	/* get a reference to the connection (no matter if it is not
 	 * defined) */
 	connection = data->connection;
+	ctx        = vortex_connection_get_ctx (connection);
 
 	switch (data->type) {
 	case CONNECTION:
@@ -666,18 +669,18 @@ bool     vortex_reader_register_watch (VortexReaderData * data, axlList * con_li
 		if (!vortex_connection_is_ok (connection, false)) {
 			/* check if we can free this connection */
 			vortex_connection_unref (connection, "vortex reader (process)");
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "received a non-valid connection, ignoring it");
+			vortex_log (VORTEX_LEVEL_DEBUG, "received a non-valid connection, ignoring it");
 			return false;
 		}
 			
 		/* now we have a first connection, we can start to wait */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "new connection to be watched (%d)", 
+		vortex_log (VORTEX_LEVEL_DEBUG, "new connection to be watched (%d)", 
 		       vortex_connection_get_socket (connection));
 		axl_list_append (con_list, connection);
 
 		break;
 	case LISTENER:
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "new listener connection to be watched (%d --> %s:%s)",
+		vortex_log (VORTEX_LEVEL_DEBUG, "new listener connection to be watched (%d --> %s:%s)",
 			    vortex_connection_get_socket (connection), 
 			    vortex_connection_get_host (connection), 
 			    vortex_connection_get_port (connection));
@@ -707,27 +710,27 @@ VortexReaderData * __vortex_reader_change_io_mech (VortexCtx        * ctx,
 	/* get current context */
 	VortexReaderData * result;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "found I/O notification change");
+	vortex_log (VORTEX_LEVEL_DEBUG, "found I/O notification change");
 	
 	/* unref IO waiting object */
-	vortex_io_waiting_invoke_destroy_fd_group (*on_reading); 
+	vortex_io_waiting_invoke_destroy_fd_group (ctx, *on_reading); 
 	*on_reading = NULL;
 	
 	/* notify preparation done and lock until new
 	 * I/O is installed */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "notify vortex reader preparation done");
+	vortex_log (VORTEX_LEVEL_DEBUG, "notify vortex reader preparation done");
 	vortex_async_queue_push (ctx->reader_stopped, INT_TO_PTR(1));
 	
 	/* free data use the function that includes that knoledge */
 	vortex_reader_register_watch (data, con_list, srv_list);
 	
 	/* lock */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "lock until new API is installed");
+	vortex_log (VORTEX_LEVEL_DEBUG, "lock until new API is installed");
 	result = vortex_async_queue_pop (ctx->reader_queue);
 
 	/* initialize the read set */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "unlocked, creating new I/O mechanism used current API");
-	*on_reading = vortex_io_waiting_invoke_create_fd_group (READ_OPERATIONS);
+	vortex_log (VORTEX_LEVEL_DEBUG, "unlocked, creating new I/O mechanism used current API");
+	*on_reading = vortex_io_waiting_invoke_create_fd_group (ctx, READ_OPERATIONS);
 
 	return result;
 }
@@ -741,7 +744,7 @@ void vortex_reader_foreach_impl (VortexCtx        * ctx,
 {
 	axlListCursor * cursor;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "doing vortex reader foreach notification..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "doing vortex reader foreach notification..");
 
 	/* foreach the connection list */
 	cursor = axl_list_cursor_new (con_list);
@@ -855,7 +858,7 @@ bool     vortex_reader_read_pending (VortexCtx  * ctx,
 		length--;
 		data            = vortex_async_queue_pop (ctx->reader_queue);
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "read pending type=%d",
+		vortex_log (VORTEX_LEVEL_DEBUG, "read pending type=%d",
 			    data->type);
 
 		/* check if we have to continue working */
@@ -892,6 +895,7 @@ VORTEX_SOCKET __vortex_reader_build_set_to_watch_aux (axlPointer      on_reading
 	VORTEX_SOCKET      max_fds     = current_max;
 	VORTEX_SOCKET      fds         = 0;
 	VortexConnection * connection;
+	VortexCtx        * ctx;
 	
 	axl_list_cursor_first (cursor);
 	while (axl_list_cursor_has_item (cursor)) {
@@ -913,11 +917,14 @@ VORTEX_SOCKET __vortex_reader_build_set_to_watch_aux (axlPointer      on_reading
 		fds        = vortex_connection_get_socket (connection);
 		max_fds    = fds > max_fds ? fds: max_fds;
 
+		/* get the context */
+		ctx        = vortex_connection_get_ctx (connection);
+
 		/* add the socket descriptor into the given on reading
 		 * group */
-		if (! vortex_io_waiting_invoke_add_to_fd_group (fds, connection, on_reading)) {
+		if (! vortex_io_waiting_invoke_add_to_fd_group (ctx, fds, connection, on_reading)) {
 			
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+			vortex_log (VORTEX_LEVEL_CRITICAL, 
 				    "unable to add the connection to the vortex reader watching set. This usually means you did reach the I/O waiting mechanism limit.");
 
 			/* set it as not connected */
@@ -991,7 +998,7 @@ void __vortex_reader_check_connection_list (VortexCtx     * ctx,
 	        fds = vortex_connection_get_socket (connection);
 		
 		/* ask if this socket have changed */
-		if (vortex_io_waiting_invoke_is_set_fd_group (fds, on_reading, ctx)) {
+		if (vortex_io_waiting_invoke_is_set_fd_group (ctx, fds, on_reading, ctx)) {
 
 			/* call to process incoming data, activating
 			 * all invocation code (first and second level
@@ -1044,9 +1051,9 @@ int  __vortex_reader_check_listener_list (VortexCtx     * ctx,
 		fds  = vortex_connection_get_socket (connection);
 		
 		/* check if the socket is activated */
-		if (vortex_io_waiting_invoke_is_set_fd_group (fds, on_reading, ctx)) {
+		if (vortex_io_waiting_invoke_is_set_fd_group (ctx, fds, on_reading, ctx)) {
 			/* init the listener incoming connection phase */
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "listener (%d) have requests, processing..", fds);
+			vortex_log (VORTEX_LEVEL_DEBUG, "listener (%d) have requests, processing..", fds);
 			vortex_listener_accept_connections (ctx, fds, connection);
 
 			/* update checked connections */
@@ -1092,7 +1099,7 @@ void __vortex_reader_stop_process (VortexCtx     * ctx,
 	axl_list_cursor_free (con_cursor);
 
 	/* unref IO waiting object */
-	vortex_io_waiting_invoke_destroy_fd_group (on_reading); 
+	vortex_io_waiting_invoke_destroy_fd_group (ctx, on_reading); 
 
 	/* signal that the vortex reader process is stopped */
 	QUEUE_PUSH (ctx->reader_stopped, INT_TO_PTR (1));
@@ -1155,7 +1162,7 @@ axlPointer __vortex_reader_run (VortexCtx * ctx)
 	axlListCursor    * srv_cursor;
 
 	/* initialize the read set */
-	on_reading  = vortex_io_waiting_invoke_create_fd_group (READ_OPERATIONS);
+	on_reading  = vortex_io_waiting_invoke_create_fd_group (ctx, READ_OPERATIONS);
 
 	/* create lists and cursors */
 	con_list = axl_list_new (axl_list_always_return_1, __vortex_reader_close_connection);
@@ -1176,18 +1183,18 @@ axlPointer __vortex_reader_run (VortexCtx * ctx)
 
 	while (true) {
 		/* reset descriptor set */
-		vortex_io_waiting_invoke_clear_fd_group (on_reading);
+		vortex_io_waiting_invoke_clear_fd_group (ctx, on_reading);
 
 		/* build socket descriptor to be read */
 		max_fds = __vortex_reader_build_set_to_watch (on_reading, con_cursor, srv_cursor);
 
 		if ((axl_list_length (con_list) == 0) && (axl_list_length (srv_list) == 0)) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "no more connection to watch for, putting into sleep thread");
+			vortex_log (VORTEX_LEVEL_DEBUG, "no more connection to watch for, putting into sleep thread");
 			goto __vortex_reader_run_first_connection;
 		}
 		
 		/* perform IO blocking wait for read operation */
-		result = vortex_io_waiting_invoke_wait (on_reading, max_fds, READ_OPERATIONS);
+		result = vortex_io_waiting_invoke_wait (ctx, on_reading, max_fds, READ_OPERATIONS);
 
 		/* check for timeout error */
 		if (result == -1 || result == -2)
@@ -1198,7 +1205,7 @@ axlPointer __vortex_reader_run (VortexCtx * ctx)
 
 			error_tries++;
 			if (error_tries == 2) {
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+				vortex_log (VORTEX_LEVEL_CRITICAL, 
 					    "tries have been reached on reader, error was=(errno=%d): %s exiting..",
 					    errno, vortex_errno_get_last_error ());
 				return NULL;
@@ -1208,7 +1215,7 @@ axlPointer __vortex_reader_run (VortexCtx * ctx)
 
 		/* check for fatal error */
 		if (result == -3) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "fatal error received from io-wait function, exiting from vortex reader process..");
+			vortex_log (VORTEX_LEVEL_CRITICAL, "fatal error received from io-wait function, exiting from vortex reader process..");
 			__vortex_reader_stop_process (ctx, on_reading, con_cursor, srv_cursor);
 			return NULL;
 		}
@@ -1218,11 +1225,11 @@ axlPointer __vortex_reader_run (VortexCtx * ctx)
 		if (result > 0) {
 			/* check if the mechanism have automatic
 			 * dispatch */
-			if (vortex_io_waiting_invoke_have_dispatch (on_reading)) {
+			if (vortex_io_waiting_invoke_have_dispatch (ctx, on_reading)) {
 				/* perform automatic dispatch,
 				 * providing the dispatch function and
 				 * the number of sockets changed */
-				vortex_io_waiting_invoke_dispatch (on_reading, __vortex_reader_dispatch_connection, result, ctx);
+				vortex_io_waiting_invoke_dispatch (ctx, on_reading, __vortex_reader_dispatch_connection, result, ctx);
 
 			} else {
 				/* call to check listener connections */
@@ -1265,13 +1272,13 @@ void vortex_reader_watch_connection (VortexCtx        * ctx,
 	v_return_if_fail (ctx->reader_queue);
 
 	if (!vortex_connection_set_nonblocking_socket (connection)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to set non-blocking I/O operation, at connection registration, closing session");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to set non-blocking I/O operation, at connection registration, closing session");
  		return;
 	}
 
 	/* increase reference counting */
 	if (! vortex_connection_ref (connection, "vortex reader (process)")) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to increase connection reference count, dropping connection");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to increase connection reference count, dropping connection");
 		return;
 	}
        
@@ -1332,7 +1339,7 @@ bool vortex_reader_run (VortexCtx * ctx)
 				    (VortexThreadFunc) __vortex_reader_run,
 				    ctx,
 				    VORTEX_THREAD_CONF_END)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to start vortex reader loop");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to start vortex reader loop");
 		return false;
 	} /* end if */
 	
@@ -1348,7 +1355,7 @@ void vortex_reader_stop (VortexCtx * ctx)
 	/* get current context */
 	VortexReaderData * data;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "stopping vortex reader ..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "stopping vortex reader ..");
 
 	/* create a bacon to signal vortex reader that it should stop
 	 * and unref resources */
@@ -1356,9 +1363,9 @@ void vortex_reader_stop (VortexCtx * ctx)
 	data->type = TERMINATE;
 
 	/* push data */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "pushing data stop signal..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "pushing data stop signal..");
 	QUEUE_PUSH (ctx->reader_queue, data);
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "signal sent reader ..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "signal sent reader ..");
 
 	/* waiting until the reader is stoped */
 	vortex_async_queue_pop (ctx->reader_stopped);
@@ -1367,7 +1374,7 @@ void vortex_reader_stop (VortexCtx * ctx)
 	/* terminate thread */
 	vortex_thread_destroy (&ctx->reader_thread, false);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "vortex reader process stopped");
+	vortex_log (VORTEX_LEVEL_DEBUG, "vortex reader process stopped");
 
 	return;
 }
@@ -1388,7 +1395,7 @@ bool vortex_reader_notify_change_io_api               (VortexCtx * ctx)
 	if (ctx == NULL || ctx->reader_queue == NULL)
 		return false;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "stopping vortex reader due to a request for a I/O notify change...");
+	vortex_log (VORTEX_LEVEL_DEBUG, "stopping vortex reader due to a request for a I/O notify change...");
 
 	/* create a bacon to signal vortex reader that it should stop
 	 * and unref resources */
@@ -1396,13 +1403,13 @@ bool vortex_reader_notify_change_io_api               (VortexCtx * ctx)
 	data->type = IO_WAIT_CHANGED;
 
 	/* push data */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "pushing signal to notify I/O change..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "pushing signal to notify I/O change..");
 	QUEUE_PUSH (ctx->reader_queue, data);
 
 	/* waiting until the reader is stoped */
 	vortex_async_queue_pop (ctx->reader_stopped);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "done, now vortex reader will wait until the new API is installed..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "done, now vortex reader will wait until the new API is installed..");
 
 	return true;
 }
@@ -1421,10 +1428,10 @@ void vortex_reader_notify_change_done_io_api   (VortexCtx * ctx)
 	data->type = IO_WAIT_READY;
 
 	/* push data */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "pushing signal to notify I/O is ready..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "pushing signal to notify I/O is ready..");
 	QUEUE_PUSH (ctx->reader_queue, data);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "notification done..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "notification done..");
 
 	return;
 }
@@ -1467,10 +1474,12 @@ void vortex_reader_notify_change_done_io_api   (VortexCtx * ctx)
  * @param value true to allow messages received on a channel to start
  * with 1 rather than 0.
  */
-void vortex_reader_allow_msgno_starting_from_1 (bool     value)
+void vortex_reader_allow_msgno_starting_from_1 (VortexCtx * ctx, 
+						bool        value)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	/* do not configure anything if a null value is received */
+	if (ctx == NULL)
+		return;
 
 	ctx->reader_accept_msgno_startig_from_1 = value;
 	return;
@@ -1502,11 +1511,11 @@ void vortex_reader_foreach                     (VortexCtx            * ctx,
 	data->user_data = user_data;
 	
 	/* queue the operation */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "notify foreach reader operation..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "notify foreach reader operation..");
 	QUEUE_PUSH (ctx->reader_queue, data);
 
 	/* notification done */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "finished foreach reader operation..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "finished foreach reader operation..");
 
 	return;
 }

@@ -93,7 +93,7 @@ bool               vortex_sasl_is_enabled                ()
 #ifndef ENABLE_SASL_SUPPORT
 	/* return false if the library wasn't compiled with support
 	 * for sasl */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "current Vortex Library doesn't have SASL support");
+	vortex_log (VORTEX_LEVEL_WARNING, "current Vortex Library doesn't have SASL support");
 	return false;
 #else
 	/* just return true to start working with SASL */
@@ -150,25 +150,26 @@ bool               vortex_sasl_set_propertie             (VortexConnection     *
 							  axlDestroyFunc         value_destroy)
 {
 #ifndef ENABLE_SASL_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "calling to set_properties with a Vortex Library without SASL support");
+	vortex_log (VORTEX_LEVEL_DEBUG, "calling to set_properties with a Vortex Library without SASL support");
 	return false;
 #else
+	VortexCtx * ctx = vortex_connection_get_ctx (connection);
+	
 	/* check the connection status before setting the
 	 * properties */
 	if (connection == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "Setting SASL properties on a null reference connection.");
 		return false;
 	}
 
 	/* check the properties being set */
 	if ((prop <= 0) || (prop >= VORTEX_SASL_PROP_NUM)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "Setting SASL properties which is not a registered value.");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Setting SASL properties which is not a registered value.");
 		return false;
 	}
 	
 	/* check the value itself */
 	if (value == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "Setting SASL properties which its value is null.");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Setting SASL properties which its value is null.");
 		return false;
 	}
 
@@ -228,18 +229,19 @@ char             * vortex_sasl_get_propertie             (VortexConnection     *
 							  VortexSaslProperties   prop)
 {
 #ifndef ENABLE_SASL_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "calling to get_properties with a Vortex Library without SASL support");
+	vortex_log (VORTEX_LEVEL_DEBUG, "calling to get_properties with a Vortex Library without SASL support");
 	return NULL;
 #else
+	VortexCtx * ctx = vortex_connection_get_ctx (connection);
+
 	/* check the connection status before setting the propertie */
 	if (connection == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "Getting SASL properties on a null reference connection.");
 		return NULL;
 	}
 
 	/* check the propertie being set */
 	if ((prop <= 0) || (prop >= VORTEX_SASL_PROP_NUM)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "Getting SASL propertie which is not a registered value.");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Getting SASL propertie which is not a registered value.");
 		return false;
 	}
 	
@@ -260,7 +262,7 @@ char             * vortex_sasl_get_propertie             (VortexConnection     *
 		break;
 	}
 	/* no propertie found */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to find propertie value, maybe buggie implementation");
+	vortex_log (VORTEX_LEVEL_CRITICAL, "unable to find propertie value, maybe buggie implementation");
 	return NULL;
 #endif
 }
@@ -307,11 +309,10 @@ char             * vortex_sasl_get_propertie             (VortexConnection     *
 bool               vortex_sasl_is_authenticated          (VortexConnection     * connection)
 {
 #ifndef ENABLE_SASL_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "Current Vortex Library doesn't support SASL profiles. Unable to return current connection authentication status.");
+	vortex_log (VORTEX_LEVEL_CRITICAL, "Current Vortex Library doesn't support SASL profiles. Unable to return current connection authentication status.");
 	return false;
 #else
 	if (connection == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "received a null referenced while trying to authenticate the connection");
 		return false;
 	}
 
@@ -346,11 +347,10 @@ bool               vortex_sasl_is_authenticated          (VortexConnection     *
 char             * vortex_sasl_auth_method_used          (VortexConnection     * connection)
 {
 #ifndef ENABLE_SASL_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "Current Vortex Library doesn't have SASL profiles support. Unable to return which method was used to authenticate.");
+	vortex_log (VORTEX_LEVEL_CRITICAL, "Current Vortex Library doesn't have SASL profiles support. Unable to return which method was used to authenticate.");
 	return NULL;
 #else
 	if (connection == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "Connection provided is a null reference. Unable to method used to authenticate.");
 		return NULL;
 	}
 	
@@ -374,10 +374,13 @@ void __vortex_sasl_notify (VortexSaslAuthNotify   process_status,
 			   char                 * message, 
 			   axlPointer             user_data)
 {
+	/* get the context */
+	VortexCtx * ctx = vortex_connection_get_ctx (connection);
+
 	/* drop to the console a log */
 	switch (status) {
 	case VortexError:
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, (message != NULL) ? message : "no message to report");
+		vortex_log (VORTEX_LEVEL_CRITICAL, (message != NULL) ? message : "no message to report");
 		/* flag the connection to be *NOT* authenticated
 		 * (remove current authid and authzid and all previous
 		 * SASL auth info) */
@@ -388,7 +391,7 @@ void __vortex_sasl_notify (VortexSaslAuthNotify   process_status,
 		vortex_connection_set_data (connection, SASL_REALM,    NULL);
 		break;
 	case VortexOk:
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, (message != NULL) ? message : "no message to report");
+		vortex_log (VORTEX_LEVEL_DEBUG, (message != NULL) ? message : "no message to report");
 		/* flag the connection to be authenticated */
 		vortex_connection_set_data (connection, SASL_IS_AUTHENTICATED, INT_TO_PTR (true));
 		break;
@@ -451,7 +454,7 @@ bool     __vortex_sasl_create_context (VortexConnection * connection)
 {
 	GsaslData * data;
 	int         rc;
-
+	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 
 	/* initialize the SASL client side */
 	data = axl_new (GsaslData, 1);
@@ -462,8 +465,8 @@ bool     __vortex_sasl_create_context (VortexConnection * connection)
 		/* free data */
 		axl_free (data);
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "SASL initialization failure (%d): %s\n",
-		       rc, gsasl_strerror (rc));
+		vortex_log (VORTEX_LEVEL_DEBUG, "SASL initialization failure (%d): %s\n",
+			    rc, gsasl_strerror (rc));
 		return false;
 	}
 
@@ -494,8 +497,8 @@ int gethostname(char *name, size_t len);
  */
 void vortex_sasl_configure_current_properties (VortexConnection * connection)
 {
-	char  hostname[512];
-
+	char        hostname[512];
+	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 	GsaslData * data = vortex_connection_get_data (connection, SASL_DATA);
 	
 	gsasl_property_set (data->session, GSASL_AUTHID,   
@@ -517,7 +520,7 @@ void vortex_sasl_configure_current_properties (VortexConnection * connection)
 	
 	/* get current hostname */
 	if (gethostname (hostname, 512) == 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "using as hostname for SASL service: %s", hostname);
+		vortex_log (VORTEX_LEVEL_DEBUG, "using as hostname for SASL service: %s", hostname);
 		gsasl_property_set (data->session, GSASL_HOSTNAME, hostname);
 	}
 	return;
@@ -550,12 +553,13 @@ char  * __vortex_sasl_initiator_do_initial_step (char                 * profile,
 {
 	/* variable definitions for the gsasl_client_start function */
 	GsaslData     * data;
+	VortexCtx     * ctx = vortex_connection_get_ctx (connection);
 	char          * base64_chunk;
 	int             rc;
 
 	/* drop a log */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, 
-	       "Starting a SASL session for the selected profile: '%s'",  &(profile[26]));
+	vortex_log (VORTEX_LEVEL_DEBUG, 
+		    "Starting a SASL session for the selected profile: '%s'",  &(profile[26]));
 
 	/* get sasl data */
 	data = vortex_connection_get_data (connection, SASL_DATA);
@@ -570,29 +574,29 @@ char  * __vortex_sasl_initiator_do_initial_step (char                 * profile,
 		
 	/* check for sasl result */
 	if (rc != GSASL_OK) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "Unable to initialize the first SASL step, code=%d, message='%s'",
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to initialize the first SASL step, code=%d, message='%s'",
 		       rc, gsasl_strerror (rc));
 		return NULL;
 	}
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "Setting SASL properties to start the handshake");
+	vortex_log (VORTEX_LEVEL_DEBUG, "Setting SASL properties to start the handshake");
 	
 	/* set properties (username, password, authorization id,
 	 * service name ..) */
 	vortex_sasl_configure_current_properties (connection);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "Creating initial blob..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "Creating initial blob..");
 
 	/* build initial message */
 	rc = gsasl_step64 (data->session, "", &base64_chunk);
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "unblocked from step64");
+	vortex_log (VORTEX_LEVEL_DEBUG, "unblocked from step64");
 	if (rc == GSASL_NEEDS_MORE || rc == GSASL_OK) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, 
+		vortex_log (VORTEX_LEVEL_DEBUG, 
 			    "SASL initial start have finished, sending start message to remote server: [size %d] '%s', GSASL message: (%d)",
 			    strlen (base64_chunk), base64_chunk, rc);
 		return base64_chunk;
 	}
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "initial step have failed: (%d): %s",
+	vortex_log (VORTEX_LEVEL_CRITICAL, "initial step have failed: (%d): %s",
 		    rc, gsasl_strerror (rc));
 	return NULL;
 }
@@ -644,6 +648,7 @@ char    * __vortex_sasl_get_base64_blob (char                  * frame_content,
 
 	/* SASL related variable declaration */
 	char          * blob;
+	VortexCtx    * ctx = vortex_connection_get_ctx (connection);
 
 	/* first check for a empty blob received */
 	if (frame_content == NULL) {
@@ -653,14 +658,14 @@ char    * __vortex_sasl_get_base64_blob (char                  * frame_content,
 	}
 
 	/* get channel management DTD */
-	if ((sasl_dtd = vortex_dtds_get_sasl_dtd ()) == NULL) {
+	if ((sasl_dtd = vortex_dtds_get_sasl_dtd (ctx)) == NULL) {
 		__vortex_sasl_notify (process_status, connection, VortexError,
 				      "unable to load dtd file (sasl.dtd), cannot validate incoming message, returning error frame",
 				      user_data);
 		return NULL;
 	}
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "about to parse SASL blob='%s'", frame_content);
+	vortex_log (VORTEX_LEVEL_DEBUG, "about to parse SASL blob='%s'", frame_content);
 
 	/* parser xml document */
 	doc = axl_doc_parse (frame_content, strlen (frame_content), NULL);
@@ -721,6 +726,7 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel         * channel,
 	char        * new_blob = NULL;
 	char        * status   = NULL;
 	GsaslData   * data;
+	VortexCtx   * ctx      = vortex_connection_get_ctx (connection);
 
 	/* get sasl data */
 	data = vortex_connection_get_data (connection, SASL_DATA);
@@ -729,7 +735,7 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel         * channel,
 		/* now process replies received */
 		reply = vortex_channel_get_reply (channel, queue);
 		
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "Reply received, checking it");
+		vortex_log (VORTEX_LEVEL_DEBUG, "Reply received, checking it");
 		
 		/* for the first reply, that is a piggyback or a reply
 		 * following the channel start response we have to
@@ -739,7 +745,7 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel         * channel,
 			return false;
 		}
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "Getting blob and status reply");
+		vortex_log (VORTEX_LEVEL_DEBUG, "Getting blob and status reply");
 
 		/* get the base64 blob reply inside the frame but
 		 * already decoded */
@@ -749,13 +755,13 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel         * channel,
 		vortex_frame_unref (reply);
 
 		/* check status value */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "current blob value is: '%s' with status='%s'",
+		vortex_log (VORTEX_LEVEL_DEBUG, "current blob value is: '%s' with status='%s'",
 		       (blob != NULL) ? blob : "" , (status != NULL) ? status : "");
 		if (status != NULL) {
 			if (axl_cmp (status, "complete")) {
 				/* undef status value and blob */
 				vortex_support_free (2, blob, axl_free, status, axl_free);
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "authentication Ok due to status code");
+				vortex_log (VORTEX_LEVEL_DEBUG, "authentication Ok due to status code");
 				return true;
 			}
 
@@ -765,18 +771,18 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel         * channel,
 
 		/* check returned value */
 		if (blob == NULL) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "received empty blob and status code doesn't indicate the SASL negotiation have ended.");
+			vortex_log (VORTEX_LEVEL_DEBUG, "received empty blob and status code doesn't indicate the SASL negotiation have ended.");
 			return false;
 		}
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "doing a SASL step..");
+		vortex_log (VORTEX_LEVEL_DEBUG, "doing a SASL step..");
 
 		/* feed the SASL engine with the data received from
 		 * the remote side */
                 rc = gsasl_step64 (data->session,
 				   blob, &new_blob);
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "before doing sasl step, status is: (%d) %s, with new_blob=%s",
+		vortex_log (VORTEX_LEVEL_DEBUG, "before doing sasl step, status is: (%d) %s, with new_blob=%s",
 		       rc, gsasl_strerror (rc), (new_blob != NULL) ? new_blob : "");
 		
 		/* free blob received */
@@ -873,6 +879,7 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 {
 	/* local variable declarations received from main function */
 	VortexConnection     * connection      = data->connection;
+	VortexCtx            * ctx             = vortex_connection_get_ctx (connection);
 	char                 * profile         = data->profile;
 	VortexSaslAuthNotify   process_status  = data->process_status;
 	axlPointer             user_data       = data->user_data;
@@ -930,7 +937,7 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 	/* unref no longer needed blob */
 	axl_free (base64_blob);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "SASL channel creation reply received");
+	vortex_log (VORTEX_LEVEL_DEBUG, "SASL channel creation reply received");
 	if (channel == NULL) {
 		/* unref queue */
 		vortex_async_queue_unref (queue);
@@ -941,7 +948,7 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 		return;
 	}
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "Seems the SASL channel have being created");
+	vortex_log (VORTEX_LEVEL_DEBUG, "Seems the SASL channel have being created");
 
 	/* perform the next additional steps needed to authenticate the peer */
 	if (!__vortex_sasl_initiator_do_steps (channel, queue,
@@ -1099,6 +1106,7 @@ void               vortex_sasl_start_auth                (VortexConnection     *
 #else
 	/* SASL enabled case */
 	VortexSaslStartData * data;
+	VortexCtx           * ctx = vortex_connection_get_ctx (connection);
 
 	/* check connection status */
 	if (!vortex_connection_is_ok (connection, false)) {
@@ -1137,7 +1145,7 @@ void               vortex_sasl_start_auth                (VortexConnection     *
 		return;
 	}
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "SASL initialized..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "SASL initialized..");
 	data                 = axl_new (VortexSaslStartData, 1);
 	data->connection     = connection;
 	data->profile        = profile;
@@ -1148,12 +1156,12 @@ void               vortex_sasl_start_auth                (VortexConnection     *
 	/* invoke the process */
 	if (data->threaded) {
 		/* threaded mode, the caller will be unblocked */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "begin SASL negotiation under threaded mode");
-		vortex_thread_pool_new_task ((VortexThreadFunc) __vortex_sasl_start_auth, data);
+		vortex_log (VORTEX_LEVEL_DEBUG, "begin SASL negotiation under threaded mode");
+		vortex_thread_pool_new_task (ctx, (VortexThreadFunc) __vortex_sasl_start_auth, data);
 		return;
 	}
 	/* non-threaded mode, the caller will be blocked until SASL process finish */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "begin SASL negotiation non-threaded mode (blocking the caller)");
+	vortex_log (VORTEX_LEVEL_DEBUG, "begin SASL negotiation non-threaded mode (blocking the caller)");
 	__vortex_sasl_start_auth (data);
 	return;
 #endif	
@@ -1169,6 +1177,7 @@ void __vortex_sasl_start_auth_sync_process  (VortexConnection * connection,
 					     axlPointer         user_data)
 {
 	VortexAsyncQueue * queue = user_data;
+	VortexCtx        * ctx   = vortex_connection_get_ctx (connection);
 
 	/* push status and status message and unref man! */
 	QUEUE_PUSH  (queue, INT_TO_PTR (status));
@@ -1233,6 +1242,9 @@ void               vortex_sasl_start_auth_sync           (VortexConnection     *
 	 * function could unref it without worry about race conditions
 	 * with sync_process function. */
 	VortexAsyncQueue * queue = vortex_async_queue_new ();
+	VortexCtx        * ctx   = vortex_connection_get_ctx (connection);
+
+	/* ref the queue (due to previous comment) */
 	vortex_async_queue_ref (queue);
 
 	/* start SASL negotiation */
@@ -1240,7 +1252,7 @@ void               vortex_sasl_start_auth_sync           (VortexConnection     *
 				queue);
 
 	/* get status */
-	_status = vortex_async_queue_timedpop (queue, vortex_connection_get_timeout ());
+	_status = vortex_async_queue_timedpop (queue, vortex_connection_get_timeout (ctx));
 	if (_status == NULL) {
 		/* seems timeout have happen while waiting for SASL to end */
 		(* status)         = VortexError;
@@ -1275,18 +1287,19 @@ void               vortex_sasl_start_auth_sync           (VortexConnection     *
  * required values.
  */
 bool     __validation_handler_check_properties (Gsasl_session * sctx, 
-						char          * sasl_profile)
+						char          * sasl_profile,
+						VortexCtx     * ctx)
 {
 	/* check for a proper SASL profile name defined */
 	if (sasl_profile == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "SASL profile not defined, giving up");
+		vortex_log (VORTEX_LEVEL_WARNING, "SASL profile not defined, giving up");
 		return false;
 	}
 
 	/* check for appropiate values for anonymous profile */
 	if (axl_cmp (sasl_profile, "ANONYMOUS")) {
 		if (gsasl_property_fast (sctx, GSASL_ANONYMOUS_TOKEN) == NULL) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "ANONYMOUS method requires the anonymous token to be configured, giving up");
+			vortex_log (VORTEX_LEVEL_WARNING, "ANONYMOUS method requires the anonymous token to be configured, giving up");
 			return false;
 		}	
 
@@ -1299,7 +1312,7 @@ bool     __validation_handler_check_properties (Gsasl_session * sctx,
 
 		/* check for authorization id value */
 		if (gsasl_property_fast (sctx, GSASL_AUTHZID) == NULL) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, 
+			vortex_log (VORTEX_LEVEL_WARNING, 
 				    "EXTERNAL method requires the authorization id to be configured, giving up");
 			return false;
 		}	
@@ -1315,7 +1328,7 @@ bool     __validation_handler_check_properties (Gsasl_session * sctx,
 
 		/* check for auth id */
 		if (gsasl_property_fast (sctx, GSASL_AUTHID) == NULL) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, 
+			vortex_log (VORTEX_LEVEL_WARNING, 
 				    "%s method requires the authorization id to be configured, giving up", sasl_profile);
 			return false;
 		}	
@@ -1324,7 +1337,7 @@ bool     __validation_handler_check_properties (Gsasl_session * sctx,
 		return true;
 	}
 	
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "SASL profile=%s not supported, giving up", sasl_profile);
+	vortex_log (VORTEX_LEVEL_WARNING, "SASL profile=%s not supported, giving up", sasl_profile);
 	return false;
 }
 
@@ -1338,19 +1351,22 @@ bool     __validation_handler_check_properties (Gsasl_session * sctx,
  * 
  * @return 
  */
-int __vortex_sasl_auth_validation (Gsasl * ctx, Gsasl_session * sctx,
+int __vortex_sasl_auth_validation (Gsasl * gctx, Gsasl_session * sctx,
 				   Gsasl_property prop)
 {
 	/* get current context */
-	VortexCtx        * vCtx = vortex_ctx_get ();
 	const char       * anonymous_token;
 	VortexConnection * connection;
 	char             * password;
 	char             * profile;
 	axlPointer	   user_data;
+	VortexCtx        * ctx;
 
 	/* get the connection reference where the SASL request was received */
-	connection      = (VortexConnection *) gsasl_callback_hook_get (ctx);
+	connection      = (VortexConnection *) gsasl_callback_hook_get (gctx);
+	
+	/* get the context */
+	ctx             = vortex_connection_get_ctx (connection);
 
 	/* get profile begin validated */
 	profile         = vortex_connection_get_data (connection, SASL_PROFILE_BEGIN_NEGOCIATED);
@@ -1368,30 +1384,30 @@ int __vortex_sasl_auth_validation (Gsasl * ctx, Gsasl_session * sctx,
 	else if (axl_cmp (profile, VORTEX_SASL_EXTERNAL+strlen(VORTEX_SASL_FAMILY)+1))
 		user_data = vortex_connection_get_data (connection, VORTEX_SASL_EXTERNAL_USER_DATA);	
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "received notification to validate an incoming SASL request for=%s over connection id=%d",
-	       profile, vortex_connection_get_id (connection));
+	vortex_log (VORTEX_LEVEL_DEBUG, "received notification to validate an incoming SASL request for=%s over connection id=%d",
+		    profile, vortex_connection_get_id (connection));
 
 	/* check for the realm */
 	if (prop == GSASL_REALM) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "received request to return current REALM configured");
+		vortex_log (VORTEX_LEVEL_DEBUG, "received request to return current REALM configured");
 
 		/* try to get current realm configured for the listener */
-		if (vortex_listener_get_default_realm () == NULL) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "no realm configured, returning no realm found");
+		if (vortex_listener_get_default_realm (ctx) == NULL) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "no realm configured, returning no realm found");
 			/* no default realm configured, return no value */
 			return GSASL_NO_CALLBACK;
 		} /* end if */
 
 		/* configure realm */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "returning that realm configured is=%s", vortex_listener_get_default_realm ());
-		gsasl_property_set (sctx, GSASL_REALM, vortex_listener_get_default_realm ());
+		vortex_log (VORTEX_LEVEL_DEBUG, "returning that realm configured is=%s", vortex_listener_get_default_realm (ctx));
+		gsasl_property_set (sctx, GSASL_REALM, vortex_listener_get_default_realm (ctx));
 		
 		/* return that the value was configured */
 		return GSASL_OK;
 	}
 
 	/* check for properties configured */
-	if (! __validation_handler_check_properties (sctx, profile))
+	if (! __validation_handler_check_properties (sctx, profile, ctx))
 		return GSASL_NO_CALLBACK;
 
 	/* according to properties the SASL listener engine should
@@ -1399,8 +1415,8 @@ int __vortex_sasl_auth_validation (Gsasl * ctx, Gsasl_session * sctx,
 	 * support */
 	if (prop == GSASL_VALIDATE_ANONYMOUS) {
 		/* check if an anonymous handler was defined */
-		if (vCtx->sasl_anonymous_auth_handler == NULL && vCtx->sasl_anonymous_auth_handler_full == NULL) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+		if (ctx->sasl_anonymous_auth_handler == NULL && ctx->sasl_anonymous_auth_handler_full == NULL) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, 
 			       "A SASL anonymous validation handler was not set. Unable to authenticate current request. Please check Vortex documentation to set this handler.");
 			return GSASL_NO_CALLBACK;
 		}
@@ -1411,18 +1427,18 @@ int __vortex_sasl_auth_validation (Gsasl * ctx, Gsasl_session * sctx,
 
 		/* validate anonymous request */
 		if ( (
-			vCtx->sasl_anonymous_auth_handler &&
-			vCtx->sasl_anonymous_auth_handler (connection, 
+			ctx->sasl_anonymous_auth_handler &&
+			ctx->sasl_anonymous_auth_handler (connection, 
 							   /* get current anonymous token received from remote side */
 							   gsasl_property_get (sctx, GSASL_ANONYMOUS_TOKEN))
 			) || (
-			vCtx->sasl_anonymous_auth_handler_full &&
-			vCtx->sasl_anonymous_auth_handler_full (connection, 
+			ctx->sasl_anonymous_auth_handler_full &&
+			ctx->sasl_anonymous_auth_handler_full (connection, 
 							  /* get current anonymous token received from remote side */
 							  gsasl_property_get (sctx, GSASL_ANONYMOUS_TOKEN),
 							  user_data))
 			) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "user space have accepted anonymous login");
+			vortex_log (VORTEX_LEVEL_DEBUG, "user space have accepted anonymous login");
 			/* configure current connections anonymous
 			 * token so the server side could get it
 			 * later */
@@ -1435,7 +1451,7 @@ int __vortex_sasl_auth_validation (Gsasl * ctx, Gsasl_session * sctx,
 			return GSASL_OK;
 		}
 		
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "anonymous validation failed: '%s'", 
+		vortex_log (VORTEX_LEVEL_DEBUG, "anonymous validation failed: '%s'", 
 		       gsasl_property_get (sctx, GSASL_ANONYMOUS_TOKEN));
 		return GSASL_AUTHENTICATION_ERROR;
 	} /* end anonymous profile validation */
@@ -1443,16 +1459,16 @@ int __vortex_sasl_auth_validation (Gsasl * ctx, Gsasl_session * sctx,
 	/* PLAIN SASL profile validation support */
 	if (prop == GSASL_VALIDATE_SIMPLE) {
 		/* check if an plain handler was defined  */
-		if (vCtx->sasl_plain_auth_handler == NULL && vCtx->sasl_plain_auth_handler_full == NULL) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+		if (ctx->sasl_plain_auth_handler == NULL && ctx->sasl_plain_auth_handler_full == NULL) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, 
 			       "A SASL plain validation handler was not set. Unable to authenticate current request. Please check Vortex documentation to set this handler.");
 			return GSASL_NO_CALLBACK;
 		}
 		
 		/* validate PLAIN profile */
 		if ( (
-			vCtx->sasl_plain_auth_handler &&
-			vCtx->sasl_plain_auth_handler (connection,
+			ctx->sasl_plain_auth_handler &&
+			ctx->sasl_plain_auth_handler (connection,
 						      /* get current auth_id value received from remote side  */
 						      gsasl_property_get (sctx, GSASL_AUTHID),
 						      /* get current authorization_id value received from remote side */
@@ -1460,8 +1476,8 @@ int __vortex_sasl_auth_validation (Gsasl * ctx, Gsasl_session * sctx,
 						      /* get current password value received from remote side */
 						      gsasl_property_get (sctx, GSASL_PASSWORD))
 			) || (
-			vCtx->sasl_plain_auth_handler_full &&
-			vCtx->sasl_plain_auth_handler_full (connection,
+			ctx->sasl_plain_auth_handler_full &&
+			ctx->sasl_plain_auth_handler_full (connection,
 						      /* get current auth_id value received from remote side  */
 						      gsasl_property_get (sctx, GSASL_AUTHID),
 						      /* get current authorization_id value received from remote side */
@@ -1470,7 +1486,7 @@ int __vortex_sasl_auth_validation (Gsasl * ctx, Gsasl_session * sctx,
 						      gsasl_property_get (sctx, GSASL_PASSWORD),
 							  user_data))
 			) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "user space have accepted plain login");
+			vortex_log (VORTEX_LEVEL_DEBUG, "user space have accepted plain login");
 			/* configure current plain validation data
 			 * used: authid, authorization id and
 			 * password */
@@ -1488,7 +1504,7 @@ int __vortex_sasl_auth_validation (Gsasl * ctx, Gsasl_session * sctx,
 
 			return GSASL_OK;
 		}
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "plain profile validation failed for: '%s'", 
+		vortex_log (VORTEX_LEVEL_DEBUG, "plain profile validation failed for: '%s'", 
 		       gsasl_property_get (sctx, GSASL_AUTHID));
 		return GSASL_AUTHENTICATION_ERROR;						      
 	} /* end plain profile validation */
@@ -1496,25 +1512,25 @@ int __vortex_sasl_auth_validation (Gsasl * ctx, Gsasl_session * sctx,
 	if (prop == GSASL_PASSWORD) {
 		/* check if we are validating cram-md5 profile */
 		if (axl_cmp (profile, "CRAM-MD5")) {
-			if (vCtx->sasl_cram_md5_auth_handler == NULL && vCtx->sasl_cram_md5_auth_handler_full == NULL) {
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+			if (ctx->sasl_cram_md5_auth_handler == NULL && ctx->sasl_cram_md5_auth_handler_full == NULL) {
+				vortex_log (VORTEX_LEVEL_CRITICAL, 
 				       "A SASL CRAM-MD5 validation handler was not set. Unable to authenticate current request. Please check Vortex documentation to set this handler.");
 				return GSASL_NO_CALLBACK;
 			}
 			
 			/* get password  */
 			password = NULL;
-			if (vCtx->sasl_cram_md5_auth_handler)
-				password = vCtx->sasl_cram_md5_auth_handler (connection, 
+			if (ctx->sasl_cram_md5_auth_handler)
+				password = ctx->sasl_cram_md5_auth_handler (connection, 
 									     gsasl_property_get (sctx, GSASL_AUTHID));
-			else if (vCtx->sasl_cram_md5_auth_handler_full)
-				password = vCtx->sasl_cram_md5_auth_handler_full (connection, 
+			else if (ctx->sasl_cram_md5_auth_handler_full)
+				password = ctx->sasl_cram_md5_auth_handler_full (connection, 
 										  gsasl_property_get (sctx, GSASL_AUTHID),
 										  user_data);
 			
 			
 			if (password != NULL) {
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "CRAM-MD5 handler defined and password returned from it");
+				vortex_log (VORTEX_LEVEL_DEBUG, "CRAM-MD5 handler defined and password returned from it");
 				gsasl_property_set (sctx, GSASL_PASSWORD, password);
 				/* Cram md5 accepted, configure current data for the connection. 
 				   Here, at this point there is a problem. Because the connection 
@@ -1541,33 +1557,33 @@ int __vortex_sasl_auth_validation (Gsasl * ctx, Gsasl_session * sctx,
 
 				return GSASL_OK;
 			}
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "cram md5 handler defined but no password returned from it.");
+			vortex_log (VORTEX_LEVEL_CRITICAL, "cram md5 handler defined but no password returned from it.");
 			return GSASL_AUTHENTICATION_ERROR;
 		}
 
 		/* check if we are validating digest-md5 profile */
 		if (axl_cmp (profile, "DIGEST-MD5")) {
-			if (vCtx->sasl_digest_md5_auth_handler == NULL && vCtx->sasl_digest_md5_auth_handler_full == NULL) {
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+			if (ctx->sasl_digest_md5_auth_handler == NULL && ctx->sasl_digest_md5_auth_handler_full == NULL) {
+				vortex_log (VORTEX_LEVEL_CRITICAL, 
 				       "A SASL DIGEST-MD5 validation handler was not set. Unable to authenticate current request. Please check Vortex documentation to set this handler.");
 				return GSASL_NO_CALLBACK;
 			}
 			
 			/* get password  */
 			password = NULL;
-			if (vCtx->sasl_digest_md5_auth_handler)
-				password = vCtx->sasl_digest_md5_auth_handler (connection, 
+			if (ctx->sasl_digest_md5_auth_handler)
+				password = ctx->sasl_digest_md5_auth_handler (connection, 
 									       gsasl_property_get (sctx, GSASL_AUTHID),
 									       gsasl_property_get (sctx, GSASL_AUTHZID),
 									       gsasl_property_get (sctx, GSASL_REALM));
-			else if (vCtx->sasl_digest_md5_auth_handler_full)
-				password = vCtx->sasl_digest_md5_auth_handler_full (connection, 
+			else if (ctx->sasl_digest_md5_auth_handler_full)
+				password = ctx->sasl_digest_md5_auth_handler_full (connection, 
 										    gsasl_property_get (sctx, GSASL_AUTHID),
 										    gsasl_property_get (sctx, GSASL_AUTHZID),
 										    gsasl_property_get (sctx, GSASL_REALM),
 										    user_data);
 			if (password != NULL) {
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "digest md5 handler defined and password returned from it");
+				vortex_log (VORTEX_LEVEL_DEBUG, "digest md5 handler defined and password returned from it");
 				gsasl_property_set (sctx, GSASL_PASSWORD, password);
 
 				/* Please read the coment done to the
@@ -1596,7 +1612,7 @@ int __vortex_sasl_auth_validation (Gsasl * ctx, Gsasl_session * sctx,
 
 				return GSASL_OK;
 			}
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "digest md5 handler defined but not password returned from it.");
+			vortex_log (VORTEX_LEVEL_CRITICAL, "digest md5 handler defined but not password returned from it.");
 			return GSASL_AUTHENTICATION_ERROR;
 		}
 	} /* end cram and digest md5 validation */
@@ -1605,18 +1621,18 @@ int __vortex_sasl_auth_validation (Gsasl * ctx, Gsasl_session * sctx,
 	if (prop == GSASL_VALIDATE_EXTERNAL) {
 		
 		/* check if an external handler was defined  */
-		if (vCtx->sasl_external_auth_handler == NULL && vCtx->sasl_external_auth_handler_full == NULL) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL,
+		if (ctx->sasl_external_auth_handler == NULL && ctx->sasl_external_auth_handler_full == NULL) {
+			vortex_log (VORTEX_LEVEL_CRITICAL,
 				    "A SASL external validation handler was not set. Unable to authenticate current request. Please check Vortex documentation to set this handler.");
 			return GSASL_NO_CALLBACK;
 		}
 
 		/* validate EXTERNAL profile */
-		if ((vCtx->sasl_external_auth_handler != NULL && 
-		     vCtx->sasl_external_auth_handler (connection, gsasl_property_get (sctx, GSASL_AUTHZID))) 
+		if ((ctx->sasl_external_auth_handler != NULL && 
+		     ctx->sasl_external_auth_handler (connection, gsasl_property_get (sctx, GSASL_AUTHZID))) 
 		    || 
-		    (vCtx->sasl_external_auth_handler_full != NULL && 
-		     vCtx->sasl_external_auth_handler_full (connection, gsasl_property_get (sctx, GSASL_AUTHZID), user_data))) {
+		    (ctx->sasl_external_auth_handler_full != NULL && 
+		     ctx->sasl_external_auth_handler_full (connection, gsasl_property_get (sctx, GSASL_AUTHZID), user_data))) {
 			
 			/* configure current external validation data
 			 * used: authid */
@@ -1626,10 +1642,10 @@ int __vortex_sasl_auth_validation (Gsasl * ctx, Gsasl_session * sctx,
 			/* configure method used to authenticate */
 			vortex_connection_set_data (connection, SASL_METHOD_USED, VORTEX_SASL_EXTERNAL);
 
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "user space have accepted external login");
+			vortex_log (VORTEX_LEVEL_DEBUG, "user space have accepted external login");
 			return GSASL_OK;
 		}
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "external profile validation failed for: '%s'", gsasl_property_get (sctx, GSASL_AUTHZID));
+		vortex_log (VORTEX_LEVEL_DEBUG, "external profile validation failed for: '%s'", gsasl_property_get (sctx, GSASL_AUTHZID));
 		
 		return GSASL_AUTHENTICATION_ERROR;
 	} /* end external profile validation */
@@ -1698,6 +1714,7 @@ bool     __vortex_sasl_server_iterate (VortexConnection * connection,
 	char          * base64_chunk  = NULL;
 	char          * status        = NULL;
 	GsaslData     * data          = vortex_connection_get_data (connection, SASL_DATA);
+	VortexCtx     * ctx           = vortex_connection_get_ctx (connection);
 	int             rc;
 
 	/* get received blob */
@@ -1708,7 +1725,7 @@ bool     __vortex_sasl_server_iterate (VortexConnection * connection,
 			return false;
 		}
 		
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "Received blob from client: %s", blob);
+		vortex_log (VORTEX_LEVEL_DEBUG, "Received blob from client: %s", blob);
 		
 		/* free status value (enable checking this value): in the case
 		 * of "abort" stop the SASL process. */
@@ -1716,7 +1733,7 @@ bool     __vortex_sasl_server_iterate (VortexConnection * connection,
 			if (axl_cmp (status, "abort")) {
 				/* free current context and session  */
 				vortex_connection_set_data (connection, SASL_DATA, NULL);
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "SASL profile negociation cancelled");
+				vortex_log (VORTEX_LEVEL_WARNING, "SASL profile negociation cancelled");
 				axl_free (status);
 				return false;
 			}
@@ -1735,14 +1752,14 @@ bool     __vortex_sasl_server_iterate (VortexConnection * connection,
 	/* unref blob */
 	axl_free (blob);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "getting error code (%d): %s", rc, gsasl_strerror (rc));
+	vortex_log (VORTEX_LEVEL_DEBUG, "getting error code (%d): %s", rc, gsasl_strerror (rc));
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "unblocked from step64 with output=%s", 
+	vortex_log (VORTEX_LEVEL_DEBUG, "unblocked from step64 with output=%s", 
 	       (base64_chunk != NULL) ? base64_chunk : "");
 
 	switch (rc) {
 	case GSASL_NEEDS_MORE:
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "more data is required");
+		vortex_log (VORTEX_LEVEL_DEBUG, "more data is required");
 		(* payload_reply ) = __build_blob_reply (NULL, base64_chunk);
 		/* accept the channel to be created in order to
 		 * receive next base64 chunks there is no need to
@@ -1750,14 +1767,14 @@ bool     __vortex_sasl_server_iterate (VortexConnection * connection,
 		 * __build_blob_reply */
 		return true;
 	case GSASL_AUTHENTICATION_ERROR:
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "application level have denied SASL auth");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "application level have denied SASL auth");
 		(* payload_reply ) = vortex_frame_get_error_message ("535", "Application level have denied to accept SASL auth. Authentication failure.", NULL);
 		/* deny on going authentication there is no need to
 		 * unref base64_chunck, it is already don at
 		 * __build_blob_reply */
 		return false;
 	case GSASL_OK:
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "SASL negotiation have finished");
+		vortex_log (VORTEX_LEVEL_DEBUG, "SASL negotiation have finished");
 		(* payload_reply ) = __build_blob_reply ("complete", base64_chunk);
 		/* accept the channel to be created and successfully
 		 * authenticated */
@@ -1803,15 +1820,16 @@ bool     __vortex_sasl_accept_negociation_start (char              * profile,
 
 	GsaslData      * data;
 	int              rc;
+	VortexCtx      * ctx = vortex_connection_get_ctx (connection);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "Received channel start for mech: %s, profile_content=%s", 
+	vortex_log (VORTEX_LEVEL_DEBUG, "Received channel start for mech: %s, profile_content=%s", 
 	       profile, profile_content);
 
 	/* create the server context */
 	if (!__vortex_sasl_create_context (connection))
 		return false;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "setting default auth validation handler for the listener");
+	vortex_log (VORTEX_LEVEL_DEBUG, "setting default auth validation handler for the listener");
 	
 	/* associate user_data with connection */
 	if (axl_cmp (profile, VORTEX_SASL_ANONYMOUS))
@@ -1825,7 +1843,7 @@ bool     __vortex_sasl_accept_negociation_start (char              * profile,
 	else if (axl_cmp (profile, VORTEX_SASL_EXTERNAL))
 		vortex_connection_set_data (connection, VORTEX_SASL_EXTERNAL_USER_DATA, user_data);
 	else
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING,
+		vortex_log (VORTEX_LEVEL_WARNING,
 			"Unsupported SASL profile used (%s), cannot associate user_data pointer", profile);
 
 	/* configure default server handler for the context created */
@@ -1834,7 +1852,7 @@ bool     __vortex_sasl_accept_negociation_start (char              * profile,
 	/* get sasl data */
 	data = vortex_connection_get_data (connection, SASL_DATA);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "begin initial server step");
+	vortex_log (VORTEX_LEVEL_DEBUG, "begin initial server step");
 
 	rc = gsasl_server_start (
 		/* get the SASL context for this connection */
@@ -1844,11 +1862,11 @@ bool     __vortex_sasl_accept_negociation_start (char              * profile,
 		/* the session object */
 		&data->session);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "getting error code (%d): %s", rc, gsasl_strerror (rc));
+	vortex_log (VORTEX_LEVEL_DEBUG, "getting error code (%d): %s", rc, gsasl_strerror (rc));
 
 	/* check for sasl result */
 	if (rc != GSASL_OK) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "Unable to initialize the first SASL step, code=%d, message='%s'",
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to initialize the first SASL step, code=%d, message='%s'",
 		       rc, gsasl_strerror (rc));
 		return false;
 	}
@@ -1856,7 +1874,7 @@ bool     __vortex_sasl_accept_negociation_start (char              * profile,
 	/* store SASL profile being negotiated */
 	vortex_connection_set_data_full (connection, SASL_PROFILE_BEGIN_NEGOCIATED, axl_strdup (&(profile[26])), NULL, axl_free);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "starting sasl server iteration");
+	vortex_log (VORTEX_LEVEL_DEBUG, "starting sasl server iteration");
 
 	if (!__vortex_sasl_server_iterate (connection, profile_content, profile_content_reply))
 		return false;
@@ -1870,18 +1888,20 @@ void __vortex_sasl_accept_negociation_frame_receive (VortexChannel    * channel,
 						     VortexFrame      * frame,
 						     axlPointer user_data)
 {
-	char  * payload_reply = NULL;
+	char      * payload_reply = NULL;
+	VortexCtx * ctx           = vortex_connection_get_ctx (connection);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "Received SASL frame\n");
+	vortex_log (VORTEX_LEVEL_DEBUG, "Received SASL frame\n");
+
 	/* perform a SASL iteration */
 	__vortex_sasl_server_iterate (connection, (char*) vortex_frame_get_payload (frame), &payload_reply);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "SASL reply: %s", payload_reply);
+	vortex_log (VORTEX_LEVEL_DEBUG, "SASL reply: %s", payload_reply);
 
 	/* reply SASL iteration result */
 	if (! vortex_channel_send_rpy (channel, payload_reply, strlen (payload_reply),
 				       vortex_frame_get_msgno (frame))) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to send SASL iteration reply");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to send SASL iteration reply");
 	}
 
 	/* free payload reply */
@@ -1896,14 +1916,16 @@ void __vortex_sasl_accept_negociation_frame_receive (VortexChannel    * channel,
  *
  * @param auth_handler Auth handler to be executed when a query for EXTERNAL authentication is received.
  */
-void           vortex_sasl_set_external_validation  (VortexSaslAuthExternal auth_handler)
+void           vortex_sasl_set_external_validation  (VortexCtx              * ctx, 
+						     VortexSaslAuthExternal   auth_handler)
 {
 #ifndef ENABLE_SASL_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "Setting external validation handler on a Vortex Library instance without SASL support");
+	vortex_log (VORTEX_LEVEL_WARNING, "Setting external validation handler on a Vortex Library instance without SASL support");
 	return;
 #else
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	/* check reference received */
+	if (ctx == NULL)
+		return;
 
 	ctx->sasl_external_auth_handler = auth_handler;
 #endif
@@ -1914,14 +1936,15 @@ void           vortex_sasl_set_external_validation  (VortexSaslAuthExternal auth
  *
  * @param auth_handler Auth handler to be executed when a query for EXTERNAL authentication is received.
  */
-void           vortex_sasl_set_external_validation_full  (VortexSaslAuthExternalFull auth_handler)
+void           vortex_sasl_set_external_validation_full  (VortexCtx * ctx, VortexSaslAuthExternalFull auth_handler)
 {
 #ifndef ENABLE_SASL_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "Setting external validation handler on a Vortex Library instance without SASL support");
+	vortex_log (VORTEX_LEVEL_WARNING, "Setting external validation handler on a Vortex Library instance without SASL support");
 	return;
 #else
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	/* check context received */
+	if (ctx == NULL)
+		return;
 
 	ctx->sasl_external_auth_handler_full = auth_handler;
 #endif
@@ -1934,14 +1957,15 @@ void           vortex_sasl_set_external_validation_full  (VortexSaslAuthExternal
  * @param auth_handler Auth handler to be executed when a query for
  * ANONYMOUS authentication is received.
  */
-void           vortex_sasl_set_anonymous_validation  (VortexSaslAuthAnonymous auth_handler)
+void           vortex_sasl_set_anonymous_validation  (VortexCtx * ctx, VortexSaslAuthAnonymous auth_handler)
 {
 #ifndef ENABLE_SASL_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "Setting anonymous validation handler on a Vortex Library instance without SASL support");
+	vortex_log (VORTEX_LEVEL_WARNING, "Setting anonymous validation handler on a Vortex Library instance without SASL support");
 	return;
 #else
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	/* check context received */
+	if (ctx == NULL)
+		return;
 
 	ctx->sasl_anonymous_auth_handler = auth_handler;
 #endif
@@ -1954,14 +1978,15 @@ void           vortex_sasl_set_anonymous_validation  (VortexSaslAuthAnonymous au
  * @param auth_handler Auth handler to be executed when a query for
  * ANONYMOUS authentication is received.
  */
-void           vortex_sasl_set_anonymous_validation_full  (VortexSaslAuthAnonymousFull auth_handler)
+void           vortex_sasl_set_anonymous_validation_full  (VortexCtx * ctx, VortexSaslAuthAnonymousFull auth_handler)
 {
 #ifndef ENABLE_SASL_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "Setting anonymous validation handler on a Vortex Library instance without SASL support");
+	vortex_log (VORTEX_LEVEL_WARNING, "Setting anonymous validation handler on a Vortex Library instance without SASL support");
 	return;
 #else
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	/* check context received */
+	if (ctx == NULL)
+		return;
 
 	ctx->sasl_anonymous_auth_handler_full = auth_handler;
 #endif
@@ -1973,14 +1998,15 @@ void           vortex_sasl_set_anonymous_validation_full  (VortexSaslAuthAnonymo
  * 
  * @param auth_handler The handler to be executed.
  */
-void               vortex_sasl_set_plain_validation      (VortexSaslAuthPlain     auth_handler)
+void               vortex_sasl_set_plain_validation      (VortexCtx * ctx, VortexSaslAuthPlain     auth_handler)
 {
 #ifndef ENABLE_SASL_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "Setting plain validation handler on a Vortex Library instance without SASL support");
+	vortex_log (VORTEX_LEVEL_WARNING, "Setting plain validation handler on a Vortex Library instance without SASL support");
 	return;
 #else
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	/* check context received */
+	if (ctx == NULL)
+		return;
 
 	ctx->sasl_plain_auth_handler = auth_handler;
 #endif
@@ -1992,14 +2018,15 @@ void               vortex_sasl_set_plain_validation      (VortexSaslAuthPlain   
  * 
  * @param auth_handler The handler to be executed.
  */
-void               vortex_sasl_set_plain_validation_full      (VortexSaslAuthPlainFull     auth_handler)
+void               vortex_sasl_set_plain_validation_full      (VortexCtx * ctx, VortexSaslAuthPlainFull     auth_handler)
 {
 #ifndef ENABLE_SASL_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "Setting plain validation handler on a Vortex Library instance without SASL support");
+	vortex_log (VORTEX_LEVEL_WARNING, "Setting plain validation handler on a Vortex Library instance without SASL support");
 	return;
 #else
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	/* check context received */
+	if (ctx == NULL)
+		return;
 	
 	ctx->sasl_plain_auth_handler_full = auth_handler;
 #endif
@@ -2010,14 +2037,15 @@ void               vortex_sasl_set_plain_validation_full      (VortexSaslAuthPla
  * 
  * @param auth_handler The handler to be executed.
  */
-void               vortex_sasl_set_cram_md5_validation      (VortexSaslAuthCramMd5     auth_handler)
+void               vortex_sasl_set_cram_md5_validation      (VortexCtx * ctx, VortexSaslAuthCramMd5     auth_handler)
 {
 #ifndef ENABLE_SASL_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "Setting CRAM-MD5 validation handler on a Vortex Library instance without SASL support");
+	vortex_log (VORTEX_LEVEL_WARNING, "Setting CRAM-MD5 validation handler on a Vortex Library instance without SASL support");
 	return;
 #else
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	/* check context received */
+	if (ctx == NULL)
+		return;
 	
 	ctx->sasl_cram_md5_auth_handler = auth_handler;
 #endif
@@ -2028,14 +2056,15 @@ void               vortex_sasl_set_cram_md5_validation      (VortexSaslAuthCramM
  * 
  * @param auth_handler The handler to be executed.
  */
-void               vortex_sasl_set_cram_md5_validation_full      (VortexSaslAuthCramMd5Full     auth_handler)
+void               vortex_sasl_set_cram_md5_validation_full      (VortexCtx * ctx, VortexSaslAuthCramMd5Full     auth_handler)
 {
 #ifndef ENABLE_SASL_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "Setting CRAM-MD5 validation handler on a Vortex Library instance without SASL support");
+	vortex_log (VORTEX_LEVEL_WARNING, "Setting CRAM-MD5 validation handler on a Vortex Library instance without SASL support");
 	return;
 #else
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	/* check context received */
+	if (ctx == NULL)
+		return;
 
 	ctx->sasl_cram_md5_auth_handler_full = auth_handler;
 #endif
@@ -2046,14 +2075,15 @@ void               vortex_sasl_set_cram_md5_validation_full      (VortexSaslAuth
  *
  * @param auth_handler Auth handler to be executed when a query for DIGEST-MD5 authentication is received.
  */
-void           vortex_sasl_set_digest_md5_validation  (VortexSaslAuthDigestMd5 auth_handler)
+void           vortex_sasl_set_digest_md5_validation  (VortexCtx * ctx, VortexSaslAuthDigestMd5 auth_handler)
 {
 #ifndef ENABLE_SASL_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "Setting DIGEST-MD5 validation handler on a Vortex Library instance without SASL support");
+	vortex_log (VORTEX_LEVEL_WARNING, "Setting DIGEST-MD5 validation handler on a Vortex Library instance without SASL support");
 	return;
 #else
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	/* check context received */
+	if (ctx == NULL)
+		return;
 
 	ctx->sasl_digest_md5_auth_handler = auth_handler;
 #endif
@@ -2064,14 +2094,15 @@ void           vortex_sasl_set_digest_md5_validation  (VortexSaslAuthDigestMd5 a
  *
  * @param auth_handler Auth handler to be executed when a query for DIGEST-MD5 authentication is received.
  */
-void           vortex_sasl_set_digest_md5_validation_full  (VortexSaslAuthDigestMd5Full auth_handler)
+void           vortex_sasl_set_digest_md5_validation_full  (VortexCtx * ctx, VortexSaslAuthDigestMd5Full auth_handler)
 {
 #ifndef ENABLE_SASL_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "Setting DIGEST-MD5 validation handler on a Vortex Library instance without SASL support");
+	vortex_log (VORTEX_LEVEL_WARNING, "Setting DIGEST-MD5 validation handler on a Vortex Library instance without SASL support");
 	return;
 #else
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	/* check context received */
+	if (ctx == NULL)
+		return;
 	
 	ctx->sasl_digest_md5_auth_handler_full = auth_handler;
 #endif
@@ -2106,21 +2137,25 @@ void           vortex_sasl_set_digest_md5_validation_full  (VortexSaslAuthDigest
  * 
  * @return true the mechanism was enabled to be accepted.
  */
-bool               vortex_sasl_accept_negociation_full        (char  * mech, axlPointer user_data)
+bool               vortex_sasl_accept_negociation_full        (VortexCtx * ctx, char  * mech, axlPointer user_data)
 {
 #ifndef ENABLE_SASL_SUPPORT
 	/* current Vortex Library doesn't support SASL */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "current Vortex Library doesn't have SASL support");
+	vortex_log (VORTEX_LEVEL_WARNING, "current Vortex Library doesn't have SASL support");
 	return false;
 #else
+	/* check context received */
+	if (ctx == NULL)
+		return false;
+
 	/* check the mech definition received */
 	if (!axl_memcmp (mech, "http://iana.org/beep/SASL/", 26)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "you didn't provide a valid mech string specification.");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "you didn't provide a valid mech string specification.");
 		return false;
 	}
 
 	/* register the profile received  */
-	vortex_profiles_register (mech, 
+	vortex_profiles_register (ctx, mech, 
 				  /* do not set the normal channel
 				   * start handler because it is need
 				   * support to process profile content
@@ -2142,7 +2177,7 @@ bool               vortex_sasl_accept_negociation_full        (char  * mech, axl
 				  __vortex_sasl_accept_negociation_frame_receive, NULL);
 	
 	/* register an extended channel start handler for the mech registered */
-	vortex_profiles_register_extended_start	 (mech, 
+	vortex_profiles_register_extended_start	 (ctx, mech, 
 						  __vortex_sasl_accept_negociation_start, 
 						  user_data);
 
@@ -2173,9 +2208,9 @@ bool               vortex_sasl_accept_negociation_full        (char  * mech, axl
  * 
  * @return true the mechanism was enabled to be accepted.
  */
-bool               vortex_sasl_accept_negociation        (char  * mech)
+bool               vortex_sasl_accept_negociation        (VortexCtx * ctx, char  * mech)
 {
-    return vortex_sasl_accept_negociation_full (mech, NULL);
+    return vortex_sasl_accept_negociation_full (ctx, mech, NULL);
 }
 
 /* @} */

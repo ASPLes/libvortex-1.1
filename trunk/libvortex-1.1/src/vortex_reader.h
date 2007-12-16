@@ -55,7 +55,8 @@ bool vortex_reader_notify_change_io_api        (VortexCtx * ctx);
 
 void vortex_reader_notify_change_done_io_api   (VortexCtx * ctx);
 
-void vortex_reader_allow_msgno_starting_from_1 (bool     value);
+void vortex_reader_allow_msgno_starting_from_1 (VortexCtx * ctx,
+						bool        value);
 
 /* internal API */
 typedef void (*VortexForeachFunc) (VortexConnection * conn, axlPointer user_data);

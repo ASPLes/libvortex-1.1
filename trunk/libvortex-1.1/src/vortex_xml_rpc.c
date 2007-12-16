@@ -105,7 +105,7 @@ typedef struct _VortexXmlRpcServiceDispatchNode {
 bool     vortex_xml_rpc_is_enabled () 
 {
 #ifndef ENABLE_XML_RPC_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "Current Vortex Library wasn't built with XML-RPC support");
+	vortex_log (VORTEX_LEVEL_CRITICAL, "Current Vortex Library wasn't built with XML-RPC support");
 	return false;
 #else
 	/* just return true (nothing to initialize) */
@@ -128,10 +128,13 @@ void __vortex_xml_rpc_notify (VortexXmlRpcBootNotify    process_status,
 			      char                    * message, 
 			      axlPointer                user_data)
 {
+	/* get context */
+	VortexCtx * ctx = vortex_channel_get_ctx (channel);
+
 	/* drop to the console a log */
 	switch (status) {
 	case VortexError:
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, (message != NULL) ? message : "no message to report");
+		vortex_log (VORTEX_LEVEL_CRITICAL, (message != NULL) ? message : "no message to report");
 
 		/* close the channel if an error have happened while
 		 * booting the XML-RPC channel. */
@@ -139,7 +142,7 @@ void __vortex_xml_rpc_notify (VortexXmlRpcBootNotify    process_status,
 			vortex_channel_close (channel, NULL);
 		break;
 	case VortexOk:
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, (message != NULL) ? message : "no message to report");
+		vortex_log (VORTEX_LEVEL_DEBUG, (message != NULL) ? message : "no message to report");
 
 		/* set the channel to be ready. */
 		vortex_channel_set_data (channel, XML_RPC_BOOT_STATE, "ready");
@@ -195,17 +198,20 @@ void __vortex_xml_rpc_notify_response (XmlRpcInvokeNotify     notify,
 				       XmlRpcMethodResponse * response,
 				       axlPointer             user_data)
 {
+	/* get context */
+	VortexCtx * ctx = vortex_channel_get_ctx (channel);
+
 	switch (status) {
 	case XML_RPC_OK:
 		/* ok reply received */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "invocation reply received!");
+		vortex_log (VORTEX_LEVEL_DEBUG, "invocation reply received!");
 		break;
 	default:
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "invocation failed, message received: (code: %d) %s", 
+		vortex_log (VORTEX_LEVEL_WARNING, "invocation failed, message received: (code: %d) %s", 
 		       fault_code, fault_message);
 		/* bad reply received */
 		if (response == NULL) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "building method response stub containing the textual error");
+			vortex_log (VORTEX_LEVEL_DEBUG, "building method response stub containing the textual error");
 			/* create a XmlRpcMethodResponse object */
 			response = method_response_new (status, fault_code, fault_message, NULL);
 		}
@@ -235,7 +241,7 @@ void __vortex_xml_rpc_notify_response (XmlRpcInvokeNotify     notify,
  * @return A newly allocated method value, containing a representation
  * of a struct or NULL if fails.
  */
-XmlRpcMethodValue * __vortex_xml_rpc_parse_struct_value (axlNode * struct_node)
+XmlRpcMethodValue * __vortex_xml_rpc_parse_struct_value (VortexCtx * ctx, axlNode * struct_node)
 {
 	/* the variable which will hold the result */
 	const char         * member_name;
@@ -284,12 +290,12 @@ XmlRpcMethodValue * __vortex_xml_rpc_parse_struct_value (axlNode * struct_node)
 		name         = axl_node_get_child_nth (node_member, 0);
 		member_name  = axl_node_get_content (name, NULL);
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "parsing struct member name=%s",
-		       member_name);
+		vortex_log (VORTEX_LEVEL_DEBUG, "parsing struct member name=%s",
+			    member_name);
 		
 		/* get the member content */
 		value        = axl_node_get_child_nth (node_member, 1);
-		member_value = __vortex_xml_rpc_parse_value (value);
+		member_value = __vortex_xml_rpc_parse_value (ctx, value);
 
 		/* create the member and add it to the struct */
 		member = vortex_xml_rpc_struct_member_new (member_name, member_value);
@@ -312,7 +318,7 @@ XmlRpcMethodValue * __vortex_xml_rpc_parse_struct_value (axlNode * struct_node)
  * 
  * @return A newly allocated xml-rpc array.
  */
-XmlRpcMethodValue * __vortex_xml_rpc_parse_array_value (axlNode * array_node)
+XmlRpcMethodValue * __vortex_xml_rpc_parse_array_value (VortexCtx * ctx, axlNode * array_node)
 {
 	/* the variable which will hold the result */
 	XmlRpcMethodValue  * method_value;
@@ -347,7 +353,7 @@ XmlRpcMethodValue * __vortex_xml_rpc_parse_array_value (axlNode * array_node)
 	length   = axl_node_get_child_num (data);
 
 	/* create the struct */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "creating xml rpc array with %d items", length);
+	vortex_log (VORTEX_LEVEL_DEBUG, "creating xml rpc array with %d items", length);
 	array = vortex_xml_rpc_array_new (length);
 
 	/* iterate over all childs inside the <data> node */
@@ -363,7 +369,7 @@ XmlRpcMethodValue * __vortex_xml_rpc_parse_array_value (axlNode * array_node)
 		}
 
 		/* parse the value node */
-		method_value = __vortex_xml_rpc_parse_value (value);
+		method_value = __vortex_xml_rpc_parse_value (ctx, value);
 
 		/* create the member and add it to the struct */
 		vortex_xml_rpc_array_add (array, method_value);
@@ -372,7 +378,7 @@ XmlRpcMethodValue * __vortex_xml_rpc_parse_array_value (axlNode * array_node)
 		iterator++;
 	}
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "returning an array with (%d) items", 
+	vortex_log (VORTEX_LEVEL_DEBUG, "returning an array with (%d) items", 
 		    vortex_xml_rpc_array_count (array));
 
 	/* return the structure parsed */
@@ -392,7 +398,7 @@ XmlRpcMethodValue * __vortex_xml_rpc_parse_array_value (axlNode * array_node)
  * 
  * @return A newly allocated \ref XmlRpcMethodValue.
  */
-XmlRpcMethodValue * __vortex_xml_rpc_parse_value (axlNode * value)
+XmlRpcMethodValue * __vortex_xml_rpc_parse_value (VortexCtx * ctx, axlNode * value)
 {
 	const char        * string_value = NULL;
 	XmlRpcMethodValue * result       = NULL;
@@ -402,7 +408,7 @@ XmlRpcMethodValue * __vortex_xml_rpc_parse_value (axlNode * value)
 
 	/* check that the received cursor contains a <value/> node */
 	if (! NODE_CMP_NAME (value, "value")) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
 		       "received a wrong top level node where expected <value />. Received <%s>.", 
 		       axl_node_get_name (value));
 		return NULL;		
@@ -410,12 +416,12 @@ XmlRpcMethodValue * __vortex_xml_rpc_parse_value (axlNode * value)
 	
 	/* get children node */
 	child = axl_node_get_child_nth (value, 0);
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "received a value tag, containing a <%s>", 
+	vortex_log (VORTEX_LEVEL_DEBUG, "received a value tag, containing a <%s>", 
 	       axl_node_get_name (child));
 
 	/* check for the none value */
 	if (NODE_CMP_NAME (child, "none")) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "none value received");
+		vortex_log (VORTEX_LEVEL_DEBUG, "none value received");
 		return method_value_new (XML_RPC_NONE_VALUE, NULL);
 	}
 
@@ -434,7 +440,7 @@ XmlRpcMethodValue * __vortex_xml_rpc_parse_value (axlNode * value)
 		string_value = axl_node_get_content (child, NULL);
 		v_return_val_if_fail (string_value, NULL);
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "received simple value='%s'", 
+		vortex_log (VORTEX_LEVEL_DEBUG, "received simple value='%s'", 
 			    string_value ? string_value : "NULL");
 
 		/* for each value tag, convert into XML-RPC parameter */
@@ -467,22 +473,22 @@ XmlRpcMethodValue * __vortex_xml_rpc_parse_value (axlNode * value)
 	
 	/* struct case */
 	if (NODE_CMP_NAME (child, "struct")) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "received a complex value <struct>");
+		vortex_log (VORTEX_LEVEL_DEBUG, "received a complex value <struct>");
 		
 		/* parse the struct value */
-		result = __vortex_xml_rpc_parse_struct_value (child);
+		result = __vortex_xml_rpc_parse_struct_value (ctx, child);
 		
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "struct parsed: type %d", 
-		       method_value_get_type (result));
+		vortex_log (VORTEX_LEVEL_DEBUG, "struct parsed: type %d", 
+			    method_value_get_type (result));
 
 	}else if (NODE_CMP_NAME (child, "array")) {
 		/* array case */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "received a complex value <array> (2)");
+		vortex_log (VORTEX_LEVEL_DEBUG, "received a complex value <array> (2)");
 		
 		/* parse the array value */
-		result = __vortex_xml_rpc_parse_array_value (child);
+		result = __vortex_xml_rpc_parse_array_value (ctx, child);
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "array parsed: type %d", 
+		vortex_log (VORTEX_LEVEL_DEBUG, "array parsed: type %d", 
 			    method_value_get_type (result));
 	}
 	
@@ -513,6 +519,7 @@ typedef struct _VortexXmlRpcBootData {
 axlPointer __vortex_xml_rpc_boot_channel_process (VortexXmlRpcBootData * data)
 {
 	VortexConnection        * connection      = data->connection;
+	VortexCtx               * ctx             = vortex_connection_get_ctx (connection);
 	char                    * serverName      = data->serverName;
 	char                    * resourceName    = data->resourceName;
 	VortexXmlRpcBootNotify    process_status  = data->process_status;
@@ -602,8 +609,8 @@ axlPointer __vortex_xml_rpc_boot_channel_process (VortexXmlRpcBootData * data)
 		goto finish_boot_xml_rpc_channel;
 	}
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "checking resource validation, received: %s",
-	       vortex_frame_get_payload (reply));
+	vortex_log (VORTEX_LEVEL_DEBUG, "checking resource validation, received: %s",
+		    vortex_frame_get_payload (reply));
 
 	/* seems that the remote peer have accepted to create the
 	 * XML-RPC channel. Because it is not a good idea to exec the
@@ -622,7 +629,7 @@ axlPointer __vortex_xml_rpc_boot_channel_process (VortexXmlRpcBootData * data)
 		goto finish_boot_xml_rpc_channel;
 	}
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "XML-RPC channel accepted");
+	vortex_log (VORTEX_LEVEL_DEBUG, "XML-RPC channel accepted");
 
 	/* notify user space level */
 	__vortex_xml_rpc_notify (process_status, channel, VortexOk,
@@ -679,10 +686,11 @@ void     vortex_xml_rpc_boot_channel (VortexConnection        * connection,
 				      axlPointer                user_data)
 {
 #ifndef ENABLE_XML_RPC_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "Trying to boot a channel under the XML-RPC profile over a vortex library without XML-RPC support.");
+	vortex_log (VORTEX_LEVEL_CRITICAL, "Trying to boot a channel under the XML-RPC profile over a vortex library without XML-RPC support.");
 	return;
 #else
 	VortexXmlRpcBootData * data;
+	VortexCtx            * ctx = vortex_connection_get_ctx (connection);
 
 	/* perform XML-RPC initial boot operations. */
 	if (!vortex_connection_is_ok (connection, false)) {
@@ -694,7 +702,7 @@ void     vortex_xml_rpc_boot_channel (VortexConnection        * connection,
 	
 	/* check for process status function */
 	if (process_status == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "notify function is mandatory, unable to perform XML-RPC boot request");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "notify function is mandatory, unable to perform XML-RPC boot request");
 		return;
 	}
 
@@ -707,7 +715,7 @@ void     vortex_xml_rpc_boot_channel (VortexConnection        * connection,
 	data->user_data      = user_data;
 
 	/* perform rpc boot process */
-	vortex_thread_pool_new_task ((VortexThreadFunc) __vortex_xml_rpc_boot_channel_process,  data);
+	vortex_thread_pool_new_task (ctx, (VortexThreadFunc) __vortex_xml_rpc_boot_channel_process,  data);
 	return;
 #endif	
 }
@@ -725,6 +733,7 @@ void __vortex_xml_rpc_boot_channel_sync_process  (VortexChannel    * booted_chan
 						  axlPointer         user_data)
 {
 	VortexAsyncQueue * queue = user_data;
+	VortexCtx        * ctx   = vortex_channel_get_ctx (booted_channel);
 
 	/* push and unref man! (first status, then status_message and
 	 * finally the connection). This must follow this order. */
@@ -797,16 +806,18 @@ VortexChannel     * vortex_xml_rpc_boot_channel_sync       (VortexConnection    
 	if (status_message != NULL)
 		(* status_message) = "Trying to initialize a XML-RPC channel but, current Vortex Library doesn't provide XML-RPC services";
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+	vortex_log (VORTEX_LEVEL_CRITICAL, 
 	       "Trying to initialize a XML-RPC channel but, current Vortex Library doesn't provide XML-RPC services");
 	return NULL;
 #else
 	VortexAsyncQueue   * queue     = NULL;
 	VortexChannel      * _channel  = NULL;
 	VortexStatus       * _status   = NULL;
+	VortexCtx          * ctx;
 
 	/* check environment values */
-	v_return_val_if_fail (vortex_connection_is_ok (connection, false), NULL);
+	if (! vortex_connection_is_ok (connection, false))
+		return NULL;
 	
 	/* creates the async queue */
 	queue = vortex_async_queue_new ();
@@ -818,7 +829,8 @@ VortexChannel     * vortex_xml_rpc_boot_channel_sync       (VortexConnection    
 				     queue);
 
 	/* get status */
-	_status = vortex_async_queue_timedpop (queue, vortex_connection_get_timeout ());
+	ctx     = vortex_connection_get_ctx (connection);
+	_status = vortex_async_queue_timedpop (queue, vortex_connection_get_timeout (ctx));
 	if (_status == NULL) {
 		/* seems timeout have happen while waiting for SASL to
 		 * end */
@@ -1013,14 +1025,16 @@ VortexChannelPool * vortex_xml_rpc_create_channel_pool     (VortexConnection    
 							    axlPointer                    user_data)
 {
 #ifndef ENABLE_XML_RPC_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+	vortex_log (VORTEX_LEVEL_CRITICAL, 
 	       "Trying to initialize a XML-RPC channel pool but, current Vortex Library doesn't provide XML-RPC services");
 	return NULL;
 #else
 	VortexChannelPool       * result;
 	XmlRpcCreateChannelData * data;
 
-	v_return_val_if_fail (connection, NULL);
+	/* get the connection reference */
+	if (connection == NULL)
+		return NULL;
 	
 	/* create data to be provided to the creation function */
 	data   = __vortex_xml_rpc_create_channel_data (serverName, resourceName);
@@ -1093,7 +1107,7 @@ VortexChannel     * vortex_xml_rpc_channel_pool_get_next   (VortexConnection * c
 							    int                pool_id)
 {
 #ifndef ENABLE_XML_RPC_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+	vortex_log (VORTEX_LEVEL_CRITICAL, 
 	       "Trying to get a XML-RPC channel from a pool but, current Vortex Library doesn't provide XML-RPC services");
 	return NULL;
 #else
@@ -1102,12 +1116,13 @@ VortexChannel     * vortex_xml_rpc_channel_pool_get_next   (VortexConnection * c
 	char                    * key;
 
 	/* check incoming parameters */
-	v_return_val_if_fail (connection, NULL);
-	v_return_val_if_fail (pool_id > 0, NULL);
+	if (connection == NULL || pool_id <= 0)
+		return NULL;
 	
 	/* get the pool */
 	pool = vortex_connection_get_channel_pool (connection, pool_id);
-	v_return_val_if_fail (pool, NULL);
+	if (pool == NULL)
+		return NULL;
 
 	/* get the data (resourceName and serverName) associated to
 	 * the pool */
@@ -1149,9 +1164,9 @@ typedef struct _VortexXmlRpcInvokeData {
  * <value> node which contains the <struct> structure with the desired
  * values.
  */
-bool     __vortex_xml_rpc_get_fault_values (axlNode * node, 
-					    int  * faultCode, 
-					    char  ** faultString,
+bool     __vortex_xml_rpc_get_fault_values (axlNode            * node, 
+					    int                * faultCode, 
+					    char              ** faultString,
 					    XmlRpcMethodValue ** _value)
 {
 	XmlRpcMethodValue * value;
@@ -1226,7 +1241,7 @@ void __vortex_xml_rpc_invoke_process_reply (VortexChannel      * channel,
 	/* release memory hold by user_data, which contains a node of
 	   type VortexXmlRpcInvokeData */
 	axl_free (invocator_data);
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "reply received, processing..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "reply received, processing..");
 
 	/* flag the channel to have its reply processed */
 	vortex_channel_flag_reply_processed (channel, true);
@@ -1236,7 +1251,7 @@ void __vortex_xml_rpc_invoke_process_reply (VortexChannel      * channel,
 			     vortex_frame_get_payload_size (frame), &error);
 	if (!doc) {
 		/* drop a log */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to parse document received, error was: %s", axl_error_get (error));
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to parse document received, error was: %s", axl_error_get (error));
 		axl_error_free (error);
 
 		/* notify user space  */
@@ -1293,7 +1308,7 @@ void __vortex_xml_rpc_invoke_process_reply (VortexChannel      * channel,
 	 * top level node */
 	if (NODE_CMP_NAME (node, "params")) {
 		/* perform here the code to read data received */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "received a positive response..");
+		vortex_log (VORTEX_LEVEL_DEBUG, "received a positive response..");
 
 		/* we got a fault reply, now point to the <param />  */
 		node = axl_node_get_child_nth (node, 0);
@@ -1305,7 +1320,7 @@ void __vortex_xml_rpc_invoke_process_reply (VortexChannel      * channel,
 		value    = __vortex_xml_rpc_parse_value (node);
 		if (value != NULL) {
 
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "received method value with type: (%d)", 
+			vortex_log (VORTEX_LEVEL_DEBUG, "received method value with type: (%d)", 
 				    method_value_get_type (value));
 			
 			/* create the response object */
@@ -1440,7 +1455,7 @@ void                vortex_xml_rpc_invoke                  (VortexChannel       
 							    axlPointer                user_data)
 {
 #ifndef ENABLE_XML_RPC_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+	vortex_log (VORTEX_LEVEL_CRITICAL, 
 	       "performing an asynchronous invocation with a Vortex Library without XML-RPC support");
 	return;
 #else
@@ -1567,7 +1582,7 @@ XmlRpcMethodResponse * vortex_xml_rpc_invoke_sync          (VortexChannel       
 							    XmlRpcMethodCall        * method_call)
 {
 #ifndef ENABLE_XML_RPC_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "performing a synchronous XML-RPC invocation with a Vortex Library without XML-RPC support");
+	vortex_log (VORTEX_LEVEL_DEBUG, "performing a synchronous XML-RPC invocation with a Vortex Library without XML-RPC support");
 	return NULL;
 #else
 	VortexAsyncQueue     * queue;
@@ -1582,12 +1597,12 @@ XmlRpcMethodResponse * vortex_xml_rpc_invoke_sync          (VortexChannel       
 	vortex_async_queue_ref (queue);
 
 	/* perform invocation */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "synchronous invocation performed..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "synchronous invocation performed..");
 	vortex_xml_rpc_invoke (channel, method_call, __vortex_xml_rpc_invoke_sync_process, queue);
 
 	/* wait until data reach */
 	response = vortex_async_queue_timedpop (queue, vortex_connection_get_timeout ());
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "method response received..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "method response received..");
 
 	/* deallocate queue */
 	vortex_async_queue_unref (queue);
@@ -1621,7 +1636,7 @@ XmlRpcMethodResponse * vortex_xml_rpc_invoke_sync          (VortexChannel       
 VortexXmlRpcState   vortex_xml_rpc_channel_status   (VortexChannel * channel)
 {
 #ifndef ENABLE_XML_RPC_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "trying to check current XML-RPC channel status on a Vortex Library which doesn't have support for XML-RPC");
+	vortex_log (VORTEX_LEVEL_CRITICAL, "trying to check current XML-RPC channel status on a Vortex Library which doesn't have support for XML-RPC");
 	return XmlRpcStateUnknown;
 #else
 	char  * boot_state;
@@ -1629,7 +1644,7 @@ VortexXmlRpcState   vortex_xml_rpc_channel_status   (VortexChannel * channel)
 	/* check some environment conditions  */
 	if ((channel == NULL) ||
 	    !vortex_channel_is_running_profile (channel, VORTEX_XML_RPC_PROFILE)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "channel provided is null or it is not running the XML-RPC profile, unable to return channel status");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "channel provided is null or it is not running the XML-RPC profile, unable to return channel status");
 		return XmlRpcStateUnknown;
 	}
 
@@ -1639,7 +1654,7 @@ VortexXmlRpcState   vortex_xml_rpc_channel_status   (VortexChannel * channel)
 	if (axl_cmp (boot_state, "ready"))
 		return XmlRpcStateReady;
 	
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to get current XML-RPC channel status, returning channel state: unknown");
+	vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get current XML-RPC channel status, returning channel state: unknown");
 	return XmlRpcStateUnknown;
 #endif
 }
@@ -1673,14 +1688,14 @@ XmlRpcMethodCall * __vortex_xml_rpc_frame_received_parse_method_call (VortexFram
 	doc = axl_doc_parse (vortex_frame_get_payload (frame), 
 			     vortex_frame_get_payload_size (frame), NULL);
 	if (!doc) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "unable to parse incoming xml data");
+		vortex_log (VORTEX_LEVEL_DEBUG, "unable to parse incoming xml data");
 		return NULL;
 	}
 	
 	/* get method name */
 	method_name = axl_doc_get_content_at (doc, "/methodCall/methodName", NULL);
 	if (method_name == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to get method name value");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get method name value");
 
 		/* free the document */
 		axl_doc_free (doc);
@@ -1696,7 +1711,7 @@ XmlRpcMethodCall * __vortex_xml_rpc_frame_received_parse_method_call (VortexFram
 	else
 		param_count = 0;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "invocation detected for: %s, with %d parameters", method_name, param_count);
+	vortex_log (VORTEX_LEVEL_DEBUG, "invocation detected for: %s, with %d parameters", method_name, param_count);
 
 	/* build the method call */
 	method_call = method_call_new (method_name, param_count);
@@ -1708,13 +1723,13 @@ XmlRpcMethodCall * __vortex_xml_rpc_frame_received_parse_method_call (VortexFram
 		/* get a reference a reference to the <param> tag */
 		node_aux = axl_node_get_child_nth (node, iterator);
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "node name=<%s>", 
+		vortex_log (VORTEX_LEVEL_DEBUG, "node name=<%s>", 
 		       axl_node_get_name (node_aux));
 		
 		/* get a referece to the <value> tag inside */
 		node_aux = axl_node_get_child_nth (node_aux, 0);
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "node name(2)=<%s>", 
+		vortex_log (VORTEX_LEVEL_DEBUG, "node name(2)=<%s>", 
 		       axl_node_get_name (node_aux));
 
 		/* parse param value and add it to the method call */
@@ -1750,7 +1765,7 @@ void __vortex_xml_rpc_frame_received (VortexChannel    * channel,
 	VortexXmlRpcServiceDispatchNode  * dispatch_node;
 	int                                iterator;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "frame received on XML-RPC channel");
+	vortex_log (VORTEX_LEVEL_DEBUG, "frame received on XML-RPC channel");
 
 	/* get method call received */
 	method_call = __vortex_xml_rpc_frame_received_parse_method_call (frame);
@@ -1759,7 +1774,7 @@ void __vortex_xml_rpc_frame_received (VortexChannel    * channel,
 		return;
 	}
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "method call name received: %s (params %d), dispatching...",
+	vortex_log (VORTEX_LEVEL_DEBUG, "method call name received: %s (params %d), dispatching...",
 	       method_call_get_name (method_call), method_call_get_num_params (method_call));
 
 	/* set method call reply data */
@@ -1820,12 +1835,12 @@ void __vortex_xml_rpc_frame_received (VortexChannel    * channel,
 	/* if method response replied is null, the method invocation
 	 * reply has been deferred, just return */
 	if (method_response == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "XML-RPC reply deferred, leaving frame received handler");
+		vortex_log (VORTEX_LEVEL_DEBUG, "XML-RPC reply deferred, leaving frame received handler");
 		return;
 	}
 	
 	/* perform reply */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, 
+	vortex_log (VORTEX_LEVEL_DEBUG, 
 	       "XML-RPC reply performed, sending it back to the client");
 	vortex_xml_rpc_notify_reply (method_call, method_response);
 	return;
@@ -1966,7 +1981,7 @@ bool     __vortex_xml_rpc_start_msg (char              * profile,
 	if (!__vortex_xml_rpc_parse_bootmsg (profile_content, &resource, profile_content_reply))
 		return false;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "start message received on XML-RPC channel resource=%s",
+	vortex_log (VORTEX_LEVEL_DEBUG, "start message received on XML-RPC channel resource=%s",
 	       resource);
 
 	/* invoke resource validation */
@@ -1998,7 +2013,7 @@ bool     __vortex_xml_rpc_start_msg (char              * profile,
 		
 		/* set the resource booted to allow the channel to be classified */
 		channel = vortex_connection_get_channel (connection, channel_num);
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "configure channel=%d resource=%s", 
+		vortex_log (VORTEX_LEVEL_DEBUG, "configure channel=%d resource=%s", 
 			    channel_num, resource);
 		vortex_channel_set_data_full (channel, XML_RPC_RESOURCE, resource, NULL, axl_free);
 		
@@ -2053,7 +2068,7 @@ void vortex_xml_rpc_notify_reply (XmlRpcMethodCall     * method_call,
 				  XmlRpcMethodResponse * method_response)
 {
 #ifndef ENABLE_XML_RPC_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, 
+	vortex_log (VORTEX_LEVEL_DEBUG, 
 	       "calling to rpc notify reply function inside a Vortex Library without XML-RPC support");
 	return;
 #else
@@ -2077,9 +2092,9 @@ void vortex_xml_rpc_notify_reply (XmlRpcMethodCall     * method_call,
 	if (reply_string != NULL && reply_size > 0) {
 		/* perform the reply */
 		if (! vortex_channel_send_rpy (channel, reply_string, reply_size, msg_no)) 
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "the XML-RPC reply was not possible to be performed");
+			vortex_log (VORTEX_LEVEL_CRITICAL, "the XML-RPC reply was not possible to be performed");
 	}else {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "failed to perform method reply, response message marshalling have failed..");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to perform method reply, response message marshalling have failed..");
 	}
 		
 	/* release memory used */
@@ -2089,7 +2104,7 @@ void vortex_xml_rpc_notify_reply (XmlRpcMethodCall     * method_call,
 			     method_response, vortex_xml_rpc_method_response_free);
 	
 	/* nothing more to do man! */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "reply performed..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "reply performed..");
 	return;
 #endif	
 }
@@ -2260,7 +2275,7 @@ void                vortex_xml_rpc_accept_negociation      (VortexXmlRpcValidate
 							    
 {
 #ifndef ENABLE_XML_RPC_SUPPORT
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "Trying to activate incoming requests for XML-RPC for a Vortex Library without support for XML-RPC");
+	vortex_log (VORTEX_LEVEL_CRITICAL, "Trying to activate incoming requests for XML-RPC for a Vortex Library without support for XML-RPC");
 	return;
 #else
 	VortexXmlRpcServiceDispatchNode * node;
@@ -2269,7 +2284,7 @@ void                vortex_xml_rpc_accept_negociation      (VortexXmlRpcValidate
 
 	/* validate incoming values */
 	if (service_dispatch == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "passed in a null value for the service dispatcher");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "passed in a null value for the service dispatcher");
 		return;
 	}
 
@@ -2431,7 +2446,7 @@ XmlRpcMethodValue * __vortex_xml_rpc_unmarshall_common_sync (XmlRpcMethodRespons
 		 * automatically deallocated on channel close or on
 		 * the next invocation. */
 		if (string != NULL) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "configuring automatic deallocation for: %s", string);
+			vortex_log (VORTEX_LEVEL_DEBUG, "configuring automatic deallocation for: %s", string);
 			vortex_channel_set_data_full (channel, string, string, axl_free, NULL);
 		}
 	}

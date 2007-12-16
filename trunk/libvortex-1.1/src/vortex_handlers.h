@@ -1250,6 +1250,8 @@ typedef void     (* XmlRpcInvokeNotify)          (VortexChannel        * channel
  * @brief IO handler definition to allow defining the method to be
  * invoked while createing a new fd set.
  *
+ * @param ctx The context where the IO set will be created.
+ *
  * @param wait_to Allows to configure the file set to be prepared to
  * be used for the set of operations provided. 
  * 
@@ -1258,7 +1260,7 @@ typedef void     (* XmlRpcInvokeNotify)          (VortexChannel        * channel
  * waiting operation at the \ref vortex_io "Vortex IO module".
  * 
  */
-typedef axlPointer   (* VortexIoCreateFdGroup)        (VortexIoWaitingFor wait_to);
+typedef axlPointer   (* VortexIoCreateFdGroup)        (VortexCtx * ctx, VortexIoWaitingFor wait_to);
 
 /** 
  * @brief IO handler definition to allow defining the method to be

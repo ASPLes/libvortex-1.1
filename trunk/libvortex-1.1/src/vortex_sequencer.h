@@ -40,7 +40,8 @@
 
 #include <vortex.h>
 
-void vortex_sequencer_queue_data               (VortexSequencerData * data);
+void vortex_sequencer_queue_data               (VortexCtx           * ctx,
+						VortexSequencerData * data);
 
 bool vortex_sequencer_run                      (VortexCtx * ctx);
 

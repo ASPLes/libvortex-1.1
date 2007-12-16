@@ -42,23 +42,19 @@
 
 #define LOG_DOMAIN "vortex-sequencer"
 
-void vortex_sequencer_queue_data (VortexSequencerData * data)
+void vortex_sequencer_queue_data (VortexCtx * ctx, VortexSequencerData * data)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
-
 	v_return_if_fail (data);
-
 
 	/* check not initialized queue */
 	if (ctx->sequencer_queue == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "trying to queue a message to be sent, having the vortex sequencer stopped");
+		vortex_log (VORTEX_LEVEL_DEBUG, "trying to queue a message to be sent, having the vortex sequencer stopped");
 		axl_free (data->message);
 		axl_free (data);
 		return;
 	} /* end if */
 
-	vortex_log2 (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "new message to be sent: msgno %d, channel %d (size: %d):\n%s",
+	vortex_log2 (VORTEX_LEVEL_DEBUG, "new message to be sent: msgno %d, channel %d (size: %d):\n%s",
 		     data->msg_no, 
 		     data->channel_num, 
 		     data->message_size,
@@ -116,7 +112,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		/* check if it was requested to stop the vortex
 		 * sequencer operation */
 		if (data == INT_TO_PTR(1)) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "vortex sequencer stopped..");
+			vortex_log (VORTEX_LEVEL_DEBUG, "vortex sequencer stopped..");
 
 			/* unref the queue */
 			queue                  = ctx->sequencer_queue;
@@ -129,7 +125,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 			return NULL;
 		}
 		
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "a new message to be sequenced..");
+		vortex_log (VORTEX_LEVEL_DEBUG, "a new message to be sequenced..");
 
 		/* new message to be sent */
 		channel = data->channel;
@@ -143,7 +139,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		 */
 		connection = vortex_channel_get_connection (channel);
 		if (! vortex_connection_ref (connection, "(vortex sequencer)")) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+			vortex_log (VORTEX_LEVEL_CRITICAL, 
 				    "detect message to be sequenced over a channel installed on a non connected session, dropping message");
 
 			/* clear data without unrefering the connection */
@@ -153,7 +149,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 
 		/* check channel number for deliver */
 		if (data->channel_num != vortex_channel_get_number (channel)) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+			vortex_log (VORTEX_LEVEL_CRITICAL, 
 			       "channel number for frame sending mismatch, dropping this frame");
 			/* unref the connection and clear data */
 			__vortex_sequencer_unref_and_clear (connection, data, true);
@@ -168,7 +164,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		 */
 		resequence = data->resequence;
 		if (data->resequence) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "detected a re-sequencing operation..");
+			vortex_log (VORTEX_LEVEL_DEBUG, "detected a re-sequencing operation..");
 
 			/* free signal, and flag the variable to be
 			 * NULL */
@@ -179,7 +175,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 			/* now get the very first pending message  */
 			data       = vortex_channel_next_pending_message (channel);
 			if (data == NULL) {
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "nothing to re-sequence, skipping..");
+				vortex_log (VORTEX_LEVEL_DEBUG, "nothing to re-sequence, skipping..");
 				
 				/* unref the connection */
 				__vortex_sequencer_unref_and_clear (connection, NULL, true);
@@ -224,7 +220,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		next_seq_no  = data->first_seq_no;
 		message_size = data->message_size;
 		max_seq_no   = vortex_channel_get_max_seq_no_remote_accepted (channel);
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "sequence operation: next seq no=%d message size=%d max seq no=%d step=%d",
+		vortex_log (VORTEX_LEVEL_DEBUG, "sequence operation: next seq no=%d message size=%d max seq no=%d step=%d",
 		       next_seq_no, message_size, max_seq_no, data->step);
 
 		
@@ -236,7 +232,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		 */
 		if (next_seq_no >= max_seq_no) {
 			
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, 
+			vortex_log (VORTEX_LEVEL_WARNING, 
 			       "Seems that the next seq number to use is greater or equal than max seq no (%d >= %d), which means that this channel (%d) is stalled",
 			       next_seq_no, max_seq_no, vortex_channel_get_number (channel));
 			/**
@@ -249,7 +245,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 			 * which means that it is already queue.
 			 */
 			if (! resequence) {
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "queueing the message, because it is not a resequencing operation..");
+				vortex_log (VORTEX_LEVEL_DEBUG, "queueing the message, because it is not a resequencing operation..");
 				vortex_channel_queue_pending_message (channel, data);
 				data = NULL;
 			}
@@ -259,7 +255,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 			vortex_connection_unref (connection, "(vortex sequencer)");
 			continue;
 		} 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "the channel is not stalled, continue with sequencing ...");
+		vortex_log (VORTEX_LEVEL_DEBUG, "the channel is not stalled, continue with sequencing ...");
 
 		/* calculate how many bytes to copy from the payload
 		 * according to max_seq_no */
@@ -273,7 +269,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		packet.msg_no       = data->msg_no;
 			
 		/* we have the payload on buffer */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "sequencing next message: type=%d, channel num=%d, msgno=%d, more=%d, next seq=%d size=%d ansno=%d",
+		vortex_log (VORTEX_LEVEL_DEBUG, "sequencing next message: type=%d, channel num=%d, msgno=%d, more=%d, next seq=%d size=%d ansno=%d",
 		       data->type, data->channel_num, data->msg_no, !(message_size == size_to_copy), 
 		       next_seq_no, size_to_copy, data->ansno);
 		a_frame = vortex_frame_build_up_from_params_s (data->type,        /* frame type to be created */
@@ -312,7 +308,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		 * Incredible, but true! 
 		 */
 		if (size_to_copy != message_size) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "the message sequenced is not going to be sent completely (%d != %d)", 
+			vortex_log (VORTEX_LEVEL_DEBUG, "the message sequenced is not going to be sent completely (%d != %d)", 
 			       size_to_copy, message_size);
 
 			/* well, it seems we didn't be able to send
@@ -329,7 +325,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 			/* make message size to be decreased the amount of bytes sent. */
 			data->message_size  = data->message_size - size_to_copy;
 
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, 
+			vortex_log (VORTEX_LEVEL_DEBUG, 
 			       "updating message sequencing status: next seq no=%d message size=%d step=%d",
 			       data->first_seq_no, data->message_size, data->step);
 
@@ -339,7 +335,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 			 * not enough buffer size at the remote peer
 			 * for the given channel to hold it. */
 			if (! resequence) {
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, 
+				vortex_log (VORTEX_LEVEL_DEBUG, 
 				       "because we are not re-sequencing, save the message to be pending");
 				/* now queue the message to be pending to be sent. */
 				vortex_channel_queue_pending_message (channel, data);
@@ -358,15 +354,15 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		 * the rest to be sequenced message. */
 		if ((a_frame != NULL) && (packet.the_size != -1)) {
 			/* now, perform a send operation for the frame built */
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "frame built, send the frame directly"); 
+			vortex_log (VORTEX_LEVEL_DEBUG, "frame built, send the frame directly"); 
 			if (! vortex_sequencer_direct_send (connection, channel, &packet)) {
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "unable to send data at this moment");
+				vortex_log (VORTEX_LEVEL_WARNING, "unable to send data at this moment");
 
 				/* free frame */
 				axl_free (packet.the_frame);
 				
 				if (! resequence) {
-					vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "queuing data to be sent later because we aren't resending");
+					vortex_log (VORTEX_LEVEL_WARNING, "queuing data to be sent later because we aren't resending");
 					
 					/* queue data to be sent later */
 					vortex_channel_queue_pending_message (channel, data);
@@ -386,7 +382,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 			/* something has happend with the given
 			 * connection. There was a problem queueing
 			 * the message. */
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, 
+			vortex_log (VORTEX_LEVEL_WARNING, 
 			       "unable to queue a frame to be sent, dropping entire message (frame == NULL)=%d (frame size == -1)=%d",
 			       (a_frame == NULL), (packet.the_size == -1));
 
@@ -409,7 +405,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		 * value gets exhausted.
 		 */
 		if (size_to_copy == message_size) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "it seems the message was sent completely");
+			vortex_log (VORTEX_LEVEL_DEBUG, "it seems the message was sent completely");
 			/* the message was sent completely, check for
 			 * re-sequence to remove the first pending
 			 * message. */
@@ -419,7 +415,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 
 				/* check for previous messages that could be resequenced */
 				if (vortex_channel_next_pending_message (channel) != NULL) {
-					vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "seems that there are pending messages to be resequenced..");
+					vortex_log (VORTEX_LEVEL_DEBUG, "seems that there are pending messages to be resequenced..");
 					/* unref the connection and clear data */
 					__vortex_sequencer_unref_and_clear (connection, data, false);
 
@@ -478,7 +474,7 @@ bool vortex_sequencer_run (VortexCtx * ctx)
 				    (VortexThreadFunc) __vortex_sequencer_run,
 				    ctx,
 				    VORTEX_THREAD_CONF_END)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to initialize the sequencer thread");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to initialize the sequencer thread");
 		return false;
 	} /* end if */
 
@@ -499,7 +495,7 @@ void vortex_sequencer_stop (VortexCtx * ctx)
 	 * API compat and because in the future the function could
 	 * implement some deallocation code, it is not removed.
 	 */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "stopping vortex sequencer");
+	vortex_log (VORTEX_LEVEL_DEBUG, "stopping vortex sequencer");
 
 	/* signal the sequencer to stop */
 	QUEUE_PUSH  (ctx->sequencer_queue, INT_TO_PTR (1));
@@ -509,7 +505,7 @@ void vortex_sequencer_stop (VortexCtx * ctx)
 	vortex_async_queue_unref (ctx->sequencer_stoped);
 	vortex_thread_destroy    (&ctx->sequencer_thread, false);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "vortex sequencer completely stoped");
+	vortex_log (VORTEX_LEVEL_DEBUG, "vortex sequencer completely stoped");
 
 	return; 
 }
@@ -522,23 +518,24 @@ bool     vortex_sequencer_direct_send (VortexConnection * connection,
 {
 	/* reply number */
 	bool        result = true;
+	VortexCtx * ctx    = vortex_connection_get_ctx (connection);
 
 	/* reference the channel during the transmission */
 	vortex_channel_ref (channel);
 
 	/* send the frame */
-	if (vortex_log2_is_enabled ())
-		vortex_log2 (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "Sending message, size (%d) over connection id=%d, Content: \n%s",
+	if (vortex_log2_is_enabled (ctx))
+		vortex_log2 (VORTEX_LEVEL_DEBUG, "Sending message, size (%d) over connection id=%d, Content: \n%s",
 			     packet->the_size,  
 			     vortex_connection_get_id (connection), packet->the_frame);
 	else
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "Sending message, size (%d) over connection id=%d",
+		vortex_log (VORTEX_LEVEL_DEBUG, "Sending message, size (%d) over connection id=%d",
 			    packet->the_size,  
 			    vortex_connection_get_id (connection));
 
 	if (! vortex_frame_send_raw (connection, packet->the_frame, packet->the_size)) {
 		/* drop a log */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to send the frame: errno=(%d): %s", 
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to send the frame: errno=(%d): %s", 
 			    errno, vortex_errno_get_error (errno));
 		
 		/* set as non connected and flag the result */
@@ -578,10 +575,10 @@ bool     vortex_sequencer_direct_send (VortexConnection * connection,
 void     vortex_sequencer_signal_update        (VortexChannel       * channel)
 {
 	/* get current context */
-	VortexCtx           * ctx = vortex_ctx_get ();
+	VortexCtx           * ctx = vortex_channel_get_ctx (channel);
 	VortexSequencerData * data;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "about to check for pending queue message not sequenced..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "about to check for pending queue message not sequenced..");
 
 	/* do not update any thing if found that the queue is not available */
 	if (ctx->sequencer_queue == NULL)
@@ -589,7 +586,7 @@ void     vortex_sequencer_signal_update        (VortexChannel       * channel)
 
 	/* check if we have data to be resequenced */
 	if (vortex_channel_next_pending_message (channel)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "it seems that we have pending messages not sequenced, re-sequence them");
+		vortex_log (VORTEX_LEVEL_DEBUG, "it seems that we have pending messages not sequenced, re-sequence them");
 		/* prepare data, flagging re-sequencing .. */
 		data                       = axl_new (VortexSequencerData, 1);
 		data->resequence           = true;
@@ -599,7 +596,7 @@ void     vortex_sequencer_signal_update        (VortexChannel       * channel)
 		/* queue data */
 		QUEUE_PUSH (ctx->sequencer_queue, data);
 	}else {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "there is no messages pending to be sequenced, over the channel=%d",
+		vortex_log (VORTEX_LEVEL_DEBUG, "there is no messages pending to be sequenced, over the channel=%d",
 		       vortex_channel_get_number (channel));
 	} /* end if */
 

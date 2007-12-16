@@ -41,53 +41,71 @@
 #include <vortex.h>
 
 /* api to configure current I/O system */
-bool                 vortex_io_waiting_use                     (VortexIoWaitingType type);
+bool                 vortex_io_waiting_use                     (VortexCtx           * ctx,
+								VortexIoWaitingType   type);
 
 bool                 vortex_io_waiting_is_available            (VortexIoWaitingType type);
 
 VortexIoWaitingType  vortex_io_waiting_get_current             ();
 
-void                 vortex_io_waiting_set_create_fd_group     (VortexIoCreateFdGroup create);
+void                 vortex_io_waiting_set_create_fd_group     (VortexCtx           * ctx,
+								VortexIoCreateFdGroup create);
 
-void                 vortex_io_waiting_set_destroy_fd_group    (VortexIoDestroyFdGroup destroy);
+void                 vortex_io_waiting_set_destroy_fd_group    (VortexCtx           * ctx,
+								VortexIoDestroyFdGroup destroy);
 
-void                 vortex_io_waiting_set_clear_fd_group      (VortexIoClearFdGroup clear);
+void                 vortex_io_waiting_set_clear_fd_group      (VortexCtx           * ctx,
+								VortexIoClearFdGroup clear);
 
-void                 vortex_io_waiting_set_add_to_fd_group     (VortexIoAddToFdGroup add_to);
+void                 vortex_io_waiting_set_add_to_fd_group     (VortexCtx           * ctx,
+								VortexIoAddToFdGroup add_to);
 
-void                 vortex_io_waiting_set_is_set_fd_group     (VortexIoIsSetFdGroup is_set);
+void                 vortex_io_waiting_set_is_set_fd_group     (VortexCtx           * ctx,
+								VortexIoIsSetFdGroup is_set);
 
-void                 vortex_io_waiting_set_have_dispatch       (VortexIoHaveDispatch  have_dispatch);
+void                 vortex_io_waiting_set_have_dispatch       (VortexCtx           * ctx,
+								VortexIoHaveDispatch  have_dispatch);
 
-void                 vortex_io_waiting_set_dispatch            (VortexIoDispatch      dispatch);
+void                 vortex_io_waiting_set_dispatch            (VortexCtx           * ctx,
+								VortexIoDispatch      dispatch);
 
-void                 vortex_io_waiting_set_wait_on_fd_group    (VortexIoWaitOnFdGroup wait_on);
+void                 vortex_io_waiting_set_wait_on_fd_group    (VortexCtx           * ctx,
+								VortexIoWaitOnFdGroup wait_on);
 
 /* api to perform invocations to the current I/O system configured */
-axlPointer           vortex_io_waiting_invoke_create_fd_group  (VortexIoWaitingFor wait_to);
+axlPointer           vortex_io_waiting_invoke_create_fd_group  (VortexCtx           * ctx,
+								VortexIoWaitingFor    wait_to);
 
-void                 vortex_io_waiting_invoke_destroy_fd_group (axlPointer fd_group);
+void                 vortex_io_waiting_invoke_destroy_fd_group (VortexCtx           * ctx,
+								axlPointer            fd_group);
 
-void                 vortex_io_waiting_invoke_clear_fd_group   (axlPointer fd_group);
+void                 vortex_io_waiting_invoke_clear_fd_group   (VortexCtx           * ctx,
+								axlPointer            fd_group);
 
-bool                 vortex_io_waiting_invoke_add_to_fd_group  (int                fds, 
-								VortexConnection * connection, 
-								axlPointer fd_group);
+bool                 vortex_io_waiting_invoke_add_to_fd_group  (VortexCtx           * ctx,
+								int                   fds, 
+								VortexConnection    * connection, 
+								axlPointer            fd_group);
 
-bool                 vortex_io_waiting_invoke_is_set_fd_group  (int        fds, 
+bool                 vortex_io_waiting_invoke_is_set_fd_group  (VortexCtx           * ctx,
+								int                   fds, 
 								axlPointer fd_group,
 								axlPointer user_data);
 
-bool                 vortex_io_waiting_invoke_have_dispatch    (axlPointer fd_group);
+bool                 vortex_io_waiting_invoke_have_dispatch    (VortexCtx           * ctx,
+								axlPointer            fd_group);
 
-void                 vortex_io_waiting_invoke_dispatch         (axlPointer           fd_group, 
-								VortexIoDispatchFunc func,
-								int                  changed,
-								axlPointer           user_data);
+void                 vortex_io_waiting_invoke_dispatch         (VortexCtx           * ctx,
+								axlPointer            fd_group, 
+								VortexIoDispatchFunc  func,
+								int                   changed,
+								axlPointer            user_data);
 
-int                  vortex_io_waiting_invoke_wait             (axlPointer         fd_group, 
-								int                max_fds,
-								VortexIoWaitingFor wait_to);
+int                  vortex_io_waiting_invoke_wait             (VortexCtx           * ctx,
+								axlPointer            fd_group, 
+								int                   max_fds,
+								VortexIoWaitingFor    wait_to);
 
 void                 vortex_io_init (VortexCtx * ctx);
+
 #endif
