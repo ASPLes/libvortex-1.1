@@ -299,25 +299,27 @@ void               vortex_sasl_start_auth_sync           (VortexConnection     *
 							  VortexStatus         * status,
 							  char                ** status_message);
 
-void               vortex_sasl_set_external_validation   (VortexSaslAuthExternal  auth_handler);
-void               vortex_sasl_set_external_validation_full   (VortexSaslAuthExternalFull  auth_handler);
+void               vortex_sasl_set_external_validation        (VortexCtx * ctx, VortexSaslAuthExternal  auth_handler);
+void               vortex_sasl_set_external_validation_full   (VortexCtx * ctx, VortexSaslAuthExternalFull  auth_handler);
 
-void               vortex_sasl_set_anonymous_validation  (VortexSaslAuthAnonymous auth_handler);
-void               vortex_sasl_set_anonymous_validation_full  (VortexSaslAuthAnonymousFull auth_handler);
+void               vortex_sasl_set_anonymous_validation       (VortexCtx * ctx, VortexSaslAuthAnonymous auth_handler);
+void               vortex_sasl_set_anonymous_validation_full  (VortexCtx * ctx, VortexSaslAuthAnonymousFull auth_handler);
 
-void               vortex_sasl_set_plain_validation      (VortexSaslAuthPlain     auth_handler);
-void               vortex_sasl_set_plain_validation_full      (VortexSaslAuthPlainFull     auth_handler);
+void               vortex_sasl_set_plain_validation           (VortexCtx * ctx, VortexSaslAuthPlain     auth_handler);
+void               vortex_sasl_set_plain_validation_full      (VortexCtx * ctx, VortexSaslAuthPlainFull     auth_handler);
 
-void               vortex_sasl_set_cram_md5_validation   (VortexSaslAuthCramMd5   auth_handler);
-void               vortex_sasl_set_cram_md5_validation_full   (VortexSaslAuthCramMd5Full   auth_handler);
+void               vortex_sasl_set_cram_md5_validation        (VortexCtx * ctx, VortexSaslAuthCramMd5   auth_handler);
+void               vortex_sasl_set_cram_md5_validation_full   (VortexCtx * ctx, VortexSaslAuthCramMd5Full   auth_handler);
 
-void               vortex_sasl_set_digest_md5_validation (VortexSaslAuthDigestMd5 auth_handler);
-void               vortex_sasl_set_digest_md5_validation_full (VortexSaslAuthDigestMd5Full auth_handler);
+void               vortex_sasl_set_digest_md5_validation      (VortexCtx * ctx, VortexSaslAuthDigestMd5 auth_handler);
+void               vortex_sasl_set_digest_md5_validation_full (VortexCtx * ctx, VortexSaslAuthDigestMd5Full auth_handler);
 
 
-bool               vortex_sasl_accept_negociation        (char  * mech);
-bool               vortex_sasl_accept_negociation_full   (char  * mech, 
-							  axlPointer user_data);
+bool               vortex_sasl_accept_negociation             (VortexCtx * ctx, 
+							       char      * mech);
+bool               vortex_sasl_accept_negociation_full        (VortexCtx * ctx,
+							       char      * mech, 
+							       axlPointer user_data);
 
        
 #endif

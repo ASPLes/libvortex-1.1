@@ -134,7 +134,9 @@ void         vortex_hash_insert   (VortexHash *hash_table,
 				   axlPointer key,
 				   axlPointer value)
 {
-	v_return_if_fail (hash_table);
+	/* check hash table reference */
+	if (hash_table == NULL)
+		return;
 	vortex_mutex_lock   (&hash_table->mutex);
 
 	axl_hash_insert_full (hash_table->table, 
@@ -160,7 +162,9 @@ void         vortex_hash_replace  (VortexHash *hash_table,
 				   axlPointer key,
 				   axlPointer value)
 {
-	v_return_if_fail (hash_table);
+	/* check hash table reference */
+	if (hash_table == NULL)
+		return;
 	vortex_mutex_lock   (&hash_table->mutex);
 	
 	axl_hash_insert_full (hash_table->table, 
@@ -192,7 +196,9 @@ void         vortex_hash_replace_full  (VortexHash     * hash_table,
 					axlPointer       value,
 					axlDestroyFunc   value_destroy)
 {
-	v_return_if_fail (hash_table);
+	/* check hash table reference */
+	if (hash_table == NULL)
+		return;
 	vortex_mutex_lock   (&hash_table->mutex);
 	
 	axl_hash_insert_full (hash_table->table, 
@@ -218,7 +224,9 @@ int      vortex_hash_size     (VortexHash *hash_table)
 {
 	int result;
 
-	v_return_val_if_fail (hash_table, -1);
+	/* check hash table reference */
+	if (hash_table == NULL)
+		return -1;
 	vortex_mutex_lock     (&hash_table->mutex);
 
 	result = axl_hash_items (hash_table->table);
@@ -244,7 +252,9 @@ axlPointer   vortex_hash_lookup   (VortexHash *hash_table,
 {
 	axlPointer data;
 
-	v_return_val_if_fail (hash_table, NULL);
+	/* check hash table reference */
+	if (hash_table == NULL)
+		return NULL;
 	vortex_mutex_lock   (&hash_table->mutex);
 	
 	data = axl_hash_get (hash_table->table, key);
@@ -271,7 +281,9 @@ axlPointer   vortex_hash_lookup_and_clear   (VortexHash   *hash_table,
 	
 	axlPointer data;
 
-	v_return_val_if_fail (hash_table, NULL);
+	/* check hash table reference */
+	if (hash_table == NULL)
+		return NULL;
 	vortex_mutex_lock   (&hash_table->mutex);
 	
 	/* get the data */
@@ -300,7 +312,9 @@ axlPointer   vortex_hash_lookup_and_clear   (VortexHash   *hash_table,
 bool         vortex_hash_remove   (VortexHash *hash_table,
 				   axlPointer key)
 {
-	v_return_val_if_fail (hash_table, false);
+	/* check hash table reference */
+	if (hash_table == NULL)
+		return false;
 
 	vortex_mutex_lock   (&hash_table->mutex);
 
@@ -321,7 +335,9 @@ bool         vortex_hash_remove   (VortexHash *hash_table,
 void         vortex_hash_destroy  (VortexHash *hash_table)
 {
 
-	v_return_if_fail (hash_table);
+	/* check hash table reference */
+	if (hash_table == NULL)
+		return;
 
 	/* look the mutex */
 	vortex_mutex_lock (&hash_table->mutex);
@@ -355,10 +371,9 @@ void         vortex_hash_foreach  (VortexHash         *hash_table,
 				   axlHashForeachFunc  func,
 				   axlPointer         user_data)
 {
-	v_return_if_fail (hash_table);
-	v_return_if_fail (func);
-	v_return_if_fail (hash_table->table);
-
+	/* check references */
+	if (hash_table == NULL || func == NULL || hash_table->table == NULL)
+		return;
 
 	vortex_mutex_lock   (&hash_table->mutex);
 	axl_hash_foreach    (hash_table->table, func, user_data);
@@ -387,10 +402,8 @@ void         vortex_hash_foreach2  (VortexHash           *hash_table,
 				    axlPointer            user_data,
 				    axlPointer            user_data2)
 {
-	v_return_if_fail (hash_table);
-	v_return_if_fail (func);
-	v_return_if_fail (hash_table->table);
-
+	if (hash_table == NULL || func == NULL || hash_table->table == NULL)
+		return;
 
 	vortex_mutex_lock   (&hash_table->mutex);
 	axl_hash_foreach2   (hash_table->table, func, user_data, user_data2);
@@ -423,10 +436,8 @@ void         vortex_hash_foreach3  (VortexHash         * hash_table,
 				    axlPointer           user_data2,
 				    axlPointer           user_data3)
 {
-	v_return_if_fail (hash_table);
-	v_return_if_fail (func);
-	v_return_if_fail (hash_table->table);
-
+	if (hash_table == NULL || func == NULL || hash_table->table == NULL)
+		return;
 
 	vortex_mutex_lock   (&hash_table->mutex);
 	axl_hash_foreach3   (hash_table->table, func, user_data, user_data2, user_data3);
@@ -452,7 +463,8 @@ bool     vortex_hash_clear_allways_true (axlPointer key, axlPointer value, axlPo
  */
 void         vortex_hash_clear    (VortexHash *hash_table)
 {
-	v_return_if_fail (hash_table);
+	if (hash_table == NULL)
+		return;
 
 	vortex_mutex_lock (&hash_table->mutex);
 

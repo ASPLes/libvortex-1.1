@@ -790,7 +790,7 @@ bool   vortex_init_ctx (VortexCtx * ctx)
 	thread_num = vortex_thread_pool_get_num ();
 	vortex_log (VORTEX_LEVEL_DEBUG, "starting vortex thread pool: (%d threads the pool have)..",
 	       thread_num);
-	vortex_thread_pool_init (thread_num);
+	vortex_thread_pool_init (ctx, thread_num);
 
 	/* register the vortex exit function */
 	return true;
@@ -867,7 +867,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
 	vortex_xml_rpc_cleanup (ctx); 
 
 	/* clean up tls module */
-	vortex_tls_cleanup ();
+	vortex_tls_cleanup (ctx);
 
 #if defined(AXL_OS_WIN32)
 	WSACleanup ();
@@ -897,7 +897,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
 	 * 
 	 * At the end, to release the thread pool is not a big
 	 * deal. */
-	vortex_thread_pool_exit (); 
+	vortex_thread_pool_exit (ctx); 
 
 	/* cleanup connection module */
 	vortex_connection_cleanup (ctx); 

@@ -68,20 +68,22 @@ typedef enum {
  */
 #define VORTEX_TLS_PROFILE_URI "http://iana.org/beep/TLS"
 
-bool               vortex_tls_is_enabled                 ();
+bool               vortex_tls_is_enabled                 (VortexCtx            * ctx);
 
 void               vortex_tls_set_ctx_creation           (VortexConnection     * connection,
 							  VortexTlsCtxCreation   ctx_creation, 
 							  axlPointer             user_data);
 
-void               vortex_tls_set_default_ctx_creation   (VortexTlsCtxCreation   ctx_creation, 
+void               vortex_tls_set_default_ctx_creation   (VortexCtx            * ctx,
+							  VortexTlsCtxCreation   ctx_creation, 
 							  axlPointer             user_data);
 
 void               vortex_tls_set_post_check             (VortexConnection     * connection,
 							  VortexTlsPostCheck     post_check,
 							  axlPointer             user_data);
 
-void               vortex_tls_set_default_post_check     (VortexTlsPostCheck     post_check,
+void               vortex_tls_set_default_post_check     (VortexCtx            * ctx, 
+							  VortexTlsPostCheck     post_check,
 							  axlPointer             user_data);
 
 void               vortex_tls_start_negociation          (VortexConnection     * connection,
@@ -94,7 +96,8 @@ VortexConnection * vortex_tls_start_negociation_sync     (VortexConnection  * co
 							  VortexStatus      * status,
 							  char             ** status_message);
 
-bool               vortex_tls_accept_negociation         (VortexTlsAcceptQuery            accept_handler, 
+bool               vortex_tls_accept_negociation         (VortexCtx         * ctx, 
+							  VortexTlsAcceptQuery            accept_handler, 
 							  VortexTlsCertificateFileLocator certificate_handler,
 							  VortexTlsPrivateKeyFileLocator  private_key_handler);
 
@@ -110,7 +113,7 @@ char             * vortex_tls_get_digest_sized           (VortexDigestMethod   m
 							  const char         * content,
 							  int                  content_size);
 
-void               vortex_tls_cleanup ();
+void               vortex_tls_cleanup                    (VortexCtx * ctx);
 
 #endif
 /* @} */

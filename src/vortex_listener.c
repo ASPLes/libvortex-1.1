@@ -523,7 +523,7 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
 	/* make request */
 	if (data->threaded) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "invoking listener_new threaded mode");
-		vortex_thread_pool_new_task ((VortexThreadFunc) __vortex_listener_new, data);
+		vortex_thread_pool_new_task (ctx, (VortexThreadFunc) __vortex_listener_new, data);
 		return NULL;
 	}
 

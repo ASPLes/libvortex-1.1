@@ -1258,14 +1258,14 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 	if(d_timeout) {
 		/* create a waiting set using current selected I/O
 		 * waiting engine. */
-		on_writing = vortex_io_waiting_invoke_create_fd_group (WRITE_OPERATIONS);
-		vortex_io_waiting_invoke_clear_fd_group (on_writing);
+		on_writing = vortex_io_waiting_invoke_create_fd_group (ctx, WRITE_OPERATIONS);
+		vortex_io_waiting_invoke_clear_fd_group (ctx, on_writing);
 
 		/* add the socket in connection transit */
-		if (vortex_io_waiting_invoke_add_to_fd_group (connection->session, connection, on_writing)){
+		if (vortex_io_waiting_invoke_add_to_fd_group (ctx, connection->session, connection, on_writing)){
 
 			while (d_start_time + d_timeout> time (NULL)) {
-				err = vortex_io_waiting_invoke_wait (on_writing, connection->session, WRITE_OPERATIONS);
+				err = vortex_io_waiting_invoke_wait (ctx, on_writing, connection->session, WRITE_OPERATIONS);
 				
 				if(err == -1 /*EINTR*/ || err == -2 /*SSL*/)
 					continue;
@@ -1283,12 +1283,12 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 			shutdown (connection->session, SHUT_RDWR);
 			vortex_log (VORTEX_LEVEL_WARNING, "unable to connect to remote host (timeout)");
 			connection->message = axl_strdup ("unable to connect to remote host (timeout)");
-			vortex_io_waiting_invoke_destroy_fd_group(on_writing);
+			vortex_io_waiting_invoke_destroy_fd_group (ctx, on_writing);
 			goto __vortex_connection_new_finalize;
 		}	
 		
 		/* destroy waiting set */
-		vortex_io_waiting_invoke_destroy_fd_group (on_writing);
+		vortex_io_waiting_invoke_destroy_fd_group (ctx, on_writing);
 		
 		/* make the connection to be blocking during the
 		 * greetings process */
@@ -1343,7 +1343,7 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 		if (ctx->connection_auto_tls) {
 			/* seems automatic TLS profile negotiation is
 			 * activated, check for TLS support */
-			if  (! vortex_tls_is_enabled () && !ctx->connection_auto_tls_allow_failures) {
+			if  (! vortex_tls_is_enabled (ctx) && !ctx->connection_auto_tls_allow_failures) {
 				__vortex_connection_set_not_connected (connection, "Unable to create a new connection, auto TLS activated and current Vortex Library doesn't have support for TLS profile");
 				goto __vortex_connection_new_invoke_caller;
 			}
@@ -1561,7 +1561,7 @@ VortexConnection * vortex_connection_new (VortexCtx   * ctx,
 
 	if (data->threaded) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "invoking connection_new threaded mode");
-		vortex_thread_pool_new_task ((VortexThreadFunc) __vortex_connection_new, data);
+		vortex_thread_pool_new_task (ctx, (VortexThreadFunc) __vortex_connection_new, data);
 		return NULL;
 	}
 	vortex_log (VORTEX_LEVEL_DEBUG, "invoking connection_new non-threaded mode");
@@ -1751,7 +1751,7 @@ bool                vortex_connection_reconnect              (VortexConnection *
 	
 	if (data->threaded) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "reconnecting connection in threaded mode");
-		vortex_thread_pool_new_task ((VortexThreadFunc) __vortex_connection_new, data);
+		vortex_thread_pool_new_task (ctx, (VortexThreadFunc) __vortex_connection_new, data);
 		return true;
 	}
 	vortex_log (VORTEX_LEVEL_DEBUG, "reconnecting connection in non-threaded mode");

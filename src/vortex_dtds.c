@@ -51,23 +51,23 @@
  * 
  * @return true if the DTD file was read, parsed and pointer updated. false if not.
  */
-bool     __vortex_dtds_load_dtd (axlDtd ** dtd_pointer, char * file_to_load)
+bool     __vortex_dtds_load_dtd (VortexCtx * ctx, axlDtd ** dtd_pointer, char * file_to_load)
 {
 	char      * dtd_file_name;
 	axlError  * error;
 
 	/* load channel DTD */
-	dtd_file_name = vortex_support_find_data_file (file_to_load);
+	dtd_file_name = vortex_support_find_data_file (ctx, file_to_load);
 	if (dtd_file_name == NULL)
 		return false;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "dtd file definition found at: %s", dtd_file_name);
+	vortex_log (VORTEX_LEVEL_DEBUG, "dtd file definition found at: %s", dtd_file_name);
 	(* dtd_pointer) = axl_dtd_parse_from_file (dtd_file_name, &error);
 	axl_free (dtd_file_name);
 
 	if ((* dtd_pointer) == NULL) {
 		/* drop a log */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to parse dtd, this can be a problem: %s",
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to parse dtd, this can be a problem: %s",
 		       axl_error_get (error));
 		
 		/* release error reported */
@@ -90,19 +90,19 @@ bool     vortex_dtds_init (VortexCtx * ctx)
 	v_return_val_if_fail (ctx, false);
 
 	/* load BEEP channel management DTD definition */
-        if (!__vortex_dtds_load_dtd (&ctx->channel_dtd, "channel.dtd")) {
+        if (!__vortex_dtds_load_dtd (ctx, &ctx->channel_dtd, "channel.dtd")) {
                 fprintf (stderr, "VORTEX_ERROR: unable to load channel.dtd file.\n");
 		return false;
         }
 	
 	/* load SASL DTD definition */
-	if (!__vortex_dtds_load_dtd (&ctx->sasl_dtd, "sasl.dtd")) {
+	if (!__vortex_dtds_load_dtd (ctx, &ctx->sasl_dtd, "sasl.dtd")) {
                 fprintf (stderr, "VORTEX_ERROR: unable to load sasl.dtd file.\n");
 		return false;
         }
 
 	/* load SASL DTD definition */
-	if (!__vortex_dtds_load_dtd (&ctx->xml_rpc_boot_dtd, "xml-rpc-boot.dtd")) {
+	if (!__vortex_dtds_load_dtd (ctx, &ctx->xml_rpc_boot_dtd, "xml-rpc-boot.dtd")) {
                 fprintf (stderr, "VORTEX_ERROR: unable to load xml-rpc-boot.dtd file.\n");
 		return false;
         }
@@ -140,10 +140,10 @@ void vortex_dtds_cleanup (VortexCtx * ctx)
  * NULL, otherwise this Vortex Library instance will not be running
  * (already checked at the Vortex Library startup)
  */
-axlDtd * vortex_dtds_get_channel_dtd ()
+axlDtd * vortex_dtds_get_channel_dtd (VortexCtx * ctx)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	if (ctx == NULL)
+		return NULL;
 
 	return ctx->channel_dtd;
 }
@@ -154,10 +154,10 @@ axlDtd * vortex_dtds_get_channel_dtd ()
  * 
  * @return Current pointer to the DTD definition for SASL profile.
  */
-axlDtd * vortex_dtds_get_sasl_dtd ()
+axlDtd * vortex_dtds_get_sasl_dtd (VortexCtx * ctx)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	if (ctx == NULL)
+		return NULL;
 
 	return ctx->sasl_dtd;
 }
@@ -168,10 +168,10 @@ axlDtd * vortex_dtds_get_sasl_dtd ()
  * 
  * @return Current pointer to the DTD definition for XML-RPC profile.
  */
-axlDtd * vortex_dtds_get_xml_rpc_boot_dtd ()
+axlDtd * vortex_dtds_get_xml_rpc_boot_dtd (VortexCtx * ctx)
 {
-	/* get current context */
-	VortexCtx * ctx = vortex_ctx_get ();
+	if (ctx == NULL)
+		return NULL;
 
 	return ctx->xml_rpc_boot_dtd;
 }

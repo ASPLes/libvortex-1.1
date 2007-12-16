@@ -140,6 +140,7 @@ VortexChannel * __vortex_channel_pool_add_channels (VortexChannelPool * pool, in
 {
 	int              iterator = 0;
 	VortexChannel  * channel  = NULL;;
+	VortexCtx      * ctx      = vortex_connection_get_ctx (pool->connection);
 
 	/* start channels */
 	while (iterator < init_num) {
@@ -176,7 +177,7 @@ VortexChannel * __vortex_channel_pool_add_channels (VortexChannelPool * pool, in
 		/* check if the channel have been created if not
 		 * break-the-loop */ 
 		if (channel == NULL) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+			vortex_log (VORTEX_LEVEL_CRITICAL, 
 			       "unable to create a channel inside the channel pool creation, this pool will have fewer channel than requested");
 			break;
 		}
@@ -193,7 +194,7 @@ VortexChannel * __vortex_channel_pool_add_channels (VortexChannelPool * pool, in
 		iterator++;
 	}
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "channels added %d to the pool id=%d", iterator, pool->id);
+	vortex_log (VORTEX_LEVEL_DEBUG, "channels added %d to the pool id=%d", iterator, pool->id);
 	
 	return channel;
 }
@@ -213,6 +214,7 @@ axlPointer __vortex_channel_pool_new (VortexChannelPoolData * data)
 	/* parameters from main function */
 	bool                          threaded                = data->threaded;
 	VortexConnection            * connection              = data->connection;
+	VortexCtx                   * ctx                     = vortex_connection_get_ctx (connection);
 	const char                  * profile                 = data->profile;
 	int                           init_num                = data->init_num;
 
@@ -264,7 +266,7 @@ axlPointer __vortex_channel_pool_new (VortexChannelPoolData * data)
 	vortex_connection_unlock_channel_pool (connection);
 
 	/* return the data */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "channel pool created id=%d over connection id=%d", channel_pool->id,
+	vortex_log (VORTEX_LEVEL_DEBUG, "channel pool created id=%d over connection id=%d", channel_pool->id,
 	       vortex_connection_get_id (connection));
 	if (threaded) {
 		on_channel_pool_created (channel_pool, user_data);
@@ -510,6 +512,7 @@ VortexChannelPool * vortex_channel_pool_new_full       (VortexConnection        
 							axlPointer user_data)
 {
 	VortexChannelPoolData * data;
+	VortexCtx             * ctx = vortex_connection_get_ctx (connection);
 
 	/* check input data */
 	v_return_val_if_fail (connection,             NULL);
@@ -532,7 +535,7 @@ VortexChannelPool * vortex_channel_pool_new_full       (VortexConnection        
 
 	/* invoke threaded mode if defined on_channel_pool_created */
 	if (data->threaded) {
-		vortex_thread_pool_new_task ((VortexThreadFunc) __vortex_channel_pool_new, data);
+		vortex_thread_pool_new_task (ctx, (VortexThreadFunc) __vortex_channel_pool_new, data);
 		return NULL;
 	}
 
@@ -551,7 +554,8 @@ VortexChannelPool * vortex_channel_pool_new_full       (VortexConnection        
 int                 vortex_channel_pool_get_num        (VortexChannelPool * pool)
 {
 	int  num;
-	v_return_val_if_fail (pool, -1);
+	if (pool == NULL)
+		return -1;
 
 	vortex_connection_lock_channel_pool   (pool->connection);
 
@@ -608,8 +612,8 @@ void                vortex_channel_pool_add_full          (VortexChannelPool * p
 							   int  num,
 							   axlPointer user_data)
 {
-	v_return_if_fail (pool);
-	v_return_if_fail (num > 0);
+	if (pool == NULL || num <= 0)
+		return;
 	
 	/* lock */
 	vortex_connection_lock_channel_pool   (pool->connection);
@@ -640,8 +644,8 @@ void __vortex_channel_pool_remove (VortexChannelPool * pool, int  num)
 	int             iterator;
 	int             init_num;	
 
-	v_return_if_fail (pool);
-	v_return_if_fail (num > 0);
+	if (pool == NULL || num <= 0)
+		return;
 
 	init_num  = axl_list_length (pool->channels);
 	iterator = 0;
@@ -712,8 +716,8 @@ void __vortex_channel_pool_remove (VortexChannelPool * pool, int  num)
 void                vortex_channel_pool_remove         (VortexChannelPool * pool,
 							int  num)
 {
-	v_return_if_fail (pool);
-	v_return_if_fail (num > 0);
+	if (pool == NULL || num <= 0)
+		return;
 
 	vortex_connection_lock_channel_pool   (pool->connection);
 
@@ -737,7 +741,10 @@ void           __vortex_channel_pool_close_common (VortexChannelPool * pool,
 {
 	int                 channels;
 	VortexConnection  * connection;
-	v_return_if_fail (pool);
+	VortexCtx         * ctx = vortex_connection_get_ctx (pool->connection);
+	
+	if (pool == NULL)
+		return;
 
 	/* check if the channel pool is already being called to be
 	 * closed */
@@ -749,16 +756,16 @@ void           __vortex_channel_pool_close_common (VortexChannelPool * pool,
 	pool->connection = NULL;
 
 	vortex_connection_lock_channel_pool   (connection);  
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "closing channel pool id=%d", pool->id);
+	vortex_log (VORTEX_LEVEL_DEBUG, "closing channel pool id=%d", pool->id);
 	
 	/* first close all channels from this pool */
 	channels = axl_list_length (pool->channels);
 	if (channels > 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "channel pool id=%d has %d channels, closing them..", 
+		vortex_log (VORTEX_LEVEL_DEBUG, "channel pool id=%d has %d channels, closing them..", 
 		       pool->id, channels);
 		__vortex_channel_pool_remove (pool, channels);
 	}else 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "channel pool id=%d is empty..",  pool->id);
+		vortex_log (VORTEX_LEVEL_DEBUG, "channel pool id=%d is empty..",  pool->id);
 
 	vortex_connection_unlock_channel_pool (connection);  
 
@@ -836,16 +843,18 @@ bool     __vortex_channel_check_same_connections (VortexChannelPool * pool,
 {
 	VortexConnection * connection;
 	VortexConnection * connection2;
+	VortexCtx        * ctx;
 
-	v_return_val_if_fail (pool,    false);
-	v_return_val_if_fail (channel, false);
+	if (pool == NULL || channel == NULL)
+		return false;
 	
 	connection  = vortex_channel_pool_get_connection (pool);
 	connection2 = vortex_channel_get_connection (channel);
+	ctx         = vortex_connection_get_ctx (connection);
 	
 	if (vortex_connection_get_id (connection) !=
 	    vortex_connection_get_id (connection2)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
 		       "trying to add a channel from a different session. Channels from different connections can't be mixed");
 		return false;
 	}
@@ -894,9 +903,13 @@ bool     __vortex_channel_pool_channel_exists (VortexChannelPool * pool,
 void                vortex_channel_pool_attach         (VortexChannelPool * pool,
 							VortexChannel     * channel)
 {
+	VortexCtx * ctx;
 
-	v_return_if_fail (pool);
-	v_return_if_fail (channel);
+	if (pool == NULL || channel == NULL)
+		return;
+
+	/* get the context */
+	ctx = vortex_connection_get_ctx (pool->connection);
 
 	/* check new channel belongs to the same connection */
 	if (!__vortex_channel_check_same_connections (pool, channel))
@@ -907,7 +920,7 @@ void                vortex_channel_pool_attach         (VortexChannelPool * pool
 
 	/* check if the channel to add doesn't exist on the pool */
 	if (__vortex_channel_pool_channel_exists (pool, channel)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "trying to add a channel which already exists on the channel pool");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "trying to add a channel which already exists on the channel pool");
 		vortex_connection_unlock_channel_pool (pool->connection);
 		return;
 	}
@@ -939,9 +952,13 @@ void                vortex_channel_pool_deattach       (VortexChannelPool * pool
 {
 	axlListCursor    * cursor;
 	VortexChannel    * channel_aux;
+	VortexCtx        * ctx;
 
-	v_return_if_fail (pool);
-	v_return_if_fail (channel);
+	if (pool == NULL || channel == NULL)
+		return;
+
+	/* get the context */
+	ctx = vortex_connection_get_ctx (pool->connection);
 
 	/* check new channel belongs to the same connection */
 	if (!__vortex_channel_check_same_connections (pool, channel))
@@ -952,12 +969,12 @@ void                vortex_channel_pool_deattach       (VortexChannelPool * pool
 
 	/* check if the channel to add doesn't exist on the pool */
 	if (!__vortex_channel_pool_channel_exists (pool, channel)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "trying to remove a channel which doesn't exists on the channel pool");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "trying to remove a channel which doesn't exists on the channel pool");
 		vortex_connection_unlock_channel_pool (pool->connection);
 		return;
 	}
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "channel id=%d deattaching from the pool id=%d (channels=%d)",
+	vortex_log (VORTEX_LEVEL_DEBUG, "channel id=%d deattaching from the pool id=%d (channels=%d)",
 		    vortex_channel_get_number (channel), pool->id, axl_list_length (pool->channels));
 
 	/* it seems the channel wasn't found on the channel pool. Add
@@ -981,13 +998,13 @@ void                vortex_channel_pool_deattach       (VortexChannelPool * pool
 	/* free the cursor */
 	axl_list_cursor_free (cursor);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, 
+	vortex_log (VORTEX_LEVEL_DEBUG, 
 		    "channel id=%d deattached from the pool id=%d (channels=%d)",
 		    vortex_channel_get_number (channel), pool->id, axl_list_length (pool->channels));
 
 	vortex_connection_unlock_channel_pool (pool->connection);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "channel id=%d detached from pool id=%d",
+	vortex_log (VORTEX_LEVEL_DEBUG, "channel id=%d detached from pool id=%d",
 	       vortex_channel_get_number (channel), vortex_channel_pool_get_id (pool));
 
 	return;
@@ -1006,8 +1023,9 @@ void __vortex_channel_pool_print_status (VortexChannelPool * pool, char  * actio
 {
 	VortexChannel * channel;
 	int             iterator;
+	VortexCtx     * ctx = vortex_connection_get_ctx (pool->connection);
 
-	if (vortex_log_is_enabled ()) {
+	if (vortex_log_is_enabled (ctx)) {
 
 		printf ("[%s] (connection=%d actual pool=%d size: %d channels [", 
 			action, vortex_connection_get_id (pool->connection), pool->id,
@@ -1093,14 +1111,15 @@ VortexChannel     * vortex_channel_pool_get_next_ready (VortexChannelPool * pool
 
 bool __find_ready (axlPointer channel, axlPointer data)
 {
+	VortexCtx * ctx = vortex_channel_get_ctx (channel);
 	if (__vortex_channel_pool_is_ready (channel)) {
 		/* ok!, we have found a channel that is ready
 		 * to be use. */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "channel id=%d is ready to be used, flagged as busy",
+		vortex_log (VORTEX_LEVEL_DEBUG, "channel id=%d is ready to be used, flagged as busy",
 			    vortex_channel_get_number (channel));
 		return true;
 	}
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "channel id=%d is not ready",
+	vortex_log (VORTEX_LEVEL_DEBUG, "channel id=%d is not ready",
 		    vortex_channel_get_number (channel));
 	return false;
 	
@@ -1140,27 +1159,32 @@ VortexChannel     * vortex_channel_pool_get_next_ready_full (VortexChannelPool *
 							     axlPointer          user_data)
 {
 	VortexChannel * channel   = NULL;
+	VortexCtx     * ctx;
 
-	v_return_val_if_fail (pool, NULL);
+	if (pool == NULL)
+		return NULL;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "getting new channel before locking..");
+	/* get the context */
+	ctx = vortex_connection_get_ctx (pool->connection);
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "getting new channel before locking..");
 
 	vortex_connection_lock_channel_pool   (pool->connection);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "getting next channel to use");
+	vortex_log (VORTEX_LEVEL_DEBUG, "getting next channel to use");
 	
 	/* for each channel inside the pool check is some one is
 	 * ready */
 	channel  = axl_list_lookup (pool->channels, __find_ready, NULL);
 
 	if (channel == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "it seems there is no channel ready to use, check auto_inc flag");
+		vortex_log (VORTEX_LEVEL_DEBUG, "it seems there is no channel ready to use, check auto_inc flag");
 
 
 		/* it seems there is no channel available so check auto_inc
 		 * var to create a new channel or simply return */
 		if (auto_inc) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "we have auto_inc flag to true, creating a new channel");
+			vortex_log (VORTEX_LEVEL_DEBUG, "we have auto_inc flag to true, creating a new channel");
 			channel = __vortex_channel_pool_add_channels (pool, 1, user_data);
 		} /* end if */
 	} /* end if */
@@ -1169,13 +1193,13 @@ VortexChannel     * vortex_channel_pool_get_next_ready_full (VortexChannelPool *
 		/* flag this channel to be busy */
 		vortex_channel_set_data (channel, "status_busy", INT_TO_PTR (true));
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "returning channel id=%d for pool id=%d connection id=%d",
+		vortex_log (VORTEX_LEVEL_DEBUG, "returning channel id=%d for pool id=%d connection id=%d",
 		       vortex_channel_get_number (channel), pool->id, 
 		       vortex_connection_get_id (pool->connection));
 		
 		__vortex_channel_pool_print_status (pool, "get_next_ready");
 	} else {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "unable to return a channel, pool is empty");
+		vortex_log (VORTEX_LEVEL_DEBUG, "unable to return a channel, pool is empty");
 	} /* end if */
 	
 	/* unlock operations */
@@ -1199,14 +1223,19 @@ VortexChannel     * vortex_channel_pool_get_next_ready_full (VortexChannelPool *
 void                vortex_channel_pool_release_channel   (VortexChannelPool * pool,
 							   VortexChannel     * channel)
 {
-	v_return_if_fail (pool);
-	v_return_if_fail (channel);
+	VortexCtx * ctx;
 
+	if (pool == NULL || channel == NULL)
+		return;
+
+	/* get the context */
+	ctx = vortex_connection_get_ctx (pool->connection);
+	
 	/* check new channel belongs to the same connection */
 	if (!__vortex_channel_check_same_connections (pool, channel))
 		return;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "attempting to release the channel id=%d for pool id=%d connection id=%d", 
+	vortex_log (VORTEX_LEVEL_DEBUG, "attempting to release the channel id=%d for pool id=%d connection id=%d", 
 	       vortex_channel_get_number (channel), pool->id, vortex_connection_get_id (pool->connection));
 	
 	/* unlock operations */
@@ -1214,7 +1243,7 @@ void                vortex_channel_pool_release_channel   (VortexChannelPool * p
 
 	/* check if the channel to add doesn't exist on the pool */
 	if (!__vortex_channel_pool_channel_exists (pool, channel)) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "trying to release a channel which doesn't exists on the channel pool");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "trying to release a channel which doesn't exists on the channel pool");
 		vortex_connection_unlock_channel_pool (pool->connection);
 		return;
 	}
@@ -1223,7 +1252,7 @@ void                vortex_channel_pool_release_channel   (VortexChannelPool * p
 	vortex_channel_set_data (channel, "status_busy", NULL);
 
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "channel id=%d for pool id=%d connection id=%d was released", 
+	vortex_log (VORTEX_LEVEL_DEBUG, "channel id=%d for pool id=%d connection id=%d was released", 
 	       vortex_channel_get_number (channel), pool->id, vortex_connection_get_id (pool->connection));
 
 	__vortex_channel_pool_print_status (pool, "releasing");
@@ -1259,7 +1288,8 @@ void                vortex_channel_pool_release_channel   (VortexChannelPool * p
  **/
 int                 vortex_channel_pool_get_id         (VortexChannelPool * pool)
 {
-	v_return_val_if_fail (pool, -1);
+	if (pool == NULL)
+		return -1;
 
 	return pool->id;
 }
@@ -1277,7 +1307,8 @@ int                 vortex_channel_pool_get_id         (VortexChannelPool * pool
  **/
 VortexConnection  * vortex_channel_pool_get_connection (VortexChannelPool * pool)
 {
-	v_return_val_if_fail (pool, NULL);
+	if (pool == NULL)
+		return NULL;
 
 	return pool->connection;
 }

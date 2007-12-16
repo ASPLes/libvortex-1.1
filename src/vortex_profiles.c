@@ -801,7 +801,7 @@ bool     vortex_profiles_invoke_frame_received (char             * uri,
 	vortex_channel_ref (vortex_connection_get_channel (connection, channel_num));
 
 	/* call to deliver the frame */
-	vortex_thread_pool_new_task (__vortex_profiles_invoke_frame_received, data);
+	vortex_thread_pool_new_task (ctx, __vortex_profiles_invoke_frame_received, data);
 	
 	return true;
 }

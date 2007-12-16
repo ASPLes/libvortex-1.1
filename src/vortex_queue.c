@@ -93,7 +93,9 @@ bool          vortex_queue_is_empty      (VortexQueue * queue)
 {
 	bool     result;
 
-	v_return_val_if_fail (queue, false);
+	/* check parameter */
+	if (queue == NULL)
+		return false;
 
 	vortex_mutex_lock (&queue->mutex);
 
@@ -116,7 +118,9 @@ unsigned int   vortex_queue_get_length    (VortexQueue * queue)
 {
 	unsigned int result;
 
-	v_return_val_if_fail (queue, -1);
+	/* check parameter */
+	if (queue == NULL)
+		return -1;
 
 	vortex_mutex_lock (&queue->mutex);
 
@@ -139,8 +143,10 @@ unsigned int   vortex_queue_get_length    (VortexQueue * queue)
  **/
 bool          vortex_queue_push          (VortexQueue * queue, axlPointer data)
 {
-	v_return_val_if_fail (queue, false);
-	v_return_val_if_fail (data,  false);
+
+	/* check parameter */
+	if (queue == NULL || data == NULL)
+		return false;
 
 	vortex_mutex_lock   (&queue->mutex);
 
@@ -167,8 +173,9 @@ bool          vortex_queue_push          (VortexQueue * queue, axlPointer data)
  **/
 bool          vortex_queue_head_push    (VortexQueue * queue, axlPointer data)
 {
-	v_return_val_if_fail (queue, false);
-	v_return_val_if_fail (data,  false);
+	/* check parameter */
+	if (queue == NULL || data == NULL)
+		return false;
 
 	vortex_mutex_lock   (&queue->mutex);
 	
@@ -194,7 +201,9 @@ axlPointer      vortex_queue_pop           (VortexQueue * queue)
 {
 	axlPointer result;
 
-	v_return_val_if_fail (queue, NULL);
+	/* check parameter */
+	if (queue == NULL)
+		return NULL;
 
 	vortex_mutex_lock   (&queue->mutex);
 	
@@ -220,7 +229,9 @@ axlPointer      vortex_queue_peek          (VortexQueue * queue)
 {
 	axlPointer result;
 
-	v_return_val_if_fail (queue, NULL);
+	/* check parameter */
+	if (queue == NULL)
+		return NULL;
 
 	vortex_mutex_lock   (&queue->mutex);
 	
@@ -240,11 +251,11 @@ axlPointer      vortex_queue_peek          (VortexQueue * queue)
  **/
 void          vortex_queue_free          (VortexQueue * queue)
 {
-	v_return_if_fail (queue);
+	/* check parameter */
+	if (queue == NULL)
+		return;
 
 	if (vortex_queue_get_length (queue) != 0) {
-		vortex_log (LOG_DOMAIN, AXL_LEVEL_WARNING, "freeing a vortex queue which already have content: elements %d",
-			    vortex_queue_get_length (queue));
 		return;
 	} /* end if */
 

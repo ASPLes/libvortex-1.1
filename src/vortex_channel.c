@@ -1154,7 +1154,7 @@ VortexChannel * vortex_channel_new_full (VortexConnection      * connection,
 
 	/* launch threaded version if on_channel_created is defined */
 	if (data->threaded) {
-		vortex_thread_pool_new_task ((VortexThreadFunc) __vortex_channel_new, data);
+		vortex_thread_pool_new_task (ctx, (VortexThreadFunc) __vortex_channel_new, data);
 		return NULL;
 	}
 
@@ -2014,7 +2014,7 @@ bool        __vortex_channel_send_msg_common (VortexChannel   * channel,
 	/* update channel status */
 	vortex_channel_update_status (channel, data->message_size, 0, UPDATE_SEQ_NO | UPDATE_MSG_NO);
 
-	vortex_sequencer_queue_data (data);
+	vortex_sequencer_queue_data (ctx, data);
 
 	/* unlock send mutex */
 	vortex_mutex_unlock (&channel->send_mutex);
@@ -2366,7 +2366,7 @@ bool      __vortex_channel_common_rpy (VortexChannel    * channel,
 	}
 
 	/* send data to sequencer */
-	vortex_sequencer_queue_data (data);
+	vortex_sequencer_queue_data (ctx, data);
 
 	/* remove from the pending stored hash */
 	axl_hash_delete (channel->stored_replies, INT_TO_PTR (msg_no_rpy));
@@ -4145,7 +4145,7 @@ bool     __vortex_channel_close_full (VortexChannel * channel,
 
 	/* launch threaded mode */
 	if (data->threaded) {
-		vortex_thread_pool_new_task ((VortexThreadFunc) __vortex_channel_close, data);
+		vortex_thread_pool_new_task (ctx, (VortexThreadFunc) __vortex_channel_close, data);
 		return true;
 	}
 
@@ -4721,7 +4721,7 @@ bool          vortex_channel_invoke_received_handler (VortexConnection * connect
 
 	/* create the thread to invoke frame received handler */
 	vortex_log (VORTEX_LEVEL_DEBUG, "about to invoke the frame received under a newly created handler");
-	vortex_thread_pool_new_task ((VortexThreadFunc)__vortex_channel_invoke_received_handler, data);
+	vortex_thread_pool_new_task (ctx, (VortexThreadFunc)__vortex_channel_invoke_received_handler, data);
 	return true;
 
 }
