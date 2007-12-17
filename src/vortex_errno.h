@@ -38,9 +38,10 @@
 #ifndef __VORTEX_ERRNO_H__
 #define __VORTEX_ERRNO_H__
 
-void    vortex_errno_show_error        (int  __errno);
+void    vortex_errno_show_error        (VortexCtx * ctx,
+					int         __errno);
 
-void    vortex_errno_show_last_error   ();
+void    vortex_errno_show_last_error   (VortexCtx * ctx);
 
 char  * vortex_errno_get_error         (int  __errno);
 

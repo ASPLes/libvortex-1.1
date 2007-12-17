@@ -145,12 +145,12 @@ VortexChannel     * vortex_xml_rpc_channel_pool_get_next   (VortexConnection * c
 							    int                pool_id);
 
 
-void                   vortex_xml_rpc_invoke               (VortexChannel           * channel,
-							    XmlRpcMethodCall        * method_call,
-							    XmlRpcInvokeNotify        reply_notify,
-							    axlPointer                user_data);
+bool                 vortex_xml_rpc_invoke               (VortexChannel           * channel,
+							  XmlRpcMethodCall        * method_call,
+							  XmlRpcInvokeNotify        reply_notify,
+							  axlPointer                user_data);
 
-void                   vortex_xml_rpc_notify_reply         (XmlRpcMethodCall        * method_call, 
+bool                   vortex_xml_rpc_notify_reply         (XmlRpcMethodCall        * method_call, 
 							    XmlRpcMethodResponse    * method_response);
 
 XmlRpcMethodResponse * vortex_xml_rpc_invoke_sync          (VortexChannel           * channel,
@@ -161,12 +161,13 @@ VortexXmlRpcState   vortex_xml_rpc_channel_status          (VortexChannel * chan
 
 const char        * vortex_xml_rpc_channel_get_resource    (VortexChannel * channel);
 
-void                vortex_xml_rpc_accept_negociation      (VortexXmlRpcValidateResource validate_resource,
-							    axlPointer                   validate_user_data,
-							    VortexXmlRpcServiceDispatch  service_dispatch,
-							    axlPointer                   dispatch_user_data);
+bool                vortex_xml_rpc_accept_negociation      (VortexCtx                    * ctx,
+							    VortexXmlRpcValidateResource   validate_resource,
+							    axlPointer                     validate_user_data,
+							    VortexXmlRpcServiceDispatch    service_dispatch,
+							    axlPointer                     dispatch_user_data);
 
-bool                vortex_xml_rpc_listener_parse_conf_and_start_listeners ();
+bool                vortex_xml_rpc_listener_parse_conf_and_start_listeners (VortexCtx * ctx);
 
 /** 
  * @internal

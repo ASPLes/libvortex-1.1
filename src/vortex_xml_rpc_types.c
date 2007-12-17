@@ -807,14 +807,16 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string2 (char  * type,
  * @param method_call The \ref XmlRpcMethodCall object where the value will be added.
  * @param value       The \ref XmlRpcMethodValue to be added.
  * 
+ * @return true if the operation was completed, otherwise false is
+ * returned. 
  */
-void                vortex_xml_rpc_method_call_add_value    (XmlRpcMethodCall  * method_call,
+bool                vortex_xml_rpc_method_call_add_value    (XmlRpcMethodCall  * method_call,
 							     XmlRpcMethodValue * value)
 {
 	/* perform a sanity check */
-	v_return_if_fail (method_call);
-	v_return_if_fail (value);
-	v_return_if_fail (method_call->count != method_call->added_count);
+	v_return_val_if_fail (method_call, false);
+	v_return_val_if_fail (value, false);
+	v_return_val_if_fail (method_call->count != method_call->added_count, false);
 	
 	/* add the object */
 	method_call->params[method_call->added_count] = value;
@@ -822,7 +824,7 @@ void                vortex_xml_rpc_method_call_add_value    (XmlRpcMethodCall  *
 	/* increase added count */
 	method_call->added_count++;
 	
-	return;
+	return true;
 }
 
 /** 
@@ -853,17 +855,22 @@ void                vortex_xml_rpc_method_call_add_value    (XmlRpcMethodCall  *
  * @param method_call The method call where the index-based adding operation will be performed.
  * @param position    The position where operate
  * @param value       The value to be set.
+ *
+ * @return true if the operation was completed, otherwise false is
+ * returned. The function can return false if the some parameter
+ * received is NULL or the position configured is not compatible with
+ * the method call configuration.
  */
-void                vortex_xml_rpc_method_call_set_value    (XmlRpcMethodCall  * method_call,
+bool                vortex_xml_rpc_method_call_set_value    (XmlRpcMethodCall  * method_call,
 							     int                 position,
 							     XmlRpcMethodValue * value)
 {
 	XmlRpcMethodValue * __previous;
 
 	/* perform some environment condition checks */
-	v_return_if_fail (method_call);
-	v_return_if_fail (value);
-	v_return_if_fail (0 <= position && position < method_call->count);
+	v_return_val_if_fail (method_call, false);
+	v_return_val_if_fail (value, false);
+	v_return_val_if_fail (0 <= position && position < method_call->count, false);
 	
 	/* get previous value to perform a deallocation operation */
 	__previous = method_call->params[position];
@@ -878,7 +885,7 @@ void                vortex_xml_rpc_method_call_set_value    (XmlRpcMethodCall  *
 	/* peter: hey jack, this function you have writtn' looks
 	 *        pretty simple, you are a great programmer! */
 	/* jack: i won't let you play with my PSP! */
-	return;
+	return true;
 }
 
 /** 
@@ -894,24 +901,25 @@ void                vortex_xml_rpc_method_call_set_value    (XmlRpcMethodCall  *
  * @param method_call The method call object where the operation will be performed.
  * @param type        The type value for the method value object to be created.
  * @param value       The value associated to the method value object to be created.
+ *
+ * @return true if the operation was completed, otherwise false is
+ * returned.
  */
-void                vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  * method_call,
+bool                vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  * method_call,
 							     XmlRpcParamType     type,
 							     axlPointer            value)
 {
 	XmlRpcMethodValue * _value;
 
-	v_return_if_fail (method_call);
+	v_return_val_if_fail (method_call, false);
 	
 	/* create the value to be added and check if it was succesful */
 	_value = vortex_xml_rpc_method_value_new (type, value);
 	if (_value == NULL)
-		return;
+		return false;
 
 	/* add the value created into the method call object */
-	vortex_xml_rpc_method_call_add_value (method_call, _value);
-	
-	return;
+	return vortex_xml_rpc_method_call_add_value (method_call, _value);
 }
 
 /** 
@@ -926,25 +934,26 @@ void                vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  *
  * @param method_call The method call object where the operation will be performed.
  * @param type        The type value for the method value object to be created.
  * @param string_value  The value associated to the method value object to be created, in a string form.
+ *
+ * @return true if the operation was completed, otherwise false is
+ * returned.
  */
-void                vortex_xml_rpc_method_call_create_value_from_string (XmlRpcMethodCall * method_call,
+bool                vortex_xml_rpc_method_call_create_value_from_string (XmlRpcMethodCall * method_call,
 									 XmlRpcParamType    type,
 									 char             * string_value)
 {
 	XmlRpcMethodValue * _value;
 
-	v_return_if_fail (method_call);
-	v_return_if_fail (string_value);
+	v_return_val_if_fail (method_call, false);
+	v_return_val_if_fail (string_value, false);
 	
 	/* create the value to be added and check if it was succesful */
 	_value = vortex_xml_rpc_method_value_new_from_string (type, string_value);
 	if (_value == NULL)
-		return;
+		return false;
 
 	/* add the value created into the method call object */
-	vortex_xml_rpc_method_call_add_value (method_call, _value);
-
-	return;
+	return vortex_xml_rpc_method_call_add_value (method_call, _value);
 }
 
 
@@ -1093,8 +1102,6 @@ int                 vortex_xml_rpc_method_call_get_param_value_as_int    (XmlRpc
 	/* check environment conditions */
 	v_return_val_if_fail (value, -1);
 	if (value->type != XML_RPC_INT_VALUE && value->type == XML_RPC_DOUBLE_VALUE) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "try to get boolean/int value but found type %d, returning -1",
-			    value->type);
 		return -1;
 	}
 
@@ -2056,8 +2063,6 @@ char                 * vortex_xml_rpc_method_response_marshall         (XmlRpcMe
 
 	switch (response->status) {
 	case XML_RPC_OK:
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "ok reply to be marshalled, type=%d", response->value->type);
-
 		/* check that the XmlRpcMethodValue is defined */
 		v_return_val_if_fail (response->value, NULL);
 		switch (response->value->type) {
@@ -2115,7 +2120,6 @@ char                 * vortex_xml_rpc_method_response_marshall         (XmlRpcMe
 		/* reply generated */
 		break;
 	default:
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "negative reply to be marshalled");
 		/* generate a error reply */
 		result = axl_strdup_printf ("<?xml version=\"1.0\"?><methodResponse><fault><value><struct><member><name>faultCode</name><value><int>%d</int></value></member><member><name>faultString</name><value><string><![CDATA[%s]]></string></value></member></struct></value></fault></methodResponse>",
 					    response->fault_code, response->fault_string);
@@ -2369,17 +2373,12 @@ bool                   vortex_xml_rpc_struct_check_member_types        (XmlRpcSt
 		/* get the member name */
 		member_type = va_arg (args, char  *);
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "checking member type for=%s (iterator=%d)",
-		       member_type, iterator);
-
 		/* check the member type */
 		if (axl_cmp (member_type, "int") && _struct->members[iterator]->value->type != XML_RPC_INT_VALUE)
 			error = true;
 
 		if (axl_cmp (member_type, "boolean") && _struct->members[iterator]->value->type != XML_RPC_BOOLEAN_VALUE) {
 			error = true;
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "type found: %d != %d", 
-			       _struct->members[iterator]->value->type, XML_RPC_BOOLEAN_VALUE);
 		}
 
 		if (axl_cmp (member_type, "string") && _struct->members[iterator]->value->type != XML_RPC_STRING_VALUE)
@@ -2406,9 +2405,6 @@ bool                   vortex_xml_rpc_struct_check_member_types        (XmlRpcSt
 
 		/* check for error found and return */
 		if (error) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "member type checking for=%s failed (iterator=%d)",
-			       member_type, iterator);
-
 			/* close the standard arg */
 			va_end (args);
 

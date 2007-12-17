@@ -142,7 +142,6 @@ bool vortex_thread_create (VortexThread      * thread_def,
 			joinable = va_arg (args, bool);
 			break;
 		default:
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "received configuration value not supported");
 			return false;
 		} /* end if */
 		
@@ -178,7 +177,7 @@ bool vortex_thread_create (VortexThread      * thread_def,
 		axl_free (data);
 		
 		/* report */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "failed to create new thread (CreateThread system call failed)");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to create new thread (CreateThread system call failed)");
 		return false;
 	} /* end if */
 
@@ -186,13 +185,12 @@ bool vortex_thread_create (VortexThread      * thread_def,
 	/* unix implementation */
 	/* init pthread attributes variable */
 	if (pthread_attr_init (&attr) != 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "failed to create thread attribute (pthread_attr_init system call failed)");
 		return false;
 	} /* end if */
 	
 	/* configure joinable state */
 	if (pthread_attr_setdetachstate (&attr, joinable ? PTHREAD_CREATE_JOINABLE : PTHREAD_CREATE_DETACHED) != 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "failed to configure detached state for the thread (pthread_attr_setdetachstate system call failed)");
+		/* vortex_log (VORTEX_LEVEL_CRITICAL, "failed to configure detached state for the thread (pthread_attr_setdetachstate system call failed)"); */
 		pthread_attr_destroy(&attr);
 		return false;
 	} /* end if */
@@ -202,7 +200,7 @@ bool vortex_thread_create (VortexThread      * thread_def,
 			    &attr, 
 			    /* function and user data */
 			    func, user_data) != 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to create the new thread (pthread_create system call failed)");
+		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to create the new thread (pthread_create system call failed)");*/
 		pthread_attr_destroy(&attr);
 		return false;
 	} /* end if */
@@ -233,14 +231,14 @@ bool vortex_thread_destroy (VortexThread * thread_def, bool free_data)
 	switch (err) {
 	default:
 	case WAIT_OBJECT_0:
-		vortex_log(LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "thread %p stopped", thread_def->handle);
+		/* vortex_log (VORTEX_LEVEL_DEBUG, "thread %p stopped", thread_def->handle); */
 		break;
 	case WAIT_ABANDONED:
-		vortex_log(LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "unable to stop thread %p, wait_abandoned", thread_def->handle);
+		/* vortex_log (VORTEX_LEVEL_DEBUG, "unable to stop thread %p, wait_abandoned", thread_def->handle); */
 		break;
 
 	case WAIT_TIMEOUT:
-		vortex_log(LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "unable to stop thread %p, wait_timeout", thread_def);
+		/* vortex_log (VORTEX_LEVEL_DEBUG, "unable to stop thread %p, wait_timeout", thread_def); */
 		break;
 	}
 	
@@ -258,19 +256,19 @@ bool vortex_thread_destroy (VortexThread * thread_def, bool free_data)
 	switch (err) {
 	default:
 	case 0:
-		vortex_log(LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "thread %p stopped with status %p", thread_def, status);
+		/* vortex_log (VORTEX_LEVEL_DEBUG, "thread %p stopped with status %p", thread_def, status); */
 		break;
 
 	case EINVAL:
-		vortex_log(LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to stop non-joinable thread %p", thread_def);
+		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to stop non-joinable thread %p", thread_def); */
 		break;
 		
 	case ESRCH:
-		vortex_log(LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to stop invalid thread %p", thread_def);
+		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to stop invalid thread %p", thread_def); */
 		break;
 
 	case EDEADLK:
-		vortex_log(LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to stop thread %p, deadlock detected", thread_def);
+		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to stop thread %p, deadlock detected", thread_def); */
 		break;
 	}
 	
@@ -312,7 +310,7 @@ bool vortex_mutex_create  (VortexMutex       * mutex_def)
 #elif defined(AXL_OS_UNIX)
 	/* init the mutex using default values */
 	if (pthread_mutex_init (mutex_def, NULL) != 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to create mutex (system call pthread_mutex_init have failed)");
+		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to create mutex (system call pthread_mutex_init have failed)"); */
 		return false;
 	} /* end if */
 #endif
@@ -340,7 +338,7 @@ bool vortex_mutex_destroy (VortexMutex       * mutex_def)
 #elif defined(AXL_OS_UNIX)
 	/* close the mutex */
 	if (pthread_mutex_destroy (mutex_def) != 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to destroy the mutex (system call pthread_mutex_destroy have failed)");
+		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to destroy the mutex (system call pthread_mutex_destroy have failed)"); */
 		return false;
 	} /* end if */
 #endif
@@ -370,7 +368,7 @@ void vortex_mutex_lock    (VortexMutex       * mutex_def)
 #elif defined(AXL_OS_UNIX)
 	/* lock the mutex */
 	if (pthread_mutex_lock (mutex_def) != 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to lock the mutex (system call pthread_mutex_lock have failed)");
+		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to lock the mutex (system call pthread_mutex_lock have failed)"); */
 		return;
 	} /* end if */
 #endif
@@ -397,7 +395,7 @@ void vortex_mutex_unlock  (VortexMutex       * mutex_def)
 #elif defined(AXL_OS_UNIX)
 	/* unlock mutex */
 	if (pthread_mutex_unlock (mutex_def) != 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to unlock the mutex (system call pthread_mutex_unlock have failed)");
+		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to unlock the mutex (system call pthread_mutex_unlock have failed)"); */
 		return;
 	} /* end if */
 #endif
@@ -448,7 +446,7 @@ bool vortex_cond_create    (VortexCond        * cond)
 #elif defined(AXL_OS_UNIX)
 	/* init the conditional variable */
 	if (pthread_cond_init (cond, NULL) != 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to init conditional variable (system call pthread_cond_init have failed)");
+		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to init conditional variable (system call pthread_cond_init have failed)"); */
 		return false;
 	} /* end if */
 #endif
@@ -488,7 +486,7 @@ void vortex_cond_signal    (VortexCond        * cond)
 #elif defined(AXL_OS_UNIX)
 	/* signal condition */
 	if (pthread_cond_signal (cond) != 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to signal conditional variable (system call pthread_cond_signal have failed)");
+		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to signal conditional variable (system call pthread_cond_signal have failed)"); */
 		return;
 	} /* end if */
 #endif
@@ -546,7 +544,7 @@ void vortex_cond_broadcast (VortexCond        * cond)
 #elif defined(AXL_OS_UNIX)
 	/* broadcast condition */
 	if (pthread_cond_broadcast (cond) != 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to signal conditional variable (system call pthread_cond_broadcast have failed)");
+		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to signal conditional variable (system call pthread_cond_broadcast have failed)"); */
 		return;
 	} /* end if */
 #endif
@@ -578,11 +576,11 @@ bool __vortex_cond_common_wait_win32 (VortexCond * cond, VortexMutex * mutex,
 	else
 		result = SignalObjectAndWait (*mutex, cond->sema_, milliseconds, FALSE);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "SignalObjectAndWait finished, because: %s%s%s%s",
+	/* vortex_log (VORTEX_LEVEL_DEBUG, "SignalObjectAndWait finished, because: %s%s%s%s",
 		    (result == WAIT_ABANDONED) ? "WAIT_ABANDONED" : "",
 		    (result == WAIT_IO_COMPLETION) ? "WAIT_IO_COMPLETION" : "",
 		    (result == WAIT_OBJECT_0) ? "WAIT_OBJECT_0" : "",
-		    (result == WAIT_TIMEOUT) ? "WAIT_TIMEOUT" : "");
+		    (result == WAIT_TIMEOUT) ? "WAIT_TIMEOUT" : ""); */
 
 
 	/* Reacquire lock to avoid race conditions. */
@@ -645,7 +643,7 @@ bool vortex_cond_wait      (VortexCond        * cond,
 #elif defined(AXL_OS_UNIX)
 	/* wait for the condition */
 	if (pthread_cond_wait (cond, mutex) != 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to wait on conditional variable (system call pthread_cond_wait have failed)");
+		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to wait on conditional variable (system call pthread_cond_wait have failed)"); */
 		return false;
 	} /* end if */
 #endif
@@ -689,7 +687,7 @@ bool vortex_cond_timedwait (VortexCond        * cond,
 	timeout.tv_sec  = now.tv_sec;
 	timeout.tv_nsec = now.tv_usec * 1000;
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "waiting from: %d.%d", timeout.tv_sec, timeout.tv_nsec);
+	/* vortex_log (VORTEX_LEVEL_DEBUG, "waiting from: %d.%d", timeout.tv_sec, timeout.tv_nsec);*/
 
 	/* Convert from timeval to timespec */
 	if ((microseconds + now.tv_usec) > 1000000) {
@@ -699,26 +697,26 @@ bool vortex_cond_timedwait (VortexCond        * cond,
 
 
 	timeout.tv_nsec = ((microseconds + now.tv_usec) % 1000000) * 1000;
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "to (microseconds=%ld): %d.%d", 
-		    microseconds, timeout.tv_sec, timeout.tv_nsec);
+	/* vortex_log (VORTEX_LEVEL_DEBUG, "to (microseconds=%ld): %d.%d", 
+	   microseconds, timeout.tv_sec, timeout.tv_nsec); */
 
 	/* check result returned */
 	rc = pthread_cond_timedwait (cond, mutex, (axlPointer) &timeout);
 	if (rc != 0) {
 		/* check timeout */
 		if (rc == ETIMEDOUT) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, 
-				    "timeout reached for conditional variable (system call pthread_cond_wait finished)");
+			/* vortex_log (VORTEX_LEVEL_WARNING, 
+			   "timeout reached for conditional variable (system call pthread_cond_wait finished)"); */
 			return true;
 		} /* end if */
 		if (rc == VORTEX_EINTR) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, 
-				    "timeout reached due to a signal received, restarting");
+			/* vortex_log (VORTEX_LEVEL_WARNING, 
+			   "timeout reached due to a signal received, restarting"); */
 			return false;
 		}
 
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, 
-			    "unable to wait timed on conditional variable (system call pthread_cond_wait have failed): code=%d", rc);
+		/* vortex_log (VORTEX_LEVEL_CRITICAL, 
+		   "unable to wait timed on conditional variable (system call pthread_cond_wait have failed): code=%d", rc); */
 		return false;
 	} /* end if */
 #endif
@@ -750,7 +748,7 @@ void vortex_cond_destroy   (VortexCond        * cond)
 #elif defined(AXL_OS_UNIX)
 	/* destroy condition */
 	if (pthread_cond_destroy (cond) != 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "unable to destroy conditional variable (system call pthread_cond_destroy have failed)");
+		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to destroy conditional variable (system call pthread_cond_destroy have failed)");*/
 		return;
 	} /* end if */
 #endif

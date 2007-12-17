@@ -52,10 +52,11 @@
 
 bool                   vortex_tunnel_is_enabled         ();
 
-VortexTunnelSettings * vortex_tunnel_settings_new       ();
+VortexTunnelSettings * vortex_tunnel_settings_new       (VortexCtx * ctx);
 
-VortexTunnelSettings * vortex_tunnel_settings_new_from_xml (char * content, 
-							    int    size);
+VortexTunnelSettings * vortex_tunnel_settings_new_from_xml (VortexCtx * ctx,
+							    char      * content, 
+							    int         size);
 
 void                   vortex_tunnel_settings_add_hop   (VortexTunnelSettings * settings,
 							 ...);
@@ -66,11 +67,13 @@ VortexConnection     * vortex_tunnel_new                (VortexTunnelSettings * 
 							 VortexConnectionNew    on_connected,
 							 axlPointer             user_data);
 
-bool                   vortex_tunnel_accept_negotiation (VortexOnAcceptedConnection accept_tunnel,
-							 axlPointer                 accept_tunnel_data);
+bool                   vortex_tunnel_accept_negotiation (VortexCtx                  * ctx,
+							 VortexOnAcceptedConnection   accept_tunnel,
+							 axlPointer                   accept_tunnel_data);
 
-void                   vortex_tunnel_set_resolver       (VortexTunnelLocationResolver resolver,
-							 axlPointer                   resolver_data);
+void                   vortex_tunnel_set_resolver       (VortexCtx                    * ctx,
+							 VortexTunnelLocationResolver   resolver,
+							 axlPointer                     resolver_data);
 
 /* private api, do not use directly (use vortex_tunnel_new) */
 VortexConnection     * __vortex_tunnel_new_common       (VortexTunnelSettings * settings,
