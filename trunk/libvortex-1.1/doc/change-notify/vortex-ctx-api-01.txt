@@ -157,6 +157,22 @@ replied by a new version:
        - vortex_tls_set_default_post_check
        - vortex_tls_accept_negociation
 
+       [vortex xml-rpc module]
+       - vortex_xml_rpc_accept_negociation
+       - vortex_xml_rpc_listener_parse_conf_and_start_listeners
+
+       [vortex errno module]
+       - vortex_errno_show_error
+       - vortex_errno_show_last_error
+
+       [vortex tunnel module] 
+       - vortex_tunnel_settings_new
+       - vortex_tunnel_settings_new_from_xml
+       - vortex_tunnel_accept_negotiation
+       - vortex_tunnel_set_resolver
+
+
+
 Solution to incompatibility
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

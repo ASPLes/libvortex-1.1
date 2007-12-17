@@ -5130,7 +5130,6 @@ bool vortex_channel_notify_start (VortexChannel    * new_channel,
 	VortexChannel    * channel0;
 	int                msg_no;
 	const char       * serverName;
-	VortexCtx        * ctx     = vortex_channel_get_ctx (new_channel);
 
 	/* check references received */
 	if (new_channel == NULL)

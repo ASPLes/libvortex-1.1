@@ -270,7 +270,7 @@ END_C_DECLS
  * @param expr The expresion to check.
  */
 #define v_return_if_fail(expr) \
-if (!(expr)) {vortex_log (VORTEX_LEVEL_CRITICAL, "Expresion '%s' have failed at %s (%s:%d)", #expr, __AXL_PRETTY_FUNCTION__, __AXL_FILE__, __AXL_LINE__); return;}
+if (!(expr)) {return;}
 
 /** 
  * @internal Allows to check a condition and return the given value if it
@@ -281,7 +281,7 @@ if (!(expr)) {vortex_log (VORTEX_LEVEL_CRITICAL, "Expresion '%s' have failed at 
  * @param val The value to return if the expression is not meet.
  */
 #define v_return_val_if_fail(expr, val) \
-if (!(expr)) { vortex_log (VORTEX_LEVEL_CRITICAL, "Expresion '%s' have failed, returning: %s at %s (%s:%d)", #expr, #val, __AXL_PRETTY_FUNCTION__, __AXL_FILE__, __AXL_LINE__); return val;}
+if (!(expr)) { return val;}
 
 
 BEGIN_C_DECLS

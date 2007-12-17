@@ -548,18 +548,18 @@ typedef struct _XmlRpcArray           XmlRpcArray;
 XmlRpcMethodCall  * vortex_xml_rpc_method_call_new          (const char        * methodName,
 							     int                 parameters);
 
-void                vortex_xml_rpc_method_call_add_value    (XmlRpcMethodCall  * method_call,
+bool                vortex_xml_rpc_method_call_add_value    (XmlRpcMethodCall  * method_call,
 							     XmlRpcMethodValue * value);
 
-void                vortex_xml_rpc_method_call_set_value    (XmlRpcMethodCall  * method_call,
+bool                vortex_xml_rpc_method_call_set_value    (XmlRpcMethodCall  * method_call,
 							     int                 position,
 							     XmlRpcMethodValue * value);
 
-void                vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  * method_call,
+bool                vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  * method_call,
 							     XmlRpcParamType     type,
 							     axlPointer            value);
 
-void                vortex_xml_rpc_method_call_create_value_from_string (XmlRpcMethodCall * method_call,
+bool                vortex_xml_rpc_method_call_create_value_from_string (XmlRpcMethodCall * method_call,
 									 XmlRpcParamType    type,
 									 char             * string_value);
 
