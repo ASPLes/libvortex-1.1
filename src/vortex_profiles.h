@@ -83,7 +83,7 @@ bool      vortex_profiles_invoke_close            (char  * uri,
 bool      vortex_profiles_is_defined_close        (VortexCtx   * ctx,
 						   const char  * uri);
 
-bool      vortex_profiles_invoke_frame_received   (char             * uri,
+bool      vortex_profiles_invoke_frame_received   (const char       * uri,
 						   int                channel_num,
 						   VortexConnection * connection,
 						   VortexFrame      * frame);

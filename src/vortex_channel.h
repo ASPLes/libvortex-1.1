@@ -65,15 +65,15 @@ VortexChannel     * vortex_channel_new_full                    (VortexConnection
 
 VortexChannel     * vortex_channel_new_fullv                   (VortexConnection      * connection,
 								int                     channel_num, 
-								char                  * serverName,
-								char                  * profile,
+								const char            * serverName,
+								const char            * profile,
 								VortexEncoding          encoding,
 								VortexOnCloseChannel    close,
 								axlPointer              close_user_data,
 								VortexOnFrameReceived   received,
 								axlPointer              received_user_data,
 								VortexOnChannelCreated  on_channel_created, axlPointer user_data,
-								char                  * profile_content_format, 
+								const char            * profile_content_format, 
 								...);
 
 bool               vortex_channel_close_full                   (VortexChannel * channel, 
@@ -83,8 +83,8 @@ bool               vortex_channel_close_full                   (VortexChannel * 
 bool               vortex_channel_close                        (VortexChannel * channel,
 								VortexOnClosedNotification on_closed);
 
-VortexChannel    * vortex_channel_empty_new                    (int  channel_num,
-								char  * profile,
+VortexChannel    * vortex_channel_empty_new                    (int                channel_num,
+								const char       * profile,
 								VortexConnection * connection);
 
 void               vortex_channel_set_close_handler            (VortexChannel * channel,
@@ -176,7 +176,7 @@ axlPointer         vortex_channel_next_pending_message         (VortexChannel * 
 void               vortex_channel_remove_pending_message       (VortexChannel * channel);
 								 
 
-char             * vortex_channel_get_profile                  (VortexChannel * channel);
+const char       * vortex_channel_get_profile                  (VortexChannel * channel);
 
 bool               vortex_channel_is_running_profile           (VortexChannel * channel,
 								const char    * profile);
@@ -222,7 +222,7 @@ bool               vortex_channel_send_msg                        (VortexChannel
 
 bool               vortex_channel_send_msgv                       (VortexChannel * channel,
 								   int           * msg_no,
-								   char          * format,
+								   const char    * format,
 								   ...);
 
 bool               vortex_channel_send_msg_and_wait               (VortexChannel     * channel,
@@ -234,7 +234,7 @@ bool               vortex_channel_send_msg_and_wait               (VortexChannel
 bool               vortex_channel_send_msg_and_waitv              (VortexChannel   * channel,
 								   int             * msg_no,
 								   WaitReplyData   * wait_reply,
-								   char            * format,
+								   const char      * format,
 								   ...);
 
 bool               vortex_channel_send_rpy                        (VortexChannel    * channel,  

@@ -561,7 +561,7 @@ bool                vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  *
 
 bool                vortex_xml_rpc_method_call_create_value_from_string (XmlRpcMethodCall * method_call,
 									 XmlRpcParamType    type,
-									 char             * string_value);
+									 const char       * string_value);
 
 char              * vortex_xml_rpc_method_call_get_name                  (XmlRpcMethodCall  * method_call);
 
@@ -600,7 +600,7 @@ void                vortex_xml_rpc_method_call_release_after_invoke (XmlRpcMetho
 bool                vortex_xml_rpc_method_call_must_release (XmlRpcMethodCall * method_call);
 
 bool                vortex_xml_rpc_method_call_is           (XmlRpcMethodCall * method_call, 
-							     char             * method_name,
+							     const char       * method_name,
 							     int                param_num,
 							     ...);
 
@@ -682,8 +682,8 @@ void                vortex_xml_rpc_method_value_nullify         (XmlRpcMethodVal
 XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string (XmlRpcParamType     type,
 								 const char        * string_value);
 
-XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string2 (char  * type,
-								  char  * string_value);
+XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string2 (const char  * type,
+								  const char  * string_value);
 
 XmlRpcParamType     vortex_xml_rpc_method_value_get_type        (XmlRpcMethodValue * value);
 
@@ -796,7 +796,7 @@ void                vortex_xml_rpc_method_value_free            (XmlRpcMethodVal
  */
 XmlRpcMethodResponse * vortex_xml_rpc_method_response_new              (XmlRpcResponseStatus  status,
 									int                   fault_code,
-									char                * fault_string,
+									const char          * fault_string,
 									XmlRpcMethodValue   * value);
 
 XmlRpcMethodResponse * vortex_xml_rpc_method_response_create           (XmlRpcParamType        type,
@@ -842,7 +842,7 @@ void                   vortex_xml_rpc_struct_add_member                (XmlRpcSt
 									XmlRpcStructMember * member);
 
 XmlRpcMethodValue    * vortex_xml_rpc_struct_get_member_value          (XmlRpcStruct       * _struct,
-									char               * member_name);
+									const char         * member_name);
 
 XmlRpcMethodValue    * vortex_xml_rpc_struct_get_member_value_at       (XmlRpcStruct       * _struct,
 									int                  position);
@@ -851,19 +851,19 @@ char                 * vortex_xml_rpc_struct_get_member_name_at        (XmlRpcSt
 									int                  position);
 
 int                    vortex_xml_rpc_struct_get_member_value_as_int   (XmlRpcStruct       * _struct,
-									char               * member_name);
+									const char         * member_name);
 
 char  *                vortex_xml_rpc_struct_get_member_value_as_string   (XmlRpcStruct       * _struct,
-									   char                * member_name);
+									   const char         * member_name);
 
 double                 vortex_xml_rpc_struct_get_member_value_as_double   (XmlRpcStruct       * _struct,
-									   char                * member_name);
+									   const char         * member_name);
 
 XmlRpcStruct         * vortex_xml_rpc_struct_get_member_value_as_struct   (XmlRpcStruct       * _struct,
-									   char                * member_name);
+									   const char         * member_name);
 
 XmlRpcArray          * vortex_xml_rpc_struct_get_member_value_as_array   (XmlRpcStruct       * _struct,
-									  char               * member_name);
+									  const char         * member_name);
 
 void                   vortex_xml_rpc_struct_free                      (XmlRpcStruct * _struct);
 

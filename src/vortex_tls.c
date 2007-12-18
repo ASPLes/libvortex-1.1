@@ -521,7 +521,7 @@ void vortex_tls_set_common_data (VortexConnection * connection,
  */
 typedef struct __VortexTlsBeginData {
 	VortexConnection    * connection;
-	char                * serverName;
+	const char          * serverName;
 	VortexTlsActivation   process_status;
 	axlPointer            user_data;
 } VortexTlsBeginData;
@@ -690,7 +690,7 @@ axlPointer __vortex_tls_start_negociation (VortexTlsBeginData * data)
 	VortexConnection      * connection      = data->connection;
 	VortexConnection      * connection_aux  = NULL;
 	VortexCtx             * ctx             = vortex_connection_get_ctx (connection);
-	char                  * serverName      = data->serverName;
+	const char            * serverName      = data->serverName;
 	VortexTlsActivation     process_status  = data->process_status;
 	axlPointer              user_data       = data->user_data;
 	VortexFrame           * reply           = NULL;
@@ -1091,7 +1091,7 @@ axlPointer __vortex_tls_start_negociation (VortexTlsBeginData * data)
  *
  */
 void vortex_tls_start_negociation (VortexConnection     * connection,
-				   char                 * serverName,
+				   const char           * serverName,
 				   VortexTlsActivation    process_status,
 				   axlPointer             user_data)
 {
@@ -1600,8 +1600,8 @@ void __vortex_tls_start_negociation_sync_process (VortexConnection * connection,
  * 
  * @return The new connection with TLS profile activated. 
  */
-VortexConnection * vortex_tls_start_negociation_sync     (VortexConnection * connection,
-							  char             * serverName,
+VortexConnection * vortex_tls_start_negociation_sync     (VortexConnection  * connection,
+							  const char        * serverName,
 							  VortexStatus      * status,
 							  char             ** status_message)
 {

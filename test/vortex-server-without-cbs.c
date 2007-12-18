@@ -7,6 +7,9 @@
 
 #define PROFILE_URI "http://vortex.aspl.es/profiles/example"
 
+/* listener context */
+VortexCtx * ctx = NULL;
+
 /** 
  * A marshalling function that queues all replies received on the
  * async queue found on the last parameter, allowing the async queue
@@ -41,17 +44,21 @@ int main (int argc, char ** argv) {
 	/* count */
 	int             iterator = 0;
 	
-	/* init vortex library (and check its result!) */
-	if (! vortex_init ()) {
-		printf ("Unable to initialize vortex library\n");
-		exit (-1);
-	}
+	/* create the context */
+	ctx = vortex_ctx_new ();
+
+	/* init vortex library */
+	if (! vortex_init_ctx (ctx)) {
+		/* unable to init context */
+		vortex_ctx_free (ctx);
+		return -1;
+	} /* end if */
 	
 	/* create the queue */
 	queue = vortex_async_queue_new ();
 
 	/* register a profile */
-	vortex_profiles_register (PROFILE_URI,
+	vortex_profiles_register (ctx, PROFILE_URI,
 				  /* no start handler, accept all channels */
 				  NULL, NULL,
 				  /* no close channel, accept all
@@ -60,7 +67,7 @@ int main (int argc, char ** argv) {
 				  vortex_channel_queue_reply, queue);
 	
 	/* now create a vortex server listening on several ports */
-	vortex_listener_new ("0.0.0.0", "4400", NULL, NULL);
+	vortex_listener_new (ctx, "0.0.0.0", "4400", NULL, NULL);
 
 
 	/* and handle all frames received */
@@ -113,7 +120,7 @@ int main (int argc, char ** argv) {
 	
 	
 	/* end vortex internal subsystem (if no one have done it yet!) */
-	vortex_exit ();
+	vortex_exit_ctx (ctx, true);
  
 	/* that's all to start BEEPing! */
 	return 0;     

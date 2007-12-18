@@ -20,6 +20,9 @@
 
 #define PLAIN_PROFILE "http://fact.aspl.es/profiles/plain_profile"
 
+/* listener context */
+VortexCtx * ctx = NULL;
+
 void frame_received (VortexChannel    * channel,
 		     VortexConnection * connection,
 		     VortexFrame      * frame,
@@ -77,26 +80,33 @@ bool     close_channel (int                channel_num,
 int  main (int  argc, char ** argv) 
 {
 
+	/* create the context */
+	ctx = vortex_ctx_new ();
+
 	/* init vortex library */
-	vortex_init ();
+	if (! vortex_init_ctx (ctx)) {
+		/* unable to init context */
+		vortex_ctx_free (ctx);
+		return -1;
+	} /* end if */
 
 	/* register a profile */
-	vortex_profiles_register (PLAIN_PROFILE, 
+	vortex_profiles_register (ctx, PLAIN_PROFILE, 
 				  start_channel, NULL, 
 				  close_channel, NULL,
 				  frame_received, NULL);
 	
-	vortex_greetings_set_features ("enable-tls");
-	vortex_greetings_set_localize ("es-ES");
+	vortex_greetings_set_features (ctx, "enable-tls");
+	vortex_greetings_set_localize (ctx, "es-ES");
 
 	/* create a vortex server */
-	vortex_listener_new ("0.0.0.0", "44000", NULL, NULL);
+	vortex_listener_new (ctx, "0.0.0.0", "44000", NULL, NULL);
 
 	/* wait for listeners (until vortex_exit is called) */
-	vortex_listener_wait ();
+	vortex_listener_wait (ctx);
 	
 	/* end vortex function */
-	vortex_exit ();
+	vortex_exit_ctx (ctx, true);
 
 	return 0;
 }

@@ -401,6 +401,9 @@ void __block_test (int value)
 VortexMutex doing_exit_mutex;
 bool        __doing_exit = false;
 
+/* listener context */
+VortexCtx * ctx = NULL;
+
 void __terminate_vortex_listener (int value)
 {
 	
@@ -415,7 +418,7 @@ void __terminate_vortex_listener (int value)
 	vortex_mutex_unlock (&doing_exit_mutex);
 
 	/* unlocking listener */
-	vortex_listener_unlock ();
+	vortex_listener_unlock (ctx);
 
 	return;
 }
@@ -454,113 +457,122 @@ int  main (int  argc, char ** argv)
 
 	vortex_mutex_create (&doing_exit_mutex);
 
+	/* create the context */
+	ctx = vortex_ctx_new ();
+
 	/* init vortex library */
-	vortex_init ();
+	if (! vortex_init_ctx (ctx)) {
+		/* unable to init context */
+		vortex_ctx_free (ctx);
+		return -1;
+	} /* end if */
 
 	if (argc > 1 && 0 == strcmp (argv[1], "-v")) {
-		vortex_log_enable (true);
-		vortex_log2_enable (true);
+		vortex_log_enable (ctx, true);
+		vortex_log2_enable (ctx, true);
 	}
 
 	/* register a profile */
-	vortex_profiles_register (REGRESSION_URI,
+	vortex_profiles_register (ctx, REGRESSION_URI,
 				  NULL, NULL, 
 				  NULL, NULL,
 				  frame_received, NULL);
 
 	/* register a extended start */
-	vortex_profiles_register_extended_start (REGRESSION_URI_2,
+	vortex_profiles_register_extended_start (ctx, REGRESSION_URI_2,
 						 NULL, NULL);
 
 	/* register more profiles */
-	vortex_profiles_register (REGRESSION_URI_3,
+	vortex_profiles_register (ctx, REGRESSION_URI_3,
 				  NULL, NULL, 
 				  NULL, NULL,
 				  frame_received_replies, NULL);
 
 	/* register the profile used to test ANS/NUL replies */
-	vortex_profiles_register (REGRESSION_URI_4,
+	vortex_profiles_register (ctx, REGRESSION_URI_4,
 				  NULL, NULL, 
 				  NULL, NULL,
 				  frame_received_ans_replies, NULL);
 
 	/* register the profile used to test ANS/NUL replies */
-	vortex_profiles_register (REGRESSION_URI_5,
+	vortex_profiles_register (ctx, REGRESSION_URI_5,
 				  NULL, NULL, 
 				  NULL, NULL,
 				  frame_received_ans_transfer_selected_file, NULL);
 
 	/* register a profile */
-	vortex_profiles_register (REGRESSION_URI_ZERO,
+	vortex_profiles_register (ctx, REGRESSION_URI_ZERO,
 				  NULL, NULL, 
 				  NULL, NULL,
 				  frame_received, NULL);
 
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */
-	if (! vortex_tls_accept_negociation (NULL, NULL, NULL)) {
+	if (! vortex_tls_accept_negociation (ctx, NULL, NULL, NULL)) {
 		printf ("Unable to start accepting TLS profile requests");
 		return -1;
 	}
 
-	if (vortex_sasl_is_enabled () ) {
+	if (vortex_sasl_is_enabled (ctx) ) {
 		/* set default ANONYMOUS validation handler */
-		vortex_sasl_set_anonymous_validation (sasl_anonymous_validation);
+		vortex_sasl_set_anonymous_validation (ctx, sasl_anonymous_validation);
 
 		/* accept SASL ANONYMOUS incoming requests */
-		if (! vortex_sasl_accept_negociation (VORTEX_SASL_ANONYMOUS)) {
+		if (! vortex_sasl_accept_negociation (ctx, VORTEX_SASL_ANONYMOUS)) {
 			printf ("Unable to make Vortex Libray to accept SASL ANONYMOUS profile");
 			return -1;
 		}
 
 		/* set default EXTERNAL validation handler */
-		vortex_sasl_set_external_validation (sasl_external_validation);
+		vortex_sasl_set_external_validation (ctx, sasl_external_validation);
 		
 		/* accept SASL EXTERNAL incoming requests */
-		if (! vortex_sasl_accept_negociation (VORTEX_SASL_EXTERNAL)) {
+		if (! vortex_sasl_accept_negociation (ctx, VORTEX_SASL_EXTERNAL)) {
 			printf ("Unable to make Vortex Libray to accept SASL EXTERNAL profile");
 			return -1;
 		}
 		
 		/* set default PLAIN validation handler */
-		vortex_sasl_set_plain_validation (sasl_plain_validation);
+		vortex_sasl_set_plain_validation (ctx, sasl_plain_validation);
 		
 		/* accept SASL PLAIN incoming requests */
-		if (! vortex_sasl_accept_negociation (VORTEX_SASL_PLAIN)) {
+		if (! vortex_sasl_accept_negociation (ctx, VORTEX_SASL_PLAIN)) {
 			printf ("Unable to make Vortex Libray to accept SASL PLAIN profile");
 			return -1;
 		}
 		
 		/* set default CRAM-MD5 validation handler */
-		vortex_sasl_set_cram_md5_validation (sasl_cram_md5_validation);
+		vortex_sasl_set_cram_md5_validation (ctx, sasl_cram_md5_validation);
 		
 		/* accept SASL CRAM-MD5 incoming requests */
-		if (! vortex_sasl_accept_negociation (VORTEX_SASL_CRAM_MD5)) {
+		if (! vortex_sasl_accept_negociation (ctx, VORTEX_SASL_CRAM_MD5)) {
 			printf ("Unable to make Vortex Library to accept SASL CRAM-MD5 profile");
 			return -1;
 		}
 		
 		/* set default DIGEST-MD5 validation handler */
-		vortex_sasl_set_digest_md5_validation (sasl_digest_md5_validation);
+		vortex_sasl_set_digest_md5_validation (ctx, sasl_digest_md5_validation);
 		
 		/* accept SASL DIGEST-MD5 incoming requests */
-		if (! vortex_sasl_accept_negociation (VORTEX_SASL_DIGEST_MD5)) {
+		if (! vortex_sasl_accept_negociation (ctx, VORTEX_SASL_DIGEST_MD5)) {
 			printf ("Unable to make Vortex Library to accept SASL DIGEST-MD5 profile");
 			return -1;
 		} /* end if */
 
 		/* configure default realm for all connections for the DIGEST-MD5 */
-		vortex_listener_set_default_realm ("aspl.es");  
+		vortex_listener_set_default_realm (ctx, "aspl.es");  
 
 	} else {
 		printf("Skipping SASL setup, since Vortex is not configured with SASL support\n");
 	}
 	
 	/* configure support for TUNNEL profile support */
-	vortex_tunnel_accept_negotiation (NULL, NULL);
+	vortex_tunnel_accept_negotiation (ctx, NULL, NULL);
 	
 	/* enable XML-RPC profile */
         vortex_xml_rpc_accept_negociation (
+		/* context */
+		ctx, 
                 /* no resource validation function */
                 NULL,
                 /* no user space data for the validation resource
@@ -571,7 +583,7 @@ int  main (int  argc, char ** argv)
                 NULL);
 
 	/* configure close in transit profile */
-	vortex_profiles_register (CLOSE_IN_TRANSIT_URI,
+	vortex_profiles_register (ctx, CLOSE_IN_TRANSIT_URI,
 				  /* just accept all channels to be created */
 				  NULL, NULL,
 				  /* just accept all channels to be closed */
@@ -579,23 +591,23 @@ int  main (int  argc, char ** argv)
 				  close_in_transit_received, NULL);
 	
 	/* create a vortex server */
-	vortex_listener_new ("0.0.0.0", "44010", NULL, NULL);
+	vortex_listener_new (ctx, "0.0.0.0", "44010", NULL, NULL);
 
 	/* create a vortex server to check the tunnel profile
 	 * support */
-	vortex_listener_new ("0.0.0.0", "44110", NULL, NULL);
+	vortex_listener_new (ctx, "0.0.0.0", "44110", NULL, NULL);
 
 	/* configure connection notification  */
-	vortex_listener_set_on_connection_accepted (on_accepted, NULL);
+	vortex_listener_set_on_connection_accepted (ctx, on_accepted, NULL);
 
 	/* wait for listeners (until vortex_exit is called) */
 	printf ("ready and waiting..\n");
-	vortex_listener_wait ();
+	vortex_listener_wait (ctx);
 
 	printf ("terminating the listener ..\n");
 
 	/* terminate process */
-	vortex_exit ();
+	vortex_exit_ctx (ctx, true);
 
 	return 0;
 }

@@ -94,6 +94,9 @@ void subs (struct timeval stop, struct timeval start, struct timeval * _result)
 bool                   tunnel_tested   = false;
 VortexTunnelSettings * tunnel_settings = NULL;
 
+/* listener context */
+VortexCtx * ctx = NULL;
+
 VortexConnection * connection_new ()
 {
 	/* create a new connection */
@@ -102,7 +105,7 @@ VortexConnection * connection_new ()
 		return vortex_tunnel_new (tunnel_settings, NULL, NULL);
 	} else {
 		/* create a direct connection */
-		return vortex_connection_new (LISTENER_HOST, LISTENER_PORT, NULL, NULL);
+		return vortex_connection_new (ctx, LISTENER_HOST, LISTENER_PORT, NULL, NULL);
 	}
 }
 
@@ -1054,7 +1057,7 @@ bool test_05 ()
 	VortexConnection * connection;
 
 	/* initialize and check if current vortex library supports TLS */
-	if (! vortex_tls_is_enabled ()) {
+	if (! vortex_tls_is_enabled (ctx)) {
 		printf ("--- WARNING: Unable to activate TLS, current vortex library has not TLS support activated. \n");
 		return true;
 	}
@@ -2455,19 +2458,26 @@ int main (int  argc, char ** argv)
 	signal (SIGABRT, __block_test);
 #endif
 
+	/* create the context */
+	ctx = vortex_ctx_new ();
+
 	/* init vortex library */
-	vortex_init ();
+	if (! vortex_init_ctx (ctx)) {
+		/* unable to init context */
+		vortex_ctx_free (ctx);
+		return -1;
+	} /* end if */
 
 	/* change to select if it is not the default */
-	vortex_io_waiting_use (VORTEX_IO_WAIT_SELECT);
+	vortex_io_waiting_use (ctx, VORTEX_IO_WAIT_SELECT);
 
 	/* empty goto to avoid compiler complain about a label not
 	 * used in the case only select is supported */
 	goto init_test;
- init_test:
+
 	printf ("**\n");
 	printf ("** INFO: running test with I/O API: ");
-	switch (vortex_io_waiting_get_current ()) {
+	switch (vortex_io_waiting_get_current (ctx)) {
 	case VORTEX_IO_WAIT_SELECT:
 		printf ("select(2) system call\n");
 		break;
@@ -2571,6 +2581,7 @@ int main (int  argc, char ** argv)
 		return -1;
 	}
 
+ init_test:
 	if (test_06 ()) {
 		printf ("Test 06: SASL profile support [   OK   ]\n");
 	} else {
@@ -2622,7 +2633,7 @@ int main (int  argc, char ** argv)
 	 */
 	if (! poll_tested) {
 		/* configure poll mode */
-		if (! vortex_io_waiting_use (VORTEX_IO_WAIT_POLL)) {
+		if (! vortex_io_waiting_use (ctx, VORTEX_IO_WAIT_POLL)) {
 			printf ("error: unable to configure poll I/O mechanishm");
 			return false;
 		} /* end if */
@@ -2640,7 +2651,7 @@ int main (int  argc, char ** argv)
 	 */
 	if (! epoll_tested) {
 		/* configure epoll mode */
-		if (! vortex_io_waiting_use (VORTEX_IO_WAIT_EPOLL)) {
+		if (! vortex_io_waiting_use (ctx, VORTEX_IO_WAIT_EPOLL)) {
 			printf ("error: unable to configure epoll I/O mechanishm");
 			return false;
 		} /* end if */
@@ -2661,7 +2672,7 @@ int main (int  argc, char ** argv)
 		printf ("**\n");
 
 		/* create tunnel settings */
-		tunnel_settings = vortex_tunnel_settings_new ();
+		tunnel_settings = vortex_tunnel_settings_new (ctx);
 
 		/* add first hop */
 		vortex_tunnel_settings_add_hop (tunnel_settings,
@@ -2691,7 +2702,7 @@ int main (int  argc, char ** argv)
 	printf ("**\n");
 
 	/* exit from vortex library */
-	vortex_exit ();
+	vortex_exit_ctx (ctx, true);
 	return 0 ;	      
 }
 

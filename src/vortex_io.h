@@ -46,7 +46,7 @@ bool                 vortex_io_waiting_use                     (VortexCtx       
 
 bool                 vortex_io_waiting_is_available            (VortexIoWaitingType type);
 
-VortexIoWaitingType  vortex_io_waiting_get_current             ();
+VortexIoWaitingType  vortex_io_waiting_get_current             (VortexCtx           * ctx);
 
 void                 vortex_io_waiting_set_create_fd_group     (VortexCtx           * ctx,
 								VortexIoCreateFdGroup create);

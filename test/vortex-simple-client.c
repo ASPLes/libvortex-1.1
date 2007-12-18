@@ -8,15 +8,22 @@ int  main (int  argc, char ** argv)
 	VortexChannel    * channel;
 	VortexFrame      * frame;
 	WaitReplyData    * wait_reply;
+	VortexCtx        * ctx;
 	int                msg_no;
 
 	/* init vortex library */
-	vortex_init ();
+	ctx = vortex_ctx_new ();
+	if (! vortex_init_ctx (ctx)) {
+		/* unable to init vortex */
+		vortex_ctx_free (ctx);
+
+		return -1;
+	} /* end if */
 
 
 	/* creates a new connection against localhost:44000 */
 	printf ("connecting to localhost:44000...\n");
-	connection = vortex_connection_new ("localhost", "44000", NULL, NULL);
+	connection = vortex_connection_new (ctx, "localhost", "44000", NULL, NULL);
 	if (!vortex_connection_is_ok (connection, false)) {
 		printf ("Unable to connect remote server, error was: %s\n",
 			 vortex_connection_get_message (connection));
@@ -68,7 +75,13 @@ int  main (int  argc, char ** argv)
 
  end:				      
 	vortex_connection_close (connection);
-	vortex_exit ();
+
+	/* terminate execution context */
+	vortex_exit_ctx (ctx, false);
+
+	/* free ctx */
+	vortex_ctx_free (ctx);
+
 	return 0 ;	      
 }
 

@@ -20,6 +20,9 @@
 
 #define PLAIN_PROFILE "http://fact.aspl.es/profiles/plain_profile"
 
+/* listener context */
+VortexCtx * ctx = NULL;
+
 void on_ready (char  * host, int  port, VortexStatus status, char  * message, axlPointer user_data)
 {
 	
@@ -27,7 +30,7 @@ void on_ready (char  * host, int  port, VortexStatus status, char  * message, ax
 		printf ("error at: %s\n", message);
 
 		/* exit from vortex */
-		vortex_exit ();
+		vortex_exit_ctx (ctx, false);
 		return;
 	}
 
@@ -73,36 +76,44 @@ bool     start_channel (int  channel_num, VortexConnection * connection, axlPoin
 int  main (int  argc, char  ** argv) 
 {
 
+	/* create the context */
+	ctx = vortex_ctx_new ();
+
 	/* init vortex library */
-	vortex_init ();
+	if (! vortex_init_ctx (ctx)) {
+		/* unable to init context */
+		vortex_ctx_free (ctx);
+		return -1;
+	} /* end if */
 
 	/* check for TLS initialization */
-	if (! vortex_tls_is_enabled ()) {
+	if (! vortex_tls_is_enabled (ctx)) {
 		printf ("Current Vortex Library is not prepared for TLS profile");
 		return -1;
 	}
 
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */
-	if (! vortex_tls_accept_negociation (NULL, NULL, NULL)) {
+	if (! vortex_tls_accept_negociation (ctx, NULL, NULL, NULL)) {
 		printf ("Unable to start accepting TLS profile requests");
 	}
 
 	/* register the plain profile to test data sending before
 	 * TLS-fication */
-	vortex_profiles_register (PLAIN_PROFILE, 
+	vortex_profiles_register (ctx, PLAIN_PROFILE, 
 				  NULL, NULL, 
 				  NULL, NULL,
 				  frame_received, NULL);
 	
 	/* create a vortex server */
-	vortex_listener_new ("0.0.0.0", "44001", on_ready, NULL);
+	vortex_listener_new (ctx, "0.0.0.0", "44001", on_ready, NULL);
 
 	/* wait for listeners (until vortex_exit is called) */
-	vortex_listener_wait ();
+	vortex_listener_wait (ctx);
 
 	/* do not call vortex_exit here if you define an on ready
 	 * function which actually ends the execution */
+	
 
 	return 0;
 }

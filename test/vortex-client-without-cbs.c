@@ -16,6 +16,9 @@
 
 #define PROFILE_URI "http://vortex.aspl.es/profiles/example"
 
+/* listener context */
+VortexCtx * ctx = NULL;
+
 /** 
  * @brief Pipe used to get notifications about frame received.
  */
@@ -60,11 +63,15 @@ int main (int argc, char ** argv) {
 	int                retval;
 	int                max_fds;
 	
-	/* init vortex library (and check its result!) */
-	if (! vortex_init ()) {
-		printf ("Unable to initialize vortex library\n");
+	/* create the context */
+	ctx = vortex_ctx_new ();
+
+	/* init vortex library */
+	if (! vortex_init_ctx (ctx)) {
+		/* unable to init context */
+		vortex_ctx_free (ctx);
 		return -1;
-	}
+	} /* end if */
 	
 	
 	/* create the queue for frame received */
@@ -91,7 +98,7 @@ int main (int argc, char ** argv) {
 	max_fds = MAX (max_fds, close_pipe[1]);
 
 	/* register a profile */
-	vortex_profiles_register ("http://vortex.aspl.es/profiles/example", 
+	vortex_profiles_register (ctx, "http://vortex.aspl.es/profiles/example", 
 				  /* no start handler, accept all channels */
 				  NULL, NULL,
 				  /* no close channel, accept all
@@ -101,7 +108,7 @@ int main (int argc, char ** argv) {
 
 
 	/* create a connection in a blocking manner */
-	connection = vortex_connection_new ("localhost", "4400", NULL, NULL);
+	connection = vortex_connection_new (ctx, "localhost", "4400", NULL, NULL);
 	if (! vortex_connection_is_ok (connection, false)) {
 		printf ("Unable to create the connection..\n");
 		goto finish;
@@ -198,7 +205,7 @@ int main (int argc, char ** argv) {
 	vortex_connection_close (connection);
 
 	/* then the vortex engine */
-	vortex_exit ();
+	vortex_exit_ctx (ctx, true);
 
 	return 0;
 }

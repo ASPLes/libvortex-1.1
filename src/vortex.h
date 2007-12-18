@@ -306,6 +306,11 @@ bool     vortex_color_log_is_enabled (VortexCtx * ctx);
 void     vortex_color_log_enable     (VortexCtx * ctx, 
 				      bool        status);
 
+bool     vortex_log_is_enabled_acquire_mutex (VortexCtx * ctx);
+
+void     vortex_log_acquire_mutex            (VortexCtx * ctx, 
+					      bool        status);
+
 void     vortex_writer_data_free     (VortexWriterData * writer_data);
 
 /**
@@ -386,7 +391,7 @@ bool      vortex_conf_get             (VortexCtx      * ctx,
 bool      vortex_conf_set             (VortexCtx      * ctx,
 				       VortexConfItem   item, 
 				       int              value, 
-				       char           * str_value);
+				       const char     * str_value);
 
 /*
  * @internal Debug levels to be used with \ref _vortex_log, which is used

@@ -1,5 +1,8 @@
 #include <vortex.h>
 
+/* listener context */
+VortexCtx * ctx = NULL;
+
 /** 
  * @brief Validation resource function. 
  * 
@@ -127,11 +130,19 @@ XmlRpcMethodResponse *  service_dispatch (VortexChannel * channel, XmlRpcMethodC
 int  main (int  argc, char ** argv) 
 {
 
+	/* create the context */
+	ctx = vortex_ctx_new ();
+
 	/* init vortex library */
-	vortex_init ();
+	if (! vortex_init_ctx (ctx)) {
+		/* unable to init context */
+		vortex_ctx_free (ctx);
+		return -1;
+	} /* end if */
 
 	/* enable XML-RPC profile */
-	vortex_xml_rpc_accept_negociation (validate_resource,
+	vortex_xml_rpc_accept_negociation (ctx, 
+					   validate_resource,
 					   /* no user space data for
 					    * the validation resource
 					    * function. */
@@ -142,16 +153,16 @@ int  main (int  argc, char ** argv)
 					   NULL);
 
 	/* create a vortex server */
-	vortex_listener_new ("0.0.0.0", "44000", NULL, NULL);
+	vortex_listener_new (ctx, "0.0.0.0", "44000", NULL, NULL);
 
 	/* also listener on the following port */
-	vortex_listener_new ("0.0.0.0", "42000", NULL, NULL);
+	vortex_listener_new (ctx, "0.0.0.0", "42000", NULL, NULL);
 
 	/* wait for listeners (until vortex_exit is called) */
-	vortex_listener_wait ();
+	vortex_listener_wait (ctx);
 	
 	/* end vortex function */
-	vortex_exit ();
+	vortex_exit_ctx (ctx, true);
 
 	return 0;
 }

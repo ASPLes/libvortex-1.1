@@ -87,12 +87,12 @@ void               vortex_tls_set_default_post_check     (VortexCtx            *
 							  axlPointer             user_data);
 
 void               vortex_tls_start_negociation          (VortexConnection     * connection,
-							  char                 * serverName,
+							  const char           * serverName,
 							  VortexTlsActivation    process_status,
 							  axlPointer             user_data);
 
 VortexConnection * vortex_tls_start_negociation_sync     (VortexConnection  * connection,
-							  char              * serverName,
+							  const char        * serverName,
 							  VortexStatus      * status,
 							  char             ** status_message);
 

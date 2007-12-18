@@ -661,7 +661,7 @@ bool     __vortex_connection_parse_greetings (VortexConnection * connection, Vor
 	/* get a reference to the context */
 	ctx = connection->ctx;
 
-	if ((channel_dtd = vortex_dtds_get_channel_dtd ()) == NULL) {
+	if ((channel_dtd = vortex_dtds_get_channel_dtd (ctx)) == NULL) {
 		__vortex_connection_set_not_connected (connection, "Cannot find DTD definition for channel management");
 		return false;
 	}
@@ -1895,7 +1895,8 @@ bool                   vortex_connection_close                  (VortexConnectio
  * @return true if the connection reference was increased or false if
  * an error was found.
  */
-bool                   vortex_connection_ref                    (VortexConnection * connection, char  * who)
+bool                   vortex_connection_ref                    (VortexConnection * connection, 
+								 const char       * who)
 {
 	VortexCtx * ctx;
 
@@ -1934,7 +1935,8 @@ bool                   vortex_connection_ref                    (VortexConnectio
  * @param connection The connection to operate.
  * @param who        Who have decreased the reference. This is a string value used to log which entity have decreased the connection counting.
  */
-void               vortex_connection_unref                  (VortexConnection * connection, char  * who)
+void               vortex_connection_unref                  (VortexConnection * connection, 
+							     char const       * who)
 {
 	VortexCtx  * ctx;
 	int          count;
@@ -2737,7 +2739,8 @@ bool                vortex_connection_is_profile_filtered    (VortexConnection  
  * 
  * @return true if the profile is supported by remote peer or false if not.
  */
-bool               vortex_connection_is_profile_supported (VortexConnection * connection, char  * uri)
+bool               vortex_connection_is_profile_supported (VortexConnection * connection, 
+							   const char       * uri)
 {
 	bool        result;
 	VortexCtx * ctx;
@@ -2759,7 +2762,7 @@ bool               vortex_connection_is_profile_supported (VortexConnection * co
 	vortex_mutex_lock (&connection->op_mutex);
 
 	/* check if the profile is found */
-	result = (axl_list_lookup (connection->remote_supported_profiles, axl_list_find_string, uri) != NULL);
+	result = (axl_list_lookup (connection->remote_supported_profiles, axl_list_find_string, (axlPointer) uri) != NULL);
 
 	/* unlock and return */
 	vortex_mutex_unlock (&connection->op_mutex);
@@ -3646,7 +3649,8 @@ void                vortex_connection_notify_created               (VortexConnec
  * @param connection the connection to set as.
  * @param message the new message to set.
  */
-void           __vortex_connection_set_not_connected (VortexConnection * connection, char  * message)
+void           __vortex_connection_set_not_connected (VortexConnection * connection, 
+						      const char       * message)
 {
 	VortexCtx * ctx;
 
@@ -3795,12 +3799,12 @@ int                vortex_connection_do_a_sending_round (VortexConnection * conn
  * @param value The value to be stored.
  */
 void               vortex_connection_set_data               (VortexConnection * connection,
-							     char             * key,
+							     const char       * key,
 							     axlPointer         value)
 {
 	/* use the full version so all source code is supported in one
 	 * function. */
-	vortex_connection_set_data_full (connection, key, value, NULL, NULL);
+	vortex_connection_set_data_full (connection, (axlPointer) key, value, NULL, NULL);
 	return;
 }
 
@@ -3933,7 +3937,7 @@ void                vortex_connection_set_data_full          (VortexConnection *
 void                vortex_connection_set_auto_tls           (VortexCtx  * ctx,
 							      bool         enabled,
 							      bool         allow_tls_failures,
-							      char       * serverName)
+							      const char * serverName)
 {
 
 	/* check reference received */
@@ -3967,12 +3971,12 @@ void                vortex_connection_set_auto_tls           (VortexCtx  * ctx,
  * @return the value or NULL if fails.
  */
 axlPointer         vortex_connection_get_data               (VortexConnection * connection,
-							     char             * key)
+							     const char       * key)
 {
 	if (connection == NULL || key == NULL)
 		return NULL;
 
-	return vortex_hash_lookup (connection->data, key);
+	return vortex_hash_lookup (connection->data, (axlPointer) key);
 }
 
 /** 

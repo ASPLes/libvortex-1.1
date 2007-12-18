@@ -290,12 +290,12 @@ char             * vortex_sasl_auth_method_used          (VortexConnection     *
 
 
 void               vortex_sasl_start_auth                (VortexConnection     * connection,
-							  char                 * profile, 
+							  const char           * profile, 
 							  VortexSaslAuthNotify   process_status,
 							  axlPointer             user_data);
 
 void               vortex_sasl_start_auth_sync           (VortexConnection     * connection,
-							  char                 * profile,
+							  const char           * profile,
 							  VortexStatus         * status,
 							  char                ** status_message);
 

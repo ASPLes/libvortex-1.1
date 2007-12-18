@@ -232,7 +232,7 @@ char  * vortex_frame_build_up_from_params (VortexFrameType   type,
 					   unsigned int      seqno,
 					   int               size,
 					   int               ansno,
-					   char   *          payload)
+					   const void *      payload)
 {
 	return vortex_frame_build_up_from_params_s (type, channel, msgno, more, seqno, size, ansno, NULL, NULL, payload, NULL);
 }
@@ -282,10 +282,10 @@ char  * vortex_frame_build_up_from_params_s (VortexFrameType   type,
 					     unsigned int      seqno,
 					     int               size,
 					     int               ansno,
-					     char   *          content_type,
-					     char   *          transfer_encoding,
-					     char   *          payload,
-					     int    *          frame_size)
+					     const char      * content_type,
+					     const char      * transfer_encoding,
+					     const void      * payload,
+					     int             * frame_size)
 {
 	char     * message_type = NULL;
 	char     * ansno_string = NULL;
@@ -459,7 +459,7 @@ VortexFrame * vortex_frame_create               (VortexCtx       * ctx,
 						 unsigned int      seqno,
 						 int               size,
 						 int               ansno,
-						 const char      * payload)
+						 const void      * payload)
 {
 	/* create a new frame using new_full interface and return
 	 * it. */
@@ -508,9 +508,9 @@ VortexFrame * vortex_frame_create_full          (VortexCtx       * ctx,
 						 unsigned int      seqno,
 						 int               size,
 						 int               ansno,
-						 char            * content_type,
-						 char            * transfer_encoding,
-						 const char      * payload)
+						 const char      * content_type,
+						 const char      * transfer_encoding,
+						 const void      * payload)
 {
 	VortexFrame * result;
 
@@ -598,9 +598,9 @@ VortexFrame * vortex_frame_create_full_ref      (VortexCtx       * ctx,
 						 unsigned int      seqno,
 						 int               size,
 						 int               ansno,
-						 char            * content_type,
-						 char            * transfer_encoding,
-						 char            * payload)
+						 const char      * content_type,
+						 const char      * transfer_encoding,
+						 void            * payload)
 {
 	VortexFrame * result;
 
@@ -623,7 +623,7 @@ VortexFrame * vortex_frame_create_full_ref      (VortexCtx       * ctx,
 
 	/* copy the payload */
 	if (size > 0 && payload != NULL) {
-		result->payload           = payload;
+		result->payload           = (axlPointer) payload;
 	}
 
 	/* copy content type */
@@ -1708,7 +1708,7 @@ VortexFrameType vortex_frame_get_type   (VortexFrame * frame)
  * with no content type and having a wrong frame (NULL value) you
  * should check if frame is not NULL first.
  **/
-char        * vortex_frame_get_content_type (VortexFrame * frame)
+const char   * vortex_frame_get_content_type (VortexFrame * frame)
 {
 	if (frame == NULL)
 		return NULL;
@@ -1725,7 +1725,7 @@ char        * vortex_frame_get_content_type (VortexFrame * frame)
  * @return Current mime header configuration request or NULL if not
  * defined.
  */
-char        * vortex_frame_get_transfer_encoding (VortexFrame * frame)
+const char   * vortex_frame_get_transfer_encoding (VortexFrame * frame)
 {
 	if (frame == NULL)
 		return NULL;
@@ -1987,7 +1987,7 @@ VortexCtx   * vortex_frame_get_ctx               (VortexFrame * frame)
  * @return A ok message. You must not free the returned message. It is
  * a copy to an internal Vortex Frame module.
  */
-char        * vortex_frame_get_ok_message        ()
+const char        * vortex_frame_get_ok_message        ()
 {
 	return _ok_msg;
 }
@@ -2004,9 +2004,9 @@ char        * vortex_frame_get_ok_message        ()
  * 
  * @return A newly allocated error message.
  */
-char        * vortex_frame_get_error_message    (char  * code, 
-						 char  * error_content,
-						 char  * xml_lang)
+char        * vortex_frame_get_error_message    (const char  * code, 
+						 const char  * error_content,
+						 const char  * xml_lang)
 {
 	return axl_strdup_printf ("<error code='%s'%s%s%s%s%s%s",
 				  code,
@@ -2073,12 +2073,12 @@ bool          vortex_frame_is_error_message      (VortexFrame * frame,
  * @return new start message that have to be deallocated when the it
  * is no longer need.
  */
-char        * vortex_frame_get_start_message   (int              channel_num,
-						char           * serverName, 
-						char           * profile,  
-						VortexEncoding   encoding,
-						char           * content_profile,
-						int              profile_content_size)
+char        * vortex_frame_get_start_message     (int              channel_num,
+						  const char     * serverName, 
+						  const char     * profile,  
+						  VortexEncoding   encoding,
+						  const char     * content_profile,
+						  int              profile_content_size)
 {
 	/* build initial start message using channel num and
 	 * serverName value. */
@@ -2110,10 +2110,10 @@ char        * vortex_frame_get_start_message   (int              channel_num,
  * @return A newly allocate close message which has to be deallocated
  * when no longer needed.
  */
-char        * vortex_frame_get_close_message     (int     number,
-						  char  * code,
-						  char  * xml_lang,
-						  char  * close_content)
+char        * vortex_frame_get_close_message     (int           number,
+						  const char  * code,
+						  const char  * xml_lang,
+						  const char  * close_content)
 {
 	return axl_strdup_printf ("<close number='%d' code='%s'%s%s%s%s%s%s",
 				  number,

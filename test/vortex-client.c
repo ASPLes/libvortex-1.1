@@ -21,6 +21,9 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+/* context */
+VortexCtx * ctx = NULL;
+
 /** 
  * @brief Connect used across the vortex client.
  */
@@ -989,8 +992,11 @@ int main (int argc, char *argv[])
 	VortexStatus       status;
 	char             * status_message;
 
+	/* init the context */
+	ctx = vortex_ctx_new ();
+	
 	/* init vortex library */
-	if (!vortex_init ()) {
+	if (!vortex_init_ctx (ctx)) {
 		printf ("ERROR: unable to initialize vortex library");
 		exit (-1);
 	}
@@ -1022,15 +1028,15 @@ int main (int argc, char *argv[])
 		}
 
 		if (axl_memcmp ("log", line, 3)) {
-			vortex_log_enable (! vortex_log_is_enabled () );
-			printf (" vortex log is: %s\n", vortex_log_is_enabled () ? "enabled" : "disabled");
+			vortex_log_enable (ctx, ! vortex_log_is_enabled (ctx) );
+			printf (" vortex log is: %s\n", vortex_log_is_enabled (ctx) ? "enabled" : "disabled");
 			continue;
 		}
 
 		if (axl_memcmp ("color log", line, 9)) {
-			vortex_color_log_enable (! vortex_color_log_is_enabled ());
+			vortex_color_log_enable (ctx, ! vortex_color_log_is_enabled (ctx));
 
-			printf (" vortex color log is: %s\n", vortex_color_log_is_enabled () ? "enabled" : "disabled");
+			printf (" vortex color log is: %s\n", vortex_color_log_is_enabled (ctx) ? "enabled" : "disabled");
 			continue;
 		}
 
@@ -1075,7 +1081,7 @@ int main (int argc, char *argv[])
 
 		if (axl_memcmp ("auto tls", line, 8)) {
 			/* enable auto tls profile negociation not allowing TLS failures */
-			vortex_connection_set_auto_tls (auto_tls_profile, false, NULL);
+			vortex_connection_set_auto_tls (ctx, auto_tls_profile, false, NULL);
 			printf ("Auto TLS profile negociation is: %s\n", auto_tls_profile ? "ON" : "OFF");
 			auto_tls_profile = !auto_tls_profile;
 			continue;
@@ -1086,7 +1092,7 @@ int main (int argc, char *argv[])
 				continue;
 
 			/* initialize and check if current vortex library supports TLS */
-			if (! vortex_tls_is_enabled ()) {
+			if (! vortex_tls_is_enabled (ctx)) {
 				printf ("Unable to activate TLS, Vortex Library is not prepared\n");
 				continue;
 			}
@@ -1138,7 +1144,7 @@ int main (int argc, char *argv[])
                         printf ("connecting to %s%s%s..", host, (port != NULL) ? ":" : "", (port != NULL) ? port : "");
 
 			/* create a vortex session */
-			connection = vortex_connection_new (host, port, NULL, NULL);
+			connection = vortex_connection_new (ctx, host, port, NULL, NULL);
 
 			/* check if connection is ok */
 			if (!vortex_connection_is_ok (connection, false)) {
@@ -1186,7 +1192,10 @@ int main (int argc, char *argv[])
 			clear_history ();	
 
 			/* finish vortex client */
-			vortex_exit ();
+			vortex_exit_ctx (ctx, false);
+
+			/* free context */
+			vortex_ctx_free (ctx);
 
 			/* exit from this program */
 			return 0;

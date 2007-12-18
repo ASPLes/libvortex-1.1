@@ -22,6 +22,9 @@
 #define COYOTE_PROFILE "http://fact.aspl.es/profiles/coyote_profile"
 #define OTP_PROFILE    "http://iana.org/beep/SASL/OTP"
 
+/* listener context */
+VortexCtx * ctx = NULL;
+
 void on_ready (char  * host, int  port, VortexStatus status, char  * message, axlPointer user_data)
 {
 	
@@ -29,7 +32,7 @@ void on_ready (char  * host, int  port, VortexStatus status, char  * message, ax
 		printf ("error at: %s\n", message);
 
 		/* exit from vortex  */
-		vortex_exit ();
+		vortex_exit_ctx (ctx, false);
 
 	}else {
 		printf ("ready on: %s:%d, message: %s\n", host, port, message);
@@ -77,19 +80,26 @@ bool     start_channel (int  channel_num, VortexConnection * connection, axlPoin
 int  main (int  argc, char ** argv) 
 {
 
+	/* create the context */
+	ctx = vortex_ctx_new ();
+
 	/* init vortex library */
-	vortex_init ();
+	if (! vortex_init_ctx (ctx)) {
+		/* unable to init context */
+		vortex_ctx_free (ctx);
+		return -1;
+	} /* end if */
 
 	/* register a profile */
-	vortex_profiles_register (COYOTE_PROFILE, 
+	vortex_profiles_register (ctx, COYOTE_PROFILE, 
 				  start_channel, NULL, NULL, NULL,
 				  frame_received, NULL);
 
 	/* create a vortex server */
-	vortex_listener_new ("0.0.0.0", "44000", on_ready, NULL);
+	vortex_listener_new (ctx, "0.0.0.0", "44000", on_ready, NULL);
 
 	/* wait for listeners (until vortex_exit is called) */
-	vortex_listener_wait ();
+	vortex_listener_wait (ctx);
 
 	/* do not call vortex_exit here if you define an on ready
 	 * function which actually ends the execution */
