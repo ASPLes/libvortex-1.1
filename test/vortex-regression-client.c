@@ -1631,6 +1631,8 @@ bool test_06 ()
 		return false;
 	}
 
+	printf ("Test 06: SASL ANONYMOUS profile support ");
+
 	/* begin SASL ANONYMOUS negociation */ 
 	vortex_sasl_set_propertie (connection, VORTEX_SASL_ANONYMOUS_TOKEN,
 				   "test-fail@aspl.es", NULL);
@@ -1657,6 +1659,8 @@ bool test_06 ()
 	/* close the connection */
 	vortex_connection_close (connection);
 
+	printf ("[   OK   ]\n");
+
 	/**** CHECK SASL EXTERNAL MECHANISM ****/
 
 	/* create a new connection */
@@ -1666,6 +1670,8 @@ bool test_06 ()
 	if (! vortex_connection_is_ok (connection, false)) {
 		return false;
 	}
+
+	printf ("Test 06: SASL EXTERNAL profile support ");
 
 	/* set external properties */
 	vortex_sasl_set_propertie (connection, VORTEX_SASL_AUTHORIZATION_ID,
@@ -1694,7 +1700,11 @@ bool test_06 ()
 	/* close the connection */
 	vortex_connection_close (connection);
 
+	printf ("[   OK   ]\n");
+
 	/**** CHECK PLAIN MECHANISM ****/
+
+	printf ("Test 06: SASL PLAIN profile support ");
 	
 	/* create a new connection */
 	connection = connection_new ();
@@ -1739,7 +1749,11 @@ bool test_06 ()
 	/* close the connection */
 	vortex_connection_close (connection);
 
+	printf ("[   OK   ]\n");
+
 	/**** CHECK CRAM-MD5 MECHANISM ****/
+
+	printf ("Test 06: SASL CRAM-MD5 profile support ");
 
 	/* create a new connection */
 	connection = connection_new ();
@@ -1784,8 +1798,12 @@ bool test_06 ()
 	/* close the connection */
 	vortex_connection_close (connection);
 
+	printf ("[   OK   ]\n");
+
 #ifndef AXL_OS_WIN32
 	/**** CHECK DIGEST-MD5 MECHANISM ****/
+	printf ("Test 06: SASL DIGEST-MD5 profile support ");
+
 	/* create a new connection */
 	connection = connection_new ();
 
@@ -1831,6 +1849,8 @@ bool test_06 ()
 
 	/* close the connection */
 	vortex_connection_close (connection);
+
+	printf ("[   OK   ]\n");
 #endif
 	
 	
@@ -2474,7 +2494,7 @@ int main (int  argc, char ** argv)
 	/* empty goto to avoid compiler complain about a label not
 	 * used in the case only select is supported */
 	goto init_test;
-
+ init_test:
 	printf ("**\n");
 	printf ("** INFO: running test with I/O API: ");
 	switch (vortex_io_waiting_get_current (ctx)) {
@@ -2581,7 +2601,6 @@ int main (int  argc, char ** argv)
 		return -1;
 	}
 
- init_test:
 	if (test_06 ()) {
 		printf ("Test 06: SASL profile support [   OK   ]\n");
 	} else {

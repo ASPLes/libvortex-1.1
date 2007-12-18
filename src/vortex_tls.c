@@ -1445,9 +1445,9 @@ bool     vortex_tls_process_start_msg (char              * profile,
 
 	/* notify user app level that a TLS profile request have being
 	 * received and it is required to act as serverName. */
-	vortex_log (VORTEX_LEVEL_DEBUG, "checking if applications level allows to negotiate the TLS profile");
+	vortex_log (VORTEX_LEVEL_DEBUG, "checking if application level allows to negotiate the TLS profile");
 	if (!ctx->tls_accept_handler (connection, serverName)) {
-		(* profile_content_reply)  = vortex_frame_get_error_message ("421", "applications level have reject to negotiate TLS transport layer", NULL);
+		(* profile_content_reply)  = vortex_frame_get_error_message ("421", "application level have reject to negotiate TLS transport layer", NULL);
 		
 		/* we have to reply true because the expected reply is
 		 * a positive one with a proceed or error content. */
@@ -1460,7 +1460,7 @@ bool     vortex_tls_process_start_msg (char              * profile,
 	certificate_file = ctx->tls_certificate_handler (connection, serverName);
 	if (certificate_file == NULL) {
 		(* profile_content_reply)  = vortex_frame_get_error_message ("421", 
-									     "applications level didn't provide a valid location for a certificate file, unable to negotiate TLS transport", 
+									     "application level didn't provide a valid location for a certificate file, unable to negotiate TLS transport", 
 									     NULL);
 		/* we have to reply true because the expected reply is
 		 * a positive one with a proceed or error content. */
@@ -1473,7 +1473,7 @@ bool     vortex_tls_process_start_msg (char              * profile,
 	private_key_file = ctx->tls_private_key_handler (connection, serverName);
 	if (private_key_file == NULL) {
 		(* profile_content_reply)  = vortex_frame_get_error_message ("421", 
-									     "applications level didn't provide a valid location for a private key file, unable to negotiate TLS transport", 
+									     "application level didn't provide a valid location for a private key file, unable to negotiate TLS transport", 
 									     NULL);
 		/* we have to reply true because the expected reply is
 		 * a positive one with a proceed or error content. */
@@ -1525,9 +1525,15 @@ bool     vortex_tls_default_accept     (VortexConnection * connection,
 char  * vortex_tls_default_certificate (VortexConnection * connection,
 				        char             * serverName)
 {
-	VortexCtx   * ctx = vortex_connection_get_ctx (connection);
+	VortexCtx   * ctx         = vortex_connection_get_ctx (connection);
+	char        * certificate;
+
+	certificate = vortex_support_find_data_file (ctx, "test-certificate.pem");
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "getting default test certificate: %s (ctx: %p)", certificate, ctx);
 	
-	return vortex_support_find_data_file (ctx, "test-certificate.pem");
+	/* return certificate found */
+	return certificate;
 }
 
 /** 
@@ -1783,6 +1789,9 @@ bool        vortex_tls_accept_negociation (VortexCtx                       * ctx
 						 VORTEX_TLS_PROFILE_URI,
 						 vortex_tls_process_start_msg,
 						 NULL);
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "tls profile activated accept handler=%p, certificate handler=%p, private key handler=%p",
+		    ctx->tls_accept_handler, ctx->tls_certificate_handler, ctx->tls_private_key_handler);
 
 	/* well, we are prepare to tls-ficate! */
 	return true;

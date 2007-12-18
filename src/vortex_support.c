@@ -436,12 +436,14 @@ char   * vortex_support_domain_find_data_file      (VortexCtx  * ctx,
 				/* free the cursor */
 				axl_list_cursor_free (cursor);
 
-				vortex_log (VORTEX_LEVEL_DEBUG, "file found at: %s", file_name);
+				vortex_log (VORTEX_LEVEL_DEBUG, "file found at: %s, %d, %p", file_name, 
+					    axl_list_length (ctx->support_search_path), ctx->support_search_path);
 				vortex_mutex_unlock (&ctx->search_path_mutex);	
 				return file_name;
 			} /* end if */
 			
-			vortex_log (VORTEX_LEVEL_DEBUG, "unable to find file %s on %s",  name, file_name);
+			vortex_log (VORTEX_LEVEL_DEBUG, "unable to find file %s on '%s', %d, %p",  
+				    name, file_name, axl_list_length (ctx->support_search_path), ctx->support_search_path);
 			axl_free (file_name);
 
 		} /* end for */
@@ -453,6 +455,10 @@ char   * vortex_support_domain_find_data_file      (VortexCtx  * ctx,
 
 	/* free the cursor */
 	axl_list_cursor_free (cursor);
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "unable to find %s inside domain: '%s', %d, %p", name, domain,
+		    axl_list_length (ctx->support_search_path), ctx->support_search_path);
+
 
 	vortex_mutex_unlock (&ctx->search_path_mutex);
 	return NULL;	
@@ -762,6 +768,5 @@ bool   vortex_support_file_test (const char * path, VortexFileTest test)
 	/* return current result */
 	return result;
 }
-
 
 /* @} */

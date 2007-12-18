@@ -6801,11 +6801,19 @@ VortexChannelPool * vortex_channel_get_pool                       (VortexChannel
  */
 VortexCtx         * vortex_channel_get_ctx                        (VortexChannel * channel)
 {
-	if (channel == NULL)
+	VortexCtx * ctx = NULL;
+
+	if (channel == NULL) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "returning null context because null channel received");
 		return NULL;
+	}
 	
 	/* call to get the context associated to the cnonection */
-	return vortex_connection_get_ctx (channel->connection);
+	ctx = vortex_connection_get_ctx (channel->connection);
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "returning ctx %p because channel %p received", ctx, channel);
+
+	return ctx;
 } 
 
 /** 

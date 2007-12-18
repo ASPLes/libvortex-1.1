@@ -807,6 +807,7 @@ bool   vortex_init_ctx (VortexCtx * ctx)
 
 	/* add default paths */
 #if defined(AXL_OS_UNIX)
+	vortex_log (VORTEX_LEVEL_DEBUG, "configuring context to use: %p", ctx);
 	vortex_support_add_search_path_ref (ctx, vortex_support_build_filename (PACKAGE_DTD_DIR, "libvortex", "data", NULL ));
 	vortex_support_add_search_path_ref (ctx, vortex_support_build_filename (PACKAGE_DTD_DIR, "libvortex", NULL ));
 	vortex_support_add_search_path_ref (ctx, vortex_support_build_filename ("libvortex", NULL ));

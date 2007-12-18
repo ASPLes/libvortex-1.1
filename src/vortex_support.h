@@ -107,7 +107,7 @@ double   vortex_support_strtod                     (const char  * param,
 int      vortex_timeval_substract                  (struct timeval * a, 
 						    struct timeval * b,
 						    struct timeval * result);
- 
+
 #define copy_if_not_null(arg) (arg != NULL) ? axl_strdup (arg) : NULL;
 
 #endif
