@@ -21,6 +21,9 @@
 
 #define COYOTE_PROFILE "http://fact.aspl.es/profiles/coyote_profile"
 
+/* listener context */
+VortexCtx * ctx = NULL;
+
 void on_ready (char  * host, int  port, VortexStatus status, char  * message, axlPointer user_data)
 {
 	
@@ -28,7 +31,7 @@ void on_ready (char  * host, int  port, VortexStatus status, char  * message, ax
 		printf ("error at: %s\n", message);
 
 		/* exit from vortex */
-		vortex_exit ();
+		vortex_listener_unlock (ctx);
 
 	}else {
 		printf ("ready on: %s:%d, message: %s\n", host, port, message);
@@ -237,8 +240,15 @@ char  * sasl_digest_md5_validation_full (VortexConnection * connection,
 int  main (int  argc, char  ** argv) 
 {
 
+	/* create the context */
+	ctx = vortex_ctx_new ();
+
 	/* init vortex library */
-	vortex_init ();
+	if (! vortex_init_ctx (ctx)) {
+		/* unable to init context */
+		vortex_ctx_free (ctx);
+		return -1;
+	} /* end if */
 
 	/* check for SASL initialization */
 	if (! vortex_sasl_is_enabled ()) {
@@ -252,46 +262,46 @@ int  main (int  argc, char  ** argv)
 		printf ("Using user-defined pointer passing server...\n");
 		
 		/* set default anonymous validation handler */
-		vortex_sasl_set_anonymous_validation_full (sasl_anonymous_validation_full);
+		vortex_sasl_set_anonymous_validation_full (ctx, sasl_anonymous_validation_full);
 
 		/* accept SASL ANONYMOUS incoming requests */
-		if (! vortex_sasl_accept_negociation_full (VORTEX_SASL_ANONYMOUS, "anonymous!")) {
+		if (! vortex_sasl_accept_negociation_full (ctx, VORTEX_SASL_ANONYMOUS, "anonymous!")) {
 			printf ("Unable to make Vortex Libray to accept SASL ANONYMOUS profile");
 			return -1;
 		}
 
 		/* set default external validation handler */
-		vortex_sasl_set_external_validation_full (sasl_external_validation_full);
+		vortex_sasl_set_external_validation_full (ctx, sasl_external_validation_full);
 
 		/* accept SASL EXTERNAL incoming requests */
-		if (! vortex_sasl_accept_negociation_full (VORTEX_SASL_EXTERNAL, "external!")) {
+		if (! vortex_sasl_accept_negociation_full (ctx, VORTEX_SASL_EXTERNAL, "external!")) {
 			printf ("Unable to make Vortex Libray to accept SASL EXTERNAL profile");
 			return -1;
 		}
 
 		/* set default plain validation handler */
-		vortex_sasl_set_plain_validation_full (sasl_plain_validation_full);
+		vortex_sasl_set_plain_validation_full (ctx, sasl_plain_validation_full);
 
 		/* accept SASL PLAIN incoming requests */
-		if (! vortex_sasl_accept_negociation_full (VORTEX_SASL_PLAIN, "plain!")) {
+		if (! vortex_sasl_accept_negociation_full (ctx, VORTEX_SASL_PLAIN, "plain!")) {
 			printf ("Unable to make Vortex Libray to accept SASL PLAIN profile");
 			return -1;
 		}
 
 		/* set default CRAM-MD5 validation handler */
-		vortex_sasl_set_cram_md5_validation_full (sasl_cram_md5_validation_full);
+		vortex_sasl_set_cram_md5_validation_full (ctx, sasl_cram_md5_validation_full);
 
 		/* accept SASL CRAM-MD5 incoming requests */
-		if (! vortex_sasl_accept_negociation_full (VORTEX_SASL_CRAM_MD5, "cram md5!")) {
+		if (! vortex_sasl_accept_negociation_full (ctx, VORTEX_SASL_CRAM_MD5, "cram md5!")) {
 			printf ("Unable to make Vortex Library to accept SASL CRAM-MD5 profile");
 			return -1;
 		}
 
 		/* set default DIGEST-MD5 validation handler */
-		vortex_sasl_set_digest_md5_validation_full (sasl_digest_md5_validation_full);
+		vortex_sasl_set_digest_md5_validation_full (ctx, sasl_digest_md5_validation_full);
 
 		/* accept SASL DIGEST-MD5 incoming requests */
-		if (! vortex_sasl_accept_negociation_full (VORTEX_SASL_DIGEST_MD5, "digest md5!")) {
+		if (! vortex_sasl_accept_negociation_full (ctx, VORTEX_SASL_DIGEST_MD5, "digest md5!")) {
 			printf ("Unable to make Vortex Library to accept SASL DIGEST-MD5 profile");
 			return -1;
 		}
@@ -300,46 +310,46 @@ int  main (int  argc, char  ** argv)
 	{
 	
 		/* set default anonymous validation handler */
-		vortex_sasl_set_anonymous_validation (sasl_anonymous_validation);
+		vortex_sasl_set_anonymous_validation (ctx, sasl_anonymous_validation);
 
 		/* accept SASL ANONYMOUS incoming requests */
-		if (! vortex_sasl_accept_negociation (VORTEX_SASL_ANONYMOUS)) {
+		if (! vortex_sasl_accept_negociation (ctx, VORTEX_SASL_ANONYMOUS)) {
 			printf ("Unable to make Vortex Libray to accept SASL ANONYMOUS profile");
 			return -1;
 		}
 
 		/* set default anonymous validation handler */
-		vortex_sasl_set_external_validation (sasl_external_validation);
+		vortex_sasl_set_external_validation (ctx, sasl_external_validation);
 
 		/* accept SASL ANONYMOUS incoming requests */
-		if (! vortex_sasl_accept_negociation (VORTEX_SASL_EXTERNAL)) {
+		if (! vortex_sasl_accept_negociation (ctx, VORTEX_SASL_EXTERNAL)) {
 			printf ("Unable to make Vortex Libray to accept SASL EXTERNAL profile");
 			return -1;
 		}
 
 		/* set default plain validation handler */
-		vortex_sasl_set_plain_validation (sasl_plain_validation);
+		vortex_sasl_set_plain_validation (ctx, sasl_plain_validation);
 
 		/* accept SASL PLAIN incoming requests */
-		if (! vortex_sasl_accept_negociation (VORTEX_SASL_PLAIN)) {
+		if (! vortex_sasl_accept_negociation (ctx, VORTEX_SASL_PLAIN)) {
 			printf ("Unable to make Vortex Libray to accept SASL PLAIN profile");
 			return -1;
 		}
 
 		/* set default CRAM-MD5 validation handler */
-		vortex_sasl_set_cram_md5_validation (sasl_cram_md5_validation);
+		vortex_sasl_set_cram_md5_validation (ctx, sasl_cram_md5_validation);
 
 		/* accept SASL CRAM-MD5 incoming requests */
-		if (! vortex_sasl_accept_negociation (VORTEX_SASL_CRAM_MD5)) {
+		if (! vortex_sasl_accept_negociation (ctx, VORTEX_SASL_CRAM_MD5)) {
 			printf ("Unable to make Vortex Library to accept SASL CRAM-MD5 profile");
 			return -1;
 		}
 
 		/* set default DIGEST-MD5 validation handler */
-		vortex_sasl_set_digest_md5_validation (sasl_digest_md5_validation);
+		vortex_sasl_set_digest_md5_validation (ctx, sasl_digest_md5_validation);
 
 		/* accept SASL DIGEST-MD5 incoming requests */
-		if (! vortex_sasl_accept_negociation (VORTEX_SASL_DIGEST_MD5)) {
+		if (! vortex_sasl_accept_negociation (ctx, VORTEX_SASL_DIGEST_MD5)) {
 			printf ("Unable to make Vortex Library to accept SASL DIGEST-MD5 profile");
 			return -1;
 		}
@@ -347,30 +357,31 @@ int  main (int  argc, char  ** argv)
 
 
 	/* check for TLS initialization */
-	if (! vortex_tls_is_enabled ()) {
+	if (! vortex_tls_is_enabled (ctx)) {
 		printf ("Current Vortex Library is not prepared for TLS profile");
 		return -1;
 	}
 
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */
-	if (! vortex_tls_accept_negociation (NULL, NULL, NULL)) {
+	if (! vortex_tls_accept_negociation (ctx, NULL, NULL, NULL)) {
 		printf ("Unable to start accepting TLS profile requests");
 	}
 
 	/* register a profile */
-	vortex_profiles_register (COYOTE_PROFILE, 
+	vortex_profiles_register (ctx, COYOTE_PROFILE, 
 				  NULL, NULL, NULL, NULL,
 				  frame_received, NULL);
 
 	/* create a vortex server */
-	vortex_listener_new ("0.0.0.0", "44000", on_ready, NULL);
+	vortex_listener_new (ctx, "0.0.0.0", "44000", on_ready, NULL);
 
 	/* wait for listeners (until vortex_exit is called) */
-	vortex_listener_wait ();
+	vortex_listener_wait (ctx);
 
 	/* do not call vortex_exit here if you define an on ready
 	 * function which actually ends the execution */
+	vortex_exit_ctx (ctx, true);
 
 	return 0;
 }

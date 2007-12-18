@@ -529,7 +529,7 @@ void vortex_sasl_configure_current_properties (VortexConnection * connection)
 
 typedef struct __VortexSaslStartData {
 	VortexConnection     * connection;
-	char                 * profile;
+	const char           * profile;
 	VortexSaslAuthNotify   process_status;
 	axlPointer             user_data;
 	bool                   threaded;
@@ -546,7 +546,7 @@ typedef struct __VortexSaslStartData {
  * @return the function return an already base64 encoded SASL
  * content. The caller must unref the memory returned once not needed.
  */
-char  * __vortex_sasl_initiator_do_initial_step (char                 * profile,
+char  * __vortex_sasl_initiator_do_initial_step (const char           * profile,
 						 VortexConnection     * connection,
 						 VortexSaslAuthNotify   process_status,
 						 axlPointer             user_data)
@@ -880,7 +880,7 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 	/* local variable declarations received from main function */
 	VortexConnection     * connection      = data->connection;
 	VortexCtx            * ctx             = vortex_connection_get_ctx (connection);
-	char                 * profile         = data->profile;
+	const char           * profile         = data->profile;
 	VortexSaslAuthNotify   process_status  = data->process_status;
 	axlPointer             user_data       = data->user_data;
 	
@@ -976,7 +976,7 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 	__vortex_sasl_filter_profiles (connection);
 
 	/* configure the profile used by the authentication process */
-	vortex_connection_set_data (connection, SASL_METHOD_USED, profile);
+	vortex_connection_set_data (connection, SASL_METHOD_USED, (axlPointer) profile);
 
 	/* notify user space that the SASL profile have successfully
 	 * completed */
@@ -1001,7 +1001,7 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
  * or false if something is wrong.
  */
 bool     __vortex_sasl_auth_data_sanity_check (VortexConnection     * connection,
-					       char                 * profile, 
+					       const char           * profile, 
 					       VortexSaslAuthNotify   process_status,
 					       axlPointer             user_data)
 {
@@ -1092,7 +1092,7 @@ bool     __vortex_sasl_auth_data_sanity_check (VortexConnection     * connection
  * @param user_data      User space defined data to be passed to <b>process_status</b>
  */
 void               vortex_sasl_start_auth                (VortexConnection     * connection,
-							  char                 * profile, 
+							  const char           * profile, 
 							  VortexSaslAuthNotify   process_status,
 							  axlPointer             user_data)
 {
@@ -1230,7 +1230,7 @@ void __vortex_sasl_start_auth_sync_process  (VortexConnection * connection,
  * @param status_message A reference to notify the caller a textual diagnostic about SASL finish status.
  */
 void               vortex_sasl_start_auth_sync           (VortexConnection     * connection,
-							  char                 * profile,
+							  const char           * profile,
 							  VortexStatus         * status,
 							  char                ** status_message)
 

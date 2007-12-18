@@ -14,6 +14,9 @@
  */
 VortexTunnelSettings * tunnel_settings = NULL;
 
+/* listener context */
+VortexCtx * ctx = NULL;
+
 VortexConnection * connection_new ()
 {
 	/* create a new connection */
@@ -23,7 +26,7 @@ VortexConnection * connection_new ()
 		return vortex_tunnel_new (tunnel_settings, NULL, NULL);
 	} else {
 		/* create a direct connection */
-		return vortex_connection_new (LISTENER_HOST, LISTENER_PORT, NULL, NULL);
+		return vortex_connection_new (ctx, LISTENER_HOST, LISTENER_PORT, NULL, NULL);
 	}
 }
 
@@ -69,16 +72,23 @@ int main (int argc, char ** argv)
 /*	vortex_log_enable (true);
 	vortex_color_log_enable (true);  */
 
+	/* create the context */
+	ctx = vortex_ctx_new ();
+
 	/* init vortex library */
-	vortex_init ();
+	if (! vortex_init_ctx (ctx)) {
+		/* unable to init context */
+		vortex_ctx_free (ctx);
+		return -1;
+	} /* end if */
 
 /*	vortex_io_waiting_use (VORTEX_IO_WAIT_EPOLL);   */
-	vortex_conf_set (VORTEX_HARD_SOCK_LIMIT, 4096, NULL); 
-	vortex_conf_set (VORTEX_SOFT_SOCK_LIMIT, 4096, NULL);  
+	vortex_conf_set (ctx, VORTEX_HARD_SOCK_LIMIT, 4096, NULL); 
+	vortex_conf_set (ctx, VORTEX_SOFT_SOCK_LIMIT, 4096, NULL);  
 	
 	/* create tunnel settings */
 	if (argc > 1 && axl_cmp (argv[1], "--use-proxy")) {
-		tunnel_settings = vortex_tunnel_settings_new ();
+		tunnel_settings = vortex_tunnel_settings_new (ctx);
 		
 		/* add end point behind it */
 		vortex_tunnel_settings_add_hop (tunnel_settings,
@@ -148,14 +158,14 @@ int main (int argc, char ** argv)
 	vortex_tunnel_settings_free (tunnel_settings);
 
 	/* end vortex function */
-	vortex_exit ();
+	vortex_exit_ctx (ctx, true);
 
 #if defined(AXL_OS_UNIX)
 	/* substract */
 	subs (stop, start, &stop);
 #endif
 
-	switch (vortex_io_waiting_get_current ()) {
+	switch (vortex_io_waiting_get_current (ctx)) {
 	case VORTEX_IO_WAIT_SELECT:
 		printf ("INFO: used select(2) system call\n");
 		break;

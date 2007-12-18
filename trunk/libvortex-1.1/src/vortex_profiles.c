@@ -744,7 +744,7 @@ axlPointer __vortex_profiles_invoke_frame_received (axlPointer __data)
  * @return true if frame was delivered to a handler or false if
  * frame was not delivered.
  */
-bool     vortex_profiles_invoke_frame_received (char             * uri,
+bool     vortex_profiles_invoke_frame_received (const char       * uri,
 						int                channel_num,
 						VortexConnection * connection,
 						VortexFrame      * frame)
@@ -759,7 +759,7 @@ bool     vortex_profiles_invoke_frame_received (char             * uri,
 	v_return_val_if_fail (frame,                           false);
 	v_return_val_if_fail (ctx && ctx->registered_profiles, false);
 
-	profile = vortex_hash_lookup (ctx->registered_profiles, uri);
+	profile = vortex_hash_lookup (ctx->registered_profiles, (axlPointer) uri);
 
 	if ((profile == NULL) || (profile->received == NULL)) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "invoking frame received handler on a profile which haven't been defined");

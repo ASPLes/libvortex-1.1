@@ -1881,16 +1881,17 @@ void __vortex_xml_rpc_frame_received (VortexChannel    * channel,
  * some error have happened. In that case, profile_content_reply is
  * filled.
  */
-bool     __vortex_xml_rpc_parse_bootmsg (char  *  profile_content, 
-					 char  ** resource, 
-					 char  ** profile_content_reply)
+bool     __vortex_xml_rpc_parse_bootmsg (VortexCtx   * ctx,
+					 char        *  profile_content, 
+					 char       ** resource, 
+					 char       ** profile_content_reply)
 {
 	axlDtd    * xml_rpc_dtd;
 	axlDoc    * doc;
 	axlNode   * bootmsg;
 
 	/* get channel management DTD */
-	if ((xml_rpc_dtd = vortex_dtds_get_xml_rpc_boot_dtd ()) == NULL) {
+	if ((xml_rpc_dtd = vortex_dtds_get_xml_rpc_boot_dtd (ctx)) == NULL) {
 		(* profile_content_reply ) = 
 			vortex_frame_get_error_message ("451",
 							"unable to load dtd file (xml-rpc.dtd), cannot validate incoming message, returning error frame",
@@ -1993,7 +1994,7 @@ bool     __vortex_xml_rpc_start_msg (char              * profile,
 	bool                               accept = false;
 	VortexChannel                    * channel;
 
-	if (!__vortex_xml_rpc_parse_bootmsg (profile_content, &resource, profile_content_reply))
+	if (!__vortex_xml_rpc_parse_bootmsg (ctx, profile_content, &resource, profile_content_reply))
 		return false;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "start message received on XML-RPC channel resource=%s",

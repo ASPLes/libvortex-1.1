@@ -25,6 +25,9 @@
 
 axlList * list;
 
+/* listener context */
+VortexCtx * ctx = NULL;
+
 void frame_received (VortexChannel    * channel,
 		     VortexConnection * connection,
 		     VortexFrame      * frame,
@@ -69,11 +72,11 @@ void frame_received (VortexChannel    * channel,
 
 	printf ("checking if the profile='%s' is registered\n", 
 		(char*) vortex_frame_get_payload (frame));
-	if (vortex_profiles_is_registered (vortex_frame_get_payload (frame))) {
+	if (vortex_profiles_is_registered (ctx, vortex_frame_get_payload (frame))) {
 		/* free the payload */
 		printf ("  Found registered profiled, unregistering it: %s\n", 
 			(char*) vortex_frame_get_payload (frame));
-		vortex_profiles_unregister (vortex_frame_get_payload (frame));
+		vortex_profiles_unregister (ctx, vortex_frame_get_payload (frame));
 	} /* end if */
 
 	return;
@@ -83,11 +86,18 @@ int  main (int  argc, char ** argv)
 {
 	VortexConnection * listener;
 
+	/* create the context */
+	ctx = vortex_ctx_new ();
+
 	/* init vortex library */
-	vortex_init ();
+	if (! vortex_init_ctx (ctx)) {
+		/* unable to init context */
+		vortex_ctx_free (ctx);
+		return -1;
+	} /* end if */
 
 	/* register a profile */
-	vortex_profiles_register (LISTENER_SHUTDOWN_PROFILE,
+	vortex_profiles_register (ctx, LISTENER_SHUTDOWN_PROFILE,
 				  /* no start channel handling */
 				  NULL, NULL, 
 				  /* no close channel handling */
@@ -95,7 +105,7 @@ int  main (int  argc, char ** argv)
 				  frame_received, NULL);
 
 	/* register a profile */
-	vortex_profiles_register (LISTENER_SHUTDOWN_PROFILE2,
+	vortex_profiles_register (ctx, LISTENER_SHUTDOWN_PROFILE2,
 				  /* no start channel handling */
 				  NULL, NULL, 
 				  /* no close channel handling */
@@ -103,7 +113,7 @@ int  main (int  argc, char ** argv)
 				  frame_received, NULL);
 
 	/* register a profile */
-	vortex_profiles_register (LISTENER_SHUTDOWN_PROFILE3,
+	vortex_profiles_register (ctx, LISTENER_SHUTDOWN_PROFILE3,
 				  /* no start channel handling */
 				  NULL, NULL, 
 				  /* no close channel handling */
@@ -114,20 +124,21 @@ int  main (int  argc, char ** argv)
 	list = axl_list_new (axl_list_always_return_1, NULL);
 				  
 	/* create a vortex server */
-	listener = vortex_listener_new ("0.0.0.0", "44000", NULL, NULL);
+	listener = vortex_listener_new (ctx, "0.0.0.0", "44000", NULL, NULL);
 	axl_list_add (list, listener);
 
-	listener = vortex_listener_new ("0.0.0.0", "44001", NULL, NULL);
+	listener = vortex_listener_new (ctx, "0.0.0.0", "44001", NULL, NULL);
 	axl_list_add (list, listener);
 
-	listener = vortex_listener_new ("0.0.0.0", "44002", NULL, NULL);
+	listener = vortex_listener_new (ctx, "0.0.0.0", "44002", NULL, NULL);
 	axl_list_add (list, listener);
 
 	/* wait for listeners (until vortex_exit is called) */
-	vortex_listener_wait ();
+	vortex_listener_wait (ctx);
 
 	/* do not call vortex_exit here if you define an on ready
 	 * function which actually ends the execution */
+	vortex_exit_ctx (ctx, true);
 
 	return 0;
 }

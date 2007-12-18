@@ -70,6 +70,9 @@ VortexCtx * vortex_ctx_new ()
 	/**** vortex_frame_factory.c: init module ****/
 	result->frame_id = 1;
 
+	/* init mutex for the log */
+	vortex_mutex_create (&result->log_mutex);
+
 	/**** vortex_thread_pool.c: init ****/
 	result->thread_pool_exclusive = true;
 
@@ -88,6 +91,9 @@ void        vortex_ctx_free (VortexCtx * ctx)
 	/* do nothing */
 	if (ctx == NULL)
 		return;
+
+	/* release log mutex */
+	vortex_mutex_create (&ctx->log_mutex);
 
 	/* free the context */
 	axl_free (ctx);

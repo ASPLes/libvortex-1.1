@@ -80,10 +80,10 @@ bool                vortex_connection_close_all_channels     (VortexConnection *
 							      bool     also_channel_0);
 
 bool                vortex_connection_ref                    (VortexConnection * connection,
-							      char             * who);
+							      const char       * who);
 
 void                vortex_connection_unref                  (VortexConnection * connection,
-							      char             * who);
+							      const char       * who);
 
 int                 vortex_connection_ref_count              (VortexConnection * connection);
 
@@ -132,7 +132,7 @@ bool                vortex_connection_is_profile_filtered    (VortexConnection  
 							      const char            * serverName);
 
 bool                vortex_connection_is_profile_supported   (VortexConnection * connection, 
-							      char  * uri);
+							      const char       * uri);
 
 bool                vortex_connection_channel_exists         (VortexConnection * connection, 
 							      int  channel_num);
@@ -191,7 +191,7 @@ bool                vortex_connection_set_sock_block         (VORTEX_SOCKET sock
 							      bool          enable);
 
 void                vortex_connection_set_data               (VortexConnection * connection,
-							      char             * key,
+							      const char       * key,
 							      axlPointer         value);
 
 void                vortex_connection_set_data_full          (VortexConnection * connection,
@@ -203,10 +203,10 @@ void                vortex_connection_set_data_full          (VortexConnection *
 void                vortex_connection_set_auto_tls           (VortexCtx        * ctx,
 							      bool               enabled,
 							      bool               allow_tls_failures,
-							      char             * serverName);
+							      const char       * serverName);
 
 axlPointer          vortex_connection_get_data               (VortexConnection * connection,
-							      char             * key);
+							      const char       * key);
 							      
 
 VortexChannelPool * vortex_connection_get_channel_pool       (VortexConnection * connection,
@@ -296,7 +296,7 @@ void                vortex_connection_init                   (VortexCtx        *
 void                vortex_connection_cleanup                (VortexCtx        * ctx);
 
 void                __vortex_connection_set_not_connected    (VortexConnection * connection, 
-							      char             * message);
+							      const char       * message);
 
 int                 vortex_connection_do_a_sending_round     (VortexConnection * connection);
 

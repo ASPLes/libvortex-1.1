@@ -30,6 +30,9 @@
 /* file size, in bytes */
 #define FILE_SIZE (43378171)
 
+/* listener context */
+VortexCtx * ctx = NULL;
+
 void frame_received (VortexChannel    * channel,
 		     VortexConnection * connection,
 		     VortexFrame      * frame,
@@ -160,29 +163,36 @@ bool     close_channel (int                channel_num,
 int  main (int  argc, char ** argv) 
 {
 
+	/* create the context */
+	ctx = vortex_ctx_new ();
+
 	/* init vortex library */
-	vortex_init ();
+	if (! vortex_init_ctx (ctx)) {
+		/* unable to init context */
+		vortex_ctx_free (ctx);
+		return -1;
+	} /* end if */
 
 	/* register a profile */
-	vortex_profiles_register (FILE_TRANSFER_URI,
+	vortex_profiles_register (ctx, FILE_TRANSFER_URI,
 				  start_channel, NULL, 
 				  close_channel, NULL,
 				  frame_received, NULL);
 
 	/* register a profile */
-	vortex_profiles_register (FILE_TRANSFER_URI_WITH_MSG,
+	vortex_profiles_register (ctx, FILE_TRANSFER_URI_WITH_MSG,
 				  start_channel, NULL, 
 				  close_channel, NULL,
 				  frame_received_with_msg, NULL);
        
 	/* create a vortex server */
-	vortex_listener_new ("0.0.0.0", "44017", NULL, NULL);
+	vortex_listener_new (ctx, "0.0.0.0", "44017", NULL, NULL);
 
 	/* wait for listeners (until vortex_exit is called) */
-	vortex_listener_wait ();
+	vortex_listener_wait (ctx);
 	
 	/* end vortex function */
-	vortex_exit ();
+	vortex_exit_ctx (ctx, true);
 
 	return 0;
 }

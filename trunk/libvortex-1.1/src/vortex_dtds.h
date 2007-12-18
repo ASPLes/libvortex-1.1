@@ -42,11 +42,11 @@
 
 bool       vortex_dtds_init                 (VortexCtx * ctx);
 
-axlDtd   * vortex_dtds_get_channel_dtd      ();
+axlDtd   * vortex_dtds_get_channel_dtd      (VortexCtx * ctx);
 
-axlDtd   * vortex_dtds_get_sasl_dtd         ();
+axlDtd   * vortex_dtds_get_sasl_dtd         (VortexCtx * ctx);
 
-axlDtd   * vortex_dtds_get_xml_rpc_boot_dtd ();
+axlDtd   * vortex_dtds_get_xml_rpc_boot_dtd (VortexCtx * ctx);
 
 void       vortex_dtds_cleanup              (VortexCtx * ctx);
 

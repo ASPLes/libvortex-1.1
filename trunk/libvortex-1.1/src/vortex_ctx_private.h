@@ -57,6 +57,8 @@ struct _VortexCtx {
 	VortexMutex          tls_init_mutex;
 	VortexMutex          listener_mutex;
 	VortexMutex          listener_unlock;
+	VortexMutex          log_mutex;
+	bool                 use_log_mutex;
 
 	/* default configurations */
 	int                  backlog;

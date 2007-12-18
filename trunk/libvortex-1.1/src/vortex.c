@@ -377,7 +377,7 @@ bool      vortex_conf_get             (VortexCtx      * ctx,
 bool      vortex_conf_set             (VortexCtx      * ctx,
 				       VortexConfItem   item, 
 				       int              value, 
-				       char           * str_value)
+				       const char     * str_value)
 {
 #if defined(AXL_OS_WIN32)
 
@@ -472,6 +472,60 @@ bool      vortex_conf_set             (VortexCtx      * ctx,
 }
 
 /** 
+ * @brief If activate the console debug, it may happen that some
+ * messages are mixed because several threads are producing them at
+ * the same time.
+ *
+ * This function allows to make all messages logged to acquire a mutex
+ * before continue. It is by default disabled because it has the
+ * following considerations:
+ * 
+ * - Acquiring a mutex allow to clearly separate messages from
+ * different threads, but has a great perform penalty (only if log is
+ * activated).
+ *
+ * - Aquiring a mutex could make the overall system to act in a
+ * different way because the threading is now globally synchronized by
+ * all calls done to the log. That is, it may be possible to not
+ * reproduce a thread race condition if the log is activated with
+ * mutex acquicision.
+ * 
+ * @param ctx The context that is going to be configured.
+ * 
+ * @param status true to acquire the mutex before logging, otherwise
+ * log without locking the context mutex.
+ *
+ * You can use \ref vortex_log_is_enabled_acquire_mutex to check the
+ * mutex status.
+ */
+void     vortex_log_acquire_mutex    (VortexCtx * ctx, 
+				      bool        status)
+{
+	/* get current context */
+	v_return_if_fail (ctx);
+
+	/* configure status */
+	ctx->use_log_mutex = true;
+}
+
+/** 
+ * @brief Allows to check if the log mutex acquicision is activated.
+ *
+ * @param ctx The context that will be required to return its
+ * configuration.
+ * 
+ * @return Current status configured.
+ */
+bool     vortex_log_is_enabled_acquire_mutex (VortexCtx * ctx)
+{
+	/* get current context */
+	v_return_val_if_fail (ctx, false);
+	
+	/* configure status */
+	return ctx->use_log_mutex;
+}
+
+/** 
  * @internal Internal common log implementation to support several levels
  * of logs.
  * 
@@ -493,20 +547,38 @@ void _vortex_log_common (VortexCtx        * ctx,
 	/* do no operation if not defined debug */
 	return;
 #else
-	v_return_if_fail (ctx);
+	/* log with mutex */
+	bool use_log_mutex = false;
+
+	if (ctx == NULL) {
+#if defined (__GNUC__)
+		fprintf (stdout, "\e[1;31m!!! CONTEXT NOT DEFINED !!!\e[0m: ");
+#else
+		fprintf (stdout, "!!! CONTEXT NOT DEFINED !!!: ");
+#endif /* __GNUC__ */
+		goto ctx_not_defined;
+	}
 
 	/* if not VORTEX_DEBUG FLAG, do not output anything */
 	if (!vortex_log_is_enabled (ctx)) {
 		return;
 	} /* end if */
 
+	/* acquire the mutex so multiple threads will not mix their
+	 * log messages together */
+	use_log_mutex = ctx->use_log_mutex;
+	if (use_log_mutex) 
+		vortex_mutex_lock (&ctx->log_mutex);
+
 	/* printout the process pid */
 #if defined (__GNUC__)
 	if (vortex_color_log_is_enabled (ctx)) 
 		fprintf (stdout, "\e[1;36m(proc %d)\e[0m: ", getpid ());
-	else
-#endif
+	else {
+#endif /* __GNUC__ */
+	ctx_not_defined:
 		fprintf (stdout, "(proc %d): ", getpid ());
+	}
 
 	/* drop a log according to the level */
 #if defined (__GNUC__)
@@ -523,13 +595,13 @@ void _vortex_log_common (VortexCtx        * ctx,
 			break;
 		}
 	}else {
-#endif
+#endif /* __GNUC__ */
 		switch (log_level) {
 		case VORTEX_LEVEL_DEBUG:
-			fprintf (stdout, "(debug)");
+			fprintf (stdout, "(debug) ");
 			break;
 		case VORTEX_LEVEL_WARNING:
-			fprintf (stdout, "(warning)");
+			fprintf (stdout, "(warning) ");
 			break;
 		case VORTEX_LEVEL_CRITICAL:
 			fprintf (stdout, "(critical) ");
@@ -549,7 +621,12 @@ void _vortex_log_common (VortexCtx        * ctx,
 
 	/* ensure that the log is droped to the console */
 	fflush (stdout);
-#endif
+	
+	/* check to release the mutex if defined the context */
+	if (use_log_mutex) 
+		vortex_mutex_unlock (&ctx->log_mutex);
+
+#endif /* end ENABLE_VORTEX_LOG */
 
 
 	/* return */
@@ -753,7 +830,7 @@ bool   vortex_init_ctx (VortexCtx * ctx)
 	 * avoid race conditions cause to properly create a
 	 * connection, which is later not possible to handle at the
 	 * select(2) I/O subsystem. */
-	if (vortex_io_waiting_get_current () == VORTEX_IO_WAIT_SELECT) {
+	if (vortex_io_waiting_get_current (ctx) == VORTEX_IO_WAIT_SELECT) {
 		/* now check if the current process soft limit is
 		 * allowed to handle more connection than
 		 * VORTEX_FD_SETSIZE */

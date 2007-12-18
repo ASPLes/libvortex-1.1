@@ -30,7 +30,10 @@
 /* server hosting the file */
 #define SERVER_HOST "localhost"
 
-FILE     * file;
+FILE      * file;
+
+/* listener context */
+VortexCtx * ctx = NULL;
 
 void frame_received (VortexChannel    * channel,
 		     VortexConnection * connection,
@@ -108,12 +111,19 @@ int  main (int  argc, char ** argv)
 
 
 
+	/* create the context */
+	ctx = vortex_ctx_new ();
+
 	/* init vortex library */
-	vortex_init ();
+	if (! vortex_init_ctx (ctx)) {
+		/* unable to init context */
+		vortex_ctx_free (ctx);
+		return -1;
+	} /* end if */
 
 	/* creates a new connection against localhost:44017 */
 	printf ("connecting to %s:44017...\n", SERVER_HOST);
-	connection = vortex_connection_new (SERVER_HOST, "44017", NULL, NULL);
+	connection = vortex_connection_new (ctx, SERVER_HOST, "44017", NULL, NULL);
 	if (!vortex_connection_is_ok (connection, false)) {
 		printf ("Unable to connect remote server, error was: %s\n",
 			 vortex_connection_get_message (connection));
@@ -189,7 +199,7 @@ int  main (int  argc, char ** argv)
 
  end:				      
 	vortex_connection_close (connection);
-	vortex_exit ();
+	vortex_exit_ctx (ctx, true);
 	return 0 ;	      
 }
 

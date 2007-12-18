@@ -47,7 +47,7 @@ char  *        vortex_frame_build_up_from_params (VortexFrameType   type,
 						  unsigned int      seqno,
 						  int               size,
 						  int               ansno,
-						  char            * payload);
+						  const void      * payload);
 
 char  *        vortex_frame_build_up_from_params_s (VortexFrameType   type,
 						    int               channel,
@@ -56,9 +56,9 @@ char  *        vortex_frame_build_up_from_params_s (VortexFrameType   type,
 						    unsigned int      seqno,
 						    int               size,
 						    int               ansno,
-						    char   *          content_type,
-						    char   *          transfer_encoding,
-						    char   *          payload,
+						    const char   *    content_type,
+						    const char   *    transfer_encoding,
+						    const void   *    payload,
 						    int    *          frame_size);
 
 
@@ -74,7 +74,7 @@ VortexFrame * vortex_frame_create               (VortexCtx       * ctx,
 						 unsigned int      seqno,
 						 int               size,
 						 int               ansno,
-						 const char      * payload);
+						 const void      * payload);
 
 VortexFrame * vortex_frame_create_full          (VortexCtx       * ctx,
 						 VortexFrameType   type,
@@ -84,9 +84,9 @@ VortexFrame * vortex_frame_create_full          (VortexCtx       * ctx,
 						 unsigned int      seqno,
 						 int               size,
 						 int               ansno,
-						 char            * content_type,
-						 char            * transfer_encoding,
-						 const char      * payload);
+						 const char      * content_type,
+						 const char      * transfer_encoding,
+						 const void      * payload);
 
 VortexFrame * vortex_frame_create_full_ref      (VortexCtx       * ctx,
 						 VortexFrameType   type,
@@ -96,9 +96,9 @@ VortexFrame * vortex_frame_create_full_ref      (VortexCtx       * ctx,
 						 unsigned int      seqno,
 						 int               size,
 						 int               ansno,
-						 char            * content_type,
-						 char            * transfer_encoding,
-						 char            * payload);
+						 const char      * content_type,
+						 const char      * transfer_encoding,
+						 void            * payload);
 
 VortexFrame * vortex_frame_copy                 (VortexFrame      * frame);
 
@@ -135,9 +135,9 @@ int           vortex_frame_get_id                (VortexFrame * frame);
 
 VortexFrameType vortex_frame_get_type            (VortexFrame * frame);
 
-char        * vortex_frame_get_content_type      (VortexFrame * frame);
+const char  * vortex_frame_get_content_type      (VortexFrame * frame);
 
-char        * vortex_frame_get_transfer_encoding (VortexFrame * frame);
+const char  * vortex_frame_get_transfer_encoding (VortexFrame * frame);
 
 int           vortex_frame_get_mime_header_size  (VortexFrame * frame);
 
@@ -164,28 +164,28 @@ const void *  vortex_frame_get_payload           (VortexFrame * frame);
 
 VortexCtx   * vortex_frame_get_ctx               (VortexFrame * frame);
 
-char        * vortex_frame_get_ok_message        ();
+const char  * vortex_frame_get_ok_message        ();
 
-char        * vortex_frame_get_error_message     (char  * code, 
-						  char  * error_content,
-						  char  * xml_lang);
+char        * vortex_frame_get_error_message     (const char  * code, 
+						  const char  * error_content,
+						  const char  * xml_lang);
 
 bool          vortex_frame_is_error_message      (VortexFrame * frame,
 						  char  ** code,
 						  char  ** message);
 
 char        * vortex_frame_get_start_message     (int              channel_num,
-						  char           * serverName, 
-						  char           * profile,  
+						  const char     * serverName, 
+						  const char     * profile,  
 						  VortexEncoding   encoding,
-						  char           * content_profile,
+						  const char     * content_profile,
 						  int              profile_content_size);
 
 char        * vortex_frame_get_start_rpy_message (const char  * profile, 
 						  const char  * profile_content);
 
-char        * vortex_frame_get_close_message     (int     number,
-						  char  * code,
-						  char  * xml_lang,
-						  char  * close_content);
+char        * vortex_frame_get_close_message     (int           number,
+						  const char  * code,
+						  const char  * xml_lang,
+						  const char  * close_content);
 #endif

@@ -732,7 +732,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 	VortexChannel    * channel    = NULL;
 	VortexChannel    * channel0   = NULL;
 	VortexFrame      * frame      = NULL;
-	VortexCtx        * ctx         = vortex_channel_get_ctx (channel);
+	VortexCtx        * ctx         = vortex_connection_get_ctx (data->connection);
 	WaitReplyData    * wait_reply = NULL;
 	char             * start_msg  = NULL;
 	int                msg_no;
@@ -1123,7 +1123,6 @@ VortexChannel * vortex_channel_new_full (VortexConnection      * connection,
 	v_return_val_if_fail (connection, NULL);
 	v_return_val_if_fail (vortex_connection_is_ok (connection, false), NULL);
 	v_return_val_if_fail (profile, NULL);
-	
 
 	/* creates data to be passed in to __vortex_channel_new */
 	data                        = axl_new (VortexChannelData, 1);
@@ -1154,6 +1153,7 @@ VortexChannel * vortex_channel_new_full (VortexConnection      * connection,
 
 	/* launch threaded version if on_channel_created is defined */
 	if (data->threaded) {
+		printf ("..2.5..");
 		vortex_thread_pool_new_task (ctx, (VortexThreadFunc) __vortex_channel_new, data);
 		return NULL;
 	}
@@ -1192,8 +1192,8 @@ VortexChannel * vortex_channel_new_full (VortexConnection      * connection,
  */
 VortexChannel     * vortex_channel_new_fullv                   (VortexConnection      * connection,
 								int                     channel_num, 
-								char                  * serverName,
-								char                  * profile,
+								const char            * serverName,
+								const char            * profile,
 								VortexEncoding          encoding,
 								VortexOnCloseChannel    close,
 								axlPointer              close_user_data,
@@ -1201,7 +1201,7 @@ VortexChannel     * vortex_channel_new_fullv                   (VortexConnection
 								axlPointer              received_user_data,
 								VortexOnChannelCreated  on_channel_created, 
 								axlPointer user_data,
-								char                  * profile_content_format, 
+								const char            * profile_content_format, 
 								...)
 {
 	va_list         args;
@@ -1328,8 +1328,8 @@ int             vortex_channel_get_next_expected_msg_no (VortexChannel * channel
  * 
  * @return a new allocated channel.
  */
-VortexChannel * vortex_channel_empty_new (int  channel_num,
-					  char  * profile,
+VortexChannel * vortex_channel_empty_new (int                channel_num,
+					  const char       * profile,
 					  VortexConnection * connection)
 {
 	VortexChannel * channel = NULL;
@@ -2101,7 +2101,7 @@ bool            vortex_channel_send_msg   (VortexChannel    * channel,
  */
 bool            vortex_channel_send_msgv       (VortexChannel * channel,
 						int           * msg_no,
-						char          * format,
+						const char    * format,
 						...)
 {
 	char       * msg;
@@ -2178,7 +2178,7 @@ bool               vortex_channel_send_msg_and_wait               (VortexChannel
 bool               vortex_channel_send_msg_and_waitv              (VortexChannel   * channel,
 								   int             * msg_no,
 								   WaitReplyData   * wait_reply,
-								   char            * format,
+								   const char      * format,
 								   ...)
 {
 	char       * msg;
@@ -3640,7 +3640,7 @@ bool __vortex_channel_close_validate_rpy (VortexChannel * channel,
 	}
 
 	/* get channel management DTD */
-	if ((channel_dtd = vortex_dtds_get_channel_dtd ()) == NULL) {
+	if ((channel_dtd = vortex_dtds_get_channel_dtd (ctx)) == NULL) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "unable to load dtd file, cannot validate incoming message, returning error frame");
 		return false;
 	}
@@ -4257,7 +4257,7 @@ bool     vortex_channel_close (VortexChannel * channel,
  * 
  * @return the profile the channel have or NULL if fails
  */
-char          * vortex_channel_get_profile (VortexChannel * channel)
+const char    * vortex_channel_get_profile (VortexChannel * channel)
 {
 	/* check references received */
 	if (channel == NULL)

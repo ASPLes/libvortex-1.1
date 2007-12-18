@@ -740,8 +740,8 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string (XmlRpcParamType
  * parameter received is NULL or the type specification is not
  * properly formated.
  */
-XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string2 (char  * type,
-								  char  * string_value)
+XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string2 (const char  * type,
+								  const char  * string_value)
 {
 	/* perform some environment checks */
 	v_return_val_if_fail (type, NULL);
@@ -940,7 +940,7 @@ bool                vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  *
  */
 bool                vortex_xml_rpc_method_call_create_value_from_string (XmlRpcMethodCall * method_call,
 									 XmlRpcParamType    type,
-									 char             * string_value)
+									 const char       * string_value)
 {
 	XmlRpcMethodValue * _value;
 
@@ -1597,7 +1597,7 @@ bool                vortex_xml_rpc_method_call_must_release (XmlRpcMethodCall * 
  * @return true if method match, otherwise false is returned.
  */
 bool                vortex_xml_rpc_method_call_is           (XmlRpcMethodCall * method_call, 
-							     char             * method_name,
+							     const char       * method_name,
 							     int                param_num,
 							     ...)
 {
@@ -1920,7 +1920,7 @@ XmlRpcArray       * vortex_xml_rpc_method_value_get_as_array    (XmlRpcMethodVal
  */
 XmlRpcMethodResponse * vortex_xml_rpc_method_response_new  (XmlRpcResponseStatus  status,
 							    int                   fault_code,
-							    char                * fault_string,
+							    const char          * fault_string,
 							    XmlRpcMethodValue   * value)
 {
 	XmlRpcMethodResponse * response;
@@ -2514,7 +2514,7 @@ void                   vortex_xml_rpc_struct_add_member                (XmlRpcSt
  * Internal function to get the struct member inside, looking by its name.
  */
 XmlRpcStructMember * __vortex_xml_rpc_struct_get_member_by_name (XmlRpcStruct * _struct,
-								 char         * member_name)
+								 const char   * member_name)
 {
 	int iterator = 0;
 	XmlRpcStructMember * member;
@@ -2554,7 +2554,7 @@ XmlRpcStructMember * __vortex_xml_rpc_struct_get_member_by_name (XmlRpcStruct * 
  * fails.
  */
 XmlRpcMethodValue    * vortex_xml_rpc_struct_get_member_value          (XmlRpcStruct       * _struct,
-									char               * member_name)
+									const char         * member_name)
 {
 	XmlRpcStructMember * member;
 
@@ -2636,7 +2636,7 @@ char      * vortex_xml_rpc_struct_get_member_name_at        (XmlRpcStruct       
  * properly function.
  */
 int                    vortex_xml_rpc_struct_get_member_value_as_int   (XmlRpcStruct       * _struct,
-									char               * member_name)
+									const char         * member_name)
 {
 	XmlRpcStructMember * member;
 
@@ -2672,7 +2672,7 @@ int                    vortex_xml_rpc_struct_get_member_value_as_int   (XmlRpcSt
  * the member doesn't exist.
  */
 char  *                vortex_xml_rpc_struct_get_member_value_as_string   (XmlRpcStruct       * _struct,
-									   char               * member_name)
+									   const char         * member_name)
 {
 	XmlRpcStructMember * member;
 
@@ -2705,7 +2705,7 @@ char  *                vortex_xml_rpc_struct_get_member_value_as_string   (XmlRp
  * @return Returns the double inside the struct or 0.0 if it fails. 
  */
 double                     vortex_xml_rpc_struct_get_member_value_as_double   (XmlRpcStruct       * _struct,
-									       char               * member_name)
+									       const char         * member_name)
 {
 	XmlRpcStructMember * member;
 
@@ -2737,7 +2737,7 @@ double                     vortex_xml_rpc_struct_get_member_value_as_double   (X
  * provided member or NULL if fails. 
  */
 XmlRpcStruct              * vortex_xml_rpc_struct_get_member_value_as_struct   (XmlRpcStruct       * _struct,
-										char               * member_name)
+										const char         * member_name)
 {
 	XmlRpcStructMember * member;
 
@@ -2774,7 +2774,7 @@ XmlRpcStruct              * vortex_xml_rpc_struct_get_member_value_as_struct   (
  * the member or NULL if it fails. The result must not be deallocated.
  */
 XmlRpcArray              * vortex_xml_rpc_struct_get_member_value_as_array   (XmlRpcStruct       * _struct,
-									      char               * member_name)
+									      const char         * member_name)
 {
 	XmlRpcStructMember * member;
 
