@@ -650,6 +650,8 @@ char    * __vortex_sasl_get_base64_blob (char                  * frame_content,
 	char          * blob;
 	VortexCtx    * ctx = vortex_connection_get_ctx (connection);
 
+	vortex_log (VORTEX_LEVEL_DEBUG, "getting context from connection id=%d", vortex_connection_get_id (connection));
+
 	/* first check for a empty blob received */
 	if (frame_content == NULL) {
 		/* return empty blob and set status to be be null */
@@ -1719,7 +1721,7 @@ bool     __vortex_sasl_server_iterate (VortexConnection * connection,
 
 	/* get received blob */
 	if (payload != NULL && strlen (payload) > 0) {
-		blob = __vortex_sasl_get_base64_blob (payload, NULL, NULL, NULL, &status);
+		blob = __vortex_sasl_get_base64_blob (payload, connection, NULL, NULL, &status);
 		if (blob == NULL) {
 			(* payload_reply) = vortex_frame_get_error_message ("500", "General syntax error: received not properly formated SASL message.", NULL);
 			return false;
@@ -1874,7 +1876,8 @@ bool     __vortex_sasl_accept_negociation_start (char              * profile,
 	/* store SASL profile being negotiated */
 	vortex_connection_set_data_full (connection, SASL_PROFILE_BEGIN_NEGOCIATED, axl_strdup (&(profile[26])), NULL, axl_free);
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "starting sasl server iteration");
+	vortex_log (VORTEX_LEVEL_DEBUG, "starting sasl server iteration on connection id=%d", 
+		    vortex_connection_get_id (connection));
 
 	if (!__vortex_sasl_server_iterate (connection, profile_content, profile_content_reply))
 		return false;

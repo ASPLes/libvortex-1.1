@@ -2101,11 +2101,11 @@ bool vortex_xml_rpc_notify_reply (XmlRpcMethodCall     * method_call,
 	if (method_response == NULL || method_call == NULL)
 		return false;
 
-	/* get a reference to the context */
-	ctx = vortex_channel_get_ctx (channel);
-
 	/* get reply data from the given method call */
 	__vortex_xml_rpc_method_call_get_reply_data (method_call, &channel, &msg_no);
+	
+	/* get a reference to the context */
+	ctx = vortex_channel_get_ctx (channel);
 
 	/* get the xml representation for the method reply */
 	reply_string = vortex_xml_rpc_method_response_marshall (method_response, &reply_size);
@@ -2126,7 +2126,10 @@ bool vortex_xml_rpc_notify_reply (XmlRpcMethodCall     * method_call,
 			     method_response, vortex_xml_rpc_method_response_free);
 	
 	/* nothing more to do man! */
-	vortex_log (VORTEX_LEVEL_DEBUG, "reply performed..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "reply performed on channel %d, connection id=%d, ctx: %p..",
+		    vortex_channel_get_number (channel), 
+		    vortex_connection_get_id (vortex_channel_get_connection (channel)),
+		    ctx);
 	return true;
 #endif	
 }

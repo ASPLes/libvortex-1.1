@@ -602,6 +602,7 @@ int  main (int  argc, char ** argv)
 
 	/* wait for listeners (until vortex_exit is called) */
 	printf ("ready and waiting..\n");
+
 	vortex_listener_wait (ctx);
 
 	printf ("terminating the listener ..\n");

@@ -317,7 +317,6 @@ int main (int argc, char **argv)
 
 	/* init vortex ctx */
 	ctx = vortex_ctx_new (ctx);
-	vortex_ctx_set (ctx);
 	vortex_support_init (ctx);
 
 	/* do not use the add_search_path_ref version to force
