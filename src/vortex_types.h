@@ -48,6 +48,55 @@
  */
 
 
+/*
+ * @brief Debug levels to be used with \ref _vortex_log, which is used
+ * through vortex_log macro.
+ *
+ * The set of functions allowing to activate the debug at run time and
+ * its variants are:
+ * 
+ * - \ref vortex_log_is_enabled
+ * - \ref vortex_log2_is_enabled
+ * - \ref vortex_log_enable
+ * - \ref vortex_log2_enable
+ *
+ * Activate console color log (using ansi characters):
+ * 
+ * - \ref vortex_color_log_is_enabled
+ * - \ref vortex_color_log_enable
+ *
+ * To lock the log during its emision to avoid several threads doing
+ * log at the same time:
+ * 
+ * - \ref vortex_log_is_enabled_acquire_mutex
+ * - \ref vortex_log_acquire_mutex
+ *
+ * Finally, to make the application level to configure a handler:
+ * 
+ * - \ref vortex_log_set_handler
+ * - \ref vortex_log_get_handler
+ * 
+ * @param domain Domain that is registering a log.
+ *
+ * @param level Log level that is being registered.
+ *
+ * @param message Message that is being registered.
+ */
+typedef enum {
+	/** 
+	 * @internal Log a message as a debug message.
+	 */
+	VORTEX_LEVEL_DEBUG,
+	/** 
+	 * @internal Log a warning message.
+	 */
+	VORTEX_LEVEL_WARNING,
+	/** 
+	 * @internal Log a critical message.
+	 */
+	VORTEX_LEVEL_CRITICAL 
+} VortexDebugLevel;
+
 
 /** 
  * @brief Describes the type allowed for a frame or the type a frame actually have.

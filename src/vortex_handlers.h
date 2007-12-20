@@ -1573,6 +1573,30 @@ typedef void (*VortexConnectionNotifyNew) (VortexConnection * created, axlPointe
  */
 typedef void (*VortexOnClosedChannel) (VortexChannel * channel, axlPointer user_data);
 
+/** 
+ * @brief Handler definition that allows a client to print log
+ * messages itself.
+ *
+ * This function is used by: 
+ * 
+ * - \ref vortex_log_set_logger
+ * - \ref vortex_log_get_logger
+ *
+ * @param file The file that produced the log.
+ *
+ * @param line The line where the log was produced.
+ *
+ * @param log_level The level of the log
+ *
+ * @param message The message being reported.
+ *
+ * @param args Arguments for the message.
+ */
+typedef void (*VortexLogHandler) (const char       * file,
+				  int                line,
+				  VortexDebugLevel   log_level,
+				  const char       * message,
+				  va_list            args);
 #endif
 
 /* @} */

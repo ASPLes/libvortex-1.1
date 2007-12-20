@@ -526,6 +526,41 @@ bool     vortex_log_is_enabled_acquire_mutex (VortexCtx * ctx)
 }
 
 /** 
+ * @brief Allows to configure an application handler that will be
+ * called for each log produced by the vortex engine.
+ * 
+ * @param handler A reference to the handler to configure or NULL to
+ * disable the notification.
+ */
+void     vortex_log_set_handler      (VortexCtx        * ctx, 
+				      VortexLogHandler   handler)
+{
+	/* get current context */
+	v_return_if_fail (ctx);
+	
+	/* configure status */
+	ctx->debug_handler = handler;
+}
+
+/** 
+ * @brief Allows to get current log handler configured. By default no
+ * handler is configured so log producted by the vortex execution is
+ * dropped to the console.
+ * 
+ * @return The handler configured (or NULL) if no handler was found
+ * configured.
+ */
+VortexLogHandler     vortex_log_get_handler      (VortexCtx * ctx)
+{
+	/* get current context */
+	v_return_val_if_fail (ctx, NULL);
+	
+	/* configure status */
+	return ctx->debug_handler;
+}
+
+
+/** 
  * @internal Internal common log implementation to support several levels
  * of logs.
  * 
@@ -570,57 +605,63 @@ void _vortex_log_common (VortexCtx        * ctx,
 	if (use_log_mutex) 
 		vortex_mutex_lock (&ctx->log_mutex);
 
-	/* printout the process pid */
+	if( ctx->debug_handler ) {
+		/* call a custom debug handler if one has been set */
+		ctx->debug_handler (file, line, log_level, message, args);
+	} else {
+		/* printout the process pid */
 #if defined (__GNUC__)
-	if (vortex_color_log_is_enabled (ctx)) 
-		fprintf (stdout, "\e[1;36m(proc %d)\e[0m: ", getpid ());
-	else {
+		if (vortex_color_log_is_enabled (ctx)) 
+			fprintf (stdout, "\e[1;36m(proc %d)\e[0m: ", getpid ());
+		else {
 #endif /* __GNUC__ */
-	ctx_not_defined:
-		fprintf (stdout, "(proc %d): ", getpid ());
-	}
-
+		ctx_not_defined:
+			fprintf (stdout, "(proc %d): ", getpid ());
+		}
+		
 	/* drop a log according to the level */
 #if defined (__GNUC__)
-	if (vortex_color_log_is_enabled (ctx)) {
-		switch (log_level) {
-		case VORTEX_LEVEL_DEBUG:
-			fprintf (stdout, "(\e[1;32mdebug\e[0m) ");
-			break;
-		case VORTEX_LEVEL_WARNING:
-			fprintf (stdout, "(\e[1;33mwarning\e[0m) ");
-			break;
-		case VORTEX_LEVEL_CRITICAL:
-			fprintf (stdout, "(\e[1;31mcritical\e[0m) ");
-			break;
-		}
-	}else {
+		if (vortex_color_log_is_enabled (ctx)) {
+			switch (log_level) {
+			case VORTEX_LEVEL_DEBUG:
+				fprintf (stdout, "(\e[1;32mdebug\e[0m) ");
+				break;
+			case VORTEX_LEVEL_WARNING:
+				fprintf (stdout, "(\e[1;33mwarning\e[0m) ");
+				break;
+			case VORTEX_LEVEL_CRITICAL:
+				fprintf (stdout, "(\e[1;31mcritical\e[0m) ");
+				break;
+			}
+		}else {
 #endif /* __GNUC__ */
-		switch (log_level) {
-		case VORTEX_LEVEL_DEBUG:
-			fprintf (stdout, "(debug) ");
-			break;
-		case VORTEX_LEVEL_WARNING:
-			fprintf (stdout, "(warning) ");
-			break;
-		case VORTEX_LEVEL_CRITICAL:
-			fprintf (stdout, "(critical) ");
-			break;
-		}
+			switch (log_level) {
+			case VORTEX_LEVEL_DEBUG:
+				fprintf (stdout, "(debug) ");
+				break;
+			case VORTEX_LEVEL_WARNING:
+				fprintf (stdout, "(warning) ");
+				break;
+			case VORTEX_LEVEL_CRITICAL:
+				fprintf (stdout, "(critical) ");
+				break;
+			}
 #if defined (__GNUC__)
-	}
+		} /* end if */
 #endif
 
-	/* drop a log according to the domain */
-	(file != NULL) ? fprintf (stdout, "%s:%d ", file, line) : fprintf (stdout, ": ");
+		/* drop a log according to the domain */
+		(file != NULL) ? fprintf (stdout, "%s:%d ", file, line) : fprintf (stdout, ": ");
+		
+		/* print the message */
+		vfprintf (stdout, message, args);
+		
+		fprintf (stdout, "\n");
 
-	/* print the message */
-	vfprintf (stdout, message, args);
-
-	fprintf (stdout, "\n");
-
-	/* ensure that the log is droped to the console */
-	fflush (stdout);
+		/* ensure that the log is droped to the console */
+		fflush (stdout);
+		
+	} /* end if (ctx->debug_handler) */
 	
 	/* check to release the mutex if defined the context */
 	if (use_log_mutex) 

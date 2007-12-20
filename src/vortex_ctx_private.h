@@ -74,6 +74,8 @@ struct _VortexCtx {
 	bool                 debug_color_checked;
 	bool                 debug_color;
 
+	VortexLogHandler     debug_handler;
+
 #if defined(AXL_OS_WIN32)
 	/**
 	 * Temporal hack to support sock limits under windows until we
