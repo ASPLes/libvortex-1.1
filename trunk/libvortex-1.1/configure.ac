@@ -273,7 +273,7 @@ test/Makefile
 xml-rpc-gen/Makefile
 data/Makefile
 logo/Makefile
-vortex.pc])
+vortex-1.1.pc])
 
 echo "------------------------------------------"
 echo "--     VORTEX LIBRARY 1.1 SETTINGS      --"

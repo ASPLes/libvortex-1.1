@@ -12,6 +12,6 @@ endif
 
 
 SUBDIRS = src $(VORTEX_TEST_DIR) $(VORTEX_XML_RPC_GEN_TOOL_DIR) $(VORTEX_DOC_DIR) data logo
-EXTRA_DIST = vortex.pc.in VERSION libvortex.sln
+EXTRA_DIST = vortex-1.1.pc.in VERSION libvortex.sln
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = vortex.pc
+pkgconfig_DATA = vortex-1.1.pc

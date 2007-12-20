@@ -44,10 +44,10 @@ replied by a new version:
 
  2. Internal context handling from previous release
  
-       - vortex_ctx_set (no longer exists, conceptually not requried)
-       - vortex_ctx_get (no longer exists, conceptually not requried)
+       - vortex_ctx_set (no longer exists, conceptually not required)
+       - vortex_ctx_get (no longer exists, conceptually not required)
 
- 3. Functions updated (same function name, new paramter "ctx").
+ 3. Functions updated (same function name, new parameter "ctx").
        
        [log activation]
        - vortex_log_is_enabled 
@@ -172,10 +172,111 @@ replied by a new version:
        - vortex_tunnel_set_resolver
 
 
-
 Solution to incompatibility
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+In general, the API change introduced affect all functions that have
+the ability to change the state of the current library instance
+loaded. Because this, and the fact that the library is now stateless,
+a VortexCtx instance is required to perform such configuration on it.
+
+However, not all functions requires a VortexCtx instance. This is
+because main objects inside the Vortex API like VortexConnection,
+VortexChannel or VortexFrame hold a reference to the VortexCtx that
+was used to create them. This has allowed to not update the API to
+those functions receiving as parameter some of these types.
+
+According to this, the following function will be useful to get the
+context for future operations, having a reference to a connection,
+channel or frame:
+
+  - vortex_frame_get_ctx
+  - vortex_connection_get_ctx
+  - vortex_channel_get_ctx
+
+Additionally, this also has allowed to not change any handler
+definition. This will make current handlers written with 1.0 series to
+be reusable with 1.1 series.
+
+Special mention to initialization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Finally, the the following will be required to properly initialize the
+library:
+
+   VortexCtx * ctx;
+
+   /* create an empty context */
+   ctx = vortex_ctx_new ();
+
+   /* init the context and start vortex library execution */
+   if (! vortex_init_ctx (ctx)) {
+        /* handle error */
+        return -1;
+   }
+
+   /* do useful work */
+
+   /* stop the vortex library execution (for this particular ctx) */
+   vortex_exit_ctx (ctx, true);
+
+
+Special mention to library compilation and its usage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Applications using Vortex Library 1.1 API will still use the following
+include to use its services:
+
+  #include <vortex.h>
+
+As a standard location recommendation, the following will be used to
+locate the vortex library headers:
+
+   ../include/vortex/vortex.h               Vortex Library 1.0
+                     vortex_types.h
+                     ....
+
+   ../include/vortex-1.1/vortex.h           Vortex Library 1.1
+                         vortex_types.h
+                         ....
+ 
+However, the linker flag to use will change because the library will
+be available in the following form:
+
+  libvortex-1.1.dll (windows)
+  libvortex-1.1.so  (unix platforms)
+
+This will require to use the following linker flag:
+
+  -lvortex-1.1
+
+In the same direction, those users taking advantage of pkg-config
+configuration system, will have to update its autoconf voodoo to:
+
+  PKG_CHECK_MODULES(VORTEX, vortex-1.1 >= 1.1.0) 
+
+which is the same like:
+
+  pkg-config --libs --cflags vortex-1.1
+
+About two branches
+~~~~~~~~~~~~~~~~~
+
+From ASPL there is no especial plans to kill the 1.0 branch at some
+particular time.
+
+Our intention, taking into consideration our current professional
+support contracts, is to keep running and updated the branch 1.0,
+integrated changes from 1.1 (and viceversa), as long as it is
+technically possible.
+
+As long as both branches provides a useful API and attractive
+alternative to programmers, they will be maintained. 
+
+With the time, this will reviewed to take a decision.
+
+However, it is advised that our main effort will be focused in the new
+branch.
 
 References
 ~~~~~~~~~~
