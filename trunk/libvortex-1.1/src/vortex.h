@@ -311,6 +311,11 @@ bool     vortex_log_is_enabled_acquire_mutex (VortexCtx * ctx);
 void     vortex_log_acquire_mutex            (VortexCtx * ctx, 
 					      bool        status);
 
+void     vortex_log_set_handler      (VortexCtx         * ctx,
+				      VortexLogHandler    handler);
+
+VortexLogHandler vortex_log_get_handler (VortexCtx      * ctx);
+
 void     vortex_writer_data_free     (VortexWriterData * writer_data);
 
 /**
@@ -392,31 +397,6 @@ bool      vortex_conf_set             (VortexCtx      * ctx,
 				       VortexConfItem   item, 
 				       int              value, 
 				       const char     * str_value);
-
-/*
- * @internal Debug levels to be used with \ref _vortex_log, which is used
- * through vortex_log macro.
- * 
- * @param domain Domain that is registering a log.
- *
- * @param level Log level that is being registered.
- *
- * @param message Message that is being registered.
- */
-typedef enum {
-	/** 
-	 * @internal Log a message as a debug message.
-	 */
-	VORTEX_LEVEL_DEBUG,
-	/** 
-	 * @internal Log a warning message.
-	 */
-	VORTEX_LEVEL_WARNING,
-	/** 
-	 * @internal Log a critical message.
-	 */
-	VORTEX_LEVEL_CRITICAL 
-} VortexDebugLevel;
 
 void     _vortex_log                 (VortexCtx        * ctx,
 				      const       char * file,
