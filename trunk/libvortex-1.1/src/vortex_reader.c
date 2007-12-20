@@ -1471,6 +1471,8 @@ void vortex_reader_notify_change_done_io_api   (VortexCtx * ctx)
  * starting from msgno=1. You can also be strict and set a false value
  * to this function.
  * 
+ * @param ctx The context where the operation will be performed.
+ *
  * @param value true to allow messages received on a channel to start
  * with 1 rather than 0.
  */

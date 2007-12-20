@@ -342,7 +342,9 @@ VortexFrame *  vortex_greetings_client_process (VortexConnection * connection)
  *
  * The function doesn't make any copy of the received value. You
  * should not free passed in value.
- * 
+ *
+ * @param ctx The context where the operation will be performed.
+ *
  * @param features The string to be set as features. If provided a
  * NULL value, previous features will cleared.
  */
@@ -367,6 +369,8 @@ void           vortex_greetings_set_features   (VortexCtx * ctx, const char  * f
  * @brief Allows to get current "features" greetings attribute.
  *
  * Check documentation for: \ref vortex_greetings_set_features.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @return Current "features" status.
  */
@@ -389,6 +393,8 @@ const char        *  vortex_greetings_get_features   (VortexCtx * ctx)
  *
  * This function doesn't make any copy of the received value. You
  * should not free passed in value.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param localize The localize value.
  */
@@ -412,6 +418,8 @@ void           vortex_greetings_set_localize   (VortexCtx * ctx, const char  * l
 
 /** 
  * @brief Return current "localize" greetings optional attribute status.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @return Current localize value.
  */

@@ -286,8 +286,6 @@ typedef enum {
  * Once finished, a call to stop the context is required: \ref
  * vortex_exit_ctx followed by a call to \ref vortex_ctx_free.
  *
- * The following two functions are deprecated and will disapear in
- * next releases: \ref vortex_ctx_get and \ref vortex_ctx_set.
  */
 typedef struct _VortexCtx VortexCtx;
 

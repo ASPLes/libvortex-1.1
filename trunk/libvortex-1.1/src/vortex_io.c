@@ -765,10 +765,11 @@ void     __vortex_io_waiting_epoll_dispatch (axlPointer           fd_group,
  * // check the mechanism is available
  * if (vortex_io_waiting_is_available (VORTEX_IO_WAIT_POLL)) {
  *     // configure the mechanism
- *     vortex_io_waiting_use (VORTEX_IO_WAIT_POLL);
+ *     vortex_io_waiting_use (ctx, VORTEX_IO_WAIT_POLL);
  * }
  * \endcode
  *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param type The I/O waiting mechanism to be used by the library
  * (especially at the vortex reader module).
@@ -930,8 +931,8 @@ bool                 vortex_io_waiting_is_available (VortexIoWaitingType type)
  * @brief Allows to check current I/O waiting mechanism being used at
  * the providec context.
  *
- * @param The context where the io mechanism is activated. 
- * 
+ * @param ctx The context where the operation will be performed.
+ *
  * @return The I/O mechanism used by the core.
  */
 VortexIoWaitingType  vortex_io_waiting_get_current  (VortexCtx * ctx)
@@ -946,6 +947,8 @@ VortexIoWaitingType  vortex_io_waiting_get_current  (VortexCtx * ctx)
 /** 
  * @brief Allows to set current handler that allows to create a fd
  * group that will be used by Vortex internals to perform IO blocking.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param create The handler to be executed by the Vortex Library to
  * create a new IO fd set. The function will fail to set the default
@@ -995,6 +998,8 @@ axlPointer           vortex_io_waiting_invoke_create_fd_group (VortexCtx        
  * @brief Allows to define the destroy method to be used on the fd_set
  * allocated by calling current configured \ref VortexIoCreateFdGroup
  * "create handler".
+ *
+ * @param ctx The context where the operation will be performed.
  *
  * @param destroy The handler to deallocate. The function will fail if
  * the provided destroy function is NULL. No operation will be
@@ -1049,6 +1054,8 @@ void                 vortex_io_waiting_invoke_destroy_fd_group (VortexCtx  * ctx
 /** 
  * @brief Allows to configure the clear handler to be executed while
  * it is required to clear a descriptor set.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param clear The handler to executed once Vortex internal process
  * requires to create a socket descriptor set.
@@ -1101,6 +1108,8 @@ void                 vortex_io_waiting_invoke_clear_fd_group (VortexCtx * ctx, a
  *
  * The function will fail if the provided handler is NULL.
  *
+ * @param ctx The context where the operation will be performed.
+ *
  * @param add_to The handler to be invoked when it is required to add
  * a socket descriptor into the fd set.
  */
@@ -1122,6 +1131,8 @@ void                 vortex_io_waiting_set_add_to_fd_group     (VortexCtx       
  *
  * @brief Invokes current add to operation for the given socket
  * descriptor into the given fd set.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param fds The socket descriptor to be added. The socket descriptor
  * should be greater than 0.
@@ -1149,6 +1160,8 @@ bool              vortex_io_waiting_invoke_add_to_fd_group  (VortexCtx        * 
  *
  * The function will fail if the provided handler is NULL.
  *
+ * @param ctx The context where the operation will be performed.
+ *
  * @param is_set The handler to be invoked when it is required to
  * check if a socket descriptor is set into a given fd set.
  */
@@ -1167,6 +1180,8 @@ void                 vortex_io_waiting_set_is_set_fd_group     (VortexCtx       
 
 /** 
  * @brief Allows to configure the "have dispatch" function.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param have_dispatch The handler to be executed by the vortex I/O
  * module to check if the current mechanism support automatic
@@ -1188,6 +1203,8 @@ void                 vortex_io_waiting_set_have_dispatch       (VortexCtx       
 /** 
  * @brief Allows to configure the dispatch function to be used for the
  * automatic dispatch function.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param dispatch The dispatch function to be executed on every
  * socket changed.
@@ -1246,6 +1263,8 @@ bool                  vortex_io_waiting_invoke_is_set_fd_group  (VortexCtx * ctx
  * If the implementation provided support this feature, the function
  * must return true. By returning true it is implied that \ref
  * vortex_io_waiting_invoke_dispatch is also implemented.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param fd_group The reference to the object created by the I/O
  * implemetation that is being used.
@@ -1272,6 +1291,8 @@ bool                 vortex_io_waiting_invoke_have_dispatch    (VortexCtx  * ctx
 /** 
  * @brief Performs automatic dispath, over all activated resources,
  * invoking the provided handler.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param fd_group The file set group that is being notified to
  * automatically dispatch.
@@ -1342,6 +1363,8 @@ void                 vortex_io_waiting_invoke_dispatch         (VortexCtx       
  * Library. To report that a socket have changed (or a group of then
  * inside the fd set), and you don't want to return how many sockets
  * have changed, just return a positive value (<b>1</b>).
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param wait_on The handler to be used. The function will fail on
  * setting the handler if it is provided a NULL reference.

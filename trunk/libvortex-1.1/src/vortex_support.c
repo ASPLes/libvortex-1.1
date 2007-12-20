@@ -228,14 +228,16 @@ void   vortex_support_free (int params, ...)
  *
  * \code 
  * // add all search paths (maybe from an user interface)
- * vortex_support_add_search_path ("/my/path/to/local/data");
- * vortex_support_add_search_path ("/my/alternative/path");
+ * vortex_support_add_search_path (ctx, "/my/path/to/local/data");
+ * vortex_support_add_search_path (ctx, "/my/alternative/path");
+ *
+ * // where ctx is an initialized VortexCtx object
  *
  * ...
  *
  * // write you file location code in an abstract manner so it could be
  * // used on every platform easily.
- * char  * my_data_def = vortex_support_find_data_file ("my_data.def");
+ * char  * my_data_def = vortex_support_find_data_file (ctx, "my_data.def");
  *
  * // NOTE that the file to lookup doesn't have any references to
  * // local paths
@@ -244,6 +246,8 @@ void   vortex_support_free (int params, ...)
  * The function will add the search path using "default" as domain. If
  * you want to configure a more especific domain use \ref
  * vortex_support_add_domain_search_path.
+ *
+ * @param ctx The context where the operation will be performed.
  *
  * @param path A new path to be added. The function will perform a copy for the given path
  */
@@ -271,6 +275,8 @@ void     vortex_support_add_search_path (VortexCtx   * ctx,
  *
  * If a static path is needed to be added \ref vortex_support_add_search_path should be used.
  *
+ * @param ctx The context where the operation will be performed.
+ *
  * @param path A new path to be added. Provided path reference mustn't be deallocated.
  */
 void     vortex_support_add_search_path_ref (VortexCtx * ctx,
@@ -295,6 +301,8 @@ void     vortex_support_add_search_path_ref (VortexCtx * ctx,
  * This function works like \ref vortex_support_add_search_path but
  * providing the default domain "default".
  * 
+ * @param ctx The context where the operation will be performed.
+ *
  * @param domain The domain where the lookup will be performed.
  * @param path The path to lookup for files once called \ref
  * vortex_support_domain_find_data_file.
@@ -315,6 +323,7 @@ void     vortex_support_add_domain_search_path     (VortexCtx  * ctx,
  * @brief Allows to define a new search path, providing the domain
  * that will apply, providing the values already allocated.
  * 
+ * @param ctx The context where the operation will be performed.
  * @param domain The domain that will be assocaited to the path.
  * @param path The path to use to lookup for files once called \ref
  * vortex_support_domain_find_data_file.
@@ -378,6 +387,7 @@ void     vortex_support_add_domain_search_path_ref (VortexCtx * ctx,
  *   - \ref vortex_support_add_domain_search_path
  *   - \ref vortex_support_add_domain_search_path_ref
  *
+ * @param ctx The context where the operation will be performed.
  * @param name the base file name to lookup.
  * 
  * @return NULL or the file path. Value returned should be unrefered using axl_free when no longer needed.
@@ -391,7 +401,9 @@ char   * vortex_support_find_data_file (VortexCtx   * ctx,
 /** 
  * @brief Perform a file lookup, providing a domain at the file to
  * lookup, using current search path configuration for the domain.
- * 
+ *
+ * @param ctx The context where the operation will be performed.
+ *
  * @param domain The domain where the search operation will be
  * performed.
  *

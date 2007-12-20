@@ -2180,6 +2180,9 @@ bool __vortex_xml_rpc_default_validate (VortexConnection * connection,
  * Here is an example of a listener initializing the vortex engine to
  * accept incoming XML-RPC requests:
  * \code
+ * // global context to be used
+ * VortexCtx * ctx = NULL;
+ *
  * bool     validate_resource (VortexConnection * connection, 
  *                             int                channel_number,
  *                             char             * serverName,
@@ -2254,11 +2257,16 @@ bool __vortex_xml_rpc_default_validate (VortexConnection * connection,
  * int  main (int  argc, char  ** argv) 
  * {
  *
- *	// init vortex library 
- *	vortex_init ();
+ *      // create an empty context 
+ *      ctx = vortex_ctx_new ();
+ *
+ *      // init the context
+ *      if (! vortex_init_ctx (ctx)) {
+ *         printf ("failed to init the library..\n");
+ *      } 
  *
  *	// enable XML-RPC profile 
- *	vortex_xml_rpc_accept_negociation (validate_resource,
+ *	vortex_xml_rpc_accept_negociation (ctx, validate_resource,
  *					   // no user space data for
  *					   // the validation resource
  *					   // function. 
@@ -2269,17 +2277,19 @@ bool __vortex_xml_rpc_default_validate (VortexConnection * connection,
  *					   NULL);
  *
  *	// create a vortex server 
- *	vortex_listener_new ("0.0.0.0", "44000", NULL, NULL);
+ *	vortex_listener_new (ctx, "0.0.0.0", "44000", NULL, NULL);
  *
  *	// wait for listeners (until vortex_exit is called) 
- *	vortex_listener_wait ();
+ *	vortex_listener_wait (ctx);
  *	
  *	// end vortex function 
- *	vortex_exit ();
+ *	vortex_exit_ctx (ctx, true);
  *
  *	return 0;
  * }
  * \endcode
+ *
+ * @param ctx The context where the operation will be performed.
  *
  * @param validate_resource The resource validation handler. This
  * handler is not optional.

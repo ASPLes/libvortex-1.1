@@ -586,6 +586,9 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
  * //     a simple listener server, using previous three
  * //     basic handlers.
  *
+ * // vortex context
+ * VortexCtx * ctx = NULL;
+ *
  * // a frame handler
  * void frame_received (VortexChannel    * channel,
  *                      VortexConnection * connection,
@@ -623,34 +626,40 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
  *        return true;
  * }
  * int main (int argc, char ** argv) {
+ *
+ *      // create a context
+ *      ctx = vortex_ctx_new ();
+ *
  *      // enable log to see whats going on 
- *      vortex_log_enable (true);
- *      
+ *      vortex_log_enable (ctx, true);
+ *
  *      // init vortex library (and check its result!)
- *      if (! vortex_init ()) {
+ *      if (! vortex_init_ctx (ctx)) {
  *           printf ("Unable to initialize vortex library\n");
  *           exit (-1);
  *      }
  * 
  *      // register a profile
- *      vortex_profiles_register ("http://vortex.aspl.es/profiles/example", 
+ *      vortex_profiles_register (ctx, "http://vortex.aspl.es/profiles/example", 
  *                                start_channel, NULL,
  *                                close_channel, NULL,
  *                                frame_received, NULL);
  * 
  *      // now create a vortex server
- *      vortex_listener_new ("0.0.0.0", "3000", NULL, NULL);
+ *      vortex_listener_new (ctx, "0.0.0.0", "3000", NULL, NULL);
  *      
  *      // wait for listener to finish (maybe due to vortex_exit call)
- *      vortex_listener_wait ();
+ *      vortex_listener_wait (ctx);
  *  
  *      // end vortex internal subsystem (if no one have done it yet!)
- *      vortex_exit ();
+ *      vortex_ctx_exit (ctx, true);
  * 
  *      // that's all to start BEEPing!
  *      return 0;     
  * }  
  * \endcode
+ *
+ * @param ctx The context where the operation will be performed.
  *
  * @param host The host to listen to.
  *
@@ -702,6 +711,8 @@ VortexConnection * vortex_listener_new (VortexCtx           * ctx,
  * If your intention isn't getting a reference to the connection
  * created, you can safely use \ref vortex_listener_new and \ref
  * vortex_listener_new2.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param host The host to listen to.
  *
@@ -745,6 +756,8 @@ VortexConnection * vortex_listener_new_full  (VortexCtx   * ctx,
  * configuration as an integer value.
  *
  * See \ref vortex_listener_new for more information. 
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param host The host to listen to.
  *
@@ -801,6 +814,7 @@ VortexConnection * vortex_listener_new2    (VortexCtx   * ctx,
  * ends or a failure have occur while creating the listener. To force
  * an unlocking, a call to \ref vortex_listener_unlock must be done.
  * 
+ * @param ctx The context where the operation will be performed.
  */
 void vortex_listener_wait (VortexCtx * ctx)
 {
@@ -834,8 +848,8 @@ void vortex_listener_wait (VortexCtx * ctx)
  * directly from user space. This function actually unblock waiting
  * listeners on vortex_listener_wait function.
  *
- * Vortex already call to this function once the \ref vortex_exit
- * function is called. 
+ * Vortex already call to this function once the \ref vortex_exit_ctx
+ * function is called.
  *
  * Because some designs could require to control how memory is
  * released once the listener is unblocked from the \ref
@@ -845,6 +859,7 @@ void vortex_listener_wait (VortexCtx * ctx)
  * Futher calls to this function will cause no operation. This
  * function is thread safe.
  *
+ * @param ctx The context where the operation will be performed.
  **/
 void vortex_listener_unlock (VortexCtx * ctx)
 {
@@ -938,7 +953,9 @@ void vortex_listener_cleanup (VortexCtx * ctx)
  * The handler to be configured could be used as a way to get
  * notifications about connections created, but also as a filter for
  * connections that must be dropped.
- * 
+ *
+ * @param ctx The context where the operation will be performed. 
+ *
  * @param on_accepted The handler to be executed.
  *
  * @param _data User space data to be passed in to the handler
@@ -999,6 +1016,8 @@ void          vortex_listener_set_on_connection_accepted (VortexCtx             
  *   </listener>
  * </vortex-listener>
  * \endcode
+ *
+ * @param ctx The context where the operation will be performed.
  *
  * @return true if the listener was started because the file was read
  * successfully otherwise false is returned.
@@ -1130,6 +1149,8 @@ bool              vortex_listener_parse_conf_and_start (VortexCtx * ctx)
  * To get the value configured you must use \ref vortex_listener_get_default_realm.
  * 
  * @param realm The realm to be configured as a default value.
+ *
+ * @param ctx The context where the operation will be performed.
  */
 void          vortex_listener_set_default_realm (VortexCtx   * ctx,
 						 const char  * realm)
@@ -1149,7 +1170,8 @@ void          vortex_listener_set_default_realm (VortexCtx   * ctx,
  * @brief Allows to get current realm configuration, used for all
  * connections.
  * 
- * 
+ * @param ctx The context where the operation will be performed.
+ *
  * @return Current configuration. Result can be NULL, which means to
  * realm was configured.
  */
