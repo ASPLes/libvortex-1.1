@@ -132,6 +132,7 @@ VortexTunnelSettings * vortex_tunnel_settings_new (VortexCtx * ctx)
  * the content provided, that must be an xml meating the RFC3620
  * description.
  * 
+ * @param ctx The context where the operation will be performed.
  * @param content The xml content to be parsed.
  * @param size The size of the xml content.
  * 
@@ -220,8 +221,8 @@ VortexTunnelSettings * vortex_tunnel_settings_new_from_xml (VortexCtx * ctx,
  * \code
  * VortexTunnelSettings * settings;
  * 
- * // create the settings 
- * settings = vortex_tunnel_settings_new ();
+ * // create the settings (using an initialized VortexCtx)
+ * settings = vortex_tunnel_settings_new (ctx);
  *
  * // configure the default proxy 
  * vortex_tunnel_settings_add_hop (settings, 
@@ -1038,6 +1039,8 @@ bool __vortex_tunnel_start_request (char             * profile,
  * to ask for accept tunnel the session or not. In the case no handler
  * is provided, the default behaviour is to accept the tunnel request.
  *
+ * @param ctx The context where the operation will be performed.
+ *
  * @param accept_tunnel_data User space pointer to data that will be
  * passed to the previous handler.
  * 
@@ -1102,6 +1105,8 @@ bool                   vortex_tunnel_accept_negotiation (VortexCtx              
  * This method allows to not only translate the <b>endpoint</b> and
  * <b>profile</b> value. It can be used to perform connection
  * redirections, etc.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param resolver The handler to be executed to resolver TUNNEL settings.
  *

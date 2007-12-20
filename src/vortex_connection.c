@@ -331,7 +331,9 @@ struct _VortexConnection {
  * 
  * This prevents from having problems while using socket descriptors
  * which could conflict with reserved file descriptors such as 0,1,2..
- * 
+ *
+ * @param ctx The context where the operation will be performed. 
+ *
  * @param connection The connection to check.
  * 
  * @return true if the socket sanity check have passed, otherwise
@@ -388,11 +390,11 @@ int  vortex_connection_default_receive (VortexConnection * connection,
 }
 
 /** 
- * @internal
- *
- * @brief Support function for connection identificators.  
+ * @internal Support function for connection identificators.
  *
  * This is used to generate and return the next connection identifier.
+ *
+ * @param ctx The context where the operation will be performed.
  *
  * @return Next connection identifier available.
  */
@@ -773,6 +775,7 @@ bool     __vortex_connection_parse_greetings (VortexConnection * connection, Vor
  *  - \ref vortex_connection_set_send_handler
  *  - \ref vortex_connection_set_receive_handler
  *
+ * @param ctx     The context where the operation will be performed.
  * @param session An already connected socket.  
  * @param role    The role to be set to the connection being created.
  * 
@@ -800,6 +803,8 @@ VortexConnection * vortex_connection_new_empty            (VortexCtx *    ctx,
  * reference provided. This is useful while performing tuning
  * operations that requires to reset the connection but retain data
  * stored on the connection.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param socket The socket to be used for the new connection.
  *
@@ -1125,6 +1130,8 @@ bool                vortex_connection_set_sock_block         (VORTEX_SOCKET sock
  * @internal wrapper to avoid possible problems caused by the
  * gethostbyname implementation which is not required to be reentrant
  * (thread safe).
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param hostname The host to translate.
  * 
@@ -1474,10 +1481,15 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
  * automatically deallocated while using \ref vortex_connection_set_data_full.
  *
  * 
- * 
+ * @param ctx The context where the operation will be performed.
+ *
  * @param host The remote peer to connect to.
+ *
  * @param port The peer's port to connect to.
- * @param on_connected Optional handler to process connection new status.
+ *
+ * @param on_connected Optional handler to process connection new
+ * status.
+ *
  * @param user_data Optional handler to process connection new status
  * 
  * @return A newly created \ref VortexConnection if called in a
@@ -2006,6 +2018,7 @@ int                 vortex_connection_ref_count              (VortexConnection *
  * \ref vortex_connection_new will return with a non-connected vortex
  * connection.
  *
+ * @param ctx The context where the operation will be performed.
  *
  * @param period Timeout value to be used.
  */
@@ -2047,6 +2060,8 @@ void               vortex_connection_timeout (VortexCtx * ctx,
  * and connect does not succeed within the period
  * \ref vortex_connection_new will return with a non-connected vortex
  * connection.
+ *
+ * @param ctx The context where the operation will be performed.
  *
  * @param period Timeout value to be used. The value provided is
  * measured in seconds. 
@@ -3548,6 +3563,8 @@ void                vortex_connection_set_channel_removed_handler  (VortexConnec
 /** 
  * @brief Allows to configure a handler which is called for each
  * connection created. The function supports configuring several handlers.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param notify_new The function to be called to produce the
  * notification.
@@ -3923,6 +3940,8 @@ void                vortex_connection_set_data_full          (VortexConnection *
  * always fails. This means that setting <b>allow_tls_failures </b>
  * to false will cause Vortex Library client peer to always fail to
  * create new connections.</i>
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param enabled true to activate the automatic TLS profile
  * negotiation for every connection created, false to disable it.
@@ -4312,8 +4331,8 @@ VortexConnection  * vortex_connection_get_listener           (VortexConnection *
  * @brief Allows to get the context under which the connection was
  * created. 
  * 
- * @param ctx The context associated to the connection (undre which it
- * was created).
+ * @param connection The connection that is requried to return the context under
+ * which it was created.
  * 
  * @return A reference to the context associated to the connection or
  * NULL if it fails.
@@ -4657,6 +4676,11 @@ int                 vortex_connection_invoke_send            (VortexConnection *
  * which could cause applications problems.
  *
  * You can disable this sanity check using this function.
+ *
+ * @param ctx The context where the operation will be performed.
+ * 
+ * @param enable According to the value, the santicy check will be
+ * enabled or disabled.
  * 
  */
 void                vortex_connection_sanity_socket_check (VortexCtx * ctx, bool     enable)

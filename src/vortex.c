@@ -88,6 +88,9 @@ void __vortex_sigpipe_do_nothing (int _signal)
 /** 
  * @brief Allows to get current status for log debug info to console.
  * 
+ * @param ctx The context that is required to return its current log
+ * activation configuration.
+ * 
  * @return true if console debug is enabled. Otherwise false.
  */
 bool     vortex_log_is_enabled (VortexCtx * ctx)
@@ -176,9 +179,9 @@ void     vortex_log_enable       (VortexCtx * ctx, bool     status)
 /** 
  * @brief Enable console second level vortex log.
  * 
- * @param status true enable log, false disables it.
- *
  * @param ctx The context where the operation will be performed.
+ *
+ * @param status true enable log, false disables it.
  */
 void     vortex_log2_enable       (VortexCtx * ctx, bool     status)
 {
@@ -367,8 +370,12 @@ bool      vortex_conf_get             (VortexCtx      * ctx,
  * integer or the string value, according to the item configuration
  * documentation.
  * 
+ * @param ctx The context where the configuration will take place.
+ *
  * @param item The item configuration to be set.
+ *
  * @param value The integer value to be configured if applies.
+ *
  * @param str_value The string value to be configured if applies.
  * 
  * @return true if the configuration was done properly, otherwise
@@ -528,6 +535,8 @@ bool     vortex_log_is_enabled_acquire_mutex (VortexCtx * ctx)
 /** 
  * @brief Allows to configure an application handler that will be
  * called for each log produced by the vortex engine.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param handler A reference to the handler to configure or NULL to
  * disable the notification.
@@ -546,6 +555,8 @@ void     vortex_log_set_handler      (VortexCtx        * ctx,
  * @brief Allows to get current log handler configured. By default no
  * handler is configured so log producted by the vortex execution is
  * dropped to the console.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @return The handler configured (or NULL) if no handler was found
  * configured.
@@ -564,6 +575,7 @@ VortexLogHandler     vortex_log_get_handler      (VortexCtx * ctx)
  * @internal Internal common log implementation to support several levels
  * of logs.
  * 
+ * @param ctx The context where the operation will be performed.
  * @param file The file that produce the log.
  * @param line The line that fired the log.
  * @param log_level The level of the log
@@ -1897,7 +1909,8 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *        // Creates a Vortex Connection without providing a
  *        // OnConnected handler or user data. This will block us
  *        // until the connection is created or fails.
- *        VortexConnection * connection = vortex_connection_new (host, port, NULL, NULL);
+ *        // The context (ctx) is assumeted to be initialized. See vortex_init_ctx.
+ *        VortexConnection * connection = vortex_connection_new (ctx, host, port, NULL, NULL);
  * \endcode
  * 
  * Once finished, you have actually created a BEEP session. Then you
@@ -1955,7 +1968,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *      }
  *
  *      // finally, finalize vortex running
- *      vortex_exit ();
+ *      vortex_exit_ctx (ctx, true);
  * \endcode
  * 
  *
@@ -1971,6 +1984,9 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * \code  
  *   #include <vortex.h>
  *
+ *   // vortex global context 
+ *   VortexCtx * ctx = NULL;
+ *
  *   void on_ready (char  * host, int  port, VortexStatus status,
  *                  char  * message, axlPointer user_data) {
  *        if (status != VortexOk) {
@@ -1983,11 +1999,17 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *   }
  *
  *   int  main (int  argc, char  ** argv) {
- *       // init vortex library
- *       vortex_init ();
- * 
+ *
+ *       // create an empty context 
+ *       ctx = vortex_ctx_new ();
+ *
+ *       // init the context
+ *       if (! vortex_init_ctx (ctx)) {
+ *           printf ("failed to init the library..\n");
+ *       } 
+ *
  *       // register a profile
- *       vortex_profiles_register (SOME_PROFILE_URI,	
+ *       vortex_profiles_register (ctx, SOME_PROFILE_URI,	
  *                                 // provide a first level start
  *                                 // handler (start handler can only be
  *                                 // provided at first level)
@@ -1999,13 +2021,13 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * 
  *       // create a vortex server using any name the running host may have.
  *       // the on_ready handler will be executed on vortex listener creation finish.
- *       vortex_listener_new ("0.0.0.0", "44000", on_ready);
+ *       vortex_listener_new (ctx, "0.0.0.0", "44000", on_ready);
  * 
  *       // wait for listeners
- *       vortex_listener_wait ();
+ *       vortex_listener_wait (ctx);
  *
  *       // finalize vortex running
- *       vortex_exit ();
+ *       vortex_exit_ctx (ctx, false);
  *
  *        return 0;
  *   }
@@ -2016,7 +2038,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *   <ul>
  *
  *   <li>Initialize the library and its subsystems using \ref
- *   vortex_init. If \ref vortex_init function is not called,
+ *   vortex_init_ctx. If \ref vortex_init_ctx function is not called,
  *   unexpected behaviors will happen.</li>
  *
  *   <li>Register one (or more profiles) the listener being
@@ -2082,12 +2104,18 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *   int  main (int  argc, char  ** argv) {
  *     // a connection reference 
  *     VortexConnection * connection;
+ *     VortexCtx        * ctx;
  *
- *     // init vortex library
- *     vortex_init ();
+ *     // create an empty context 
+ *     ctx = vortex_ctx_new ();
+ *
+ *     // init the context
+ *     if (! vortex_init_ctx (ctx)) {
+ *           printf ("failed to init the library..\n");
+ *     } 
  * 
  *     // connect to remote vortex listener
- *     connection = vortex_connection_new (host, port, 
+ *     connection = vortex_connection_new (ctx, host, port, 
  *                                         // do not provide an on_connected_handler 
  *                                         NULL, NULL);
  * 
@@ -2102,7 +2130,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *     
  *
  *     // and finally call to terminate vortex
- *     vortex_exit ();
+ *     vortex_exit_ctx (ctx, true);
  *   }
  *   
  * \endcode
@@ -2110,7 +2138,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * Previous steps stands for:
  *   <ul>
  *   
- *   <li> Initialize Vortex Library calling to \ref vortex_init. As we have
+ *   <li> Initialize Vortex Library calling to \ref vortex_init_ctx. As we have
  *   seen on vortex listener case, if vortex library is not initialized
  *   unexpected behaviors will occur.</li>
  *    
@@ -3053,7 +3081,8 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * On this case, we could activate listener TLS profile support as follows:
  * \code
  * // activate TLS profile support using defaults
- * vortex_tls_accept_negociation (NULL,  // accept all TLS request received
+ * vortex_tls_accept_negociation (ctx,   // context to configure
+ *                                NULL,  // accept all TLS request received
  *                                NULL,  // use default certificate file
  *                                NULL); // use default private key file
  *
@@ -3072,8 +3101,8 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *  control how are accepted incoming TLS requests. Here is an example:
  * \code
  * // return true if we agree to accept the TLS negotiation
- * bool     check_and_accept_tls_request (VortexConnection *connection, 
- *                                        char  *serverName)
+ * bool     check_and_accept_tls_request (VortexConnection * connection, 
+ *                                        char             * serverName)
  * {
  *     // perform some especial operations against the serverName
  *     // value or the received connection, return false to deny the 
@@ -3094,7 +3123,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *     // perform some especial operation to choose which 
  *     // certificate file to be used, then return it:
  *    
- *     return vortex_support_find_data_file ("myCertificate.cert"); 
+ *     return vortex_support_find_data_file (ctx, "myCertificate.cert"); 
  * }
  * \endcode
  * 
@@ -3114,7 +3143,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *     // perform some especial operation to choose which 
  *     // private key file to be used, then return it:
  *    
- *     return vortex_support_find_data_file ("myPrivateKey.pem"); 
+ *     return vortex_support_find_data_file (ctx, "myPrivateKey.pem"); 
  * }
  * \endcode
  *  </li>
@@ -3124,7 +3153,8 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *  
  * \code
  * // activate TLS profile support using defaults
- * vortex_tls_accept_negociation (check_and_accept_tls_request,
+ * vortex_tls_accept_negociation (ctx,
+ *                                check_and_accept_tls_request,
  *                                certificate_file_location,
  *                                private_key_file_locatin);
  * \endcode
@@ -3555,10 +3585,10 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * }
  * 
  * // set default plain validation handler
- * vortex_sasl_set_plain_validation (sasl_plain_validation);
+ * vortex_sasl_set_plain_validation (ctx, sasl_plain_validation);
  * 
  * // accept SASL PLAIN incoming requests
- * if (! vortex_sasl_accept_negociation (VORTEX_SASL_PLAIN)) {
+ * if (! vortex_sasl_accept_negociation (ctx, VORTEX_SASL_PLAIN)) {
  *	printf ("Unable  accept SASL PLAIN profile");
  *	return -1;
  * }
@@ -3716,7 +3746,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * 
  * As you can see, the server code is fairly easy to understand. The following steps are done:
  * <ul>
- *  <li>First of all, Vortex Library is initialized using \ref vortex_init.</li>
+ *  <li>First of all, Vortex Library is initialized using \ref vortex_init_ctx.</li>
  *
  *  <li>Then, <i>PLAIN_PROFILE</i> is registered inside Vortex Library
  *  using \ref vortex_profiles_register.  This means, the vortex
@@ -4204,9 +4234,12 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * VortexStatus       status;
  * char             * message;
  *
+ * // the ctx variable represents a context already initialized with
+ * // vortex_ctx_new followed by vortex_ctx_init.
+ *
  * // create the connection to a known location (in a blocking manner for
  * // demostration purposes)
- * connection = vortex_connection_new ("localhost", "22000", NULL, NULL);
+ * connection = vortex_connection_new (ctx, "localhost", "22000", NULL, NULL);
  *
  * // boot an XML-RPC channel
  * channel = vortex_xml_rpc_boot_channel_sync (connection, NULL, NULL, &status, &message);
@@ -4389,33 +4422,42 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * accept the XML-RPC profile: 
  * 
  * \code
+ *
+ * // vortex global context 
+ * VortexCtx * ctx = NULL;
+ *
  * int  main (int  argc, char  ** argv) 
  * {
  *
- *	// init vortex library 
- *	vortex_init ();
+ *      // create an empty context 
+ *      ctx = vortex_ctx_new ();
  *
- *	// enable XML-RPC profile 
- *	vortex_xml_rpc_accept_negociation (validate_resource,
- *					   // no user space data for
- *					   // the validation resource
- *					   // function. 
- *					   NULL, 
- *					   service_dispatch,
- *					   // no user space data for
- *					   // the dispatch function. 
- *					   NULL);
+ *      // init the context
+ *      if (! vortex_init_ctx (ctx)) {
+ *           printf ("failed to init the library..\n");
+ *      } 
  *
- *	// create a vortex server 
- *	vortex_listener_new ("0.0.0.0", "44000", NULL, NULL);
+ *      // enable XML-RPC profile 
+ *      vortex_xml_rpc_accept_negociation (ctx, validate_resource,
+ *                                         // no user space data for
+ *                                         // the validation resource
+ *                                         // function. 
+ *                                         NULL, 
+ *                                         service_dispatch,
+ *                                         // no user space data for
+ *                                         // the dispatch function. 
+ *                                         NULL);
  *
- *	// wait for listeners (until vortex_exit is called) 
- *	vortex_listener_wait ();
+ *      // create a vortex server 
+ *      vortex_listener_new (ctx, "0.0.0.0", "44000", NULL, NULL);
+ *
+ *      // wait for listeners (until vortex_exit is called) 
+ *      vortex_listener_wait (ctx);
  *	
- *	// end vortex function 
- *	vortex_exit ();
+ *      // end vortex function 
+ *      vortex_exit_ctx (ctx, true);
  *
- *	return 0;
+ *      return 0;
  * }
  * \endcode
  *
@@ -5091,8 +5133,9 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * VortexTunnelSettings * settings;
  * VortexConnection     * connection;
  * 
- * // create a tunnel settings holder
- * settings = vortex_tunnel_settings_new ();
+ * // create a tunnel settings holder (being ctx a context already initialized
+ * // with vortex_ctx_new followed by vortex_init_ctx
+ * settings = vortex_tunnel_settings_new (ctx);
  *
  * // configure the tunnel
  * vortex_tunnel_settings_add_hop (settings,

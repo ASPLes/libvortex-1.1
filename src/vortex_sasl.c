@@ -1917,6 +1917,7 @@ void __vortex_sasl_accept_negociation_frame_receive (VortexChannel    * channel,
 /** 
  * @brief Allows to set current auth validation handler for the the SASL EXTERNAL profile.
  *
+ * @param ctx The context where the operation will be performed.
  * @param auth_handler Auth handler to be executed when a query for EXTERNAL authentication is received.
  */
 void           vortex_sasl_set_external_validation  (VortexCtx              * ctx, 
@@ -1937,6 +1938,7 @@ void           vortex_sasl_set_external_validation  (VortexCtx              * ct
 /** 
  * @brief Allows to set current auth validation handler for the the SASL EXTERNAL profile.
  *
+ * @param ctx The context where the operation will be performed.
  * @param auth_handler Auth handler to be executed when a query for EXTERNAL authentication is received.
  */
 void           vortex_sasl_set_external_validation_full  (VortexCtx * ctx, VortexSaslAuthExternalFull auth_handler)
@@ -1957,6 +1959,7 @@ void           vortex_sasl_set_external_validation_full  (VortexCtx * ctx, Vorte
  * @brief Allows to set current auth validation handler for the the
  * SASL ANONYMOUS profile.
  *
+ * @param ctx The context where the operation will be performed.
  * @param auth_handler Auth handler to be executed when a query for
  * ANONYMOUS authentication is received.
  */
@@ -1978,6 +1981,7 @@ void           vortex_sasl_set_anonymous_validation  (VortexCtx * ctx, VortexSas
  * @brief Allows to set current auth validation handler for the the
  * SASL ANONYMOUS profile.
  *
+ * @param ctx The context where the operation will be performed.
  * @param auth_handler Auth handler to be executed when a query for
  * ANONYMOUS authentication is received.
  */
@@ -1999,6 +2003,7 @@ void           vortex_sasl_set_anonymous_validation_full  (VortexCtx * ctx, Vort
  * @brief Allows to set the validation handler to be used while
  * authenticating PLAIN SASL profile.
  * 
+ * @param ctx The context where the operation will be performed.
  * @param auth_handler The handler to be executed.
  */
 void               vortex_sasl_set_plain_validation      (VortexCtx * ctx, VortexSaslAuthPlain     auth_handler)
@@ -2019,6 +2024,7 @@ void               vortex_sasl_set_plain_validation      (VortexCtx * ctx, Vorte
  * @brief Allows to set the validation handler to be used while
  * authenticating PLAIN SASL profile.
  * 
+ * @param ctx The context where the operation will be performed.
  * @param auth_handler The handler to be executed.
  */
 void               vortex_sasl_set_plain_validation_full      (VortexCtx * ctx, VortexSaslAuthPlainFull     auth_handler)
@@ -2038,6 +2044,7 @@ void               vortex_sasl_set_plain_validation_full      (VortexCtx * ctx, 
 /** 
  * @brief Allows to set the validation handler to be used while authenticating CRAM-MD5 SASL profile.
  * 
+ * @param ctx The context where the operation will be performed.
  * @param auth_handler The handler to be executed.
  */
 void               vortex_sasl_set_cram_md5_validation      (VortexCtx * ctx, VortexSaslAuthCramMd5     auth_handler)
@@ -2057,6 +2064,7 @@ void               vortex_sasl_set_cram_md5_validation      (VortexCtx * ctx, Vo
 /** 
  * @brief Allows to set the validation handler to be used while authenticating CRAM-MD5 SASL profile.
  * 
+ * @param ctx The context where the operation will be performed.
  * @param auth_handler The handler to be executed.
  */
 void               vortex_sasl_set_cram_md5_validation_full      (VortexCtx * ctx, VortexSaslAuthCramMd5Full     auth_handler)
@@ -2076,6 +2084,7 @@ void               vortex_sasl_set_cram_md5_validation_full      (VortexCtx * ct
 /** 
  * @brief Allows to set current auth validation handler for the the SASL DIGEST-MD5 profile.
  *
+ * @param ctx The context where the operation will be performed.
  * @param auth_handler Auth handler to be executed when a query for DIGEST-MD5 authentication is received.
  */
 void           vortex_sasl_set_digest_md5_validation  (VortexCtx * ctx, VortexSaslAuthDigestMd5 auth_handler)
@@ -2095,6 +2104,7 @@ void           vortex_sasl_set_digest_md5_validation  (VortexCtx * ctx, VortexSa
 /** 
  * @brief Allows to set current auth validation handler for the the SASL DIGEST-MD5 profile.
  *
+ * @param ctx The context where the operation will be performed.
  * @param auth_handler Auth handler to be executed when a query for DIGEST-MD5 authentication is received.
  */
 void           vortex_sasl_set_digest_md5_validation_full  (VortexCtx * ctx, VortexSaslAuthDigestMd5Full auth_handler)
@@ -2135,6 +2145,7 @@ void           vortex_sasl_set_digest_md5_validation_full  (VortexCtx * ctx, Vor
  * for a detailed explanation about SASL support inside Vortex
  * for the server side.
  * 
+ * @param ctx The context where the operation will be performed.
  * @param mech The SASL mech to be accepted from remote BEEP peers.
  * @param user_data User-defined pointer to be passed to SASL callbacks.
  * 
@@ -2207,6 +2218,7 @@ bool               vortex_sasl_accept_negociation_full        (VortexCtx * ctx, 
  * for a detailed explanation about SASL support inside Vortex
  * for the server side.
  * 
+ * @param ctx The context where the operation will be performed.
  * @param mech The SASL mech to be accepted from remote BEEP peers.
  * 
  * @return true the mechanism was enabled to be accepted.

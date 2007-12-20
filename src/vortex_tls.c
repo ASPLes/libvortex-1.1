@@ -89,6 +89,8 @@
  * enabled and to check if the Vortex Library being used have support
  * for TLS profile.
  *
+ * @param ctx The context where the operation will be performed.
+ *
  * @return true if the TLS profile was activated and, implicitly, the
  * Vortex Library being used have TLS support enabled. Otherwise false
  * is returned.
@@ -199,6 +201,7 @@ void               vortex_tls_set_ctx_creation           (VortexConnection     *
  *
  * </i>
  * 
+ * @param ctx The context where the operation will be performed.
  * 
  * @param ctx_creation The handler to be called once required a
  * SSL_CTX object.
@@ -277,6 +280,8 @@ void               vortex_tls_set_post_check             (VortexConnection     *
  * If you want to configure a per-connection handler to be called for all
  * connections, you can use the default handler: \ref
  * vortex_tls_set_default_post_check
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param post_check The handler to be called once required to perform the post-check.
  *
@@ -972,7 +977,7 @@ axlPointer __vortex_tls_start_negociation (VortexTlsBeginData * data)
  *     }
  *
  *     // start the TLS profile negotiation process
- *     vortex_tls_start_negociation (connection, NULL, 
+ *     vortex_tls_start_negociation (ctx, connection, NULL, 
  *                                   process_tls_status, NULL);
  * }
  *
@@ -1751,6 +1756,8 @@ VortexConnection * vortex_tls_start_negociation_sync     (VortexConnection  * co
  * to set the default private key handler which returns a path to the
  * test private key. It is highly recommended to set this handler,
  * however you can use NULL values under development environment.
+ *
+ * @param ctx The context where the operation will be performed.
  *
  * @return Returns it the current server instance could accept incoming TLS connections.
  */

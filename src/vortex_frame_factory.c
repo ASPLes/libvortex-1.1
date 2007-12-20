@@ -439,13 +439,22 @@ char  * vortex_frame_build_up_from_params_s (VortexFrameType   type,
  * creating new frames, also specifying content type and content
  * transfer encoding values.
  *
- * @param type    The frame type to build.
+ * @param ctx The context where the operation will be performed.
+ *
+ * @param type The frame type to build.
+ *
  * @param channel The channel number the frame have.
- * @param msgno   The message number the frame have. 
- * @param more    More flag configuration for the frame.
- * @param seqno   The sequence number for the frame to build.
- * @param size    The frame payload size.
- * @param ansno   The answer number the frame have.
+ *
+ * @param msgno The message number the frame have.
+ *
+ * @param more More flag configuration for the frame.
+ *
+ * @param seqno The sequence number for the frame to build.
+ *
+ * @param size The frame payload size.
+ *
+ * @param ansno The answer number the frame have.
+ *
  * @param payload The payload the frame hold.
  * 
  * @return A newly created \ref VortexFrame object that must be
@@ -481,13 +490,21 @@ VortexFrame * vortex_frame_create               (VortexCtx       * ctx,
  * The function also performs a local copy for the content type ("Content-Type:" ) value  and
  * the transfer encoding ("Content-Transfer-Encoding:" )  value provided.
  * 
- * @param type    The frame type to build.
+ * @param ctx The context where the operation will be performed.
+ *
+ * @param type The frame type to build.
+ *
  * @param channel The channel number the frame have.
- * @param msgno   The message number the frame have. 
- * @param more    More flag configuration for the frame.
- * @param seqno   The sequence number for the frame to build.
- * @param size    The frame payload size.
- * @param ansno   The answer number the frame have.
+ *
+ * @param msgno The message number the frame have.
+ *
+ * @param more More flag configuration for the frame.
+ *
+ * @param seqno The sequence number for the frame to build.
+ *
+ * @param size The frame payload size.
+ *
+ * @param ansno The answer number the frame have.
  *
  * @param content_type The MIME Content-Type value to be used for this
  * frame. Optional value.
@@ -571,13 +588,21 @@ VortexFrame * vortex_frame_create_full          (VortexCtx       * ctx,
  * The function also performs a local copy for the content type ("Content-Type:" ) value  and
  * the transfer encoding ("Content-Transfer-Encoding:" )  value provided.
  * 
- * @param type    The frame type to build.
+ * @param ctx The context where the operation will be performed.
+ *
+ * @param type The frame type to build.
+ *
  * @param channel The channel number the frame have.
- * @param msgno   The message number the frame have. 
- * @param more    More flag configuration for the frame.
- * @param seqno   The sequence number for the frame to build.
- * @param size    The frame payload size.
- * @param ansno   The answer number the frame have.
+ *
+ * @param msgno The message number the frame have.
+ *
+ * @param more More flag configuration for the frame.
+ *
+ * @param seqno The sequence number for the frame to build.
+ *
+ * @param size The frame payload size.
+ *
+ * @param ansno The answer number the frame have.
  *
  * @param content_type The MIME Content-Type value to be used for this
  * frame. Optional value.

@@ -147,6 +147,8 @@ void __vortex_thread_pool_terminate_thread (axlPointer _thread)
  * process are run inside a separate thread. All those process are
  * also run inside the thread pool.
  *
+ * @param ctx The context where the operation will be performed.
+ *
  * @param max_threads how many threads to start.
  *
  **/
@@ -264,6 +266,7 @@ void vortex_thread_pool_being_closed        (VortexCtx * ctx)
  * for internal purpose so it should not be useful for vortex library
  * consumers.
  *
+ * @param ctx The context where the operation will be performed.
  * @param func the function to execute.
  * @param data the data to be passed in to the function.
  *
@@ -294,6 +297,8 @@ void vortex_thread_pool_new_task (VortexCtx * ctx, VortexThreadFunc func, axlPoi
  * @brief Returns the running threads the given pool have.
  * 
  * Returns the actual running threads the vortex thread pool have.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @return the thread number or -1 if fails
  **/
@@ -313,10 +318,10 @@ int  vortex_thread_pool_get_running_threads (VortexCtx * ctx)
  *
  * This function modifies the environment variable
  * <b>"VORTEX_THREADS"</b>, setting the value provided. Later, the
- * value will be used by the \ref vortex_init function to initialize
+ * value will be used by the \ref vortex_init_ctx function to initialize
  * the Vortex Library.
  *
- * This function must be called before \ref vortex_init to take
+ * This function must be called before \ref vortex_init_ctx to take
  * effect. See also:
  *
  *  - \ref vortex_thread_pool_get_num
@@ -401,8 +406,10 @@ int  vortex_thread_pool_get_num             ()
  * available not only from its thread pool but also from other thread
  * pools created outside the Vortex Library context.
  *
- * This function must be called before \ref vortex_init to take
+ * This function must be called before \ref vortex_init_ctx to take
  * effect.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param value The new behaviour to configure. By default, internal
  * value is already configured to true. Set false to make the thread

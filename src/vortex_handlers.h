@@ -1579,8 +1579,8 @@ typedef void (*VortexOnClosedChannel) (VortexChannel * channel, axlPointer user_
  *
  * This function is used by: 
  * 
- * - \ref vortex_log_set_logger
- * - \ref vortex_log_get_logger
+ * - \ref vortex_log_set_handler
+ * - \ref vortex_log_get_handler
  *
  * @param file The file that produced the log.
  *

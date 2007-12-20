@@ -204,7 +204,7 @@ bool     __vortex_profiles_default_close (int                channel_num,
  * creating new profiles for your application. 
  *
  * 
- * 
+ * @param ctx                 The context where the operation will be performed.
  * @param uri                 A profile name to register
  * @param start               A handler to control channel creation
  * @param start_user_data     User defined data to be passed in to start handler
@@ -277,6 +277,7 @@ bool vortex_profiles_register (VortexCtx             * ctx,
  * The function is able to support calling several times to unregister
  * the same profile (or unregistering profiles not registered).
  * 
+ * @param ctx The context where the operation will be performed.
  * @param uri The profile uri to unregister.
  *
  * @return true if the profile was unregistered, otherwise false is
@@ -315,6 +316,8 @@ bool     vortex_profiles_unregister              (VortexCtx             * ctx,
  * The function will perform a local copy of all the values provided
  * on this function, so you could safely unref them once the function
  * had finished.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param uri The profile which the given values for the mime
  * configuration will be applied.
@@ -370,6 +373,8 @@ bool     vortex_profiles_set_mime_type           (VortexCtx             * ctx,
 /** 
  * @brief Allows to get current configuration for the default mime
  * type used for the given uri profile.
+ *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param uri The BEEP unique profile identification to get mime type
  * configuration from.
@@ -401,6 +406,8 @@ const char  * vortex_profiles_get_mime_type (VortexCtx * ctx, const char  * uri)
 /** 
  * @brief Allows to get current configuration for the default content
  * transfer encoding used for the given uri profile.
+ *
+ * @param ctx The context where the operation will be performed.
  *
  * @param uri The BEEP unique profile identification to get content
  * transfer encoding configuration from.
@@ -447,7 +454,8 @@ const char  * vortex_profiles_get_transfer_encoding (VortexCtx   * ctx,
  *
  * Once defined the extended handler, the start handler defined at
  * \ref vortex_profiles_register will be ignored.
- * 
+ *
+ * @param ctx                      The context where the operation will be performed.
  * @param uri                      The uri profile to register the start channel extended
  * @param extended_start           The handler to be invoked when an start message is received
  * @param extended_start_user_data User defined data to be passed in to the handler.
@@ -565,6 +573,7 @@ bool     vortex_profiles_invoke_start (char             * uri,
  * It also returns no start handler defined if <i>uri</i> is not a
  * registered profile.
  * 
+ * @param ctx The context where the operation will be performed.
  * @param uri The uri to check.
  * 
  * @return true if close handler is defined or false if not
@@ -623,6 +632,7 @@ bool     vortex_profiles_invoke_close (char             * uri,
  * It also returns no close handler defined if <i>uri</i> is not a
  * registered profile. 
  * 
+ * @param ctx The context where the operation will be performed.
  * @param uri the uri profile to check.
  * 
  * @return true if close handler is defined or false if not
@@ -812,7 +822,8 @@ bool     vortex_profiles_invoke_frame_received (const char       * uri,
  * It also returns no received handler defined if <i>uri</i> is not a
  * registered profile.
  * 
- * @param uri 
+ * @param ctx The context where the operation will be performed.
+ * @param uri The uri to check.
  * 
  * @return true if received handler is defined or false if not
  */
@@ -852,6 +863,8 @@ bool __get_actual_list (axlPointer     key,
  * The axlList returned contains all uri that have been
  * registered by using \ref vortex_profiles_register.
  * 
+ * @param ctx The context where the operation will be performed.
+ *
  * You must free returned after using it. Use axl_list_free.  
  * 
  * @return the actual profile registered list.
@@ -875,6 +888,7 @@ axlList * vortex_profiles_get_actual_list (VortexCtx * ctx)
  * @brief Return current profiles registered, in a internally created
  * list.
  * 
+ * @param ctx The context where the operation will be performed.
  * 
  * @return A reference to the profile list. Do not manipulate or
  * dealloc the list.
@@ -892,6 +906,8 @@ axlList * vortex_profiles_get_actual_list_ref (VortexCtx * ctx)
 /** 
  * @brief Return the actual number of profiles registered. 
  * 
+ * @param ctx The context where the operation will be performed.
+ *
  * @return number of profiles registered.
  */
 int     vortex_profiles_registered (VortexCtx * ctx)
@@ -908,6 +924,7 @@ int     vortex_profiles_registered (VortexCtx * ctx)
 /** 
  * @brief Return if a profile identifier is registered. 
  * 
+ * @param ctx The context where the operation will be performed.
  * @param uri The unique URI identifier used to lookup.
  * 
  * @return true if the profile is registered or false if not. 
