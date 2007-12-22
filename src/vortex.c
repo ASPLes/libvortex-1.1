@@ -275,7 +275,7 @@ void     vortex_color_log_enable (VortexCtx * ctx, bool     status)
  * @brief Allows to get a vortex configuration, providing a valid
  * vortex item.
  * 
- * The function requires the configuration item that is requried and a
+ * The function requires the configuration item that is required and a
  * valid reference to a variable to store the result. 
  *
  * @param ctx The context where the operation will be performed.
@@ -491,11 +491,11 @@ bool      vortex_conf_set             (VortexCtx      * ctx,
  * different threads, but has a great perform penalty (only if log is
  * activated).
  *
- * - Aquiring a mutex could make the overall system to act in a
+ * - Acquiring a mutex could make the overall system to act in a
  * different way because the threading is now globally synchronized by
  * all calls done to the log. That is, it may be possible to not
  * reproduce a thread race condition if the log is activated with
- * mutex acquicision.
+ * mutex acquire.
  * 
  * @param ctx The context that is going to be configured.
  * 
@@ -516,7 +516,7 @@ void     vortex_log_acquire_mutex    (VortexCtx * ctx,
 }
 
 /** 
- * @brief Allows to check if the log mutex acquicision is activated.
+ * @brief Allows to check if the log mutex acquire is activated.
  *
  * @param ctx The context that will be required to return its
  * configuration.
@@ -553,7 +553,7 @@ void     vortex_log_set_handler      (VortexCtx        * ctx,
 
 /** 
  * @brief Allows to get current log handler configured. By default no
- * handler is configured so log producted by the vortex execution is
+ * handler is configured so log produced by the vortex execution is
  * dropped to the console.
  *
  * @param ctx The context where the operation will be performed.
@@ -670,7 +670,7 @@ void _vortex_log_common (VortexCtx        * ctx,
 		
 		fprintf (stdout, "\n");
 
-		/* ensure that the log is droped to the console */
+		/* ensure that the log is dropped to the console */
 		fflush (stdout);
 		
 	} /* end if (ctx->debug_handler) */
@@ -878,7 +878,7 @@ bool   vortex_init_ctx (VortexCtx * ctx)
 	}
 
 	/* before starting, check if we are using select(2) system
-	 * call method, to adecuate the number of sockets that can
+	 * call method, to adequate the number of sockets that can
 	 * *really* handle the FD_* function family, to the number of
 	 * sockets that is allowed to handle the process. This is to
 	 * avoid race conditions cause to properly create a
@@ -894,7 +894,7 @@ bool   vortex_init_ctx (VortexCtx * ctx)
 		if (soft_limit > (VORTEX_FD_SETSIZE - 1)) {
 			/* decrease the limit to avoid funny
 			 * problems. it is not required to be
-			 * priviledge user to run the following
+			 * privilege user to run the following
 			 * command. */
 			vortex_conf_set (ctx, VORTEX_SOFT_SOCK_LIMIT, (VORTEX_FD_SETSIZE - 1), NULL);
 			vortex_log (VORTEX_LEVEL_WARNING, 
@@ -932,7 +932,7 @@ bool   vortex_init_ctx (VortexCtx * ctx)
  * context.
  *
  * Stops all internal vortex process and all allocated resources
- * assocated to the context. It also close all channels for all
+ * associated to the context. It also close all channels for all
  * connection that where not closed until call this function.
  *
  * This function is reentrant, allowing several threads to call \ref
@@ -942,10 +942,10 @@ bool   vortex_init_ctx (VortexCtx * ctx)
  * NOTE: Although it isn't explicitly stated, this function shouldn't
  * be called from inside a handler notification: \ref
  * VortexOnFrameReceived "Frame Receive", \ref VortexOnCloseChannel
- * "Channel close", etc. This is because those handlers works indise
+ * "Channel close", etc. This is because those handlers works inside
  * the context of the vortex library execution. Making a call to this
  * function in the middle of that context, will produce undefined
- * behaviours.
+ * behaviors.
  *
  * NOTE2: This function isn't designed to dealloc all resources
  * associated to the context and used by the vortex engine
@@ -1022,7 +1022,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
 	 * 
 	 * In the past, this call was done, however, it is showed that
 	 * user applications on top of vortex that wants to handle
-	 * signals, emited to all threads running (including the pool)
+	 * signals, emitted to all threads running (including the pool)
 	 * causes many non-easy to solve problem related to race
 	 * conditions.
 	 * 
@@ -1218,7 +1218,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * See Axl Library installation manual for more details: http://www.aspl.es/axl/html/axl_install.html
  *
  * An an example, on a debian similar system, with deb based packaging,
- * these dependecies can be installed using:
+ * these dependencies can be installed using:
  *
  * To activate TLS profile support:
  * \code
@@ -1280,34 +1280,35 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *
  * \section imp_notes Notes about Vortex Library implementation
  * 
- * The <b>BEEP Core</b> definition (<b>RFC3080</b> and <b>RFC3081</b>)
- * defines what must or should be supported by any implementation. At
- * this moment the Vortex Library support all sections including must
- * and should requirements (including TLS and SASL profiles).
+ * The <b>BEEP Core</b> definition found at (<b>RFC3080</b> and
+ * <b>RFC3081</b>) defines what "must" and "should" be supported by
+ * any implementation. At this moment the Vortex Library support all
+ * sections including must and should requirements (including TLS and
+ * SASL profiles).
  *
- * Vortex Library has been build using asynchronous sockets (not
- * blocking model) with a thread model each one working on specific
+ * Vortex Library has been built using asynchronous sockets (non
+ * blocking call) with a thread model, each one working on specific
  * tasks. Once the Vortex Library is started it creates 2 threads
  * apart from the main thread doing the following task:
  *
  * - <b>Vortex Sequencer: </b> its main purpose is to create the
- * package sequencing, split user level message into frames, queue
- * them into channel's buffer if no receiving window is available or
- * sending the data directly in a round robin fashion.  This process
- * allows user space to not get blocked while sending message no
- * matter how big they are.
+ * package sequencing, split user level message into frames and queue
+ * them into channel's buffer if no receiving window is available,
+ * sending the data when possible in a round robin fashion.  This
+ * process allows user space to not get blocked while sending message
+ * no matter how big they are.
  *
- * - <b>Vortex Reader: </b> its main purpose is to read all frames
- * for all channels inside all connections. It checks all environment
+ * - <b>Vortex Reader: </b> its main purpose is to read all frames for
+ * all channels inside all connections. It checks all environment
  * conditions for a frame to be accepted: sequence number sync,
  * previous frame with more fragment flag activated, properly frame
- * format, and so on. Once the frame is accepted the Vortex Reader try
- * to dispatch it using the Vortex Library frame dispatch schema.
+ * format, and so on. Once the frame is accepted, the Vortex Reader
+ * try to dispatch it using the \ref vortex_manual_dispatch_schema "Vortex Library frame dispatch schema".
  * 
  * Apart from the 2 threads created plus the main one, the Vortex
- * Library creates a pool of threads already prepared to dispatch
- * incoming frames inside user space function.  The thread pool size
- * can also be tweaked.
+ * Library creates a thread pool already prepared to dispatch incoming
+ * frames inside user space function.  The thread pool size can also
+ * be tweaked.
  *
  *
  */
@@ -1428,9 +1429,9 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * Vortex Library but also how it has been programed internally. 
  *
  * - <b>Vortex Library is released under Lesser General Public
- * License</b> allowing to create open source projects but also
- * proprietary ones. See this \ref license
- * "section" for more information about license topic.
+ * License</b> allowing to create open source and proprietary
+ * projects. See this \ref license "section" for more information
+ * about license topic.
  * 
  */
 
@@ -1458,7 +1459,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * protocol, including securing networking session using the TLS
  * profile, and authenticating BEEP peers through SASL profiles.
  *
- * You can also use Vortex Library throught its XML-RPC API to produce
+ * You can also use Vortex Library through its XML-RPC API to produce
  * distributed RPC environments.
  *
  * \section not_supported_yet Known features not supported yet
@@ -1567,7 +1568,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *         info@aspl.es
  *      Fax and Telephones:
  *         (00 34) 91 669 55 32 - (00 34) 91 231 44 50
- *         Pleope from outside Spain must use (00 34) prefix.
+ *         From outside Spain must use (00 34) prefix.
  * \endcode
  * 
  *
@@ -1601,7 +1602,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * to be stable, by checking out a svn copy executing the following:
  *
  * \code
- *   svn co https://dolphin.aspl.es/svn/publico/af-arch/trunk/libvortex
+ *   svn co https://dolphin.aspl.es/svn/publico/af-arch/trunk/libvortex-1.1
  * \endcode
  * 
  * If you are using Microsoft Windows platform use the url
@@ -1620,8 +1621,8 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * following once you have downloaded the source code:
  *
  * \code
- *   bash:~$ cd libvortex
- *   bash:~/libvortex$ ./autogen.sh
+ *   bash:~$ cd libvortex-1.1
+ *   bash:~/libvortex$-1.1 ./autogen.sh
  * \endcode
  *
  * This will configure your project trying to find the dependencies
@@ -1630,7 +1631,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * Once the configure process is done you can type: 
  * 
  * \code
- *   bash:~/libvortex$ make install
+ *   bash:~/libvortex-1.1$ make install
  * \endcode
  *
  * The previous command will require permissions to write inside the
@@ -1643,7 +1644,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * environment var as follows:
  * 
  * \code
- *   bash:~/libvortex$ READLINE_PATH=/some/path/to/readline make
+ *   bash:~/libvortex-1.1$ READLINE_PATH=/some/path/to/readline make
  * \endcode
  *
  * <b>make</b> program will use the content of <b>READLINE_PATH</b> var to build an
@@ -1671,13 +1672,13 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * environment, and use some as follow:
  * 
  * \code
- *  CC=gcc-3.3 vortex_dll=libvortex MODE=console make -f Makefile.win
+ *  CC=gcc-3.3 vortex_dll=libvortex-1.1 MODE=console make -f Makefile.win
  * \endcode
  *
  * Of course, the <b>CC</b> variable may point to another gcc, check the one
  * that is installed on your system but, make sure you are not using
  * the gcc provided by a cygwin installation. It will produce a faulty
- * libvortex.dll not usable by any native Microsoft Windows program.
+ * libvortex-1.1.dll not usable by any native Microsoft Windows program.
  *
  * The <b>MODE</b> variable can be set to <b>"windows"</b>. This will disable the
  * console output. <b>"console"</b> value will allow to enable vortex log
@@ -1697,19 +1698,19 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *
  * Now type:
  * \code
- *  CC=gcc-3.3 vortex_dll=libvortex MODE=console BASE_DIR=c:/libraries make -f Makefile.win
+ *  CC=gcc-3.3 vortex_dll=libvortex-1.1 MODE=console BASE_DIR=c:/libraries make -f Makefile.win
  * \endcode
  *
- * This process will produce a libvortex.dll (actually the dynamic
- * libraries) and a import library called libvortex.dll.a. The import
+ * This process will produce a libvortex-1.1.dll (actually the dynamic
+ * libraries) and a import library called libvortex-1.1.dll.a. The import
  * library will be needed to compile your application under windows
- * against Vortex Library so it get linked to libvortex.dll.
+ * against Vortex Library so it get linked to libvortex-1.1.dll.
  * 
  * \section using_linux Using Vortex on GNU/Linux platforms (including Cygwin)
  * 
  * Once you have installed the library you can type: 
  * \code
- *   gcc `pkg-config --cflags --libs vortex` your-program.c -o your-program
+ *   gcc `pkg-config --cflags --libs vortex-1.1` your-program.c -o your-program
  * \endcode
  *
  * On windows platform using cygwin the previous example also
@@ -1721,7 +1722,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *
  * \code
  *  gcc your-program.c -o your-program
- *        -Ic:/libraries/include/vortex/  \
+ *        -Ic:/libraries/include/vortex-1.1/  \
  *        -I"c:/libraries/include" \
  *        -I"c:/libraries/include/axl" \
  *        -L"c:/libraries/lib" \
@@ -1731,8 +1732,8 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * \endcode
  *
  * Where <b>c:/libraries</b> contains the installation of the Vortex
- * Library (headers files installed on c:/libraries/include/vortex,
- * import library: libvortex.dll.a and dll: libvortex.dll) and LibAxl installation.
+ * Library (headers files installed on c:/libraries/include/vortex-1.1,
+ * import library: libvortex-1.1.dll.a and dll: libvortex-1.1.dll) and LibAxl installation.
  *
  * The <b>-lws2_32</b> will provide winsocks2 reference to your
  * program.
@@ -1909,7 +1910,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *        // Creates a Vortex Connection without providing a
  *        // OnConnected handler or user data. This will block us
  *        // until the connection is created or fails.
- *        // The context (ctx) is assumeted to be initialized. See vortex_init_ctx.
+ *        // The context (ctx) is assumed to be initialized. See vortex_init_ctx.
  *        VortexConnection * connection = vortex_connection_new (ctx, host, port, NULL, NULL);
  * \endcode
  * 
@@ -2272,21 +2273,20 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *
  * \section vortex_manual_dispatch_schema The Vortex Library Frame receiving dispatch schema (or how incoming frames are read)
  *
- * Once a frame is received and validated, the Vortex Reader try to
+ * Once a frame is received and validated, the Vortex Reader tries to
  * deliver it following next rules:
  *
  * - Invoke a second level handler for frame receive event. The second
- * level handler is a user space callback defined per channel. Several
+ * level handler is a user space callback, optionally defined for each channel. Several
  * channel on the same connections may have different second level
  * handlers (or the same) according to its purpose.
  *
- * - If second level handler for frame receive event where not
- * defined, the Vortex Reader tries to dispatch the frame on the first
- * level handler for frame receive handler event. The first level
- * handler is defined at profile level. This means that channels using
- * the same profiles shares frame receive callback. This allows to
- * defined a general purpose callback at user space for every channel
- * created on every connection.
+ * - If second level handler for frame receive event were not defined,
+ * the Vortex Reader tries to dispatch the frame on the first level
+ * handler, which is defined at profile level. This means that
+ * channels using the same profiles shares frame receive
+ * callback. This allows to defined a general purpose callback at user
+ * space for every channel created on every connection.
  *
  * - Finally, it may happen that a thread wants to keep on waiting for
  * a specific frame to be received bypassing the second and first
@@ -2294,17 +2294,16 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * continue if the frame response is not received. This is called \ref vortex_manual_wait_reply "wait reply method".
  *
  * The second and first level handler dispatching method are called
- * asynchronous message receiving because allows user code to keep on
- * doing other things and be notified only when frames are received.
+ * asynchronous methods because allows user code to keep on doing
+ * other things and to be notified only when frames are received.
  *
- * The wait reply method is also called synchronous dispatch method
- * because it blocks the caller thread until the specific frame reply
- * is received. The wait reply method disables the second and first
- * level handler execution.
+ * The wait reply method is called synchronous dispatch because it
+ * blocks the caller thread until the specific frame reply is
+ * received. The wait reply method disables the second and first level
+ * handler execution.
  *
- * Keep in mind that if no second level handler, first level handler
- * or wait reply method is defined, the Vortex Reader will drop the
- * frame.
+ * Having not defined a second or first level handler or wait reply
+ * method will cause the Vortex Reader to drop the frame.
  *
  * Because \ref vortex_manual_wait_reply "wait reply method" doesn't
  * support receiving all frames in a channel, to perform blocking
@@ -2473,7 +2472,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * messages you will have to recognize, its content and format, or
  * what will happen on some particular circumstances, it is only needed to
  * register the profile name and to implement that behavior on top of
- * the Vortex Library to fulfill the profile especification.
+ * the Vortex Library to fulfill the profile specification.
  *
  * Maybe the main problem a new BEEP programmer have to face is the
  * fact that a BEEP implementation doesn't allows him to start 
@@ -2667,7 +2666,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * Initially, if you send a message, without taking into account the
  * MIME type, either because you didn't configure anything nor your
  * messages didn't include any MIME headers, then frames generated
- * won't have any MIME hearders. 
+ * won't have any MIME headers. 
  * 
  * However, even in that case, BEEP suppose a MIME IMPLICIT
  * information, which are the following values:
@@ -2714,7 +2713,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * configuration, setting it to frames delivered into your
  * application.
  * 
- * Conclusion: under the same profile, withtout configuring any MIME
+ * Conclusion: under the same profile, without configuring any MIME
  * information, you are able to send any arbitrary MIME object.
  *
  * \section vortex_manual_implementing_request_response_pattern Implementing the request-response pattern
@@ -2974,12 +2973,12 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *   - \ref vortex_connection_get_data
  * 
  * For the case of the IO blocking mechanism, Vortex now checks for
- * the presense of select(2), poll(2) and epoll(2) system call,
+ * the presence of select(2), poll(2) and epoll(2) system call,
  * selecting the best mechanism to be used by default. However, you
  * can change to the desired mechanism at run time (even during
  * transmission!) using:
  * 
- * - \ref vortex_io_waiting_use, providing the appropiate value for \ref VortexIoWaitingType.
+ * - \ref vortex_io_waiting_use, providing the appropriate value for \ref VortexIoWaitingType.
  *
  * - Use \ref vortex_io_waiting_get_current to know which is the I/O
  * mechanism currently installed.
@@ -2988,7 +2987,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * implemented mechanism. In the case you want to provide your own
  * user space implementation to handling I/O waiting, you can use the
  * following handlers to define the functions to be executed by the
- * Vortex I/O engine at the appropiate time:
+ * Vortex I/O engine at the appropriate time:
  * 
  * <ul>
  *
@@ -3270,7 +3269,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * public certificate is the piece enclosed by <b>BEGIN/END-"CERTIFICATE"</b>. 
  * 
  * Splitting the certificate produced into two files is not required
- * beucase openssl lookup for the appropriate part while providing the
+ * because openssl lookup for the appropriate part while providing the
  * same file for the certificate or the private key.
  * </li>
  * 
@@ -3639,8 +3638,8 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *
  * Then, a call to register and activate the profile \ref
  * VORTEX_SASL_PLAIN is done. This step will notify vortex profiles
- * module that the selected SASL profile must be anonnounced as
- * supported, at the connetion greetings, configuring all internal
+ * module that the selected SASL profile must be announced as
+ * supported, at the connection greetings, configuring all internal
  * SASL handlers. In this case, the example is not providing an user
  * data to the \ref vortex_sasl_accept_negociation function. In the
  * case that a user data is required, the following function must be
@@ -3686,7 +3685,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * authenticated connection, and then you can call to the next
  * function, \ref vortex_sasl_auth_method_used, to get the auth method
  * that was used, and finally call to the following function to get
- * the appropiate auth data: 
+ * the appropriate auth data: 
  * 
  *  - \ref vortex_sasl_get_propertie
  *
@@ -3841,7 +3840,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * profiles by the remote host. 
  *
  * \code
- * (jobs:0)[acinom@barbol libvortex]
+ * (jobs:0)[acinom@barbol libvortex-1.1]
  * $ vortex-client
  * Vortex-client v.0.8.3.b1498.g1498: a cmd tool to test vortex (and BEEP-enabled) peers
  * Copyright (c) 2005 Advanced Software Production Line, S.L.
@@ -4111,7 +4110,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *
  * All of these environments provide an infrastructure to locate
  * the server that are actually exposing services/methods/procedures to be
- * invoked. Howerver, RPC developers usually fall into providing a
+ * invoked. However, RPC developers usually fall into providing a
  * host and a port (TCP/IP) to locate the resource, bypassing the
  * location facilities.
  * 
@@ -4121,7 +4120,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * will accept to process the service invocation received.
  *
  * Obviously, in most cases, this isn't a problem, because most of system
- * network design is based on a client/server interation, making only
+ * network design is based on a client/server interaction, making only
  * necessary to know where is located the server component.
  *
  * Usually, these RPC environments provides two API (or way to use the
@@ -4130,7 +4129,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *
  * As you may guessing, there are more fun (and pain!) while using the
  * Raw invocation interface than the High level one. Both offers
- * (dis)advantanges and both provides an especific functionality, that
+ * (dis)advantages and both provides an specific functionality, that
  * is required in particular situations.
  *
  * \section explaining_a_bit_interfaces The Raw invocation, The High level invocation and the protocol compiler
@@ -4277,7 +4276,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * Well, it is impressive the huge amount of things to be done to
  * simple invoke a sum operation that is on the remote side, isn't it?
  * That's why people doesn't use Raw interface, preferring to use the
- * High level one while producting common RPC tasks.
+ * High level one while producing common RPC tasks.
  * 
  * However, this interface is required if you need to produce a custom
  * invocator that perform some especial task before doing the actual
@@ -4287,7 +4286,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * 
  * \section raw_client_invoke_considerations Raw client invocation considerations
  *
- * Beforing seeing previous example, here are some issues to be
+ * Before seeing previous example, here are some issues to be
  * considered:
  *
  * <ul> 
@@ -4341,7 +4340,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * XmlRpcMethodValue) calling to \ref vortex_xml_rpc_method_response_get_value.
  * 
  * Then, the next set of functions will help you to get the value
- * marshalled into the appropiate type:
+ * marshalled into the appropriate type:
  *
  *  - \ref vortex_xml_rpc_method_value_get_as_int
  *  - \ref vortex_xml_rpc_method_value_get_as_double
@@ -4360,7 +4359,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *
  * We have seen in previous sections how an XML-RPC invocation is
  * produced. Now, it is time to know what happens on the remote side,
- * because, until now, we have just moved the problem from an machime
+ * because, until now, we have just moved the problem from an machine
  * to another. However, the problem remains unresolved.
  * 
  * Listener side implementation is built on top of two handlers: \ref
@@ -4374,7 +4373,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * services. It could be used also to provide a versioning mechanism
  * for the same service.
  * 
- * So the resouce "/version/1.0" and the resource "/version/1.2" could
+ * So the resource "/version/1.0" and the resource "/version/1.2" could
  * allow to support the same service name, but with different
  * versions.
  * 
@@ -4387,7 +4386,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *
  * Previous XML-RPC uri states that there is a XML-RPC listener server at
  * <b>example.server.com</b> located at the IANA registered port
- * <b>602</b> (because no port was especified by appending to the
+ * <b>602</b> (because no port was specified by appending to the
  * server name, the value in the form <b>:port-num</b>), and it is required
  * to ask for the resource <b>NumberToName</b> before producing the actual
  * invocation.
@@ -4411,8 +4410,8 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * Now, let's talk about the \ref VortexXmlRpcServiceDispatch "service dispatch handler". As it names
  * shows, it is used to enable the Vortex engine to notify user space
  * code that a new method invocation have arrived (\ref XmlRpcMethodCall) and that it has to be dispatched to the
- * appropiate handler. This handler is mainly provided to allow
- * developers to be able to produce its own service dispaching policy.
+ * appropriate handler. This handler is mainly provided to allow
+ * developers to be able to produce its own service dispatching policy.
  * 
  * Let's see a simple dispatching implementation for the sum service
  * introduced at the \ref raw_client_invoke "client invocation section". 
@@ -4547,16 +4546,16 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * 
  * The example shows how the service dispatch handler is the
  * <b>service_dispatch</b> function, which first recognizes if the
- * service is supported and then call to the appropiate handler. 
+ * service is supported and then call to the appropriate handler. 
  * 
  * Here is the first interesting thing, the function \ref
  * method_call_is. It is used to recognize service patterns like name,
- * number of paremter and the parameter type. This allows to easily
+ * number of parameter and the parameter type. This allows to easily
  * recognize the service to actually dispatch.
  *
  * In this function, <b>service_dispatch</b>, should be created a \ref XmlRpcMethodResponse to
  * be returned. So, the vortex engine could reply as fast as
- * possible. However, the implementation is prepared to deffer the
+ * possible. However, the implementation is prepared to defer the
  * reply. This allows, especially, to communicate with other language
  * runtimes. Once the runtime have generated the reply, it must be
  * used the following function \ref vortex_xml_rpc_notify_reply, to actually perform the reply.
@@ -4686,7 +4685,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * \section xml_rpc_gen_tool_language_recursive Recursive declarations with Struct
  * 
  * You can also define recursive type declarations, which makes
- * refence to the type being defined. This allows, for example, to
+ * references to the type being defined. This allows, for example, to
  * create a list with linked nodes represented by struct
  * declarations. Here is an example:
  * 
@@ -4708,9 +4707,9 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *
  * - You have to first define a type before using it. You can't use an
  * struct/array definition if it is defined after it first
- * use. Howerver, there are exception: recursive definitions.
+ * use. However, there are exception: recursive definitions.
  *
- * - Howerver, because the tool allows you to define source code
+ * - However, because the tool allows you to define source code
  * inside the services to be included inside the server output, you
  * have to use the pointer syntax. This could be obvious: remember
  * that xml-rpc-gen tool just includes the source code. It doesn't
@@ -4777,7 +4776,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * \include af-arch.idl
  *
  * In the example, the service <b>get_list</b> won't be invoked using
- * that name (the default xml-rpc-gen behaviour), but the name
+ * that name (the default xml-rpc-gen behavior), but the name
  * declared at the <b>method_name</b> will be used.
  *
  * Previous IDL declaration is used by shaper to invoke a service
@@ -4792,7 +4791,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * resource: <b>"/"</b>. 
  *
  * This <b>resource</b> declaration can be used in several ways to
- * archieve some interesting features:
+ * achieve some interesting features:
  * 
  * - If services provided by your server are grouped into a defined
  * resource, different from the default ("/"), it is possible to use
@@ -4834,12 +4833,12 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * \section xml_rpc_gen_tool_including_body_code Including additional code to be placed at the service module file
  *
  * Examples showed allows to include code that is placed at the
- * appropiate file at the server side created. However, real situation
+ * appropriate file at the server side created. However, real situation
  * requires calling to functions that are defined at the same modules
  * or other modules. This is because it is required a mechanism that
  * allows to include arbitrary code, not only in the service body.
  *
- * Supose the following example:
+ * Suppose the following example:
  *
  * <b>IDL format:</b>
  * \include body-include.idl
@@ -4886,16 +4885,16 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * 
  * By default, the client library is placed at:
  * <b>out/client-&lt;component-name></b>. In this case, the output
- * will be <b>out/client-test</b>. You can modify this behaviour by
+ * will be <b>out/client-test</b>. You can modify this behavior by
  * using the <b>--out-dir</b> switch.
  * 
  * Inside a the <b>out/client-test</b> directory you'll find the main
  * API file <b>out/client-test/test_xml_rpc.h</b>. This file contains
  * all invocation functions required to perform a method call to all
- * services exported by the componet compiled. 
+ * services exported by the component compiled. 
  * 
- * Again, this file will follow the next naming convetion accoring to
- * the component name: <b>out/client-&lt;component-name>/&lt;componet-name>_xml_rpc.h</b>
+ * Again, this file will follow the next naming convention according to
+ * the component name: <b>out/client-&lt;component-name>/&lt;component-name>_xml_rpc.h</b>
  *
  * Let's see its content:
  * 
@@ -4908,7 +4907,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * serves for the asynchronous (non-blocking) invocation.
  * 
  * In the synchronous invocation case, the function ending with
- * <b>"_s"</b>, you'll find all parameters especified in the IDL/XDL
+ * <b>"_s"</b>, you'll find all parameters specified in the IDL/XDL
  * definition, in this case: <b><i>int a, and int b</i></b>, plus
  * three additional parameters, that are optional, and helps to get invocation error
  * reporting.
@@ -5024,7 +5023,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * 
  * If the service returns pointer types: \ref XML_RPC_STRING_VALUE,
  * \ref XML_RPC_STRUCT_VALUE and \ref XML_RPC_ARRAY_VALUE, all of them
- * must return dinamically allocated objects. They will be deallocated
+ * must return dynamically allocated objects. They will be deallocated
  * by the XML-RPC engine, at the proper time.
  * 
  *
@@ -5051,13 +5050,13 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * VortexOnStartChannel "start handler" or at the \ref
  * VortexXmlRpcValidateResource "resource validation handler". Unless
  * it is required some especial TLS function at the server side, like
- * identifing the client certificate, it is not required to implement
+ * identifying the client certificate, it is not required to implement
  * anything especial. Look at the following document with provides a
  * default TLS environment: \ref vortex_manual_securing_your_session.
  *
  * Because Vortex Library, at this moment, doesn't provide a profile
  * path, allowing to hide non-secured profiles behind TLS or SASL
- * profiles until they are entirely negociated, you have to ensure
+ * profiles until they are entirely negotiated, you have to ensure
  * that TLS is already activated, before accepting to dispatch a
  * function, at the \ref VortexXmlRpcServiceDispatch "service dispatch handler". 
  * See also \ref vortex_connection_is_tlsficated for more details.
@@ -5078,7 +5077,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * To summarize, there is no way to describe the <b>"unique security and authentication"</b> solution inside BEEP. Authentication
  * (SASL), Security (TLS) and, for this case, the XML-RPC invocation
  * mechanism are implemented in an independent way, like blocks that
- * must be combined and mixed to build your especific solution that
+ * must be combined and mixed to build your specific solution that
  * meets your requirements.
  *
  * Maybe you only require to use TLS, or maybe you just need to do a
