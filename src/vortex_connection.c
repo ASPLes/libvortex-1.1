@@ -1912,14 +1912,12 @@ bool                   vortex_connection_ref                    (VortexConnectio
 {
 	VortexCtx * ctx;
 
-	if (connection == NULL)
-		return false;
+	v_return_val_if_fail (connection, false);
+	v_return_val_if_fail (vortex_connection_is_ok (connection, false), false);
 
 	/* get a reference to the ctx */
 	ctx = connection->ctx;
 	
-	v_return_val_if_fail (vortex_connection_is_ok (connection, false), false);
-
 	/* lock ref/unref operations over this connection */
 	vortex_mutex_lock   (&connection->ref_mutex);
 
@@ -2868,17 +2866,38 @@ int                 vortex_connection_channels_count         (VortexConnection *
  * @param connection the connection where channels will be iterated.
  * @param func the function to apply for each channel found
  * @param user_data user data to be passed into the foreach function.
+ *
+ * @return true if the foreach operation was completed, otherwise
+ * false is returned.
  */
-void            vortex_connection_foreach_channel        (VortexConnection * connection,
+bool            vortex_connection_foreach_channel        (VortexConnection * connection,
 							  axlHashForeachFunc func,
 							  axlPointer         user_data)
 {
+	VortexCtx * ctx;
+
 	/* do not operate */
-	if (connection == NULL || func == NULL)
-		return;
+	v_return_val_if_fail (connection, false);
+	v_return_val_if_fail (func, false);
+
+	/* get context */
+	ctx = connection->ctx;
+
+	/* try to ref the connection to avoid loosing the reference
+	 * during the process. */
+	if (! vortex_connection_ref (connection, "foreach-channel")) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to foreach because ref operation over connection id=%d (%p) have failed",
+			    connection->id, connection);
+		return false;
+	}
+
+	/* perform the foreach operation */
 	vortex_hash_foreach (connection->channels, func, user_data);
 
-	return;
+	/* unref connection increased */
+	vortex_connection_unref (connection, "foreach-channel");
+
+	return true;
 }
 
 

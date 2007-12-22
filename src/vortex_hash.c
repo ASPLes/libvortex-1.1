@@ -372,8 +372,9 @@ void         vortex_hash_foreach  (VortexHash         *hash_table,
 				   axlPointer         user_data)
 {
 	/* check references */
-	if (hash_table == NULL || func == NULL || hash_table->table == NULL)
-		return;
+	v_return_if_fail (hash_table);
+	v_return_if_fail (func);
+	v_return_if_fail (hash_table->table);
 
 	vortex_mutex_lock   (&hash_table->mutex);
 	axl_hash_foreach    (hash_table->table, func, user_data);
