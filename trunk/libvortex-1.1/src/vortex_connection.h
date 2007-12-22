@@ -139,7 +139,7 @@ bool                vortex_connection_channel_exists         (VortexConnection *
 
 int                 vortex_connection_channels_count         (VortexConnection * connection);
 
-void                vortex_connection_foreach_channel        (VortexConnection   * connection,
+bool                vortex_connection_foreach_channel        (VortexConnection   * connection,
 							      axlHashForeachFunc   func,
 							      axlPointer           user_data);
 
