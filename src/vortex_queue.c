@@ -71,7 +71,7 @@ struct _VortexQueue {
  * 
  * @return a new \ref VortexQueue object.
  **/
-VortexQueue * vortex_queue_new           ()
+VortexQueue * vortex_queue_new           (void)
 {
 	VortexQueue * result;
 

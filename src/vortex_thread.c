@@ -177,7 +177,6 @@ bool vortex_thread_create (VortexThread      * thread_def,
 		axl_free (data);
 		
 		/* report */
-		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to create new thread (CreateThread system call failed)");
 		return false;
 	} /* end if */
 
@@ -806,7 +805,7 @@ struct _VortexAsyncQueue {
  * to 1. To dealloc it when no longer needed, use \ref
  * vortex_async_queue_unref.
  */
-VortexAsyncQueue * vortex_async_queue_new       ()
+VortexAsyncQueue * vortex_async_queue_new       (void)
 {
 	VortexAsyncQueue * result;
 

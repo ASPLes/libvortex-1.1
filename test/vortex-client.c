@@ -132,7 +132,7 @@ int  get_number_int (char  * ans, int limit) {
 	return num;
 }
 
-unsigned int get_number_long (char  * ans, uint64_t limit) {
+unsigned int get_number_long (char  * ans, long limit) {
 	char         * response;
 	unsigned int   num;
 
@@ -142,7 +142,7 @@ unsigned int get_number_long (char  * ans, uint64_t limit) {
 	num       = strtod (response, NULL);
 	if (num < 0 || num > limit ) {
                 axl_free (response);
-		printf ("You must provide a valid number from 0 up to %llu\n", limit);
+		printf ("You must provide a valid number from 0 up to %ld\n", limit);
 		goto label;
 	}
         axl_free (response);
@@ -156,7 +156,7 @@ void vortex_client_write_frame (VortexConnection * connection, bool     fragment
 	VortexFrameType    type              = VORTEX_FRAME_TYPE_UNKNOWN;
 	int                channel_num       = 0;
 	int                message_num       = 0;
-	uint64_t           sequence_num      = 0;
+	long               sequence_num      = 0;
 	int                payload_size      = 0;
 	int                ansno_num         = 0;
 	char             * payload           = NULL;

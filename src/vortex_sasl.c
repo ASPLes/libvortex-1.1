@@ -88,7 +88,7 @@
  * @return true if current Vortex Library is already compiled with
  * SASL profile support. Otherwise false is returned.
  */
-bool               vortex_sasl_is_enabled                ()
+bool               vortex_sasl_is_enabled                (void)
 {
 #ifndef ENABLE_SASL_SUPPORT
 	/* return false if the library wasn't compiled with support

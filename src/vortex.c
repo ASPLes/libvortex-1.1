@@ -852,7 +852,8 @@ bool   vortex_init_ctx (VortexCtx * ctx)
 #if defined(AXL_OS_WIN32)
 	/* init winsock API */
 	vortex_log (VORTEX_LEVEL_DEBUG, "init winsocket for windows");
-	vortex_win32_init ();
+	if (! vortex_win32_init (ctx))
+		return false;
 #endif
 
 	/* init axl library */
@@ -980,7 +981,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
 	vortex_mutex_unlock  (&ctx->exit_mutex);
 
 	/* flag the thread pool to not accept more jobs */
-	vortex_thread_pool_being_closed ();
+	vortex_thread_pool_being_closed (ctx);
 
 	/* stop vortex writer */
 	/* vortex_writer_stop (); */

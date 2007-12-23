@@ -274,7 +274,7 @@ typedef enum {
  */
 #define AUTH_ID_FROM_CONN(conn) (vortex_sasl_is_authenticated (conn) ? vortex_sasl_get_propertie (conn, VORTEX_SASL_AUTH_ID) : NULL)
 
-bool               vortex_sasl_is_enabled                ();
+bool               vortex_sasl_is_enabled                (void);
 
 bool               vortex_sasl_set_propertie             (VortexConnection     * connection,
 							  VortexSaslProperties   prop,

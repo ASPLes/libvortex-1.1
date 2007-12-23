@@ -509,8 +509,6 @@ int      vortex_support_getenv_int                 (const char * env_name)
 	size_returned = GetEnvironmentVariable (env_name, variable, 1023);
 
 	if (size_returned > 1023) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "trying to get an number from an environment variable which is too large: %s",
-			    env_name);
 		return 0;
 	}
 	

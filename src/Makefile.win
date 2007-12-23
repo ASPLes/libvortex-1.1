@@ -26,9 +26,9 @@ OBJ  = vortex.o \
        vortex_tunnel.o \
        vortex_win32.o
 
-DLL        = $(vortex_dll)-1.1.dll
+DLL        = $(vortex_1_1_dll).dll
 IMPORT_DLL = $(DLL).a
-STATIC_LIB = $(vortex_dll)-1.1.a
+STATIC_LIB = $(vortex_1_1_dll).a
 
 #LIBS = -Wall -g -L"$(BASE_DIR)/lib" \
 #	-L"$(BASE_DIR)/bin" \

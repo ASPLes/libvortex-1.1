@@ -367,7 +367,7 @@ void vortex_thread_pool_set_num             (int  number)
  * 
  * @return the number of threads to be created.
  **/
-int  vortex_thread_pool_get_num             ()
+int  vortex_thread_pool_get_num             (void)
 {
 #if defined(AXL_OS_WIN32) && ! defined(__GNUC__)
 	char * temp;

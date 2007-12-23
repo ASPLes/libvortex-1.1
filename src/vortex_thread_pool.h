@@ -48,7 +48,7 @@ void vortex_thread_pool_init                (VortexCtx * ctx, int  max_threads);
 
 void vortex_thread_pool_exit                (VortexCtx * ctx);
 
-void vortex_thread_pool_being_closed        ();
+void vortex_thread_pool_being_closed        (VortexCtx * ctx);
 
 void vortex_thread_pool_new_task            (VortexCtx        * ctx,
 					     VortexThreadFunc   func, 
@@ -58,7 +58,7 @@ int  vortex_thread_pool_get_running_threads (VortexCtx        * ctx);
 
 void vortex_thread_pool_set_num             (int  number);
 
-int  vortex_thread_pool_get_num             ();
+int  vortex_thread_pool_get_num             (void);
 
 void vortex_thread_pool_set_exclusive_pool  (VortexCtx        * ctx,
 					     bool               value);

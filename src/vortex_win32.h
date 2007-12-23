@@ -42,7 +42,7 @@
 
 BEGIN_C_DECLS
 
-void          vortex_win32_init ();
+bool          vortex_win32_init (VortexCtx * ctx);
 
 bool          vortex_win32_nonblocking_enable (VORTEX_SOCKET socket);
 
