@@ -164,7 +164,7 @@ const void *  vortex_frame_get_payload           (VortexFrame * frame);
 
 VortexCtx   * vortex_frame_get_ctx               (VortexFrame * frame);
 
-const char  * vortex_frame_get_ok_message        ();
+const char  * vortex_frame_get_ok_message        (void);
 
 char        * vortex_frame_get_error_message     (const char  * code, 
 						  const char  * error_content,

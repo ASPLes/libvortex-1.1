@@ -198,21 +198,21 @@ struct _VortexCtx {
 	/**** vortex xml rpc module state ****/
 	/* @internal List of dispatch handlers and its associated
 	 * mutex to handle it. */
-	axlList          *        xml_rpc_service_dispatch;
+	axlList                 * xml_rpc_service_dispatch;
 
 	/**** vortex greetings module state ****/
-	char  * greetings_features;
-	char  * greetings_localize;
+	char                    * greetings_features;
+	char                    * greetings_localize;
 
 	/**** vortex listener module state ****/
-	VortexAsyncQueue     * listener_wait_lock;
+	VortexAsyncQueue        * listener_wait_lock;
 
 	/* configuration handler for OnAccepted signal */
-	axlList              * listener_on_accept_handlers;
+	axlList                 * listener_on_accept_handlers;
 
 	/* default realm configuration for all connections at the
 	 * server side */
-	char                 * listener_default_realm;
+	char                    * listener_default_realm;
 
 	/**** vortex tls module state ****/
 #if defined(ENABLE_TLS_SUPPORT)

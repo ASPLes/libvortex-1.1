@@ -513,7 +513,7 @@ int  main (int  argc, char ** argv)
 		return -1;
 	}
 
-	if (vortex_sasl_is_enabled (ctx) ) {
+	if (vortex_sasl_is_enabled () ) {
 		/* set default ANONYMOUS validation handler */
 		vortex_sasl_set_anonymous_validation (ctx, sasl_anonymous_validation);
 

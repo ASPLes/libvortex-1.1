@@ -102,7 +102,7 @@ typedef struct _VortexXmlRpcServiceDispatchNode {
  *
  * @return true when the library have built-in XML-RPC support, otherwise false is returned.
  */
-bool     vortex_xml_rpc_is_enabled () 
+bool     vortex_xml_rpc_is_enabled (void) 
 {
 #ifndef ENABLE_XML_RPC_SUPPORT
 	vortex_log (VORTEX_LEVEL_CRITICAL, "Current Vortex Library wasn't built with XML-RPC support");

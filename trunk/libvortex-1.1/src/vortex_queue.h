@@ -40,7 +40,7 @@
 
 #include <vortex.h>
 
-VortexQueue * vortex_queue_new           ();
+VortexQueue * vortex_queue_new           (void);
 
 bool          vortex_queue_is_empty      (VortexQueue * queue);
 

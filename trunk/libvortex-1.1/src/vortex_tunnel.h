@@ -50,7 +50,7 @@
 
 #include <vortex.h>
 
-bool                   vortex_tunnel_is_enabled         ();
+bool                   vortex_tunnel_is_enabled         (void);
 
 VortexTunnelSettings * vortex_tunnel_settings_new       (VortexCtx * ctx);
 

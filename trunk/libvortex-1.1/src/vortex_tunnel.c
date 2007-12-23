@@ -78,7 +78,7 @@ struct _VortexTunnelSettings{
  * @return true if the current vortex library used provides TUNNEL
  * profile support. Otherwise false is returned.
  */
-bool                   vortex_tunnel_is_enabled       ()
+bool                   vortex_tunnel_is_enabled       (void)
 {
 #if ! defined(ENABLE_TUNNEL_SUPPORT)
 	/* beep general application proxy not supported */

@@ -105,7 +105,7 @@ bool               vortex_cond_timedwait  (VortexCond        * cond,
 
 void               vortex_cond_destroy    (VortexCond        * cond);
 
-VortexAsyncQueue * vortex_async_queue_new       ();
+VortexAsyncQueue * vortex_async_queue_new       (void);
 
 void               vortex_async_queue_push      (VortexAsyncQueue * queue,
 						 axlPointer         data);

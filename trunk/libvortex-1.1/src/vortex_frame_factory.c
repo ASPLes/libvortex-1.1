@@ -2012,7 +2012,7 @@ VortexCtx   * vortex_frame_get_ctx               (VortexFrame * frame)
  * @return A ok message. You must not free the returned message. It is
  * a copy to an internal Vortex Frame module.
  */
-const char        * vortex_frame_get_ok_message        ()
+const char        * vortex_frame_get_ok_message        (void)
 {
 	return _ok_msg;
 }
