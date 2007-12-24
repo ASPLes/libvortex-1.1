@@ -274,8 +274,10 @@ void xml_rpc_gen_compile ()
 
 int main (int argc, char **argv)
 {
-	axlError  * error;
-	char      * file;
+	axlError   * error;
+	char       * file;
+	char      ** paths;
+	int          iterator;
 
 	/* init exarg library */
 	exarg_install_arg ("version", "v", EXARG_NONE,
@@ -296,6 +298,8 @@ int main (int argc, char **argv)
 	exarg_install_arg ("out-stub-dir", NULL, EXARG_STRING, "Allows to fully configure stub output source code. This is not the same as --out-dir which is a directory where is placed both products.");
 	exarg_install_arg ("disable-main-file", NULL, EXARG_NONE, "Server side component option. It allows to disable creating a main.c file, allowing to produce a custom one. This option is useful while trying to create XML-RPC components mixed with other profiles");
 	exarg_install_arg ("to-xml", NULL, EXARG_NONE, "Makes the IDL input file to be translated into XML");
+
+	exarg_install_arg ("add-search-path", NULL, EXARG_STRING, "Allows to configure a list of directories (separated by ;) that are added to the search path. This allows to locate DTD files required by the tool.");
 
 	
 	/* configure headers to be showed */
@@ -322,6 +326,23 @@ int main (int argc, char **argv)
 	/* do not use the add_search_path_ref version to force
 	   xml-rpc-gen library to perform a local copy path */
 	xml_rpc_support_add_search_path (".");
+
+	/* add additional search path */
+	if (exarg_is_defined ("add-search-path")) {
+		paths    = axl_stream_split (exarg_get_string ("add-search-path"), 1, ";");
+		iterator = 0;
+		while (paths[iterator]) {
+			/* log and add path */
+			xml_rpc_report ("adding search path: %s", paths[iterator]);
+			xml_rpc_support_add_search_path (paths[iterator]);
+			
+			/* update iterator */
+			iterator++;
+		} /* end while */
+
+		/* free vstring */
+		axl_freev (paths);
+	} /* end if */
 
 	/* install search paths */
 	xml_rpc_support_add_search_path_ref (vortex_support_build_filename (INSTALL_DIR, NULL));
