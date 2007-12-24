@@ -276,7 +276,7 @@ bool          vortex_greetings_client_send     (VortexConnection * connection)
 	char      * the_payload = NULL;
 	char      * features    = NULL;
 	char      * localize    = NULL;
-	VortexCtx * ctx         = vortex_connection_get_ctx (connection);
+	VortexCtx * ctx         = CONN_CTX (connection);
 	
 	/* check for features and localize */
 	if (vortex_greetings_get_features (ctx) != NULL)

@@ -59,6 +59,12 @@
  * vortex_channel_new_emtpy.
  */
 struct _VortexChannel {
+	/**
+	 * @internal reference to the ctx under which the channel was
+	 * created (which is the context under which the connection
+	 * was created)
+	 */
+	VortexCtx             * ctx;
 	int                     channel_num;
 
 	int                     last_message_sent;
@@ -1335,10 +1341,18 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 	VortexChannel * channel = NULL;
 	VortexCtx     * ctx     = vortex_connection_get_ctx (connection);
 
-	if (profile == NULL || ! vortex_connection_is_ok (connection, false))
+	if (ctx == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to create channel, received a connection with a null context");
 		return NULL;
+	}
+
+	if (profile == NULL || ! vortex_connection_is_ok (connection, false)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to create channel, received NULL profile or a non-connected BEEP session");
+		return NULL;
+	}
 
 	channel                                 = axl_new (VortexChannel, 1);
+	channel->ctx                            = ctx;
 	channel->channel_num                    = channel_num;
 	channel->last_message_sent              = -1;
 	channel->last_message_received          = -1;
@@ -6809,8 +6823,7 @@ VortexCtx         * vortex_channel_get_ctx                        (VortexChannel
 	}
 	
 	/* call to get the context associated to the cnonection */
-	ctx = vortex_connection_get_ctx (channel->connection);
-
+	ctx = channel->ctx;
 	vortex_log (VORTEX_LEVEL_DEBUG, "returning ctx %p because channel %p received", ctx, channel);
 
 	return ctx;

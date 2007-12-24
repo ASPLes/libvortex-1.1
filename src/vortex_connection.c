@@ -1190,8 +1190,8 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 	/* get current context */
 	VortexConnection   * connection   = data->connection;
 	VortexCtx          * ctx          = connection->ctx;
-        struct in_addr     * haddr;
-        struct sockaddr_in   saddr;
+	struct in_addr     * haddr;
+	struct sockaddr_in   saddr;
 	VortexFrame        * frame;
 	VortexChannel      * channel;
 	int 		     d_timeout    = 0;
@@ -1332,7 +1332,7 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 		vortex_log (VORTEX_LEVEL_DEBUG, "greetings received, process reply frame");
 
 		/* now we have to send greetings and process them */
-		if (! vortex_greetings_client_send (connection)) {
+		if (frame == NULL || ! vortex_greetings_client_send (connection)) {
 			/* greetings have failed, unref the frame */
 			vortex_frame_unref (frame);
 
@@ -4363,6 +4363,31 @@ VortexCtx         * vortex_connection_get_ctx                (VortexConnection *
 		return NULL;
 
 	/* reference to the connection */
+	return connection->ctx;
+}
+
+/* @internal Function used by the macro CONN_CTX that allows to return
+ * the context associated to the connection, and at the same time,
+ * some checks are done.
+ */
+VortexCtx         * vortex_connection_get_ctx_aux            (const char * file,
+							             int  line, 
+							             VortexConnection * connection)
+{
+	/* fake ctx declaration for the following vortex_log calls */
+	VortexCtx * ctx = NULL;
+
+	if (connection == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to return context because a null connection was received (%s:%d)",
+			    file, line);
+		return NULL;
+	} else if (connection->ctx == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to return context because it was received a connection without context configured (%s:%d)",
+			    file, line);
+		return NULL;
+	} /* end if */
+
+	/* return context configured */
 	return connection->ctx;
 }
 
