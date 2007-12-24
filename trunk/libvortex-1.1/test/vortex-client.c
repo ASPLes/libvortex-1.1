@@ -1134,14 +1134,14 @@ int main (int argc, char *argv[])
 				}
                         }
 
-                        /* if the port is not properly set, ask for it */
+			/* if the port is not properly set, ask for it */
 			if (port == NULL) {
 				port = readline ("port to connect to: ");
                                 if (port == NULL)
                                         port = axl_strdup ("44000");
 			}
 			
-                        printf ("connecting to %s%s%s..", host, (port != NULL) ? ":" : "", (port != NULL) ? port : "");
+			printf ("connecting to %s%s%s..", host, (port != NULL) ? ":" : "", (port != NULL) ? port : "");
 
 			/* create a vortex session */
 			connection = vortex_connection_new (ctx, host, port, NULL, NULL);

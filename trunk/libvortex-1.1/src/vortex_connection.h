@@ -64,6 +64,21 @@
  */
 #define SERVER_NAME_FROM_CHANNEL(channel) (vortex_connection_get_server_name (vortex_channel_get_connection (channel)))
 
+/**
+ * @brief Allows to get the context associated to the provided
+ * connection, logging a more verbose message if the context is null
+ * or the connection provided is null.
+ *
+ * For vortex, the context object is central for its
+ * function. Providing a function that warns that a null context is
+ * returned is a key to find bugs, since no proper result could be
+ * expected if no context is provided (\ref VortexCtx). 
+ *
+ * @param c The connection that is required to return the context
+ * associated.
+ */
+#define CONN_CTX(c) vortex_connection_get_ctx_aux(__AXL_FILE__, __AXL_LINE__, c)
+
 VortexConnection  * vortex_connection_new                    (VortexCtx            * ctx,
 							      const char           * host, 
 							      const char           * port,
@@ -225,6 +240,10 @@ int                 vortex_connection_get_opened_channels    (VortexConnection *
 VortexConnection  * vortex_connection_get_listener           (VortexConnection * connection);
 
 VortexCtx         * vortex_connection_get_ctx                (VortexConnection * connection);
+
+VortexCtx         * vortex_connection_get_ctx_aux            (const char * file,
+							             int  line, 
+							             VortexConnection * connection);
 
 VortexSendHandler      vortex_connection_set_send_handler    (VortexConnection * connection,
 							      VortexSendHandler  send_handler);
