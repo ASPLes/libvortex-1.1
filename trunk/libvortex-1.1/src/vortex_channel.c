@@ -5833,7 +5833,7 @@ bool            vortex_channel_is_opened       (VortexChannel * channel)
 		return false;
 
 	/* return current channel status */
-	return channel->is_opened;
+	return channel->is_opened && vortex_connection_is_ok (channel->connection, false);
 }
 
 /** 
