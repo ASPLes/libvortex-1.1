@@ -3932,7 +3932,7 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
 	/* check for a connection already closed */
 	if (!vortex_connection_is_ok (connection, false)) {
 		vortex_log (VORTEX_LEVEL_DEBUG, 
-			    "trying to close a channel over a terminated session, this is a bug on client side code, freeing vortex channel resources");
+			    "Detected a session not connected during channel close, stoping BEEP close negotiation and going ahead to resource deallocation...");
 		result = true;
 		goto __vortex_channel_close_invoke_caller;
 	}
@@ -4083,9 +4083,14 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
 	}
 	
 	/* return the value */
-	if (threaded)
+	if (threaded) {
+		/* before exit, reduce the reference counting updated
+		 * by the calling thread */
+		vortex_connection_unref (connection, "channel close threaded");
+
 		return NULL; /* on threaded mode always returns
 			      * NULL */
+	}
 	return result ? INT_TO_PTR (result) : NULL;
 }
 
@@ -4117,7 +4122,8 @@ bool     __vortex_channel_close_full (VortexChannel * channel,
 	/* check if the caller is trying to close the channel that was
 	 * notified to be closed */
 	if (vortex_channel_get_data (channel, VORTEX_CHANNEL_CLOSE_HANDLER_CALLED)) {
-		vortex_log (VORTEX_LEVEL_WARNING, "BEEP application is calling to close a channel that is notified to be closed. You are calling to close a channel from the close handler.");
+		vortex_log (VORTEX_LEVEL_WARNING, 
+			    "BEEP application is calling to close a channel that is notified to be closed. You are calling to close a channel from the close handler.");
 		return true;
 	}
 
@@ -4159,6 +4165,14 @@ bool     __vortex_channel_close_full (VortexChannel * channel,
 
 	/* launch threaded mode */
 	if (data->threaded) {
+		/* if we are in threaded mode, update the reference
+		 * counting to the connection to avoid lossing the
+		 * reference during the close activation and an
+		 * asynchrous broken connection received */
+		if (! vortex_connection_ref (channel->connection, "channel close threaded")) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "failed to update reference counting to the connection during channel close, going ahead anyway...");
+		} /* end if */
+
 		vortex_thread_pool_new_task (ctx, (VortexThreadFunc) __vortex_channel_close, data);
 		return true;
 	}
