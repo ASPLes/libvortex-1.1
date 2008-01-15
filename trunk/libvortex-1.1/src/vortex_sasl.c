@@ -93,7 +93,6 @@ bool               vortex_sasl_is_enabled                (void)
 #ifndef ENABLE_SASL_SUPPORT
 	/* return false if the library wasn't compiled with support
 	 * for sasl */
-	vortex_log (VORTEX_LEVEL_WARNING, "current Vortex Library doesn't have SASL support");
 	return false;
 #else
 	/* just return true to start working with SASL */
@@ -150,7 +149,6 @@ bool               vortex_sasl_set_propertie             (VortexConnection     *
 							  axlDestroyFunc         value_destroy)
 {
 #ifndef ENABLE_SASL_SUPPORT
-	vortex_log (VORTEX_LEVEL_DEBUG, "calling to set_properties with a Vortex Library without SASL support");
 	return false;
 #else
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
@@ -229,7 +227,6 @@ char             * vortex_sasl_get_propertie             (VortexConnection     *
 							  VortexSaslProperties   prop)
 {
 #ifndef ENABLE_SASL_SUPPORT
-	vortex_log (VORTEX_LEVEL_DEBUG, "calling to get_properties with a Vortex Library without SASL support");
 	return NULL;
 #else
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
@@ -309,7 +306,6 @@ char             * vortex_sasl_get_propertie             (VortexConnection     *
 bool               vortex_sasl_is_authenticated          (VortexConnection     * connection)
 {
 #ifndef ENABLE_SASL_SUPPORT
-	vortex_log (VORTEX_LEVEL_CRITICAL, "Current Vortex Library doesn't support SASL profiles. Unable to return current connection authentication status.");
 	return false;
 #else
 	if (connection == NULL) {
@@ -347,7 +343,6 @@ bool               vortex_sasl_is_authenticated          (VortexConnection     *
 char             * vortex_sasl_auth_method_used          (VortexConnection     * connection)
 {
 #ifndef ENABLE_SASL_SUPPORT
-	vortex_log (VORTEX_LEVEL_CRITICAL, "Current Vortex Library doesn't have SASL profiles support. Unable to return which method was used to authenticate.");
 	return NULL;
 #else
 	if (connection == NULL) {
