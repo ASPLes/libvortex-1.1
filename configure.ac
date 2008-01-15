@@ -192,6 +192,11 @@ if test x$enable_vortex_doc = xyes ; then
 fi
 AM_CONDITIONAL(ENABLE_AF_ARCH_DOC, test "x$DOXYGEN" = "xyes")
 
+dnl LibAxl library support.
+PKG_CHECK_MODULES(AXL, axl >= 0.4.13)
+AC_SUBST(AXL_CFLAGS)
+AC_SUBST(AXL_LIBS)
+
 dnl check for console log
 AC_ARG_ENABLE(vortex-log, [  --enable-vortex-log       Enable building Vortex Library console debug log support [default=yes]], 
 	      enable_vortex_log="$enableval", 
@@ -229,6 +234,9 @@ if test "$enable_sasl_support" != "no" ; then
 dnl Enable SASL cflags and link headers
 	SASL_LIBS=`pkg-config --libs libgsasl`
 	SASL_CFLAGS=`pkg-config --cflags libgsasl`
+	dnl SASL libraries subsitution
+	AC_SUBST(SASL_CFLAGS)
+	AC_SUBST(SASL_LIBS)
     fi
 fi
 AM_CONDITIONAL(ENABLE_SASL_SUPPORT, test "x$enable_sasl_support" = "xyes")
@@ -254,15 +262,6 @@ AM_CONDITIONAL(ENABLE_TUNNEL_SUPPORT, test "x$enable_tunnel_support" = "xyes")
 dnl general libries subsitution
 dnl AC_SUBST(LIBRARIES_CFLAGS)
 dnl AC_SUBST(LIBRARIES_LIBS)
-
-dnl SASL libraries subsitution
-AC_SUBST(SASL_CFLAGS)
-AC_SUBST(SASL_LIBS)
-
-dnl LibAxl library support.
-PKG_CHECK_MODULES(AXL, axl >= 0.4.13)
-AC_SUBST(AXL_CFLAGS)
-AC_SUBST(AXL_LIBS)
 
 AC_OUTPUT([
 Makefile

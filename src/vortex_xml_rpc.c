@@ -105,7 +105,6 @@ typedef struct _VortexXmlRpcServiceDispatchNode {
 bool     vortex_xml_rpc_is_enabled (void) 
 {
 #ifndef ENABLE_XML_RPC_SUPPORT
-	vortex_log (VORTEX_LEVEL_CRITICAL, "Current Vortex Library wasn't built with XML-RPC support");
 	return false;
 #else
 	/* just return true (nothing to initialize) */
@@ -686,7 +685,6 @@ void     vortex_xml_rpc_boot_channel (VortexConnection        * connection,
 				      axlPointer                user_data)
 {
 #ifndef ENABLE_XML_RPC_SUPPORT
-	vortex_log (VORTEX_LEVEL_CRITICAL, "Trying to boot a channel under the XML-RPC profile over a vortex library without XML-RPC support.");
 	return;
 #else
 	VortexXmlRpcBootData * data;
@@ -806,8 +804,6 @@ VortexChannel     * vortex_xml_rpc_boot_channel_sync       (VortexConnection    
 	if (status_message != NULL)
 		(* status_message) = "Trying to initialize a XML-RPC channel but, current Vortex Library doesn't provide XML-RPC services";
 
-	vortex_log (VORTEX_LEVEL_CRITICAL, 
-	       "Trying to initialize a XML-RPC channel but, current Vortex Library doesn't provide XML-RPC services");
 	return NULL;
 #else
 	VortexAsyncQueue   * queue     = NULL;
@@ -1025,8 +1021,6 @@ VortexChannelPool * vortex_xml_rpc_create_channel_pool     (VortexConnection    
 							    axlPointer                    user_data)
 {
 #ifndef ENABLE_XML_RPC_SUPPORT
-	vortex_log (VORTEX_LEVEL_CRITICAL, 
-	       "Trying to initialize a XML-RPC channel pool but, current Vortex Library doesn't provide XML-RPC services");
 	return NULL;
 #else
 	VortexChannelPool       * result;
@@ -1107,8 +1101,6 @@ VortexChannel     * vortex_xml_rpc_channel_pool_get_next   (VortexConnection * c
 							    int                pool_id)
 {
 #ifndef ENABLE_XML_RPC_SUPPORT
-	vortex_log (VORTEX_LEVEL_CRITICAL, 
-	       "Trying to get a XML-RPC channel from a pool but, current Vortex Library doesn't provide XML-RPC services");
 	return NULL;
 #else
 	VortexChannelPool       * pool = NULL;
@@ -1589,7 +1581,6 @@ XmlRpcMethodResponse * vortex_xml_rpc_invoke_sync          (VortexChannel       
 							    XmlRpcMethodCall        * method_call)
 {
 #ifndef ENABLE_XML_RPC_SUPPORT
-	vortex_log (VORTEX_LEVEL_DEBUG, "performing a synchronous XML-RPC invocation with a Vortex Library without XML-RPC support");
 	return NULL;
 #else
 	VortexAsyncQueue     * queue;
@@ -1647,7 +1638,6 @@ XmlRpcMethodResponse * vortex_xml_rpc_invoke_sync          (VortexChannel       
 VortexXmlRpcState   vortex_xml_rpc_channel_status   (VortexChannel * channel)
 {
 #ifndef ENABLE_XML_RPC_SUPPORT
-	vortex_log (VORTEX_LEVEL_CRITICAL, "trying to check current XML-RPC channel status on a Vortex Library which doesn't have support for XML-RPC");
 	return XmlRpcStateUnknown;
 #else
 	char      * boot_state;

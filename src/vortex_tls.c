@@ -1617,7 +1617,6 @@ VortexConnection * vortex_tls_start_negociation_sync     (VortexConnection  * co
 							  char             ** status_message)
 {
 #ifndef ENABLE_TLS_SUPPORT
-	vortex_log (VORTEX_LEVEL_CRITICAL, "trying to execute a synchronous tls-fication on a vortex library without TLS support");
 	if (status != NULL)
 		(* status)         = VortexError;
 	if (status_message != NULL)
@@ -1821,7 +1820,6 @@ bool        vortex_tls_accept_negociation (VortexCtx                       * ctx
 axlPointer         vortex_tls_get_ssl_object             (VortexConnection * connection)
 {
 #ifndef ENABLE_TLS_SUPPORT
-	vortex_log (VORTEX_LEVEL_WARNING, "current Vortex Library doesn't have TLS support");
 	return NULL;
 #else	
 	/* return the ssl object which is stored under the key:
@@ -1851,7 +1849,6 @@ char             * vortex_tls_get_peer_ssl_digest        (VortexConnection   * c
 							  VortexDigestMethod   method)
 {
 #ifndef ENABLE_TLS_SUPPORT
-	vortex_log (VORTEX_LEVEL_WARNING, "current Vortex Library doesn't have TLS support");
 	return NULL;
 #else	
 
@@ -1954,7 +1951,6 @@ char             * vortex_tls_get_digest_sized           (VortexDigestMethod   m
 							  int                  content_size)
 {
 #ifndef ENABLE_TLS_SUPPORT
-	vortex_log (VORTEX_LEVEL_WARNING, "current Vortex Library doesn't have TLS support");
 	return NULL;
 #else	
 	char          * result = NULL;
