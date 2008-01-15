@@ -4235,7 +4235,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * char             * message;
  *
  * // the ctx variable represents a context already initialized with
- * // vortex_ctx_new followed by vortex_ctx_init.
+ * // vortex_ctx_new followed by vortex_init_ctx
  *
  * // create the connection to a known location (in a blocking manner for
  * // demostration purposes)
