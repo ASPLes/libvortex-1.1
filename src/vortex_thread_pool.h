@@ -36,7 +36,7 @@
  *         info@aspl.es - http://fact.aspl.es
  */
 #ifndef __VORTEX_THREAD_POOL_H__
-#define __VORTEX_TREAHD_POOL_H__
+#define __VORTEX_THREAD_POOL_H__
 
 #include <vortex.h>
 
