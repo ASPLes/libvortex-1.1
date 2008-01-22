@@ -1,4 +1,3 @@
-
        #####################################
        ####     Change notification     ####
        #####################################
@@ -30,7 +29,7 @@ Change Description
 ~~~~~~~~~~~~~~~~~~
 
 The following set of function have been removed from the 1.1 series,
-replied by a new version:
+replaced by a new version:
 
  1. Initialization:
 
@@ -47,7 +46,8 @@ replied by a new version:
        - vortex_ctx_set (no longer exists, conceptually not required)
        - vortex_ctx_get (no longer exists, conceptually not required)
 
- 3. Functions updated (same function name, new parameter "ctx").
+ 3. Functions updated (same function name, which now includes a new
+    parameter "ctx").
        
        [log activation]
        - vortex_log_is_enabled 
@@ -178,13 +178,13 @@ Solution to incompatibility
 In general, the API change introduced affect all functions that have
 the ability to change the state of the current library instance
 loaded. Because this, and the fact that the library is now stateless,
-a VortexCtx instance is required to perform such configuration on it.
+a VortexCtx instance is required to perform such configuration.
 
 However, not all functions requires a VortexCtx instance. This is
 because main objects inside the Vortex API like VortexConnection,
 VortexChannel or VortexFrame hold a reference to the VortexCtx that
-was used to create them. This has allowed to not update the API to
-those functions receiving as parameter some of these types.
+was used to create them. This has allowed to minimize the API update
+for those functions receiving as parameter some of these types.
 
 According to this, the following function will be useful to get the
 context for future operations, having a reference to a connection,
@@ -201,8 +201,7 @@ be reusable with 1.1 series.
 Special mention to initialization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Finally, the the following will be required to properly initialize the
-library:
+The following will be required to properly initialize the library:
 
    VortexCtx * ctx;
 
@@ -239,14 +238,22 @@ locate the vortex library headers:
    ../include/vortex-1.1/vortex.h           Vortex Library 1.1
                          vortex_types.h
                          ....
+
+In this context, it is encourage package maintainers use the following
+include flags according to the vortex revision used:
+
+  -I../include/vortex                       Vortex Library 1.0
+  
+  -I../include/vortex-1.1                   Vortex Library 1.1
  
-However, the linker flag to use will change because the library will
-be available in the following form:
+The linker flag to use will change because the library will be
+available in the following form:
 
   libvortex-1.1.dll (windows)
   libvortex-1.1.so  (unix platforms)
 
-This will require to use the following linker flag:
+This will require to use the following linker flag to get access to
+services provided by 1.1 series:
 
   -lvortex-1.1
 
@@ -255,7 +262,7 @@ configuration system, will have to update its autoconf voodoo to:
 
   PKG_CHECK_MODULES(VORTEX, vortex-1.1 >= 1.1.0) 
 
-which is the same like:
+which is the same:
 
   pkg-config --libs --cflags vortex-1.1
 
