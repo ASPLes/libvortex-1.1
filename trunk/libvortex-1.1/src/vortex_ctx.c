@@ -53,9 +53,23 @@
 
 /** 
  * @brief Creates a new vortex execution context. This is mainly used
- * by the main module (called from vortex_init) and finished from
- * vortex_exit. This is a preparation to make the vortex a stateless
+ * by the main module (called from \ref vortex_init_ctx) and finished from
+ * \ref vortex_exit_ctx. 
+ *
+ * A context is required to make vortex library to work. This object
+ * stores a single execution context. Several execution context can be
+ * created inside the same process.
+ *
+ * After calling to this function, a new \ref VortexCtx is created and
+ * all configuration required previous to \ref vortex_init_ctx can be
+ * done. Once prepared, a call to \ref vortex_init_ctx starts vortex
  * library.
+ *
+ * Once you want to stop the library execution you must call to \ref
+ * vortex_exit_ctx.
+ *
+ * See http://lists.aspl.es/pipermail/vortex/2008-January/000343.html
+ * for more information.
  *
  * @return A newly allocated reference to the \ref VortexCtx. You must
  * finish it with \ref vortex_ctx_free.
