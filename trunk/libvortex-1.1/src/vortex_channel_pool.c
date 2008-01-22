@@ -139,7 +139,7 @@ bool     __vortex_channel_pool_is_ready (VortexChannel * channel)
 VortexChannel * __vortex_channel_pool_add_channels (VortexChannelPool * pool, int  init_num, axlPointer user_data)
 {
 	int              iterator = 0;
-	VortexChannel  * channel  = NULL;;
+	VortexChannel  * channel  = NULL;
 	VortexCtx      * ctx      = vortex_connection_get_ctx (pool->connection);
 
 	/* start channels */
