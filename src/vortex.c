@@ -952,7 +952,8 @@ bool   vortex_init_ctx (VortexCtx * ctx)
  * associated to the context and used by the vortex engine
  * function. According to the particular control structure used by
  * your application, you must first terminate using any Vortex API and
- * then call to vortex_exit_ctx.
+ * then call to \ref vortex_exit_ctx. In other words, this function
+ * won't close all your opened connections.
  * 
  * @param ctx The context to terminate. The function do not dealloc
  * the context provided. 
@@ -1897,9 +1898,29 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * is a BEEP implementation mapped into TCP/IP, a session is actually
  * a TCP connection (with some additional data).
  * 
- * Now we know most of the concepts involving BEEP, here goes how this
- * concepts get mapped into a concrete example using Vortex. Keep in
- * mind this is a simplified version on how Vortex Library could be.
+ * Now we know most of the concepts involving BEEP, here goes how
+ * these concepts get mapped into a concrete example using
+ * Vortex. Keep in mind this is a simplified version on how Vortex
+ * Library could be.
+ *
+ * We we have to do first, is to create a context. This object will be
+ * used by your application to keep the state and the current
+ * configuration. This is done as follow:
+ * 
+ * \code
+ *       VortexCtx * ctx;
+ *
+ *       // create an empty context 
+ *       ctx = vortex_ctx_new ();
+ *
+ *       // do your required configuration here
+ *
+ *       // init the context and start vortex library execution 
+ *       if (! vortex_init_ctx (ctx)) {
+ *		// handle error 
+ *              return -1;
+ *       }
+ * \endcode
  * 
  * In order to send a message to a remote peer you'll have to create a
  * \ref VortexConnection, using \ref vortex_connection_new as follows:
@@ -1911,7 +1932,6 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *        // Creates a Vortex Connection without providing a
  *        // OnConnected handler or user data. This will block us
  *        // until the connection is created or fails.
- *        // The context (ctx) is assumed to be initialized. See vortex_init_ctx.
  *        VortexConnection * connection = vortex_connection_new (ctx, host, port, NULL, NULL);
  * \endcode
  * 
@@ -1969,7 +1989,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * 	   printf ("Okey, my channel have been closed");
  *      }
  *
- *      // finally, finalize vortex running
+ *      // finally, terminate vortex context execution running
  *      vortex_exit_ctx (ctx, true);
  * \endcode
  * 
