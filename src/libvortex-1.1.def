@@ -27,6 +27,7 @@ vortex_channel_flag_reply_processed
 vortex_channel_free
 vortex_channel_free_wait_reply
 vortex_channel_get_connection
+vortex_channel_get_ctx
 vortex_channel_get_data
 vortex_channel_get_max_seq_no_accepted
 vortex_channel_get_max_seq_no_remote_accepted
@@ -157,6 +158,8 @@ vortex_connection_get_channel_by_uri
 vortex_connection_get_channel_count
 vortex_connection_get_channel_pool
 vortex_connection_get_connect_timeout
+vortex_connection_get_ctx
+vortex_connection_get_ctx_aux
 vortex_connection_get_data
 vortex_connection_get_features
 vortex_connection_get_host
@@ -223,10 +226,7 @@ vortex_connection_timeout
 vortex_connection_unlock_channel_pool
 vortex_connection_unref
 vortex_ctx_free
-vortex_ctx_get
-vortex_ctx_global
 vortex_ctx_new
-vortex_ctx_set
 vortex_dtds_cleanup
 vortex_dtds_get_channel_dtd
 vortex_dtds_get_sasl_dtd
@@ -236,7 +236,6 @@ vortex_errno_get_error
 vortex_errno_get_last_error
 vortex_errno_show_error
 vortex_errno_show_last_error
-vortex_exit
 vortex_exit_ctx
 vortex_frame_are_equal
 vortex_frame_are_joinable
@@ -254,6 +253,7 @@ vortex_frame_get_channel_ref
 vortex_frame_get_close_message
 vortex_frame_get_content_size
 vortex_frame_get_content_type
+vortex_frame_get_ctx
 vortex_frame_get_error_message
 vortex_frame_get_header_data
 vortex_frame_get_id
@@ -305,7 +305,6 @@ vortex_hash_remove
 vortex_hash_replace
 vortex_hash_replace_full
 vortex_hash_size
-vortex_init
 vortex_init_ctx
 vortex_io_init
 vortex_io_waiting_get_current
@@ -343,8 +342,12 @@ vortex_listener_unlock
 vortex_listener_wait
 vortex_log2_enable
 vortex_log2_is_enabled
+vortex_log_acquire_mutex
 vortex_log_enable
+vortex_log_get_handler
 vortex_log_is_enabled
+vortex_log_is_enabled_acquire_mutex
+vortex_log_set_handler
 vortex_mutex_create
 vortex_mutex_destroy
 vortex_mutex_lock

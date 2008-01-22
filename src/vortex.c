@@ -622,14 +622,14 @@ void _vortex_log_common (VortexCtx        * ctx,
 		ctx->debug_handler (file, line, log_level, message, args);
 	} else {
 		/* printout the process pid */
+	ctx_not_defined:
 #if defined (__GNUC__)
 		if (vortex_color_log_is_enabled (ctx)) 
 			fprintf (stdout, "\e[1;36m(proc %d)\e[0m: ", getpid ());
-		else {
+		else 
 #endif /* __GNUC__ */
-		ctx_not_defined:
 			fprintf (stdout, "(proc %d): ", getpid ());
-		}
+		
 		
 	/* drop a log according to the level */
 #if defined (__GNUC__)

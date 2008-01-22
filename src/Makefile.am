@@ -111,4 +111,4 @@ libvortex-1.1.def: update-def
 
 update-def:
 	echo "EXPORTS" > libvortex-1.1.def
-	cat .libs/libvortex.exp | grep -v io_waiting_poll | grep -v io_waiting_epoll | grep -v __vortex >> libvortex-1.1.def
+	cat .libs/libvortex-1.1.exp | grep -v io_waiting_poll | grep -v io_waiting_epoll | grep -v __vortex >> libvortex-1.1.def

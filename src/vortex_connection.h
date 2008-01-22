@@ -112,7 +112,7 @@ VortexConnection  * vortex_connection_new_empty_from_connection (VortexCtx      
 								 VortexPeerRole     role);
 
 void                vortex_connection_timeout                (VortexCtx        * ctx,
-							      long int           miliseconds_to_wait);
+							      long int           microseconds_to_wait);
 void                vortex_connection_connect_timeout        (VortexCtx        * ctx,
 							      long int           seconds_to_wait);
 

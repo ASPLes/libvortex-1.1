@@ -2018,10 +2018,10 @@ int                 vortex_connection_ref_count              (VortexConnection *
  *
  * @param ctx The context where the operation will be performed.
  *
- * @param period Timeout value to be used.
+ * @param microsedons_to_wait Timeout value to be used.
  */
 void               vortex_connection_timeout (VortexCtx * ctx,
-					      long int    period)
+					      long int    microseconds_to_wait)
 {
 	/* get current context */
 	char      * value;
@@ -2031,13 +2031,13 @@ void               vortex_connection_timeout (VortexCtx * ctx,
 		return;
 	
 	/* clear previous value */
-	if (period == 0) {
+	if (microseconds_to_wait == 0) {
 		vortex_support_unsetenv ("VORTEX_SYNC_TIMEOUT");
 		return;
 	}
 
 	/* set new value */
-	value = axl_strdup_printf ("%ld", period);
+	value = axl_strdup_printf ("%ld", microseconds_to_wait);
 	vortex_support_setenv ("VORTEX_SYNC_TIMEOUT", value);
 	axl_free (value);
 
@@ -2161,7 +2161,8 @@ long int             vortex_connection_get_connect_timeout (VortexCtx * ctx)
 	} /* end if */
 
 	if (d_timeout == 0) {
-		/* no timeout definition done using default timeout 10 seconds */
+		/* no timeout definition done using default timeout 60
+		 * seconds (60000000 microseconds) */
 		return ctx->connection_connect_std_timeout;
 	}else {
 		/* update current std timeout */
