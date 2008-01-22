@@ -1243,7 +1243,10 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 	 * application have requested to configure a particular TCP
 	 * connect timeout. */
 	d_timeout  = vortex_connection_get_connect_timeout (connection->ctx); 
-	if (d_timeout) {
+	if (d_timeout > 0) {
+		/* translate hold value for d_timeout into seconds  */
+		d_timeout = (int) d_timeout / (int) 1000000;
+
 		/* make the socket to be nonblocking */
 		vortex_connection_set_nonblocking_socket (connection);
 
