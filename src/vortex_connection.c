@@ -2064,11 +2064,11 @@ void               vortex_connection_timeout (VortexCtx * ctx,
  *
  * @param ctx The context where the operation will be performed.
  *
- * @param period Timeout value to be used. The value provided is
- * measured in seconds. 
+ * @param microseconds_to_wait Timeout value to be used. The value
+ * provided is measured in microseconds.
  */
 void               vortex_connection_connect_timeout (VortexCtx * ctx,
-						      long int    period)
+						      long int    microseconds_to_wait)
 {
 	/* get current context */
 	char      * value;
@@ -2078,13 +2078,13 @@ void               vortex_connection_connect_timeout (VortexCtx * ctx,
 		return;
 	
 	/* clear previous value */
-	if (period == 0) {
+	if (microseconds_to_wait == 0) {
 		vortex_support_unsetenv ("VORTEX_CONNECT_TIMEOUT");
 		return;
 	}
 
 	/* set new value */
-	value = axl_strdup_printf ("%ld", period);
+	value = axl_strdup_printf ("%ld", microseconds_to_wait);
 	vortex_support_setenv ("VORTEX_CONNECT_TIMEOUT", value);
 	axl_free (value);
 

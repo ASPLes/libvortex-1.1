@@ -114,7 +114,7 @@ VortexConnection  * vortex_connection_new_empty_from_connection (VortexCtx      
 void                vortex_connection_timeout                (VortexCtx        * ctx,
 							      long int           microseconds_to_wait);
 void                vortex_connection_connect_timeout        (VortexCtx        * ctx,
-							      long int           seconds_to_wait);
+							      long int           microseconds_to_wait);
 
 long int            vortex_connection_get_timeout            (VortexCtx        * ctx);
 long int            vortex_connection_get_connect_timeout    (VortexCtx        * ctx);
