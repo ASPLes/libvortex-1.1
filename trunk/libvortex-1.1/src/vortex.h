@@ -255,7 +255,9 @@ END_C_DECLS
 # define vortex_log(l, m, ...)   do{_vortex_log  (ctx, __AXL_FILE__, __AXL_LINE__, l, m, ##__VA_ARGS__);}while(0)
 # define vortex_log2(l, m, ...)   do{_vortex_log2  (ctx, __AXL_FILE__, __AXL_LINE__, l, m, ##__VA_ARGS__);}while(0)
 #else
-# if defined(AXL_OS_WIN32) && ! defined(__GNUC__)
+# if defined(AXL_OS_WIN32) && !( defined(__GNUC__) || _MSC_VER >= 1400)
+/* default case where '...' is not supported but log is still
+ * disabled */
 #   define vortex_log _vortex_log
 #   define vortex_log2 _vortex_log2
 # else
