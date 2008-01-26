@@ -184,7 +184,9 @@ bool     vortex_greetings_send (VortexConnection * connection)
 VortexFrame *  vortex_greetings_process (VortexConnection * connection)
 {
 	VortexFrame        * frame;
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx          * ctx   = vortex_connection_get_ctx (connection);
+#endif
 
 	/*
 	 * Because this is a really especial case where we need to get
@@ -219,7 +221,9 @@ VortexFrame *  vortex_greetings_process (VortexConnection * connection)
 bool           vortex_greetings_is_reply_ok    (VortexFrame      * frame, VortexConnection * connection)
 {
 	VortexChannel * channel;
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx     * ctx = vortex_connection_get_ctx (connection);
+#endif
 
 	/* check greetings reply */
 	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {

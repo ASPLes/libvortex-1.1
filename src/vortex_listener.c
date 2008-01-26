@@ -263,7 +263,9 @@ void __vortex_listener_initial_accept (VortexCtx        * ctx,
  */
 void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection * connection)
 {
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
+#endif
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "greetings sent, waiting reply");
 

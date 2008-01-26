@@ -663,10 +663,12 @@ typedef struct _VortexProfileReceivedData {
 
 axlPointer __vortex_profiles_invoke_frame_received (axlPointer __data)
 {
+#if defined(ENABLE_VORTEX_DEBUG)
+	VortexCtx                 * ctx          = vortex_connection_get_ctx (connection);
+#endif
 	VortexProfileReceivedData * data         = __data;
 	VortexProfile             * profile      = data->profile;
 	VortexConnection          * connection   = data->connection;
-	VortexCtx                 * ctx          = vortex_connection_get_ctx (connection);
 	VortexFrame               * frame        = data->frame;
 	VortexChannel             * channel      = NULL;
 	bool                        is_connected = false;
