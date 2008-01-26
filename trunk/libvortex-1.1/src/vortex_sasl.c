@@ -151,7 +151,9 @@ bool               vortex_sasl_set_propertie             (VortexConnection     *
 #ifndef ENABLE_SASL_SUPPORT
 	return false;
 #else
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
+#endif
 	
 	/* check the connection status before setting the
 	 * properties */
@@ -229,7 +231,9 @@ char             * vortex_sasl_get_propertie             (VortexConnection     *
 #ifndef ENABLE_SASL_SUPPORT
 	return NULL;
 #else
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
+#endif
 
 	/* check the connection status before setting the propertie */
 	if (connection == NULL) {
@@ -370,7 +374,9 @@ void __vortex_sasl_notify (VortexSaslAuthNotify   process_status,
 			   axlPointer             user_data)
 {
 	/* get the context */
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
+#endif
 
 	/* drop to the console a log */
 	switch (status) {
@@ -449,7 +455,9 @@ bool     __vortex_sasl_create_context (VortexConnection * connection)
 {
 	GsaslData * data;
 	int         rc;
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
+#endif
 
 	/* initialize the SASL client side */
 	data = axl_new (GsaslData, 1);
@@ -493,7 +501,9 @@ int gethostname(char *name, size_t len);
 void vortex_sasl_configure_current_properties (VortexConnection * connection)
 {
 	char        hostname[512];
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
+#endif
 	GsaslData * data = vortex_connection_get_data (connection, SASL_DATA);
 	
 	gsasl_property_set (data->session, GSASL_AUTHID,   
@@ -548,7 +558,9 @@ char  * __vortex_sasl_initiator_do_initial_step (const char           * profile,
 {
 	/* variable definitions for the gsasl_client_start function */
 	GsaslData     * data;
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx     * ctx = vortex_connection_get_ctx (connection);
+#endif
 	char          * base64_chunk;
 	int             rc;
 
@@ -723,7 +735,9 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel         * channel,
 	char        * new_blob = NULL;
 	char        * status   = NULL;
 	GsaslData   * data;
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx   * ctx      = vortex_connection_get_ctx (connection);
+#endif
 
 	/* get sasl data */
 	data = vortex_connection_get_data (connection, SASL_DATA);
@@ -876,7 +890,9 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 {
 	/* local variable declarations received from main function */
 	VortexConnection     * connection      = data->connection;
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx            * ctx             = vortex_connection_get_ctx (connection);
+#endif
 	const char           * profile         = data->profile;
 	VortexSaslAuthNotify   process_status  = data->process_status;
 	axlPointer             user_data       = data->user_data;
@@ -1174,7 +1190,9 @@ void __vortex_sasl_start_auth_sync_process  (VortexConnection * connection,
 					     axlPointer         user_data)
 {
 	VortexAsyncQueue * queue = user_data;
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx        * ctx   = vortex_connection_get_ctx (connection);
+#endif
 
 	/* push status and status message and unref man! */
 	QUEUE_PUSH  (queue, INT_TO_PTR (status));
@@ -1711,7 +1729,9 @@ bool     __vortex_sasl_server_iterate (VortexConnection * connection,
 	char          * base64_chunk  = NULL;
 	char          * status        = NULL;
 	GsaslData     * data          = vortex_connection_get_data (connection, SASL_DATA);
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx     * ctx           = vortex_connection_get_ctx (connection);
+#endif
 	int             rc;
 
 	/* get received blob */
@@ -1817,7 +1837,9 @@ bool     __vortex_sasl_accept_negociation_start (char              * profile,
 
 	GsaslData      * data;
 	int              rc;
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx      * ctx = vortex_connection_get_ctx (connection);
+#endif
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "Received channel start for mech: %s, profile_content=%s", 
 	       profile, profile_content);
@@ -1887,7 +1909,9 @@ void __vortex_sasl_accept_negociation_frame_receive (VortexChannel    * channel,
 						     axlPointer user_data)
 {
 	char      * payload_reply = NULL;
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx * ctx           = vortex_connection_get_ctx (connection);
+#endif
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "Received SASL frame\n");
 

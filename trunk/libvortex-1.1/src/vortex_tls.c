@@ -328,7 +328,9 @@ int  vortex_tls_ssl_read (VortexConnection * connection, char  * buffer, int  bu
 {
 	SSL         * ssl;
 	VortexMutex * mutex;
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx   * ctx = vortex_connection_get_ctx (connection);
+#endif
 	int    res;
 	int    ssl_err;
 
@@ -409,7 +411,9 @@ int  vortex_tls_ssl_write (VortexConnection * connection, const char  * buffer, 
 	int           res;
 	int           ssl_err;
 	VortexMutex * mutex;
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx   * ctx = vortex_connection_get_ctx (connection);
+#endif
 
 	SSL * ssl = vortex_connection_get_data (connection, "ssl-data:ssl");
 	if (ssl == NULL) {
@@ -495,7 +499,9 @@ void vortex_tls_set_common_data (VortexConnection * connection,
 				 SSL* ssl, SSL_CTX * _ctx)
 {
 	VortexMutex * mutex;
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx   * ctx = vortex_connection_get_ctx (connection);
+#endif
 
 	/* set some necessary ssl data (setting destroy functions for
 	 * both) */
@@ -538,7 +544,9 @@ void __vortex_tls_start_negociation_close_and_notify (VortexTlsActivation   proc
 						      char                * message,
 						      axlPointer            user_data)
 {
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx   * ctx = vortex_connection_get_ctx (connection);
+#endif
 
 	/* close the channel */
 	if (channel != NULL)
@@ -1574,7 +1582,9 @@ void __vortex_tls_start_negociation_sync_process (VortexConnection * connection,
 						  axlPointer         user_data)
 {
 	VortexAsyncQueue    * queue = user_data;
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx           * ctx = vortex_connection_get_ctx (connection);
+#endif
 	VortexTlsSyncResult * result;
 
 	/* create a structure to hold all the result produced. */

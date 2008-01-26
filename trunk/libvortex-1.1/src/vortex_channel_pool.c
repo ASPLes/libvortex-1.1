@@ -140,7 +140,9 @@ VortexChannel * __vortex_channel_pool_add_channels (VortexChannelPool * pool, in
 {
 	int              iterator = 0;
 	VortexChannel  * channel  = NULL;
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx      * ctx      = vortex_connection_get_ctx (pool->connection);
+#endif
 
 	/* start channels */
 	while (iterator < init_num) {
@@ -211,10 +213,13 @@ VortexChannel * __vortex_channel_pool_add_channels (VortexChannelPool * pool, in
 axlPointer __vortex_channel_pool_new (VortexChannelPoolData * data)
 {
 
+#if defined(ENABLE_VORTEX_DEBUG)
+	VortexCtx                   * ctx                     = vortex_connection_get_ctx (connection);
+#endif
 	/* parameters from main function */
 	bool                          threaded                = data->threaded;
 	VortexConnection            * connection              = data->connection;
-	VortexCtx                   * ctx                     = vortex_connection_get_ctx (connection);
+
 	const char                  * profile                 = data->profile;
 	int                           init_num                = data->init_num;
 
@@ -739,9 +744,11 @@ void                vortex_channel_pool_remove         (VortexChannelPool * pool
 void           __vortex_channel_pool_close_common (VortexChannelPool * pool, 
 						   bool deattach_from_connection)
 {
+#if defined(ENABLE_VORTEX_DEBUG)
+	VortexCtx         * ctx                     = vortex_connection_get_ctx (connection);
+#endif
 	int                 channels;
 	VortexConnection  * connection;
-	VortexCtx         * ctx = vortex_connection_get_ctx (pool->connection);
 	
 	if (pool == NULL)
 		return;
@@ -1111,7 +1118,10 @@ VortexChannel     * vortex_channel_pool_get_next_ready (VortexChannelPool * pool
 
 bool __find_ready (axlPointer channel, axlPointer data)
 {
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx * ctx = vortex_channel_get_ctx (channel);
+#endif
+
 	if (__vortex_channel_pool_is_ready (channel)) {
 		/* ok!, we have found a channel that is ready
 		 * to be use. */

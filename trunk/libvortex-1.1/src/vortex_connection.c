@@ -455,7 +455,9 @@ void __close_channel_aux (axlPointer _channel)
 {
 	VortexChannel * channel = _channel;
 	/* get the context */
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx     * ctx     = vortex_channel_get_ctx (channel);
+#endif
 
 	/* check this channel is not the administrative one. */
 	if (vortex_channel_get_number (channel) == 0)
@@ -4379,7 +4381,9 @@ VortexCtx         * vortex_connection_get_ctx_aux            (const char * file,
 							             VortexConnection * connection)
 {
 	/* fake ctx declaration for the following vortex_log calls */
+#if defined(ENABLE_VORTEX_DEBUG)
 	VortexCtx * ctx = NULL;
+#endif
 
 	if (connection == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to return context because a null connection was received (%s:%d)",
