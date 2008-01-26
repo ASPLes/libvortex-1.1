@@ -455,7 +455,7 @@ void __close_channel_aux (axlPointer _channel)
 {
 	VortexChannel * channel = _channel;
 	/* get the context */
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
@@ -4381,7 +4381,7 @@ VortexCtx         * vortex_connection_get_ctx_aux            (const char * file,
 							             VortexConnection * connection)
 {
 	/* fake ctx declaration for the following vortex_log calls */
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx = NULL;
 #endif
 

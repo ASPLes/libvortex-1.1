@@ -21,6 +21,9 @@
 /* include vortex library */
 #include <vortex.h>
 
+/* include vortex tunnel support */
+#include <vortex_tunnel.h>
+
 /* include local headers produced by xml-rpc-gen */
 #include <test_xml_rpc.h>
 

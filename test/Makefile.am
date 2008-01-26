@@ -10,6 +10,10 @@ if ENABLE_VORTEX_LOG
 INCLUDE_VORTEX_LOG=-DENABLE_VORTEX_LOG
 endif
 
+if ENABLE_TUNNEL_SUPPORT
+INCLUDE_TUNNEL_SUPPORT = -DENABLE_TUNNEL_SUPPORT
+endif
+
 certfilesdir    = $(datadir)/libvortex-1.1
 certfiles_DATA  = test-certificate.pem test-private-key.pem
 EXTRA_DIST      = Makefile.win $(certfiles_DATA) vortex-regression-client.vcproj  vortex-regression-listener.vcproj vortex-regression-client.idl
@@ -29,9 +33,9 @@ noinst_PROGRAMS = \
 	vortex-client-without-cbs \
 	vortex-close-listeners vortex-file-transfer-server vortex-file-transfer-client
 
-INCLUDES        = -I$(top_srcdir)/libvortex-1.1/src $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
+INCLUDES = -I../src -I../tunnel $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
 	-I$(READLINE_PATH)/include -Wall -g -ansi \
-        -DVERSION=\""$(VORTEX_VERSION)"\" -I../src $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_VORTEX_LOG)
+        -DVERSION=\""$(VORTEX_VERSION)"\" -I../src $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_VORTEX_LOG) $(INCLUDE_TUNNEL_SUPPORT)
 
 LIBS            = $(AXL_LIBS) $(PTHREAD_LIBS)
 
@@ -54,7 +58,7 @@ vortex_simple_client_SOURCES   = vortex-simple-client.c
 vortex_simple_client_LDADD     = $(LIBS) ../src/libvortex-1.1.la
 
 vortex_client_connections_SOURCES   = vortex-client-connections.c
-vortex_client_connections_LDADD     = $(LIBS) ../src/libvortex-1.1.la
+vortex_client_connections_LDADD     = $(LIBS) ../src/libvortex-1.1.la ../tunnel/libvortex-tunnel-1.1.la 
 
 vortex_regression_client_SOURCES   = \
 	vortex-regression-client.c \
@@ -69,7 +73,7 @@ vortex_regression_client_SOURCES   = \
 	test_array_itemarray_xml_rpc.c \
 	test_struct_node_xml_rpc.h \
 	test_struct_node_xml_rpc.c
-vortex_regression_client_LDADD     = $(LIBS) ../src/libvortex-1.1.la 
+vortex_regression_client_LDADD     = $(LIBS) ../src/libvortex-1.1.la  ../tunnel/libvortex-tunnel-1.1.la 
 
 vortex_regression_listener_SOURCES   = \
 	vortex-regression-listener.c \
@@ -103,7 +107,7 @@ vortex_regression_listener_SOURCES   = \
 	test_struct_node_xml_rpc.c \
 	test_sum2_int_int.h \
 	test_sum2_int_int.c
-vortex_regression_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la
+vortex_regression_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la  ../tunnel/libvortex-tunnel-1.1.la 
 
 vortex_server_without_cbs_SOURCES   = vortex-server-without-cbs.c
 vortex_server_without_cbs_LDADD     = $(LIBS) ../src/libvortex-1.1.la

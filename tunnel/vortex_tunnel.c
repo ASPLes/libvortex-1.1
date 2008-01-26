@@ -35,7 +35,8 @@
  *      Email address:
  *         info@aspl.es - http://fact.aspl.es
  */
-#include <vortex.h>
+#include <vortex_tunnel.h>
+
 
 /* local include */
 #include <vortex_ctx_private.h>
@@ -786,7 +787,7 @@ void __vortex_tunnel_pass_octets (VortexConnection * connection)
 	/* get the connection partner */
 	VortexConnection * partner = vortex_connection_get_data (connection, VORTEX_TUNNEL_PARTNER_CONNECTION);
 	char             * buffer  = vortex_connection_get_data (connection, VORTEX_TUNNEL_BUFFER);
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx     = vortex_connection_get_ctx (connection);
 #endif
 	int                read;

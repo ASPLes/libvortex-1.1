@@ -716,7 +716,7 @@ int         vortex_frame_receive_raw  (VortexConnection * connection, char  * bu
 {
 	int         nread;
 	char      * error_msg;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 #endif
 
@@ -766,7 +766,7 @@ int          __vortex_frame_readline (VortexConnection * connection, char  * buf
 	int         n, rc;
 	char        c, *ptr;
 	char      * error_msg;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 #endif
 
@@ -1206,7 +1206,7 @@ bool              vortex_frame_send_raw     (VortexConnection * connection, cons
 	bool        result = true;
 	int         bytes  = 0;
 	char      * error_msg;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx    = vortex_connection_get_ctx (connection);
 #endif
 

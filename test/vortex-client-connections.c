@@ -1,4 +1,8 @@
+/* include main library */
 #include <vortex.h>
+
+/* include tunnel support */
+#include <vortex_tunnel.h>
 
 #define MAX_NUM_CON 1000
 
