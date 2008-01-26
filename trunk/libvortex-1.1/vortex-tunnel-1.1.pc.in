@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libvortex-tunnel
+Description: Robust, full featured BEEP implementation (RFC 3080/RFC 3081)
+  TUNNEL RFC2620 implementation for Vortex.
+Requires: vortex
+Version: @VORTEX_VERSION@
+Libs: -L${libdir} -lvortex-tunnel-1.1
+Cflags: -I${includedir}/vortex-1.1

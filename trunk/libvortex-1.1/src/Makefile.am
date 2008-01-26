@@ -13,10 +13,6 @@ if ENABLE_XML_RPC_SUPPORT
 INCLUDE_XML_RPC_SUPPORT=-DENABLE_XML_RPC_SUPPORT
 endif
 
-if ENABLE_TUNNEL_SUPPORT
-INCLUDE_TUNNEL_SUPPORT=-DENABLE_TUNNEL_SUPPORT
-endif
-
 if ENABLE_VORTEX_LOG
 INCLUDE_VORTEX_LOG=-DENABLE_VORTEX_LOG
 endif
@@ -39,7 +35,7 @@ endif
 
 INCLUDES = -Wall -ansi -g -I$(top_srcdir) -D__COMPILING_VORTEX__ \
 	$(AXL_CFLAGS) $(SASL_CFLAGS) $(INCLUDE_VORTEX_LOG) $(PTHREAD_CFLAGS) \
-	-DVERSION=\""$(VORTEX_VERSION)"\" $(INCLUDE_TLS_SUPPORT) $(INCLUDE_SASL_SUPPORT) $(INCLUDE_XML_RPC_SUPPORT) $(INCLUDE_TUNNEL_SUPPORT) \
+	-DVERSION=\""$(VORTEX_VERSION)"\" $(INCLUDE_TLS_SUPPORT) $(INCLUDE_SASL_SUPPORT) $(INCLUDE_XML_RPC_SUPPORT) \
 	-DPACKAGE_DTD_DIR=\""$(datadir)"\" \
 	-DPACKAGE_TOP_DIR=\""$(top_srcdir)"\" $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_DEFAULT_EPOLL) $(INCLUDE_DEFAULT_POLL)
 
@@ -72,8 +68,8 @@ libvortex_1_1_la_SOURCES =	\
 	vortex_xml_rpc.c \
 	vortex_xml_rpc_types.c \
 	vortex_errno.c \
-	vortex_thread.c \
-	vortex_tunnel.c
+	vortex_thread.c 
+
 libvortex_1_1_include_HEADERS = vortex.h \
 	vortex_ctx.h \
 	vortex_ctx_private.h \
@@ -100,8 +96,8 @@ libvortex_1_1_include_HEADERS = vortex.h \
 	vortex_xml_rpc_types.h \
 	vortex_win32.h \
 	vortex_errno.h \
-	vortex_thread.h \
-	vortex_tunnel.h
+	vortex_thread.h 
+
 libvortex_1_1_la_LIBADD = \
 	$(AXL_LIBS) $(INCLUDE_TLS_LIBS) $(SASL_LIBS) $(PTHREAD_LIBS)
 

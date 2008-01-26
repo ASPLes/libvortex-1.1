@@ -235,9 +235,6 @@ BEGIN_C_DECLS
 /* XML-RPC profile */
 #include <vortex_xml_rpc.h>
 
-/* TUNNEL profile */
-#include <vortex_tunnel.h>
-
 END_C_DECLS
 
 #if defined(AXL_OS_WIN32)

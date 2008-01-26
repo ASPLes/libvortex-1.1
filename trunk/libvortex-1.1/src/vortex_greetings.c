@@ -184,7 +184,7 @@ bool     vortex_greetings_send (VortexConnection * connection)
 VortexFrame *  vortex_greetings_process (VortexConnection * connection)
 {
 	VortexFrame        * frame;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx          * ctx   = vortex_connection_get_ctx (connection);
 #endif
 
@@ -221,7 +221,7 @@ VortexFrame *  vortex_greetings_process (VortexConnection * connection)
 bool           vortex_greetings_is_reply_ok    (VortexFrame      * frame, VortexConnection * connection)
 {
 	VortexChannel * channel;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx = vortex_connection_get_ctx (connection);
 #endif
 

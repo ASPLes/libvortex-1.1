@@ -425,7 +425,7 @@ void vortex_channel_data_free (VortexChannelData * data)
  */
 int  __vortex_channel_get_mime_headers_size (VortexChannel * channel)
 {
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx       * ctx               = vortex_channel_get_ctx (channel);
 #endif
 	/* mime configuration */
@@ -1843,7 +1843,7 @@ int             vortex_channel_get_number (VortexChannel * channel)
 void vortex_channel_update_status (VortexChannel * channel, int  frame_size, int msg_no, WhatUpdate update)
 {
 	/* get a reference */
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
@@ -1901,7 +1901,7 @@ void vortex_channel_update_status_received (VortexChannel * channel, int  frame_
 					    WhatUpdate update)
 {
 
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
@@ -2861,7 +2861,7 @@ void vortex_channel_update_remote_incoming_buffer (VortexChannel * channel,
 						   VortexFrame   * frame)
 {
 	int          new_size;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx  * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
@@ -2971,7 +2971,7 @@ bool     vortex_channel_update_incoming_buffer (VortexChannel * channel,
 	int         new_max_seq_no_accepted;
 	int         consumed_seqno;
 	int         window_size;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
@@ -3100,7 +3100,7 @@ bool               vortex_channel_are_equal                    (VortexChannel * 
 void               vortex_channel_queue_pending_message         (VortexChannel * channel,
 								 axlPointer      message)
 {
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
@@ -3129,7 +3129,7 @@ void               vortex_channel_queue_pending_message         (VortexChannel *
  */
 axlPointer         vortex_channel_next_pending_message          (VortexChannel * channel)
 {
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx   = vortex_channel_get_ctx (channel);
 #endif
 
@@ -3175,7 +3175,7 @@ bool             vortex_channel_is_empty_pending_message (VortexChannel * channe
  */
 void               vortex_channel_remove_pending_message        (VortexChannel * channel)
 {
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx   = vortex_channel_get_ctx (channel);
 #endif
 
@@ -3409,7 +3409,7 @@ bool               vortex_channel_ref                             (VortexChannel
  */
 void               vortex_channel_unref                           (VortexChannel * channel)
 {
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx   = vortex_channel_get_ctx (channel);
 #endif
 
@@ -3737,7 +3737,7 @@ bool __vortex_channel_close_validate_rpy (VortexChannel * channel,
 bool     __vortex_channel_block_until_replies_are_received (VortexChannel * channel)
 {
 	VortexConnection * connection;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx    = vortex_channel_get_ctx (channel);
 #endif
 	bool               result = true;
@@ -3833,7 +3833,7 @@ bool     __vortex_channel_block_until_replies_are_received (VortexChannel * chan
 bool     __vortex_channel_block_until_replies_are_sent (VortexChannel * channel)
 {
 	bool            result = true;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx    = vortex_channel_get_ctx (channel);
 #endif
 
@@ -4980,7 +4980,7 @@ bool     __vortex_channel_0_frame_received_get_start_param (VortexFrame    * fra
 	axlNode       * profile_node;
 	const char    * channel;
 	const char    * enc;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx     = vortex_frame_get_ctx (frame);
 #endif
 
@@ -5094,7 +5094,7 @@ bool vortex_channel_notify_start_internal (const char       * serverName,
 	char        * start_rpy;
 	const char  * profile;
 	bool          result = true;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx   * ctx     = vortex_channel_get_ctx (channel0);
 #endif
 
@@ -5654,7 +5654,7 @@ void vortex_channel_notify_close (VortexChannel * channel, int  msg_no, bool    
 	VortexConnection * connection;
 	char             * error_msg;
 	bool               ok_on_wait      = false;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
@@ -5786,7 +5786,7 @@ void vortex_channel_0_frame_received (VortexChannel    * channel0,
 				      VortexFrame      * frame,
 				      axlPointer         user_data)
 {
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx   * ctx     = vortex_channel_get_ctx (channel0);
 #endif
 
@@ -5906,7 +5906,7 @@ void vortex_channel_free (VortexChannel * channel)
 {
 	VortexWriterData * writer_data;
 	WaitReplyData    * wait_reply;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
@@ -6115,7 +6115,7 @@ void     vortex_channel_free_wait_reply (WaitReplyData * wait_reply)
  */
 bool               vortex_channel_is_ready                       (VortexChannel * channel)
 {
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
@@ -6151,7 +6151,7 @@ void               vortex_channel_queue_reply                    (VortexChannel 
 {
 	VortexAsyncQueue * queue      = user_data;
 	VortexFrame      * frame_copy = NULL;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx        = vortex_channel_get_ctx (channel);
 #endif
 	
@@ -6591,7 +6591,7 @@ void               vortex_channel_unlock_to_receive              (VortexChannel 
 void           	   vortex_channel_signal_on_close_blocked        (VortexChannel    * channel)
 {
 
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx   * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
@@ -6688,7 +6688,7 @@ void   vortex_channel_signal_reply_sent_on_close_blocked (VortexChannel * channe
  */
 void vortex_channel_flag_reply_processed (VortexChannel * channel, bool  flag)
 {
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx    * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
@@ -6792,7 +6792,7 @@ void             vortex_channel_signal_rpy_sent                 (VortexChannel *
 {
 	char             * rpy;
 	VortexAsyncQueue * queue;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx     = vortex_channel_get_ctx (channel);
 #endif
 

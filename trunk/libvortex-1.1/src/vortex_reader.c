@@ -124,7 +124,7 @@ bool     __vortex_reader_update_incoming_buffer_and_notify (VortexConnection  * 
 
 
 	VortexChannel     * channel0;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx         * ctx = vortex_connection_get_ctx (connection);
 #endif
 	int                 ackno, window;

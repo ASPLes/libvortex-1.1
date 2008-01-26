@@ -266,13 +266,15 @@ dnl AC_SUBST(LIBRARIES_LIBS)
 AC_OUTPUT([
 Makefile
 src/Makefile
+tunnel/Makefile
 doc/Makefile
 doc/vortex-doc.doxygen
 test/Makefile
 xml-rpc-gen/Makefile
 data/Makefile
 logo/Makefile
-vortex-1.1.pc])
+vortex-1.1.pc
+vortex-tunnel-1.1.pc])
 
 echo "------------------------------------------"
 echo "--     VORTEX LIBRARY 1.1 SETTINGS      --"
@@ -342,6 +344,7 @@ else
 fi
 if test x$enable_tunnel_support = xyes ; then
    echo "   Build TUNNEL profile support:   enabled"
+   echo "     (libvortex-tunnel-1.1)"
 else
    echo "   Build TUNNEL profile support:   disabled"
    echo 

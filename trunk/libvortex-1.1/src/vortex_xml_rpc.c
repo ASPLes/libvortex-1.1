@@ -128,7 +128,7 @@ void __vortex_xml_rpc_notify (VortexXmlRpcBootNotify    process_status,
 			      axlPointer                user_data)
 {
 	/* get context */
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx = vortex_channel_get_ctx (channel);
 #endif
 
@@ -200,7 +200,7 @@ void __vortex_xml_rpc_notify_response (XmlRpcInvokeNotify     notify,
 				       axlPointer             user_data)
 {
 	/* get context */
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx = vortex_channel_get_ctx (channel);
 #endif
 
@@ -522,7 +522,7 @@ typedef struct _VortexXmlRpcBootData {
 axlPointer __vortex_xml_rpc_boot_channel_process (VortexXmlRpcBootData * data)
 {
 	VortexConnection        * connection      = data->connection;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx               * ctx             = vortex_connection_get_ctx (connection);
 #endif
 	char                    * serverName      = data->serverName;
@@ -737,7 +737,7 @@ void __vortex_xml_rpc_boot_channel_sync_process  (VortexChannel    * booted_chan
 						  axlPointer         user_data)
 {
 	VortexAsyncQueue * queue = user_data;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx   = vortex_channel_get_ctx (booted_channel);
 #endif
 
@@ -1528,7 +1528,7 @@ void __vortex_xml_rpc_invoke_sync_process (VortexChannel        * channel,
 					   axlPointer             user_data)
 {
 	VortexAsyncQueue * queue = user_data;
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx   = vortex_channel_get_ctx (channel);
 #endif
 
@@ -1652,7 +1652,7 @@ VortexXmlRpcState   vortex_xml_rpc_channel_status   (VortexChannel * channel)
 #else
 	char      * boot_state;
 	/* get a reference to the context */
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx = vortex_channel_get_ctx (channel);
 #endif
 
@@ -2453,7 +2453,7 @@ XmlRpcMethodValue * __vortex_xml_rpc_unmarshall_common_sync (XmlRpcMethodRespons
 	XmlRpcResponseStatus   _status;
 	char                 * string;
 	/* get a reference to the context */
-#if defined(ENABLE_VORTEX_DEBUG)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx            * ctx = vortex_channel_get_ctx (channel);
 #endif
 	
