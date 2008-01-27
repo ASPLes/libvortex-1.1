@@ -42,6 +42,19 @@
 
 VortexCtx * vortex_ctx_new ();
 
-void        vortex_ctx_free (VortexCtx * ctx);
+void        vortex_ctx_set_data (VortexCtx       * ctx, 
+				 axlPointer        key, 
+				 axlPointer        value);
+
+void        vortex_ctx_set_data_full (VortexCtx       * ctx, 
+				      axlPointer        key, 
+				      axlPointer        value,
+				      axlDestroyFunc    key_destroy,
+				      axlDestroyFunc    value_destroy);
+
+axlPointer  vortex_ctx_get_data (VortexCtx       * ctx,
+				 axlPointer        key);
+
+void        vortex_ctx_free     (VortexCtx * ctx);
 
 #endif /* __VORTEX_CTX_H__ */

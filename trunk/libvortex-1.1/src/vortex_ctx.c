@@ -81,6 +81,9 @@ VortexCtx * vortex_ctx_new ()
 	/* create a new context */
 	result           = axl_new (VortexCtx, 1);
 
+	/* create the hash to store data */
+	result->data     = vortex_hash_new (axl_hash_string, axl_hash_equal_string);
+
 	/**** vortex_frame_factory.c: init module ****/
 	result->frame_id = 1;
 
@@ -92,6 +95,77 @@ VortexCtx * vortex_ctx_new ()
 
 	/* return context created */
 	return result;
+}
+
+
+/** 
+ * @brief Allows to store arbitrary data associated to the provided
+ * context, which can later retrieved using a particular key. 
+ * 
+ * @param ctx The ctx where the data will be stored.
+ * @param key The key to index the value stored.
+ * @param value The value to be stored. 
+ */
+void        vortex_ctx_set_data (VortexCtx       * ctx, 
+				 axlPointer        key, 
+				 axlPointer        value)
+{
+	v_return_if_fail (ctx && key);
+
+	/* call to configure using full version */
+	vortex_ctx_set_data_full (ctx, key, value, NULL, NULL);
+	return;
+}
+
+
+/** 
+ * @brief Allows to store arbitrary data associated to the provided
+ * context, which can later retrieved using a particular key. It is
+ * also possible to configure a destroy handler for the key and the
+ * value stored, ensuring the memory used will be deallocated once the
+ * context is terminated (\ref vortex_ctx_free) or the value is
+ * replaced by a new one.
+ * 
+ * @param ctx The ctx where the data will be stored.
+ * @param key The key to index the value stored.
+ * @param value The value to be stored. 
+ * @param key_destroy Optional key destroy function (use NULL to set no destroy function).
+ * @param value_destroy Optional value destroy function (use NULL to set no destroy function).
+ */
+void        vortex_ctx_set_data_full (VortexCtx       * ctx, 
+				      axlPointer        key, 
+				      axlPointer        value,
+				      axlDestroyFunc    key_destroy,
+				      axlDestroyFunc    value_destroy)
+{
+	v_return_if_fail (ctx && key);
+
+	/* store the data */
+	vortex_hash_replace_full (ctx->data, 
+				  /* key and function */
+				  key, key_destroy,
+				  /* value and function */
+				  value, value_destroy);
+	return;
+}
+
+
+/** 
+ * @brief Allows to retreive data stored on the given context (\ref
+ * vortex_ctx_set_data) using the provided index key.
+ * 
+ * @param ctx The context where to lookup the data.
+ * @param key The key to use as index for the lookup.
+ * 
+ * @return A reference to the pointer stored or NULL if it fails.
+ */
+axlPointer  vortex_ctx_get_data (VortexCtx       * ctx,
+				 axlPointer        key)
+{
+	v_return_val_if_fail (ctx && key, NULL);
+
+	/* lookup */
+	return vortex_hash_lookup (ctx->data, key);
 }
 
 /** 
@@ -108,6 +182,10 @@ void        vortex_ctx_free (VortexCtx * ctx)
 
 	/* release log mutex */
 	vortex_mutex_create (&ctx->log_mutex);
+
+	/* clear the hash */
+	vortex_hash_destroy (ctx->data);
+	ctx->data = NULL;
 
 	/* free the context */
 	axl_free (ctx);
