@@ -37,14 +37,17 @@
  */
 #include <vortex_tunnel.h>
 
-
-/* local include */
-#include <vortex_ctx_private.h>
-
 #define LOG_DOMAIN "vortex-tunnel"
 
 #define VORTEX_TUNNEL_PARTNER_CONNECTION "vo:tu:con"
 #define VORTEX_TUNNEL_BUFFER             "vo:tu:buf"
+
+/* key for the accept tunnel and the tunnel resolver handler */
+#define VORTEX_TUNNEL_ACCEPT             "vo:tu:ac"
+#define VORTEX_TUNNEL_ACCEPT_DATA        "vo:tu:ac:da"
+#define VORTEX_TUNNEL_RESOLVER           "vo:tu:re"
+#define VORTEX_TUNNEL_RESOLVER_DATA      "vo:tu:re:da"
+
 
 /**
  * \defgroup vortex_tunnel Vortex Tunnel: TUNNEL profile support, general application layer proxy for BEEP
@@ -847,6 +850,10 @@ bool __vortex_tunnel_start_request (char             * profile,
 	char                   * buffer;
 	bool                     result;
 	VortexCtx              * ctx;
+	
+	/* references to handlers */
+	VortexOnAcceptedConnection         tunnel_accept;
+	VortexTunnelLocationResolver       tunnel_location_resolver;
 
 	v_return_val_if_fail (connection, false);
 	/* get context */
@@ -894,9 +901,10 @@ bool __vortex_tunnel_start_request (char             * profile,
 		
 		/* call here to get the application level approval to
 		 * accept the endpoint tunnel request */
-		if (ctx->tunnel_accept != NULL) {
+		tunnel_accept = vortex_ctx_get_data (ctx, VORTEX_TUNNEL_ACCEPT);
+		if (tunnel_accept != NULL) {
 
-			if (! ctx->tunnel_accept (connection, ctx->tunnel_accept_data)) {
+			if (! tunnel_accept (connection, vortex_ctx_get_data (ctx, VORTEX_TUNNEL_ACCEPT_DATA))) {
 
 				/* free document */
 				axl_doc_free (doc);
@@ -932,14 +940,15 @@ bool __vortex_tunnel_start_request (char             * profile,
 		/* perform here the location resolution if found a
 		 * final hop with endpoint or profile attributes
 		 * defined */
-		if (ctx->tunnel_location_resolver != NULL) {
+		tunnel_location_resolver = vortex_ctx_get_data (ctx, VORTEX_TUNNEL_RESOLVER);
+		if (tunnel_location_resolver != NULL) {
 			/* location resolution defined, call to the
 			 * user space to create a new tunnel
 			 * setting */
-			settings = ctx->tunnel_location_resolver (profile_content, 
-								  strlen (profile_content),
-								  doc,
-								  ctx->tunnel_location_resolver_data);
+			settings = tunnel_location_resolver (profile_content, 
+							     strlen (profile_content),
+							     doc,
+							     vortex_ctx_get_data (ctx, VORTEX_TUNNEL_RESOLVER_DATA));
 		} /* end if */
 
 		/* check if, at this point, the tunnel setting is
@@ -1057,11 +1066,10 @@ bool                   vortex_tunnel_accept_negotiation (VortexCtx              
 #if ! defined(ENABLE_TUNNEL_SUPPORT)
 	return false;
 #else
-	
 
 	/* configure handlers */
-	ctx->tunnel_accept      = accept_tunnel;
-	ctx->tunnel_accept_data = accept_tunnel_data;
+	vortex_ctx_set_data (ctx, VORTEX_TUNNEL_ACCEPT, accept_tunnel);
+	vortex_ctx_set_data (ctx, VORTEX_TUNNEL_ACCEPT_DATA, accept_tunnel_data);
 
 	/* register the profile, using the basic handlers */
 	vortex_profiles_register (
@@ -1123,8 +1131,9 @@ void                   vortex_tunnel_set_resolver       (VortexCtx              
 #if defined(ENABLE_TUNNEL_SUPPORT)
 	v_return_if_fail (ctx);
 
-	ctx->tunnel_location_resolver      = resolver;
-	ctx->tunnel_location_resolver_data = resolver_data;
+	/* configure handlers */
+	vortex_ctx_set_data (ctx, VORTEX_TUNNEL_RESOLVER, resolver);
+	vortex_ctx_set_data (ctx, VORTEX_TUNNEL_RESOLVER_DATA, resolver_data);
 #else
 	return;
 #endif
