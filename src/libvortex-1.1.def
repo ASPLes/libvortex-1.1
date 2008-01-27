@@ -226,7 +226,10 @@ vortex_connection_timeout
 vortex_connection_unlock_channel_pool
 vortex_connection_unref
 vortex_ctx_free
+vortex_ctx_get_data
 vortex_ctx_new
+vortex_ctx_set_data
+vortex_ctx_set_data_full
 vortex_dtds_cleanup
 vortex_dtds_get_channel_dtd
 vortex_dtds_get_sasl_dtd

@@ -44,6 +44,9 @@
 
 struct _VortexCtx {
 
+	/* global hash to store arbitrary data */
+	VortexHash         * data;
+
 	/* @internal Allows to check if the vortex library is in exit
 	 * transit.
 	 */
@@ -309,16 +312,6 @@ struct _VortexCtx {
 	VortexSaslAuthExternalFull         sasl_external_auth_handler_full;
 #endif	/* end ENABLE_SASL_SUPPORT */
 
-#if defined(ENABLE_TUNNEL_SUPPORT)
-
-	/* handlers for accepted connections */
-	VortexOnAcceptedConnection         tunnel_accept;
-	axlPointer                         tunnel_accept_data;
-	
-	/* handlers for tunnel configuration translation */
-	VortexTunnelLocationResolver       tunnel_location_resolver;
-	axlPointer                         tunnel_location_resolver_data;
-#endif /* ENABLE_TUNNEL_SUPPORT */
 };
 
 #endif /* __VORTEX_CTX_PRIVATE_H__ */
