@@ -2401,6 +2401,11 @@ bool      __vortex_channel_common_rpy (VortexChannel    * channel,
 	if (data != NULL) {
 		/* update the type */
 		type = data->type;
+
+		/* and update new first seq no to use while building
+		 * the frame */
+		/* data->first_seq_no    = vortex_channel_get_next_seq_no (channel); */
+
 		vortex_log (VORTEX_LEVEL_WARNING, "found pending reply=%d to be sent on channel=%d", 
 			    msg_no_rpy, channel->channel_num);
 		goto send_reply;

@@ -435,11 +435,15 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	if (vortex_channel_get_next_expected_seq_no (channel) !=
 	    vortex_frame_get_seqno (frame)) {
 
-		__vortex_connection_set_not_connected (connection, "expected seq no number for channel wan't found");
+		/* drop a log */
+		vortex_log (VORTEX_LEVEL_CRITICAL, "expected seq no %d for channel=%d, connection-id=%d wasn't found, received %d",
+			    vortex_channel_get_next_expected_seq_no (channel),
+			    vortex_channel_get_number (channel),
+			    vortex_connection_get_id (connection),
+			    vortex_frame_get_seqno (frame));
 
-		vortex_log (VORTEX_LEVEL_CRITICAL, "expected seq no %d for channel wasn't found, received %d",
-		       vortex_channel_get_next_expected_seq_no (channel),
-		       vortex_frame_get_seqno (frame));
+		/* close the connection due to a protocol violation */
+		__vortex_connection_set_not_connected (connection, "expected seq no number for channel wan't found");
 
 		/* free the frame */
 		vortex_frame_unref (frame);
