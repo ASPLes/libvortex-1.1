@@ -2259,6 +2259,10 @@ bool test_11 ()
 	VortexChannel    * channel;
 	VortexAsyncQueue * queue;
 	VortexFrame      * frame;
+	VortexFrame      * frame2;
+	VortexFrame      * frame3;
+	int                iterator;
+	int                pattern = 0;
 
 	/* create a new connection */
 	connection = connection_new ();
@@ -2277,43 +2281,91 @@ bool test_11 ()
 	/* send a message to activate the test, then the listener will
 	 * ack it and send three messages that will be replied in
 	 * wrong other. */
-	printf ("Test 11: activating test..\n");
-	vortex_channel_send_msg (channel, "", 0, NULL);
+	iterator = 0;
+	while (iterator < 10) {
+		/* printf ("  --> activating test (%d)..\n", iterator); */
+		vortex_channel_send_msg (channel, "", 0, NULL);
+		
+		/* get the reply and unref */
+		frame = vortex_channel_get_reply (channel, queue);
+		if (frame == NULL || vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
+			printf ("Test 11: failed, expected to find reply defined or to be RPY..\n");
+			return false;
+		} /* end if */
+		vortex_frame_unref (frame);
+		
+		/* Test 11: test in progress... */
+		
+		/* ask for all replies */
+		frame     = NULL;
+		frame2    = NULL;
+		frame3    = NULL;
+
+		/* get the first frame */
+		frame = vortex_channel_get_reply (channel, queue);
+		/* printf ("."); */
+		if (frame == NULL || vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_MSG) {
+			printf ("Test 11: failed, expected to find defined frame and using type MSG\n");
+			return false;
+		} /* end if */
+		
+		/* get the first frame2 */
+		frame2 = vortex_channel_get_reply (channel, queue);
+		/* printf ("."); */
+		if (frame2 == NULL || vortex_frame_get_type (frame2) != VORTEX_FRAME_TYPE_MSG) {
+			printf ("Test 11: failed, expected to find defined frame and using type MSG\n");
+			return false;
+		} /* end if */
+		
+		/* get the first frame2 */
+		frame3 = vortex_channel_get_reply (channel, queue);
+		/* printf ("."); */
+		if (frame3 == NULL || vortex_frame_get_type (frame3) != VORTEX_FRAME_TYPE_MSG) {
+			printf ("Test 11: failed, expected to find defined frame and using type MSG\n");
+			return false;
+		} /* end if */
+		
+		/* now reply in our of order */
+		if (pattern == 0) {
+			/* send a reply */
+			vortex_channel_send_rpy (channel, "AA", 2, vortex_frame_get_msgno (frame2));
+			vortex_channel_send_rpy (channel, "BB", 2, vortex_frame_get_msgno (frame));
+			vortex_channel_send_rpy (channel, "CC", 2, vortex_frame_get_msgno (frame3));
+			pattern++;
+
+		} else if (pattern == 1) {
+			
+			/* send a reply */
+			vortex_channel_send_rpy (channel, "AA", 2, vortex_frame_get_msgno (frame3));
+			vortex_channel_send_rpy (channel, "BB", 2, vortex_frame_get_msgno (frame2));
+			vortex_channel_send_rpy (channel, "CC", 2, vortex_frame_get_msgno (frame));
+			pattern++;
+			
+		} else if (pattern == 2) {
+
+			/* send a reply */
+			vortex_channel_send_rpy (channel, "AA", 2, vortex_frame_get_msgno (frame2));
+			vortex_channel_send_rpy (channel, "BB", 2, vortex_frame_get_msgno (frame3));
+			vortex_channel_send_rpy (channel, "CC", 2, vortex_frame_get_msgno (frame));
+			pattern = 0;
+			
+		} /* end if */
+
+		if (! vortex_connection_is_ok (connection, false)) {
+			printf ("Test 11: failed, detected connection close after sending data..\n");
+			return false;
+		}
+		
+		/* delete all frames */
+		vortex_frame_unref (frame);
+		vortex_frame_unref (frame2);
+		vortex_frame_unref (frame3);
+		
+		/* next test */
+		iterator++;
+		
+	} /* end while */
 	
-	/* get the reply and unref */
-	frame = vortex_channel_get_reply (channel, queue);
-	vortex_frame_unref (frame);
-
-	printf ("Test 11: test in progress..");
-	frame = vortex_channel_get_reply (channel, queue);
-	printf (".");
-	vortex_frame_unref (frame);
-
-	frame = vortex_channel_get_reply (channel, queue);
-	printf (".");
-	vortex_frame_unref (frame);
-
-	frame = vortex_channel_get_reply (channel, queue);
-	printf (".");
-	vortex_frame_unref (frame);
-
-	/* unref queue */
-	vortex_async_queue_unref (queue);
-
-	/* reply */
-	printf (".");
-	vortex_channel_send_rpy (channel, "", 0, 2);
-	printf (".");
-
-	printf (".");
-	vortex_channel_send_rpy (channel, "", 0, 1);
-	printf (".");
-
-	printf (".");
-	vortex_channel_send_rpy (channel, "", 0, 0);
-	printf (".");
-
-
 	/* close the channel */
 	if (! vortex_channel_close (channel, NULL)) {
 		printf ("Test 11: failed to close the regression channel when a possitive reply was expected\n");
