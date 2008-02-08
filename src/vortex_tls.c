@@ -1459,7 +1459,7 @@ bool     vortex_tls_process_start_msg (char              * profile,
 	/* notify user app level that a TLS profile request have being
 	 * received and it is required to act as serverName. */
 	vortex_log (VORTEX_LEVEL_DEBUG, "checking if application level allows to negotiate the TLS profile");
-	if (!ctx->tls_accept_handler (connection, serverName)) {
+	if (! ctx->tls_accept_handler (connection, serverName)) {
 		(* profile_content_reply)  = vortex_frame_get_error_message ("421", "application level have reject to negotiate TLS transport layer", NULL);
 		
 		/* we have to reply true because the expected reply is
