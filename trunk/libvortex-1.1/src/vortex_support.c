@@ -120,6 +120,9 @@ void vortex_support_init (VortexCtx * ctx)
 							 (axlDestroyFunc) __search_path_node_destroy);
 	}
 
+	/* init hte mutex */
+	vortex_mutex_create (&ctx->search_path_mutex);
+
 	return;
 }
 
@@ -139,6 +142,9 @@ void vortex_support_cleanup (VortexCtx * ctx)
 	/* clear search path */
 	axl_list_free (ctx->support_search_path);
 	ctx->support_search_path = NULL;
+
+	/* destroy mutex */
+	vortex_mutex_destroy (&ctx->search_path_mutex);
 
 	return;
 }
