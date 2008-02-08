@@ -818,7 +818,6 @@ bool   vortex_init_ctx (VortexCtx * ctx)
 	/**** vortex.c: init global mutex *****/
 	vortex_mutex_create (&ctx->frame_id_mutex);
 	vortex_mutex_create (&ctx->connection_id_mutex);
-	vortex_mutex_create (&ctx->search_path_mutex);
 	vortex_mutex_create (&ctx->tls_init_mutex);
 	vortex_mutex_create (&ctx->listener_mutex);
 	vortex_mutex_create (&ctx->listener_unlock);
@@ -1053,7 +1052,6 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
 	/* destroy global mutex */
 	vortex_mutex_destroy (&ctx->frame_id_mutex);
 	vortex_mutex_destroy (&ctx->connection_id_mutex);
-	vortex_mutex_destroy (&ctx->search_path_mutex);
 	vortex_mutex_destroy (&ctx->tls_init_mutex);
 	vortex_mutex_destroy (&ctx->listener_mutex);
 	vortex_mutex_destroy (&ctx->listener_unlock);
