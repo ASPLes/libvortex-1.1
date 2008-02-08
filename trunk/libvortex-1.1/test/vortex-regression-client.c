@@ -2301,6 +2301,11 @@ bool test_11 ()
 		frame2    = NULL;
 		frame3    = NULL;
 
+		if (! vortex_connection_is_ok (connection, false)) {
+			printf ("Test 11: failed, detected connection close before getting first frame..\n");
+			return false;
+		}
+
 		/* get the first frame */
 		frame = vortex_channel_get_reply (channel, queue);
 		/* printf ("."); */
@@ -2308,6 +2313,11 @@ bool test_11 ()
 			printf ("Test 11: failed, expected to find defined frame and using type MSG\n");
 			return false;
 		} /* end if */
+
+		if (! vortex_connection_is_ok (connection, false)) {
+			printf ("Test 11: failed, detected connection close before getting second frame..\n");
+			return false;
+		}
 		
 		/* get the first frame2 */
 		frame2 = vortex_channel_get_reply (channel, queue);
@@ -2316,9 +2326,15 @@ bool test_11 ()
 			printf ("Test 11: failed, expected to find defined frame and using type MSG\n");
 			return false;
 		} /* end if */
+
+		if (! vortex_connection_is_ok (connection, false)) {
+			printf ("Test 11: failed, detected connection close before getting third frame..\n");
+			return false;
+		}
 		
 		/* get the first frame2 */
 		frame3 = vortex_channel_get_reply (channel, queue);
+		
 		/* printf ("."); */
 		if (frame3 == NULL || vortex_frame_get_type (frame3) != VORTEX_FRAME_TYPE_MSG) {
 			printf ("Test 11: failed, expected to find defined frame and using type MSG\n");
