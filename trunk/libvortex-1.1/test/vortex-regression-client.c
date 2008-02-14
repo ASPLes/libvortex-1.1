@@ -2391,6 +2391,10 @@ bool test_11 ()
 
 	/* close the connection */
 	vortex_connection_close (connection);
+
+	/* unref the queue */
+	vortex_async_queue_unref (queue);
+
 	return true;
 }
 
