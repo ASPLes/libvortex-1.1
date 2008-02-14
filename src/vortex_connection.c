@@ -325,6 +325,24 @@ struct _VortexConnection {
 };
 
 
+/**
+ * @internal Function to init all mutex associated to this particular
+ * connection 
+ */
+void __vortex_connection_init_mutex (VortexConnection * connection)
+{
+	/* inits all mutex associated to the connection provided. */
+	vortex_mutex_create (&connection->channel_mutex);
+	vortex_mutex_create (&connection->ref_mutex);
+	vortex_mutex_create (&connection->op_mutex);
+	vortex_mutex_create (&connection->handlers_mutex);
+	vortex_mutex_create (&connection->channel_pool_mutex);
+	vortex_mutex_create (&connection->pending_errors_mutex);
+	vortex_mutex_create (&connection->channel_update_mutex);
+
+	return;
+}
+
 
 /** 
  * @internal Fucntion that perform the connection socket sanity check.
@@ -870,19 +888,14 @@ VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx       
 	connection->on_close                  = axl_list_new (axl_list_always_return_1, NULL);
 	connection->on_close_full             = axl_list_new (axl_list_always_return_1, axl_free);
 	
-	/* mutexes */
-	vortex_mutex_create (&connection->ref_mutex);
-	vortex_mutex_create (&connection->op_mutex);
-	vortex_mutex_create (&connection->handlers_mutex);
-	vortex_mutex_create (&connection->pending_errors_mutex);
-	vortex_mutex_create (&connection->channel_update_mutex);
+	/* call to init all mutex associated to this particular connection */
+	__vortex_connection_init_mutex (connection);
 
 	/* channel creation errors list */
 	connection->pending_errors = axl_stack_new ((axlDestroyFunc) __vortex_connection_free_channel_error);
 
 	/* check connection that is accepting connections */
 	if (role != VortexRoleMasterListener) {
-		vortex_mutex_create (&connection->channel_pool_mutex);
 		connection->channels           = vortex_hash_new_full (axl_hash_int, axl_hash_equal_int, 
 								       /* key destroy */
 								       NULL,
@@ -903,8 +916,6 @@ VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx       
 		connection->channel_pools      = vortex_hash_new_full (axl_hash_int, axl_hash_equal_int,
 								       NULL, 
 								       (axlDestroyFunc) __vortex_channel_pool_close_internal);
-		vortex_mutex_create (&connection->channel_mutex);
-
 		/* configure the last channel value */
 		connection->last_channel       = (role == VortexRoleListener) ? 2 : 1;
 
@@ -1531,13 +1542,10 @@ VortexConnection * vortex_connection_new (VortexCtx   * ctx,
 	data->connection->channels            = vortex_hash_new_full (axl_hash_int, axl_hash_equal_int,
 								      NULL,
 								      (axlDestroyFunc) vortex_channel_unref);
-	vortex_mutex_create (&data->connection->channel_mutex);
 	data->connection->ref_count           = 1;
-	vortex_mutex_create (&data->connection->ref_mutex);
-	vortex_mutex_create (&data->connection->op_mutex);
-	vortex_mutex_create (&data->connection->handlers_mutex);
-	vortex_mutex_create (&data->connection->channel_pool_mutex);
-	vortex_mutex_create (&data->connection->pending_errors_mutex);
+
+	/* call to init all mutex associated to this particular connection */
+	__vortex_connection_init_mutex (data->connection);
 
 	/* channel creation errors list */
 	data->connection->pending_errors = axl_stack_new ((axlDestroyFunc) __vortex_connection_free_channel_error);
