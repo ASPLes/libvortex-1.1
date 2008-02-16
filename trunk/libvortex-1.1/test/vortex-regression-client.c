@@ -854,6 +854,19 @@ bool test_03 () {
 			printf ("Test 03: Messages aren't equal\n");
 			return false;
 		}
+
+		/* check the reference of the channel associated */
+		if (vortex_frame_get_channel_ref (frame) == NULL) {
+			printf ("Test 03: Frame received doesn't have a valid channel reference configured\n");
+			return false;
+		} /* end if */
+
+		/* check channel reference */
+		if (! vortex_channel_are_equal (vortex_frame_get_channel_ref (frame),
+						channel)) {
+			printf ("Test 03: Frame received doesn't have the spected channel reference configured\n");
+			return false;
+		} /* end if */
 		
 		/* free frame received */
 		vortex_frame_free (frame);

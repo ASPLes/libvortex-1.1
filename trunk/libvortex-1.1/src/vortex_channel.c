@@ -1770,6 +1770,9 @@ VortexFrame      * vortex_channel_build_single_pending_frame   (VortexChannel * 
 		vortex_frame_get_transfer_encoding (frame),
 		(char *) payload);
 
+	/* ensure we set the channel */
+	vortex_frame_set_channel_ref (result, channel); 
+
 	/* now we have the result, release all pending frames */
 	axl_list_cursor_first (cursor);
 	while (axl_list_cursor_has_item (cursor)) {
