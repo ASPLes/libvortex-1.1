@@ -6,11 +6,14 @@
 
 #define MAX_NUM_CON 1000
 
+/* location of the vortex-regression-listener */
 #define LISTENER_HOST "localhost"
 #define LISTENER_PORT "44010"
 
+/* BEEP proxy running on the following port, also provided by
+ * vortex-regression-listener */
 #define LISTENER_PROXY_HOST "localhost"
-#define LISTENER_PROXY_PORT "3206"
+#define LISTENER_PROXY_PORT "44110"
 
 /** 
  * @internal Allows to know if the connection must be created directly or
@@ -127,6 +130,7 @@ int main (int argc, char ** argv)
 		printf ("(iterator=%d) connecting to localhost:44000...", iterator);
 		connections[iterator] =connection_new ();
 		if (!vortex_connection_is_ok (connections[iterator], false)) {
+			printf ("..failed to create a connection on iteration=%d: %s..\n", iterator, vortex_connection_get_message (connections[iterator]));
 			break;
 			/* break; */
 		}
@@ -134,6 +138,12 @@ int main (int argc, char ** argv)
 
 		/* update iterator */
 		iterator++;
+		
+		/* check for proxy test activation */
+		if (tunnel_settings != NULL && iterator == 10) {
+			/* stop proxy test .. */
+			break;
+		} /* end if */
 	} /* end while */
 
 	/* store current count */
