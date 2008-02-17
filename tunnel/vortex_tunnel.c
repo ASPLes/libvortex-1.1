@@ -122,6 +122,9 @@ VortexTunnelSettings * vortex_tunnel_settings_new (VortexCtx * ctx)
 	settings      = axl_new (VortexTunnelSettings, 1);
 	settings->doc = axl_doc_create (NULL, NULL, true);
 
+	/* configure context */
+	settings->ctx = ctx;
+
 	/* configure the inner most tunnel */
 	node = axl_node_create ("tunnel");
 	axl_doc_set_root (settings->doc, node);
@@ -856,6 +859,7 @@ bool __vortex_tunnel_start_request (char             * profile,
 	VortexTunnelLocationResolver       tunnel_location_resolver;
 
 	v_return_val_if_fail (connection, false);
+
 	/* get context */
 	ctx = vortex_connection_get_ctx (connection);
 	v_return_val_if_fail (ctx, false);
@@ -957,6 +961,9 @@ bool __vortex_tunnel_start_request (char             * profile,
 			/* create settings reusing reference */
 			settings      = axl_new (VortexTunnelSettings, 1);
 			settings->doc = doc;
+
+			/* configure settings */
+			settings->ctx = ctx;
 		} else {
 			/* free the document if it is not going to be
 			 * used by the settings */
