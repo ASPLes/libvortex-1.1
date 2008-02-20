@@ -942,7 +942,8 @@ void vortex_listener_cleanup (VortexCtx * ctx)
 	axl_free (ctx->listener_default_realm);
 	ctx->listener_default_realm = NULL;
 
-	vortex_async_queue_unref (ctx->listener_wait_lock);
+	if (ctx->listener_wait_lock)
+		vortex_async_queue_unref (ctx->listener_wait_lock);
 	ctx->listener_wait_lock = NULL;
 
 	return;
