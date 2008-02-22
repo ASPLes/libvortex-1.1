@@ -305,6 +305,11 @@ void                vortex_connection_notify_new_connections       (VortexCtx   
 
 void                vortex_connection_notify_created               (VortexConnection                * conn);
 
+void                vortex_connection_block                        (VortexConnection * conn,
+								    bool               enable);
+
+bool                vortex_connection_is_blocked                   (VortexConnection  * conn);
+
 /** 
  * @internal
  * Do not use the following functions, internal Vortex Library purposes.
