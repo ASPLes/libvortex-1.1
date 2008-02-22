@@ -59,6 +59,9 @@ void vortex_sequencer_queue_data (VortexCtx * ctx, VortexSequencerData * data)
 		     data->channel_num, 
 		     data->message_size,
 		     data->message ? data->message : "**** empty message ****");
+
+	/* get the connection for the data to be sent */
+	data->conn = vortex_channel_get_connection (data->channel);
 	
 	/* queue data */
 	QUEUE_PUSH (ctx->sequencer_queue, data);
@@ -129,6 +132,13 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 
 		/* new message to be sent */
 		channel = data->channel;
+
+		/* check to drop the sequence */
+		if (data->discard) {
+			vortex_log (VORTEX_LEVEL_WARNING, "discarding sequencer data (found flag activated)");
+			__vortex_sequencer_unref_and_clear (NULL, data, false);
+			continue;
+		} /* end if */
 
 		/**
 		 * Increase reference counting for the connection holding the channel 
@@ -601,4 +611,51 @@ void     vortex_sequencer_signal_update        (VortexChannel       * channel)
 	} /* end if */
 
 	return;
+}
+
+void vortex_sequencer_drop_connections_foreach (VortexAsyncQueue * queue,
+						axlPointer         item_stored,
+						int                position,
+						axlPointer         user_data)
+{
+	VortexConnection    * conn = user_data;
+	VortexSequencerData * data = item_stored;
+
+	/* check for termination beacon */
+	if (data == INT_TO_PTR(1))
+		return;
+
+	/* flag as discard those messages having the connection provided */
+	if (data->conn == conn &&
+	    vortex_connection_get_id (conn) == vortex_connection_get_id (data->conn)) {
+		
+		data->discard = true;
+	} /* end if */
+
+	return;
+}
+						
+
+/** 
+ * @internal Function used to drop all pending messages to be
+ * sequenced for this connection.
+ * 
+ * @param conn The connection that is about to be closed.
+ */
+void	vortex_sequencer_drop_connection_messages (VortexConnection * conn)
+{
+	/* get current context */
+	VortexCtx * ctx = vortex_connection_get_ctx (conn);
+
+	/* check context and queue */
+	if (ctx == NULL || ctx->sequencer_queue == NULL)
+		return;
+
+	/* call to discard pending messages */
+	vortex_log (VORTEX_LEVEL_DEBUG, 
+		    "calling to discard messages pending to be sequenced for connection id=%d",
+		    vortex_connection_get_id (conn));
+	vortex_async_queue_foreach (ctx->sequencer_queue,
+				    vortex_sequencer_drop_connections_foreach,
+				    conn);
 }
