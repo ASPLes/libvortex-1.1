@@ -159,14 +159,6 @@ void vortex_listener_accept_connection    (VortexConnection * connection, bool s
 	 */
 	vortex_reader_watch_connection      (ctx, connection);
 
-	/*
-	 * Because this is a listener, we don't want to pay attention
-	 * to free connection on errors. connection already have 1
-	 * reference (reader), so let's reference counting to the job
-	 * of free connection resources
-	 */
-	vortex_connection_unref (connection, "vortex listener (initial accept)");
-
 	/* close connection and free resources */
 	vortex_log (VORTEX_LEVEL_DEBUG, "worker ended, connection registered on manager (initial accept)");
 
@@ -275,7 +267,7 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 		 * received is something goes wrong */
 		vortex_log (VORTEX_LEVEL_CRITICAL, "wrong greeting rpy from init peer, closing session");
 		__vortex_connection_set_not_connected (connection, "wrong greeting rpy from init peer, closing session");
-		return;
+		goto unref;
 	}
 
 	/* because the greeting is ok, parse it */
@@ -286,7 +278,7 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 		
 		vortex_log (VORTEX_LEVEL_CRITICAL, "wrong greetings received, closing session");
 		__vortex_connection_set_not_connected (connection, "wrong greetings received, closing session");
-		return;
+		goto unref;
 	}
 
 	/* frame accepted */
@@ -297,6 +289,15 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 	
 	/* flag the connection to be totally accepted. */
 	vortex_connection_set_data (connection, "initial_accept", NULL);
+
+ unref:
+	/*
+	 * Because this is a listener, we don't want to pay attention
+	 * to free connection on errors. connection already have 1
+	 * reference (reader), so let's reference counting to the job
+	 * of free connection resources.
+	 */
+	vortex_connection_unref (connection, "vortex listener (initial accept)");
 
 	return;	
 }
@@ -1234,7 +1235,8 @@ void __vortex_listener_shutdown_foreach (VortexConnection * conn,
 void          vortex_listener_shutdown (VortexConnection * listener,
 					bool               also_created_conns)
 {
-	VortexCtx * ctx;
+	VortexCtx        * ctx;
+	VortexAsyncQueue * notify = NULL;
 
 	/* check parameters */
 	if (! vortex_connection_is_ok (listener, false))
@@ -1252,9 +1254,12 @@ void          vortex_listener_shutdown (VortexConnection * listener,
 	 * reader */
 	if (also_created_conns) {
 		/* call to shutdown all associated connections */
-		vortex_reader_foreach (ctx, 
-				       __vortex_listener_shutdown_foreach, 
-				       INT_TO_PTR (vortex_connection_get_id (listener)));
+		notify = vortex_reader_foreach (ctx, 
+						__vortex_listener_shutdown_foreach, 
+						INT_TO_PTR (vortex_connection_get_id (listener)));
+		/* wait to finish */
+		vortex_async_queue_pop (notify);
+		vortex_async_queue_unref (notify);
 	} /* end if */
 
 	/* shutdown the listener */
