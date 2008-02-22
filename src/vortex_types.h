@@ -491,33 +491,45 @@ typedef struct _VortexSequencerData {
 	 * @brief The channel where the message should be sequenced.
 	 */
 	VortexChannel   * channel;
+
+	/**
+	 * @brief Reference to the connection.
+	 */
+	VortexConnection * conn;
+
 	/** 
 	 * @brief The type of the frame to be sequenced.
 	 */
 	VortexFrameType   type;
+
 	/** 
 	 * @brief The channel number to be sequenced (this is a
 	 * redundancy data used for checking integrity).
 	 */
 	int              channel_num;
+
 	/** 
 	 * @brief The message number value to be used for frames
 	 * sequenced from this message.
 	 */
 	int              msg_no;
+
 	/** 
 	 * Next sequence number to be used for the first byte on the
 	 * message hold by this structure.
 	 */
 	int              first_seq_no;
+
 	/** 
 	 * @brief The content to be sequenced into frames.
 	 */
 	char            * message;
+
 	/** 
 	 * @brief The message size content.
 	 */
 	int              message_size;
+
 	/** 
 	 * @brief This is a tricky value and it is used to allow
 	 * vortex sequencer to keep track about byte stream to be used
@@ -533,6 +545,7 @@ typedef struct _VortexSequencerData {
 	 * sent *for the given message.
 	 */
 	int              step;
+
 	/** 
 	 * @brief Signal value used by the vortex reader to instruct
 	 * vortex sequencer that a new SEQ frame was received and the
@@ -540,10 +553,18 @@ typedef struct _VortexSequencerData {
 	 * has been increased.
 	 */
 	bool              resequence;
+
 	/** 
 	 * @brief The ansno value to be used.
 	 */
 	int              ansno;
+
+	/**
+	 * @brief Discard flag used internally to drop packages that
+	 * were queued to be sent.
+	 */
+	bool             discard;
+
 } VortexSequencerData;
 
 
