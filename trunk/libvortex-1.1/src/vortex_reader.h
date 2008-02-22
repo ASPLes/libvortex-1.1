@@ -61,7 +61,7 @@ void vortex_reader_allow_msgno_starting_from_1 (VortexCtx * ctx,
 /* internal API */
 typedef void (*VortexForeachFunc) (VortexConnection * conn, axlPointer user_data);
 
-void vortex_reader_foreach                     (VortexCtx            * ctx,
+VortexAsyncQueue * vortex_reader_foreach       (VortexCtx            * ctx,
 						VortexForeachFunc      func,
 						axlPointer             user_data);
 

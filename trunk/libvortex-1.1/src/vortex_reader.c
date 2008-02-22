@@ -65,6 +65,9 @@ typedef struct _VortexReaderData {
 	VortexConnection   * connection;
 	VortexForeachFunc    func;
 	axlPointer           user_data;
+	/* queue used to notify that the foreach operation was
+	 * finished: currently only used for type == FOREACH */
+	VortexAsyncQueue   * notify;
 }VortexReaderData;
 
 /** 
@@ -783,6 +786,9 @@ void vortex_reader_foreach_impl (VortexCtx        * ctx,
 	/* free cursor */
 	axl_list_cursor_free (cursor);
 
+	/* notify that the foreach operation was completed */
+	vortex_async_queue_push (data->notify, INT_TO_PTR (1));
+
 	return;
 }
 
@@ -908,6 +914,7 @@ VORTEX_SOCKET __vortex_reader_build_set_to_watch_aux (axlPointer      on_reading
 
 		/* get current connection */
 		connection = axl_list_cursor_get (cursor);
+		ctx        = vortex_connection_get_ctx (connection);
 		if (!vortex_connection_is_ok (connection, false)) {
 
 			/* connection isn't ok, unref it */
@@ -915,6 +922,16 @@ VORTEX_SOCKET __vortex_reader_build_set_to_watch_aux (axlPointer      on_reading
 
 			/* and remove current cursor */
 			axl_list_cursor_unlink (cursor);
+			continue;
+		} /* end if */
+
+		/* check if the connection is blocked (no I/O read to
+		 * perform on it) */
+		if (vortex_connection_is_blocked (connection)) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "connection id=%d has I/O read blocked (vortex_connection_block)", 
+				    vortex_connection_get_id (connection));
+			/* get the next */
+			axl_list_cursor_next (cursor);
 			continue;
 		} /* end if */
 
@@ -1502,21 +1519,27 @@ void vortex_reader_allow_msgno_starting_from_1 (VortexCtx * ctx,
  * @param func The function to execute on each connection.
  *
  * @param user_data User data to be provided to the function.
+ *
+ * @return The function returns a reference to the queue that will be
+ * used to notify the foreach operation finished.
  */
-void vortex_reader_foreach                     (VortexCtx            * ctx,
-						VortexForeachFunc      func,
-						axlPointer             user_data)
+VortexAsyncQueue * vortex_reader_foreach                     (VortexCtx            * ctx,
+							      VortexForeachFunc      func,
+							      axlPointer             user_data)
 {
 	VortexReaderData * data;
+	VortexAsyncQueue * queue;
 
-	v_return_if_fail (ctx);
-	v_return_if_fail (func);
+	v_return_val_if_fail (ctx, NULL);
+	v_return_val_if_fail (func, NULL);
 
 	/* queue an operation */
 	data            = axl_new (VortexReaderData, 1);
 	data->type      = FOREACH;
 	data->func      = func;
 	data->user_data = user_data;
+	queue           = vortex_async_queue_new ();
+	data->notify    = queue;
 	
 	/* queue the operation */
 	vortex_log (VORTEX_LEVEL_DEBUG, "notify foreach reader operation..");
@@ -1525,7 +1548,8 @@ void vortex_reader_foreach                     (VortexCtx            * ctx,
 	/* notification done */
 	vortex_log (VORTEX_LEVEL_DEBUG, "finished foreach reader operation..");
 
-	return;
+	/* return a reference */
+	return queue;
 }
 
 /* @} */
