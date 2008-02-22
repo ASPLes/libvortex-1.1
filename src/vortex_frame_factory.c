@@ -968,7 +968,9 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	/* parse frame header, read the first line */
 	bytes_read = __vortex_frame_readline (connection, line, 99);
 	if (bytes_read == -2) {
-                vortex_log (VORTEX_LEVEL_WARNING, "no data were waiting on this non-blocking connection (EWOULDBLOCK error)");
+                vortex_log (VORTEX_LEVEL_WARNING,
+			    "no data were waiting on this non-blocking connection id=%d (EWOULDBLOCK error)",
+			    vortex_connection_get_id (connection));
 		return NULL;
 	}
 
@@ -980,9 +982,20 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 			return NULL;
 		}
 
+		/* check for connection into initial connect state */
+		if (PTR_TO_INT (vortex_connection_get_data (connection, "initial_accept"))) {
+			/* found a connection broken in the middle of
+			 * the negotiation (just before the initial
+			 * step, but after the second step) */
+			vortex_log (VORTEX_LEVEL_WARNING, "found connection closed before finishing negotiation, dropping..");
+			vortex_connection_unref (connection, "vortex listener (initial accept not finished)");
+			__vortex_connection_set_not_connected (connection, "connection closed during session connection");
+			return NULL;
+		}
+	
 		/* check if we have a non-blocking connection */
 		vortex_log (VORTEX_LEVEL_CRITICAL, "client have disconnected without closing properly this session id=%d",
-		       vortex_connection_get_id (connection));
+			    vortex_connection_get_id (connection));
 		__vortex_connection_set_not_connected (connection, "client have disconnected without closing session");
 		return NULL;
 	}

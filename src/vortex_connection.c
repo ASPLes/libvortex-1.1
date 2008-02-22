@@ -1209,14 +1209,15 @@ int __vortex_connection_wait_on (VortexIoWaitingFor    wait_for,
 				 VortexConnection    * conn,
 				 int                 * wait_period)
 {
-	int        err = -2;
-	axlPointer wait_set;
-	int        start_time;
+	int         err         = -2;
+	axlPointer  wait_set;
+	int         start_time;
+	VortexCtx * ctx         = vortex_connection_get_ctx (conn);
 
 	/* do not perform a wait operation if the wait period is zero
 	 * or less */
 	if (*wait_period <= 0) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, 
+		vortex_log (VORTEX_LEVEL_WARNING, 
 			    "requested to perform a wait operation but the wait period configured is 0 or less: %d",
 			    *wait_period);
 		return -2;
@@ -1227,30 +1228,30 @@ int __vortex_connection_wait_on (VortexIoWaitingFor    wait_for,
 
 	/* create a waiting set using current selected I/O
 	 * waiting engine. */
-	wait_set     = vortex_io_waiting_invoke_create_fd_group (wait_for);
+	wait_set     = vortex_io_waiting_invoke_create_fd_group (ctx, wait_for);
 
 	/* flag the starting time */
 	start_time   = time (NULL);
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, 
+	vortex_log (VORTEX_LEVEL_DEBUG, 
 		    "detected connect timeout during %d seconds (starting from: %d)", 
 		    *wait_period, start_time);
 
 	/* add the socket in connection transit */
 	while ((start_time + (*wait_period)) > time (NULL)) {
 		/* clear file set */
-		vortex_io_waiting_invoke_clear_fd_group (wait_set);
+		vortex_io_waiting_invoke_clear_fd_group (ctx, wait_set);
 
 		/* add the socket into the file set */
-		if (! vortex_io_waiting_invoke_add_to_fd_group (conn->session, conn, wait_set)) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "failed to add session to the waiting socket");
+		if (! vortex_io_waiting_invoke_add_to_fd_group (ctx, conn->session, conn, wait_set)) {
+			vortex_log (VORTEX_LEVEL_WARNING, "failed to add session to the waiting socket");
 			err = -4;
 			break;
 		} /* end if */
 				
 		/* perform wait operation */
-		err = vortex_io_waiting_invoke_wait (wait_set, conn->session, wait_for);
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "__vortex_connection_wait_on (id=%d, sock=%d) operation finished, err=%d, errno=%d (%s) (ellapsed: %d)",
+		err = vortex_io_waiting_invoke_wait (ctx, wait_set, conn->session, wait_for);
+		vortex_log (VORTEX_LEVEL_DEBUG, "__vortex_connection_wait_on (id=%d, sock=%d) operation finished, err=%d, errno=%d (%s) (ellapsed: %d)",
 			    conn->id, conn->session, err, errno, vortex_errno_get_error (errno), time (NULL) - start_time);
 		
 		if(err == -1 /* EINTR */ || err == -2 /* SSL */)
@@ -1263,11 +1264,11 @@ int __vortex_connection_wait_on (VortexIoWaitingFor    wait_for,
 			return -1;
 	} /* end while */
 	
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "timeout operation finished, with err=%d, errno=%d, ellapsed time=%d (seconds)", 
+	vortex_log (VORTEX_LEVEL_DEBUG, "timeout operation finished, with err=%d, errno=%d, ellapsed time=%d (seconds)", 
 		    err, errno, time (NULL) - start_time);
 
 	/* destroy waiting set */
-	vortex_io_waiting_invoke_destroy_fd_group (wait_set);
+	vortex_io_waiting_invoke_destroy_fd_group (ctx, wait_set);
 
 	/* update the return timeout code to signal that the timeout
 	 * period was reached */
@@ -1415,10 +1416,10 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 
 		/* check frame received */
 		if (frame != NULL)
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "greetings received, process reply frame");
+			vortex_log (VORTEX_LEVEL_DEBUG, "greetings received, process reply frame");
 		else if (d_timeout > 0) {
 
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, 
+			vortex_log (VORTEX_LEVEL_WARNING, 
 				    "found NULL frame referecence connection=%d, checking to wait for read operation..",
 				    connection->id);
 
@@ -1426,7 +1427,7 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 			err = __vortex_connection_wait_on (READ_OPERATIONS, connection, &d_timeout);
 			if (err <= 0 && d_timeout <= 0) {
 				/* timeout reached while waiting for the connection to terminate */
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, 
+				vortex_log (VORTEX_LEVEL_WARNING, 
 					    "reached timeout while waiting for initial greetings frame, err=%d, d_timeout=%d",
 					    err, d_timeout);
 
@@ -1439,13 +1440,13 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 				goto __vortex_connection_new_finalize;
 			} else {
 				
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG,
+				vortex_log (VORTEX_LEVEL_DEBUG,
 					    "found the connection is ready to provide data, checking..");
 				goto __vortex_connection_try_again;
 			} /* end if */
 		} else {
 			/* null frame received */
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL,
+			vortex_log (VORTEX_LEVEL_CRITICAL,
 				    "Received null frame were it was expected initial greetings, finish connection id=%d", connection->id);
 
 				/* timeout reached while waiting for the connection to terminate */
