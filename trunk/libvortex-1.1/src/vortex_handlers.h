@@ -1597,6 +1597,27 @@ typedef void (*VortexLogHandler) (const char       * file,
 				  VortexDebugLevel   log_level,
 				  const char       * message,
 				  va_list            args);
+
+/**
+ * @brief Handler definition used by \ref vortex_async_queue_foreach
+ * to implement a foreach operation over all items inside the provided
+ * queue, blocking its access during its process.
+ *
+ * @param queue The queue that will receive the foreach operation.
+ *
+ * @param item_stored The item stored on the provided queue.
+ *
+ * @param position Item position inside the queue. 0 position is the
+ * next item to pop.
+ *
+ * @param user_data User defined optional data provided to the foreach
+ * function.
+ */
+typedef void (*VortexAsyncQueueForeach) (VortexAsyncQueue * queue,
+					 axlPointer         item_stored,
+					 int                position,
+					 axlPointer         user_data);
+
 #endif
 
 /* @} */
