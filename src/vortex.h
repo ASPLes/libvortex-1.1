@@ -207,11 +207,11 @@ BEGIN_C_DECLS
 #include <vortex_ctx.h>
 #include <vortex_xml_rpc_types.h>
 #include <vortex_support.h>
+#include <vortex_handlers.h>
 #include <vortex_thread.h>
 #include <vortex_thread_pool.h>
 #include <vortex_queue.h>
 #include <vortex_hash.h>
-#include <vortex_handlers.h>
 #include <vortex_connection.h>
 #include <vortex_listener.h>
 #include <vortex_frame_factory.h>
