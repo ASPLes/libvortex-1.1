@@ -1187,6 +1187,101 @@ struct in_addr * vortex_gethostbyname (VortexCtx  * ctx,
 }
 
 /** 
+ * @internal Function to perform a wait operation on the provided
+ * socket, assuming the wait operation will be performed on a
+ * nonblocking socket. The function configure the socket to be
+ * non-blocking.
+ * 
+ * @param wait_for The kind of operation to wait for to be available.
+ *
+ * @param conn The connection that is behind the waiting operation,
+ * the BEEP session.
+ *
+ * @param wait_period How many seconds to wait for the connection.
+ * 
+ * @return The error code to return:
+ *    -4: Add operation into the file set failed.
+ *     1: Wait operation finished.
+ *    -2: Timeout
+ *    -3: Fatal error found.
+ */
+int __vortex_connection_wait_on (VortexIoWaitingFor    wait_for, 
+				 VortexConnection    * conn,
+				 int                 * wait_period)
+{
+	int        err = -2;
+	axlPointer wait_set;
+	int        start_time;
+
+	/* do not perform a wait operation if the wait period is zero
+	 * or less */
+	if (*wait_period <= 0) {
+		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, 
+			    "requested to perform a wait operation but the wait period configured is 0 or less: %d",
+			    *wait_period);
+		return -2;
+	} /* end if */
+
+	/* make the socket to be nonblocking */
+	vortex_connection_set_nonblocking_socket (conn);
+
+	/* create a waiting set using current selected I/O
+	 * waiting engine. */
+	wait_set     = vortex_io_waiting_invoke_create_fd_group (wait_for);
+
+	/* flag the starting time */
+	start_time   = time (NULL);
+
+	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, 
+		    "detected connect timeout during %d seconds (starting from: %d)", 
+		    *wait_period, start_time);
+
+	/* add the socket in connection transit */
+	while ((start_time + (*wait_period)) > time (NULL)) {
+		/* clear file set */
+		vortex_io_waiting_invoke_clear_fd_group (wait_set);
+
+		/* add the socket into the file set */
+		if (! vortex_io_waiting_invoke_add_to_fd_group (conn->session, conn, wait_set)) {
+			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "failed to add session to the waiting socket");
+			err = -4;
+			break;
+		} /* end if */
+				
+		/* perform wait operation */
+		err = vortex_io_waiting_invoke_wait (wait_set, conn->session, wait_for);
+		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "__vortex_connection_wait_on (id=%d, sock=%d) operation finished, err=%d, errno=%d (%s) (ellapsed: %d)",
+			    conn->id, conn->session, err, errno, vortex_errno_get_error (errno), time (NULL) - start_time);
+		
+		if(err == -1 /* EINTR */ || err == -2 /* SSL */)
+			continue;
+		else if (!err) 
+			continue; /*select, poll, epoll timeout*/
+		else if (err > 0) 
+			break; /* connect ok */
+		else if (err /*==-3, fatal internal error, other errors*/)
+			return -1;
+	} /* end while */
+	
+	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "timeout operation finished, with err=%d, errno=%d, ellapsed time=%d (seconds)", 
+		    err, errno, time (NULL) - start_time);
+
+	/* destroy waiting set */
+	vortex_io_waiting_invoke_destroy_fd_group (wait_set);
+
+	/* update the return timeout code to signal that the timeout
+	 * period was reached */
+	if ((start_time + (*wait_period)) <= time (NULL))
+		err = -2;
+
+	/* update wait period */
+	(*wait_period) -= (time (NULL) - start_time);
+
+	/* return error code */
+	return err;
+}
+
+/** 
  * @internal
  * @brief Support function to vortex_connection_new. 
  *
@@ -1208,9 +1303,7 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 	VortexFrame        * frame;
 	VortexChannel      * channel;
 	int 		     d_timeout    = 0;
-	int		     d_start_time = 0;
 	int		     err          = 0;
-	axlPointer	     on_writing;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "executing connection new in %s mode to %s:%s id=%d",
 	       (data->threaded == true) ? "thread" : "blocking", 
@@ -1259,12 +1352,6 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 	if (d_timeout > 0) {
 		/* translate hold value for d_timeout into seconds  */
 		d_timeout = (int) d_timeout / (int) 1000000;
-
-		/* make the socket to be nonblocking */
-		vortex_connection_set_nonblocking_socket (connection);
-
-		/* get start time */
-		d_start_time = time (NULL);
 	} /* end if */
 
 	/* do a tcp connect */
@@ -1278,44 +1365,18 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 	}
 	
 	/* if a connection timeout is defined, wait until connect */
-	if(d_timeout) {
-		/* create a waiting set using current selected I/O
-		 * waiting engine. */
-		on_writing = vortex_io_waiting_invoke_create_fd_group (ctx, WRITE_OPERATIONS);
-		vortex_io_waiting_invoke_clear_fd_group (ctx, on_writing);
-
-		/* add the socket in connection transit */
-		if (vortex_io_waiting_invoke_add_to_fd_group (ctx, connection->session, connection, on_writing)){
-
-			while (d_start_time + d_timeout> time (NULL)) {
-				err = vortex_io_waiting_invoke_wait (ctx, on_writing, connection->session, WRITE_OPERATIONS);
-				
-				if(err == -1 /*EINTR*/ || err == -2 /*SSL*/)
-					continue;
-				else if (!err) 
-					continue; /*select, poll, epoll timeout*/
-				else if (err>0) 
-					break; /*connect ok*/
-				else if (err /*==-3, fatal internal error, other errors*/)
-					break;
-			} /* end while */
-		} /* end if */
+	if (d_timeout) {
+		/* wait for write operation, signaling that the
+		 * connection is available */
+		err = __vortex_connection_wait_on (WRITE_OPERATIONS, connection, &d_timeout);
 		
 		if(err <= 0){
 			/* timeout reached while waiting for the connection to terminate */
 			shutdown (connection->session, SHUT_RDWR);
 			vortex_log (VORTEX_LEVEL_WARNING, "unable to connect to remote host (timeout)");
 			connection->message = axl_strdup ("unable to connect to remote host (timeout)");
-			vortex_io_waiting_invoke_destroy_fd_group (ctx, on_writing);
 			goto __vortex_connection_new_finalize;
-		}	
-		
-		/* destroy waiting set */
-		vortex_io_waiting_invoke_destroy_fd_group (ctx, on_writing);
-		
-		/* make the connection to be blocking during the
-		 * greetings process */
-		vortex_connection_set_blocking_socket (connection);
+		} /* end if */
 	}
 
 	/* flag that the connection is ok, and continue with the
@@ -1344,11 +1405,63 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 		vortex_connection_add_channel  (connection, channel);
 
 		/* block thread until received remote greetings */
+	__vortex_connection_try_again:
+
+		/* block thread until received remote greetings */
+		vortex_log (VORTEX_LEVEL_DEBUG, "getting initial greetings frame..");
 		frame = vortex_greetings_client_process (connection);
-		vortex_log (VORTEX_LEVEL_DEBUG, "greetings received, process reply frame");
+		vortex_log (VORTEX_LEVEL_DEBUG, "finished wait for initial greetings frame=%p d_timeout=%d", 
+			    frame, d_timeout);
+
+		/* check frame received */
+		if (frame != NULL)
+			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "greetings received, process reply frame");
+		else if (d_timeout > 0) {
+
+			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, 
+				    "found NULL frame referecence connection=%d, checking to wait for read operation..",
+				    connection->id);
+
+			/* try to perform a wait operation */
+			err = __vortex_connection_wait_on (READ_OPERATIONS, connection, &d_timeout);
+			if (err <= 0 && d_timeout <= 0) {
+				/* timeout reached while waiting for the connection to terminate */
+				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, 
+					    "reached timeout while waiting for initial greetings frame, err=%d, d_timeout=%d",
+					    err, d_timeout);
+
+				/* close the connection */
+				shutdown (connection->session, SHUT_RDWR);
+				connection->message      = axl_strdup_printf (
+					"reached timeout while waiting for initial greetings frame, err=%d, d_timeout=%d",
+					err, d_timeout);
+				connection->is_connected = false;
+				goto __vortex_connection_new_finalize;
+			} else {
+				
+				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG,
+					    "found the connection is ready to provide data, checking..");
+				goto __vortex_connection_try_again;
+			} /* end if */
+		} else {
+			/* null frame received */
+			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL,
+				    "Received null frame were it was expected initial greetings, finish connection id=%d", connection->id);
+
+				/* timeout reached while waiting for the connection to terminate */
+				shutdown (connection->session, SHUT_RDWR);
+				connection->message      = axl_strdup_printf (
+					"Received null frame were it was expected initial greetings, finish connection id=%d", connection->id);
+				connection->is_connected = false;
+				goto __vortex_connection_new_finalize;
+		} /* end if */
+
+		/* make the connection to be blocking during the
+		 * greetings process (if it were not) */
+		vortex_connection_set_blocking_socket (connection);
 
 		/* now we have to send greetings and process them */
-		if (frame == NULL || ! vortex_greetings_client_send (connection)) {
+		if (! vortex_greetings_client_send (connection)) {
 			/* greetings have failed, unref the frame */
 			vortex_frame_unref (frame);
 
@@ -2017,7 +2130,7 @@ int                 vortex_connection_ref_count              (VortexConnection *
 }
 
 /** 
- * @brief Allows to tweak vortex internal timeouts for synchrnous
+ * @brief Allows to configure vortex internal timeouts for synchrnous
  * operations.
  * 
  * This function allows to set the timeout to use on new
@@ -2031,7 +2144,8 @@ int                 vortex_connection_ref_count              (VortexConnection *
  *
  * @param ctx The context where the operation will be performed.
  *
- * @param microsedons_to_wait Timeout value to be used.
+ * @param microsedons_to_wait Timeout value to be used. Providing a
+ * value of 0, will reset the timeout to the default value.
  */
 void               vortex_connection_timeout (VortexCtx * ctx,
 					      long int    microseconds_to_wait)
@@ -2045,14 +2159,14 @@ void               vortex_connection_timeout (VortexCtx * ctx,
 	
 	/* clear previous value */
 	if (microseconds_to_wait == 0) {
+		/* reset value */
 		vortex_support_unsetenv ("VORTEX_SYNC_TIMEOUT");
-		return;
-	}
-
-	/* set new value */
-	value = axl_strdup_printf ("%ld", microseconds_to_wait);
-	vortex_support_setenv ("VORTEX_SYNC_TIMEOUT", value);
-	axl_free (value);
+	} else {
+		/* set new value */
+		value = axl_strdup_printf ("%ld", microseconds_to_wait);
+		vortex_support_setenv ("VORTEX_SYNC_TIMEOUT", value);
+		axl_free (value);
+	} /* end if */
 
 	/* make the next call to vortex_connection_get_timeout to
 	 * recheck the value */
@@ -2062,7 +2176,7 @@ void               vortex_connection_timeout (VortexCtx * ctx,
 }
 
 /** 
- * @brief Allows to tweak vortex connect timeout.
+ * @brief Allows to configure vortex connect timeout.
  * 
  * This function allows to set the timeout to use on a TCP connect.
  * Default timeout is TCP timeout.
@@ -2089,14 +2203,14 @@ void               vortex_connection_connect_timeout (VortexCtx * ctx,
 	
 	/* clear previous value */
 	if (microseconds_to_wait == 0) {
+		/* unset value */
 		vortex_support_unsetenv ("VORTEX_CONNECT_TIMEOUT");
-		return;
-	}
-
-	/* set new value */
-	value = axl_strdup_printf ("%ld", microseconds_to_wait);
-	vortex_support_setenv ("VORTEX_CONNECT_TIMEOUT", value);
-	axl_free (value);
+	} else {
+		/* set new value */
+		value = axl_strdup_printf ("%ld", microseconds_to_wait);
+		vortex_support_setenv ("VORTEX_CONNECT_TIMEOUT", value);
+		axl_free (value);
+	} /* end if */
 
 	/* make the next call to vortex_connection_get_connect_timeout
 	 * to recheck the value */
@@ -2409,6 +2523,9 @@ void               vortex_connection_free (VortexConnection * connection)
 	ctx = connection->ctx;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing connection id=%d", connection->id);
+
+	/* notify sequencer to drop all packages */
+	vortex_sequencer_drop_connection_messages (connection);
 
 	/*
 	 * NOTE: The order in which the channels and the channel pools
@@ -3636,6 +3753,57 @@ void                vortex_connection_notify_new_connections       (VortexCtx   
 }
 
 /** 
+ * @internal Key to access conn blocking state.
+ */
+#define VORTEX_CONNECTION_BLOCK "vo:co:blk"
+
+/** 
+ * @brief Enable/disable connection blocking on the provided
+ * reference. Activating the connection blocking will cause the BEEP
+ * session associated to stop accepting any data. This is done by
+ * signaling the vortex reader engine to not watch for status change
+ * on the connection provided.
+ * 
+ * @param conn The connection to (un)block.
+ *
+ * @param enable According to this value the connection will be
+ * blocked (true) otherwise false must be used to make the connection
+ * to accept incoming data.
+ *
+ * The function can also be used to block listener connections. The
+ * function do not block connections accepted due to the listener.
+ */
+void                vortex_connection_block                        (VortexConnection * conn,
+								    bool               enable)
+{
+	v_return_if_fail (conn);
+
+	/* set blocking state */
+	vortex_connection_set_data (conn, VORTEX_CONNECTION_BLOCK, INT_TO_PTR (enable));
+
+	return;
+}
+
+/** 
+ * @brief Allows to check if the connection provided is blocked.
+ * 
+ * @param conn The connection to check for its associated blocking
+ * state.
+ * 
+ * @return true if the connection is blocked (no read I/O operation
+ * available), otherwise false is returned, signaling the connection
+ * is fully I/O operational. Keep in mind the function returns false
+ * if the reference provided is NULL.
+ */
+bool                vortex_connection_is_blocked                   (VortexConnection  * conn)
+{
+	v_return_val_if_fail (conn, false);
+
+	/* set blocking state */
+	return PTR_TO_INT (vortex_connection_get_data (conn, VORTEX_CONNECTION_BLOCK));
+}
+
+/** 
  * @internal Function used to perform notifications for a connection
  * created.
  */
@@ -3675,6 +3843,8 @@ void                vortex_connection_notify_created               (VortexConnec
 
 	return;
 }
+
+
 
 /** 
  * @internal
@@ -3748,6 +3918,9 @@ void           __vortex_connection_set_not_connected (VortexConnection * connect
 			connection->session      = -1;
 			vortex_log (VORTEX_LEVEL_DEBUG, "closing session id=%d and set to be not connected",
 			       connection->id);
+
+			/* notify sequencer to drop all packages */
+			vortex_sequencer_drop_connection_messages (connection);
  	        } /* end if */
 
 		return;
