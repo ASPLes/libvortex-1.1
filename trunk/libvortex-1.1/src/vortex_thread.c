@@ -1141,6 +1141,52 @@ void               vortex_async_queue_unref     (VortexAsyncQueue * queue)
 	return;
 }
 
+/** 
+ * @brief Allows to perform a foreach operation on the provided queue,
+ * applying the provided function over all items stored.
+ * 
+ * @param queue The queue that will receive the foreach operation.
+ * @param foreach The function to call for each item found.
+ * @param user_data User defined pointer to be passed to the function.
+ */
+void               vortex_async_queue_foreach   (VortexAsyncQueue         * queue,
+						 VortexAsyncQueueForeach    foreach_func,
+						 axlPointer                 user_data)
+{
+	axlListCursor * cursor;
+	int             iterator;
+	axlPointer      ref;
+
+	v_return_if_fail (queue);
+	v_return_if_fail (foreach_func);
+
+	/* get the mutex */
+	vortex_mutex_lock (&queue->mutex);
+
+	/* create a cursor */
+	cursor   = axl_list_cursor_new (queue->data);
+	iterator = 0;
+	while (axl_list_cursor_has_item (cursor)) {
+		
+		/* call to the function */
+		ref = axl_list_cursor_get (cursor);
+		foreach_func (queue, ref, iterator, user_data);
+		
+		/* next item */
+		axl_list_cursor_next (cursor);
+		iterator++;
+
+	} /* end while */
+
+	/* free cursor */
+	axl_list_cursor_free (cursor);
+
+	/* unlock the mutex */
+	vortex_mutex_unlock (&queue->mutex);
+
+	return;
+}
+
 /**
  * @} 
  */
