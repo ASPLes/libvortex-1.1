@@ -125,6 +125,10 @@ void               vortex_async_queue_ref       (VortexAsyncQueue * queue);
 
 void               vortex_async_queue_unref     (VortexAsyncQueue * queue);
 
+void               vortex_async_queue_foreach   (VortexAsyncQueue         * queue,
+						 VortexAsyncQueueForeach    foreach_func,
+						 axlPointer                 user_data);
+
 END_C_DECLS
 
 #endif
