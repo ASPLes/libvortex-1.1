@@ -2764,18 +2764,123 @@ void __block_test (int value)
 }
 #endif
 
+/** 
+ * @brief Allows to check tunnel implementation.
+ * 
+ * @return true if all test pass, otherwise false is returned.
+ */
+bool test_13 ()
+{
+	printf ("Test 13: ** \n");
+	printf ("Test 13: ** INFO: Running test, under the TUNNEL profile (BEEP proxy support)!\n");
+	printf ("Test 13: **\n");
 
+	/* create tunnel settings */
+	tunnel_settings = vortex_tunnel_settings_new (ctx);
+	tunnel_tested   = true;
+	
+	/* add first hop */
+	vortex_tunnel_settings_add_hop (tunnel_settings,
+					TUNNEL_IP4, LISTENER_PROXY_HOST,
+					TUNNEL_PORT, LISTENER_PROXY_PORT,
+					TUNNEL_END_CONF);
+	
+	/* add end point behind it */
+	vortex_tunnel_settings_add_hop (tunnel_settings,
+					TUNNEL_IP4, LISTENER_HOST,
+					TUNNEL_PORT, LISTENER_PORT,
+					TUNNEL_END_CONF);
+
+	printf ("Test 13::");
+	if (test_01 ())
+		printf ("Test 01: basic BEEP support [   OK   ]\n");
+	else {
+		printf ("Test 01: basic BEEP support [ FAILED ]\n");
+		return false;
+	}
+
+	printf ("Test 13::");
+	if (test_01a ())
+		printf ("Test 01-a: transfer zeroed binary frames [   OK   ]\n");
+	else {
+		printf ("Test 01-a: transfer zeroed binary frames [ FAILED ]\n");
+		return false;
+	}
+
+	printf ("Test 13::");
+	if (test_02 ())
+		printf ("Test 02: basic BEEP channel support [   OK   ]\n");
+	else {
+		printf ("Test 02: basic BEEP channel support [ FAILED ]\n");
+		return false;
+	}
+
+	printf ("Test 13::");
+	if (test_02a ()) 
+		printf ("Test 02-a: connection close notification [   OK   ]\n");
+	else {
+		printf ("Test 02-a: connection close notification [ FAILED ]\n");
+		return false;
+	}
+
+	printf ("Test 13::");
+	if (test_02b ()) 
+		printf ("Test 02-b: small message followed by close  [   OK   ]\n");
+	else {
+		printf ("Test 02-b: small message followed by close [ FAILED ]\n");
+		return false;
+	}
+
+	printf ("Test 13::");
+	if (test_02c ()) 
+		printf ("Test 02-c: huge amount of small message followed by close  [   OK   ]\n");
+	else {
+		printf ("Test 02-c: huge amount of small message followed by close [ FAILED ]\n");
+		return false;
+	}
+
+	printf ("Test 13::");
+	if (test_03 ())
+		printf ("Test 03: basic BEEP channel support (large messages) [   OK   ]\n");
+	else {
+		printf ("Test 03: basic BEEP channel support (large messages) [ FAILED ]\n");
+		return false;
+	}
+
+	printf ("Test 13::");
+	if (test_04_a ()) {
+		printf ("Test 04-a: Check ANS/NUL support, sending large content [   OK   ]\n");
+	} else {
+		printf ("Test 04-a: Check ANS/NUL support, sending large content [ FAILED ]\n");
+		return false;
+	}
+
+	printf ("Test 13::");
+	if (test_04_ab ()) {
+		printf ("Test 04-ab: Check ANS/NUL support, sending different files [   OK   ]\n");
+	} else {
+		printf ("Test 04-ab: Check ANS/NUL support, sending different files [ FAILED ]\n");
+		return false;
+	}
+
+	/* free tunnel settings */
+	vortex_tunnel_settings_free (tunnel_settings);
+	tunnel_settings = NULL;
+	tunnel_tested   = false;
+
+	return true;
+}
 
 int main (int  argc, char ** argv)
 {
 
 #if defined (AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/* if poll(2) mechanism is available, check it */
-	bool poll_tested = false;
+	bool poll_tested = true;
 #endif
 #if defined (AXL_OS_UNIX) && defined (VORTEX_HAVE_EPOLL)
 	/* if epoll(2) mechanism is available, check it */
-	bool epoll_tested = false;
+	bool epoll_tested = true;
 #endif
 
 	printf ("** Vortex Library: A BEEP core implementation.\n");
@@ -2969,7 +3074,12 @@ int main (int  argc, char ** argv)
 		return -1;
 	}
 
-	goto EXIT_AND_FIX;
+	if (test_13 ()) {
+		printf ("Test 13: test TUNNEL implementation [   OK   ]\n");
+	} else {
+		printf ("Test 13: test TUNNEL implementation [ FAILED ]\n");
+		return -1;
+	}
 
 #if defined(AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/**
@@ -3006,41 +3116,6 @@ int main (int  argc, char ** argv)
 		goto init_test;
 	} /* end if */
 #endif
-
-	/* check TUNNEL profile support */
-	if (! tunnel_tested) {
-
-		goto EXIT_AND_FIX;
-
-		printf ("**\n");
-		printf ("** INFO: Running test, under the TUNNEL profile (BEEP proxy support)!\n");
-		printf ("**\n");
-
-		/* create tunnel settings */
-		tunnel_settings = vortex_tunnel_settings_new (ctx);
-
-		/* add first hop */
-		vortex_tunnel_settings_add_hop (tunnel_settings,
-						TUNNEL_IP4, LISTENER_PROXY_HOST,
-						TUNNEL_PORT, LISTENER_PROXY_PORT,
-						TUNNEL_END_CONF);
-
-		/* add end point behind it */
-		vortex_tunnel_settings_add_hop (tunnel_settings,
-						TUNNEL_IP4, LISTENER_HOST,
-						TUNNEL_PORT, LISTENER_PORT,
-						TUNNEL_END_CONF);
-
-		/* check TUNNEL support */
-		tunnel_tested = true;
-		goto init_test;
-	} else {
-		/* free tunnel settings */
-		vortex_tunnel_settings_free (tunnel_settings);
-
-	} /* end TUNNEL profile checking */
-
- EXIT_AND_FIX:
 
 	printf ("**\n");
 	printf ("** INFO: All test ok!\n");
