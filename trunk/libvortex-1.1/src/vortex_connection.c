@@ -2145,7 +2145,7 @@ int                 vortex_connection_ref_count              (VortexConnection *
  *
  * @param ctx The context where the operation will be performed.
  *
- * @param microsedons_to_wait Timeout value to be used. Providing a
+ * @param microseconds_to_wait Timeout value to be used. Providing a
  * value of 0, will reset the timeout to the default value.
  */
 void               vortex_connection_timeout (VortexCtx * ctx,
