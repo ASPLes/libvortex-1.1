@@ -1146,7 +1146,7 @@ void               vortex_async_queue_unref     (VortexAsyncQueue * queue)
  * applying the provided function over all items stored.
  * 
  * @param queue The queue that will receive the foreach operation.
- * @param foreach The function to call for each item found.
+ * @param foreach_func The function to call for each item found.
  * @param user_data User defined pointer to be passed to the function.
  */
 void               vortex_async_queue_foreach   (VortexAsyncQueue         * queue,
