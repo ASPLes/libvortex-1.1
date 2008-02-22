@@ -195,7 +195,7 @@ VortexFrame *  vortex_greetings_process (VortexConnection * connection)
 	 */
 	frame = vortex_frame_get_next (connection);
 	if (frame == NULL) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "no frame received from remote peer");
+		vortex_log (VORTEX_LEVEL_WARNING, "no frame received from remote peer");
 		return NULL;
 	}
 
