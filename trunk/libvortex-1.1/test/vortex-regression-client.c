@@ -2400,7 +2400,6 @@ bool test_11 ()
 		printf ("Test 11: failed to close the regression channel when a possitive reply was expected\n");
 		return false;
 	}
-	printf ("\n");
 
 	/* close the connection */
 	vortex_connection_close (connection);
@@ -2410,6 +2409,238 @@ bool test_11 ()
 
 	return true;
 }
+
+/** 
+ * @brief Checks connection creating timeout.
+ * 
+ * 
+ * @return true if test pass, otherwise false is returned.
+ */
+bool test_12 () {
+	VortexConnection  * connection;
+	VortexConnection  * listener;
+	VortexChannel     * channel;
+	int                 stamp;
+
+	/* checking timeout connection activated.. */
+	printf ("Test 12: .");
+	fflush (stdout);
+
+	/* check current timeout */
+	if (vortex_connection_get_connect_timeout (ctx) != 0) {
+		printf ("Test 12 (1): failed, expected to receive an empty timeout configuration: but received %ld..\n",
+			vortex_connection_get_connect_timeout (ctx));
+		return false;
+	}
+
+	/* configure a new timeout (10 seconds, 10000000 microseconds) */
+	vortex_connection_connect_timeout (ctx, 10000000);
+
+	/* check new timeout configured */
+	if (vortex_connection_get_connect_timeout (ctx) != 10000000) {
+		printf ("Test 12 (2): failed, expected to receive 10000000 timeout configuration: but received %ld..\n",
+			vortex_connection_get_connect_timeout (ctx));
+		return false;
+	}
+
+	/* creates a new connection against localhost:44000 */
+	/* doing connect operation with timeout activated.. */
+	printf (".");
+	fflush (stdout);
+	stamp      = time (NULL);
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		printf ("Test 12 (3): failed to connect to: %s:%s...reason: %s\n",
+			LISTENER_HOST, LISTENER_PORT, vortex_connection_get_message (connection));
+		vortex_connection_close (connection);
+		return false;
+	}
+
+	/* check stamp before continue */
+	if ((time (NULL) - stamp) > 1) {
+		printf ("Test 12 (3.1): failed, expected less connection time while testing..\n");
+		return false;
+	}
+
+	/* connected */
+	printf (".");
+	fflush (stdout);
+	
+	/* ok, close the connection */
+	vortex_connection_close (connection);
+	printf (".");
+	fflush (stdout);
+
+	/* disable timeout */
+	vortex_connection_connect_timeout (ctx, 0);
+
+	/* check new timeout configured */
+	if (vortex_connection_get_connect_timeout (ctx) != 0) {
+		printf ("Test 12 (4): failed, expected to receive 0 timeout configuration, after clearing: but received %ld..\n",
+			vortex_connection_get_connect_timeout (ctx));
+		return false;
+	}
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		printf ("Test 12 (5): failed to connect to: %s:%s...reason: %s\n",
+			LISTENER_HOST, LISTENER_PORT, vortex_connection_get_message (connection));
+		vortex_connection_close (connection);
+		return false;
+	}
+	
+	/* ok, close the connection */
+	printf (".");
+	vortex_connection_close (connection);
+
+	/*** check unreachable host with timeout activated ****/
+
+	/* enable timeout again */
+	vortex_connection_connect_timeout (ctx, 5000000);
+	printf (".");
+	fflush (stdout);
+
+	/* check new timeout configured */
+	if (vortex_connection_get_connect_timeout (ctx) != 5000000) {
+		printf ("Test 12 (6): failed, expected to receive 10000000 timeout configuration, after configuring: but received %ld..\n",
+			vortex_connection_get_connect_timeout (ctx));
+		return false;
+	}
+	printf (".");
+	fflush (stdout);
+
+	/* try to connect to an unreachable host */
+	connection = vortex_connection_new (ctx, LISTENER_HOST, "44012", NULL, NULL);
+	stamp      = time (NULL);
+	if (vortex_connection_is_ok (connection, false)) {
+		printf ("Test 12 (7): failed to connect to: %s:%s...reason: %s\n",
+			LISTENER_HOST, LISTENER_PORT, vortex_connection_get_message (connection));
+		vortex_connection_close (connection);
+		return false;
+	}
+	printf (".");
+	fflush (stdout);
+	
+	/* check stamp (check unreachable host doesn't take any
+	 * special time) */
+	if (stamp != time (NULL) && (stamp + 1) != time (NULL)) {
+		printf ("Test 12 (7.1): failed, expected no especial timeout for an unreachable connect operation..\n");
+		vortex_connection_close (connection);
+		return false;
+	} /* end if */
+
+	/* ok, close the connection */
+	vortex_connection_close (connection);
+	printf (".");
+	fflush (stdout);
+
+	/*** create a fake listener which do not have response to
+	 * check timemout */
+	printf ("...create fake listener...");
+	listener = vortex_listener_new (ctx, LISTENER_HOST, "44012", NULL, NULL);
+	if (! vortex_connection_is_ok (listener, false)) {
+		printf ("Test 12 (8): failed to start fake listener..\n");
+		return false;
+	}
+
+	/* block the listener */
+	printf (".");
+	fflush (stdout);
+	vortex_connection_block (listener, true);
+	printf ("..(wait 1 second)..");
+	fflush (stdout);
+	
+	/* stop some time to allow the listener to recover its
+	 * state */
+#if defined(AXL_OS_UNIX)
+	sleep (1);
+#elif defined(AXL_OS_WIN32)
+        Sleep (1);
+#endif
+
+	/* now try to connect again */
+	printf ("...connect (wait 5 seconds)");
+	fflush (stdout);
+	stamp      = time (NULL);
+	connection = vortex_connection_new (ctx, LISTENER_HOST, "44012", NULL, NULL);
+	if (vortex_connection_is_ok (connection, false)) {
+		printf ("Test 12 (9): failed to connect to: %s:%s...reason: %s\n",
+			LISTENER_HOST, LISTENER_PORT, vortex_connection_get_message (connection));
+		vortex_connection_close (connection);
+		return false;
+	}
+	
+	/* ok, close the connection */
+	printf ("...check..");
+	fflush (stdout);
+	vortex_connection_close (connection);
+	if ((stamp + 3) > time (NULL)) {
+		printf ("Test 12 (9.1): supposed to perform a connection failed, with a timeout about of 3 seconds but only consumed: %ld seconds..\n",
+			(time (NULL)) - stamp);
+		return false;
+	}
+
+	/* now unlock the listener */
+	printf ("..unlock listener..");
+	fflush (stdout);
+	vortex_connection_block (listener, false);
+	
+	/* now try to connect again */
+	printf ("..connecting");
+	fflush (stdout);
+	connection = vortex_connection_new (ctx, LISTENER_HOST, "44012", NULL, NULL);
+	if (! vortex_connection_is_ok (connection, false)) {
+		printf ("Test 12 (10): failed to connect to: %s:%s...reason: %s\n",
+			LISTENER_HOST, LISTENER_PORT, vortex_connection_get_message (connection));
+		vortex_connection_close (connection);
+		return false;
+	} 
+
+	/* create a channel */
+	printf ("..creating a channel..");
+
+	/* register a profile */
+	vortex_profiles_register (ctx, 
+				  REGRESSION_URI,
+				  NULL, NULL, 
+				  NULL, NULL,
+				  NULL, NULL);
+
+	fflush (stdout);
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Test 12 (10.1): Unable to create the channel..");
+		return false;
+	}
+
+	/* ok, close the channel */
+	vortex_channel_close (channel, NULL);
+
+	/* now unregister */
+	vortex_profiles_unregister (ctx, REGRESSION_URI);
+
+	/* close the connection created */
+	printf (".");
+	fflush (stdout);
+	vortex_connection_close (connection);
+
+	/* close the listener */
+	vortex_listener_shutdown (listener, true);
+	
+	
+	/* return true */
+	printf ("\n");
+	return true;
+}
+
 
 /** 
  * @brief Allows to check the close in transit support.
@@ -2728,6 +2959,13 @@ int main (int  argc, char ** argv)
 		printf ("Test 11: reply to multiple messages in a wrong order without blocking [   OK   ]\n");
 	} else {
 		printf ("Test 11: reply to multiple messages in a wrong order without blocking  [ FAILED ]\n");
+		return -1;
+	}
+
+	if (test_12 ()) {
+		printf ("Test 12: check connection creation timeout [   OK   ]\n");
+	} else {
+		printf ("Test 12: check connection creation timeout [ FAILED ]\n");
 		return -1;
 	}
 

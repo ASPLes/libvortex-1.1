@@ -2267,35 +2267,21 @@ long int             vortex_connection_get_timeout (VortexCtx * ctx)
  * See also \ref vortex_connection_connect_timeout.
  *
  * @return Current timeout configured. Returned value is measured in
- * microseconds (1 second = 1000000 microseconds).
+ * microseconds (1 second = 1000000 microseconds). If a null value is
+ * received, 0 is return and no timeout is implemented.
  */
 long int             vortex_connection_get_connect_timeout (VortexCtx * ctx)
 {
-	/* get current context */
-	long int     d_timeout;
-
 	/* check context recevied */
 	if (ctx == NULL) {
 		/* get the the default connect */
-		return (60000000);
+		return (0);
 	} /* end if */
 		
-	d_timeout   = ctx->connection_connect_std_timeout;
-
 	/* check if we have used the current environment variable */
 	if (! ctx->connection_connect_timeout_checked) {
 		ctx->connection_connect_timeout_checked = true;
-		d_timeout = vortex_support_getenv_int ("VORTEX_CONNECT_TIMEOUT");
-	} /* end if */
-
-	if (d_timeout == 0) {
-		/* no timeout definition done using default timeout 60
-		 * seconds (60000000 microseconds) */
-		return ctx->connection_connect_std_timeout;
-	}else {
-		/* update current std timeout */
-		ctx->connection_connect_std_timeout = d_timeout;
-		
+		ctx->connection_connect_std_timeout     = vortex_support_getenv_int ("VORTEX_CONNECT_TIMEOUT");
 	} /* end if */
 
 	/* return current value */
