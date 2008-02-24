@@ -199,11 +199,14 @@ void               vortex_channel_set_data                        (VortexChannel
 								   axlPointer key,
 								   axlPointer value);
 
-void             vortex_channel_set_data_full                     (VortexChannel    * channel, 
+void               vortex_channel_set_data_full                   (VortexChannel    * channel, 
 								   axlPointer         key, 
 								   axlPointer         value, 
 								   axlDestroyFunc     key_destroy,
 								   axlDestroyFunc     value_destroy);
+
+void               vortex_channel_delete_data                     (VortexChannel    * channel,
+								   axlPointer         key);
 
 axlPointer         vortex_channel_get_data                        (VortexChannel * channel,
 								   axlPointer key);

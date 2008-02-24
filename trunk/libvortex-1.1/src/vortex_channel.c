@@ -3356,6 +3356,30 @@ void             vortex_channel_set_data_full (VortexChannel    * channel,
 }
 
 /** 
+ * @brief Allows to remove data associated to the channel via \ref
+ * vortex_channel_set_data_full without calling to defined destroy
+ * functions. If you want to remove items stored on the hash, calling
+ * to defined destroy function, just call to \ref
+ * vortex_channel_set_data_full with the appropiate key and NUL as
+ * data.
+ * 
+ * @param channel The channel where the delete operation will take place.
+ *
+ * @param key The key for the data stored to be deleted.
+ */
+void               vortex_channel_delete_data                     (VortexChannel    * channel,
+								   axlPointer         key)
+{
+	/* perform some environment checks */
+	v_return_if_fail (channel);
+	v_return_if_fail (key);
+
+	/* delete associated data */
+	vortex_hash_delete (channel->data, key);
+	return;
+}
+
+/** 
  * @brief Returns the value indexed by the given key inside the given
  * channel.
  * 
