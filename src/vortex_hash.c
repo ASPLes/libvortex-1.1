@@ -356,6 +356,33 @@ void         vortex_hash_destroy  (VortexHash *hash_table)
 	return;
 }
 
+/** 
+ * @brief Allows to remove the provided key and its associated data on
+ * the provided hash without calling to the optionally associated
+ * destroy functions.
+ * 
+ * @param hash_table The hash where the unlink operation will take
+ * place.
+ *
+ * @param key The key for the data to be removed.
+ * 
+ * @return true if the item was removed (current implementation always
+ * return true).
+ */
+bool         vortex_hash_delete   (VortexHash   *hash_table,
+				   axlPointer    key)
+{
+	v_return_val_if_fail (hash_table, false);
+
+	vortex_mutex_lock    (&hash_table->mutex);
+
+	axl_hash_delete      (hash_table->table, key);
+	
+	vortex_mutex_unlock  (&hash_table->mutex);
+
+	return true;
+}
+
 /**
  * @brief Perform a foreach over all elements inside the VortexHash.
  * 

@@ -76,6 +76,8 @@ bool         vortex_hash_remove   (VortexHash   *hash_table,
 
 void         vortex_hash_destroy  (VortexHash *hash_table);
 
+bool         vortex_hash_delete   (VortexHash   *hash_table,
+				   axlPointer    key);
 
 void         vortex_hash_foreach  (VortexHash         * hash_table,
 				   axlHashForeachFunc   func,
