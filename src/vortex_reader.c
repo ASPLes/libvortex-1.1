@@ -755,6 +755,10 @@ void vortex_reader_foreach_impl (VortexCtx        * ctx,
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "doing vortex reader foreach notification..");
 
+	/* check for null function */
+	if (data->func == NULL) 
+		goto foreach_impl_notify;
+
 	/* foreach the connection list */
 	cursor = axl_list_cursor_new (con_list);
 	while (axl_list_cursor_has_item (cursor)) {
@@ -787,6 +791,7 @@ void vortex_reader_foreach_impl (VortexCtx        * ctx,
 	axl_list_cursor_free (cursor);
 
 	/* notify that the foreach operation was completed */
+ foreach_impl_notify:
 	vortex_async_queue_push (data->notify, INT_TO_PTR (1));
 
 	return;
@@ -1516,7 +1521,9 @@ void vortex_reader_allow_msgno_starting_from_1 (VortexCtx * ctx,
  * 
  * @param ctx The context where the operation will be implemented.
  *
- * @param func The function to execute on each connection.
+ * @param func The function to execute on each connection. If the
+ * function provided is NULL the call will produce to lock until the
+ * reader tend the foreach, restarting the reader loop.
  *
  * @param user_data User data to be provided to the function.
  *
@@ -1531,7 +1538,6 @@ VortexAsyncQueue * vortex_reader_foreach                     (VortexCtx         
 	VortexAsyncQueue * queue;
 
 	v_return_val_if_fail (ctx, NULL);
-	v_return_val_if_fail (func, NULL);
 
 	/* queue an operation */
 	data            = axl_new (VortexReaderData, 1);
@@ -1550,6 +1556,21 @@ VortexAsyncQueue * vortex_reader_foreach                     (VortexCtx         
 
 	/* return a reference */
 	return queue;
+}
+
+/**
+ * @internal Allows to restart the vortex reader module, locking the
+ * caller until the reader restart its loop.
+ */
+void vortex_reader_restart (VortexCtx * ctx)
+{
+	VortexAsyncQueue * queue;
+
+	/* call to restart */
+	queue = vortex_reader_foreach (ctx, NULL, NULL);
+	vortex_async_queue_pop (queue);
+	vortex_async_queue_unref (queue);
+	return;
 }
 
 /* @} */

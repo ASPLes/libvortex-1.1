@@ -2548,17 +2548,8 @@ bool test_12 () {
 	printf (".");
 	fflush (stdout);
 	vortex_connection_block (listener, true);
-	printf ("..(wait 1 second)..");
 	fflush (stdout);
 	
-	/* stop some time to allow the listener to recover its
-	 * state */
-#if defined(AXL_OS_UNIX)
-	sleep (1);
-#elif defined(AXL_OS_WIN32)
-        Sleep (1);
-#endif
-
 	/* now try to connect again */
 	printf ("...connect (wait 5 seconds)");
 	fflush (stdout);

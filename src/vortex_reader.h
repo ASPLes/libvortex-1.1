@@ -65,6 +65,6 @@ VortexAsyncQueue * vortex_reader_foreach       (VortexCtx            * ctx,
 						VortexForeachFunc      func,
 						axlPointer             user_data);
 
-
+void               vortex_reader_restart (VortexCtx * ctx);
 
 #endif
