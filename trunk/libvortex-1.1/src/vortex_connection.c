@@ -1370,6 +1370,13 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 		/* wait for write operation, signaling that the
 		 * connection is available */
 		err = __vortex_connection_wait_on (WRITE_OPERATIONS, connection, &d_timeout);
+
+#if defined(AXL_OS_WIN32)
+		/* under windows we have to also we to be readable */
+		if (err > 0) { 
+			err = __vortex_connection_wait_on (READ_OPERATIONS, connection, &d_timeout);
+		} /* end if */
+#endif
 		
 		if(err <= 0){
 			/* timeout reached while waiting for the connection to terminate */
@@ -3767,6 +3774,9 @@ void                vortex_connection_block                        (VortexConnec
 
 	/* set blocking state */
 	vortex_connection_set_data (conn, VORTEX_CONNECTION_BLOCK, INT_TO_PTR (enable));
+
+	/* call to restart the reader */
+	vortex_reader_restart (vortex_connection_get_ctx (conn));
 
 	return;
 }
