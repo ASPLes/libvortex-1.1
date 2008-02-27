@@ -2,6 +2,7 @@ EXPORTS
 _vortex_log
 _vortex_log2
 _vortex_log_common
+vortex_async_queue_foreach
 vortex_async_queue_items
 vortex_async_queue_length
 vortex_async_queue_new
@@ -21,6 +22,7 @@ vortex_channel_close_full
 vortex_channel_create_wait_reply
 vortex_channel_data_free
 vortex_channel_defer_start
+vortex_channel_delete_data
 vortex_channel_empty_new
 vortex_channel_finalize_ans_rpy
 vortex_channel_flag_reply_processed
@@ -140,6 +142,7 @@ vortex_conf_get
 vortex_conf_set
 vortex_connection_add_channel
 vortex_connection_add_channel_pool
+vortex_connection_block
 vortex_connection_channel_exists
 vortex_connection_channels_count
 vortex_connection_cleanup
@@ -180,6 +183,7 @@ vortex_connection_init
 vortex_connection_invoke_preread_handler
 vortex_connection_invoke_receive
 vortex_connection_invoke_send
+vortex_connection_is_blocked
 vortex_connection_is_defined_preread_handler
 vortex_connection_is_ok
 vortex_connection_is_profile_filtered
@@ -295,6 +299,7 @@ vortex_greetings_set_features
 vortex_greetings_set_localize
 vortex_hash_clear
 vortex_hash_clear_allways_true
+vortex_hash_delete
 vortex_hash_destroy
 vortex_hash_foreach
 vortex_hash_foreach2
@@ -389,6 +394,7 @@ vortex_reader_notify_change_io_api
 vortex_reader_read_pending
 vortex_reader_read_queue
 vortex_reader_register_watch
+vortex_reader_restart
 vortex_reader_run
 vortex_reader_stop
 vortex_reader_watch_connection
@@ -414,6 +420,8 @@ vortex_sasl_set_propertie
 vortex_sasl_start_auth
 vortex_sasl_start_auth_sync
 vortex_sequencer_direct_send
+vortex_sequencer_drop_connection_messages
+vortex_sequencer_drop_connections_foreach
 vortex_sequencer_queue_data
 vortex_sequencer_run
 vortex_sequencer_signal_update
