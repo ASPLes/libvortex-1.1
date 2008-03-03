@@ -381,7 +381,7 @@ void __vortex_sasl_notify (VortexSaslAuthNotify   process_status,
 	/* drop to the console a log */
 	switch (status) {
 	case VortexError:
-		vortex_log (VORTEX_LEVEL_CRITICAL, (message != NULL) ? message : "no message to report");
+		vortex_log (VORTEX_LEVEL_WARNING, (message != NULL) ? message : "no message to report");
 		/* flag the connection to be *NOT* authenticated
 		 * (remove current authid and authzid and all previous
 		 * SASL auth info) */
@@ -582,7 +582,9 @@ char  * __vortex_sasl_initiator_do_initial_step (const char           * profile,
 	/* check for sasl result */
 	if (rc != GSASL_OK) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to initialize the first SASL step, code=%d, message='%s'",
-		       rc, gsasl_strerror (rc));
+			    rc, gsasl_strerror (rc));
+		__vortex_sasl_notify (process_status, connection, VortexError, 
+				      "Unable initial SASL layer, required to produce first SASL message: unable to initialize the first SASl step",  user_data);
 		return NULL;
 	}
 
@@ -605,6 +607,9 @@ char  * __vortex_sasl_initiator_do_initial_step (const char           * profile,
 	}
 	vortex_log (VORTEX_LEVEL_CRITICAL, "initial step have failed: (%d): %s",
 		    rc, gsasl_strerror (rc));
+	/* notify failure found */
+	__vortex_sasl_notify (process_status, connection, VortexError, 
+			      "Unable initial SASL layer, required to produce first SASL message: initial SASL step have failed",  user_data);
 	return NULL;
 }
 
@@ -628,7 +633,7 @@ bool     __vortex_sasl_is_error_content (VortexFrame * frame,
 	
 	if (axl_memcmp (vortex_frame_get_payload (frame), "<error", 6)) {
 		__vortex_sasl_notify (process_status, connection, VortexError, 
-				      "Received an negative reply from the server side to authenticate the PEER", user_data);
+				      "Received a negative reply from the server side to authenticate the PEER", user_data);
 		return false;
 	}
 	return true;
@@ -913,9 +918,8 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 							       user_data);
 	/* check returned blob value */
 	if (base64_blob == NULL) {
-		/* notify user space  */
-		__vortex_sasl_notify (process_status, connection, VortexError, 
-				      "Unable initial SASL layer, required to produce first SASL message",  user_data);
+		/* do not notify here because it is already done by
+		 * __vortex_sasl_initiator_do_initial_step */
 		return;
 	}
 
@@ -963,6 +967,20 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "Seems the SASL channel have being created");
 
+	/* acquire a reference before proceeding because the function
+	 * __vortex_sasl_initiator_do_steps could perform a
+	 * notification when a failure is found, causing a possible
+	 * race condition */
+	if (! vortex_connection_ref (connection, "vortex-sasl-next")) {
+		/* unref queue */
+		vortex_async_queue_unref (queue);
+		
+		/* notify user space  */
+		__vortex_sasl_notify (process_status, connection, VortexError, 
+				      "Unable to acquire connection ref during SASL negotiation. Unable to create the SASL channel",  user_data);
+		return;
+	} /* end if */
+
 	/* perform the next additional steps needed to authenticate the peer */
 	if (!__vortex_sasl_initiator_do_steps (channel, queue,
 					       connection, process_status, user_data)) {
@@ -971,8 +989,15 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 		vortex_async_queue_unref (queue);
 
 		/* because the SASL profile negotiation have failed,
-		 * close the channel */
-		vortex_channel_close (channel, NULL);
+		 * close the channel only if the connection is ok */
+		if (vortex_connection_is_ok (connection, false)) {
+			vortex_log (VORTEX_LEVEL_WARNING, "closing sasl channel=%d that has failed over the connection id=%d",
+				    vortex_channel_get_number (channel), vortex_connection_get_id (connection));
+			vortex_channel_close (channel, NULL);
+		}
+
+		/* unref connection here */
+		vortex_connection_unref (connection, "vortex-sasl-next");
 		return;
 	}
 
@@ -995,6 +1020,9 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 	 * completed */
 	__vortex_sasl_notify (process_status, connection, VortexOk,
 			      "SASL authentication Ok, let's continue!", user_data);
+
+	/* unref connection here, just after doing all the configuration */
+	vortex_connection_unref (connection, "vortex-sasl-next");
 	return;
 }
 
