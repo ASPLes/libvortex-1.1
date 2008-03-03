@@ -297,6 +297,9 @@ bool     vortex_profiles_unregister              (VortexCtx             * ctx,
 	if (profile == NULL)
 		return false;
 
+	/* remove by pointer */
+	axl_list_remove_ptr (ctx->profiles_list, profile->profile_name);
+
 	/* unregister the profile */
 	vortex_hash_remove (ctx->registered_profiles, (axlPointer) uri);
 
