@@ -48,7 +48,6 @@
 #define LOG_DOMAIN "vortex-tls"
 
 #include <vortex.h>
-#include <openssl/err.h>
 
 /* local include */
 #include <vortex_ctx_private.h>
@@ -77,6 +76,7 @@
 #ifdef ENABLE_TLS_SUPPORT
 #include <openssl/x509v3.h>
 #include <openssl/ssl.h>
+#include <openssl/err.h>
 #endif
 
 
