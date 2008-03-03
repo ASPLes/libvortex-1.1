@@ -54,6 +54,126 @@
 /**
  * @internal
  * 
+ * Build the greetings message for the provided @connection.
+ * 
+ * @param connection The connection where the greeting will be sent.
+ * @param greetings_buffer The buffer used to build the message.
+ *
+ * @return the number of bytes in the built message.
+ **/
+int __vortex_greetings_build_message (VortexConnection * connection, char * greetings_buffer, int buffer_size)
+{
+	VortexCtx     * ctx                 = CONN_CTX (connection);
+	axlList       * registered_profiles = vortex_profiles_get_actual_list_ref (ctx);
+	int             iterator;
+	int             next_index          = 0;
+	const char    * localize            = NULL;
+	const char    * features            = NULL;
+	char          * uri;
+	int             features_size, localize_size, size;
+	
+
+	/* check features and localize here (including all additional
+	 * size required to build the greetings header) */
+	features      = vortex_greetings_get_features (ctx);
+	features_size = features ? strlen (features) : 0;
+
+	localize      = vortex_greetings_get_localize (ctx);
+	localize_size = localize ? strlen (localize) : 0;
+
+	/* count features and localize size plus 9, 11, 1, 11, 1 ,3 */
+	if ((features_size + localize_size + 36) >= buffer_size) {
+		vortex_log (VORTEX_LEVEL_CRITICAL,  
+			    "found buffer to build greetings to be not enough to hold current features (%d bytes)/localize (%d bytes) configuration",
+			    features_size, localize_size);
+		return -1;
+	} /* end if */
+	
+	
+	/* copy greetings */
+	memcpy (greetings_buffer, "<greeting", 9);
+	next_index += 9;
+	if (features) {
+		memcpy (greetings_buffer + next_index, " features='", 11);
+		next_index += 11;
+		
+		memcpy (greetings_buffer + next_index, features, features_size);
+		next_index += features_size;
+		
+		memcpy (greetings_buffer + next_index, "'", 1);
+		next_index ++;
+	} /* end features */
+	
+
+	if (localize) {
+		memcpy (greetings_buffer + next_index, " localize='", 11);
+		next_index += 11;
+		
+		memcpy (greetings_buffer + next_index, localize, localize_size);
+		next_index += localize_size;
+		
+		memcpy (greetings_buffer + next_index, "'", 1);
+		next_index ++;
+	} /* end features */
+	
+	memcpy (greetings_buffer + next_index, ">\x0D\x0A", 3);
+	next_index += 3;
+	if (registered_profiles != NULL) {
+		iterator = 0;   
+		while (iterator < axl_list_length (registered_profiles)) {
+			/* get the uri reference */
+			uri = (char  *) axl_list_get_nth (registered_profiles, iterator);
+			
+			/* check if the profile is masked for this particular
+			 * connection. */
+			if (vortex_connection_is_profile_filtered (connection, -1, uri, NULL, NULL)) {
+				vortex_log (VORTEX_LEVEL_DEBUG, "profile is filtered: %s", uri);
+				
+				/* update the iterator */
+				iterator++;
+				
+				continue;
+			} /* end if */
+
+			/* check here the size to produce */
+			size = strlen (uri);
+
+			/* count profile uri size and accumulated
+			 * counting plus 17, 6, 13) */
+			if ((next_index + size + 36) >= buffer_size) {
+				vortex_log (VORTEX_LEVEL_CRITICAL,  
+					"found buffer to build greetings to be not enough to hold current profiles to advertise");
+				return -1;
+			} /* end if */
+			
+			/* copy the profile content */
+			memcpy (greetings_buffer + next_index, "   <profile uri='", 17);
+			next_index += 17;
+			
+			/* copy the actual profile */
+			memcpy (greetings_buffer + next_index, uri, size);
+			next_index += size;
+			
+			/* terminate profile def */
+			memcpy (greetings_buffer + next_index, "' />\x0D\x0A", 6);
+			next_index += 6;
+			
+			/* update to the next iterator */
+			iterator++;
+			
+		} /* end if */
+	} /* end if */
+	
+	/* terminate greetings  */
+	memcpy (greetings_buffer + next_index, "</greeting>\x0D\x0A", 13);
+	next_index += 13;
+    
+	return next_index;
+}
+
+/**
+ * @internal
+ * 
  * Sends the BEEP init connection greeting over the channel 0 of this @connection
  * This initial greetings message reply is sent by actual listener role to remote beep client peer.
  * 
@@ -65,10 +185,6 @@ bool     vortex_greetings_send (VortexConnection * connection)
 {
 	
 	axlList       * registered_profiles;
-	int             iterator;
-	const char    * localize            = NULL;
-	const char    * features            = NULL;
-	char          * uri;
 	VortexCtx     * ctx                 = vortex_connection_get_ctx (connection);
 
 	/* tecnically, the greetings initial message can't be larger
@@ -86,72 +202,16 @@ bool     vortex_greetings_send (VortexConnection * connection)
 		return false;
 	}
 
-	/* copy greetings */
-	memcpy (greetings_buffer, "<greeting", 9);
-	next_index += 9;
-	features = vortex_greetings_get_features (ctx);
-	if (features) {
-		memcpy (greetings_buffer + next_index, " features='", 11);
-		next_index += 11;
-
-		memcpy (greetings_buffer + next_index, features, strlen (features));
-		next_index += strlen (features);
-
-		memcpy (greetings_buffer + next_index, "'", 1);
-		next_index ++;
-	} /* end features */
-
-	localize = vortex_greetings_get_localize (ctx);
-	if (localize) {
-		memcpy (greetings_buffer + next_index, " localize='", 11);
-		next_index += 11;
-
-		memcpy (greetings_buffer + next_index, localize, strlen (localize));
-		next_index += strlen (localize);
-
-		memcpy (greetings_buffer + next_index, "'", 1);
-		next_index ++;
-	} /* end features */
-
-	memcpy (greetings_buffer + next_index, ">\x0D\x0A", 3);
-	next_index += 3;
-
-	iterator = 0;	
-	while (iterator < axl_list_length (registered_profiles)) {
-		/* get the uri reference */
-		uri = (char  *) axl_list_get_nth (registered_profiles, iterator);
-		
-		/* check if the profile is masked for this particular
-		 * connection. */
-		if (vortex_connection_is_profile_filtered (connection, -1, uri, NULL, NULL)) {
-			vortex_log (VORTEX_LEVEL_DEBUG, "profile is filtered: %s", uri);
-			
-			/* update the iterator */
-			iterator++;
-		    
-			continue;
-		} /* end if */
-
-		/* copy the profile content */
-		memcpy (greetings_buffer + next_index, "   <profile uri='", 17);
-		next_index += 17;
-
-		/* copy the actual profile */
-		memcpy (greetings_buffer + next_index, uri, strlen (uri));
-		next_index += strlen (uri);
-
-		/* terminate profile def */
-		memcpy (greetings_buffer + next_index, "' />\x0D\x0A", 6);
-		next_index += 6;
-
-		/* update to the next iterator */
-		iterator++;
-
+	/* Build the greetings message with localization features and filtered profiles*/
+	next_index = __vortex_greetings_build_message (connection, greetings_buffer, 5100);
+	if (next_index == -1) {
+		/* log */
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to build greetings message, closing the connection");
+		/* and drop */
+		__vortex_connection_set_not_connected (connection, 
+						       "failed to build greetings message, closing the connection");
+		return false;
 	} /* end if */
-
-	/* terminate greetings  */
-	memcpy (greetings_buffer + next_index, "</greeting>\x0D\x0A", 13);
-	next_index += 13;
 
 	/* send the message */
 	if (!vortex_channel_send_rpy (vortex_connection_get_channel (connection, 0),
@@ -161,7 +221,7 @@ bool     vortex_greetings_send (VortexConnection * connection)
 		__vortex_connection_set_not_connected (connection, "unable to send listener greetings message");
 		return false;
 	} /* end if */
-
+	
 	return true;
 }
 
@@ -277,39 +337,43 @@ bool           vortex_greetings_is_reply_ok    (VortexFrame      * frame, Vortex
  **/
 bool          vortex_greetings_client_send     (VortexConnection * connection)
 {
-	char      * the_payload = NULL;
-	char      * features    = NULL;
-	char      * localize    = NULL;
+	/* tecnically, the greetings initial message can't be larger
+	 * than 4096 initial window. */
+	char        greetings_buffer[5100];
+	int         next_index = 0;
 	VortexCtx * ctx         = CONN_CTX (connection);
+	axlList   * registered_profiles;
 	
-	/* check for features and localize */
-	if (vortex_greetings_get_features (ctx) != NULL)
-		features = axl_strdup_printf (" features='%s'", vortex_greetings_get_features (ctx));
-	if (vortex_greetings_get_localize (ctx) != NULL)
-		localize = axl_strdup_printf (" localize='%s'", vortex_greetings_get_localize (ctx));
-
-	the_payload = axl_strdup_printf ("<greeting %s%s/>\x0D\x0A",
-					 (features != NULL) ? features : "",
-					 (localize != NULL) ? localize : "");
-	/* free value */
-	if (features != NULL)
-		axl_free (features);
-	if (localize != NULL)
-		axl_free (localize);
+	/* build up supported registered profiles */
+	registered_profiles = vortex_profiles_get_actual_list_ref (ctx);
+	if (registered_profiles == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
+			    "unable to build and send greetings message: unable to found any profile registered");
+		return false;
+	}
+	
+	/* Build the greetings message with localization features and filtered profiles*/
+	next_index = __vortex_greetings_build_message (connection, greetings_buffer, 5100);
+	if (next_index == -1) {
+		/* log */
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to build greetings message, closing the connection");
+		/* and drop */
+		__vortex_connection_set_not_connected (connection, 
+						       "failed to build greetings message, closing the connection");
+		return false;
+	} /* end if */
 
 	/* send the message */
 	if (!vortex_channel_send_rpy (vortex_connection_get_channel (connection, 0),
-				      the_payload,
-				      strlen (the_payload),
+				      greetings_buffer,
+				      next_index,
 				      0)) {
-		axl_free (the_payload);
 		vortex_log (VORTEX_LEVEL_CRITICAL,  "unable to send initial client greetings message");
 		__vortex_connection_set_not_connected (connection, 
 						       "unable to send initial client greetings message");
 		return false;
-	}
-	
-	axl_free (the_payload);				      
+	} /* end if */
+
 	return true;
 }
 

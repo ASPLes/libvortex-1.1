@@ -1945,8 +1945,8 @@ bool                   vortex_connection_close                  (VortexConnectio
 
 	/* close all channel on this connection */
 	if (vortex_connection_is_ok (connection, false)) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "closing a connection which is already opened with %d channels opened..",
-		       vortex_hash_size (connection->channels));
+		vortex_log (VORTEX_LEVEL_DEBUG, "closing a connection id=%d which is already opened with %d channels opened..",
+			    connection->id, vortex_hash_size (connection->channels));
 
 		/* update the connection reference to avoid race
 		 * conditions caused by deallocations */

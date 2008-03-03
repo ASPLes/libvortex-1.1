@@ -80,6 +80,16 @@ void subs (struct timeval stop, struct timeval start, struct timeval * _result)
  */
 #define REGRESSION_URI_5 "http://iana.org/beep/transient/vortex-regression/5"
 
+/** 
+ * A profile to check ans content transfered for a series of files
+ */
+#define REGRESSION_URI_6 "http://iana.org/beep/transient/vortex-regression/6"
+
+/** 
+ * A profile to check ans content transfered for a series of files
+ */
+#define REGRESSION_URI_6bis "http://iana.org/beep/transient/vortex-regression/6bis"
+
 /**
  * A profile to check close in transit support.
  */ 
@@ -1621,6 +1631,116 @@ bool test_04_ab () {
 }
 
 /** 
+ * @brief Checks client adviced profiles.
+ *
+ * @return true if the test is ok, otherwise false is returned.
+ */
+bool test_04_c () {
+
+	VortexConnection * connection;
+	VortexChannel    * channel;
+
+	/* register two profiles for this session */
+	vortex_profiles_register (ctx, 
+				  "urn:vortex:regression-test:uri:1", 
+				  /* start channel */
+				  NULL, NULL, 
+				  /* stop channel */
+				  NULL, NULL, 
+				  /* frame received */
+				  NULL, NULL);
+
+	/* register two profiles for this session */
+	vortex_profiles_register (ctx,
+				  "urn:vortex:regression-test:uri:2", 
+				  /* start channel */
+				  NULL, NULL, 
+				  /* stop channel */
+				  NULL, NULL, 
+				  /* frame received */
+				  NULL, NULL);
+
+	/* register two profiles for this session */
+	vortex_profiles_register (ctx, 
+				  "urn:vortex:regression-test:uri:3", 
+				  /* start channel */
+				  NULL, NULL, 
+				  /* stop channel */
+				  NULL, NULL, 
+				  /* frame received */
+				  NULL, NULL);
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+	}
+
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_6,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+
+	if (channel == NULL) {
+		printf ("Unable to create the channel, failed to advice client profiles..\n");
+		return false;
+	}
+
+	/* ok, close the channel */
+	if (! vortex_channel_close (channel, NULL))
+		return false;
+
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection))
+		return false;
+
+	/* register two profiles for this session */
+	vortex_profiles_unregister (ctx, "urn:vortex:regression-test:uri:1");
+	vortex_profiles_unregister (ctx, "urn:vortex:regression-test:uri:2");
+	vortex_profiles_unregister (ctx, "urn:vortex:regression-test:uri:3");
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+	}
+
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_6bis,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+				
+	if (channel == NULL) {
+		printf ("Unable to create the channel, failed to advice client profiles..\n");
+		return false;
+	}
+
+	/* ok, close the channel */
+	if (! vortex_channel_close (channel, NULL))
+		return false;
+
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection))
+		return false;
+
+	/* close connection */
+	return true;
+}
+
+
+/** 
  * @brief Checking SASL profile support.
  * 
  * @return true if ok, otherwise, false is returned.
@@ -3006,6 +3126,13 @@ int main (int  argc, char ** argv)
 		printf ("Test 04-ab: Check ANS/NUL support, sending different files [   OK   ]\n");
 	} else {
 		printf ("Test 04-ab: Check ANS/NUL support, sending different files [ FAILED ]\n");
+		return -1;
+	}
+
+	if (test_04_c ()) {
+		printf ("Test 04-c: check client adviced profiles [   OK   ]\n");
+	} else {
+		printf ("Test 04-c: check client adviced profiles [ FAILED ]\n");
 		return -1;
 	}
 

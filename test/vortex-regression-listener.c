@@ -62,6 +62,11 @@
  */
 #define REGRESSION_URI_6 "http://iana.org/beep/transient/vortex-regression/6"
 
+/** 
+ * A profile to check wrong order reply.
+ */
+#define REGRESSION_URI_6bis "http://iana.org/beep/transient/vortex-regression/6bis"
+
 /**
  * A profile to check close in transit support.
  */ 
@@ -446,6 +451,89 @@ void close_in_transit_received (VortexChannel    * channel,
 	return;
 }
 
+bool check_profiles_adviced (int channel_num, VortexConnection *connection, axlPointer user_data)
+{
+	axlList    * profiles = vortex_connection_get_remote_profiles (connection);
+	int          iterator;
+	const char * uri;
+
+	
+	printf ("Check profiles announced: %d\n", axl_list_length (profiles));
+	iterator = 0;
+	while (iterator < axl_list_length (profiles)) {
+		/* get uri */
+		uri = (const char *) axl_list_get_nth (profiles, iterator);
+		printf ("  uri found: %s\n", uri);
+
+		/* next position */
+		iterator++;
+	}  /* end while */
+
+	if (axl_list_length (profiles) < 3) {
+		printf ("ERROR: Expected to find 3 profiles registered, but found: %d..\n",
+			axl_list_length (profiles));
+		return false;
+	}
+
+	/* check profiles */
+	if (! vortex_connection_is_profile_supported (connection, 
+						      "urn:vortex:regression-test:uri:1")) {
+		printf ("ERROR: Expected to find support profile: %s, but it wasn't found..\n", 
+			"urn:vortex:regression-test:uri:1");
+		return false;
+	}
+
+	/* check profiles */
+	if (! vortex_connection_is_profile_supported (connection, 
+						      "urn:vortex:regression-test:uri:2")) {
+		printf ("ERROR: Expected to find support profile: %s, but it wasn't found..\n", 
+			"urn:vortex:regression-test:uri:2");
+		return false;
+	}
+
+	/* check profiles */
+	if (! vortex_connection_is_profile_supported (connection, 
+						      "urn:vortex:regression-test:uri:3")) {
+		printf ("ERROR: Expected to find support profile: %s, but it wasn't found..\n",
+			"urn:vortex:regression-test:uri:3");
+		return false;
+	}
+	
+	/* ok */
+	return true;
+
+}
+
+bool check_profiles_adviced_bis (int channel_num, VortexConnection *connection, axlPointer user_data)
+{
+	/* check profiles */
+	if (vortex_connection_is_profile_supported (connection, 
+						    "urn:vortex:regression-test:uri:1")) {
+		printf ("ERROR: Expected to find support profile: %s, but it wasn't found..\n", 
+			"urn:vortex:regression-test:uri:1");
+		return false;
+	}
+
+	/* check profiles */
+	if (vortex_connection_is_profile_supported (connection, 
+						    "urn:vortex:regression-test:uri:2")) {
+		printf ("ERROR: Expected to find support profile: %s, but it wasn't found..\n", 
+			"urn:vortex:regression-test:uri:2");
+		return false;
+	}
+
+	/* check profiles */
+	if (vortex_connection_is_profile_supported (connection, 
+						    "urn:vortex:regression-test:uri:3")) {
+		printf ("ERROR: Expected to find support profile: %s, but it wasn't found..\n",
+			"urn:vortex:regression-test:uri:3");
+		return false;
+	}
+	
+	/* return true if the profile list is 0 */
+	return true;
+
+}
 
 int  main (int  argc, char ** argv) 
 {
@@ -502,6 +590,20 @@ int  main (int  argc, char ** argv)
 				  NULL, NULL, 
 				  NULL, NULL,
 				  frame_received_ans_transfer_selected_file, NULL);
+
+	/* register the profile used to test ANS/NUL replies */
+	vortex_profiles_register (ctx, REGRESSION_URI_6,
+				  /* start message */
+				  check_profiles_adviced, NULL,
+				  NULL, NULL,
+				  NULL, NULL);
+
+	/* register the profile used to test ANS/NUL replies */
+	vortex_profiles_register (ctx, REGRESSION_URI_6bis,
+				  /* start message */
+				  check_profiles_adviced_bis, NULL,
+				  NULL, NULL,
+				  NULL, NULL);
 
 	/* register a profile */
 	vortex_profiles_register (ctx, REGRESSION_URI_ZERO,
