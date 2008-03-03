@@ -952,11 +952,12 @@ VORTEX_SOCKET __vortex_reader_build_set_to_watch_aux (axlPointer      on_reading
 		 * group */
 		if (! vortex_io_waiting_invoke_add_to_fd_group (ctx, fds, connection, on_reading)) {
 			
-			vortex_log (VORTEX_LEVEL_CRITICAL, 
-				    "unable to add the connection to the vortex reader watching set. This usually means you did reach the I/O waiting mechanism limit.");
+			vortex_log (VORTEX_LEVEL_WARNING, 
+				    "unable to add the connection to the vortex reader watching set. This could mean you did reach the I/O waiting mechanism limit.");
 
 			/* set it as not connected */
-			__vortex_connection_set_not_connected (connection, "vortex reader (process)");
+			if (vortex_connection_is_ok (connection, false))
+				__vortex_connection_set_not_connected (connection, "vortex reader (process)");
 			vortex_connection_unref (connection, "vortex reader (process)");
 
 			/* and remove current cursor */
