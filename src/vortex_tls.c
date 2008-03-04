@@ -1654,8 +1654,10 @@ VortexConnection * vortex_tls_start_negociation_sync     (VortexConnection  * co
 	if (result == NULL) {
 		/* seems timeout have happen while waiting for SASL to
 		 * end */
-		(* status)         = VortexError;
-		(* status_message) = "Timeout have been reached while waiting for TLS to finish";
+		if (status != NULL)
+			(* status)         = VortexError;
+		if (status_message != NULL)
+			(* status_message) = "Timeout have been reached while waiting for TLS to finish";
 		return NULL;
 	}
 
