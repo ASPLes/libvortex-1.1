@@ -2714,6 +2714,19 @@ bool               vortex_channel_finalize_ans_rpy                (VortexChannel
  * <i>msg_no_rpy</i>. This function does the same as \ref vortex_channel_send_rpy
  * but sending a ERR frame, so take a look to its documentation.
  *
+ * NOTE \ref vortex_channel_send_err is provided to enable sending BEEP ERR
+ * frames which may or may not include XML content, just like RPY or
+ * MSG type.  This depends on the profile you are implementing.
+ * 
+ * Because of this, \ref vortex_channel_send_err can't receive the
+ * error code and the message because it has to provide a more general
+ * API, for example, to send binary error messages.
+ * 
+ * In other words, if you want to use the error reply format used for
+ * BEEP channel 0 (and some other standard profiles) you will have to
+ * use \ref vortex_frame_get_error_message and then provide the
+ * message created to \ref vortex_channel_send_err.
+ *
  * @param channel the channel where error reply is going to be sent
  * @param message the message
  * @param message_size the message size
