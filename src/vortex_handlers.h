@@ -28,12 +28,13 @@
  *          
  *      Postal address:
  *         Advanced Software Production Line, S.L.
- *         C/ Dr. Michavila Nº 14
- *         Coslada 28820 Madrid
+ *         C/ Antonio Suarez Nº 10, 
+ *         Edificio Alius A, Despacho 102
+ *         Alcalá de Henares 28802 (Madrid)
  *         Spain
  *
  *      Email address:
- *         info@aspl.es - http://fact.aspl.es
+ *         info@aspl.es - http://www.aspl.es/vortex
  */
 #ifndef __VORTEX_HANDLERS_H__
 #define __VORTEX_HANDLERS_H__
