@@ -28,12 +28,13 @@
  *          
  *      Postal address:
  *         Advanced Software Production Line, S.L.
- *         C/ Dr. Michavila Nº 14
- *         Coslada 28820 Madrid
+ *         C/ Antonio Suarez Nº 10, 
+ *         Edificio Alius A, Despacho 102
+ *         Alcalá de Henares 28802 (Madrid)
  *         Spain
  *
  *      Email address:
- *         info@aspl.es - http://fact.aspl.es
+ *         info@aspl.es - http://www.aspl.es/vortex
  */
 
 /* global includes */
@@ -1561,11 +1562,13 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * \code
  *      Postal address:
  *         Advanced Software Production Line, S.L.
- *         C/ Dr. Michavila Nº 14
- *         Coslada 28820 Madrid
+ *         C/ Antonio Suarez Nº 10, 
+ *         Edificio Alius A, Despacho 102
+ *         Alcalá de Henares 28802 (Madrid)
  *         Spain
+ *
  *      Email address:
- *         info@aspl.es
+ *         info@aspl.es - http://www.aspl.es/vortex
  *      Fax and Telephones:
  *         (00 34) 91 669 55 32 - (00 34) 91 231 44 50
  *         From outside Spain must use (00 34) prefix.
