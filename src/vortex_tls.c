@@ -1468,51 +1468,57 @@ bool     vortex_tls_process_start_msg (char              * profile,
 		return true;
 	}
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "application level seems to accept negotiate the TLS profile, getting certificate");
+	if (ctx->tls_default_ctx_creation == NULL && 
+	    vortex_connection_get_data (connection, CTX_CREATION) == NULL) {
+		
+		vortex_log (VORTEX_LEVEL_DEBUG, "application level seems to accept negotiate the TLS profile, getting certificate");
 
-	/* get TLS certificate file */
-	certificate_file = ctx->tls_certificate_handler (connection, serverName);
-	if (certificate_file == NULL) {
-		(* profile_content_reply)  = vortex_frame_get_error_message ("421", 
-									     "application level didn't provide a valid location for a certificate file, unable to negotiate TLS transport", 
-									     NULL);
-		/* we have to reply true because the expected reply is
-		 * a positive one with a proceed or error content. */
-		return true;
+		/* get TLS certificate file */
+		certificate_file = ctx->tls_certificate_handler (connection, serverName);
+		if (certificate_file == NULL) {
+			(* profile_content_reply)  = 
+				vortex_frame_get_error_message ("421", 
+								"application level didn't provide a valid location for a certificate file, unable to negotiate TLS transport", 
+								NULL);
+			/* we have to reply true because the expected reply is
+			 * a positive one with a proceed or error content. */
+			return true;
+		}
+		
+		vortex_log (VORTEX_LEVEL_DEBUG, "getting private key file");
+		
+		/* get TLS private key file */
+		private_key_file = ctx->tls_private_key_handler (connection, serverName);
+		if (private_key_file == NULL) {
+			(* profile_content_reply)  = vortex_frame_get_error_message ("421", 
+										     "application level didn't provide a valid location for a private key file, unable to negotiate TLS transport", 
+										     NULL);
+			/* we have to reply true because the expected reply is
+			 * a positive one with a proceed or error content. */
+			return true;
+		}
+
+		/* store certificate and private key files */
+		vortex_connection_set_data_full    (connection, "tls:certificate-file", certificate_file, NULL, axl_free);
+		vortex_connection_set_data_full    (connection, "tls:private-file",     private_key_file, NULL, axl_free);
 	}
-
-	vortex_log (VORTEX_LEVEL_DEBUG, "getting private key file");
-
-	/* get TLS private key file */
-	private_key_file = ctx->tls_private_key_handler (connection, serverName);
-	if (private_key_file == NULL) {
-		(* profile_content_reply)  = vortex_frame_get_error_message ("421", 
-									     "application level didn't provide a valid location for a private key file, unable to negotiate TLS transport", 
-									     NULL);
-		/* we have to reply true because the expected reply is
-		 * a positive one with a proceed or error content. */
-		return true;
-	}
-
+		
 	/* set the reply to for the TLS channel negotiation. Memory
 	 * holding profile content reply should be dynamically
 	 * allocated because vortex library will deallocate it. */
 	(* profile_content_reply)  = axl_strdup ("<proceed />");
 	vortex_log (VORTEX_LEVEL_DEBUG, "replying peer that TLS negotiation can start");
-
+	
 	/* Here goes the trick that makes tunning reset at the server
 	 * side to be possible.
 	 * 
-	 * 1) we prepare the socket connection to not be closed even
-	 * if the channel 0 is closed on the given connection. */
+	 * we prepare the socket connection to not be closed even if
+	 * the channel 0 is closed on the given connection. */
 	vortex_connection_set_close_socket (connection, false);
 
-	/* 2) store certificate and private key files */
-	vortex_connection_set_data_full    (connection, "tls:certificate-file", certificate_file, NULL, axl_free);
-	vortex_connection_set_data_full    (connection, "tls:private-file",     private_key_file, NULL, axl_free);
 
-	/* 3) now prepare the connection to accept the incoming
-	   negotiation by using the pre read handler */
+	/* now prepare the connection to accept the incoming
+	 * negotiation by using the pre read handler */
 	vortex_connection_set_preread_handler (connection, vortex_tls_prepare_listener);
 
 	return true;
