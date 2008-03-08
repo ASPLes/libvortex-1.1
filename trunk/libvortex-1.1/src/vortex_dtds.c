@@ -41,6 +41,12 @@
 /* local include */
 #include <vortex_ctx_private.h>
 
+/* include inline dtds */
+#include <vortex-sasl.dtd.h>
+#include <vortex-tls.dtd.h>
+#include <vortex-channel.dtd.h>
+#include <xml-rpc-boot.dtd.h>
+
 #define LOG_DOMAIN "vortex-dtds"
 
 /** 
@@ -52,19 +58,12 @@
  * 
  * @return true if the DTD file was read, parsed and pointer updated. false if not.
  */
-bool     __vortex_dtds_load_dtd (VortexCtx * ctx, axlDtd ** dtd_pointer, char * file_to_load)
+bool     __vortex_dtds_load_dtd (VortexCtx * ctx, axlDtd ** dtd_pointer, char * dtd_to_load)
 {
-	char      * dtd_file_name;
 	axlError  * error;
 
 	/* load channel DTD */
-	dtd_file_name = vortex_support_find_data_file (ctx, file_to_load);
-	if (dtd_file_name == NULL)
-		return false;
-
-	vortex_log (VORTEX_LEVEL_DEBUG, "dtd file definition found at: %s", dtd_file_name);
-	(* dtd_pointer) = axl_dtd_parse_from_file (dtd_file_name, &error);
-	axl_free (dtd_file_name);
+	(* dtd_pointer) = axl_dtd_parse (dtd_to_load, -1, &error);
 
 	if ((* dtd_pointer) == NULL) {
 		/* drop a log */
@@ -91,19 +90,19 @@ bool     vortex_dtds_init (VortexCtx * ctx)
 	v_return_val_if_fail (ctx, false);
 
 	/* load BEEP channel management DTD definition */
-        if (!__vortex_dtds_load_dtd (ctx, &ctx->channel_dtd, "channel.dtd")) {
+        if (!__vortex_dtds_load_dtd (ctx, &ctx->channel_dtd, CHANNEL_DTD)) {
                 fprintf (stderr, "VORTEX_ERROR: unable to load channel.dtd file.\n");
 		return false;
         }
 	
 	/* load SASL DTD definition */
-	if (!__vortex_dtds_load_dtd (ctx, &ctx->sasl_dtd, "sasl.dtd")) {
+	if (!__vortex_dtds_load_dtd (ctx, &ctx->sasl_dtd, SASL_DTD)) {
                 fprintf (stderr, "VORTEX_ERROR: unable to load sasl.dtd file.\n");
 		return false;
         }
 
 	/* load SASL DTD definition */
-	if (!__vortex_dtds_load_dtd (ctx, &ctx->xml_rpc_boot_dtd, "xml-rpc-boot.dtd")) {
+	if (!__vortex_dtds_load_dtd (ctx, &ctx->xml_rpc_boot_dtd, XML_RPC_BOOT_DTD)) {
                 fprintf (stderr, "VORTEX_ERROR: unable to load xml-rpc-boot.dtd file.\n");
 		return false;
         }
