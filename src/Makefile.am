@@ -96,7 +96,12 @@ libvortex_1_1_include_HEADERS = vortex.h \
 	vortex_xml_rpc_types.h \
 	vortex_win32.h \
 	vortex_errno.h \
-	vortex_thread.h 
+	vortex_thread.h \
+	vortex-sasl.dtd.h \
+	vortex-tls.dtd.h \
+	vortex-channel.dtd.h \
+	xml-rpc-boot.dtd.h \
+	vortex-listener-conf.dtd.h 
 
 libvortex_1_1_la_LIBADD = \
 	$(AXL_LIBS) $(INCLUDE_TLS_LIBS) $(SASL_LIBS) $(PTHREAD_LIBS)
@@ -104,6 +109,13 @@ libvortex_1_1_la_LIBADD = \
 libvortex_1_1_la_LDFLAGS = -no-undefined -export-symbols-regex '^(vortex|__vortex|_vortex).*'
 
 libvortex-1.1.def: update-def
+
+update-dtds:
+	axl-knife --input ../data/channel.dtd --dtd-to-c > vortex-channel.dtd.h
+	axl-knife --input ../data/tls.dtd --dtd-to-c > vortex-tls.dtd.h
+	axl-knife --input ../data/sasl.dtd --dtd-to-c > vortex-sasl.dtd.h
+	axl-knife --input ../data/xml-rpc-boot.dtd --dtd-to-c > xml-rpc-boot.dtd.h
+	axl-knife --input ../data/vortex-listener-conf.dtd --dtd-to-c > vortex-listener-conf.dtd.h
 
 update-def:
 	echo "EXPORTS" > libvortex-1.1.def

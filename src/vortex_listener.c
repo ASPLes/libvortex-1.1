@@ -41,6 +41,9 @@
 /* local include */
 #include <vortex_ctx_private.h>
 
+/* include inline dtd */
+#include <vortex-listener-conf.dtd.h>
+
 #define LOG_DOMAIN "vortex-listener"
 
 typedef struct _VortexListenerOnAcceptData {
@@ -1067,16 +1070,7 @@ bool              vortex_listener_parse_conf_and_start (VortexCtx * ctx)
 	
 
 	/* load the xml listener conf DTD */
-	full_path_file = vortex_support_find_data_file (ctx, "vortex-listener-conf.dtd");
-	if (full_path_file == NULL) {
-		fprintf (stderr, "Unable to open DTD validation file: vortex-listener-conf.dtd file, for host and port configuration.\n");
-		
-		return false;
-	}
-
-	dtd            = axl_dtd_parse_from_file (full_path_file, &error);
-	axl_free (full_path_file);
-	
+	dtd            = axl_dtd_parse (VORTEX_LISTENER_CONF_DTD, -1, &error);
 	if (dtd == NULL) {
 		/* drop a log message */
 		fprintf (stderr, "Unable to open conf.xml file, for host and port configuration. Error reported: %s\n",
