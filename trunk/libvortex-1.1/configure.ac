@@ -193,7 +193,7 @@ fi
 AM_CONDITIONAL(ENABLE_AF_ARCH_DOC, test "x$DOXYGEN" = "xyes")
 
 dnl LibAxl library support.
-PKG_CHECK_MODULES(AXL, axl >= 0.4.13)
+PKG_CHECK_MODULES(AXL, axl >= 0.4.15)
 AC_SUBST(AXL_CFLAGS)
 AC_SUBST(AXL_LIBS)
 
