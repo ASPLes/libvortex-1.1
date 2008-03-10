@@ -111,11 +111,11 @@ libvortex_1_1_la_LDFLAGS = -no-undefined -export-symbols-regex '^(vortex|__vorte
 libvortex-1.1.def: update-def
 
 update-dtds:
-	axl-knife --input ../data/channel.dtd --dtd-to-c > vortex-channel.dtd.h
-	axl-knife --input ../data/tls.dtd --dtd-to-c > vortex-tls.dtd.h
-	axl-knife --input ../data/sasl.dtd --dtd-to-c > vortex-sasl.dtd.h
-	axl-knife --input ../data/xml-rpc-boot.dtd --dtd-to-c > xml-rpc-boot.dtd.h
-	axl-knife --input ../data/vortex-listener-conf.dtd --dtd-to-c > vortex-listener-conf.dtd.h
+	axl-knife --input ../data/channel.dtd --dtd-to-c --output vortex-channel.dtd.h --ifnewer
+	axl-knife --input ../data/tls.dtd --dtd-to-c  --output vortex-tls.dtd.h  --ifnewer
+	axl-knife --input ../data/sasl.dtd --dtd-to-c  --output vortex-sasl.dtd.h  --ifnewer
+	axl-knife --input ../data/xml-rpc-boot.dtd --dtd-to-c  --output xml-rpc-boot.dtd.h  --ifnewer
+	axl-knife --input ../data/vortex-listener-conf.dtd --dtd-to-c  --output vortex-listener-conf.dtd.h  --ifnewer
 
 update-def:
 	echo "EXPORTS" > libvortex-1.1.def
