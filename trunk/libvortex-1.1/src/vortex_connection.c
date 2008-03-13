@@ -1386,6 +1386,9 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 			/* timeout reached while waiting for the connection to terminate */
 			shutdown (connection->session, SHUT_RDWR);
 			vortex_log (VORTEX_LEVEL_WARNING, "unable to connect to remote host (timeout)");
+			/* free previous message */
+			if (connection->message)
+				axl_free (connection->message);
 			connection->message = axl_strdup ("unable to connect to remote host (timeout)");
 			goto __vortex_connection_new_finalize;
 		} /* end if */
@@ -1444,6 +1447,9 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 
 				/* close the connection */
 				shutdown (connection->session, SHUT_RDWR);
+				/* free previous message */
+				if (connection->message)
+					axl_free (connection->message);
 				connection->message      = axl_strdup_printf (
 					"reached timeout while waiting for initial greetings frame, err=%d, d_timeout=%d",
 					err, d_timeout);
@@ -1462,6 +1468,9 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 
 				/* timeout reached while waiting for the connection to terminate */
 				shutdown (connection->session, SHUT_RDWR);
+				/* free previous message */
+				if (connection->message)
+					axl_free (connection->message);
 				connection->message      = axl_strdup_printf (
 					"Received null frame were it was expected initial greetings, finish connection id=%d", connection->id);
 				connection->is_connected = false;
