@@ -1226,7 +1226,7 @@ bool              vortex_frame_send_raw     (VortexConnection * connection, cons
 
 	v_return_val_if_fail (connection, false);
 	v_return_val_if_fail (vortex_connection_is_ok (connection, false), false);
-	v_return_val_if_fail (a_frame && (* a_frame), false);
+	v_return_val_if_fail (a_frame, false);
 
  again:
 
