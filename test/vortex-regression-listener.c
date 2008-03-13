@@ -77,6 +77,85 @@
  */
 #define REGRESSION_URI_ZERO "http://iana.org/beep/transient/vortex-regression/zero"
 
+/** 
+ * A profile to check connection timeout against unresponsive
+ * listeners.
+ */
+#define REGRESSION_URI_LISTENERS "http://iana.org/beep/transient/vortex-regression/fake-listener"
+
+void frame_received_fake_listeners  (VortexChannel    * channel,
+				     VortexConnection * connection,
+				     VortexFrame      * frame,
+				     axlPointer           user_data)
+{
+	VortexConnection * listener;
+	VortexCtx        * ctx = CONN_CTX (connection);
+
+	/* check commands */
+	if (axl_cmp (vortex_frame_get_payload (frame), "create-listener")) {
+		/* create listener command received */
+
+		printf ("RECEIVED: create-listener request..creating at 0.0.0.0:44012\n");
+
+		/* create the listener */
+		listener = vortex_listener_new (ctx, "0.0.0.0", "44012", NULL, NULL);
+		if (! vortex_connection_is_ok (listener, false)) {
+			printf ("Test 12 (8): failed to start fake listener..\n");
+			vortex_channel_send_err (channel, "failed to create listener", 25, vortex_frame_get_msgno (frame));
+			return;
+		} /* end if */
+
+		printf ("CALLING: to block listener created..\n");
+		vortex_connection_block (listener, true);
+
+		/* associate listener to the channel */
+		vortex_channel_set_data (channel, 
+					 /* key and value */
+					 "listener", listener);
+		
+		/* reply the peer client with the same content */
+		vortex_channel_send_rpy (channel, "listener created", 16, vortex_frame_get_msgno (frame));
+		return;
+	} else if (axl_cmp (vortex_frame_get_payload (frame), "unlock-listener")) {
+		/* unlock listener command received */
+		listener = vortex_channel_get_data (channel, "listener");
+		if (listener == NULL) {
+			printf ("Test 12 (9): failed to unlock listener, unable to find reference..\n");
+			vortex_channel_send_err (channel, "failed to unlock listener", 25, vortex_frame_get_msgno (frame));
+			return;
+		} /* end if */
+
+		printf ("CALLING: to unblock listener created..\n");
+		vortex_connection_block (listener, false);
+
+		/* reply the peer client with the same content */
+		vortex_channel_send_rpy (channel, "listener unblocked", 18, vortex_frame_get_msgno (frame));
+		return;
+
+	} else if (axl_cmp (vortex_frame_get_payload (frame), "close-listener")) {
+
+		/* close listener command received */
+		listener = vortex_channel_get_data (channel, "listener");
+		if (listener == NULL) {
+			printf ("Test 12 (9): failed to close listener, unable to find reference..\n");
+			vortex_channel_send_err (channel, "failed to close listener", 24, vortex_frame_get_msgno (frame));
+			return;
+		} /* end if */
+
+		printf ("CALLING: to close listener created..\n");
+		vortex_listener_shutdown (listener, true);
+
+		/* reply the peer client with the same content */
+		vortex_channel_send_rpy (channel, "listener closed", 15, vortex_frame_get_msgno (frame));
+		return;
+		
+	} /* end if */
+
+	/* default reply error */
+	vortex_channel_send_err (channel,"", 0, vortex_frame_get_msgno (frame));
+	return;
+}
+
 void frame_received (VortexChannel    * channel,
 		     VortexConnection * connection,
 		     VortexFrame      * frame,
@@ -610,6 +689,12 @@ int  main (int  argc, char ** argv)
 				  NULL, NULL, 
 				  NULL, NULL,
 				  frame_received, NULL);
+
+	/* register a profile */
+	vortex_profiles_register (ctx, REGRESSION_URI_LISTENERS,
+				  NULL, NULL, 
+				  NULL, NULL,
+				  frame_received_fake_listeners, NULL);
 
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */

@@ -101,6 +101,12 @@ void subs (struct timeval stop, struct timeval start, struct timeval * _result)
 #define REGRESSION_URI_ZERO "http://iana.org/beep/transient/vortex-regression/zero"
 
 /** 
+ * A profile to check connection timeout against unresponsive
+ * listeners.
+ */
+#define REGRESSION_URI_LISTENERS "http://iana.org/beep/transient/vortex-regression/fake-listener"
+
+/** 
  * @internal Allows to know if the connection must be created directly or
  * through the tunnel.
  */
@@ -2538,9 +2544,12 @@ bool test_11 ()
  */
 bool test_12 () {
 	VortexConnection  * connection;
-	VortexConnection  * listener;
+	VortexConnection  * control;
+	VortexChannel     * c_channel;
 	VortexChannel     * channel;
 	int                 stamp;
+	VortexAsyncQueue  * queue;
+	VortexFrame       * frame;
 
 	/* checking timeout connection activated.. */
 	printf ("Test 12: .");
@@ -2634,7 +2643,7 @@ bool test_12 () {
 	connection = vortex_connection_new (ctx, LISTENER_HOST, "44012", NULL, NULL);
 	stamp      = time (NULL);
 	if (vortex_connection_is_ok (connection, false)) {
-		printf ("Test 12 (7): failed to connect to: %s:%s...reason: %s\n",
+		printf ("Test 12 (7): failed, expected to NOT to connect to: %s:%s...reason: %s\n",
 			LISTENER_HOST, LISTENER_PORT, vortex_connection_get_message (connection));
 		vortex_connection_close (connection);
 		return false;
@@ -2658,32 +2667,62 @@ bool test_12 () {
 	/*** create a fake listener which do not have response to
 	 * check timemout */
 	printf ("...create fake listener...");
-	listener = vortex_listener_new (ctx, LISTENER_HOST, "44012", NULL, NULL);
-	if (! vortex_connection_is_ok (listener, false)) {
-		printf ("Test 12 (8): failed to start fake listener..\n");
+	
+	/* create a control connection and an special channel to start
+	 * a listener */
+	control = connection_new ();
+	if (! vortex_connection_is_ok (control, false)) {
+		printf ("Test 12 (7.2): failed to create control connection, unable to start remote fake listener..\n");
+		vortex_connection_close (connection);
+		return false;
+	} /* end if */
+	
+	/* CREATE CONTROL CHANNEL: now create the fake listener */
+	queue     = vortex_async_queue_new ();
+	c_channel = vortex_channel_new (control, 0, REGRESSION_URI_LISTENERS,
+					/* default on close */
+					NULL, NULL, 
+					/* default frame received */
+					vortex_channel_queue_reply, queue,
+					/* default on channel created */
+					NULL, NULL);
+	if (c_channel == NULL) {
+		printf ("Test 12 (7.3): failed to create remote listener creation channel, unable to start remote fake listener..\n");
+		vortex_connection_close (connection);
+		return false;
+	} /* end if */
+
+	/* CREATE FAKE LISTENER: call to create a remote listener
+	 * (blocked) running on the 44012 port */
+	if (! vortex_channel_send_msg (c_channel, "create-listener", 15, NULL)) {
+		printf ("Test 12 (7.4): failed to send message to create remote fake listener...\n");
 		return false;
 	}
 
-	/* block the listener */
-	printf (".");
-	fflush (stdout);
-	vortex_connection_block (listener, true);
-	fflush (stdout);
+	/* get reply */
+	frame = vortex_channel_get_reply (c_channel, queue);
+	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
+		printf ("Test 12 (7.5): failed to start remote fake listener, received negative reply..\n");
+		return false;
+	} /* end if */
+	vortex_frame_unref (frame);
+	printf ("remote fake listener created");
 	
-	/* now try to connect again */
+	/* CONNECT TO UNRESPONSIVE LISTENER: now try to connect
+	 * again */
 	printf ("...connect (wait 5 seconds)");
 	fflush (stdout);
 	stamp      = time (NULL);
 	connection = vortex_connection_new (ctx, LISTENER_HOST, "44012", NULL, NULL);
 	if (vortex_connection_is_ok (connection, false)) {
-		printf ("Test 12 (9): failed to connect to: %s:%s...reason: %s\n",
-			LISTENER_HOST, LISTENER_PORT, vortex_connection_get_message (connection));
+		printf ("\nTest 12 (9): failed to connect to: %s:%s...reason: %s\n",
+			LISTENER_HOST, "44012", vortex_connection_get_message (connection));
 		vortex_connection_close (connection);
 		return false;
 	}
-	
+
 	/* ok, close the connection */
-	printf ("...check..");
+	printf ("...check (step 9 ok)..");
 	fflush (stdout);
 	vortex_connection_close (connection);
 	if ((stamp + 3) > time (NULL)) {
@@ -2695,10 +2734,24 @@ bool test_12 () {
 	/* now unlock the listener */
 	printf ("..unlock listener..");
 	fflush (stdout);
-	vortex_connection_block (listener, false);
+	/* CALL TO UNLOCK THE REMOTE LISTENER: call to create a remote
+	 * listener (blocked) running on the 44012 port */
+	if (! vortex_channel_send_msg (c_channel, "unlock-listener", 15, NULL)) {
+		printf ("Test 12 (7.4): failed to send message to create remote fake listener...\n");
+		return false;
+	}
+
+	/* get reply */
+	frame = vortex_channel_get_reply (c_channel, queue);
+	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
+		printf ("Test 12 (7.5): failed to start remote fake listener, received negative reply..\n");
+		return false;
+	} /* end if */
+	vortex_frame_unref (frame);
+	printf ("ok..");
 	
-	/* now try to connect again */
-	printf ("..connecting");
+	/* CONNECT TO RESPONSE SERVER: now try to connect again */
+	printf ("..now connecting");
 	fflush (stdout);
 	connection = vortex_connection_new (ctx, LISTENER_HOST, "44012", NULL, NULL);
 	if (! vortex_connection_is_ok (connection, false)) {
@@ -2743,9 +2796,27 @@ bool test_12 () {
 	fflush (stdout);
 	vortex_connection_close (connection);
 
-	/* close the listener */
-	vortex_listener_shutdown (listener, true);
+	/* CLOSE REMOTE SERVER: call to close remote fake listener */
+	if (! vortex_channel_send_msg (c_channel, "close-listener", 14, NULL)) {
+		printf ("Test 12 (7.4): failed to send message to create remote fake listener...\n");
+		return false;
+	}
+
+	/* get reply */
+	frame = vortex_channel_get_reply (c_channel, queue);
+	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
+		printf ("Test 12 (7.5): failed to start remote fake listener, received negative reply..\n");
+		return false;
+	} /* end if */
+	vortex_frame_unref (frame);
+	printf ("remote fake listener created");
 	
+	/* close control connection */
+	vortex_channel_close (c_channel, NULL);
+	vortex_connection_close (control);
+
+	/* free queue */
+	vortex_async_queue_unref (queue);
 	
 	/* return true */
 	printf ("\n");
