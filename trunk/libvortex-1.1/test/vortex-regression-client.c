@@ -31,10 +31,12 @@
 #include <signal.h>
 #endif
 
-#define LISTENER_HOST       "localhost"
+/* listener location */
+char   * listener_host = NULL;
 #define LISTENER_PORT       "44010"
 
-#define LISTENER_PROXY_HOST "localhost"
+/* listener proxy location */
+char   * listener_proxy_host = NULL;
 #define LISTENER_PROXY_PORT "44110"
 
 /* substract */
@@ -124,7 +126,7 @@ VortexConnection * connection_new ()
 		return vortex_tunnel_new (tunnel_settings, NULL, NULL);
 	} else {
 		/* create a direct connection */
-		return vortex_connection_new (ctx, LISTENER_HOST, LISTENER_PORT, NULL, NULL);
+		return vortex_connection_new (ctx, listener_host, LISTENER_PORT, NULL, NULL);
 	}
 }
 
@@ -2580,7 +2582,7 @@ bool test_12 () {
 	connection = connection_new ();
 	if (!vortex_connection_is_ok (connection, false)) {
 		printf ("Test 12 (3): failed to connect to: %s:%s...reason: %s\n",
-			LISTENER_HOST, LISTENER_PORT, vortex_connection_get_message (connection));
+			listener_host, LISTENER_PORT, vortex_connection_get_message (connection));
 		vortex_connection_close (connection);
 		return false;
 	}
@@ -2614,7 +2616,7 @@ bool test_12 () {
 	connection = connection_new ();
 	if (!vortex_connection_is_ok (connection, false)) {
 		printf ("Test 12 (5): failed to connect to: %s:%s...reason: %s\n",
-			LISTENER_HOST, LISTENER_PORT, vortex_connection_get_message (connection));
+			listener_host, LISTENER_PORT, vortex_connection_get_message (connection));
 		vortex_connection_close (connection);
 		return false;
 	}
@@ -2640,11 +2642,11 @@ bool test_12 () {
 	fflush (stdout);
 
 	/* try to connect to an unreachable host */
-	connection = vortex_connection_new (ctx, LISTENER_HOST, "44012", NULL, NULL);
+	connection = vortex_connection_new (ctx, listener_host, "44012", NULL, NULL);
 	stamp      = time (NULL);
 	if (vortex_connection_is_ok (connection, false)) {
 		printf ("Test 12 (7): failed, expected to NOT to connect to: %s:%s...reason: %s\n",
-			LISTENER_HOST, LISTENER_PORT, vortex_connection_get_message (connection));
+			listener_host, LISTENER_PORT, vortex_connection_get_message (connection));
 		vortex_connection_close (connection);
 		return false;
 	}
@@ -2713,10 +2715,10 @@ bool test_12 () {
 	printf ("...connect (wait 5 seconds)");
 	fflush (stdout);
 	stamp      = time (NULL);
-	connection = vortex_connection_new (ctx, LISTENER_HOST, "44012", NULL, NULL);
+	connection = vortex_connection_new (ctx, listener_host, "44012", NULL, NULL);
 	if (vortex_connection_is_ok (connection, false)) {
 		printf ("\nTest 12 (9): failed to connect to: %s:%s...reason: %s\n",
-			LISTENER_HOST, "44012", vortex_connection_get_message (connection));
+			listener_host, "44012", vortex_connection_get_message (connection));
 		vortex_connection_close (connection);
 		return false;
 	}
@@ -2753,10 +2755,10 @@ bool test_12 () {
 	/* CONNECT TO RESPONSE SERVER: now try to connect again */
 	printf ("..now connecting");
 	fflush (stdout);
-	connection = vortex_connection_new (ctx, LISTENER_HOST, "44012", NULL, NULL);
+	connection = vortex_connection_new (ctx, listener_host, "44012", NULL, NULL);
 	if (! vortex_connection_is_ok (connection, false)) {
 		printf ("Test 12 (10): failed to connect to: %s:%s...reason: %s\n",
-			LISTENER_HOST, LISTENER_PORT, vortex_connection_get_message (connection));
+			listener_host, LISTENER_PORT, vortex_connection_get_message (connection));
 		vortex_connection_close (connection);
 		return false;
 	} 
@@ -2963,13 +2965,13 @@ bool test_13 ()
 	
 	/* add first hop */
 	vortex_tunnel_settings_add_hop (tunnel_settings,
-					TUNNEL_IP4, LISTENER_PROXY_HOST,
+					TUNNEL_IP4, listener_proxy_host,
 					TUNNEL_PORT, LISTENER_PROXY_PORT,
 					TUNNEL_END_CONF);
 	
 	/* add end point behind it */
 	vortex_tunnel_settings_add_hop (tunnel_settings,
-					TUNNEL_IP4, LISTENER_HOST,
+					TUNNEL_IP4, listener_host,
 					TUNNEL_PORT, LISTENER_PORT,
 					TUNNEL_END_CONF);
 
@@ -3071,9 +3073,17 @@ int main (int  argc, char ** argv)
 		VERSION);
 	printf ("** To properly run this test it is required to run vortex-regression-listener.\n");
 	printf ("** To gather information about time performance you can use:\n**\n");
-	printf ("**     time ./vortex-regression-client\n**\n");
+	printf ("**     >> time ./vortex-regression-client\n**\n");
 	printf ("** To gather information about memory consumed (and leaks) use:\n**\n");
-	printf ("**     libtool --mode=execute valgrind --leak-check=yes --error-limit=no ./vortex-regression-client\n**\n");
+	printf ("**     >> libtool --mode=execute valgrind --leak-check=yes --error-limit=no ./vortex-regression-client\n**\n");
+	printf ("** Additional settings:\n");
+	printf ("**\n");
+	printf ("**     >> ./vortex-regression-client [listener-host [listener-host-proxy]]\n");
+	printf ("**\n");
+	printf ("**       If no listener-host value is provided, it is used \"localhost\". \n");
+	printf ("**       If no listener-host-proxy value is provided, it is used the value \n");
+	printf ("**       provided for listener-host. \n");
+	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
 
@@ -3086,6 +3096,31 @@ int main (int  argc, char ** argv)
 
 	/* create the context */
 	ctx = vortex_ctx_new ();
+
+	/* configure default values */
+	if (argc == 1) {
+		listener_host       = "localhost";
+		listener_proxy_host = "localhost";
+	} else if (argc == 2) {
+		listener_host       = argv[1];
+		listener_proxy_host = argv[1];
+	} else if (argc == 3) {
+		listener_host       = argv[1];
+		listener_proxy_host = argv[2];
+	}
+
+	if (listener_host == NULL) {
+		printf ("Error: undefined value found for listener host..\n");
+		return -1;
+	}
+
+	if (listener_proxy_host == NULL) {
+		printf ("Error: undefined value found for listener proxy host..\n");
+		return -1;
+	}
+		
+	printf ("INFO: running test against %s, with BEEP proxy located at: %s..\n",
+		listener_host, listener_proxy_host);
 
 	/* init vortex library */
 	if (! vortex_init_ctx (ctx)) {
