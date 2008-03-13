@@ -1354,6 +1354,9 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 	if (d_timeout > 0) {
 		/* translate hold value for d_timeout into seconds  */
 		d_timeout = (int) d_timeout / (int) 1000000;
+
+		/* set non blocking connection */
+		vortex_connection_set_nonblocking_socket (connection);
 	} /* end if */
 
 	/* do a tcp connect */
