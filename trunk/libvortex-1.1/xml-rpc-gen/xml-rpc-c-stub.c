@@ -1253,9 +1253,18 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 	xml_rpc_c_stub_write_native_type (doc, type, true);
 	xml_rpc_support_write (" value);\n");
 
-	write ("void %s_%s_add (%s * ref, ", comp_name_lower, name_lower, name);
-	xml_rpc_c_stub_write_native_type (doc, type, true);
-	xml_rpc_support_write (" value);\n\n");
+	/* do not provide add method for bool, double and int since is
+	 * not possible to check which is the next free position
+	 * available */
+	if (axl_cmp (type, "int") || axl_cmp (type, "double") || axl_cmp (type, "bool")) {
+		write ("/* %s_%s_add not available to due to holding type %s */\n",
+		       comp_name_lower, name_lower, type);
+	} else {
+		write ("void %s_%s_add (%s * ref, ", comp_name_lower, name_lower, name);
+	
+		xml_rpc_c_stub_write_native_type (doc, type, true);
+		xml_rpc_support_write (" value);\n\n");
+	}
 
 	/* write the count function */
 	xml_rpc_support_write ("int %s_%s_count (%s * ref);\n\n",
@@ -1599,9 +1608,11 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 	xml_rpc_support_push_indent ();
 	
 	/* minimal common check */
-	write ("v_return_val_if_fail (ref, NULL);\n");
 	if (axl_cmp (type, "string") || axl_cmp (type, "base64") || 
 	    xml_rpc_c_stub_type_is_array (doc, type) || xml_rpc_c_stub_type_is_struct (doc, type)) {
+		write ("/* check received reference */\n");
+		write ("v_return_val_if_fail (ref, NULL);\n\n");
+
 		/* string, base64, array and struct */
 		xml_rpc_support_multiple_write ("/* check index access */\n",
 						"v_return_val_if_fail (index >= 0 &&  index < ref->count,  NULL);\n\n",
@@ -1609,6 +1620,9 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 						"return ref->array[index];\n",
 						NULL);
 	} else {
+		write ("/* check received reference */\n");
+		write ("v_return_val_if_fail (ref, 0);\n\n");
+
 		/* int, decimal and bool case */
 		xml_rpc_support_multiple_write ("/* check index access */\n",
 						"v_return_val_if_fail (index >= 0 &&  index < ref->count,  0);\n\n",
@@ -1646,47 +1660,52 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 	xml_rpc_support_write ("}\n\n");
 
 	/* write the add function */
-	write ("void %s_%s_add (%s * ref, ", comp_name_lower, name_lower, name);
-	xml_rpc_c_stub_write_native_type (doc, type, true);
-	xml_rpc_support_write (" value)\n{\n");
-
-	/* write the set content function */
-	push_indent ();
-
-	write ("int iterator = 0;\n\n");
-
-	write ("/* check index access */\n");
-	write ("v_return_if_fail (ref && value);\n\n");
-
-	write ("/* find the next free bucket */\n");
-	write ("while (iterator < ref->count) {\n\n");
+	if (axl_cmp (type, "int") || axl_cmp (type, "double") || axl_cmp (type, "bool")) {
+		write ("/* %s_%s_add not available to due to holding type %s */\n",
+		       comp_name_lower, name_lower, type);
+	} else {
+		write ("void %s_%s_add (%s * ref, ", comp_name_lower, name_lower, name);
+		xml_rpc_c_stub_write_native_type (doc, type, true);
+		xml_rpc_support_write (" value)\n{\n");
+		
+		/* write the set content function */
+		push_indent ();
+		
+		write ("int iterator = 0;\n\n");
+		
+		write ("/* check index access */\n");
+		write ("v_return_if_fail (ref && value);\n\n");
+		
+		write ("/* find the next free bucket */\n");
+		write ("while (iterator < ref->count) {\n\n");
+		
+		push_indent ();
+		
+		write ("/* check free bucket */\n");
+		write ("if (ref->array[iterator] == NULL) {\n");
+		push_indent ();
+		
+		write ("/* found free bucket, set the data and return */\n");
+		write ("ref->array[iterator] = value;\n");
+		write ("return;\n");
 	
-	push_indent ();
-
-	write ("/* check free bucket */\n");
-	write ("if (ref->array[iterator] == NULL) {\n");
-	push_indent ();
+		pop_indent ();
 	
-	write ("/* found free bucket, set the data and return */\n");
-	write ("ref->array[iterator] = value;\n");
-	write ("return;\n");
-	
-	pop_indent ();
-	
-	write ("} /* end if */\n\n");
+		write ("} /* end if */\n\n");
 
-	write ("/* next position */\n");
-	write ("iterator++;\n\n");
+		write ("/* next position */\n");
+		write ("iterator++;\n\n");
 
-	pop_indent ();
+		pop_indent ();
 
-	write ("} /* end while */\n\n");
-
-	write ("return;\n");
+		write ("} /* end while */\n\n");
+		
+		write ("return;\n");
 	
-	pop_indent ();
-	
-	write ("}\n\n");
+		pop_indent ();
+		
+		write ("}\n\n");
+	} /* end if */
 	
 	/* write the count function */
 	xml_rpc_support_write ("int %s_%s_count (%s * ref)\n{\n",
