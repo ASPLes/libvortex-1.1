@@ -109,6 +109,11 @@ void subs (struct timeval stop, struct timeval start, struct timeval * _result)
 #define REGRESSION_URI_LISTENERS "http://iana.org/beep/transient/vortex-regression/fake-listener"
 
 /** 
+ * A profile to check sending zeroed binary frames.
+ */
+#define REGRESSION_URI_BLOCK_TLS "http://iana.org/beep/transient/vortex-regression/block-tls"
+
+/** 
  * @internal Allows to know if the connection must be created directly or
  * through the tunnel.
  */
@@ -1195,6 +1200,190 @@ bool test_05 ()
 	vortex_async_queue_unref (queue);
 
 	/* close connection */
+	return true;
+}
+
+/** 
+ * @brief Checking TLS profile support.
+ * 
+ * @return true if ok, otherwise, false is returned.
+ */
+bool test_05_a ()
+{
+	/* TLS status notification */
+	VortexStatus       status;
+	char             * status_message = NULL;
+	VortexChannel    * channel;
+	int                connection_id;
+
+	/* vortex connection */
+	VortexConnection * connection;
+	VortexConnection * connection2;
+
+	/* initialize and check if current vortex library supports TLS */
+	if (! vortex_tls_is_enabled (ctx)) {
+		printf ("--- WARNING: Unable to activate TLS, current vortex library has not TLS support activated. \n");
+		return true;
+	}
+
+	/* create a new connection */
+	connection = connection_new ();
+
+	/* create a channel to block tls negotiation */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_BLOCK_TLS,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return false;
+	}
+
+	/* enable TLS negociation but get the connection id first */
+	connection_id = vortex_connection_get_id (connection);
+	connection    = vortex_tls_start_negociation_sync (connection, NULL, 
+							   &status,
+							   &status_message);
+
+	if (connection == NULL) {
+		printf ("Test 05-a: expected an error but not NULL reference..\n");
+		return false;
+	} /* end if */
+
+	if (vortex_connection_get_id (connection) != connection_id) {
+		printf ("Test 05-a: expected an error but not a connection change..\n");
+		return false;
+	} /* end if */
+
+	if (status == VortexOk) {
+		printf ("Test 05-a: Failed to activate TLS support: %s\n", status_message);
+		/* return false */
+		return false;
+	}
+
+	/* check that the connection is ok */
+	if (! vortex_connection_is_ok (connection, false)) {
+		printf ("Test 05-a: expected an error but not a connection closed..\n");
+		return false;
+	} /* end if */
+
+	/* now, do the same text to force a TLS error at the remote
+	 * side (activated due to previous exchange) */
+	connection_id = vortex_connection_get_id (connection);
+	connection    = vortex_tls_start_negociation_sync (connection, NULL, 
+							   &status,
+							   &status_message);
+
+	if (connection == NULL) {
+		printf ("Test 05-a: expected an error but not NULL reference..\n");
+		return false;
+	} /* end if */
+
+	if (status == VortexOk) {
+		printf ("Test 05-a: Failed to activate TLS support: %s\n", status_message);
+		/* return false */
+		return false;
+	}
+
+	/* check that the connection is ok */
+	if (vortex_connection_is_ok (connection, false)) {
+		printf ("Test 05-a: expected an error but  a connection properly running..\n");
+		return false;
+	} /* end if */
+
+	vortex_connection_close (connection);
+
+	/* now check autotls */
+	connection = connection_new ();
+
+	/* create a channel to block tls negotiation */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_BLOCK_TLS,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return false;
+	}
+
+	/* enable autotls */
+	vortex_connection_set_auto_tls (ctx, true, false, NULL);
+
+	/* now check autotls */
+	connection2 = connection_new ();
+
+	if (connection2 == NULL) {
+		printf ("Test 05-a: expected a failure using auto-tls but not a null reference..\n");
+		return false;
+	}
+
+	if (vortex_connection_is_ok (connection2, false)) {
+		printf ("Test 05-a: expected a failure using auto-tls but a proper connection status was found...\n");
+		return false;
+	}
+
+	/* close the connection */
+	vortex_connection_close (connection2);
+	vortex_connection_close (connection);
+
+	/* now create a connection with auto tls activated */
+	connection2 = connection_new ();
+
+	if (connection2 == NULL) {
+		printf ("Test 05-a: expected a proper connection using auto-tls but not a null reference..\n");
+		return false;
+	}
+
+	/* check connection status */
+	if (! vortex_connection_is_ok (connection2, false)) {
+		printf ("Test 05-a: expected a proper connection using auto-tls but a failure was found...\n");
+		return false;
+	}
+
+	/* check tls fixate status */
+	if (! vortex_connection_is_tlsficated (connection2)) {
+		printf ("Test 05-a: expected proper TLS fixate status..\n");
+		return false;
+	}
+	
+	/* close the connection */
+	vortex_connection_close (connection2);
+	
+	/* restore auto-tls */
+	vortex_connection_set_auto_tls (ctx, false, false, NULL);
+
+	/* now create a connection with auto tls activated */
+	connection2 = connection_new ();
+
+	if (connection2 == NULL) {
+		printf ("Test 05-a: expected a proper connection using auto-tls but not a null reference..\n");
+		return false;
+	}
+
+	/* check connection status */
+	if (! vortex_connection_is_ok (connection2, false)) {
+		printf ("Test 05-a: expected a proper connection using auto-tls but a failure was found...\n");
+		return false;
+	}
+
+	/* check tls fixate status */
+	if (vortex_connection_is_tlsficated (connection2)) {
+		printf ("Test 05-a: expected to find disable automatic TLS negotiation, but it found enabled..\n");
+		return false;
+	}
+	
+	/* close the connection */
+	vortex_connection_close (connection2);
+
+
 	return true;
 }
 
@@ -3246,6 +3435,13 @@ int main (int  argc, char ** argv)
 		printf ("Test 05: TLS profile support [   OK   ]\n");
 	} else {
 		printf ("Test 05: TLS profile support [ FAILED ]\n");
+		return -1;
+	}
+
+	if (test_05_a ()) {
+		printf ("Test 05-a: Check auto-tls on fail fix (24/03/2008) [   OK   ]\n");
+	} else {
+		printf ("Test 05-a: Check auto-tls on fail fix (24/03/2008) [ FAILED ]\n");
 		return -1;
 	}
 

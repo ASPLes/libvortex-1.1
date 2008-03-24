@@ -4121,10 +4121,10 @@ void                vortex_connection_set_data_full          (VortexConnection *
  * only an instance already connected but also with the TLS profile
  * already activated.
  * 
- * This allows to take advantage about source code developed to create
+ * This allows to take advantage of the support developed to create
  * and wait for a \ref VortexConnection to be created rather than
  * having two steps at the user space: first create the connection and
- * the TLS-ficate it with \ref vortex_tls_start_negociation.
+ * the TLS-fixate it with \ref vortex_tls_start_negociation.
  *
  * The function allows to specify the optional serverName value to be
  * used when \ref vortex_tls_start_negociation is called. The values
@@ -4151,12 +4151,6 @@ void                vortex_connection_set_data_full          (VortexConnection *
  *
  * By default, Vortex Library have auto TLS feature disabled.
  * 
- * <i><b>NOTE:</b> If current Vortex Library doesn't have built-in
- * support for TLS profile, automatic TLS profile negotiation will
- * always fails. This means that setting <b>allow_tls_failures </b>
- * to false will cause Vortex Library client peer to always fail to
- * create new connections.</i>
- *
  * @param ctx The context where the operation will be performed.
  * 
  * @param enabled true to activate the automatic TLS profile
@@ -4168,6 +4162,28 @@ void                vortex_connection_set_data_full          (VortexConnection *
  * @param serverName The server name value to be passed in to \ref
  * vortex_tls_start_negociation. If the received is not NULL the
  * function will perform a local copy
+ *
+ * <i><b>NOTE:</b> If current Vortex Library doesn't have built-in
+ * support for TLS profile, automatic TLS profile negotiation will
+ * always fail. This means that setting <b>allow_tls_failures </b> to
+ * false will cause Vortex Library client peer to always fail to
+ * create new connections.</i>
+ *
+ * <i><b>NOTE2: About could fail during the TLS handshake</b> <br> A
+ * TLS handshake could fail at two points: before the tuning start or
+ * a failure during the TLS handshake itself. In the second case the error
+ * is not recoverable because is not possible to restore the BEEP
+ * state on both peers.
+ * 
+ * In the first case, the connection is still working and BEEP state
+ * remains untouched because the error at this phase is caused because
+ * the partner peer have denied accepting the TLS handshare by
+ * rejecting to create the TLS channel, leaving both peers at the BEEP
+ * level.
+ *
+ * Having this in mind, you must always call to \ref
+ * vortex_connection_is_ok after a connection create operation. 
+ * </i>
  */
 void                vortex_connection_set_auto_tls           (VortexCtx  * ctx,
 							      bool         enabled,

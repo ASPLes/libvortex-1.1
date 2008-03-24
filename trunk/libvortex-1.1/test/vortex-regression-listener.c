@@ -83,6 +83,16 @@
  */
 #define REGRESSION_URI_LISTENERS "http://iana.org/beep/transient/vortex-regression/fake-listener"
 
+/** 
+ * A profile to check sending zeroed binary frames.
+ */
+#define REGRESSION_URI_ZERO "http://iana.org/beep/transient/vortex-regression/zero"
+
+/** 
+ * A profile to check sending zeroed binary frames.
+ */
+#define REGRESSION_URI_BLOCK_TLS "http://iana.org/beep/transient/vortex-regression/block-tls"
+
 void frame_received_fake_listeners  (VortexChannel    * channel,
 				     VortexConnection * connection,
 				     VortexFrame      * frame,
@@ -614,6 +624,44 @@ bool check_profiles_adviced_bis (int channel_num, VortexConnection *connection, 
 
 }
 
+/* a flag that allows to configure if the TLS request is accepted */
+bool enable_block_tls_queries = false;
+
+bool start_channel_block_tls (int channel_num, VortexConnection * connection, axlPointer user_data)
+{
+	printf ("Received request to block TLS query..\n");
+
+	/* block next tls query */
+	enable_block_tls_queries = true;
+	return true;
+}
+
+axlPointer block_ctx_creation (VortexConnection * connection, axlPointer user_data)
+{
+	/* simulate a failure creating the SSL context.. */
+	printf ("Simulate a SSL context creation failure..\n");
+	return NULL;
+}
+
+bool regression_tls_handle_query (VortexConnection * connection, char * serverName)
+{
+
+	printf ("Receiving request to start tls auth, with status=%d..\n", enable_block_tls_queries);
+	if (enable_block_tls_queries) {
+		/* return to not accept TLS query but revert state for
+		 * the next query */
+		enable_block_tls_queries = false;
+
+		/* but also configure next blocking function (to
+		 * simulate a failure at the TLS protocol) */
+		vortex_tls_set_ctx_creation (connection, block_ctx_creation, NULL);
+
+		return false;
+	} /* end if */
+
+	return true;
+}
+
 int  main (int  argc, char ** argv) 
 {
 
@@ -696,9 +744,16 @@ int  main (int  argc, char ** argv)
 				  NULL, NULL,
 				  frame_received_fake_listeners, NULL);
 
+	/* register a profile */
+	vortex_profiles_register (ctx, REGRESSION_URI_BLOCK_TLS,
+				  start_channel_block_tls, NULL,
+				  NULL, NULL,
+				  frame_received_fake_listeners, NULL);
+
+
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */
-	if (! vortex_tls_accept_negociation (ctx, NULL, NULL, NULL)) {
+	if (! vortex_tls_accept_negociation (ctx, regression_tls_handle_query, NULL, NULL)) {
 		printf ("Unable to start accepting TLS profile requests");
 		return -1;
 	}
