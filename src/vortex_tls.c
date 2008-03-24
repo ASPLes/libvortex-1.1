@@ -643,6 +643,15 @@ bool     vortex_tls_invoke_tls_activation (VortexConnection * connection)
 		case SSL_ERROR_WANT_WRITE:
 			vortex_log (VORTEX_LEVEL_WARNING, "still not prepared to continue because write wanted");
 			break;
+		case SSL_ERROR_SYSCALL:
+			vortex_log (VORTEX_LEVEL_CRITICAL, "syscall error while doing TLS handshake, ssl error (code:%d) : %s",
+				    ssl_error, ERR_error_string (ssl_error, NULL));
+			/* now the TLS process have failed because we
+			 * are in the middle of a tuning process we
+			 * have to close the connection because is not
+			 * possible to recover previous BEEP state */
+			__vortex_connection_set_not_connected (connection, "tls handshake failed");
+			return false;
 		default:
 			vortex_log (VORTEX_LEVEL_CRITICAL, "there was an error with the TLS negotiation, ssl error (code:%d) : %s",
 				    ssl_error, ERR_error_string (ssl_error, NULL));
@@ -814,17 +823,19 @@ axlPointer __vortex_tls_start_negociation (VortexTlsBeginData * data)
 			       vortex_frame_get_payload (reply));
 
 			/* received a unexpected token reply */
+			vortex_frame_unref (reply);
 			__vortex_tls_start_negociation_close_and_notify (process_status,
 									 connection,
 									 channel, 
 									 "Wrong reply received from remote peer for TLS support",
 									 user_data);
 			return NULL;
-		}
+		} /* end if */
 
 		break;
 	case VORTEX_FRAME_TYPE_ERR:
 		/* received a unexpected token reply */
+		vortex_frame_unref (reply);
 		__vortex_tls_start_negociation_close_and_notify (process_status,
 								 connection,
 								 channel, 
@@ -832,6 +843,7 @@ axlPointer __vortex_tls_start_negociation (VortexTlsBeginData * data)
 		return NULL;
 	default:
 		/* unexpected reply received */
+		vortex_frame_unref (reply);
 		__vortex_tls_start_negociation_close_and_notify (process_status,
 								 connection,
 								 channel, "Unexpected frame type received", 
@@ -888,7 +900,7 @@ axlPointer __vortex_tls_start_negociation (VortexTlsBeginData * data)
 		/* notify that the TLS negotiation have failed
 		 * because the initial greetings failure */
 		__vortex_tls_start_negociation_close_and_notify (process_status,
-								 NULL,
+								 connection,
 								 NULL, 
 								 "TLS negotiation has failed, unable to procede with BEEP session tuning.", user_data);
 		return NULL;
@@ -900,15 +912,10 @@ axlPointer __vortex_tls_start_negociation (VortexTlsBeginData * data)
 	if (!vortex_greetings_client_send (connection)) {
                 vortex_log (VORTEX_LEVEL_CRITICAL, "failed while sending greetings after TLS negotiation");
 
-		/* because the greeting connection have failed, we
-		 * have to close and drop the \ref VortexConnection
-		 * object. */
-		vortex_connection_unref (connection, "(vortex tls profile)");
-
 		/* notify that the TLS negotiation have failed
 		 * because the initial greetings failure */
 		__vortex_tls_start_negociation_close_and_notify (process_status,
-								 NULL,
+								 connection,
 								 NULL, 
 								 "Initial greetings before a TLS negotiation has failed", user_data);
 		return NULL;
@@ -927,14 +934,9 @@ axlPointer __vortex_tls_start_negociation (VortexTlsBeginData * data)
 	 * the vortex reader to start exchanging data. */
 	if (!vortex_connection_parse_greetings_and_enable (connection, reply)) {
 
-		/* flag the connection object to be not usable,
-		 * unrefering it so eventually resources allocated
-		 * will be collected. */
-		vortex_connection_unref (connection, "(vortex tls profile)");
-
 		/* notify the user the sad new! */
 		__vortex_tls_start_negociation_close_and_notify (process_status,
-								 NULL,
+								 connection,
 								 NULL,
 								 "Greetings response parsing have failed before successful TLS negotiation", 
 								 user_data);
@@ -1330,6 +1332,7 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
 		       "unable to create SSL context object, unable to start TLS profile");
 		vortex_connection_set_close_socket (connection, true);
+		vortex_connection_shutdown (connection);
 		return;
 	} /* end if */
 	
@@ -1345,6 +1348,7 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
 				    "there was an error while setting certificate file into the SSl context, unable to start TLS profile");
 			vortex_connection_set_close_socket (connection, true);
+			vortex_connection_shutdown (connection);
 			return;
 		}
 		
@@ -1354,6 +1358,7 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
 				    "there was an error while setting private file into the SSl context, unable to start TLS profile");
 			vortex_connection_set_close_socket (connection, true);
+			vortex_connection_shutdown (connection);
 			return;
 		}
 
@@ -1362,6 +1367,7 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
 				    "seems that certificate file and private key doesn't match!, unable to start TLS profile");
 			vortex_connection_set_close_socket (connection, true);
+			vortex_connection_shutdown (connection);
 			return;
 		} /* end if */
 
@@ -1373,6 +1379,7 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 	if (ssl == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "error while creating TLS transport");
 		vortex_connection_set_close_socket (connection, true);
+		vortex_connection_shutdown (connection);
 		return;
 	}
 
@@ -1456,7 +1463,7 @@ bool     vortex_tls_process_start_msg (char              * profile,
 		vortex_log (VORTEX_LEVEL_WARNING, "received a TLS channel request having a missing or wrong profile content");
 		return false;
 	}
-
+	
 	/* notify user app level that a TLS profile request have being
 	 * received and it is required to act as serverName. */
 	vortex_log (VORTEX_LEVEL_DEBUG, "checking if application level allows to negotiate the TLS profile");
@@ -1620,13 +1627,31 @@ void __vortex_tls_start_negociation_sync_process (VortexConnection * connection,
  * If TLS profile is not supported the function returns the same
  * connection received. To avoid problems you should use \ref
  * vortex_tls_is_enabled first.
- * 
+ *
  * @param connection The connection where the TLS profile negotiation will take place.
  * @param serverName The serverName optional value to request remote peer to act as server name.
  * @param status     An optional reference to a \ref VortexStatus variable so the caller could get a TLS activation status.
  * @param status_message An optional reference to get a textual diagnostic about TLS activation status.
  * 
  * @return The new connection with TLS profile activated. 
+ * 
+ * <i><b>NOTE: About connection reference returned</b><br> 
+ * 
+ * The function always return a reference to a connection, even on TLS
+ * failures. Assuming this, it is required to call to \ref
+ * vortex_connection_is_ok to check status and proceed as requried if
+ * the case an error was found. The same can be done using
+ * <i>status</i> or <i>status_message</i> parameters (checking state).
+ * 
+ * Because the function could fail before the TLS handshake can start
+ * or during it, the function returns the same connection if the
+ * failure was found before TLS started or a different connection
+ * reference (with the same data) if the error is found during the
+ * tuning. In both cases a valid reference (which is not the same as
+ * valid connection) is always returned (even if the connection is not
+ * working).
+ * 
+ * </i>
  */
 VortexConnection * vortex_tls_start_negociation_sync     (VortexConnection  * connection,
 							  const char        * serverName,
@@ -1644,11 +1669,12 @@ VortexConnection * vortex_tls_start_negociation_sync     (VortexConnection  * co
 	VortexCtx           * ctx = vortex_connection_get_ctx (connection);
 	VortexConnection    * _connection;
 	VortexTlsSyncResult * result;
+	VortexAsyncQueue    * queue;
 
 	/* create an async queue and increase queue reference so the
 	 * function could unref it without worry about race conditions
 	 * with sync_process function. */
-	VortexAsyncQueue    * queue = vortex_async_queue_new ();
+	queue = vortex_async_queue_new ();
 	vortex_async_queue_ref (queue);
 
 	/* start TLS negotiation */
@@ -1665,7 +1691,9 @@ VortexConnection * vortex_tls_start_negociation_sync     (VortexConnection  * co
 			(* status)         = VortexError;
 		if (status_message != NULL)
 			(* status_message) = "Timeout have been reached while waiting for TLS to finish";
-		return NULL;
+
+		/* return the same connection */
+		return connection;
 	}
 
 	/* get status */
