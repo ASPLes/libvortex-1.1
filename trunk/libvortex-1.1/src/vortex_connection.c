@@ -28,9 +28,9 @@
  *          
  *      Postal address:
  *         Advanced Software Production Line, S.L.
- *         C/ Antonio Suarez Nº 10, 
+ *         C/ Antonio Suarez NÂº 10, 
  *         Edificio Alius A, Despacho 102
- *         Alcalá de Henares 28802 (Madrid)
+ *         AlcalÃ¡ de Henares 28802 (Madrid)
  *         Spain
  *
  *      Email address:
@@ -1431,7 +1431,7 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 		/* check frame received */
 		if (frame != NULL)
 			vortex_log (VORTEX_LEVEL_DEBUG, "greetings received, process reply frame");
-		else if (d_timeout > 0) {
+		else if (d_timeout > 0 && vortex_connection_is_ok (connection, false)) {
 
 			vortex_log (VORTEX_LEVEL_WARNING, 
 				    "found NULL frame referecence connection=%d, checking to wait for read operation..",
@@ -1439,12 +1439,12 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 
 			/* try to perform a wait operation */
 			err = __vortex_connection_wait_on (READ_OPERATIONS, connection, &d_timeout);
-			if (err <= 0 && d_timeout <= 0) {
+			if (err <= 0 || d_timeout <= 0) {
 				/* timeout reached while waiting for the connection to terminate */
 				vortex_log (VORTEX_LEVEL_WARNING, 
-					    "reached timeout while waiting for initial greetings frame, err=%d, d_timeout=%d",
+					    "reached timeout=%d or general operation failure=%d while waiting for initial greetings frame",
 					    err, d_timeout);
-
+				
 				/* close the connection */
 				shutdown (connection->session, SHUT_RDWR);
 				/* free previous message */

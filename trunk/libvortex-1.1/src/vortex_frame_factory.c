@@ -28,9 +28,9 @@
  *          
  *      Postal address:
  *         Advanced Software Production Line, S.L.
- *         C/ Antonio Suarez Nº 10, 
+ *         C/ Antonio Suarez NÂº 10, 
  *         Edificio Alius A, Despacho 102
- *         Alcalá de Henares 28802 (Madrid)
+ *         AlcalÃ¡ de Henares 28802 (Madrid)
  *         Spain
  *
  *      Email address:
