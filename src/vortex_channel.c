@@ -628,7 +628,8 @@ bool     __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _pr
 		axl_error_free (error);
 		       
 		/* free resources */
-		vortex_support_free (2, channel, vortex_channel_unref, frame, vortex_frame_unref);
+		vortex_connection_remove_channel (channel->connection, channel);
+		vortex_frame_unref (frame);
 		return false;
 	}
 
@@ -651,7 +652,8 @@ bool     __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _pr
 		} /* end if */
 
 		/* free resources */
-		vortex_support_free (3, channel, vortex_channel_unref, frame, vortex_frame_unref, doc, axl_doc_free);
+		vortex_connection_remove_channel (channel->connection, channel);
+		vortex_support_free (2, frame, vortex_frame_unref, doc, axl_doc_free);
 		return false;
 	}
 	
@@ -659,10 +661,11 @@ bool     __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _pr
 	node = axl_doc_get_root (doc);
 	if (! NODE_CMP_NAME (node, "profile")) {
 		
+		/* remove the channel */
+		vortex_connection_remove_channel (channel->connection, channel);
+
 		/* free resources */
-		vortex_support_free (3, 
-				     channel, vortex_channel_unref, 
-				     frame, vortex_frame_unref,
+		vortex_support_free (2, frame, vortex_frame_unref,
 				     doc, axl_doc_free);
 		return false;
 	}
@@ -724,8 +727,8 @@ bool     __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _pr
 	axl_doc_free (doc);
 	
 	if (!result) {
-		/* free the channel and the frame in case something went wrong */
-		vortex_channel_unref (channel);
+		/* remove the channel in the case something went wrong */
+		vortex_connection_remove_channel (channel->connection, channel);
 	}
 	return result;
 }
@@ -799,6 +802,26 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 		goto __vortex_channel_new_invoke_caller;
 	}
 
+	/* Add the channel to the connection to allow fast receive of
+	 * frames. If the channel creation is not accepted just remove
+	 * from the connection as usual.
+	 *
+	 * Now check profile associated to the channel
+	 * requested. Check if user have forgot to register profile
+	 * used. If does, register it for the user. */
+	if (! vortex_profiles_is_registered (ctx, channel->profile)) {
+		vortex_profiles_register (ctx, channel->profile,
+					  /* use default start handler */
+					  NULL, NULL, 
+					  /* use default close handler */
+					  NULL, NULL,
+					  /* use no frame received handler */
+					  NULL, NULL);
+	} /* end if */
+	
+	/* add the channel created to the connection */
+	vortex_connection_add_channel (data->connection, channel);
+
 	/* create wait reply object. */
 	wait_reply = vortex_channel_create_wait_reply ();
 
@@ -809,13 +832,19 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 						     data->encoding,
 						     data->profile_content,
 						     data->profile_content_size);
+
 	/* send start message */
 	if (!vortex_channel_send_msg_and_wait (channel0, 
 					       start_msg,
 					       strlen (start_msg),
 					       &msg_no, wait_reply)) {
 		axl_free (start_msg);
+
+		/* remove the channel and nullify */
+		vortex_connection_remove_channel (data->connection, channel);
 		channel = NULL;
+		
+		/* free pending data */
 		vortex_channel_free_wait_reply (wait_reply);
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to send start message for channel %d and profile %s",
 		       vortex_channel_get_number (channel),
@@ -833,7 +862,8 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 		       vortex_channel_get_number (channel), 
 		       vortex_channel_get_profile (channel));
 
-		vortex_channel_unref      (channel);
+		/* remove the channel and nullify */
+		vortex_connection_remove_channel (data->connection, channel);
 		channel = NULL;
 		goto __vortex_channel_new_invoke_caller;
 	}
@@ -841,34 +871,20 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 
 	/* check start reply data */
 	if (!__vortex_channel_validate_start_reply (frame, channel->profile, channel)) {
+		/* remove the channel and nullify */
 		channel = NULL;
 		goto __vortex_channel_new_invoke_caller;
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "channel start reply validation stage finished");
 
-	/* register channel on connection */
-	if (channel != NULL) {
-		/* it seems the channel have been created, now we
-		 * have to check if user have forgot to register
-		 * profile used. If does, register it for the user. */
-		if (!vortex_profiles_is_registered (ctx, channel->profile)) {
-			vortex_profiles_register (ctx, 
-						  channel->profile,
-						  /* use default start handler */
-						  NULL, NULL, 
-						  /* use default close handler */
-						  NULL, NULL,
-						  /* use no frame received handler */
-						  NULL, NULL);
-		}
-
+	/* register serverName associated to the channel
+	 * created. reached this point the channel was properly
+	 * created */
+	if (channel != NULL && channel->is_opened) {
 		/* set the server name for the connection if not set
 		 * before */
 		vortex_connection_set_server_name (data->connection, data->serverName);
-
-		/* add the channel created to the connection */
-		vortex_connection_add_channel (data->connection, channel);
 	} /* end if */
 
 	__vortex_channel_new_invoke_caller:
@@ -4117,7 +4133,7 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
 		if(on_closed_full)
 			on_closed_full(channel->connection, channel->channel_num, result, code, msg, user_data);
 		else {
-			if(on_closed)
+			if (on_closed)
 				on_closed (channel->channel_num, result, code, msg);
 		}
 	}

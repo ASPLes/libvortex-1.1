@@ -93,6 +93,12 @@
  */
 #define REGRESSION_URI_BLOCK_TLS "http://iana.org/beep/transient/vortex-regression/block-tls"
 
+/** 
+ * A regression test profile that allows to check if the listener can
+ * send data just after accepting the channel to be created.
+ */
+#define REGRESSION_URI_FAST_SEND "http://iana.org/beep/transient/vortex-regression/fast-send"
+
 void frame_received_fake_listeners  (VortexChannel    * channel,
 				     VortexConnection * connection,
 				     VortexFrame      * frame,
@@ -662,6 +668,30 @@ bool regression_tls_handle_query (VortexConnection * connection, char * serverNa
 	return true;
 }
 
+void added_channel_fast_send (VortexChannel * channel, axlPointer user_data)
+{
+	/* check if the channel is running the fast send profile */
+	if (vortex_channel_is_running_profile (channel, REGRESSION_URI_FAST_SEND)) {
+		printf ("Found channel running %s..sending two messages\n", REGRESSION_URI_FAST_SEND);
+		if (! vortex_channel_send_msg (channel, "message 1", 9, NULL)) {
+			printf ("FAILED TO SEND MESSAGE 1 at fast send..\n");
+		}
+
+		if (! vortex_channel_send_msg (channel, "message 2", 9, NULL)) {
+			printf ("FAILED TO SEND MESSAGE 2 at fast send..\n");
+		}
+		printf ("Messages sent..ok\n");
+	}
+}
+
+bool on_accepted_fast_send (VortexConnection * connection, axlPointer data)
+{
+	/* configure the added channel handler */
+	vortex_connection_set_channel_added_handler (connection, added_channel_fast_send, NULL);
+
+	return true;
+}
+
 int  main (int  argc, char ** argv) 
 {
 
@@ -750,6 +780,13 @@ int  main (int  argc, char ** argv)
 				  NULL, NULL,
 				  frame_received_fake_listeners, NULL);
 
+
+	/* register a profile */
+	vortex_profiles_register (ctx, REGRESSION_URI_FAST_SEND,
+				  NULL, NULL,
+				  NULL, NULL,
+				  NULL, NULL);
+	vortex_listener_set_on_connection_accepted (ctx, on_accepted_fast_send, NULL);
 
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */
