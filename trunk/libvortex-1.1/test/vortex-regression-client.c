@@ -354,6 +354,90 @@ bool test_01a () {
 	return true;
 }
 
+void test_01b_created (int             channel_num, 
+		       VortexChannel * channel, 
+		       axlPointer      user_data)
+{
+	VortexAsyncQueue * queue = user_data;
+
+	/* check piggy back */
+	if (vortex_channel_have_piggyback (channel)) {
+		printf ("Found piggy back on the channel, this is not expected..\n");
+
+		/* push a notification */
+		vortex_async_queue_push (queue, INT_TO_PTR(0));
+		return;
+	}
+	
+	/* configure a piggy back */
+	vortex_channel_set_piggyback (channel, ">>>dummy content<<<");
+
+	/* close the channel here */
+	if (! vortex_channel_close (channel, NULL)) {
+		printf ("Failed to close the channel...\n");
+
+		/* push a notification */
+		vortex_async_queue_push (queue, INT_TO_PTR(0));
+
+		return;
+	}
+
+	/* push a notification */
+	vortex_async_queue_push (queue, INT_TO_PTR(3));
+
+	return;
+}
+
+bool test_01b () {
+	VortexConnection  * connection;
+	VortexAsyncQueue  * queue;
+	int                 iterator;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+	}
+
+	/* create the queue */
+	queue   = vortex_async_queue_new ();
+
+	iterator = 0;
+	while (iterator < 10) {
+
+		/* create a channel */
+		vortex_channel_new (connection, 0,
+				    REGRESSION_URI,
+				    /* no close handling */
+				    NULL, NULL,
+				    /* no frame received */
+				    NULL, NULL,
+				    /* no async channel creation */
+				    test_01b_created, queue);
+		
+		/* do not check NULL reference for channel here since the
+		 * threaded mode was activated causing to always return
+		 * NULL. */
+		
+		/* unref the queue */
+		if (PTR_TO_INT (vortex_async_queue_pop (queue)) != 3) {
+			printf ("Failed to close the channel..\n");
+			return false;
+		} /* end if */
+
+		iterator++;
+	} /* end while */
+
+	/* close the connection */
+	vortex_connection_close (connection);
+
+	vortex_async_queue_unref (queue);
+
+	return true;
+
+} /* end test_01b */
+
 #define TEST_02_MAX_CHANNELS 24
 
 bool test_02 () {
@@ -3358,6 +3442,13 @@ int main (int  argc, char ** argv)
 		printf ("Test 01-a: transfer zeroed binary frames [   OK   ]\n");
 	else {
 		printf ("Test 01-a: transfer zeroed binary frames [ FAILED ]\n");
+		return -1;
+	}
+
+	if (test_01b ())
+		printf ("Test 01-b: channel close inside created notification (31/03/2008) [   OK   ]\n");
+	else {
+		printf ("Test 01-b: channel close inside created notification (31/03/2008) [ FAILED ]\n");
 		return -1;
 	}
 
