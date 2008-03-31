@@ -889,7 +889,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 
 		/* if piggyback is defined, invoke the frame received
 		 * using the piggyback */
-		if (vortex_channel_have_piggyback (channel)) {
+		if (channel->is_opened && vortex_channel_have_piggyback (channel)) {
 			/* get the piggyback */
 			frame = vortex_channel_get_piggyback (channel);
 			
@@ -1162,7 +1162,6 @@ VortexChannel * vortex_channel_new_full (VortexConnection      * connection,
 
 	/* launch threaded version if on_channel_created is defined */
 	if (data->threaded) {
-		printf ("..2.5..");
 		vortex_thread_pool_new_task (ctx, (VortexThreadFunc) __vortex_channel_new, data);
 		return NULL;
 	}
