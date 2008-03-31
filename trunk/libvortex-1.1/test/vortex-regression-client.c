@@ -114,6 +114,12 @@ void subs (struct timeval stop, struct timeval start, struct timeval * _result)
 #define REGRESSION_URI_BLOCK_TLS "http://iana.org/beep/transient/vortex-regression/block-tls"
 
 /** 
+ * A regression test profile that allows to check if the listener can
+ * send data just after accepting the channel to be created.
+ */
+#define REGRESSION_URI_FAST_SEND "http://iana.org/beep/transient/vortex-regression/fast-send"
+
+/** 
  * @internal Allows to know if the connection must be created directly or
  * through the tunnel.
  */
@@ -437,6 +443,106 @@ bool test_01b () {
 	return true;
 
 } /* end test_01b */
+
+bool test_01c () {
+	VortexConnection  * connection;
+	VortexAsyncQueue  * queue;
+	VortexChannel     * channel;
+	VortexFrame       * frame;
+	int                 iterator;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+	}
+
+	/* create the queue */
+	queue   = vortex_async_queue_new ();
+
+	iterator = 0;
+	while (iterator < 1) {
+
+		/* create a channel */
+		channel = vortex_channel_new (connection, 0,
+					      REGRESSION_URI_FAST_SEND,
+					      /* no close handling */
+					      NULL, NULL,
+					      /* no frame received */
+					      vortex_channel_queue_reply, queue,
+					      /* no async channel creation */
+					      NULL, NULL);
+		
+		if (channel == NULL) {
+			printf ("Unable to create channel for fast send..\n");
+			return false;
+		} /* end if */
+
+		/* check connection here */
+		if (! vortex_connection_is_ok (connection, false)) {
+			printf ("Test 01-c: (1) Failed to check connection, it should be running..\n");
+			return false;
+		} /* end if */
+
+		/* receive both messages */
+		frame = vortex_channel_get_reply (channel, queue);
+		if (! axl_cmp (vortex_frame_get_payload (frame), "message 1")) {
+			printf ("Test 01-c: (1.1) Expected to find content %s but found %s..\n",
+				"message 1", (char*)vortex_frame_get_payload (frame));
+		} /* end if */
+
+		/* send reply */
+		if (! vortex_channel_send_rpy (channel, "", 0, vortex_frame_get_msgno (frame))) {
+			printf ("Test 01-c: (1.1.1) Expected to be able to reply to message received..\n");
+			return false;
+		} /* end if */
+
+		vortex_frame_unref (frame);
+
+		/* get next reply */
+		frame = vortex_channel_get_reply (channel, queue);
+		if (! axl_cmp (vortex_frame_get_payload (frame), "message 2")) {
+			printf ("Test 01-c: (1.2) Expected to find content %s but found %s..\n",
+				"message 2", (char*)vortex_frame_get_payload (frame));
+		} /* end if */
+
+		if (! vortex_channel_send_rpy (channel, "", 0, vortex_frame_get_msgno (frame))) {
+			printf ("Test 01-c: (1.1.1) Expected to be able to reply to message received..\n");
+			return false;
+		} /* end if */
+
+		vortex_frame_unref (frame);
+		
+		/* close channel */
+		if (! vortex_channel_close (channel, NULL)) {
+			printf ("Unable to close the channel..\n");
+			return false;
+		}
+
+		/* check connection here */
+		if (! vortex_connection_is_ok (connection, false)) {
+			printf ("Test 01-c: (2) Failed to check connection, it should be running..\n");
+			return false;
+		} /* end if */
+		
+		iterator++;
+	} /* end while */
+
+	/* check connection here */
+	if (! vortex_connection_is_ok (connection, false)) {
+		printf ("Test 01-c: (3) Failed to check connection, it should be running..\n");
+		return false;
+	} /* end if */
+
+	/* close the connection */
+	vortex_connection_close (connection);
+
+	vortex_async_queue_unref (queue);
+	
+	return true;
+
+} /* end test_01c */
 
 #define TEST_02_MAX_CHANNELS 24
 
@@ -2102,6 +2208,13 @@ bool test_06 ()
 		return false;
 	} /* end if */
 
+	/* check SASL channels opened at this point */
+	if (vortex_connection_channels_count (connection) != 1) {
+		printf ("Expected to find only one channel but found: %d..\n", 
+			vortex_connection_channels_count (connection));
+		return false;
+	} /* end if */
+
 	/* set external properties */
 	vortex_sasl_set_propertie (connection, VORTEX_SASL_AUTHORIZATION_ID,
 				   "acinom", NULL);
@@ -2144,6 +2257,13 @@ bool test_06 ()
 
 	if (status != VortexError) {
 		printf ("Expected to find a PLAIN mechanism failure but it wasn't found.\n");
+		return false;
+	} /* end if */
+
+	/* check SASL channels opened at this point */
+	if (vortex_connection_channels_count (connection) != 1) {
+		printf ("Expected to find only one channel but found: %d..\n", 
+			vortex_connection_channels_count (connection));
 		return false;
 	} /* end if */
 
@@ -2196,6 +2316,13 @@ bool test_06 ()
 		return false;
 	} /* end if */
 
+	/* check SASL channels opened at this point */
+	if (vortex_connection_channels_count (connection) != 1) {
+		printf ("Expected to find only one channel but found: %d..\n", 
+			vortex_connection_channels_count (connection));
+		return false;
+	} /* end if */
+
 	/* set cram-md5 properties */
 	vortex_sasl_set_propertie (connection, VORTEX_SASL_AUTH_ID,
 				   "bob", NULL);
@@ -2241,6 +2368,12 @@ bool test_06 ()
 
 	if (status != VortexError) {
 		printf ("Expected to find a DIGEST-MD5 mechanism failure but it wasn't found.\n");
+		return false;
+	} /* end if */
+
+	if (vortex_connection_channels_count (connection) != 1) {
+		printf ("Expected to find only one channel but found: %d..\n", 
+			vortex_connection_channels_count (connection));
 		return false;
 	} /* end if */
 
@@ -3452,6 +3585,13 @@ int main (int  argc, char ** argv)
 		return -1;
 	}
 
+	if (test_01c ())
+		printf ("Test 01-c: check immediately send (31/03/2008) [   OK   ]\n");
+	else {
+		printf ("Test 01-c: check immediately send (31/03/2008) [ FAILED ]\n");
+		return -1;
+	}
+
 	if (test_02 ())
 		printf ("Test 02: basic BEEP channel support [   OK   ]\n");
 	else {
@@ -3528,7 +3668,7 @@ int main (int  argc, char ** argv)
 		printf ("Test 05: TLS profile support [ FAILED ]\n");
 		return -1;
 	}
-
+	
 	if (test_05_a ()) {
 		printf ("Test 05-a: Check auto-tls on fail fix (24/03/2008) [   OK   ]\n");
 	} else {

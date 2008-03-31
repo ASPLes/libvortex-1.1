@@ -28,9 +28,9 @@
  *          
  *      Postal address:
  *         Advanced Software Production Line, S.L.
- *         C/ Antonio Suarez Nº 10, 
+ *         C/ Antonio Suarez NÂº 10, 
  *         Edificio Alius A, Despacho 102
- *         Alcalá de Henares 28802 (Madrid)
+ *         AlcalÃ¡ de Henares 28802 (Madrid)
  *         Spain
  *
  *      Email address:
@@ -622,19 +622,20 @@ char  * __vortex_sasl_initiator_do_initial_step (const char           * profile,
  * authentication couldn't be performed. Otherwise true is returned.
  */
 bool     __vortex_sasl_is_error_content (VortexFrame * frame,
-					 VortexConnection      * connection, 
-					 VortexSaslAuthNotify    process_status, 
-					 axlPointer              user_data)
+					 VortexConnection       * connection, 
+					 VortexSaslAuthNotify     process_status, 
+					 char                  ** status_msg,
+					 axlPointer               user_data)
 {
 	if (frame == NULL) {
-		__vortex_sasl_notify (process_status, connection, VortexError, 
-				      "Received a NULL frame while expenting a SASL server reply", user_data);
+		/* notify error */
+		(*status_msg) = "Received a NULL frame while expenting a SASL server reply";
 		return false;
 	}
 	
 	if (axl_memcmp (vortex_frame_get_payload (frame), "<error", 6)) {
-		__vortex_sasl_notify (process_status, connection, VortexError, 
-				      "Received a negative reply from the server side to authenticate the PEER", user_data);
+		/* notify error */
+		(*status_msg) = "Received a negative reply from the server side to authenticate the PEER";
 		return false;
 	}
 	return true;
@@ -726,11 +727,12 @@ char    * __vortex_sasl_get_base64_blob (char                  * frame_content,
 
 /* perform the next additional steps needed to authenticate the
  * peer */
-bool     __vortex_sasl_initiator_do_steps (VortexChannel         * channel, 
-					   VortexAsyncQueue           * queue,
-					   VortexConnection      * connection, 
-					   VortexSaslAuthNotify    process_status, 
-					   axlPointer              user_data)
+bool     __vortex_sasl_initiator_do_steps (VortexChannel          * channel, 
+					   VortexAsyncQueue       * queue,
+					   VortexConnection       * connection, 
+					   VortexSaslAuthNotify     process_status, 
+					   char                  ** status_msg,
+					   axlPointer               user_data)
 {
 	/* variable definitions for the sasl_client_step function */
 	int           rc;
@@ -757,7 +759,7 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel         * channel,
 		/* for the first reply, that is a piggyback or a reply
 		 * following the channel start response we have to
 		 * check if an error code was returned. */
-		if (!__vortex_sasl_is_error_content (reply, connection, process_status, user_data)) {
+		if (!__vortex_sasl_is_error_content (reply, connection, process_status, status_msg, user_data)) {
 			vortex_frame_unref (reply);
 			return false;
 		}
@@ -783,12 +785,13 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel         * channel,
 			}
 
 			/* unref status value */
-			vortex_support_free (1, status, axl_free);
-		}
+			axl_free (status);
+		} /* end if */
 
 		/* check returned value */
 		if (blob == NULL) {
 			vortex_log (VORTEX_LEVEL_DEBUG, "received empty blob and status code doesn't indicate the SASL negotiation have ended.");
+			(*status_msg) = "received empty blob and status code doesn't indicate the SASL negotiation have ended.";
 			return false;
 		}
 
@@ -817,12 +820,10 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel         * channel,
 				/* free new blob */
 				axl_free (new_blob);
 
-				__vortex_sasl_notify (process_status, connection, VortexError,
-						      "Unable to negotiate SASL profile selected, an error have happen while sending data",
-						      user_data);
+				(*status_msg) = "Unable to negotiate SASL profile selected, an error have happen while sending data";
 				return false;
-			}
-		}
+			} /* end if */
+		} /* end if */
 
 		/* unref blob generated and nullify loop variables */
 		axl_free (new_blob);
@@ -834,8 +835,7 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel         * channel,
 
 	if (rc != GSASL_OK) {
 		/* unable to negotiate the SASL auth */
-		__vortex_sasl_notify (process_status, connection, VortexError, 
-				      "SASL negotiation have failed", user_data);
+		(*status_msg) = "SASL negotiation have failed";
 		return false;
 	}
 
@@ -905,8 +905,9 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 	
 	/* local variable declarations for this function */
 	VortexChannel        * channel;
-	VortexAsyncQueue          * queue;
+	VortexAsyncQueue     * queue;
 	char                 * base64_blob;
+	char                 * status_msg = "SASL error not defined!";
 
 	/* free no longer needed node */
 	axl_free (data);
@@ -984,11 +985,11 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 
 	/* perform the next additional steps needed to authenticate the peer */
 	if (!__vortex_sasl_initiator_do_steps (channel, queue,
-					       connection, process_status, user_data)) {
-
+					       connection, process_status, &status_msg, user_data)) {
+		
 		/* unref queue */
 		vortex_async_queue_unref (queue);
-
+		
 		/* because the SASL profile negotiation have failed,
 		 * close the channel only if the connection is ok */
 		if (vortex_connection_is_ok (connection, false)) {
@@ -997,10 +998,14 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 			vortex_channel_close (channel, NULL);
 		}
 
+		/* do notifycation here */
+		__vortex_sasl_notify (process_status, connection, VortexError, status_msg, user_data);
+
 		/* unref connection here */
 		vortex_connection_unref (connection, "vortex-sasl-next");
+
 		return;
-	}
+	} /* end if */
 
 	/* unref queue */
 	vortex_async_queue_unref (queue);
