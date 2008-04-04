@@ -124,12 +124,6 @@
 #define vortex_is_disconnected ((errno == WSAESHUTDOWN) || (errno == WSAECONNABORTED) || (errno == WSAECONNRESET))
 #define VORTEX_FILE_SEPARATOR "\\"
 
-/* errno definition */
-#ifdef  errno
-#undef  errno
-#endif
-#define errno WSAGetLastError()
-
 /* a definition to avoid warnings */
 #define strlen (int) strlen
 
@@ -243,6 +237,15 @@ END_C_DECLS
 #endif
 
 #include <errno.h>
+
+#if defined(AXL_OS_WIN32)
+/* errno redefinition for windows platform. this declaration must
+ * follow the previous include. */
+#ifdef  errno
+#undef  errno
+#endif
+#define errno (WSAGetLastError())
+#endif
 
 /* console debug support:
  *
