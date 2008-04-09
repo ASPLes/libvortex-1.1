@@ -243,7 +243,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		 */
 		if (next_seq_no >= max_seq_no) {
 			
-			vortex_log (VORTEX_LEVEL_WARNING, 
+			vortex_log (VORTEX_LEVEL_DEBUG, 
 			       "Seems that the next seq number to use is greater or equal than max seq no (%d >= %d), which means that this channel (%d) is stalled",
 			       next_seq_no, max_seq_no, vortex_channel_get_number (channel));
 			/**
