@@ -1036,6 +1036,22 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
  * channel creation fails (NULL value returned) by calling to \ref
  * vortex_connection_pop_channel_error.  </i>
  *
+ * <i><b>NOTE2:</b> especially under threaded-moded (activated if \ref
+ * VortexOnChannelCreated "on_channel_created" is defined) the channel
+ * reference can't be used until the channel reference is
+ * notified.
+ * 
+ * During the channel preparation, a reference starts to be available
+ * at the connection, and it is possible to get a reference to it
+ * (i.e. \ref vortex_connection_get_channel or \ref
+ * vortex_connection_get_channel_by_func). This is provided to avoid
+ * race conditions with other running threads during its preparation
+ * and to allow application level to do some provisioning on the
+ * channel (\ref vortex_channel_set_data). 
+ * 
+ * In short, do use the channel reference to send data until it was
+ * notified to be completely created.</i>
+ *
  *
  * @param connection           session where channel will be created.
  * @param channel_num          the channel number. Using 0 automatically assigns the next channel number free.
@@ -1047,7 +1063,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
  * @param on_channel_created   a callback to be able to make channel process to be async.
  * @param user_data            user data to be passed in to \ref VortexOnChannelCreated "on_channel_created".
  * 
- * @return the newly created channel or NULL if fails under
+ * @return The newly created channel or NULL if fails under
  * non-threaded model.  Under threaded model returned value will
  * always be NULL and newly channel created will be notified on
  * \ref VortexOnChannelCreated "on_channel_created".

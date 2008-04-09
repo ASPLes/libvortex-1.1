@@ -1464,17 +1464,17 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 		} else {
 			/* null frame received */
 			vortex_log (VORTEX_LEVEL_CRITICAL,
-				    "Received null frame were it was expected initial greetings, finish connection id=%d", connection->id);
-
-				/* timeout reached while waiting for the connection to terminate */
-				shutdown (connection->session, SHUT_RDWR);
-				/* free previous message */
-				if (connection->message)
-					axl_free (connection->message);
-				connection->message      = axl_strdup_printf (
-					"Received null frame were it was expected initial greetings, finish connection id=%d", connection->id);
-				connection->is_connected = false;
-				goto __vortex_connection_new_finalize;
+				    "Connection refused. Received null frame were it was expected initial greetings, finish connection id=%d", connection->id);
+			
+			/* timeout reached while waiting for the connection to terminate */
+			shutdown (connection->session, SHUT_RDWR);
+			/* free previous message */
+			if (connection->message)
+				axl_free (connection->message);
+			connection->message      = axl_strdup_printf (
+				"Connection refused. Received null frame were it was expected initial greetings, finish connection id=%d", connection->id);
+			connection->is_connected = false;
+			goto __vortex_connection_new_finalize;
 		} /* end if */
 
 		/* make the connection to be blocking during the
