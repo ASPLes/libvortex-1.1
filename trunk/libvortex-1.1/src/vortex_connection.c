@@ -1973,7 +1973,7 @@ bool                   vortex_connection_close                  (VortexConnectio
 			vortex_connection_unref (connection, "vortex_connection_close");
 
 
-			vortex_log (VORTEX_LEVEL_CRITICAL, "failed while closing all channels");
+			vortex_log (VORTEX_LEVEL_WARNING, "failed while closing all channels");
 			return false;
 		}
 
