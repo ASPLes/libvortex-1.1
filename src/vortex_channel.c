@@ -894,32 +894,37 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 	
 	/* finally, invoke caller with channel result */
 	if (data->threaded) {
-		/* ensure we do not lost the reference during the
-		 * channel notification */
-		vortex_channel_ref (channel);
-
-		/* invoke the channel created handler */
-		data->on_channel_created (channel ? channel->channel_num : -1, 
-					  channel ? channel : NULL, 
-					  data->user_data);
-
-		/* if piggyback is defined, invoke the frame received
-		 * using the piggyback */
-		if (channel->is_opened && vortex_channel_have_piggyback (channel)) {
-			/* get the piggyback */
-			frame = vortex_channel_get_piggyback (channel);
+		if (channel) {
+			/* ensure we do not lost the reference during the
+			 * channel notification */
+			vortex_channel_ref (channel);
 			
-			/* invoke the frame received */
-			vortex_channel_invoke_received_handler (data->connection, channel, frame);
-		}
-
-		/* unref the channel here */
-		vortex_channel_unref (channel);
+			/* invoke the channel created handler */
+			data->on_channel_created (channel->channel_num,
+						  channel, 
+						  data->user_data);
+			
+			/* if piggyback is defined, invoke the frame received
+			 * using the piggyback */
+			if (channel->is_opened && vortex_channel_have_piggyback (channel)) {
+				/* get the piggyback */
+				frame = vortex_channel_get_piggyback (channel);
+				
+				/* invoke the frame received */
+				vortex_channel_invoke_received_handler (data->connection, channel, frame);
+			}
+			
+			/* unref the channel here */
+			vortex_channel_unref (channel);
+		} else {
+			/* notify null reference receievd */
+			data->on_channel_created (-1, NULL, data->user_data);
+		} /* end if */
 
 		/* free no longer needed data */
 		vortex_channel_data_free (data);
 		return NULL;
-	}
+	} /* end if */
 
 	/* free no longer needed data */
 	vortex_channel_data_free (data);
@@ -4202,6 +4207,8 @@ bool     __vortex_channel_close_full (VortexChannel * channel,
 	
 	v_return_val_if_fail (channel,                   false);
 	v_return_val_if_fail (channel->channel_num >= 0, false);
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "vortex_channel_close of channel #%d",channel->channel_num);
 
 	/* check if the caller is trying to close the channel that was
 	 * notified to be closed */
