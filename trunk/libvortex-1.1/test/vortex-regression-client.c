@@ -120,6 +120,18 @@ void subs (struct timeval stop, struct timeval start, struct timeval * _result)
 #define REGRESSION_URI_FAST_SEND "http://iana.org/beep/transient/vortex-regression/fast-send"
 
 /** 
+ * A regression test profile to check channel deny operations. This
+ * profile must not be supported by the listener side.
+ */
+#define REGRESSION_URI_DENY "http://iana.org/beep/transient/vortex-regression/deny"
+
+/** 
+ * A regression test profile to check channel deny operations. This
+ * profile is supported by the remote listener.
+ */
+#define REGRESSION_URI_DENY_SUPPORTED "http://iana.org/beep/transient/vortex-regression/deny_supported"
+
+/** 
  * @internal Allows to know if the connection must be created directly or
  * through the tunnel.
  */
@@ -546,6 +558,26 @@ bool test_01c () {
 
 #define TEST_02_MAX_CHANNELS 24
 
+void test_02_channel_created (int channel_num, VortexChannel * channel, axlPointer user_data)
+{
+	
+	/* check error code received */
+	if (channel_num != -1) {
+		printf ("ERROR: expected to received -1 on channel creation failure, inside threaded mode, but found: %d\n", 
+			channel_num);
+		vortex_async_queue_push ((VortexAsyncQueue *) user_data, INT_TO_PTR(2));
+		return;
+	} /* end if */
+
+	/* push data received (in the case a null reference is
+	 * received push 1 because we can't push NULL or 0. in the
+	 * case a valid reference is received push it as is to break
+	 * the other side */
+	vortex_async_queue_push ((VortexAsyncQueue *) user_data, channel == NULL ? INT_TO_PTR(1) : channel);
+
+	return;
+}
+
 bool test_02 () {
 
 	VortexConnection * connection;
@@ -554,6 +586,8 @@ bool test_02 () {
 	VortexFrame      * frame;
 	int                iterator;
 	char             * message;
+	char             * msg;
+	int                code;
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
@@ -704,14 +738,96 @@ bool test_02 () {
 
 	} /* end while */
 
+	/* now check for channels denied to be opened */
+	channel[0] = vortex_channel_new (connection, 0, 
+					 REGRESSION_URI_DENY,
+					 /* no close handling */
+					 NULL, NULL,
+					 /* no frame receive handling */
+					 NULL, NULL,
+					 /* no async channel create notification */
+					 NULL, NULL);
+	if (channel[0] != NULL) {
+		printf ("Expected to find an error while trying to create a channel under the profile: %s\n",
+			REGRESSION_URI_DENY);
+		return false;
+	}
+
+	/* now check channel creation in threaded mode */
+	vortex_channel_new (connection, 0, 
+			    REGRESSION_URI_DENY,
+			    /* no close handling */
+			    NULL, NULL,
+			    /* no frame receive handling */
+			    NULL, NULL,
+			    /* no async channel create notification */
+			    test_02_channel_created, queue);
+
+	/* get channel created */
+	channel[0] = vortex_async_queue_pop (queue);
+					 
+	if (PTR_TO_INT (channel[0]) != 1) {
+		printf ("Expected to find an error while trying to create a channel under the profile: %s\n",
+			REGRESSION_URI_DENY);
+		return false;
+	}
+	
+	/* check error code here */
+	if (! vortex_connection_pop_channel_error (connection, &code, &msg)) {
+		printf ("Expected to find error message after channel creation failure..\n");
+		return false;
+	}
+
+	/* check profile not supported error code */
+	if (code != 554) {
+		printf ("Expected to find error code reported as profile not supported.\n");
+		return false;
+	}
+
+	axl_free (msg);
+
+	/* now check channel creation in threaded mode for a remote supported profile */
+	vortex_channel_new (connection, 0, 
+			    REGRESSION_URI_DENY_SUPPORTED,
+			    /* no close handling */
+			    NULL, NULL,
+			    /* no frame receive handling */
+			    NULL, NULL,
+			    /* no async channel create notification */
+			    test_02_channel_created, queue);
+
+	/* get channel created */
+	channel[0] = vortex_async_queue_pop (queue);
+					 
+	if (PTR_TO_INT (channel[0]) != 1) {
+		printf ("Expected to find an error while trying to create a channel under the profile: %s\n",
+			REGRESSION_URI_DENY);
+		return false;
+	}
+	
+	/* check error code here */
+	if (! vortex_connection_pop_channel_error (connection, &code, &msg)) {
+		printf ("Expected to find error message after channel creation failure..\n");
+		return false;
+	}
+
+	/* check profile not supported error code */
+	if (code != 421) {
+		printf ("Expected to find error code reported as profile supported by denied to create a channel.\n");
+		return false;
+	} 
+
+	axl_free (msg);
+
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection)) {
 		printf ("failed to close the BEEP session\n");
 		return false;
 	} /* end if */
-
+	
 	/* free queue */
 	vortex_async_queue_unref (queue);
+	
 
 	/* return true */
 	return true;

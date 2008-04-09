@@ -99,6 +99,12 @@
  */
 #define REGRESSION_URI_FAST_SEND "http://iana.org/beep/transient/vortex-regression/fast-send"
 
+/** 
+ * A regression test profile to check channel deny operations. This
+ * profile is supported by the remote listener.
+ */
+#define REGRESSION_URI_DENY_SUPPORTED "http://iana.org/beep/transient/vortex-regression/deny_supported"
+
 void frame_received_fake_listeners  (VortexChannel    * channel,
 				     VortexConnection * connection,
 				     VortexFrame      * frame,
@@ -692,6 +698,13 @@ bool on_accepted_fast_send (VortexConnection * connection, axlPointer data)
 	return true;
 }
 
+
+bool deny_supported (int channel_num, VortexConnection *connection, axlPointer user_data) 
+{
+	/* do not accept channel; never */
+	return false;
+}
+
 int  main (int  argc, char ** argv) 
 {
 
@@ -787,6 +800,12 @@ int  main (int  argc, char ** argv)
 				  NULL, NULL,
 				  NULL, NULL);
 	vortex_listener_set_on_connection_accepted (ctx, on_accepted_fast_send, NULL);
+
+	vortex_profiles_register (ctx, REGRESSION_URI_DENY_SUPPORTED,
+				  /* handler that always denies */
+				  deny_supported, NULL,
+				  NULL, NULL,
+				  NULL, NULL);
 
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */
