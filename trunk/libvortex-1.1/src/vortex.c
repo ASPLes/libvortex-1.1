@@ -1,16 +1,16 @@
 /* 
  *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
- *  Copyright (C) 2005 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2008 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2.1 of
- *  the License, or (at your option) any later version.
+ *  as published by the Free Software Foundation; either version 2.1
+ *  of the License, or (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of 
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the  
- *  GNU Lesser General Public License for more details.
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
  *
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this program; if not, write to the Free
@@ -18,19 +18,18 @@
  *  02111-1307 USA
  *  
  *  You may find a copy of the license under this software is released
- *  at COPYING file. This is LGPL software: you are welcome to
- *  develop proprietary applications using this library without any
- *  royalty or fee but returning back any change, improvement or
- *  addition in the form of source code, project image, documentation
- *  patches, etc. 
+ *  at COPYING file. This is LGPL software: you are welcome to develop
+ *  proprietary applications using this library without any royalty or
+ *  fee but returning back any change, improvement or addition in the
+ *  form of source code, project image, documentation patches, etc.
  *
  *  For commercial support on build BEEP enabled solutions contact us:
  *          
  *      Postal address:
  *         Advanced Software Production Line, S.L.
- *         C/ Antonio Suarez Nº 10, 
+ *         C/ Antonio Suarez NÂº 10, 
  *         Edificio Alius A, Despacho 102
- *         Alcalá de Henares 28802 (Madrid)
+ *         AlcalÃ¡ de Henares 28802 (Madrid)
  *         Spain
  *
  *      Email address:
@@ -1562,9 +1561,9 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * \code
  *      Postal address:
  *         Advanced Software Production Line, S.L.
- *         C/ Antonio Suarez Nº 10, 
+ *         C/ Antonio Suarez NÃ‚Âº 10, 
  *         Edificio Alius A, Despacho 102
- *         Alcalá de Henares 28802 (Madrid)
+ *         AlcalÃƒÂ¡ de Henares 28802 (Madrid)
  *         Spain
  *
  *      Email address:
@@ -3232,7 +3231,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *  Locality Name (eg, city) []:Coslada
  *  Organization Name (eg, company) [Internet Widgits Pty Ltd]:Advanced Software Production Line, S.L.
  *  Organizational Unit Name (eg, section) []:Software Development
- *  Common Name (eg, YOUR name) []:Francis Brosnan Blázquez
+ *  Common Name (eg, YOUR name) []:Francis Brosnan BlÃ¡zquez
  *  Email Address []:francis@aspl.es
  *  Certificate (and private key) is in newreq.pem
  * \endcode
