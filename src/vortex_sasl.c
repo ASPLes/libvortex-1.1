@@ -2204,7 +2204,9 @@ void           vortex_sasl_set_digest_md5_validation_full  (VortexCtx * ctx, Vor
  * 
  * @return true the mechanism was enabled to be accepted.
  */
-bool               vortex_sasl_accept_negociation_full        (VortexCtx * ctx, char  * mech, axlPointer user_data)
+bool               vortex_sasl_accept_negociation_full        (VortexCtx  * ctx, 
+							       const char * mech, 
+							       axlPointer user_data)
 {
 #ifndef ENABLE_SASL_SUPPORT
 	/* current Vortex Library doesn't support SASL */
@@ -2276,7 +2278,7 @@ bool               vortex_sasl_accept_negociation_full        (VortexCtx * ctx, 
  * 
  * @return true the mechanism was enabled to be accepted.
  */
-bool               vortex_sasl_accept_negociation        (VortexCtx * ctx, char  * mech)
+bool               vortex_sasl_accept_negociation        (VortexCtx * ctx, const char  * mech)
 {
     return vortex_sasl_accept_negociation_full (ctx, mech, NULL);
 }
