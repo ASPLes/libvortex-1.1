@@ -316,10 +316,10 @@ void               vortex_sasl_set_digest_md5_validation      (VortexCtx * ctx, 
 void               vortex_sasl_set_digest_md5_validation_full (VortexCtx * ctx, VortexSaslAuthDigestMd5Full auth_handler);
 
 
-bool               vortex_sasl_accept_negociation             (VortexCtx * ctx, 
-							       char      * mech);
-bool               vortex_sasl_accept_negociation_full        (VortexCtx * ctx,
-							       char      * mech, 
+bool               vortex_sasl_accept_negociation             (VortexCtx  * ctx, 
+							       const char * mech);
+bool               vortex_sasl_accept_negociation_full        (VortexCtx  * ctx,
+							       const char * mech, 
 							       axlPointer user_data);
 
        
