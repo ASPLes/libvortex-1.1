@@ -132,6 +132,12 @@ void subs (struct timeval stop, struct timeval start, struct timeval * _result)
 #define REGRESSION_URI_DENY_SUPPORTED "http://iana.org/beep/transient/vortex-regression/deny_supported"
 
 /** 
+ * A regression test profile to check channel deny operations. This
+ * profile is supported by the remote listener.
+ */
+#define REGRESSION_URI_CLOSE_AFTER_LARGE_REPLY "http://iana.org/beep/transient/vortex-regression/close-after-large-reply"
+
+/** 
  * @internal Allows to know if the connection must be created directly or
  * through the tunnel.
  */
@@ -1086,6 +1092,155 @@ bool test_02c () {
 	/* return true */
 	return true;
 }
+
+bool test_02d () {
+	VortexConnection  * connection;
+	VortexChannel     * channel;
+	VortexAsyncQueue  * queue;
+	VortexFrame       * frame;
+	char              * message;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+	}
+
+	/* create the queue */
+	queue   = vortex_async_queue_new ();
+
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_CLOSE_AFTER_LARGE_REPLY,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return false;
+	}
+
+	/* send a message the */
+	printf ("Test 02-d: Sending message..\n");
+	if (! vortex_channel_send_msg (channel, "a", 1, NULL)) {
+		printf ("failed to send a small message\n");
+		return false;
+	}
+
+	/* pop and free */
+	printf ("Test 02-d: message sent, waiting reply....\n");
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL) {
+		printf ("Found null frame when expecting for content..\n");
+		return false;
+	}
+	if (vortex_frame_get_payload_size (frame) != 32767) {
+		printf ("Expected to find payload content size %d but found %d\n",
+			32767, vortex_frame_get_payload_size (frame));
+		return false;
+	}
+	vortex_frame_unref (frame);
+
+	printf ("Test 02-d: message received ok..\n");
+	
+	
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("Failed to close connection: %s\n", vortex_connection_get_message (connection));
+		return false;
+	}
+
+
+	/*** SECOND TEST PART ***/
+	printf ("Test 02-d: now check local close..\n");
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+	}
+
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_CLOSE_AFTER_LARGE_REPLY,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return false;
+	}
+
+	/* send a message the */
+	printf ("Test 02-d: Sending message..\n");
+	if (! vortex_channel_send_msg (channel, "send-message", 12, NULL)) {
+		printf ("failed to send a small message\n");
+		return false;
+	}
+
+	/* block until reply is received */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL) {
+		printf ("Found null frame when expecting for content..\n");
+		return false;
+	}
+
+	/* check reply for our first message and send rply for next
+	 * message */
+	printf ("Test 02-d: received message reply, checking its type...\n");
+	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
+		printf ("Expected to find RPY type but found: %d..\n", vortex_frame_get_type (frame));
+		return false;
+	}
+	vortex_frame_unref (frame);
+
+	/* block until reply is received */
+	printf ("Test 02-d: received message to be replied..\n");
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL) {
+		printf ("Found null frame when expecting for content..\n");
+		return false;
+	}
+
+	/* check reply for our first message and send rply for next
+	 * message */
+	printf ("Test 02-d: Received message...checking..\n");
+	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_MSG) {
+		printf ("Expected to find RPY type but found: %d..\n", vortex_frame_get_type (frame));
+		return false;
+	}
+
+	/* now reply with a huge message */
+	message = axl_new (char, 65536);
+	if (! vortex_channel_send_rpy (channel, message, 65536, vortex_frame_get_msgno (frame))) {
+		printf ("Expected to be able to send reply..\n");
+		return false;
+	}
+	axl_free (message);
+	vortex_frame_unref (frame);
+
+	/* now close the connection */
+	printf ("Test 02-d: now close connection..\n");
+	if (! vortex_connection_close (connection)) {
+		printf ("Failed to close connection: %s\n", vortex_connection_get_message (connection));
+		return false;
+	}
+
+	/* dealloc the queue */
+	vortex_async_queue_unref (queue);
+
+	/* return true */
+	return true;
+}
+
 
 #define TEST_03_MSGSIZE (65536 * 8)
 
@@ -3733,6 +3888,13 @@ int main (int  argc, char ** argv)
 		printf ("Test 02-c: huge amount of small message followed by close  [   OK   ]\n");
 	else {
 		printf ("Test 02-c: huge amount of small message followed by close [ FAILED ]\n");
+		return -1;
+	}
+	
+	if (test_02d ()) 
+		printf ("Test 02-d: close after large reply [   OK   ]\n");
+	else {
+		printf ("Test 02-d: close after large reply [ FAILED ]\n");
 		return -1;
 	}
 

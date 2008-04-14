@@ -588,6 +588,7 @@ typedef struct _VortexWriterData {
 	int               msg_no;
 	char            * the_frame;
 	int               the_size;
+	bool              is_complete;
 }VortexWriterData;
 
 /** 

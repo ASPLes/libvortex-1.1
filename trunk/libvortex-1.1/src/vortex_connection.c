@@ -1963,7 +1963,14 @@ bool                   vortex_connection_close                  (VortexConnectio
 
 		/* update the connection reference to avoid race
 		 * conditions caused by deallocations */
-		vortex_connection_ref (connection, "vortex_connection_close");
+		if (! vortex_connection_ref (connection, "vortex_connection_close")) {
+			vortex_log (VORTEX_LEVEL_WARNING, 
+				    "failed to update reference counting on the connection during close operation, skiping clean close operation..");
+			__vortex_connection_set_not_connected (connection, 
+							       "failed to update reference counting on the connection during close operation, skiping clean close operation..");
+			vortex_connection_unref (connection, "vortex_connection_close");
+			return true;
+		}
 		
 		/* close all channels because the connection at this
 		 * point is running properly */

@@ -374,5 +374,8 @@ VortexCtx         * vortex_channel_get_ctx                        (VortexChannel
 void                vortex_channel_init                           (VortexCtx * ctx);
 
 void                vortex_channel_cleanup                        (VortexCtx * ctx);
+
+bool                vortex_channel_block_until_replies_are_sent   (VortexChannel * channel, 
+								   long int        microseconds_to_wait);
 								   
 #endif

@@ -304,7 +304,8 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 							       /* calculated frame size */
 							       &(packet.the_size));
 		/* set frame returned to the package */
-		packet.the_frame = a_frame;
+		packet.the_frame   = a_frame;
+		packet.is_complete = (size_to_copy == message_size);
 		
 			
 		/* STEP 1: new queue the rest of the message if it
@@ -554,7 +555,7 @@ bool     vortex_sequencer_direct_send (VortexConnection * connection,
 	}
 
 	/* signal the message have been sent */
-	if (packet->type == VORTEX_FRAME_TYPE_RPY) {
+	if (packet->type == VORTEX_FRAME_TYPE_RPY && packet->is_complete) {
 
 		/* update reply sent */
 		vortex_channel_update_status (channel, 0, packet->msg_no, UPDATE_RPY_NO_WRITTEN);
@@ -564,8 +565,6 @@ bool     vortex_sequencer_direct_send (VortexConnection * connection,
 		
 		/* signal reply sent */
 		vortex_channel_signal_rpy_sent (channel, packet->msg_no);
-		
-		
 	}
 
 	/* unref the channel now finished the operation */
