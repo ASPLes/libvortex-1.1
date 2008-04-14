@@ -105,6 +105,12 @@
  */
 #define REGRESSION_URI_DENY_SUPPORTED "http://iana.org/beep/transient/vortex-regression/deny_supported"
 
+/** 
+ * A regression test profile to check channel deny operations. This
+ * profile is supported by the remote listener.
+ */
+#define REGRESSION_URI_CLOSE_AFTER_LARGE_REPLY "http://iana.org/beep/transient/vortex-regression/close-after-large-reply"
+
 void frame_received_fake_listeners  (VortexChannel    * channel,
 				     VortexConnection * connection,
 				     VortexFrame      * frame,
@@ -573,6 +579,7 @@ bool check_profiles_adviced (int channel_num, VortexConnection *connection, axlP
 	if (axl_list_length (profiles) < 3) {
 		printf ("ERROR: Expected to find 3 profiles registered, but found: %d..\n",
 			axl_list_length (profiles));
+		axl_list_free (profiles);
 		return false;
 	}
 
@@ -581,6 +588,7 @@ bool check_profiles_adviced (int channel_num, VortexConnection *connection, axlP
 						      "urn:vortex:regression-test:uri:1")) {
 		printf ("ERROR: Expected to find support profile: %s, but it wasn't found..\n", 
 			"urn:vortex:regression-test:uri:1");
+		axl_list_free (profiles);
 		return false;
 	}
 
@@ -589,6 +597,7 @@ bool check_profiles_adviced (int channel_num, VortexConnection *connection, axlP
 						      "urn:vortex:regression-test:uri:2")) {
 		printf ("ERROR: Expected to find support profile: %s, but it wasn't found..\n", 
 			"urn:vortex:regression-test:uri:2");
+		axl_list_free (profiles);
 		return false;
 	}
 
@@ -597,10 +606,12 @@ bool check_profiles_adviced (int channel_num, VortexConnection *connection, axlP
 						      "urn:vortex:regression-test:uri:3")) {
 		printf ("ERROR: Expected to find support profile: %s, but it wasn't found..\n",
 			"urn:vortex:regression-test:uri:3");
+		axl_list_free (profiles);
 		return false;
 	}
 	
 	/* ok */
+	axl_list_free (profiles);
 	return true;
 
 }
@@ -705,6 +716,68 @@ bool deny_supported (int channel_num, VortexConnection *connection, axlPointer u
 	return false;
 }
 
+/** 
+ * @internal Handler that replies to a message received with huge
+ * content and then closes.
+ * 
+ */
+void frame_received_close_after_large_reply (VortexChannel    * channel,
+					     VortexConnection * connection,
+					     VortexFrame      * frame,
+					     axlPointer         user_data)
+{
+	char             * message;
+
+	/* check message that only requires a reply followed by a message */
+	if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_MSG &&
+	    axl_cmp (vortex_frame_get_payload (frame), "send-message")) {
+		printf ("Test-02d: received request to reply and send a new message..\n");
+		if (! vortex_channel_send_rpy (channel, "", 0, vortex_frame_get_msgno (frame))) {
+			printf ("!!!!! ERROR: found error while sending reply, unable to complete test-02d..\n");
+			return;
+		}
+		if (! vortex_channel_send_msg (channel, "", 0, NULL)) {
+			printf ("!!!!! ERROR: found error while sending reply, unable to complete test-02d..\n");
+			return;
+		}
+		printf ("Test-02d: received a request to reply and send a new message..ok\n");
+		return;
+	} /* end if */
+
+	if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_MSG) {
+		printf ("Test-02d: received request, sending reply: '%s...\n", (char*) vortex_frame_get_payload (frame));
+		/* send big reply */
+		message = axl_new (char, 32767);
+		if (! vortex_channel_send_rpy (channel, message, 32767, vortex_frame_get_msgno (frame))) {
+			printf ("!!!!! ERROR: found error while sending reply, unable to complete test-02d..\n");
+			return;
+		}
+		axl_free (message);
+
+		/* wait a bit to allow sending all pending content */
+		printf ("Test-02d: waiting to flush all content..\n");
+		if (! vortex_channel_block_until_replies_are_sent (channel, -1)) {
+			printf ("!!!!! ERROR: found error while checking if all replies were sent..\n");
+			return;
+		}
+
+		/* now close the connection */
+		printf ("Test-02d: sent!..now close the connection...\n");
+		if (! vortex_connection_close (connection)) {
+			printf ("!!!!! ERROR: failed to close connection, unable to complete test-02d..\n");
+			return;
+		}
+
+		printf ("Test-02d: managed to send reply and close the connection..\n");
+		return;
+	} /* end if */
+
+	printf ("Test-02d: received unhandled frame type..\n");
+
+	return;
+}
+
+
 int  main (int  argc, char ** argv) 
 {
 
@@ -806,6 +879,16 @@ int  main (int  argc, char ** argv)
 				  deny_supported, NULL,
 				  NULL, NULL,
 				  NULL, NULL);
+
+	/* registre a profile to send a rpy huge and then close a channel */
+	vortex_profiles_register (ctx, REGRESSION_URI_CLOSE_AFTER_LARGE_REPLY,
+				  /* start channel handler */
+				  NULL, NULL,
+				  /* close channel handler */
+				  NULL, NULL,
+				  /* frame received handler */
+				  frame_received_close_after_large_reply, NULL);
+				  
 
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */

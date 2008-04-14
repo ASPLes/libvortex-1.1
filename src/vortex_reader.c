@@ -151,12 +151,13 @@ bool     __vortex_reader_update_incoming_buffer_and_notify (VortexConnection  * 
 			 * Now create a SEQ frame with higher priority to
 			 * report remote side that the current max seq no
 			 * value have been updated. */
-			writer.type      = VORTEX_FRAME_TYPE_SEQ;
-			writer.msg_no    = 0;
-			writer.the_frame = vortex_frame_seq_build_up_from_params (vortex_channel_get_number (channel),
-										  ackno,
-										  window);
-			writer.the_size  = strlen (writer.the_frame);
+			writer.type        = VORTEX_FRAME_TYPE_SEQ;
+			writer.msg_no      = 0;
+			writer.the_frame   = vortex_frame_seq_build_up_from_params (vortex_channel_get_number (channel),
+										    ackno,
+										    window);
+			writer.the_size    = strlen (writer.the_frame);
+			writer.is_complete = true;
 			vortex_log (VORTEX_LEVEL_DEBUG, "notifying remote side that current buffer status is %s",
 				    writer.the_frame);
 			/* Queue the vortex writer message to be sent with

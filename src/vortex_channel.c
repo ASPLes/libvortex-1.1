@@ -3898,38 +3898,53 @@ bool     __vortex_channel_block_until_replies_are_received (VortexChannel * chan
 
 
 /** 
- * @internal
- * @brief Blocks a channel until all replies to message receive are
+ * @brief Block the caller until all pending replies are sent for the
+ * channel provided.
+ *
+ * @param channel The channel that could contain pending replies to be
  * sent.
  *
- * This function is used by __vortex_channel_close to ensure we send
- * all replies awaited by the remote peer until getting blocked for
- * the ok message.
+ * @param microseconds_to_wait Amount of time to implement the timeout
+ * or -1 if the caller is requesting to lock using default timeout
+ * provided by vortex_connection_get_timeout.
  *
- * 
- * @param channel the channel to block
- *
- * @return true if the waiting was ok in all cases or false if
- * something has failed because the connection is not ok.
+ * @return true if all pending replies were sent (or no pending
+ * replies were found). Otherwise false is returned due to connection
+ * problems (\ref vortex_connection_is_ok) or because timeout has been
+ * reached.
  */
-bool     __vortex_channel_block_until_replies_are_sent (VortexChannel * channel)
+bool     vortex_channel_block_until_replies_are_sent (VortexChannel * channel, 
+						      long int        microseconds_to_wait)
 {
-	bool            result = true;
-#if defined(ENABLE_VORTEX_LOG)
-	VortexCtx     * ctx    = vortex_channel_get_ctx (channel);
-#endif
+	VortexCtx     * ctx     = vortex_channel_get_ctx (channel);
+	bool            result  = true;
+
+	/* normalize the value received */
+	if (microseconds_to_wait < 0)
+		microseconds_to_wait = vortex_connection_get_timeout (ctx);
 
 	/* look the mutex */
 	vortex_mutex_lock (&channel->pending_mutex);
 
 	while (channel->last_message_received != (channel->last_reply_written)) {
+		
+		/* check timeout here */
+		if (microseconds_to_wait < 0) {
+			vortex_log (VORTEX_LEVEL_WARNING, 
+				    "we still didn't sent replies for connection=%d channel=%d, (RPY %d != MSG %d), but timeout has been reached",
+				    vortex_connection_get_id (channel->connection),
+				    channel->channel_num,
+				    (channel->last_reply_written), channel->last_message_received);
+			result = false;
+			break;
+		} /* end if */
 
 		/* drop a log */
 		vortex_log (VORTEX_LEVEL_WARNING, 
-		       "we still didn't sent replies for connection=%d channel=%d, block until all replies are sent (RPY %d != MSG %d)",
-		       vortex_connection_get_id (channel->connection),
-		       channel->channel_num,
-		       (channel->last_reply_written), channel->last_message_received);
+			    "we still didn't sent replies for connection=%d channel=%d, block until all replies are sent (RPY %d != MSG %d), remaining timeout=%d",
+			    vortex_connection_get_id (channel->connection),
+			    channel->channel_num,
+			    (channel->last_reply_written), channel->last_message_received, microseconds_to_wait);
 		
 		/* check the connection status to perform a signaled
 		 * wait for replies not received */
@@ -3940,7 +3955,10 @@ bool     __vortex_channel_block_until_replies_are_sent (VortexChannel * channel)
 					       &channel->pending_cond, 
 					       &channel->pending_mutex,
 					       500000);
-			result = true;
+
+			/* remove the amount of time implemented */
+			microseconds_to_wait -= 500000;
+			result                = true;
 		} else {
 			/* the connection is closed so, the replies
 			 * will never arrive. Because this is a
@@ -4116,8 +4134,8 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
 	/* step 3)
 	 *
 	 * ensure we have sent all message replies to remote peer
-	 * MSG */
-	__vortex_channel_block_until_replies_are_sent (channel);
+	 * doing timeout wait with the default value. */
+	vortex_channel_block_until_replies_are_sent (channel, -1);
 
 	frame = vortex_channel_wait_reply (channel0, msg_no, wait_reply);
 	switch (vortex_frame_get_type (frame)) {
