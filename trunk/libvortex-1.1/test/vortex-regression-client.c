@@ -1241,6 +1241,103 @@ bool test_02d () {
 	return true;
 }
 
+bool test_02e () {
+
+	VortexConnection * connection;
+	VortexChannel    * channel;
+	WaitReplyData    * wait_reply;
+	VortexFrame      * frame;
+	int                iterator;
+	char             * message;
+	int                msg_no;
+	VortexAsyncQueue * queue;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+		
+	} /* end if */
+
+	/* create the queue */
+	queue = vortex_async_queue_new ();
+	
+	/* create the channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+	/* check channel returned */
+	if (channel == NULL) {
+		printf ("Unable to create the channel, failed to create channel..\n");
+		return false;
+	}
+
+	/* now send data */
+	iterator = 0;
+	while (iterator < 10) {
+
+		/* create wait reply object */
+		wait_reply = vortex_channel_create_wait_reply ();
+		
+		/* build the message */
+		message    = axl_strdup_printf ("Message: %d\n", iterator);
+
+		/* send message */
+		if (! vortex_channel_send_msg_and_wait (channel, message, strlen (message), &msg_no, wait_reply)) {
+			printf ("Unable to send message over channel=%d\n", vortex_channel_get_number (channel));
+			return false;
+		}
+
+		/* get message */
+		frame = vortex_channel_wait_reply (channel, msg_no, wait_reply);
+		if (frame == NULL) {
+			printf ("there was an error while receiving the reply or a timeout have occur\n");
+			return false;
+		}
+
+		/* check reference counting for frame returned */
+		if (vortex_frame_ref_count (frame) != 1) {
+			printf ("Expected to find ref counting equal to == 1, but found %d..\n",
+				vortex_frame_ref_count (frame));
+			return false;
+		}
+
+		/* check data */
+		if (! axl_cmp (vortex_frame_get_payload (frame), message)) {
+			printf ("Found different content at message..\n");
+			return false;
+		}
+
+		/* unref frame */
+		vortex_frame_unref (frame);
+
+		/* free message */
+		axl_free (message);
+
+		/* update iterator */
+		iterator++;
+
+	} /* end while */
+
+	vortex_async_queue_unref (queue);
+
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return false;
+	} /* end if */
+	
+
+	/* return true */
+	return true;
+}
+
 
 #define TEST_03_MSGSIZE (65536 * 8)
 
@@ -3895,6 +3992,13 @@ int main (int  argc, char ** argv)
 		printf ("Test 02-d: close after large reply [   OK   ]\n");
 	else {
 		printf ("Test 02-d: close after large reply [ FAILED ]\n");
+		return -1;
+	}
+
+	if (test_02e ()) 
+		printf ("Test 02-e: check wait reply support [   OK   ]\n");
+	else {
+		printf ("Test 02-e: check wait reply support [ FAILED ]\n");
 		return -1;
 	}
 
