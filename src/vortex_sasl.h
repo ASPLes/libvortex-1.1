@@ -53,38 +53,38 @@
 #define VORTEX_SASL_FAMILY        "http://iana.org/beep/SASL"
 /** 
  * @brief ANONYMOUS profile identification to be used at \ref
- * vortex_sasl_start_auth or \ref vortex_sasl_accept_negociation.
+ * vortex_sasl_start_auth or \ref vortex_sasl_accept_negotiation.
  */
 #define VORTEX_SASL_ANONYMOUS     "http://iana.org/beep/SASL/ANONYMOUS"
 /** 
  * @brief EXTERNAL profile identification to be used at \ref
- * vortex_sasl_start_auth or \ref vortex_sasl_accept_negociation.
+ * vortex_sasl_start_auth or \ref vortex_sasl_accept_negotiation.
  */
 #define VORTEX_SASL_EXTERNAL      "http://iana.org/beep/SASL/EXTERNAL"
 /** 
  * @brief PLAIN profile identification to be used at \ref
- * vortex_sasl_start_auth or \ref vortex_sasl_accept_negociation.
+ * vortex_sasl_start_auth or \ref vortex_sasl_accept_negotiation.
  */
 #define VORTEX_SASL_PLAIN         "http://iana.org/beep/SASL/PLAIN"
 /** 
  * @brief CRAM-MD5 profile identification to be used at \ref
- * vortex_sasl_start_auth or \ref vortex_sasl_accept_negociation.
+ * vortex_sasl_start_auth or \ref vortex_sasl_accept_negotiation.
  */
 #define VORTEX_SASL_CRAM_MD5      "http://iana.org/beep/SASL/CRAM-MD5"
 /** 
  * @brief DIGEST-MD5 profile identification to be used at \ref
- * vortex_sasl_start_auth or \ref vortex_sasl_accept_negociation.
+ * vortex_sasl_start_auth or \ref vortex_sasl_accept_negotiation.
  */
 #define VORTEX_SASL_DIGEST_MD5    "http://iana.org/beep/SASL/DIGEST-MD5"
 /** 
  * @brief GSSAPI profile identification to be used at \ref
- * vortex_sasl_start_auth or \ref vortex_sasl_accept_negociation.
+ * vortex_sasl_start_auth or \ref vortex_sasl_accept_negotiation.
  * Currently GSSAPI is not supported by Vortex Library.
  */
 #define VORTEX_SASL_GSSAPI        "http://iana.org/beep/SASL/GASSAPI"
 /** 
  * @brief KERBEROS_V4 profile identification to be used at \ref
- * vortex_sasl_start_auth or \ref vortex_sasl_accept_negociation.
+ * vortex_sasl_start_auth or \ref vortex_sasl_accept_negotiation.
  * Currently KERBEROS_V4 is not supported by Vortex Library.
  */
 #define VORTEX_SASL_KERBEROS_V4   "http://iana.org/beep/SASL/KERBEROS_V4"
@@ -95,7 +95,7 @@
  * and vortex_connection_get_data to access the data. 
  * 
  * This data is configured at \ref
- * vortex_sasl_accept_negociation_full, and then passed to the handler
+ * vortex_sasl_accept_negotiation_full, and then passed to the handler
  * configured. Because the SASL module doesn't remove this data once
  * the authentication process have finished, you can still get access
  * to the data configured using this key.
@@ -108,7 +108,7 @@
  * and vortex_connection_get_data to access the data.
  *
  * This data is configured at \ref
- * vortex_sasl_accept_negociation_full, and then passed to the handler
+ * vortex_sasl_accept_negotiation_full, and then passed to the handler
  * configured. Because the SASL module doesn't remove this data once
  * the authentication process have finished, you can still get access
  * to the data configured using this key.
@@ -121,7 +121,7 @@
  * and vortex_connection_get_data to access the data.
  *
  * This data is configured at \ref
- * vortex_sasl_accept_negociation_full, and then passed to the handler
+ * vortex_sasl_accept_negotiation_full, and then passed to the handler
  * configured. Because the SASL module doesn't remove this data once
  * the authentication process have finished, you can still get access
  * to the data configured using this key.
@@ -134,7 +134,7 @@
  * and vortex_connection_get_data to access the data.
  *
  * This data is configured at \ref
- * vortex_sasl_accept_negociation_full, and then passed to the handler
+ * vortex_sasl_accept_negotiation_full, and then passed to the handler
  * configured. Because the SASL module doesn't remove this data once
  * the authentication process have finished, you can still get access
  * to the data configured using this key.
@@ -147,7 +147,7 @@
  * and vortex_connection_get_data to access the data.
  *
  * This data is configured at \ref
- * vortex_sasl_accept_negociation_full, and then passed to the handler
+ * vortex_sasl_accept_negotiation_full, and then passed to the handler
  * configured. Because the SASL module doesn't remove this data once
  * the authentication process have finished, you can still get access
  * to the data configured using this key.
@@ -315,9 +315,9 @@ void               vortex_sasl_set_digest_md5_validation      (VortexCtx * ctx, 
 void               vortex_sasl_set_digest_md5_validation_full (VortexCtx * ctx, VortexSaslAuthDigestMd5Full auth_handler);
 
 
-bool               vortex_sasl_accept_negociation             (VortexCtx  * ctx, 
+bool               vortex_sasl_accept_negotiation             (VortexCtx  * ctx, 
 							       const char * mech);
-bool               vortex_sasl_accept_negociation_full        (VortexCtx  * ctx,
+bool               vortex_sasl_accept_negotiation_full        (VortexCtx  * ctx,
 							       const char * mech, 
 							       axlPointer user_data);
 

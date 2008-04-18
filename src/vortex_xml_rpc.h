@@ -160,7 +160,7 @@ VortexXmlRpcState   vortex_xml_rpc_channel_status          (VortexChannel * chan
 
 const char        * vortex_xml_rpc_channel_get_resource    (VortexChannel * channel);
 
-bool                vortex_xml_rpc_accept_negociation      (VortexCtx                    * ctx,
+bool                vortex_xml_rpc_accept_negotiation      (VortexCtx                    * ctx,
 							    VortexXmlRpcValidateResource   validate_resource,
 							    axlPointer                     validate_user_data,
 							    VortexXmlRpcServiceDispatch    service_dispatch,

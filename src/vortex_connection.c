@@ -197,11 +197,11 @@ struct _VortexConnection {
 	 * 
 	 * The vortex_connection_add_channel adds a channel into a
 	 * existing connection. Inside the implementation, this
-	 * function first lookup if channel already exists which means
+	 * function first look up if channel already exists which means
 	 * a program error and the insert the new channel if no
 	 * channel was found.
 	 *
-	 * This mutex is also used on that function to avoid reentrant
+	 * This mutex is also used on that function to avoid re-entrant
 	 * conditions on the same function and between function which
 	 * access to channel hash table.
 	 */
@@ -239,7 +239,7 @@ struct _VortexConnection {
 	/** 
 	 * @brief The handlers mutex
 	 *
-	 * This mutex is usted to secure code sections destinated to
+	 * This mutex is used to secure code sections destined to
 	 * handle handlers stored associated to the connection.
 	 */
 	VortexMutex handlers_mutex;
@@ -1507,7 +1507,7 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 			/* seems that current Vortex Library have TLS
 			 * profile built-in support and auto TLS is
 			 * activated */
-			connection = vortex_tls_start_negociation_sync (connection,
+			connection = vortex_tls_start_negotiation_sync (connection,
 									ctx->connection_auto_tls_server_name,
 									NULL, NULL);
 			if (!vortex_connection_is_ok (connection, false)) {
@@ -1612,7 +1612,7 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
  *
  * Additionally, you may be interested on securing the connection
  * created using the TLS profile. This is actually done with \ref
- * vortex_tls_start_negociation. Optionally, you can configure your
+ * vortex_tls_start_negotiation. Optionally, you can configure your
  * Vortex Library client peer to automatically negotiate the TLS
  * profile for every connection created, allowing to get from this
  * function a connection that already have TLS profile activated. You
@@ -3598,25 +3598,57 @@ void __vortex_connection_invoke_on_close (VortexConnection * connection, bool   
 } 
 
 /** 
- * @brief Makes its underlaying connection to be closed, flagging the
- * connection as non connected (without deallocating resources
- * associated to the connection).
- *
- * This function is callable over and over again on the same
- * connection. The first time the function is called sets to false
- * connection state and its error message. It also close the BEEP
- * session and sets its socket to -1 in order to make it easily to
- * recognize for other functions.
- *
+ * @brief Shutdown the connection provided immediately without doing
+ * BEEP session close, flagging the connection as non connected
+ * (without deallocating resources associated to the connection).
+ * 
  * You can use this function to perform a forced connection close
- * (without meeting BEEP requirements while closing sessions). Once
- * the connection have been closed by using the function, vortex
- * library will detect its status, removing all its references to the
- * connection (\ref vortex_connection_unref). 
+ * (without meeting BEEP requirements while closing sessions). 
+ * 
+ * From a listener perspective (a connection created pasively), once
+ * the connection is closed using this function, vortex library will
+ * detect its status, removing all its references to the connection
+ * (\ref vortex_connection_unref). 
  *
- * The function do not updates the reference counting. The caller will
- * still have to do all required calls to \ref vortex_connection_unref
- * (as much as times called to \ref vortex_connection_ref).
+ * From a client perspective (the side that created the connection
+ * using \ref vortex_connection_new) a call to \ref
+ * vortex_connection_close after calling this function is required.
+ *
+ * How to know if you must call to \ref vortex_connection_close after
+ * calling to \ref vortex_connection_shutdown? Your application must
+ * perform a call to \ref vortex_connection_close if it issued a call
+ * to \ref vortex_connection_new.
+ * 
+ * <b>Example 1</b>: Closing a connection at the client side:
+ * \code
+ * // Call to terminate the connection right now. No reference counting
+ * // is updated.
+ * vortex_connection_shutdown (connection);
+ * 
+ * // now close the connection (decreases the reference counting, that is
+ * // the one assignated by vortex_connection_new) and terminates resources
+ * // associated.
+ * vortex_connection_close (connection);
+ * 
+ * // NOTE: a call to vortex_connection_close, after vortex_connection_shutdow
+ * //       never fails.
+ * \endcode
+ *
+ * <b>Example 2</b>: Closing a connection at the listener side:
+ * \code
+ * // Call to terminate the connection right now. No reference counting
+ * // is updated.
+ * vortex_connection_shutdown (connection);
+ *
+ * // Now let the system to collect the connection since the listener
+ * // do not owns a reference (he didn't create the connection by doing
+ * // a vortex_connection_new but it was received).
+ * \endcode
+ * 
+ * The key of the function is that it do not updates the reference
+ * counting. The caller will still have to do all required calls to
+ * \ref vortex_connection_unref (as much as times called to \ref
+ * vortex_connection_ref).
  * 
  * @param connection The connection to be shutted down.
  */
@@ -4130,10 +4162,10 @@ void                vortex_connection_set_data_full          (VortexConnection *
  * This allows to take advantage of the support developed to create
  * and wait for a \ref VortexConnection to be created rather than
  * having two steps at the user space: first create the connection and
- * the TLS-fixate it with \ref vortex_tls_start_negociation.
+ * the TLS-fixate it with \ref vortex_tls_start_negotiation.
  *
  * The function allows to specify the optional serverName value to be
- * used when \ref vortex_tls_start_negociation is called. The values
+ * used when \ref vortex_tls_start_negotiation is called. The values
  * set on this function will make effect to all connections created.
  * 
  * Once a \ref VortexConnection "connection" is created, the TLS
@@ -4166,7 +4198,7 @@ void                vortex_connection_set_data_full          (VortexConnection *
  * while activating automatic TLS negotiation.
  *
  * @param serverName The server name value to be passed in to \ref
- * vortex_tls_start_negociation. If the received is not NULL the
+ * vortex_tls_start_negotiation. If the received is not NULL the
  * function will perform a local copy
  *
  * <i><b>NOTE:</b> If current Vortex Library doesn't have built-in

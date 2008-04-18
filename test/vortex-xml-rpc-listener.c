@@ -141,7 +141,7 @@ int  main (int  argc, char ** argv)
 	} /* end if */
 
 	/* enable XML-RPC profile */
-	vortex_xml_rpc_accept_negociation (ctx, 
+	vortex_xml_rpc_accept_negotiation (ctx, 
 					   validate_resource,
 					   /* no user space data for
 					    * the validation resource

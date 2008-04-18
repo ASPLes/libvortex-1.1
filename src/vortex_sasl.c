@@ -1783,7 +1783,7 @@ bool     __vortex_sasl_server_iterate (VortexConnection * connection,
 			if (axl_cmp (status, "abort")) {
 				/* free current context and session  */
 				vortex_connection_set_data (connection, SASL_DATA, NULL);
-				vortex_log (VORTEX_LEVEL_WARNING, "SASL profile negociation cancelled");
+				vortex_log (VORTEX_LEVEL_WARNING, "SASL profile negotiation cancelled");
 				axl_free (status);
 				return false;
 			}
@@ -1858,7 +1858,7 @@ bool     __vortex_sasl_server_iterate (VortexConnection * connection,
  * 
  * @return 
  */
-bool     __vortex_sasl_accept_negociation_start (char              * profile,
+bool     __vortex_sasl_accept_negotiation_start (char              * profile,
 						 int                 channel_num,
 						 VortexConnection  * connection,
 						 char              * serverName,
@@ -1936,7 +1936,7 @@ bool     __vortex_sasl_accept_negociation_start (char              * profile,
 	return true;
 }
 
-void __vortex_sasl_accept_negociation_frame_receive (VortexChannel    * channel,
+void __vortex_sasl_accept_negotiation_frame_receive (VortexChannel    * channel,
 						     VortexConnection * connection,
 						     VortexFrame      * frame,
 						     axlPointer user_data)
@@ -2181,7 +2181,7 @@ void           vortex_sasl_set_digest_md5_validation_full  (VortexCtx * ctx, Vor
  * and to provide a handler that will be executed once received an
  * authentication request. There are two functions to activate SASL
  * profile support: this one and the previous API: \ref
- * vortex_sasl_accept_negociation.
+ * vortex_sasl_accept_negotiation.
  *
  * Both works the same way but this one is able to pass the user data
  * configured to the SASL auth handler once it is executed. Allowed
@@ -2203,7 +2203,7 @@ void           vortex_sasl_set_digest_md5_validation_full  (VortexCtx * ctx, Vor
  * 
  * @return true the mechanism was enabled to be accepted.
  */
-bool               vortex_sasl_accept_negociation_full        (VortexCtx  * ctx, 
+bool               vortex_sasl_accept_negotiation_full        (VortexCtx  * ctx, 
 							       const char * mech, 
 							       axlPointer user_data)
 {
@@ -2242,11 +2242,11 @@ bool               vortex_sasl_accept_negociation_full        (VortexCtx  * ctx,
 				  /* set frame received handlers to be
 				   * able to handle and reply SASL
 				   * frames received */
-				  __vortex_sasl_accept_negociation_frame_receive, NULL);
+				  __vortex_sasl_accept_negotiation_frame_receive, NULL);
 	
 	/* register an extended channel start handler for the mech registered */
 	vortex_profiles_register_extended_start	 (ctx, mech, 
-						  __vortex_sasl_accept_negociation_start, 
+						  __vortex_sasl_accept_negotiation_start, 
 						  user_data);
 
 	return true;
@@ -2259,7 +2259,7 @@ bool               vortex_sasl_accept_negociation_full        (VortexCtx  * ctx,
  * @brief Allows to configure current Vortex Library process to accept
  * incoming SASL negotiations.
  *
- * See also \ref vortex_sasl_accept_negociation_full. Allowed value
+ * See also \ref vortex_sasl_accept_negotiation_full. Allowed value
  * for <b>mech</b> are:
  *
  *  - \ref VORTEX_SASL_ANONYMOUS
@@ -2277,9 +2277,9 @@ bool               vortex_sasl_accept_negociation_full        (VortexCtx  * ctx,
  * 
  * @return true the mechanism was enabled to be accepted.
  */
-bool               vortex_sasl_accept_negociation        (VortexCtx * ctx, const char  * mech)
+bool               vortex_sasl_accept_negotiation        (VortexCtx * ctx, const char  * mech)
 {
-    return vortex_sasl_accept_negociation_full (ctx, mech, NULL);
+    return vortex_sasl_accept_negotiation_full (ctx, mech, NULL);
 }
 
 /* @} */

@@ -1565,8 +1565,8 @@ bool test_05 ()
 	/* create a new connection */
 	connection = connection_new ();
 
-	/* enable TLS negociation */
-	connection = vortex_tls_start_negociation_sync (connection, NULL, 
+	/* enable TLS negotiation */
+	connection = vortex_tls_start_negotiation_sync (connection, NULL, 
 							&status,
 							&status_message);
 	if (vortex_connection_get_data (connection, "being_closed")) {
@@ -1704,9 +1704,9 @@ bool test_05_a ()
 		return false;
 	}
 
-	/* enable TLS negociation but get the connection id first */
+	/* enable TLS negotiation but get the connection id first */
 	connection_id = vortex_connection_get_id (connection);
-	connection    = vortex_tls_start_negociation_sync (connection, NULL, 
+	connection    = vortex_tls_start_negotiation_sync (connection, NULL, 
 							   &status,
 							   &status_message);
 
@@ -1735,7 +1735,7 @@ bool test_05_a ()
 	/* now, do the same text to force a TLS error at the remote
 	 * side (activated due to previous exchange) */
 	connection_id = vortex_connection_get_id (connection);
-	connection    = vortex_tls_start_negociation_sync (connection, NULL, 
+	connection    = vortex_tls_start_negotiation_sync (connection, NULL, 
 							   &status,
 							   &status_message);
 
@@ -2411,7 +2411,7 @@ bool test_06 ()
 
 	/* check for SASL support */
 	if (! vortex_sasl_is_enabled ()) {
-		printf ("--- WARNING: Unable to begin SASL negociation. Current Vortex Library doesn't support SASL");
+		printf ("--- WARNING: Unable to begin SASL negotiation. Current Vortex Library doesn't support SASL");
 		return true;
 	}
 
@@ -2427,7 +2427,7 @@ bool test_06 ()
 
 	printf ("Test 06: SASL ANONYMOUS profile support ");
 
-	/* begin SASL ANONYMOUS negociation */ 
+	/* begin SASL ANONYMOUS negotiation */ 
 	vortex_sasl_set_propertie (connection, VORTEX_SASL_ANONYMOUS_TOKEN,
 				   "test-fail@aspl.es", NULL);
 	
@@ -2438,7 +2438,7 @@ bool test_06 ()
 		return false;
 	} /* end if */
 
-	/* begin SASL ANONYMOUS negociation */ 
+	/* begin SASL ANONYMOUS negotiation */ 
 	vortex_sasl_set_propertie (connection, VORTEX_SASL_ANONYMOUS_TOKEN,
 				   "test@aspl.es", NULL);
 	

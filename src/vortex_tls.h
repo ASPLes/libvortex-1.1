@@ -86,17 +86,17 @@ void               vortex_tls_set_default_post_check     (VortexCtx            *
 							  VortexTlsPostCheck     post_check,
 							  axlPointer             user_data);
 
-void               vortex_tls_start_negociation          (VortexConnection     * connection,
+void               vortex_tls_start_negotiation          (VortexConnection     * connection,
 							  const char           * serverName,
 							  VortexTlsActivation    process_status,
 							  axlPointer             user_data);
 
-VortexConnection * vortex_tls_start_negociation_sync     (VortexConnection  * connection,
+VortexConnection * vortex_tls_start_negotiation_sync     (VortexConnection  * connection,
 							  const char        * serverName,
 							  VortexStatus      * status,
 							  char             ** status_message);
 
-bool               vortex_tls_accept_negociation         (VortexCtx         * ctx, 
+bool               vortex_tls_accept_negotiation         (VortexCtx         * ctx, 
 							  VortexTlsAcceptQuery            accept_handler, 
 							  VortexTlsCertificateFileLocator certificate_handler,
 							  VortexTlsPrivateKeyFileLocator  private_key_handler);

@@ -728,7 +728,7 @@ void     vortex_xml_rpc_boot_channel (VortexConnection        * connection,
 /** 
  * @internal
  *
- * @brief Support function for \ref vortex_tls_start_negociation_sync
+ * @brief Support function for \ref vortex_tls_start_negotiation_sync
  * function.
  */
 void __vortex_xml_rpc_boot_channel_sync_process  (VortexChannel    * booted_channel,
@@ -2138,7 +2138,7 @@ bool vortex_xml_rpc_notify_reply (XmlRpcMethodCall     * method_call,
 
 #ifdef ENABLE_XML_RPC_SUPPORT
 /** 
- * @internal Handler used by vortex_xml_rpc_accept_negociation.
+ * @internal Handler used by vortex_xml_rpc_accept_negotiation.
  */
 bool __vortex_xml_rpc_default_validate (VortexConnection * connection,
 					int                channel_number,
@@ -2147,7 +2147,7 @@ bool __vortex_xml_rpc_default_validate (VortexConnection * connection,
 					axlPointer         user_data)
 {
 	/* default validation handler used by
-	 * vortex_xml_rpc_accept_negociation in the case no validation
+	 * vortex_xml_rpc_accept_negotiation in the case no validation
 	 * handler is provided */
 	return true;
 }
@@ -2268,7 +2268,7 @@ bool __vortex_xml_rpc_default_validate (VortexConnection * connection,
  *      } 
  *
  *	// enable XML-RPC profile 
- *	vortex_xml_rpc_accept_negociation (ctx, validate_resource,
+ *	vortex_xml_rpc_accept_negotiation (ctx, validate_resource,
  *					   // no user space data for
  *					   // the validation resource
  *					   // function. 
@@ -2310,7 +2310,7 @@ bool __vortex_xml_rpc_default_validate (VortexConnection * connection,
  * dispatch or the context provided is null, or the xml-rpc BEEP
  * profile is not enabled. See \ref vortex_xml_rpc_is_enabled.
  */
-bool                vortex_xml_rpc_accept_negociation      (VortexCtx                    * ctx,
+bool                vortex_xml_rpc_accept_negotiation      (VortexCtx                    * ctx,
 							    VortexXmlRpcValidateResource   validate_resource,
 							    axlPointer                     validate_user_data,
 							    VortexXmlRpcServiceDispatch    service_dispatch,
