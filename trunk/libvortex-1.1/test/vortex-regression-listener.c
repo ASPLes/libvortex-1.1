@@ -892,7 +892,7 @@ int  main (int  argc, char ** argv)
 
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */
-	if (! vortex_tls_accept_negociation (ctx, regression_tls_handle_query, NULL, NULL)) {
+	if (! vortex_tls_accept_negotiation (ctx, regression_tls_handle_query, NULL, NULL)) {
 		printf ("Unable to start accepting TLS profile requests");
 		return -1;
 	}
@@ -902,7 +902,7 @@ int  main (int  argc, char ** argv)
 		vortex_sasl_set_anonymous_validation (ctx, sasl_anonymous_validation);
 
 		/* accept SASL ANONYMOUS incoming requests */
-		if (! vortex_sasl_accept_negociation (ctx, VORTEX_SASL_ANONYMOUS)) {
+		if (! vortex_sasl_accept_negotiation (ctx, VORTEX_SASL_ANONYMOUS)) {
 			printf ("Unable to make Vortex Libray to accept SASL ANONYMOUS profile");
 			return -1;
 		}
@@ -911,7 +911,7 @@ int  main (int  argc, char ** argv)
 		vortex_sasl_set_external_validation (ctx, sasl_external_validation);
 		
 		/* accept SASL EXTERNAL incoming requests */
-		if (! vortex_sasl_accept_negociation (ctx, VORTEX_SASL_EXTERNAL)) {
+		if (! vortex_sasl_accept_negotiation (ctx, VORTEX_SASL_EXTERNAL)) {
 			printf ("Unable to make Vortex Libray to accept SASL EXTERNAL profile");
 			return -1;
 		}
@@ -920,7 +920,7 @@ int  main (int  argc, char ** argv)
 		vortex_sasl_set_plain_validation (ctx, sasl_plain_validation);
 		
 		/* accept SASL PLAIN incoming requests */
-		if (! vortex_sasl_accept_negociation (ctx, VORTEX_SASL_PLAIN)) {
+		if (! vortex_sasl_accept_negotiation (ctx, VORTEX_SASL_PLAIN)) {
 			printf ("Unable to make Vortex Libray to accept SASL PLAIN profile");
 			return -1;
 		}
@@ -929,7 +929,7 @@ int  main (int  argc, char ** argv)
 		vortex_sasl_set_cram_md5_validation (ctx, sasl_cram_md5_validation);
 		
 		/* accept SASL CRAM-MD5 incoming requests */
-		if (! vortex_sasl_accept_negociation (ctx, VORTEX_SASL_CRAM_MD5)) {
+		if (! vortex_sasl_accept_negotiation (ctx, VORTEX_SASL_CRAM_MD5)) {
 			printf ("Unable to make Vortex Library to accept SASL CRAM-MD5 profile");
 			return -1;
 		}
@@ -938,7 +938,7 @@ int  main (int  argc, char ** argv)
 		vortex_sasl_set_digest_md5_validation (ctx, sasl_digest_md5_validation);
 		
 		/* accept SASL DIGEST-MD5 incoming requests */
-		if (! vortex_sasl_accept_negociation (ctx, VORTEX_SASL_DIGEST_MD5)) {
+		if (! vortex_sasl_accept_negotiation (ctx, VORTEX_SASL_DIGEST_MD5)) {
 			printf ("Unable to make Vortex Library to accept SASL DIGEST-MD5 profile");
 			return -1;
 		} /* end if */
@@ -954,7 +954,7 @@ int  main (int  argc, char ** argv)
 	vortex_tunnel_accept_negotiation (ctx, NULL, NULL);
 	
 	/* enable XML-RPC profile */
-        vortex_xml_rpc_accept_negociation (
+        vortex_xml_rpc_accept_negotiation (
 		/* context */
 		ctx, 
                 /* no resource validation function */

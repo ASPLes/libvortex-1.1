@@ -46,7 +46,7 @@ void vortex_client_show_help () {
 	printf ("  connect           - Connects to a remove vortex (BEEP enabled) server\n");
 	printf ("  open              - The same as connect.\n");
 	printf ("  enable tls        - Try to negociate underlaying TLS profile.\n");
-	printf ("  auto tls          - Enable/Disable automatic TLS profile negociation for new connections\n");
+	printf ("  auto tls          - Enable/Disable automatic TLS profile negotiation for new connections\n");
 	printf ("  begin auth        - Start SASL authentication process\n");
 	printf ("  close             - Close connection opened.\n");
 	printf ("\n -- debuging peers --\n");
@@ -662,7 +662,7 @@ void vortex_client_begin_auth () {
 	
 	/* check for SASL support */
 	if (!vortex_sasl_is_enabled ()) {
-		printf ("Unable to begin SASL negociation. Current Vortex Library doesn't support SASL");
+		printf ("Unable to begin SASL negotiation. Current Vortex Library doesn't support SASL");
 		return;
 	}
 	
@@ -747,7 +747,7 @@ void vortex_client_begin_auth () {
 		return;
 	}
 
-	/* begin SASL negociation */
+	/* begin SASL negotiation */
 	vortex_sasl_start_auth_sync (connection, profile_selected, &status, &status_message);
 
 	/* print error */
@@ -757,7 +757,7 @@ void vortex_client_begin_auth () {
 			 status_message);
 		break;
 	case VortexError:
-		printf ("FAIL: There was an error for SASL negociation, message reported: %s\n",
+		printf ("FAIL: There was an error for SASL negotiation, message reported: %s\n",
 			 status_message);
 		break;
 	}
@@ -1080,9 +1080,9 @@ int main (int argc, char *argv[])
 		}
 
 		if (axl_memcmp ("auto tls", line, 8)) {
-			/* enable auto tls profile negociation not allowing TLS failures */
+			/* enable auto tls profile negotiation not allowing TLS failures */
 			vortex_connection_set_auto_tls (ctx, auto_tls_profile, false, NULL);
-			printf ("Auto TLS profile negociation is: %s\n", auto_tls_profile ? "ON" : "OFF");
+			printf ("Auto TLS profile negotiation is: %s\n", auto_tls_profile ? "ON" : "OFF");
 			auto_tls_profile = !auto_tls_profile;
 			continue;
 		}
@@ -1097,8 +1097,8 @@ int main (int argc, char *argv[])
 				continue;
 			}
 
-			/* enable TLS negociation */
-			connection = vortex_tls_start_negociation_sync (connection, NULL, 
+			/* enable TLS negotiation */
+			connection = vortex_tls_start_negotiation_sync (connection, NULL, 
 									&status,
 									&status_message);
 

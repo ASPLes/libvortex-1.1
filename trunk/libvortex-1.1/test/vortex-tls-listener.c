@@ -94,7 +94,7 @@ int  main (int  argc, char  ** argv)
 
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */
-	if (! vortex_tls_accept_negociation (ctx, NULL, NULL, NULL)) {
+	if (! vortex_tls_accept_negotiation (ctx, NULL, NULL, NULL)) {
 		printf ("Unable to start accepting TLS profile requests");
 	}
 

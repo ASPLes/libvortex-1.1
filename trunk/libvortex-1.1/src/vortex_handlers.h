@@ -594,7 +594,7 @@ typedef bool     (*VortexOnAcceptedConnection)   (VortexConnection * connection,
  * @brief Async notifications for TLS activation.
  *
  * Once the process for TLS negotiation have started, using \ref
- * vortex_tls_start_negociation function, the status for such process is notified
+ * vortex_tls_start_negotiation function, the status for such process is notified
  * using this handler type definition.
  *
  * The <i>status</i> value have to be checked in order to know if the
@@ -602,12 +602,12 @@ typedef bool     (*VortexOnAcceptedConnection)   (VortexConnection * connection,
  * variable, the <i>status_message</i> have a textual diagnostic about
  * the current status received.
  * 
- * While invoking \ref vortex_tls_start_negociation you could provide an user
+ * While invoking \ref vortex_tls_start_negotiation you could provide an user
  * space pointer, using the <i>user_data</i> parameter. That user data
  * is received on this handler.
  *
  * Functions using this handler:
- *  \ref vortex_tls_start_negociation
+ *  \ref vortex_tls_start_negotiation
  * 
  * 
  * @param connection The connection where the TLS activation status is
@@ -638,7 +638,7 @@ typedef void     (*VortexTlsActivation)          (VortexConnection * connection,
  * the server name the value represent.
  * 
  * This handler definition is used by:
- *   - \ref vortex_tls_accept_negociation
+ *   - \ref vortex_tls_accept_negotiation
  * 
  * @param connection The connection where the TLS request was received.
  * @param serverName Optional serverName value requesting, if defined, to act as the server defined by this value.
@@ -697,7 +697,7 @@ typedef bool     (*VortexTlsAcceptQuery) (VortexConnection * connection,
  * right certificate file.
  * 
  * This handler is used by:
- *  - \ref vortex_tls_accept_negociation 
+ *  - \ref vortex_tls_accept_negotiation 
  * 
  * @return A newly allocated value containing the path to the certificate file.
  */
@@ -713,7 +713,7 @@ typedef char  * (* VortexTlsCertificateFileLocator) (VortexConnection * connecti
  * session TLS-fication.
  * 
  * This handler is used by:
- *  - \ref vortex_tls_accept_negociation 
+ *  - \ref vortex_tls_accept_negotiation 
  * 
  * @return A newly allocated value containing the path to the private key file.
  */
@@ -1145,13 +1145,13 @@ typedef void (* VortexXmlRpcBootNotify)               (VortexChannel    * booted
  * without it safely.
  *
  * As a note, you can pass a NULL handler reference to the \ref
- * vortex_xml_rpc_accept_negociation, making the Vortex XML-RPC engine
+ * vortex_xml_rpc_accept_negotiation, making the Vortex XML-RPC engine
  * to accept all resources (resource validation always evaluated to
  * true).
  *
  * This function is used by:
  *
- *  - \ref vortex_xml_rpc_accept_negociation
+ *  - \ref vortex_xml_rpc_accept_negotiation
  *
  * Here is an example of a resource validation handler that accept all
  * resources:

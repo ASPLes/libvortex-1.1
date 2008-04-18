@@ -358,7 +358,7 @@ void xml_rpc_write_c_server_main_function ()
 	xml_rpc_support_multiple_write ("/* init vortex library */\n",
 					"vortex_init ();\n\n",
 					"/* enable XML-RPC profile */\n",
-					"vortex_xml_rpc_accept_negociation (\n",
+					"vortex_xml_rpc_accept_negotiation (\n",
 					NULL);
 	
 	/* push again the indent */

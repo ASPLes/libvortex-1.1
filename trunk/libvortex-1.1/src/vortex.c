@@ -3076,7 +3076,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * vortex_connection_new.
  *
  * - 2. Secure the connection already created using \ref
- * vortex_tls_start_negociation.
+ * vortex_tls_start_negotiation.
  *
  * - 3. Then use the \ref VortexConnection "connection", as normal,
  * creating channels (\ref vortex_channel_new), sending data over them (\ref vortex_channel_send_msg), etc. From the
@@ -3101,7 +3101,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * On this case, we could activate listener TLS profile support as follows:
  * \code
  * // activate TLS profile support using defaults
- * vortex_tls_accept_negociation (ctx,   // context to configure
+ * vortex_tls_accept_negotiation (ctx,   // context to configure
  *                                NULL,  // accept all TLS request received
  *                                NULL,  // use default certificate file
  *                                NULL); // use default private key file
@@ -3173,7 +3173,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *  
  * \code
  * // activate TLS profile support using defaults
- * vortex_tls_accept_negociation (ctx,
+ * vortex_tls_accept_negotiation (ctx,
  *                                check_and_accept_tls_request,
  *                                certificate_file_location,
  *                                private_key_file_locatin);
@@ -3190,7 +3190,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *
  * There is also an alternative approach, which provides more control
  * to configure the TLS process. See \ref
- * vortex_tls_accept_negociation for more information, especially \ref
+ * vortex_tls_accept_negotiation for more information, especially \ref
  * vortex_tls_set_ctx_creation and \ref vortex_tls_set_default_ctx_creation.
  * 
  * Now your listener is prepared to receive incoming connections and
@@ -3608,7 +3608,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * vortex_sasl_set_plain_validation (ctx, sasl_plain_validation);
  * 
  * // accept SASL PLAIN incoming requests
- * if (! vortex_sasl_accept_negociation (ctx, VORTEX_SASL_PLAIN)) {
+ * if (! vortex_sasl_accept_negotiation (ctx, VORTEX_SASL_PLAIN)) {
  *	printf ("Unable  accept SASL PLAIN profile");
  *	return -1;
  * }
@@ -3662,11 +3662,11 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * module that the selected SASL profile must be announced as
  * supported, at the connection greetings, configuring all internal
  * SASL handlers. In this case, the example is not providing an user
- * data to the \ref vortex_sasl_accept_negociation function. In the
+ * data to the \ref vortex_sasl_accept_negotiation function. In the
  * case that a user data is required, the following function must be
  * used:
  *
- * - \ref vortex_sasl_accept_negociation_full
+ * - \ref vortex_sasl_accept_negotiation_full
  *
  * Now the SASL PLAIN profile is fully activated and waiting for
  * requests. Validating the rest of SASL profiles works the same
@@ -4458,7 +4458,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *      } 
  *
  *      // enable XML-RPC profile 
- *      vortex_xml_rpc_accept_negociation (ctx, validate_resource,
+ *      vortex_xml_rpc_accept_negotiation (ctx, validate_resource,
  *                                         // no user space data for
  *                                         // the validation resource
  *                                         // function. 
@@ -4482,7 +4482,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * \endcode
  *
  * The example is quite simple, first, Vortex Library is initialized,
- * then a call to \ref vortex_xml_rpc_accept_negociation is done to
+ * then a call to \ref vortex_xml_rpc_accept_negotiation is done to
  * active the XML-RPC. Then a call to activate a listener, for any
  * host name that the local machine may have, at the port 44000, is
  * done by using \ref vortex_listener_new. Finally, a call to \ref
