@@ -6141,12 +6141,12 @@ void vortex_channel_wait_reply_ref (WaitReplyData * wait_reply)
 }
 
 /** 
- * @brief Frees allocated memory by wait reply data
+ * @brief Terminates allocated memory by wait reply data.
  *
  * See \ref vortex_manual_wait_reply "this section" to know more about this function
  * and how it is used inside the Wait Reply process.
  * 
- * @param wait_reply Wait reply to free.
+ * @param wait_reply Wait reply to free. The reference created by using \ref vortex_channel_create_wait_reply.
  */
 void     vortex_channel_free_wait_reply (WaitReplyData * wait_reply)
 {
@@ -6572,10 +6572,20 @@ WaitReplyData * vortex_channel_create_wait_reply ()
  *
  * @param wait_reply The wait reply object used. A valid wait reply
  * object created by \ref vortex_channel_create_wait_reply. This
- * function will check if the provided value is not NULL.
+ * function will check if the provided value is not NULL. 
  * 
  * @return The frame reply or NULL if a timeout occurs, having all
- * parameters well specified, or there was a parameter error detected.
+ * parameters well specified, or there was a parameter error detected. 
+ * 
+ * <i><b>NOTE:</b> In the case the function returns a valid frame, your
+ * application must terminate it by using \ref vortex_frame_unref.  The reference to
+ * the wait_reply object is also terminated (with \ref
+ * vortex_channel_free_wait_reply) in the case a valid frame is
+ * returned.</i>
+ *
+ * <i><b>NOTE 2:</b> You cannot use the same \ref WaitReplyData for
+ * several wait operations. You must create a new one \ref
+ * WaitReplyData object for each call done to this function (\ref vortex_channel_wait_reply).</i>
  */
 VortexFrame   * vortex_channel_wait_reply              (VortexChannel * channel, int msg_no, 
 							WaitReplyData * wait_reply)

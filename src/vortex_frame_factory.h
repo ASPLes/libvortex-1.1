@@ -117,6 +117,8 @@ bool          vortex_frame_ref                   (VortexFrame * frame);
 
 void          vortex_frame_unref                 (VortexFrame * frame);
 
+int           vortex_frame_ref_count             (VortexFrame * frame);
+
 void          vortex_frame_free                  (VortexFrame * frame);
 
 VortexFrame * vortex_frame_join                  (VortexFrame * a, 

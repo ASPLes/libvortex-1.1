@@ -1332,6 +1332,22 @@ void          vortex_frame_unref                 (VortexFrame * frame)
 	return;
 }
 
+/** 
+ * @brief Returns current reference counting for the frame received.
+ * 
+ * @param frame The frame that is required to return the current
+ * reference counting.
+ * 
+ * @return Reference counting or -1 if it fails. The function could
+ * only fail if a null reference is received.
+ */
+int           vortex_frame_ref_count             (VortexFrame * frame)
+{
+	v_return_val_if_fail (frame, -1);
+	return frame->ref_count;
+}
+
+
 /**
  * @brief Deallocate the frame. You shouldn't call this directly,
  * instead use \ref vortex_frame_unref.
