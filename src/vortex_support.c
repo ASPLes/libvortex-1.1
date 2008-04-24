@@ -688,7 +688,8 @@ double   vortex_support_strtod                     (const char * param, char ** 
  * @param result Result variable. Do no used a or b to place the
  * result.
  *
- * @return 1 if the difference is negative, otherwise 0.  
+ * @return 1 if the difference is negative, otherwise 0 (operations
+ * implemented is a - b).
  */ 
 int     vortex_timeval_substract                  (struct timeval * a, 
 						   struct timeval * b,

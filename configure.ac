@@ -226,8 +226,8 @@ AC_ARG_ENABLE(sasl-support, [  --disable-sasl-support    Makes Vortex Library to
 	      enable_sasl_support="$enableval", 
 	      enable_sasl_support=yes)
 if test "$enable_sasl_support" != "no" ; then
-    PKG_CHECK_MODULES(GSASL, libgsasl >= 0.2.5,	[enable_sasl_support=yes], [enable_sasl_support=no])
-    if test "$enable_sasl_support" != "yes" ; then
+    PKG_CHECK_MODULES(GSASL, libgsasl >= 0.2.21,	[enable_sasl_support=yes], [enable_sasl_support=no])
+    if test "$enable_sasl_support" = "no" ; then
         AC_MSG_WARN([Cannot find GNU SASL installaton, disabling it. This will disable SASL family profile support.])
 	enable_sasl_support=no
     else
