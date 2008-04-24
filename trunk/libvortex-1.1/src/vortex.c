@@ -60,10 +60,10 @@ void vortex_writer_data_free (VortexWriterData * writer_data)
 	/* do not perform any operation if null value is received */
 	if (writer_data == NULL) 
 		return;
-
+	
 	axl_free (writer_data->the_frame);
 	axl_free (writer_data);
-
+	
 	return;
 }
 
@@ -74,7 +74,7 @@ void __vortex_sigpipe_do_nothing (int _signal)
 	 * the vortex reader process that is waiting for changes over
 	 * a connection and that changes include remote peer
 	 * closing. So, EPIPE (or receive SIGPIPE) can't happen. */
-
+	
 #if !defined(AXL_OS_WIN32)
 	/* the following line is to ensure ancient glibc version that
 	 * restores to the default handler once the signal handling is

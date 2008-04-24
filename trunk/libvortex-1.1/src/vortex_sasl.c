@@ -411,18 +411,18 @@ void __vortex_sasl_notify (VortexSaslAuthNotify   process_status,
 
 #ifdef ENABLE_SASL_SUPPORT
 
-typedef struct _GsaslData {
+typedef struct _VortexGsaslData {
 	/* context used for a particular connection */
 	Gsasl            * ctx;
 	
 	/* session used for a particular connection */
 	Gsasl_session    * session;
 	
-}GsaslData;
+} VortexGsaslData;
 
 void __vortex_sasl_destroy_context (axlPointer _data)
 {
-	GsaslData        * data = _data;
+	VortexGsaslData  * data = _data;
 	VortexConnection * connection;
 
 	/* get the connection reference where the SASL request was received */
@@ -436,7 +436,7 @@ void __vortex_sasl_destroy_context (axlPointer _data)
 	/* dealloc sasl context */
 	gsasl_done (data->ctx);
 
-	/* free gsasl holder */
+	/* free gsasl holder (verified axl_free) */
 	axl_free (data);
 
 	return;
@@ -453,19 +453,19 @@ void __vortex_sasl_destroy_context (axlPointer _data)
  */
 bool     __vortex_sasl_create_context (VortexConnection * connection) 
 {
-	GsaslData * data;
-	int         rc;
+	VortexGsaslData * data;
+	int               rc;
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 #endif
 
 	/* initialize the SASL client side */
-	data = axl_new (GsaslData, 1);
+	data = axl_new (VortexGsaslData, 1);
 
 	/* initialize sasl */
 	rc = gsasl_init (&data->ctx);
 	if (rc != GSASL_OK) {
-		/* free data */
+		/* free data (verified axl_free) */
 		axl_free (data);
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "SASL initialization failure (%d): %s\n",
@@ -500,11 +500,11 @@ int gethostname(char *name, size_t len);
  */
 void vortex_sasl_configure_current_properties (VortexConnection * connection)
 {
-	char        hostname[512];
+	char              hostname[512];
+	VortexGsaslData * data = vortex_connection_get_data (connection, SASL_DATA);
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 #endif
-	GsaslData * data = vortex_connection_get_data (connection, SASL_DATA);
 	
 	gsasl_property_set (data->session, GSASL_AUTHID,   
 			    vortex_sasl_get_propertie (connection, VORTEX_SASL_AUTH_ID));
@@ -549,7 +549,8 @@ typedef struct __VortexSaslStartData {
  * Support function for __vortex_sasl_start_auth
  *
  * @return the function return an already base64 encoded SASL
- * content. The caller must unref the memory returned once not needed.
+ * content. The caller must unref the memory returned once not needed
+ * using gsasl_free (no axl_free).
  */
 char  * __vortex_sasl_initiator_do_initial_step (const char           * profile,
 						 VortexConnection     * connection,
@@ -557,12 +558,13 @@ char  * __vortex_sasl_initiator_do_initial_step (const char           * profile,
 						 axlPointer             user_data)
 {
 	/* variable definitions for the gsasl_client_start function */
-	GsaslData     * data;
+	VortexGsaslData   * data;
+	char              * base64_chunk;
+	int                 rc;
+
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx = vortex_connection_get_ctx (connection);
 #endif
-	char          * base64_chunk;
-	int             rc;
 
 	/* drop a log */
 	vortex_log (VORTEX_LEVEL_DEBUG, 
@@ -646,7 +648,9 @@ bool     __vortex_sasl_is_error_content (VortexFrame * frame,
  * @brief Support function to extract from a frame received the SASL
  * base64 blob.
  * 
- * @return The blob content reply already decoded or NULL if fails.
+ * @return The blob content reply already decoded or NULL if
+ * fails. Value returned must be deallocated with axl_free. status
+ * variable must be also deallocated using axl_free
  */
 char    * __vortex_sasl_get_base64_blob (char                  * frame_content,
 					 VortexConnection      * connection, 
@@ -734,14 +738,14 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel          * channel,
 					   axlPointer               user_data)
 {
 	/* variable definitions for the sasl_client_step function */
-	int           rc;
+	int                 rc;
 
 	/* variable definitions for the blob decoding */
-	VortexFrame * reply    = NULL;
-	char        * blob     = NULL;
-	char        * new_blob = NULL;
-	char        * status   = NULL;
-	GsaslData   * data;
+	VortexFrame       * reply    = NULL;
+	char              * blob     = NULL;
+	char              * new_blob = NULL;
+	char              * status   = NULL;
+	VortexGsaslData   * data;
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx   * ctx      = vortex_connection_get_ctx (connection);
 #endif
@@ -764,7 +768,7 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel          * channel,
 		}
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "Getting blob and status reply");
-
+		
 		/* get the base64 blob reply inside the frame but
 		 * already decoded */
 		blob = __vortex_sasl_get_base64_blob ((char*) vortex_frame_get_payload (reply), 
@@ -777,13 +781,13 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel          * channel,
 		       (blob != NULL) ? blob : "" , (status != NULL) ? status : "");
 		if (status != NULL) {
 			if (axl_cmp (status, "complete")) {
-				/* undef status value and blob */
+				/* undef status value and blob (axl_free verified) */
 				vortex_support_free (2, blob, axl_free, status, axl_free);
 				vortex_log (VORTEX_LEVEL_DEBUG, "authentication Ok due to status code");
 				return true;
 			}
 
-			/* unref status value */
+			/* unref status value (axl_free verified) */
 			axl_free (status);
 		} /* end if */
 
@@ -804,8 +808,8 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel          * channel,
 		vortex_log (VORTEX_LEVEL_DEBUG, "before doing sasl step, status is: (%d) %s, with new_blob=%s",
 		       rc, gsasl_strerror (rc), (new_blob != NULL) ? new_blob : "");
 		
-		/* free blob received */
-		vortex_support_free (1, blob, axl_free);
+		/* free blob received (axl_free verified) */
+		axl_free (blob);
 		
 		/* manage continue case, that is, to keep on sending
 		 * base64 pieces of code */
@@ -816,16 +820,16 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel          * channel,
 
 			/* we need to send more data to the server */
 			if (!vortex_channel_send_msgv (channel, NULL, "<blob>%s</blob>", new_blob)) {
-				/* free new blob */
-				axl_free (new_blob);
+				/* free new blob (gsasl_free verified) */
+				gsasl_free (new_blob);
 
 				(*status_msg) = "Unable to negotiate SASL profile selected, an error have happen while sending data";
 				return false;
 			} /* end if */
 		} /* end if */
 
-		/* unref blob generated and nullify loop variables */
-		axl_free (new_blob);
+		/* unref blob generated and nullify loop variables (gsasl_free verified) */
+		gsasl_free (new_blob);
 		new_blob = NULL;
 		blob     = NULL;
 		status   = NULL;
@@ -908,7 +912,7 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 	char                 * base64_blob;
 	char                 * status_msg = "SASL error not defined!";
 
-	/* free no longer needed node */
+	/* free no longer needed node (axl_free verified) */
 	axl_free (data);
 
 	/* do initial client step creating the initial
@@ -952,8 +956,8 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 					    /* the profile content to send */
 					    (strlen (base64_blob) != 0) ? "<blob>%s</blob>" : "",
 					    (strlen (base64_blob) != 0) ? base64_blob       : NULL);
-	/* unref no longer needed blob */
-	axl_free (base64_blob);
+	/* unref no longer needed blob (gsasl_free verified) */
+	gsasl_free (base64_blob);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "SASL channel creation reply received");
 	if (channel == NULL) {
@@ -1596,7 +1600,9 @@ int __vortex_sasl_auth_validation (Gsasl * gctx, Gsasl_session * sctx,
 
 				/* the next instruction store the password duplicating it and
 				 * providing a destroy function because the SASL engine already
-				 * deallocated this value. */
+				 * deallocated this value. 
+				 * deallocate password using axl_free (verified)
+				 */
 				vortex_sasl_set_propertie (connection, VORTEX_SASL_PASSWORD, 
 							   (char  *) password, axl_free);
 				
@@ -1651,7 +1657,9 @@ int __vortex_sasl_auth_validation (Gsasl * gctx, Gsasl_session * sctx,
 				
 				/* the next instruction store the password duplicating it and
 				 * providing a destroy function because the SASL engine already
-				 * deallocated this value. */
+				 * deallocated this value. 
+				 * deallocate password using axl_free (verified).
+				 */
 				vortex_sasl_set_propertie (connection, VORTEX_SASL_PASSWORD, 
 							   (char  *) password, axl_free);
 				
@@ -1712,7 +1720,7 @@ int __vortex_sasl_auth_validation (Gsasl * gctx, Gsasl_session * sctx,
 void __vortex_sasl_set_default_listener_handler (VortexConnection * connection)
 {
 	/* get sasl data */
-	GsaslData * data = vortex_connection_get_data (connection, SASL_DATA);
+	VortexGsaslData * data = vortex_connection_get_data (connection, SASL_DATA);
 
 	/* set default validation handlers */
 	gsasl_callback_set (data->ctx, __vortex_sasl_auth_validation);
@@ -1724,7 +1732,9 @@ void __vortex_sasl_set_default_listener_handler (VortexConnection * connection)
  * @brief Build the SASL reply message.
  * 
  * @param status Current status to be set: "complete", "abort", "continue".
- * @param blob_content Current blob content
+ *
+ * @param blob_content Current blob content. This parameter must be
+ * deallocated using gsasl_free.
  * 
  * @return Return a newly allocated SASL blob reply.
  */
@@ -1737,9 +1747,9 @@ char  * __build_blob_reply (char  * status, char  * blob_content)
 					     (blob_content != NULL && (strlen (blob_content) > 0)) ? ">"          : " />",
 					     (blob_content != NULL && (strlen (blob_content) > 0)) ? blob_content : "",
 					     (blob_content != NULL && (strlen (blob_content) > 0)) ? "</blob>"    : "");
-	/* deallocate the blob content */
+	/* deallocate the blob content (gsasl_free verified) */
 	if (blob_content != NULL)
-		axl_free (blob_content);
+		gsasl_free (blob_content);
 
 	/* return built message */
 	return result;
@@ -1758,14 +1768,14 @@ bool     __vortex_sasl_server_iterate (VortexConnection * connection,
 				       char             * payload,
 				       char            ** payload_reply)
 {
-	char          * blob          = NULL;
-	char          * base64_chunk  = NULL;
-	char          * status        = NULL;
-	GsaslData     * data          = vortex_connection_get_data (connection, SASL_DATA);
+	char             * blob          = NULL;
+	char             * base64_chunk  = NULL;
+	char             * status        = NULL;
+	VortexGsaslData  * data          = vortex_connection_get_data (connection, SASL_DATA);
 #if defined(ENABLE_VORTEX_LOG)
-	VortexCtx     * ctx           = vortex_connection_get_ctx (connection);
+	VortexCtx        * ctx           = vortex_connection_get_ctx (connection);
 #endif
-	int             rc;
+	int                rc;
 
 	/* get received blob */
 	if (payload != NULL && strlen (payload) > 0) {
@@ -1788,7 +1798,7 @@ bool     __vortex_sasl_server_iterate (VortexConnection * connection,
 				return false;
 			}
 
-			/* free status value if not processed */
+			/* free status value if not processed (axl_free verified) */
 			axl_free (status);
 		}
 	} else {
@@ -1799,7 +1809,7 @@ bool     __vortex_sasl_server_iterate (VortexConnection * connection,
 	/* now feed the server SASL context with the blob received from the remote peer */
 	rc = gsasl_step64 (data->session, blob, &base64_chunk);
 
-	/* unref blob */
+	/* unref blob (axl_free verified) */
 	axl_free (blob);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "getting error code (%d): %s", rc, gsasl_strerror (rc));
@@ -1868,10 +1878,10 @@ bool     __vortex_sasl_accept_negotiation_start (char              * profile,
 						 axlPointer          user_data)
 {
 
-	GsaslData      * data;
-	int              rc;
+	VortexGsaslData   * data;
+	int                 rc;
 #if defined(ENABLE_VORTEX_LOG)
-	VortexCtx      * ctx = vortex_connection_get_ctx (connection);
+	VortexCtx         * ctx = vortex_connection_get_ctx (connection);
 #endif
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "Received channel start for mech: %s, profile_content=%s", 
@@ -1959,7 +1969,7 @@ void __vortex_sasl_accept_negotiation_frame_receive (VortexChannel    * channel,
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to send SASL iteration reply");
 	}
 
-	/* free payload reply */
+	/* free payload reply (axl_free verified) */
 	axl_free (payload_reply);
 	return;
 }
