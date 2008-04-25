@@ -243,10 +243,16 @@ bool     vortex_greetings_send (VortexConnection * connection)
  **/
 VortexFrame *  vortex_greetings_process (VortexConnection * connection)
 {
-	VortexFrame        * frame;
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx          * ctx   = vortex_connection_get_ctx (connection);
 #endif
+	VortexFrame        * frame;
+ 	VortexFrame        * pending;
+  
+ 	/* check if the connection have a pending frame (get the
+	 * reference) */
+ 	pending = vortex_connection_get_data (connection,
+ 					      VORTEX_GREETINGS_PENDING_FRAME);
 
 	/*
 	 * Because this is a really especial case where we need to get
@@ -258,6 +264,29 @@ VortexFrame *  vortex_greetings_process (VortexConnection * connection)
 		vortex_log (VORTEX_LEVEL_WARNING, "no frame received from remote peer");
 		return NULL;
 	}
+
+	/* check pending frame */
+	if (pending) {
+		pending = vortex_frame_join (pending, frame);
+		vortex_frame_unref (frame);
+		frame   = pending;
+	} /* end if */
+
+	/* check if the frame returned is not complete, to store in
+	 * the connection and return NULL */
+	if (vortex_frame_get_more_flag (frame)) {
+		/* store the frame */
+		vortex_connection_set_data_full (connection, 
+						 /* key and data */
+						 VORTEX_GREETINGS_PENDING_FRAME, frame,
+						 NULL, (axlDestroyFunc) vortex_frame_unref);
+		return NULL;
+	} /* end if */
+
+	/* frame complete, clear connection content */
+	vortex_connection_set_data (connection, 
+				    /* key and data */
+				    VORTEX_GREETINGS_PENDING_FRAME, NULL);
 
 	/* ensure from this point to be frame not NULL  */
 	if (vortex_greetings_is_reply_ok (frame, connection))

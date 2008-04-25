@@ -1461,6 +1461,12 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 				goto __vortex_connection_try_again;
 			} /* end if */
 		} else {
+			/* check if a pending frame was found */
+			if (vortex_connection_get_data (connection, VORTEX_GREETINGS_PENDING_FRAME)) {
+				vortex_log (VORTEX_LEVEL_DEBUG, "found partial greetings frame, reading rest..");
+				goto __vortex_connection_try_again;
+			} /* end if */
+
 			/* null frame received */
 			vortex_log (VORTEX_LEVEL_CRITICAL,
 				    "Connection refused. Received null frame were it was expected initial greetings, finish connection id=%d", connection->id);
@@ -5214,6 +5220,39 @@ void                vortex_connection_cleanup                (VortexCtx        *
 	ctx->connection_new_notify_list = NULL;
 
 	return;
+}
+
+/** 
+ * @brief Allows to get maximum segment size negociated.
+ * 
+ * @param connection The connection where to get maximum segment size.
+ * 
+ * @return The maximum segment size or -1 if fails.
+ */
+long int              vortex_connection_get_mss                (VortexConnection * connection)
+{
+	long int max_seg_size;
+#if defined(AXL_OS_WIN32)
+	/* windows flavors */
+	int                  optlen;
+#else
+	/* unix flavors */
+	socklen_t            optlen;
+#endif
+
+	v_return_val_if_fail (connection, -1);
+
+	/* clear values */
+	optlen       = sizeof (long int);
+	max_seg_size = 0;
+	
+	/* call to get socket option */
+	if (getsockopt (connection->session, IPPROTO_TCP, TCP_MAXSEG, &max_seg_size, &optlen) == 0) {
+		return max_seg_size;
+	}
+
+	/* return value found */
+	return -1;
 }
 
 /* @} */

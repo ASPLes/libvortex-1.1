@@ -63,4 +63,10 @@ const char  *  vortex_greetings_get_localize   (VortexCtx        * ctx);
 
 void           vortex_greetings_cleanup        (VortexCtx        * ctx);
 
+/** 
+ * @internal Definition to handle pending partial frame received on
+ * greetings.
+ */
+#define VORTEX_GREETINGS_PENDING_FRAME "vo:gr:pe"
+
 #endif
