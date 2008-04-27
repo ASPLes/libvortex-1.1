@@ -178,7 +178,6 @@ struct _VortexChannel {
 	 * value. */
 	int                     window_size;
 
-
 	bool                    complete_flag;
 	axlList               * previous_frame;
 
@@ -373,6 +372,12 @@ struct _VortexChannel {
 	 * @internal Handler used to decide how to split frames.
 	 */
 	VortexChannelFrameSize  next_frame_size;
+	
+	/** 
+	 * @internal Reference to user defined pointer to be provided
+	 * to the function once executed.
+	 */
+	axlPointer              next_frame_size_data;
 };
 
 typedef struct _VortexChannelData {
@@ -2865,6 +2870,8 @@ int             vortex_channel_get_window_size (VortexChannel * channel)
 	return channel->window_size;
 }
 
+
+
 /** 
  * @brief Returns current mime type used for messages exchange perform
  * on the given channel.
@@ -3034,20 +3041,34 @@ int                vortex_channel_get_next_frame_size         (VortexChannel * c
 							       int             message_size,
 							       int             max_seq_no)
 {
-	if (channel == NULL)
-		return -1;
+	/* get current context */
+	VortexCtx   * ctx = vortex_channel_get_ctx (channel);
+	int           size;
 
-	/* check the channel and next frame size implementation to be
-	 * defined */
-	if (channel->next_frame_size == NULL) {
-		/* use default implementation */
-		if ((next_seq_no + message_size) > max_seq_no)
-			return VORTEX_MIN (max_seq_no - next_seq_no + 1, VORTEX_MIN (channel->window_size, 4096));
-		return VORTEX_MIN (message_size, VORTEX_MIN (channel->window_size, 4096));
-	}
+	v_return_val_if_fail (channel, -1);
 
-	/* return value provided by the handler defined */
-	return channel->next_frame_size (channel, next_seq_no, message_size, max_seq_no);
+	/* check channel implementation */
+	if (channel->next_frame_size) {
+		/* return value provided by the handler defined */
+		return channel->next_frame_size (channel, next_seq_no, message_size, max_seq_no, channel->next_frame_size_data);
+	} /* end if */
+
+	/* check the connection holding the channel have an
+	 * implementation configured */
+	size = vortex_connection_get_next_frame_size (channel->connection, channel, next_seq_no, message_size, max_seq_no);
+	if (size > 0) 
+		return size;
+
+	/* now check for globally configured segmentator */
+	if (ctx->next_frame_size) {
+		/* return value provided by the handler defined */
+		return ctx->next_frame_size (channel, next_seq_no, message_size, max_seq_no, ctx->next_frame_size_data);
+	} /* end if */
+
+	/* use default implementation */
+	if ((next_seq_no + message_size) > max_seq_no)
+		return VORTEX_MIN (max_seq_no - next_seq_no + 1, VORTEX_MIN (channel->window_size, 4096));
+	return VORTEX_MIN (message_size, VORTEX_MIN (channel->window_size, 4096));
 }
 
 /** 
@@ -3059,23 +3080,32 @@ int                vortex_channel_get_next_frame_size         (VortexChannel * c
  *
  * @param next_frame_size The handler to be configured or NULL if the
  * default implementation is required.
+ *
+ * @param user_data User defined pointer to be passed to the \ref
+ * VortexChannelFrameSize handler.
  * 
  * @return Returns previously configured handler or NULL if nothing
  * was set. The function does nothing and return NULL if channel
  * reference received is NULL.
  */
-VortexChannelFrameSize  vortex_channel_set_next_frame_size_handler (VortexChannel * channel,
-								    VortexChannelFrameSize   next_frame_size)
+VortexChannelFrameSize  vortex_channel_set_next_frame_size_handler (VortexChannel          * channel,
+								    VortexChannelFrameSize   next_frame_size,
+								    axlPointer               user_data)
 {
 	VortexChannelFrameSize previous;
-	if (channel == NULL)
-		return NULL;
+	v_return_val_if_fail (channel, NULL);
 
 	/* get previous value */
-	previous                 = channel->next_frame_size;
+	previous                      = channel->next_frame_size;
 
-	/* configure new value */
-	channel->next_frame_size = next_frame_size;
+	/* configure new value (first data and then handler) */
+	channel->next_frame_size_data = user_data;
+	channel->next_frame_size      = next_frame_size;
+
+
+	/* nullify data if a null handler is received */
+	if (next_frame_size == NULL)
+		channel->next_frame_size_data = NULL;
 
 	/* return previous configuration */
 	return previous;

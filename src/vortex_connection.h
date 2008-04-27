@@ -311,6 +311,20 @@ void                vortex_connection_block                        (VortexConnec
 
 bool                vortex_connection_is_blocked                   (VortexConnection  * conn);
 
+int                 vortex_connection_get_next_frame_size          (VortexConnection * connection,
+								    VortexChannel    * channel,
+								    int                next_seq_no,
+								    int                message_size,
+								    int                max_seq_no);
+
+VortexChannelFrameSize  vortex_connection_set_next_frame_size_handler (VortexConnection        * connection,
+								       VortexChannelFrameSize    next_frame_size,
+								       axlPointer                user_data);
+
+VortexChannelFrameSize  vortex_connection_set_default_next_frame_size_handler (VortexCtx               * ctx,
+									       VortexChannelFrameSize    next_frame_size,
+									       axlPointer                user_data);
+
 /** 
  * @internal
  * Do not use the following functions, internal Vortex Library purposes.

@@ -148,6 +148,9 @@ int                vortex_channel_get_next_expected_reply_no   (VortexChannel * 
 
 int                vortex_channel_get_window_size              (VortexChannel * channel);
 
+void               vortex_channel_set_window_size              (VortexChannel * channel,
+                                                                int desired_size);
+
 const char       * vortex_channel_get_mime_type                (VortexChannel * channel);
 
 const char       * vortex_channel_get_transfer_encoding        (VortexChannel * channel);
@@ -159,8 +162,9 @@ int                vortex_channel_get_next_frame_size         (VortexChannel * c
 							       int             message_size,
 							       int             max_seq_no);
 
-VortexChannelFrameSize  vortex_channel_set_next_frame_size_handler (VortexChannel * channel,
-								    VortexChannelFrameSize   next_frame_size);
+VortexChannelFrameSize  vortex_channel_set_next_frame_size_handler (VortexChannel          * channel,
+								    VortexChannelFrameSize   next_frame_size,
+								    axlPointer               user_data);
 
 void               vortex_channel_update_remote_incoming_buffer (VortexChannel * channel, 
 								 VortexFrame   * frame);

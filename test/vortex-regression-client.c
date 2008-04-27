@@ -587,9 +587,9 @@ void test_02_channel_created (int channel_num, VortexChannel * channel, axlPoint
 	return;
 }
 
-bool test_02 () {
+bool test_02_common (VortexConnection * connection)
+{
 
-	VortexConnection * connection;
 	VortexChannel    * channel[TEST_02_MAX_CHANNELS];
 	VortexAsyncQueue * queue;
 	VortexFrame      * frame;
@@ -598,14 +598,6 @@ bool test_02 () {
 	char             * msg;
 	int                code;
 
-	/* creates a new connection against localhost:44000 */
-	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
-		vortex_connection_close (connection);
-		return false;
-		
-	} /* end if */
-	
 	/* create the queue */
 	queue   = vortex_async_queue_new ();
 
@@ -828,16 +820,151 @@ bool test_02 () {
 
 	axl_free (msg);
 
+	/* free queue */
+	vortex_async_queue_unref (queue);
+
+	return true;
+}
+
+/* message size variable used by test_03 and test_02f */
+#define TEST_03_MSGSIZE (65536 * 8)
+
+void test_03_reply (VortexChannel    * channel,
+		    VortexConnection * connection,
+		    VortexFrame      * frame, 
+		    axlPointer         user_data)
+{
+	VortexAsyncQueue * queue = user_data;
+	
+	/* push the frame received */
+	frame = vortex_frame_copy (frame);
+	vortex_async_queue_push (queue, frame);
+	
+	return;
+}
+
+bool test_03_common (VortexConnection * connection) {
+
+	VortexChannel    * channel;
+	VortexFrame      * frame;
+	VortexAsyncQueue * queue;
+	char             * message;
+	int                iterator;
+
+	/* create the queue */
+	queue = vortex_async_queue_new ();
+	
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      test_03_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return false;
+	}
+
+	/* build the message */
+	message = axl_new (char, TEST_03_MSGSIZE);
+	for (iterator = 0; iterator < TEST_03_MSGSIZE; iterator++)
+		message [iterator] = (iterator % 3);
+
+	iterator = 0;
+	while (iterator < 20) {
+
+		/* send the hug message */
+		if (! vortex_channel_send_msg (channel, message, TEST_03_MSGSIZE, NULL)) {
+			printf ("Test 03: Unable to send large message");
+			axl_free (message);
+			return false;
+		}
+
+		/* update the iterator */
+		iterator++;
+		
+	} /* end while */
+
+	iterator = 0;
+	while (iterator < 20) {
+
+		/* wait for the message */
+		frame = vortex_async_queue_pop (queue);
+		
+		/* check payload size */
+		if (vortex_frame_get_payload_size (frame) != TEST_03_MSGSIZE) {
+			printf ("Test 03: found that payload received isn't the value expected: %d != %d\n",
+				vortex_frame_get_payload_size (frame), TEST_03_MSGSIZE);
+			/* free frame */
+			vortex_frame_free (frame);
+			
+			return false;
+		}
+
+		/* check result */
+		if (memcmp (message, vortex_frame_get_payload (frame), TEST_03_MSGSIZE)) {
+			printf ("Test 03: Messages aren't equal\n");
+			return false;
+		}
+
+		/* check the reference of the channel associated */
+		if (vortex_frame_get_channel_ref (frame) == NULL) {
+			printf ("Test 03: Frame received doesn't have a valid channel reference configured\n");
+			return false;
+		} /* end if */
+
+		/* check channel reference */
+		if (! vortex_channel_are_equal (vortex_frame_get_channel_ref (frame),
+						channel)) {
+			printf ("Test 03: Frame received doesn't have the spected channel reference configured\n");
+			return false;
+		} /* end if */
+		
+		/* free frame received */
+		vortex_frame_free (frame);
+
+		/* update iterator */
+		iterator++;
+	}
+
+	/* free the message */
+	axl_free (message);
+
+	/* ok, close the channel */
+	vortex_channel_close (channel, NULL);
+
+	/* free queue */
+	vortex_async_queue_unref (queue);
+
+	/* return true */
+	return true;
+}
+
+bool test_02 () {
+
+	VortexConnection * connection;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+		
+	} /* end if */
+
+	/* call common implementation */
+	if (! test_02_common (connection))
+		return false;
+	
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection)) {
 		printf ("failed to close the BEEP session\n");
 		return false;
 	} /* end if */
 	
-	/* free queue */
-	vortex_async_queue_unref (queue);
-	
-
 	/* return true */
 	return true;
 }
@@ -1341,9 +1468,6 @@ bool test_02e () {
 	return true;
 }
 
-/* message size variable used by test_03 and test_02f */
-#define TEST_03_MSGSIZE (65536 * 8)
-
 bool test_02f_send_data (VortexChannel * channel, const char * message, VortexAsyncQueue * queue, 
 			 long max_tv_sec, long max_tv_usec)
 {
@@ -1496,20 +1620,90 @@ bool test_02f () {
 	return true;
 }
 
-
-void test_03_reply (VortexChannel    * channel,
-		    VortexConnection * connection,
-		    VortexFrame      * frame, 
-		    axlPointer         user_data)
+int test_02g_frame_size_64 (VortexChannel *channel, int next_seq_no, int message_size, int max_seq_no, axlPointer user_data) 
 {
-	VortexAsyncQueue * queue = user_data;
-	
-	/* push the frame received */
-	frame = vortex_frame_copy (frame);
-	vortex_async_queue_push (queue, frame);
-	
-	return;
+	int result = VORTEX_MIN (PTR_TO_INT(user_data), VORTEX_MIN (message_size, max_seq_no - next_seq_no + 1));
+	if (result > 64) {
+		printf ("ERROR: test is failing, supposed to segment frames into, at maximum, 64 bytes of payload..\n");
+	}
+	return result;
 }
+
+int test_02g_frame_size (VortexChannel *channel, int next_seq_no, int message_size, int max_seq_no, axlPointer user_data) 
+{
+	return VORTEX_MIN (PTR_TO_INT(user_data), VORTEX_MIN (message_size, max_seq_no - next_seq_no + 1));
+}
+
+bool test_02g () {
+
+	VortexConnection * connection;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+		
+	} /* end if */
+
+	/* configure 512 frame size */
+	printf ("Test 02-g: testing 512 frame size (slow)..\n");
+	vortex_connection_set_next_frame_size_handler (connection, test_02g_frame_size, INT_TO_PTR(512));
+
+	/* call common implementation */
+	if (! test_02_common (connection))
+		return false;
+
+	/* configure 2048 frame size */
+	printf ("Test 02-g: testing 2048 frame size (faster)..\n");
+	vortex_connection_set_next_frame_size_handler (connection, test_02g_frame_size, INT_TO_PTR(2048));
+
+	/* call common implementation */
+	if (! test_02_common (connection))
+		return false;
+
+	/* call to common implementation */
+	if (! test_03_common (connection)) 
+		return false;
+	
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return false;
+	} /* end if */
+
+	/* now configure global frame segmentation function */
+	printf ("Test 02-g: checking globally configured frame segmentator (including greetings..)\n");
+	printf ("Test 02-g: doing 64 frame size segmentation..\n");
+	vortex_connection_set_default_next_frame_size_handler (ctx, test_02g_frame_size_64, INT_TO_PTR (64));
+	
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+		
+	} /* end if */
+
+	printf ("Test 02-g: connection ok, running tests..\n");
+
+	/* call common implementation */
+	if (! test_02_common (connection))
+		return false;
+
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return false;
+	} /* end if */
+
+	/* now configure global frame segmentation function */
+	vortex_connection_set_default_next_frame_size_handler (ctx, NULL, NULL);
+	
+	/* return true */
+	return true;
+}
+
 
 /** 
  * @brief Checks BEEP support to send large messages that goes beyond
@@ -1520,11 +1714,6 @@ void test_03_reply (VortexChannel    * channel,
  */
 bool test_03 () {
 	VortexConnection * connection;
-	VortexChannel    * channel;
-	VortexFrame      * frame;
-	VortexAsyncQueue * queue;
-	char             * message;
-	int                iterator;
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
@@ -1533,96 +1722,12 @@ bool test_03 () {
 		return false;
 	}
 
-	/* create the queue */
-	queue = vortex_async_queue_new ();
-	
-	/* create a channel */
-	channel = vortex_channel_new (connection, 0,
-				      REGRESSION_URI,
-				      /* no close handling */
-				      NULL, NULL,
-				      /* frame receive async handling */
-				      test_03_reply, queue,
-				      /* no async channel creation */
-				      NULL, NULL);
-	if (channel == NULL) {
-		printf ("Unable to create the channel..");
+	/* call to common implementation */
+	if (! test_03_common (connection)) 
 		return false;
-	}
-
-	/* build the message */
-	message = axl_new (char, TEST_03_MSGSIZE);
-	for (iterator = 0; iterator < TEST_03_MSGSIZE; iterator++)
-		message [iterator] = (iterator % 3);
-
-	iterator = 0;
-	while (iterator < 20) {
-
-		/* send the hug message */
-		if (! vortex_channel_send_msg (channel, message, TEST_03_MSGSIZE, NULL)) {
-			printf ("Test 03: Unable to send large message");
-			axl_free (message);
-			return false;
-		}
-
-		/* update the iterator */
-		iterator++;
-		
-	} /* end while */
-
-	iterator = 0;
-	while (iterator < 20) {
-
-		/* wait for the message */
-		frame = vortex_async_queue_pop (queue);
-		
-		/* check payload size */
-		if (vortex_frame_get_payload_size (frame) != TEST_03_MSGSIZE) {
-			printf ("Test 03: found that payload received isn't the value expected: %d != %d\n",
-				vortex_frame_get_payload_size (frame), TEST_03_MSGSIZE);
-			/* free frame */
-			vortex_frame_free (frame);
-			
-			return false;
-		}
-
-		/* check result */
-		if (memcmp (message, vortex_frame_get_payload (frame), TEST_03_MSGSIZE)) {
-			printf ("Test 03: Messages aren't equal\n");
-			return false;
-		}
-
-		/* check the reference of the channel associated */
-		if (vortex_frame_get_channel_ref (frame) == NULL) {
-			printf ("Test 03: Frame received doesn't have a valid channel reference configured\n");
-			return false;
-		} /* end if */
-
-		/* check channel reference */
-		if (! vortex_channel_are_equal (vortex_frame_get_channel_ref (frame),
-						channel)) {
-			printf ("Test 03: Frame received doesn't have the spected channel reference configured\n");
-			return false;
-		} /* end if */
-		
-		/* free frame received */
-		vortex_frame_free (frame);
-
-		/* update iterator */
-		iterator++;
-	}
-
-	/* free the message */
-	axl_free (message);
-
-	/* ok, close the channel */
-	vortex_channel_close (channel, NULL);
 
 	/* ok, close the connection */
 	vortex_connection_close (connection);
-
-	/* free queue */
-	vortex_async_queue_unref (queue);
 
 	/* return true */
 	return true;
@@ -4098,7 +4203,7 @@ int main (int  argc, char ** argv)
 	/* change to select if it is not the default */
 	vortex_io_waiting_use (ctx, VORTEX_IO_WAIT_SELECT);
 
-/*	goto init;   */
+/*	goto init;    */
 
 	/* empty goto to avoid compiler complain about a label not
 	 * used in the case only select is supported */
@@ -4205,7 +4310,16 @@ int main (int  argc, char ** argv)
 		return -1;
 	}
 
-/*	goto finish;   */
+	/* goto finish;    */
+
+	if (test_02g ()) {
+		printf ("Test 02-g: check basic BEEP support with different frame sizes [   OK   ]\n");
+	} else {
+		printf ("Test 02-g: check basic BEEP support with different frame sizes [ FAILED ]\n");
+		return -1;
+	}
+
+
 
 	if (test_03 ())
 		printf ("Test 03: basic BEEP channel support (large messages) [   OK   ]\n");
@@ -4355,7 +4469,7 @@ int main (int  argc, char ** argv)
 	} /* end if */
 #endif
 
-/* finish:   */
+/* finish:    */
 
 	printf ("**\n");
 	printf ("** INFO: All test ok!\n");

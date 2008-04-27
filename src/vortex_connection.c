@@ -322,6 +322,17 @@ struct _VortexConnection {
 	 * @brief Mutex used to protect previous lists.
 	 */
 	VortexMutex channel_update_mutex;
+
+	/** 
+	 * @internal Handler used to decide how to split frames.
+	 */
+	VortexChannelFrameSize  next_frame_size;
+	
+	/** 
+	 * @internal Reference to user defined pointer to be provided
+	 * to the function once executed.
+	 */
+	axlPointer              next_frame_size_data;
 };
 
 
@@ -3855,6 +3866,133 @@ bool                vortex_connection_is_blocked                   (VortexConnec
 
 	/* set blocking state */
 	return PTR_TO_INT (vortex_connection_get_data (conn, VORTEX_CONNECTION_BLOCK));
+}
+
+/** 
+ * @brief Allows to get the amount of data to be used to build the
+ * next frame. This function calls to the user defined configured
+ * handler on the connection, acting globally to all channels. If no
+ * handler is defined, the function returns -1.
+ * 
+ * @param connection The connection where a frame is about to be sent.
+ *
+ * @param channel The connection where the sending operation is taking
+ * place.
+ *
+ * @param next_seq_no This value represent the next sequence number
+ * for the first octect to be sent on the frame.
+ *
+ * @param message_size This value represent the size of the payload to
+ * be sent.
+ *
+ * @param max_seq_no Is the maximum allowed seqno accepted by the
+ * remote peer. Beyond this value, the remote peer will close the
+ * connection.
+ * 
+ * @return The amount of payload to use into the next frame to be
+ * built. The function will return -1 if no handler is defined or
+ * connection reference received is null.
+ */
+int                 vortex_connection_get_next_frame_size          (VortexConnection * connection,
+								    VortexChannel    * channel,
+								    int                next_seq_no,
+								    int                message_size,
+								    int                max_seq_no)
+{
+	v_return_val_if_fail (connection, -1);
+
+	/* return -1 to signal no handler is defined */
+	if (connection->next_frame_size == NULL)
+		return -1;
+
+	/* call to configured handler */
+	return connection->next_frame_size (channel, next_seq_no, message_size, max_seq_no, connection->next_frame_size_data);
+}
+
+/** 
+ * @brief Allows to configure the \ref VortexChannelFrameSize handler
+ * to be used by the sequencer to decide how many data is used into
+ * each frame produced (outstanding frames). 
+ *
+ * Configuring the handler at connection level will make all channels
+ * to use this implementation unless the channel have its own \ref
+ * VortexChannelFrameSize handler configured (\ref
+ * vortex_channel_set_next_frame_size_handler).
+ * 
+ * @param connection The connection to be configured.
+ *
+ * @param next_frame_size The handler to be configured or NULL if the
+ * default implementation is required.
+ *
+ * @param user_data User defined pointer to be passed to the \ref
+ * VortexChannelFrameSize handler.
+ * 
+ * @return Returns previously configured handler or NULL if nothing
+ * was set. The function does nothing and return NULL if connection
+ * reference received is NULL.
+ */
+VortexChannelFrameSize  vortex_connection_set_next_frame_size_handler (VortexConnection        * connection,
+								       VortexChannelFrameSize    next_frame_size,
+								       axlPointer                user_data)
+{
+	VortexChannelFrameSize previous;
+	v_return_val_if_fail (connection, NULL);
+
+	/* get previous value */
+	previous                         = connection->next_frame_size;
+
+	/* configure new value (first data and then handler) */
+	connection->next_frame_size_data = user_data;
+	connection->next_frame_size      = next_frame_size;
+
+	/* nullify data if a null handler is received */
+	if (next_frame_size == NULL)
+		connection->next_frame_size_data = NULL;
+
+	/* return previous configuration */
+	return previous;
+}
+
+/** 
+ * @brief Configures default frame segmentation function (\ref
+ * VortexChannelFrameSize) used for all connections and all channels
+ * that do not have a segmentator defined.
+ *
+ * See \ref vortex_connection_set_next_frame_size_handler and \ref vortex_channel_set_next_frame_size_handler.
+ *
+ * 
+ * @param next_frame_size The handler to be configured globally.
+ *
+ * @param user_data User defined pointer to be provided to the global
+ * function to be configured.
+ * 
+ * @return Returns previously configured handler or NULL if nothing
+ * was set. The function does nothing and return NULL if context
+ * reference received is NULL.
+ */
+VortexChannelFrameSize  vortex_connection_set_default_next_frame_size_handler (VortexCtx               * ctx,
+									       VortexChannelFrameSize    next_frame_size,
+									       axlPointer                user_data)
+{
+	VortexChannelFrameSize    previous;
+
+	/* check context received */
+	v_return_val_if_fail (ctx, NULL);
+
+	/* get previous value */
+	previous                  = next_frame_size;
+
+	/* configure new value (first data and then handler) */
+	ctx->next_frame_size_data = user_data;
+	ctx->next_frame_size      = next_frame_size;
+
+
+	/* nullify data if a null handler is received */
+	if (next_frame_size == NULL)
+		ctx->next_frame_size_data = NULL;
+
+	/* return previous configuration */
+	return previous;
 }
 
 /** 

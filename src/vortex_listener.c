@@ -258,11 +258,38 @@ void __vortex_listener_initial_accept (VortexCtx        * ctx,
  */
 void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection * connection)
 {
+	VortexFrame   * pending;
 #if defined(ENABLE_VORTEX_LOG)
-	VortexCtx * ctx = vortex_connection_get_ctx (connection);
+	VortexCtx     * ctx = vortex_connection_get_ctx (connection);
 #endif
-
 	vortex_log (VORTEX_LEVEL_DEBUG, "greetings sent, waiting reply");
+
+	/* check if the connection have a pending frame (get the reference) */
+	pending = vortex_connection_get_data (connection,
+					      VORTEX_GREETINGS_PENDING_FRAME);
+	/* check pending frame */
+	if (pending) {
+		pending = vortex_frame_join (pending, frame);
+		vortex_frame_unref (frame);
+		frame   = pending;
+	} /* end if */
+
+	/* check if the frame returned is not complete, to store in
+	 * the connection and return NULL */
+	if (vortex_frame_get_more_flag (frame)) {
+		/* store the frame */
+		vortex_connection_set_data_full (connection, 
+						 /* key and data */
+						 VORTEX_GREETINGS_PENDING_FRAME, frame,
+						 NULL, (axlDestroyFunc) vortex_frame_unref);
+		return;
+	} /* end if */
+
+	/* frame complete, clear connection content */
+	vortex_connection_set_data (connection, 
+				    /* key and data */
+				    VORTEX_GREETINGS_PENDING_FRAME, NULL);
+
 
 	/* process greetings from init peer */
 	if (!vortex_greetings_is_reply_ok (frame, connection)) {
