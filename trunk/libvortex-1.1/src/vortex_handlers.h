@@ -1504,8 +1504,12 @@ typedef VortexTunnelSettings * (* VortexTunnelLocationResolver) (const char  * t
  * sequencer process.
  *
  * This handler is used by the following functions:
+ *
  * - \ref vortex_channel_get_next_frame_size
  * - \ref vortex_channel_set_next_frame_size_handler
+ * - \ref vortex_connection_get_next_frame_size
+ * - \ref vortex_connection_set_next_frame_size_handler
+ * - \ref vortex_connection_set_default_next_frame_size_handler
  *
  * @param channel The channel that is required to return next frame size.
  *
@@ -1518,6 +1522,9 @@ typedef VortexTunnelSettings * (* VortexTunnelLocationResolver) (const char  * t
  * @param max_seq_no Is the maximum allowed seqno accepted by the
  * remote peer. Beyond this value, the remote peer will close the
  * connection.
+ *
+ * @param user_data User defined pointer passed to the handler when it
+ * is executed.
  * 
  * @return The amount of payload to use into the next frame to be
  * built. The function will return -1 if the channel reference
@@ -1526,7 +1533,9 @@ typedef VortexTunnelSettings * (* VortexTunnelLocationResolver) (const char  * t
 typedef int (*VortexChannelFrameSize) (VortexChannel * channel,
 				       int             next_seq_no,
 				       int             message_size,
-				       int             max_seq_no);
+				       int             max_seq_no,
+				       axlPointer      user_data);
+				      
 
 /** 
  * @brief Handler used by \ref vortex_connection_get_channel_by_func

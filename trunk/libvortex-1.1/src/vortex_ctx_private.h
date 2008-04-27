@@ -218,6 +218,17 @@ struct _VortexCtx {
 	 * server side */
 	char                    * listener_default_realm;
 
+	/** 
+	 * @internal Handler used to decide how to split frames.
+	 */
+	VortexChannelFrameSize  next_frame_size;
+	
+	/** 
+	 * @internal Reference to user defined pointer to be provided
+	 * to the function once executed.
+	 */
+	axlPointer              next_frame_size_data;
+
 	/**** vortex tls module state ****/
 #if defined(ENABLE_TLS_SUPPORT)
 	/* @internal Internal default handlers used to define the TLS
