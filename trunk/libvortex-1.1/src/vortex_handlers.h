@@ -1498,6 +1498,36 @@ typedef VortexTunnelSettings * (* VortexTunnelLocationResolver) (const char  * t
 								 axlDoc      * tunnel_doc,
 								 axlPointer    user_data);
 
+/**
+ * @brief Handler definition for the set of functions that allow the
+ * users space to control how frames are splited by the vortex
+ * sequencer process.
+ *
+ * This handler is used by the following functions:
+ * - \ref vortex_channel_get_next_frame_size
+ * - \ref vortex_channel_set_next_frame_size_handler
+ *
+ * @param channel The channel that is required to return next frame size.
+ *
+ * @param next_seq_no This value represent the next sequence number
+ * for the first octect to be sent on the frame.
+ *
+ * @param message_size This value represent the size of the payload to
+ * be sent.
+ *
+ * @param max_seq_no Is the maximum allowed seqno accepted by the
+ * remote peer. Beyond this value, the remote peer will close the
+ * connection.
+ * 
+ * @return The amount of payload to use into the next frame to be
+ * built. The function will return -1 if the channel reference
+ * received is NULL.
+ */
+typedef int (*VortexChannelFrameSize) (VortexChannel * channel,
+				       int             next_seq_no,
+				       int             message_size,
+				       int             max_seq_no);
+
 /** 
  * @brief Handler used by \ref vortex_connection_get_channel_by_func
  * which is called to check if the channel provided must be returned

@@ -40,19 +40,18 @@
 
 #include <vortex.h>
 
-void vortex_sequencer_queue_data               (VortexCtx           * ctx,
-						VortexSequencerData * data);
+void     vortex_sequencer_queue_data              (VortexCtx           * ctx,
+						   VortexSequencerData * data);
 
-bool vortex_sequencer_run                      (VortexCtx * ctx);
+bool     vortex_sequencer_run                     (VortexCtx * ctx);
 
-void vortex_sequencer_stop                     (VortexCtx * ctx);
+void     vortex_sequencer_stop                    (VortexCtx * ctx);
 
-bool     vortex_sequencer_direct_send          (VortexConnection * connection,
-						VortexChannel    * channel,
-						
-						VortexWriterData * packet);
+bool     vortex_sequencer_direct_send             (VortexConnection * connection,
+						   VortexChannel    * channel,
+						   VortexWriterData * packet);
 
-void     vortex_sequencer_signal_update        (VortexChannel       * channel);
+void     vortex_sequencer_signal_update           (VortexChannel       * channel);
 
 void	vortex_sequencer_drop_connection_messages (VortexConnection * conn);
 
