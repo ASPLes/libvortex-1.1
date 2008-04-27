@@ -3960,6 +3960,7 @@ VortexChannelFrameSize  vortex_connection_set_next_frame_size_handler (VortexCon
  *
  * See \ref vortex_connection_set_next_frame_size_handler and \ref vortex_channel_set_next_frame_size_handler.
  *
+ * @param ctx The context where the operation will be performed.
  * 
  * @param next_frame_size The handler to be configured globally.
  *
