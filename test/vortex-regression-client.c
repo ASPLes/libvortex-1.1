@@ -31,6 +31,9 @@
 #include <signal.h>
 #endif
 
+/* disable time checks */
+bool    disable_time_checks = false;
+
 /* listener location */
 char   * listener_host = NULL;
 #define LISTENER_PORT       "44010"
@@ -1338,8 +1341,161 @@ bool test_02e () {
 	return true;
 }
 
-
+/* message size variable used by test_03 and test_02f */
 #define TEST_03_MSGSIZE (65536 * 8)
+
+bool test_02f_send_data (VortexChannel * channel, const char * message, VortexAsyncQueue * queue, 
+			 long max_tv_sec, long max_tv_usec)
+{
+	int               iterator;
+	VortexFrame     * frame;
+	struct timeval    start;
+	struct timeval    stop;
+	struct timeval    result;
+
+	/* start */
+	gettimeofday (&start, NULL);
+
+	iterator = 0;
+	while (iterator < 10) {
+
+		/* send the hug message */
+		if (! vortex_channel_send_msg (channel, message, TEST_03_MSGSIZE, NULL)) {
+			printf ("Test 03: Unable to send large message");
+			return false;
+		}
+
+		/* wait for the message */
+		frame = vortex_async_queue_pop (queue);
+		
+		/* check payload size */
+		if (vortex_frame_get_payload_size (frame) != TEST_03_MSGSIZE) {
+			printf ("Test 03: found that payload received isn't the value expected: %d != %d\n",
+				vortex_frame_get_payload_size (frame), TEST_03_MSGSIZE);
+			/* free frame */
+			vortex_frame_free (frame);
+			
+			return false;
+		}
+
+		/* check result */
+		if (memcmp (message, vortex_frame_get_payload (frame), TEST_03_MSGSIZE)) {
+			printf ("Test 03: Messages aren't equal\n");
+			return false;
+		}
+
+		/* check the reference of the channel associated */
+		if (vortex_frame_get_channel_ref (frame) == NULL) {
+			printf ("Test 03: Frame received doesn't have a valid channel reference configured\n");
+			return false;
+		} /* end if */
+
+		/* check channel reference */
+		if (! vortex_channel_are_equal (vortex_frame_get_channel_ref (frame),
+						channel)) {
+			printf ("Test 03: Frame received doesn't have the spected channel reference configured\n");
+			return false;
+		} /* end if */
+		
+		/* free frame received */
+		vortex_frame_free (frame);
+
+		/* update the iterator */
+		iterator++;
+		
+	} /* end while */
+
+	/* stop */
+	gettimeofday (&stop, NULL);
+
+	/* get result */
+	vortex_timeval_substract (&stop, &start, &result);
+	
+	printf ("Test 02-f:    ellapsed time to transfer %d bytes (%d Kbytes): %ld secs +  %ld microseconds\n", 
+		TEST_03_MSGSIZE * 10, (TEST_03_MSGSIZE * 10) / 1024 , result.tv_sec, result.tv_usec);
+
+	/* check time results if not enabled */
+	if (! disable_time_checks) {
+		if (result.tv_sec >= max_tv_sec && result.tv_usec > max_tv_usec) {
+			printf ("Test 02-f:    ERROR: transfer limit delay reached..test failed\n");
+			return false;
+		} 
+	} /* end if */
+
+	return true;
+}
+	
+
+/** 
+ * @brief Check vortex under packet delay conditions.
+ * 
+ * @return true if tests are passed.
+ */
+bool test_02f () {
+
+	VortexConnection * connection;
+	VortexChannel    * channel;
+	int                iterator;
+	long int           mss;
+	char             * message;
+	VortexAsyncQueue * queue;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+		
+	} /* end if */
+
+	/* create the queue */
+	queue = vortex_async_queue_new ();
+
+	mss   = vortex_connection_get_mss (connection);
+	printf ("Test 02-f: mss found %ld..\n", mss);
+	
+	/* create the channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	/* check channel returned */
+	if (channel == NULL) {
+		printf ("Unable to create the channel, failed to create channel..\n");
+		return false;
+	}
+
+	/* build the message to be used */
+	message = axl_new (char, TEST_03_MSGSIZE);
+	for (iterator = 0; iterator < TEST_03_MSGSIZE; iterator++)
+		message [iterator] = (iterator % 3);
+
+	/* check no delay escenario */
+	printf ("Test 02-f: checking no delay scenario..\n");
+	if (! test_02f_send_data (channel, message, queue, 1, 140000))
+		return false;
+
+	/* free queue and message */
+	vortex_async_queue_unref (queue);
+	axl_free (message);
+
+	/* ok, close the connection, for that, restore previous
+	handler */
+	printf ("Test 02-f: restoring default handler to close connection..\n");
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return false;
+	} /* end if */
+	
+
+	/* return true */
+	return true;
+}
+
 
 void test_03_reply (VortexChannel    * channel,
 		    VortexConnection * connection,
@@ -3849,14 +4005,18 @@ int main (int  argc, char ** argv)
 	printf ("** To gather information about time performance you can use:\n**\n");
 	printf ("**     >> time ./vortex-regression-client\n**\n");
 	printf ("** To gather information about memory consumed (and leaks) use:\n**\n");
-	printf ("**     >> libtool --mode=execute valgrind --leak-check=yes --error-limit=no ./vortex-regression-client\n**\n");
+	printf ("**     >> libtool --mode=execute valgrind --leak-check=yes --error-limit=no ./vortex-regression-client --disable-time-checks\n**\n");
 	printf ("** Additional settings:\n");
 	printf ("**\n");
-	printf ("**     >> ./vortex-regression-client [listener-host [listener-host-proxy]]\n");
+	printf ("**     >> ./vortex-regression-client [--disable-time-checks] [listener-host [listener-host-proxy]]\n");
 	printf ("**\n");
 	printf ("**       If no listener-host value is provided, it is used \"localhost\". \n");
 	printf ("**       If no listener-host-proxy value is provided, it is used the value \n");
 	printf ("**       provided for listener-host. \n");
+	printf ("**\n");
+	printf ("**       Providing --disable-time-checks will make regression test to skip those\n");
+	printf ("**       tests that could fail due to timing issues. This is useful when using\n");
+        printf ("**       valgrind or similar tools.\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -3876,11 +4036,43 @@ int main (int  argc, char ** argv)
 		listener_host       = "localhost";
 		listener_proxy_host = "localhost";
 	} else if (argc == 2) {
-		listener_host       = argv[1];
-		listener_proxy_host = argv[1];
+
+		/* check for disable-time-checks */
+		if (axl_cmp (argv[1], "--disable-time-checks")) {
+			disable_time_checks = true;
+			listener_host       = "localhost";
+			listener_proxy_host = "localhost";
+		} else {
+			listener_host       = argv[1];
+			listener_proxy_host = argv[1];
+		} /* end if */
+
 	} else if (argc == 3) {
-		listener_host       = argv[1];
-		listener_proxy_host = argv[2];
+
+		/* check for disable-time-checks */
+		if (axl_cmp (argv[1], "--disable-time-checks")) {
+			/* default proxy same as host */
+			disable_time_checks = true;
+			listener_host       = argv[2];
+			listener_proxy_host = argv[2];
+		} else {
+			listener_host       = argv[1];
+			listener_proxy_host = argv[2];
+		} /* end if */
+
+	} else if (argc == 4) {
+		/* check for disable-time-checks */
+		if (! axl_cmp (argv[1], "--disable-time-checks")) {
+			printf ("Error: expected to find --disable-time-checks, but %s was found..\n",
+				argv[1]);
+			return -1;
+		}
+
+		/* disable time checks and host and proxy configured
+		 * at 2 and 3 command parameters */
+		disable_time_checks = true;
+		listener_host       = argv[2];
+		listener_proxy_host = argv[3];
 	}
 
 	if (listener_host == NULL) {
@@ -3905,6 +4097,8 @@ int main (int  argc, char ** argv)
 
 	/* change to select if it is not the default */
 	vortex_io_waiting_use (ctx, VORTEX_IO_WAIT_SELECT);
+
+/*	goto init;   */
 
 	/* empty goto to avoid compiler complain about a label not
 	 * used in the case only select is supported */
@@ -4001,6 +4195,17 @@ int main (int  argc, char ** argv)
 		printf ("Test 02-e: check wait reply support [ FAILED ]\n");
 		return -1;
 	}
+
+/* init: */
+
+	if (test_02f ()) {
+		printf ("Test 02-f: check vortex performance under packet delay scenarios [   OK   ]\n");
+	} else {
+		printf ("Test 02-f: check vortex performance under packet delay scenarios [ FAILED ]\n");
+		return -1;
+	}
+
+/*	goto finish;   */
 
 	if (test_03 ())
 		printf ("Test 03: basic BEEP channel support (large messages) [   OK   ]\n");
@@ -4149,6 +4354,8 @@ int main (int  argc, char ** argv)
 		goto init_test;
 	} /* end if */
 #endif
+
+/* finish:   */
 
 	printf ("**\n");
 	printf ("** INFO: All test ok!\n");

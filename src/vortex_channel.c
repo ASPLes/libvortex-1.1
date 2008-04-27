@@ -368,6 +368,11 @@ struct _VortexChannel {
 	 * corresponding order that are hold until its time is found.
 	 */
 	axlHash               * stored_replies;
+
+	/** 
+	 * @internal Handler used to decide how to split frames.
+	 */
+	VortexChannelFrameSize  next_frame_size;
 };
 
 typedef struct _VortexChannelData {
@@ -2426,12 +2431,12 @@ bool      __vortex_channel_common_rpy (VortexChannel    * channel,
 		break;
 	}
 
+	/* remove from the pending stored hash */
+	axl_hash_delete (channel->stored_replies, INT_TO_PTR (msg_no_rpy));
+
 	/* send data to sequencer */
 	vortex_sequencer_queue_data (ctx, data);
 
-	/* remove from the pending stored hash */
-	axl_hash_delete (channel->stored_replies, INT_TO_PTR (msg_no_rpy));
-	
 	/* update next msg_no_rpy */
 	msg_no_rpy = vortex_channel_get_next_reply_no (channel);
 
@@ -2999,6 +3004,84 @@ int  vortex_channel_get_max_seq_no_remote_accepted (VortexChannel * channel)
 }
 
 /** 
+ * @brief Gets the amount of data to be copied from the pending
+ * message into the frame about being fragmented or built. The
+ * function is used by the vortex sequencer to get the amount of data
+ * to get from the message. 
+ *
+ * If the channel do not have any \ref VortexChannelFrameSize defined
+ * at \ref vortex_channel_set_next_frame_size_handler the function
+ * will use the default implementation provided.
+ * 
+ * @param channel The channel that is required to return next frame size.
+ *
+ * @param next_seq_no This value represent the next sequence number
+ * for the first octect to be sent on the frame.
+ *
+ * @param message_size This value represent the size of the payload to
+ * be sent.
+ *
+ * @param max_seq_no Is the maximum allowed seqno accepted by the
+ * remote peer. Beyond this value, the remote peer will close the
+ * connection.
+ * 
+ * @return The amount of payload to use into the next frame to be
+ * built. The function will return -1 if the channel reference
+ * received is NULL.
+ */
+int                vortex_channel_get_next_frame_size         (VortexChannel * channel,
+							       int             next_seq_no,
+							       int             message_size,
+							       int             max_seq_no)
+{
+	if (channel == NULL)
+		return -1;
+
+	/* check the channel and next frame size implementation to be
+	 * defined */
+	if (channel->next_frame_size == NULL) {
+		/* use default implementation */
+		if ((next_seq_no + message_size) > max_seq_no)
+			return VORTEX_MIN (max_seq_no - next_seq_no + 1, VORTEX_MIN (channel->window_size, 4096));
+		return VORTEX_MIN (message_size, VORTEX_MIN (channel->window_size, 4096));
+	}
+
+	/* return value provided by the handler defined */
+	return channel->next_frame_size (channel, next_seq_no, message_size, max_seq_no);
+}
+
+/** 
+ * @brief Allows to configure the \ref VortexChannelFrameSize handler
+ * to be used by the sequencer to decide how many data is used into
+ * each frame produced (outstanding frames).
+ * 
+ * @param channel The channel to be configured.
+ *
+ * @param next_frame_size The handler to be configured or NULL if the
+ * default implementation is required.
+ * 
+ * @return Returns previously configured handler or NULL if nothing
+ * was set. The function does nothing and return NULL if channel
+ * reference received is NULL.
+ */
+VortexChannelFrameSize  vortex_channel_set_next_frame_size_handler (VortexChannel * channel,
+								    VortexChannelFrameSize   next_frame_size)
+{
+	VortexChannelFrameSize previous;
+	if (channel == NULL)
+		return NULL;
+
+	/* get previous value */
+	previous                 = channel->next_frame_size;
+
+	/* configure new value */
+	channel->next_frame_size = next_frame_size;
+
+	/* return previous configuration */
+	return previous;
+}
+
+/** 
  * @internal
  * 
  * @brief Allows to update current buffer status for the maximum seq
@@ -3465,8 +3548,9 @@ axlPointer         vortex_channel_get_data                        (VortexChannel
 bool               vortex_channel_ref                             (VortexChannel * channel)
 {
 	/* check channel received */
-	if (channel == NULL)
-		return false;
+	v_return_val_if_fail (channel,                false);
+	v_return_val_if_fail (channel->is_opened,     false);
+	v_return_val_if_fail (channel->ref_count > 0, false);
 	
 	/* lock ref/unref operations over this connection */
 	vortex_mutex_lock   (&channel->ref_mutex);

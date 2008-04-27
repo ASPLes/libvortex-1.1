@@ -154,6 +154,14 @@ const char       * vortex_channel_get_transfer_encoding        (VortexChannel * 
 
 int                vortex_channel_get_max_seq_no_remote_accepted (VortexChannel * channel);
 
+int                vortex_channel_get_next_frame_size         (VortexChannel * channel,
+							       int             next_seq_no,
+							       int             message_size,
+							       int             max_seq_no);
+
+VortexChannelFrameSize  vortex_channel_set_next_frame_size_handler (VortexChannel * channel,
+								    VortexChannelFrameSize   next_frame_size);
+
 void               vortex_channel_update_remote_incoming_buffer (VortexChannel * channel, 
 								 VortexFrame   * frame);
 

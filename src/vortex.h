@@ -194,6 +194,13 @@
 # define S_ISREG(m) (((m) & _S_IFMT) == _S_IFREG)
 #endif 
 
+/**
+ * @brief Returns the minimum from two values.
+ * @param a First value to compare.
+ * @param b Second value to compare.
+ */
+#define VORTEX_MIN(a,b) ((a) > (b) ? b : a)
+
 BEGIN_C_DECLS
 
 /* Internal includes and external includes for Vortex API
