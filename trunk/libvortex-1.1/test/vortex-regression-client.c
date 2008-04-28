@@ -994,7 +994,7 @@ char * test_04_ab_gen_md5 (const char * file)
 /** 
  * Common implementation for test_04_ab test
  */
-bool test_04_ab_common (VortexConnection * connection, int window_size, const char * prefix, int * amount_transferred) {
+bool test_04_ab_common (VortexConnection * connection, int window_size, const char * prefix, int * amount_transferred, int times) {
 
 	VortexChannel    * channel;
 	VortexAsyncQueue * queue;
@@ -1005,6 +1005,7 @@ bool test_04_ab_common (VortexConnection * connection, int window_size, const ch
 	FILE             * file;
 	int                bytes_written;
 	int                iterator = 0;
+	bool               disable_log = (times == 4);
 
 	if (amount_transferred)
 		(*amount_transferred) = 0;
@@ -1033,13 +1034,16 @@ bool test_04_ab_common (VortexConnection * connection, int window_size, const ch
 	if (window_size != -1) 
 		vortex_channel_set_window_size (channel, window_size);
 
+ transfer_again:
+
 	/* configure the file requested: first file */
 	file_name = "vortex-regression-client.c";
 
  transfer_file:
 	/* create the md5 to track content transfered */
 	md5       = test_04_ab_gen_md5 (file_name);
-	printf ("%sTest 04-ab:   request files: %s (md5: %s)\n", prefix ? prefix : "", file_name, md5);
+	if (! disable_log)
+		printf ("%sTest 04-ab:   request files: %s (md5: %s)\n", prefix ? prefix : "", file_name, md5);
 	if (! vortex_channel_send_msg (channel, file_name, strlen (file_name), NULL)) {
 		printf ("Failed to send message request to retrieve file: %s..\n", file_name);
 		return false;
@@ -1059,7 +1063,8 @@ bool test_04_ab_common (VortexConnection * connection, int window_size, const ch
 	}
 
 	/* wait for all replies */
-	printf ("%sTest 04-ab:   waiting replies having file: %s\n", prefix ? prefix : "", file_name);
+	if (! disable_log)
+		printf ("%sTest 04-ab:   waiting replies having file: %s\n", prefix ? prefix : "", file_name);
 	while (true) {
 		/* get the next message, blocking at this call. */
 		frame = vortex_channel_get_reply (channel, queue);
@@ -1106,7 +1111,8 @@ bool test_04_ab_common (VortexConnection * connection, int window_size, const ch
 		return false;
 	}
 	
-	printf ("%sTest 04-ab:   content transfered for %s ok\n", prefix ? prefix : "", file_name);
+	if (! disable_log)
+		printf ("%sTest 04-ab:   content transfered for %s ok\n", prefix ? prefix : "", file_name);
 
 	axl_free (md5);
 	axl_free (md5Aux);
@@ -1126,6 +1132,12 @@ bool test_04_ab_common (VortexConnection * connection, int window_size, const ch
 	default:
 		/* more files to transfer */
 		break;
+	}
+
+	times--;
+	if (times > 0) {
+		iterator  = 0;
+		goto transfer_again;
 	}
 
 	/* free the queue */
@@ -1831,6 +1843,14 @@ int test_02g_frame_size (VortexChannel *channel, int next_seq_no, int message_si
 	return VORTEX_MIN (PTR_TO_INT(user_data), VORTEX_MIN (message_size, max_seq_no - next_seq_no + 1));
 }
 
+double test_02g_rate (int bytes, struct timeval result)
+{
+	double seconds = result.tv_sec + (result.tv_usec / (double) 1000000);
+	double kbytes  = bytes / (double) 1024;
+	
+	return kbytes / seconds;
+}
+
 bool test_02g () {
 
 	VortexConnection * connection;
@@ -1911,11 +1931,26 @@ bool test_02g () {
 	if (vortex_connection_get_next_frame_size (connection, NULL, 0, 0, 0) != -1)
 		return false;
 
+	/* test 4096 */
+	printf ("Test 02-g: check to perform a transfer updated the default window size to 4096, step 4096\n");
+	gettimeofday (&start, NULL);
+	/* call to base implementation */
+	if (! test_04_ab_common (connection, -1, "Test 02-g::", &amount, 4))
+		return false;
+	gettimeofday (&stop, NULL);
+	vortex_timeval_substract (&stop, &start, &result);
+	printf ("Test 02-g: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 4096, step 4096.\n", amount, result.tv_sec, result.tv_usec);
+	if (! vortex_connection_is_ok (connection, false)) {
+		printf ("Test 02-g: ERROR, connection status is not ok before test..\n");
+		return false;
+	}
+	printf ("Test 02-g:    download rate at %.2f KBytes/segs..\n", test_02g_rate (amount, result));
+
 	/* test 8192 */
 	printf ("Test 02-g: check to perform a transfer updated the default window size to 8192, step 4096\n");
 	gettimeofday (&start, NULL);
 	/* call to base implementation */
-	if (! test_04_ab_common (connection, 8192, "Test 02-g::", &amount))
+	if (! test_04_ab_common (connection, 8192, "Test 02-g::", &amount, 4))
 		return false;
 	gettimeofday (&stop, NULL);
 	vortex_timeval_substract (&stop, &start, &result);
@@ -1924,14 +1959,14 @@ bool test_02g () {
  		printf ("Test 02-g: ERROR, connection status is not ok before test..\n");
  		return false;
  	}
- 
+ 	printf ("Test 02-g:    download rate at %.2f KBytes/segs..\n", test_02g_rate (amount, result));
  	
  	
  	/* test 16384 */
  	printf ("Test 02-g: check to perform a transfer updated the default window size to 16384, step 4096\n");
  	gettimeofday (&start, NULL);
  	/* call to base implementation */
- 	if (! test_04_ab_common (connection, 16384, "Test 02-g::", &amount))
+ 	if (! test_04_ab_common (connection, 16384, "Test 02-g::", &amount, 4))
  		return false;
  	gettimeofday (&stop, NULL);
  	vortex_timeval_substract (&stop, &start, &result);
@@ -1940,12 +1975,13 @@ bool test_02g () {
  		printf ("Test 02-g: ERROR, connection status is not ok before test..\n");
  		return false;
  	}
+	printf ("Test 02-g:    download rate at %.2f KBytes/segs..\n", test_02g_rate (amount, result));
  
  	/* test 32768 */
  	printf ("Test 02-g: check to perform a transfer updated the default window size to 32768, step 4096\n");
  	gettimeofday (&start, NULL);
  	/* call to base implementation */
- 	if (! test_04_ab_common (connection, 32768, "Test 02-g::", &amount))
+ 	if (! test_04_ab_common (connection, 32768, "Test 02-g::", &amount, 4))
  		return false;
  	gettimeofday (&stop, NULL);
  	vortex_timeval_substract (&stop, &start, &result);
@@ -1954,6 +1990,7 @@ bool test_02g () {
  		printf ("Test 02-g: ERROR, connection status is not ok before test..\n");
  		return false;
  	}
+	printf ("Test 02-g:    download rate at %.2f KBytes/segs..\n", test_02g_rate (amount, result));
  
  	/* ok, close the connection */
  	if (! vortex_connection_close (connection)) {
@@ -2726,7 +2763,7 @@ bool test_04_ab () {
 	}
 
 	/* call to base implementation */
-	if (! test_04_ab_common (connection, -1, NULL, NULL))
+	if (! test_04_ab_common (connection, -1, NULL, NULL, 1))
 		return false;
 
 	/* ok, close the connection */
@@ -4294,8 +4331,6 @@ int main (int  argc, char ** argv)
 	/* change to select if it is not the default */
 	vortex_io_waiting_use (ctx, VORTEX_IO_WAIT_SELECT);
 
-	goto init;     
-
 	/* empty goto to avoid compiler complain about a label not
 	 * used in the case only select is supported */
 	goto init_test;
@@ -4399,16 +4434,12 @@ int main (int  argc, char ** argv)
 		return -1;
 	}
 
- init:  
-
 	if (test_02g ()) {
 		printf ("Test 02-g: check basic BEEP support with different frame sizes [   OK   ]\n");
 	} else {
 		printf ("Test 02-g: check basic BEEP support with different frame sizes [ FAILED ]\n");
 		return -1;
 	}
-
-	goto finish;     
 
 	if (test_03 ())
 		printf ("Test 03: basic BEEP channel support (large messages) [   OK   ]\n");
@@ -4557,8 +4588,6 @@ int main (int  argc, char ** argv)
 		goto init_test;
 	} /* end if */
 #endif
-
- finish:     
 
 	printf ("**\n");
 	printf ("** INFO: All test ok!\n");
