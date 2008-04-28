@@ -149,7 +149,7 @@ int                vortex_channel_get_next_expected_reply_no   (VortexChannel * 
 int                vortex_channel_get_window_size              (VortexChannel * channel);
 
 void               vortex_channel_set_window_size              (VortexChannel * channel,
-                                                                int desired_size);
+                                                                int             desired_size);
 
 const char       * vortex_channel_get_mime_type                (VortexChannel * channel);
 

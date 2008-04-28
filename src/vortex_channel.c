@@ -178,6 +178,13 @@ struct _VortexChannel {
 	 * value. */
 	int                     window_size;
 
+	/* desired_window_size
+	 *
+	 * This value tracks changes the client has requested in the
+	 * window_size. The actual window_size will not be adjusted until
+	 * the current window fills up and a new SEQ frame is sent. */
+	int                     desired_window_size;
+	
 	bool                    complete_flag;
 	axlList               * previous_frame;
 
@@ -1417,6 +1424,7 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 	channel->profile                        = axl_strdup (profile);
 	channel->connection                     = connection;
 	channel->window_size                    = 4096;
+	channel->desired_window_size            = 4096;
 	/* Attention commander: the following two values *must* be
 	 * 4095 because they represent the maximum seq no value
 	 * accepted at the channel start up, which is the same to say,
@@ -2873,6 +2881,30 @@ int             vortex_channel_get_window_size (VortexChannel * channel)
 
 
 /** 
+ * @brief Allows the caller to change the channel window size.
+ *
+ * A larger window size than the default (4096) allows the remote peer
+ * to send more data over this channel at once. This increases the
+ * bandwidth that can be received, especially over high-latency sockets,
+ * at the expense of increasing the latency for other channels.
+ *
+ * @param channel the channel to operate on.
+ *
+ * @param desired_size the desired window size; it is recomended to be
+ * at least 4096.
+ */
+void            vortex_channel_set_window_size (VortexChannel * channel,
+                                                                                               int desired_size)
+{
+       v_return_if_fail (channel);
+       v_return_if_fail (desired_size > 0);
+       
+       channel->desired_window_size = desired_size;
+
+       return;
+}
+
+/** 
  * @brief Returns current mime type used for messages exchange perform
  * on the given channel.
  * 
@@ -3192,6 +3224,16 @@ bool     vortex_channel_update_incoming_buffer (VortexChannel * channel,
 	 * data received is the already not advertised window is
 	 * configured to be smaller. */
 	if (new_max_seq_no_accepted > channel->max_seq_no_accepted) {
+
+ 		/* if the client wants to change the channel window
+ 		 * size, do so now */
+ 		if (window_size != channel->desired_window_size) {
+ 			vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: Changing window size from %d to %d",
+ 				    window_size,channel->desired_window_size);
+ 			window_size             = channel->desired_window_size;
+ 			channel->window_size    = window_size;
+ 			new_max_seq_no_accepted = (consumed_seqno + window_size - 1) % (MAX_SEQ_NO);
+ 		}
 
 		vortex_log (VORTEX_LEVEL_DEBUG, 
 			    "SEQ FRAME: updating allowed max seq no to be received from %d to %d (delta: %d)",

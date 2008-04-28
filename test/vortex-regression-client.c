@@ -943,6 +943,203 @@ bool test_03_common (VortexConnection * connection) {
 	return true;
 }
 
+char * test_04_ab_gen_md5 (const char * file)
+{
+	char * result;
+	char * resultAux;
+	FILE * handle;
+	struct stat status;
+
+	/* check parameter received */
+	if (file == NULL)
+		return NULL;
+
+	/* open the file */
+	handle = fopen (file, "r");
+	if (handle == NULL) {
+		printf ("Failed to open file: %s\n", file);
+		return NULL;
+	}
+
+	/* get the file size */
+	memset (&status, 0, sizeof (struct stat));
+	if (stat (file, &status) != 0) {
+		/* failed to get file size */
+		fprintf (stderr, "Failed to get file size for %s..\n", file);
+		fclose (handle);
+		return NULL;
+	} /* end if */
+	
+	result = axl_new (char, status.st_size + 1);
+	if (fread (result, 1, status.st_size, handle) != status.st_size) {
+		/* failed to read content */
+		fprintf (stdout, "Unable to properly read the file, size expected to read %ld, wasn't fulfilled",
+			 status.st_size);
+		axl_free (result);
+		fclose (handle);
+		return NULL;
+	} /* end if */
+	
+	/* close the file and return the content */
+	fclose (handle);
+
+	/* now create the md5 representation */
+	resultAux = vortex_tls_get_digest_sized (VORTEX_MD5, result, status.st_size);
+	axl_free (result);
+
+	return resultAux;
+}
+
+
+/** 
+ * Common implementation for test_04_ab test
+ */
+bool test_04_ab_common (VortexConnection * connection, int window_size, const char * prefix, int * amount_transferred) {
+
+	VortexChannel    * channel;
+	VortexAsyncQueue * queue;
+	VortexFrame      * frame;
+	char             * file_name;
+	char             * md5;
+	char             * md5Aux;
+	FILE             * file;
+	int                bytes_written;
+	int                iterator = 0;
+
+	if (amount_transferred)
+		(*amount_transferred) = 0;
+
+	/* create the queue */
+	queue = vortex_async_queue_new ();
+	
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_5,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return false;
+	}
+
+	/* configure serialize */
+	vortex_channel_set_serialize (channel, true);
+
+	/* check and change default window size */
+	if (window_size != -1) 
+		vortex_channel_set_window_size (channel, window_size);
+
+	/* configure the file requested: first file */
+	file_name = "vortex-regression-client.c";
+
+ transfer_file:
+	/* create the md5 to track content transfered */
+	md5       = test_04_ab_gen_md5 (file_name);
+	printf ("%sTest 04-ab:   request files: %s (md5: %s)\n", prefix ? prefix : "", file_name, md5);
+	if (! vortex_channel_send_msg (channel, file_name, strlen (file_name), NULL)) {
+		printf ("Failed to send message request to retrieve file: %s..\n", file_name);
+		return false;
+	} /* end if */
+
+	/* open the file */
+#if defined(AXL_OS_UNIX)
+	file = fopen ("vortex-regression-client-test-04-ab.txt", "w");
+#elif defined(AXL_OS_WIN32)
+	file = fopen ("vortex-regression-client-test-04-ab.txt", "wb");
+#endif
+
+	/* check result */
+	if (file == NULL) {
+		printf ("Unable to create the file (%s) to hold content: %s\n", "vortex-regression-client-test-04-ab.txt", strerror (errno));
+		return false;
+	}
+
+	/* wait for all replies */
+	printf ("%sTest 04-ab:   waiting replies having file: %s\n", prefix ? prefix : "", file_name);
+	while (true) {
+		/* get the next message, blocking at this call. */
+		frame = vortex_channel_get_reply (channel, queue);
+		if (frame == NULL) {
+			printf ("Timeout received for regression test: %s\n", REGRESSION_URI_4);
+			continue;
+		}
+
+		/* check frame type */
+		if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
+			/* unref the frame and finish the loop */
+			vortex_frame_unref (frame);
+			break;
+		} /* endif */
+
+		/* write content */
+		bytes_written = fwrite (vortex_frame_get_payload (frame),
+					1, vortex_frame_get_payload_size (frame), file);
+
+		if (bytes_written != vortex_frame_get_payload_size (frame)) {
+			printf ("ERROR: error while writing to the file: %d != %d\n", 
+				bytes_written, vortex_frame_get_payload_size (frame));
+			return false;
+		} /* end if */
+
+		/* update amount transferred */
+		if (amount_transferred)
+			(*amount_transferred) += vortex_frame_get_payload_size (frame);
+			
+		/* deallocate the frame received */
+		vortex_frame_unref (frame);
+	} /* end while */
+
+	/* close the file */
+	fclose (file);
+
+	/* now check md5 sum */
+	md5Aux = test_04_ab_gen_md5 ("vortex-regression-client-test-04-ab.txt");
+	if (! axl_cmp (md5, md5Aux)) {
+		printf ("Content transfered is not the expected, md5 sum differs: %s != %s",
+			md5, md5Aux);
+		axl_free (md5);
+		axl_free (md5Aux);
+		return false;
+	}
+	
+	printf ("%sTest 04-ab:   content transfered for %s ok\n", prefix ? prefix : "", file_name);
+
+	axl_free (md5);
+	axl_free (md5Aux);
+
+	/* check to transfer more files */
+	iterator++;
+	switch (iterator) {
+	case 1:
+		file_name = "vortex-client.c";
+		goto transfer_file;
+	case 2:
+		file_name = "vortex-regression-listener.c";
+		goto transfer_file;
+	case 3:
+		file_name = "vortex-sasl-listener.c";
+		goto transfer_file;
+	default:
+		/* more files to transfer */
+		break;
+	}
+
+	/* free the queue */
+	vortex_async_queue_unref (queue);
+
+	/* ok, close the channel */
+	if (! vortex_channel_close (channel, NULL))
+		return false;
+
+	/* close connection */
+	return true;
+}
+
+
 bool test_02 () {
 
 	VortexConnection * connection;
@@ -1637,6 +1834,8 @@ int test_02g_frame_size (VortexChannel *channel, int next_seq_no, int message_si
 bool test_02g () {
 
 	VortexConnection * connection;
+	struct timeval     start, stop, result;
+	int                amount;
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
@@ -1699,6 +1898,68 @@ bool test_02g () {
 
 	/* now configure global frame segmentation function */
 	vortex_connection_set_default_next_frame_size_handler (ctx, NULL, NULL);
+
+ 	/* creates a new connection against localhost:44000 */
+ 	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+		
+	} /* end if */
+
+	/* check no segmentator is activated */
+	if (vortex_connection_get_next_frame_size (connection, NULL, 0, 0, 0) != -1)
+		return false;
+
+	/* test 8192 */
+	printf ("Test 02-g: check to perform a transfer updated the default window size to 8192, step 4096\n");
+	gettimeofday (&start, NULL);
+	/* call to base implementation */
+	if (! test_04_ab_common (connection, 8192, "Test 02-g::", &amount))
+		return false;
+	gettimeofday (&stop, NULL);
+	vortex_timeval_substract (&stop, &start, &result);
+ 	printf ("Test 02-g: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 8192, step 4096.\n", amount, result.tv_sec, result.tv_usec);
+ 	if (! vortex_connection_is_ok (connection, false)) {
+ 		printf ("Test 02-g: ERROR, connection status is not ok before test..\n");
+ 		return false;
+ 	}
+ 
+ 	
+ 	
+ 	/* test 16384 */
+ 	printf ("Test 02-g: check to perform a transfer updated the default window size to 16384, step 4096\n");
+ 	gettimeofday (&start, NULL);
+ 	/* call to base implementation */
+ 	if (! test_04_ab_common (connection, 16384, "Test 02-g::", &amount))
+ 		return false;
+ 	gettimeofday (&stop, NULL);
+ 	vortex_timeval_substract (&stop, &start, &result);
+ 	printf ("Test 02-g: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 16384, step 4096.\n", amount, result.tv_sec, result.tv_usec);
+ 	if (! vortex_connection_is_ok (connection, false)) {
+ 		printf ("Test 02-g: ERROR, connection status is not ok before test..\n");
+ 		return false;
+ 	}
+ 
+ 	/* test 32768 */
+ 	printf ("Test 02-g: check to perform a transfer updated the default window size to 32768, step 4096\n");
+ 	gettimeofday (&start, NULL);
+ 	/* call to base implementation */
+ 	if (! test_04_ab_common (connection, 32768, "Test 02-g::", &amount))
+ 		return false;
+ 	gettimeofday (&stop, NULL);
+ 	vortex_timeval_substract (&stop, &start, &result);
+ 	printf ("Test 02-g: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 32768, step 4096.\n", amount, result.tv_sec, result.tv_usec);
+ 	if (! vortex_connection_is_ok (connection, false)) {
+ 		printf ("Test 02-g: ERROR, connection status is not ok before test..\n");
+ 		return false;
+ 	}
+ 
+ 	/* ok, close the connection */
+ 	if (! vortex_connection_close (connection)) {
+ 		printf ("failed to close the BEEP session\n");
+ 		return false;
+ 	} /* end if */
 	
 	/* return true */
 	return true;
@@ -2447,53 +2708,6 @@ bool test_04_a () {
 	return true;
 }
 
-char * test_04_ab_gen_md5 (const char * file)
-{
-	char * result;
-	char * resultAux;
-	FILE * handle;
-	struct stat status;
-
-	/* check parameter received */
-	if (file == NULL)
-		return NULL;
-
-	/* open the file */
-	handle = fopen (file, "r");
-	if (handle == NULL) {
-		printf ("Failed to open file: %s\n", file);
-		return NULL;
-	}
-
-	/* get the file size */
-	memset (&status, 0, sizeof (struct stat));
-	if (stat (file, &status) != 0) {
-		/* failed to get file size */
-		fprintf (stderr, "Failed to get file size for %s..\n", file);
-		fclose (handle);
-		return NULL;
-	} /* end if */
-	
-	result = axl_new (char, status.st_size + 1);
-	if (fread (result, 1, status.st_size, handle) != status.st_size) {
-		/* failed to read content */
-		fprintf (stdout, "Unable to properly read the file, size expected to read %ld, wasn't fulfilled",
-			 status.st_size);
-		axl_free (result);
-		fclose (handle);
-		return NULL;
-	} /* end if */
-	
-	/* close the file and return the content */
-	fclose (handle);
-
-	/* now create the md5 representation */
-	resultAux = vortex_tls_get_digest_sized (VORTEX_MD5, result, status.st_size);
-	axl_free (result);
-
-	return resultAux;
-}
-
 /** 
  * @brief Checks BEEP support for ANS/NUL while sending different
  * files in the same channel.
@@ -2503,15 +2717,6 @@ char * test_04_ab_gen_md5 (const char * file)
 bool test_04_ab () {
 
 	VortexConnection * connection;
-	VortexChannel    * channel;
-	VortexAsyncQueue * queue;
-	VortexFrame      * frame;
-	char             * file_name;
-	char             * md5;
-	char             * md5Aux;
-	FILE             * file;
-	int                bytes_written;
-	int                iterator = 0;
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
@@ -2520,122 +2725,8 @@ bool test_04_ab () {
 		return false;
 	}
 
-	/* create the queue */
-	queue = vortex_async_queue_new ();
-	
-	/* create a channel */
-	channel = vortex_channel_new (connection, 0,
-				      REGRESSION_URI_5,
-				      /* no close handling */
-				      NULL, NULL,
-				      /* frame receive async handling */
-				      vortex_channel_queue_reply, queue,
-				      /* no async channel creation */
-				      NULL, NULL);
-	if (channel == NULL) {
-		printf ("Unable to create the channel..");
-		return false;
-	}
-
-	/* configure serialize */
-	vortex_channel_set_serialize (channel, true);
-
-	/* configure the file requested: first file */
-	file_name = "vortex-regression-client.c";
-
- transfer_file:
-	/* create the md5 to track content transfered */
-	md5       = test_04_ab_gen_md5 (file_name);
-	printf ("Test 04-ab:   request files: %s (md5: %s)\n", file_name, md5);
-	if (! vortex_channel_send_msg (channel, file_name, strlen (file_name), NULL)) {
-		printf ("Failed to send message request to retrieve file: %s..\n", file_name);
-		return false;
-	} /* end if */
-
-	/* open the file */
-#if defined(AXL_OS_UNIX)
-	file = fopen ("vortex-regression-client-test-04-ab.txt", "w");
-#elif defined(AXL_OS_WIN32)
-	file = fopen ("vortex-regression-client-test-04-ab.txt", "wb");
-#endif
-
-	/* check result */
-	if (file == NULL) {
-		printf ("Unable to create the file (%s) to hold content: %s\n", "vortex-regression-client-test-04-ab.txt", strerror (errno));
-		return false;
-	}
-
-	/* wait for all replies */
-	printf ("Test 04-ab:   waiting replies having file: %s\n", file_name);
-	while (true) {
-		/* get the next message, blocking at this call. */
-		frame = vortex_channel_get_reply (channel, queue);
-		if (frame == NULL) {
-			printf ("Timeout received for regression test: %s\n", REGRESSION_URI_4);
-			continue;
-		}
-
-		/* check frame type */
-		if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
-			/* unref the frame and finish the loop */
-			vortex_frame_unref (frame);
-			break;
-		} /* endif */
-
-		/* write content */
-		bytes_written = fwrite (vortex_frame_get_payload (frame),
-					1, vortex_frame_get_payload_size (frame), file);
-
-		if (bytes_written != vortex_frame_get_payload_size (frame)) {
-			printf ("ERROR: error while writing to the file: %d != %d\n", 
-				bytes_written, vortex_frame_get_payload_size (frame));
-			return false;
-		} /* end if */
-			
-		/* deallocate the frame received */
-		vortex_frame_unref (frame);
-	} /* end while */
-
-	/* close the file */
-	fclose (file);
-
-	/* now check md5 sum */
-	md5Aux = test_04_ab_gen_md5 ("vortex-regression-client-test-04-ab.txt");
-	if (! axl_cmp (md5, md5Aux)) {
-		printf ("Content transfered is not the expected, md5 sum differs: %s != %s",
-			md5, md5Aux);
-		axl_free (md5);
-		axl_free (md5Aux);
-		return false;
-	}
-	
-	printf ("Test 04-ab:   content transfered for %s ok\n", file_name);
-
-	axl_free (md5);
-	axl_free (md5Aux);
-
-	/* check to transfer more files */
-	iterator++;
-	switch (iterator) {
-	case 1:
-		file_name = "vortex-client.c";
-		goto transfer_file;
-	case 2:
-		file_name = "vortex-regression-listener.c";
-		goto transfer_file;
-	case 3:
-		file_name = "vortex-sasl-listener.c";
-		goto transfer_file;
-	default:
-		/* more files to transfer */
-		break;
-	}
-
-	/* free the queue */
-	vortex_async_queue_unref (queue);
-
-	/* ok, close the channel */
-	if (! vortex_channel_close (channel, NULL))
+	/* call to base implementation */
+	if (! test_04_ab_common (connection, -1, NULL, NULL))
 		return false;
 
 	/* ok, close the connection */
@@ -4203,7 +4294,7 @@ int main (int  argc, char ** argv)
 	/* change to select if it is not the default */
 	vortex_io_waiting_use (ctx, VORTEX_IO_WAIT_SELECT);
 
-/*	goto init;    */
+	goto init;     
 
 	/* empty goto to avoid compiler complain about a label not
 	 * used in the case only select is supported */
@@ -4301,8 +4392,6 @@ int main (int  argc, char ** argv)
 		return -1;
 	}
 
-/* init: */
-
 	if (test_02f ()) {
 		printf ("Test 02-f: check vortex performance under packet delay scenarios [   OK   ]\n");
 	} else {
@@ -4310,7 +4399,7 @@ int main (int  argc, char ** argv)
 		return -1;
 	}
 
-	/* goto finish;    */
+ init:  
 
 	if (test_02g ()) {
 		printf ("Test 02-g: check basic BEEP support with different frame sizes [   OK   ]\n");
@@ -4319,7 +4408,7 @@ int main (int  argc, char ** argv)
 		return -1;
 	}
 
-
+	goto finish;     
 
 	if (test_03 ())
 		printf ("Test 03: basic BEEP channel support (large messages) [   OK   ]\n");
@@ -4469,7 +4558,7 @@ int main (int  argc, char ** argv)
 	} /* end if */
 #endif
 
-/* finish:    */
+ finish:     
 
 	printf ("**\n");
 	printf ("** INFO: All test ok!\n");
