@@ -4218,8 +4218,24 @@ bool test_13 ()
 	return true;
 }
 
+typedef bool (*VortexRegressionTest) ();
+  
+void run_test (VortexRegressionTest test, const char * test_name, const char * message) {
+ 
+ 	if (test ()) 
+ 		printf ("%s: %s [   OK   ]\n", test_name, message);
+ 	else {
+ 		printf ("%s: %s [ FAILED ]\n", test_name, message);
+ 		exit (-1);
+ 	}
+ 	return;
+}
+  
+
 int main (int  argc, char ** argv)
 {
+	int    iterator;
+ 	char * run_test_name = NULL;
 
 #if defined (AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/* if poll(2) mechanism is available, check it */
@@ -4241,7 +4257,8 @@ int main (int  argc, char ** argv)
 	printf ("**     >> libtool --mode=execute valgrind --leak-check=yes --error-limit=no ./vortex-regression-client --disable-time-checks\n**\n");
 	printf ("** Additional settings:\n");
 	printf ("**\n");
-	printf ("**     >> ./vortex-regression-client [--disable-time-checks] [listener-host [listener-host-proxy]]\n");
+	printf ("**     >> ./vortex-regression-client [--disable-time-checks] [--run-test=NAME] \n");
+	printf ("**                                   [listener-host [listener-host-proxy]]\n");
 	printf ("**\n");
 	printf ("**       If no listener-host value is provided, it is used \"localhost\". \n");
 	printf ("**       If no listener-host-proxy value is provided, it is used the value \n");
@@ -4250,6 +4267,13 @@ int main (int  argc, char ** argv)
 	printf ("**       Providing --disable-time-checks will make regression test to skip those\n");
 	printf ("**       tests that could fail due to timing issues. This is useful when using\n");
         printf ("**       valgrind or similar tools.\n");
+	printf ("**\n");
+	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
+	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_02, test_02a\n");
+	printf ("**                       test_02b, test_02c, test_02d, test_02e, test_02f, test_02g\n");
+	printf ("**                       test_03, test_03a, test_04, test_04a, test_04b, test_004c\n");
+	printf ("**                       test_05, test_05a, test_06, test_07, test_08, test_09\n");
+	printf ("**                       test_10, test_11, test_12, test_13\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -4264,49 +4288,44 @@ int main (int  argc, char ** argv)
 	/* create the context */
 	ctx = vortex_ctx_new ();
 
+	/* check for disable-time-checks */
+	if (argc > 1 && axl_cmp (argv[1], "--disable-time-checks")) {
+		disable_time_checks = true;
+		iterator            = 1;
+		argc--;
+		printf ("INFO: disabling timing checks\n");
+		while (iterator <= argc) {
+			argv[iterator] = argv[iterator+1];
+			iterator++;
+		} /* end while */
+	} /* end if */
+
+	/* check for disable-time-checks */
+	if (argc > 1 && axl_memcmp (argv[1], "--run-test=", 11)) {
+		run_test_name  = argv[1] + 11;
+		iterator       = 1;
+		argc--;
+		printf ("INFO: running test=%s\n", run_test_name);
+		while (iterator <= argc) {
+			argv[iterator] = argv[iterator+1];
+			iterator++;
+		} /* end while */
+	} /* end if */
+
 	/* configure default values */
 	if (argc == 1) {
 		listener_host       = "localhost";
 		listener_proxy_host = "localhost";
 	} else if (argc == 2) {
 
-		/* check for disable-time-checks */
-		if (axl_cmp (argv[1], "--disable-time-checks")) {
-			disable_time_checks = true;
-			listener_host       = "localhost";
-			listener_proxy_host = "localhost";
-		} else {
-			listener_host       = argv[1];
-			listener_proxy_host = argv[1];
-		} /* end if */
+		listener_host       = argv[1];
+		listener_proxy_host = argv[1];
 
 	} else if (argc == 3) {
 
-		/* check for disable-time-checks */
-		if (axl_cmp (argv[1], "--disable-time-checks")) {
-			/* default proxy same as host */
-			disable_time_checks = true;
-			listener_host       = argv[2];
-			listener_proxy_host = argv[2];
-		} else {
-			listener_host       = argv[1];
-			listener_proxy_host = argv[2];
-		} /* end if */
-
-	} else if (argc == 4) {
-		/* check for disable-time-checks */
-		if (! axl_cmp (argv[1], "--disable-time-checks")) {
-			printf ("Error: expected to find --disable-time-checks, but %s was found..\n",
-				argv[1]);
-			return -1;
-		}
-
-		/* disable time checks and host and proxy configured
-		 * at 2 and 3 command parameters */
-		disable_time_checks = true;
-		listener_host       = argv[2];
-		listener_proxy_host = argv[3];
-	}
+		listener_host       = argv[1];
+		listener_proxy_host = argv[2];
+	} /* end if */
 
 	if (listener_host == NULL) {
 		printf ("Error: undefined value found for listener host..\n");
@@ -4331,6 +4350,97 @@ int main (int  argc, char ** argv)
 	/* change to select if it is not the default */
 	vortex_io_waiting_use (ctx, VORTEX_IO_WAIT_SELECT);
 
+	if (run_test_name) {
+		if (axl_cmp (run_test_name, "test_00"))
+			run_test (test_00, "Test 00", "Async Queue support");
+
+		if (axl_cmp (run_test_name, "test_01"))
+			run_test (test_01, "Test 01", "basic BEEP support");
+
+		if (axl_cmp (run_test_name, "test_01a"))
+			run_test (test_01a, "Test 01-a", "transfer zeroed binary frames");
+
+		if (axl_cmp (run_test_name, "test_01b"))
+			run_test (test_01b, "Test 01-b", "channel close inside created notification (31/03/2008)");
+
+		if (axl_cmp (run_test_name, "test_01c"))
+			run_test (test_01c, "Test 01-c", "check immediately send (31/03/2008)");
+
+		if (axl_cmp (run_test_name, "test_02"))
+			run_test (test_02, "Test 02", "basic BEEP channel support");
+
+		if (axl_cmp (run_test_name, "test_02a"))
+			run_test (test_02a, "Test 02-a", "connection close notification");
+
+		if (axl_cmp (run_test_name, "test_02b"))
+			run_test (test_02b, "Test 02-b", "small message followed by close");
+
+		if (axl_cmp (run_test_name, "test_02c"))
+			run_test (test_02c, "Test 02-c", "huge amount of small message followed by close");
+
+		if (axl_cmp (run_test_name, "test_02d"))
+			run_test (test_02d, "Test 02-d", "close after large reply");
+
+		if (axl_cmp (run_test_name, "test_02e"))
+			run_test (test_02e, "Test 02-e", "check wait reply support");
+
+		if (axl_cmp (run_test_name, "test_02f"))
+			run_test (test_02f, "Test 02-f", "check vortex performance under packet delay scenarios");
+
+		if (axl_cmp (run_test_name, "test_02g"))
+			run_test (test_02g, "Test 02-g", "check basic BEEP support with different frame sizes");
+
+		if (axl_cmp (run_test_name, "test_03"))
+			run_test (test_03, "Test 03", "basic BEEP channel support (large messages)");
+
+		if (axl_cmp (run_test_name, "test_03a"))
+			run_test (test_03a, "Test 03-a", "vortex channel pool support");
+
+		if (axl_cmp (run_test_name, "test_04"))
+			run_test (test_04, "Test 04", "Handling many connections support");
+
+		if (axl_cmp (run_test_name, "test_04a"))
+			run_test (test_04_a, "Test 04-a", "Check ANS/NUL support, sending large content");
+
+		if (axl_cmp (run_test_name, "test_04ab"))
+			run_test (test_04_ab, "Test 04-ab", "Check ANS/NUL support, sending different files");
+
+		if (axl_cmp (run_test_name, "test_04c"))
+			run_test (test_04_c, "Test 04-c", "check client adviced profiles");
+
+		if (axl_cmp (run_test_name, "test_05"))
+			run_test (test_05, "Test 05", "TLS profile support");
+		
+		if (axl_cmp (run_test_name, "test_05a"))
+			run_test (test_05_a, "Test 05-a", "Check auto-tls on fail fix (24/03/2008)");
+
+		if (axl_cmp (run_test_name, "test_06"))
+			run_test (test_06, "Test 06", "SASL profile support");
+
+		if (axl_cmp (run_test_name, "test_07"))
+			run_test (test_07, "Test 07", "XML-RPC profile support");
+
+		if (axl_cmp (run_test_name, "test_08"))
+			run_test (test_08, "Test 08", "serverName configuration");
+
+		if (axl_cmp (run_test_name, "test_09"))		
+			run_test (test_09, "Test 09", "close in transit support");
+
+		if (axl_cmp (run_test_name, "test_10"))
+			run_test (test_10, "Test 10", "default channel close action");
+
+		if (axl_cmp (run_test_name, "test_11"))
+			run_test (test_11, "Test 11", "reply to multiple messages in a wrong order without blocking");
+
+		if (axl_cmp (run_test_name, "test_12"))
+			run_test (test_12, "Test 12", "check connection creation timeout");
+
+		if (axl_cmp (run_test_name, "test_13"))
+			run_test (test_13, "Test 13", "test TUNNEL implementation");
+
+		goto finish;
+	}
+
 	/* empty goto to avoid compiler complain about a label not
 	 * used in the case only select is supported */
 	goto init_test;
@@ -4350,208 +4460,63 @@ int main (int  argc, char ** argv)
 	} /* end if */
 	printf ("**\n");
 
-	if (test_00 ()) 
-		printf ("Test 00: Async Queue support [   OK   ]\n");
-	else {
-		printf ("Test 00: Async Queue support [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_01 ())
-		printf ("Test 01: basic BEEP support [   OK   ]\n");
-	else {
-		printf ("Test 01: basic BEEP support [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_01a ())
-		printf ("Test 01-a: transfer zeroed binary frames [   OK   ]\n");
-	else {
-		printf ("Test 01-a: transfer zeroed binary frames [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_01b ())
-		printf ("Test 01-b: channel close inside created notification (31/03/2008) [   OK   ]\n");
-	else {
-		printf ("Test 01-b: channel close inside created notification (31/03/2008) [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_01c ())
-		printf ("Test 01-c: check immediately send (31/03/2008) [   OK   ]\n");
-	else {
-		printf ("Test 01-c: check immediately send (31/03/2008) [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_02 ())
-		printf ("Test 02: basic BEEP channel support [   OK   ]\n");
-	else {
-		printf ("Test 02: basic BEEP channel support [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_02a ()) 
-		printf ("Test 02-a: connection close notification [   OK   ]\n");
-	else {
-		printf ("Test 02-a: connection close notification [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_02b ()) 
-		printf ("Test 02-b: small message followed by close  [   OK   ]\n");
-	else {
-		printf ("Test 02-b: small message followed by close [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_02c ()) 
-		printf ("Test 02-c: huge amount of small message followed by close  [   OK   ]\n");
-	else {
-		printf ("Test 02-c: huge amount of small message followed by close [ FAILED ]\n");
-		return -1;
-	}
-	
-	if (test_02d ()) 
-		printf ("Test 02-d: close after large reply [   OK   ]\n");
-	else {
-		printf ("Test 02-d: close after large reply [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_02e ()) 
-		printf ("Test 02-e: check wait reply support [   OK   ]\n");
-	else {
-		printf ("Test 02-e: check wait reply support [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_02f ()) {
-		printf ("Test 02-f: check vortex performance under packet delay scenarios [   OK   ]\n");
-	} else {
-		printf ("Test 02-f: check vortex performance under packet delay scenarios [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_02g ()) {
-		printf ("Test 02-g: check basic BEEP support with different frame sizes [   OK   ]\n");
-	} else {
-		printf ("Test 02-g: check basic BEEP support with different frame sizes [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_03 ())
-		printf ("Test 03: basic BEEP channel support (large messages) [   OK   ]\n");
-	else {
-		printf ("Test 03: basic BEEP channel support (large messages) [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_03a ()) {
-		printf ("Test 03-a: vortex channel pool support [   OK   ]\n");
-	} else {
-		printf ("Test 03-a: vortex channel pool support [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_04 ()) {
-		printf ("Test 04: Handling many connections support [   OK   ]\n");
-	} else {
-		printf ("Test 04: Handling many connections support [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_04_a ()) {
-		printf ("Test 04-a: Check ANS/NUL support, sending large content [   OK   ]\n");
-	} else {
-		printf ("Test 04-a: Check ANS/NUL support, sending large content [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_04_ab ()) {
-		printf ("Test 04-ab: Check ANS/NUL support, sending different files [   OK   ]\n");
-	} else {
-		printf ("Test 04-ab: Check ANS/NUL support, sending different files [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_04_c ()) {
-		printf ("Test 04-c: check client adviced profiles [   OK   ]\n");
-	} else {
-		printf ("Test 04-c: check client adviced profiles [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_05 ()) {
-		printf ("Test 05: TLS profile support [   OK   ]\n");
-	} else {
-		printf ("Test 05: TLS profile support [ FAILED ]\n");
-		return -1;
-	}
-	
-	if (test_05_a ()) {
-		printf ("Test 05-a: Check auto-tls on fail fix (24/03/2008) [   OK   ]\n");
-	} else {
-		printf ("Test 05-a: Check auto-tls on fail fix (24/03/2008) [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_06 ()) {
-		printf ("Test 06: SASL profile support [   OK   ]\n");
-	} else {
-		printf ("Test 06: SASL profile support [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_07 ()) {
-		printf ("Test 07: XML-RPC profile support [   OK   ]\n");
-	} else {
-		printf ("Test 07: XML-RPC profile support [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_08 ()) {
-		printf ("Test 08: serverName configuration [   OK   ]\n");
-	} else {
-		printf ("Test 08: serverName [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_09 ()) {
-		printf ("Test 09: close in transit support [   OK   ]\n");
-	} else {
-		printf ("Test 09: close in transit support [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_10 ()) {
-		printf ("Test 10: default channel close action [   OK   ]\n");
-	} else {
-		printf ("Test 10: default channel close action [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_11 ()) {
-		printf ("Test 11: reply to multiple messages in a wrong order without blocking [   OK   ]\n");
-	} else {
-		printf ("Test 11: reply to multiple messages in a wrong order without blocking  [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_12 ()) {
-		printf ("Test 12: check connection creation timeout [   OK   ]\n");
-	} else {
-		printf ("Test 12: check connection creation timeout [ FAILED ]\n");
-		return -1;
-	}
-
-	if (test_13 ()) {
-		printf ("Test 13: test TUNNEL implementation [   OK   ]\n");
-	} else {
-		printf ("Test 13: test TUNNEL implementation [ FAILED ]\n");
-		return -1;
-	}
+ 	run_test (test_00, "Test 00", "Async Queue support");
+  
+ 	run_test (test_01, "Test 01", "basic BEEP support");
+  
+ 	run_test (test_01a, "Test 01-a", "transfer zeroed binary frames");
+  
+ 	run_test (test_01b, "Test 01-b", "channel close inside created notification (31/03/2008)");
+  
+ 	run_test (test_01c, "Test 01-c", "check immediately send (31/03/2008)");
+  
+ 	run_test (test_02, "Test 02", "basic BEEP channel support");
+  
+ 	run_test (test_02a, "Test 02-a", "connection close notification");
+  
+ 	run_test (test_02b, "Test 02-b", "small message followed by close");
+  	
+ 	run_test (test_02c, "Test 02-c", "huge amount of small message followed by close");
+ 	
+ 	run_test (test_02d, "Test 02-d", "close after large reply");
+  
+ 	run_test (test_02e, "Test 02-e", "check wait reply support");
+  
+ 	run_test (test_02f, "Test 02-f", "check vortex performance under packet delay scenarios");
+  
+ 	run_test (test_02g, "Test 02-g", "check basic BEEP support with different frame sizes");
+  
+ 	run_test (test_03, "Test 03", "basic BEEP channel support (large messages)");
+  
+ 	run_test (test_03a, "Test 03-a", "vortex channel pool support");
+  
+ 	run_test (test_04, "Test 04", "Handling many connections support");
+  
+ 	run_test (test_04_a, "Test 04-a", "Check ANS/NUL support, sending large content");
+  
+ 	run_test (test_04_ab, "Test 04-ab", "Check ANS/NUL support, sending different files");
+  
+ 	run_test (test_04_c, "Test 04-c", "check client adviced profiles");
+  
+ 	run_test (test_05, "Test 05", "TLS profile support");
+  	
+ 	run_test (test_05_a, "Test 05-a", "Check auto-tls on fail fix (24/03/2008)");
+  
+ 	run_test (test_06, "Test 06", "SASL profile support");
+  
+ 	run_test (test_07, "Test 07", "XML-RPC profile support");
+  
+ 	run_test (test_08, "Test 08", "serverName configuration");
+  
+ 	run_test (test_09, "Test 09", "close in transit support");
+  
+ 	run_test (test_10, "Test 10", "default channel close action");
+  
+ 	run_test (test_11, "Test 11", "reply to multiple messages in a wrong order without blocking");
+  	
+ 	run_test (test_12, "Test 12", "check connection creation timeout");
+  
+ 	run_test (test_13, "Test 13", "test TUNNEL implementation");
 
 #if defined(AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/**
@@ -4588,6 +4553,8 @@ int main (int  argc, char ** argv)
 		goto init_test;
 	} /* end if */
 #endif
+
+ finish:
 
 	printf ("**\n");
 	printf ("** INFO: All test ok!\n");
