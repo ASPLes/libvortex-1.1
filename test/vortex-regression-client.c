@@ -1,21 +1,40 @@
-/**
- *  LibVortex:  A BEEP implementation for af-arch
- *  Copyright (C) 2006 Advanced Software Production Line, S.L.
+/*
+ *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
+ *  Copyright (C) 2008 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU General Public License as
- *  published by the Free Software Foundation; either version 2 of the
- *  License, or (at your option) any later version.
+ *  modify it under the terms of the GNU Lesser General Public License
+ *  as published by the Free Software Foundation; either version 2.1 of
+ *  the License, or (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  General Public License for more details.
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the  
+ *  GNU Lesser General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this program; if not, write to the Free
+ *  Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
  *  02111-1307 USA
+ *  
+ *  You may find a copy of the license under this software is released
+ *  at COPYING file. This is LGPL software: you are welcome to
+ *  develop proprietary applications using this library without any
+ *  royalty or fee but returning back any change, improvement or
+ *  addition in the form of source code, project image, documentation
+ *  patches, etc. 
+ *
+ *  For commercial support on build BEEP enabled solutions contact us:
+ *          
+ *      Postal address:
+ *         Advanced Software Production Line, S.L.
+ *         C/ Antonio Suarez Nº 10, 
+ *         Edificio Alius A, Despacho 102
+ *         Alcalá de Henares 28802 (Madrid)
+ *         Spain
+ *
+ *      Email address:
+ *         info@aspl.es - http://www.aspl.es/vortex
  */
 
 /* include vortex library */
@@ -1854,8 +1873,6 @@ double test_02g_rate (int bytes, struct timeval result)
 bool test_02g () {
 
 	VortexConnection * connection;
-	struct timeval     start, stop, result;
-	int                amount;
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
@@ -1919,85 +1936,6 @@ bool test_02g () {
 	/* now configure global frame segmentation function */
 	vortex_connection_set_default_next_frame_size_handler (ctx, NULL, NULL);
 
- 	/* creates a new connection against localhost:44000 */
- 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
-		vortex_connection_close (connection);
-		return false;
-		
-	} /* end if */
-
-	/* check no segmentator is activated */
-	if (vortex_connection_get_next_frame_size (connection, NULL, 0, 0, 0) != -1)
-		return false;
-
-	/* test 4096 */
-	printf ("Test 02-g: check to perform a transfer updated the default window size to 4096, step 4096\n");
-	gettimeofday (&start, NULL);
-	/* call to base implementation */
-	if (! test_04_ab_common (connection, -1, "Test 02-g::", &amount, 4))
-		return false;
-	gettimeofday (&stop, NULL);
-	vortex_timeval_substract (&stop, &start, &result);
-	printf ("Test 02-g: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 4096, step 4096.\n", amount, result.tv_sec, result.tv_usec);
-	if (! vortex_connection_is_ok (connection, false)) {
-		printf ("Test 02-g: ERROR, connection status is not ok before test..\n");
-		return false;
-	}
-	printf ("Test 02-g:    download rate at %.2f KBytes/segs..\n", test_02g_rate (amount, result));
-
-	/* test 8192 */
-	printf ("Test 02-g: check to perform a transfer updated the default window size to 8192, step 4096\n");
-	gettimeofday (&start, NULL);
-	/* call to base implementation */
-	if (! test_04_ab_common (connection, 8192, "Test 02-g::", &amount, 4))
-		return false;
-	gettimeofday (&stop, NULL);
-	vortex_timeval_substract (&stop, &start, &result);
- 	printf ("Test 02-g: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 8192, step 4096.\n", amount, result.tv_sec, result.tv_usec);
- 	if (! vortex_connection_is_ok (connection, false)) {
- 		printf ("Test 02-g: ERROR, connection status is not ok before test..\n");
- 		return false;
- 	}
- 	printf ("Test 02-g:    download rate at %.2f KBytes/segs..\n", test_02g_rate (amount, result));
- 	
- 	
- 	/* test 16384 */
- 	printf ("Test 02-g: check to perform a transfer updated the default window size to 16384, step 4096\n");
- 	gettimeofday (&start, NULL);
- 	/* call to base implementation */
- 	if (! test_04_ab_common (connection, 16384, "Test 02-g::", &amount, 4))
- 		return false;
- 	gettimeofday (&stop, NULL);
- 	vortex_timeval_substract (&stop, &start, &result);
- 	printf ("Test 02-g: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 16384, step 4096.\n", amount, result.tv_sec, result.tv_usec);
- 	if (! vortex_connection_is_ok (connection, false)) {
- 		printf ("Test 02-g: ERROR, connection status is not ok before test..\n");
- 		return false;
- 	}
-	printf ("Test 02-g:    download rate at %.2f KBytes/segs..\n", test_02g_rate (amount, result));
- 
- 	/* test 32768 */
- 	printf ("Test 02-g: check to perform a transfer updated the default window size to 32768, step 4096\n");
- 	gettimeofday (&start, NULL);
- 	/* call to base implementation */
- 	if (! test_04_ab_common (connection, 32768, "Test 02-g::", &amount, 4))
- 		return false;
- 	gettimeofday (&stop, NULL);
- 	vortex_timeval_substract (&stop, &start, &result);
- 	printf ("Test 02-g: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 32768, step 4096.\n", amount, result.tv_sec, result.tv_usec);
- 	if (! vortex_connection_is_ok (connection, false)) {
- 		printf ("Test 02-g: ERROR, connection status is not ok before test..\n");
- 		return false;
- 	}
-	printf ("Test 02-g:    download rate at %.2f KBytes/segs..\n", test_02g_rate (amount, result));
- 
- 	/* ok, close the connection */
- 	if (! vortex_connection_close (connection)) {
- 		printf ("failed to close the BEEP session\n");
- 		return false;
- 	} /* end if */
-	
 	/* return true */
 	return true;
 }
@@ -2027,6 +1965,90 @@ bool test_03 () {
 	/* ok, close the connection */
 	vortex_connection_close (connection);
 
+	/* return true */
+	return true;
+}
+
+bool test_02h () {
+
+	VortexConnection * connection;
+	struct timeval     start, stop, result;
+	int                amount;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+		
+	} /* end if */
+
+	/* test 4096 */
+	printf ("Test 02-h: check to perform a transfer updated the default window size to 4096, step 4096\n");
+	gettimeofday (&start, NULL);
+	/* call to base implementation */
+	if (! test_04_ab_common (connection, -1, "Test 02-h::", &amount, 4))
+		return false;
+	gettimeofday (&stop, NULL);
+	vortex_timeval_substract (&stop, &start, &result);
+	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 4096, step 4096.\n", amount, result.tv_sec, result.tv_usec);
+	if (! vortex_connection_is_ok (connection, false)) {
+		printf ("Test 02-h: ERROR, connection status is not ok before test..\n");
+		return false;
+	}
+	printf ("Test 02-h:    download rate at %.2f KBytes/segs..\n", test_02g_rate (amount, result));
+
+	/* test 8192 */
+	printf ("Test 02-h: check to perform a transfer updated the default window size to 8192, step 4096\n");
+	gettimeofday (&start, NULL);
+	/* call to base implementation */
+	if (! test_04_ab_common (connection, 8192, "Test 02-h::", &amount, 4))
+		return false;
+	gettimeofday (&stop, NULL);
+	vortex_timeval_substract (&stop, &start, &result);
+	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 8192, step 4096.\n", amount, result.tv_sec, result.tv_usec);
+	if (! vortex_connection_is_ok (connection, false)) {
+		printf ("Test 02-h: ERROR, connection status is not ok before test..\n");
+		return false;
+	}
+	printf ("Test 02-h:    download rate at %.2f KBytes/segs..\n", test_02g_rate (amount, result));
+	
+	/* test 16384 */
+	printf ("Test 02-h: check to perform a transfer updated the default window size to 16384, step 4096\n");
+	gettimeofday (&start, NULL);
+	/* call to base implementation */
+	if (! test_04_ab_common (connection, 16384, "Test 02-h::", &amount, 4))
+		return false;
+	gettimeofday (&stop, NULL);
+	vortex_timeval_substract (&stop, &start, &result);
+	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 16384, step 4096.\n", amount, result.tv_sec, result.tv_usec);
+	if (! vortex_connection_is_ok (connection, false)) {
+		printf ("Test 02-h: ERROR, connection status is not ok before test..\n");
+		return false;
+	}
+	printf ("Test 02-h:    download rate at %.2f KBytes/segs..\n", test_02g_rate (amount, result));
+
+	/* test 32768 */
+	printf ("Test 02-h: check to perform a transfer updated the default window size to 32768, step 4096\n");
+	gettimeofday (&start, NULL);
+	/* call to base implementation */
+	if (! test_04_ab_common (connection, 32768, "Test 02-h::", &amount, 4))
+		return false;
+	gettimeofday (&stop, NULL);
+	vortex_timeval_substract (&stop, &start, &result);
+	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 32768, step 4096.\n", amount, result.tv_sec, result.tv_usec);
+	if (! vortex_connection_is_ok (connection, false)) {
+		printf ("Test 02-h: ERROR, connection status is not ok before test..\n");
+		return false;
+	}
+	printf ("Test 02-h:    download rate at %.2f KBytes/segs..\n", test_02g_rate (amount, result));
+
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return false;
+	} /* end if */
+	
 	/* return true */
 	return true;
 }
@@ -2785,8 +2807,7 @@ bool test_04_c () {
 	VortexChannel    * channel;
 
 	/* register two profiles for this session */
-	vortex_profiles_register (ctx, 
-				  "urn:vortex:regression-test:uri:1", 
+	vortex_profiles_register (ctx, "urn:vortex:regression-test:uri:1", 
 				  /* start channel */
 				  NULL, NULL, 
 				  /* stop channel */
@@ -2795,8 +2816,7 @@ bool test_04_c () {
 				  NULL, NULL);
 
 	/* register two profiles for this session */
-	vortex_profiles_register (ctx,
-				  "urn:vortex:regression-test:uri:2", 
+	vortex_profiles_register (ctx, "urn:vortex:regression-test:uri:2", 
 				  /* start channel */
 				  NULL, NULL, 
 				  /* stop channel */
@@ -2805,8 +2825,7 @@ bool test_04_c () {
 				  NULL, NULL);
 
 	/* register two profiles for this session */
-	vortex_profiles_register (ctx, 
-				  "urn:vortex:regression-test:uri:3", 
+	vortex_profiles_register (ctx, "urn:vortex:regression-test:uri:3", 
 				  /* start channel */
 				  NULL, NULL, 
 				  /* stop channel */
@@ -3930,8 +3949,7 @@ bool test_12 () {
 	printf ("..creating a channel..");
 
 	/* register a profile */
-	vortex_profiles_register (ctx, 
-				  REGRESSION_URI,
+	vortex_profiles_register (ctx, REGRESSION_URI,
 				  NULL, NULL, 
 				  NULL, NULL,
 				  NULL, NULL);
@@ -4270,7 +4288,7 @@ int main (int  argc, char ** argv)
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
 	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_02, test_02a\n");
-	printf ("**                       test_02b, test_02c, test_02d, test_02e, test_02f, test_02g\n");
+	printf ("**                       test_02b, test_02c, test_02d, test_02e, test_02f, test_02g, test_02h\n");
 	printf ("**                       test_03, test_03a, test_04, test_04a, test_04b, test_004c\n");
 	printf ("**                       test_05, test_05a, test_06, test_07, test_08, test_09\n");
 	printf ("**                       test_10, test_11, test_12, test_13\n");
@@ -4390,6 +4408,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_02g"))
 			run_test (test_02g, "Test 02-g", "check basic BEEP support with different frame sizes");
 
+		if (axl_cmp (run_test_name, "test_02h"))
+			run_test (test_02h, "Test 02-h", "check bandwith performrace with different window and segmentator sizes");
+
 		if (axl_cmp (run_test_name, "test_03"))
 			run_test (test_03, "Test 03", "basic BEEP channel support (large messages)");
 
@@ -4485,6 +4506,8 @@ int main (int  argc, char ** argv)
  	run_test (test_02f, "Test 02-f", "check vortex performance under packet delay scenarios");
   
  	run_test (test_02g, "Test 02-g", "check basic BEEP support with different frame sizes");
+
+ 	run_test (test_02h, "Test 02-h", "check bandwith performrace with different window and segmentator sizes");
   
  	run_test (test_03, "Test 03", "basic BEEP channel support (large messages)");
   
