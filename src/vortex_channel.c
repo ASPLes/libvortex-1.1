@@ -6343,12 +6343,12 @@ void     vortex_channel_free_wait_reply (WaitReplyData * wait_reply)
 
 /** 
  * @brief Returns the actual state for a given channel about pending
- * replies. 
+ * replies to be received (not pending replies to be sent).
  * 
- * Due to RFC3080/RFC3081 design any message sent will be replied in
- * the order the message was issued. This means that if you use the
- * same channel to send two messages the reply for the second one will
- * not be received until the previous one. This is true even the
+ * Due to RFC3080/RFC3081 design any message sent must be replied in
+ * the same order the message was issued. This means that if you use
+ * the same channel to send two messages the reply for the second one
+ * will not be received until the previous one is. This is true even the
  * second message have a task-impact lower than previous on the remote
  * peer.
  *
@@ -6362,14 +6362,28 @@ void     vortex_channel_free_wait_reply (WaitReplyData * wait_reply)
  * my message will only wait as long as the remote peer process my
  * message and reply it"</i>.
  *
+ * In other words: <i>"The function returns true if the channel
+ * received all replies for all message sent".</i>
+ *
  * Keep in mind a channel is always ready to accept new message to be
  * sent messages. In fact, eventually any message sent over a channel
  * will have its reply but this "ready sense" is a matter of
  * performance not availability.
+ *
+ * <i><b>NOTE 1:</b>The function do not check if the channel have
+ * pending replies to be sent. This is the opossite situation where
+ * the remote peer sent messages that this channel didn't reply.
+ *
+ * This function only cares about channel's pending replies to be
+ * received, not those to be sent.
+ * </i>
+ *
+ * <i><b>NOTE 2:</b>As a general rule any MSG received, by both peers,
+ * must be replied by a RPY or ERR or ANS/NUL series.</i>
  * 
  * @param channel the channel to check for its readyness state.
  * 
- * @return true if ready or false if not.
+ * @return true if ready, otherwise false is returned.
  */
 bool               vortex_channel_is_ready                       (VortexChannel * channel)
 {
