@@ -5368,7 +5368,7 @@ void                vortex_connection_cleanup                (VortexCtx        *
  * 
  * @return The maximum segment size or -1 if fails.
  */
-long int              vortex_connection_get_mss                (VortexConnection * connection)
+int                vortex_connection_get_mss                (VortexConnection * connection)
 {
 	long int max_seg_size;
 #if defined(AXL_OS_WIN32)

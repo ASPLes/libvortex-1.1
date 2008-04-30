@@ -354,7 +354,7 @@ void                vortex_connection_remove_channel_pool    (VortexConnection  
 bool                __vortex_connection_parse_greetings      (VortexConnection * connection, 
 							      VortexFrame * frame);
 
-long int            vortex_connection_get_mss                (VortexConnection * connection);
+int                 vortex_connection_get_mss                (VortexConnection * connection);
 
 #endif
 
