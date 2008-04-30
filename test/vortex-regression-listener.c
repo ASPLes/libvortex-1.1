@@ -284,6 +284,11 @@ void frame_received_ans_replies (VortexChannel    * channel,
 	return;
 }
 
+int limit_transfer_frame_size (VortexChannel *channel, int next_seq_no, int message_size, int max_seq_no, axlPointer user_data) 
+{
+	return VORTEX_MIN (PTR_TO_INT(user_data), VORTEX_MIN (message_size, max_seq_no - next_seq_no + 1));
+}
+
 /** 
  * @internal Frame received handler used to check wrong reply order
  * support.
@@ -300,6 +305,24 @@ void frame_received_ans_transfer_selected_file (VortexChannel    * channel,
 
 	/* ack message received */
 	if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_MSG) {
+
+		/* check "change-mss" message */
+		if (axl_cmp (vortex_frame_get_payload (frame), "change-mss")) {
+			/* request to change mss; configure the
+			 * segmentator to limit transfer to tcp
+			 * maximum segment size configured */
+			vortex_connection_set_next_frame_size_handler (connection, 
+								       limit_transfer_frame_size, INT_TO_PTR (vortex_connection_get_mss (connection) - 60));
+			
+			/* send reply */
+			printf ("Request to change frame segmentator to up %d bytes (TCP MSS(%d) - BEEP HEADERS(60)\n",
+				vortex_connection_get_mss (connection) - 60, vortex_connection_get_mss (connection));
+			vortex_channel_send_rpy (channel, 
+						 vortex_frame_get_payload (frame), 
+						 vortex_frame_get_payload_size (frame), 
+						 vortex_frame_get_msgno (frame));
+			return;
+		}
 		
 		printf ("Sending content (ANS/NUL test: %s)\n", REGRESSION_URI_5);
 		/* reply with a file (simulating it) */ 

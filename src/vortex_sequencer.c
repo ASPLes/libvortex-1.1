@@ -578,13 +578,13 @@ bool     vortex_sequencer_direct_send (VortexConnection * connection,
 
 	/* send the frame */
 	if (vortex_log2_is_enabled (ctx))
-		vortex_log2 (VORTEX_LEVEL_DEBUG, "Sending message, size (%d) over connection id=%d, Content: \n%s",
+		vortex_log2 (VORTEX_LEVEL_DEBUG, "Sending message, size (%d) over connection id=%d, errno=%d, Content: \n%s",
 			     packet->the_size,  
-			     vortex_connection_get_id (connection), packet->the_frame);
+			     vortex_connection_get_id (connection), errno, packet->the_frame);
 	else
-		vortex_log (VORTEX_LEVEL_DEBUG, "Sending message, size (%d) over connection id=%d",
+		vortex_log (VORTEX_LEVEL_DEBUG, "Sending message, size (%d) over connection id=%d, errno=%d",
 			    packet->the_size,  
-			    vortex_connection_get_id (connection));
+			    vortex_connection_get_id (connection), errno);
 
 	if (! vortex_frame_send_raw (connection, packet->the_frame, packet->the_size)) {
 		/* drop a log */
@@ -594,7 +594,7 @@ bool     vortex_sequencer_direct_send (VortexConnection * connection,
 		/* set as non connected and flag the result */
 		result = false;
 	}
-
+	
 	/* signal the message have been sent */
 	if (packet->type == VORTEX_FRAME_TYPE_RPY && packet->is_complete) {
 
