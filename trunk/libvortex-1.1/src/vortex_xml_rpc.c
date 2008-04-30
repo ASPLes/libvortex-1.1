@@ -1411,6 +1411,10 @@ axlPointer __vortex_xml_rpc_invoke (VortexXmlRpcInvokeData * data)
 	if (vortex_xml_rpc_method_call_must_release (invocator))
 		vortex_xml_rpc_method_call_free (invocator);
 	axl_free (message);
+
+	/* unref channel (reference acquired at
+	 * vortex_xml_rpc_invoke) */
+	vortex_channel_unref (channel);
 	
 	/* nothing more to do */
 	return NULL;
@@ -1499,6 +1503,8 @@ bool                vortex_xml_rpc_invoke                  (VortexChannel       
 	/* prepare data to be passed in to the thread function */
 	data               = axl_new (VortexXmlRpcInvokeData, 1);
 	data->channel      = channel;
+	/* get a reference to the channel during the process */
+	vortex_channel_ref (channel);
 	data->invocator    = method_call;
 	data->reply_notify = reply_notify;
 	data->user_data    = user_data;

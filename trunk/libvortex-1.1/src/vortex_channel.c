@@ -3621,7 +3621,6 @@ bool               vortex_channel_ref                             (VortexChannel
 {
 	/* check channel received */
 	v_return_val_if_fail (channel,                false);
-	v_return_val_if_fail (channel->is_opened,     false);
 	v_return_val_if_fail (channel->ref_count > 0, false);
 	
 	/* lock ref/unref operations over this connection */
