@@ -639,6 +639,9 @@ bool test_02_common (VortexConnection * connection)
 			return false;
 		}
 
+		/* update reference counting */
+		vortex_channel_ref (channel[iterator]);
+
 		/* enable serialize */
 		vortex_channel_set_serialize (channel[iterator], true);
 
@@ -752,6 +755,9 @@ bool test_02_common (VortexConnection * connection)
 			printf ("failed to close channel=%d\n", vortex_channel_get_number (channel[iterator]));
 			return false;
 		}
+
+		/* unref the channel */
+		vortex_channel_unref (channel[iterator]);
 
 		/* update the iterator */
 		iterator++;
