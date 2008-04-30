@@ -723,6 +723,9 @@ int         vortex_frame_receive_raw  (VortexConnection * connection, char  * bu
 	/* clear buffer */
 	/* memset (buffer, 0, maxlen * sizeof (char )); */
 	if ((nread = vortex_connection_invoke_receive (connection, buffer, maxlen)) == VORTEX_SOCKET_ERROR) {
+		if (errno == VORTEX_EAGAIN) {
+			return 0;
+		}
 		if (errno == VORTEX_EWOULDBLOCK) {
 			return 0;
 		}
@@ -785,10 +788,10 @@ int          __vortex_frame_readline (VortexConnection * connection, char  * buf
 				return 0;
 			else
 				break;
-		}else {
+		} else {
 			if (errno == VORTEX_EINTR) 
 				goto __vortex_frame_readline_again;
-			if (errno == VORTEX_EWOULDBLOCK || (rc == -2))
+			if ((errno == VORTEX_EWOULDBLOCK) || (errno == VORTEX_EAGAIN) || (rc == -2))
 				return (-2);
 			
 			/* if the connection is closed, just return
@@ -931,7 +934,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 		vortex_log (VORTEX_LEVEL_DEBUG, "bytes already read: %d", bytes_read);
 
 		bytes_read = vortex_frame_receive_raw (connection, buffer + bytes_read, remaining);
-		if (bytes_read == 0) {
+		if (bytes_read == 0 && errno != VORTEX_EAGAIN && errno != VORTEX_EWOULDBLOCK) {
 			vortex_frame_free (frame);
 			axl_free (buffer);
 			vortex_connection_set_data (connection, "buffer", NULL);
@@ -968,8 +971,8 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	bytes_read = __vortex_frame_readline (connection, line, 99);
 	if (bytes_read == -2) {
                 vortex_log (VORTEX_LEVEL_WARNING,
-			    "no data were waiting on this non-blocking connection id=%d (EWOULDBLOCK error)",
-			    vortex_connection_get_id (connection));
+			    "no data were waiting on this non-blocking connection id=%d (EWOULDBLOCK|EAGAIN errno=%d)",
+			    vortex_connection_get_id (connection), errno);
 		return NULL;
 	}
 
@@ -1006,9 +1009,9 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 
 	if ((line[bytes_read - 1] != '\x0A') || (line[bytes_read - 2] != '\x0D')) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
-		       "no line definition found for frame, over connection id=%d, bytes read: %d, line: \n'%s'\n, closing session",
-		       vortex_connection_get_id (connection),
-		       bytes_read, line);
+			    "no line definition found for frame, over connection id=%d, bytes read: %d, line: '%s' errno=%d, closing session",
+			    vortex_connection_get_id (connection),
+			    bytes_read, line, errno);
 		__vortex_connection_set_not_connected (connection, "no line definition found for frame");
 		return NULL;
 	}
@@ -1098,7 +1101,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	
 	/* read the next frame content */
 	bytes_read = vortex_frame_receive_raw (connection, buffer, frame->size + 5);
-	if (bytes_read == 0) {
+ 	if (bytes_read == 0 && errno != VORTEX_EAGAIN && errno != VORTEX_EWOULDBLOCK) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "remote peer have closed connection while reading the rest of the frame");
 		__vortex_connection_set_not_connected (connection, "remote peer have closed connection while reading the rest of the frame");
 
@@ -1215,24 +1218,75 @@ process_buffer:
  */
 bool              vortex_frame_send_raw     (VortexConnection * connection, const char  * a_frame, int  frame_size)
 {
-	bool        result = true;
-	int         bytes  = 0;
-	char      * error_msg;
-#if defined(ENABLE_VORTEX_LOG)
-	VortexCtx * ctx    = vortex_connection_get_ctx (connection);
-#endif
+
+	VortexCtx  * ctx    = vortex_connection_get_ctx (connection);
+	bool         result = true;
+	int          bytes  = 0;
+ 	int          total  = 0;
+	char       * error_msg;
+ 	int          fds;
+ 	int          wait_result;
+ 	int          tries    = 3;
+ 	axlPointer   on_write = NULL;
 
 	v_return_val_if_fail (connection, false);
 	v_return_val_if_fail (vortex_connection_is_ok (connection, false), false);
 	v_return_val_if_fail (a_frame, false);
 
  again:
-
-	if ((bytes = vortex_connection_invoke_send (connection, a_frame, frame_size)) < 0) {
+	if ((bytes = vortex_connection_invoke_send (connection, a_frame + total, frame_size - total)) < 0) {
 		if (errno == VORTEX_EINTR)
 			goto again;
-		if ((errno == VORTEX_EWOULDBLOCK) || (bytes == -2)) {
-			vortex_log (VORTEX_LEVEL_WARNING, "unable to write data to socket, socket not prepare to write");
+ 		if ((errno == VORTEX_EWOULDBLOCK) || (errno == VORTEX_EAGAIN) || (bytes == -2)) {
+ 		implement_retry:
+ 			vortex_log (VORTEX_LEVEL_WARNING, 
+ 				    "unable to write data to socket (requested %d but written %d), socket not is prepared to write, doing wait",
+ 				    frame_size, total);
+ 
+ 			/* create and configure waiting set */
+ 			if (on_write == NULL) {
+ 				on_write = vortex_io_waiting_invoke_create_fd_group (ctx, WRITE_OPERATIONS);
+ 			} /* end if */
+ 
+ 			/* clear and add  fd */
+ 			vortex_io_waiting_invoke_clear_fd_group (ctx, on_write);
+ 			fds = vortex_connection_get_socket (connection);
+ 			if (! vortex_io_waiting_invoke_add_to_fd_group (ctx, fds, connection, on_write)) {
+ 				vortex_log (VORTEX_LEVEL_CRITICAL, 
+ 					    "failed to add connection to waiting set for write operation, closing connection");
+ 				__vortex_connection_set_not_connected (connection,
+ 								       "failed to add connection to waiting set for write operation, closing connection");
+ 				result = false;
+ 				goto end;
+ 			} /* en dif */
+ 
+ 			/* perform a wait operation */
+ 			wait_result = vortex_io_waiting_invoke_wait (ctx, on_write, fds + 1, WRITE_OPERATIONS);
+ 			switch (wait_result) {
+ 			case -3: /* unrecoberable error */
+ 				vortex_log (VORTEX_LEVEL_CRITICAL, "unrecoberable error was found while waiting to perform write operation, closing connection");
+ 				__vortex_connection_set_not_connected (connection,
+ 								       "failed to add connection to waiting set for write operation, closing connection");
+ 				result = false;
+ 				goto end;
+ 			case -2: /* error received while waiting (soft error like signals) */
+ 			case -1: /* timeout received */
+ 			case 0:  /* nothing changed which is a kind of timeout */
+ 				vortex_log (VORTEX_LEVEL_DEBUG, "found timeout while waiting to perform write operation (tries=%d)", tries);
+ 				tries --;
+ 				if (tries == 0) {
+ 					__vortex_connection_set_not_connected (connection,
+ 									       "found timeout while waiting to perform write operation and maximum tries were reached");
+ 					result = false;
+ 					goto end;
+ 				} /* end if */
+ 				goto again;
+ 			default:
+ 				/* default case when it is found the socket is now available */
+ 				vortex_log (VORTEX_LEVEL_DEBUG, "now the socket is able to perform a write operation, doing so (total written until now %d)..",
+ 					    total);
+ 				goto again;
+ 			} /* end switch */
 			goto end;
 		}
 		
@@ -1241,34 +1295,52 @@ bool              vortex_frame_send_raw     (VortexConnection * connection, cons
 		if (vortex_is_disconnected) {
 			__vortex_connection_set_not_connected (connection, 
 							       "remote peer have closed connection");
-			return false;
+			result = false;
+			goto end;
 		}
 		error_msg = vortex_errno_get_last_error ();
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to write data to socket: %s",
 		       error_msg ? error_msg : "");
 		__vortex_connection_set_not_connected (connection, "unable to write data to socket:");
-		return false;
+		result = false;
+		goto end;
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "bytes written: %d", bytes);
 
 	if (bytes == 0) {
 		vortex_log (VORTEX_LEVEL_DEBUG, 
-		       "remote peer have closed before sending proper close connection, closing");
+			    "remote peer have closed before sending proper close connection, closing");
 		__vortex_connection_set_not_connected (connection, 
 						       "remote peer have closed before sending proper close connection, closing");
-		return false;
+		result = false;
+		goto end;
 	}
 
-	if (bytes != frame_size) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "write request mismatch with write done (%d != %d)",
-		       bytes, frame_size);
-		return false;
-	}
+ 	/* sum total amount of data */
+ 	if (bytes > 0)
+ 		total += bytes;
+
+ 	if (total != frame_size) {
+ 		vortex_log (VORTEX_LEVEL_CRITICAL, "write request mismatch with write done (%d != %d), pending tries=%d",
+ 			    total, frame_size, tries);
+ 		tries--;
+ 		if (tries == 0) {
+ 			result = false;
+ 			goto end;
+		}
+ 
+ 		/* do retry operation */
+ 		goto implement_retry;
+  	}
 	vortex_log (VORTEX_LEVEL_DEBUG, "write on socket request=%d written=%d", frame_size, bytes);
-	
  end:
-	return result;
+
+ 	/* clear waiting set before returning */
+ 	if (on_write)
+ 		vortex_io_waiting_invoke_destroy_fd_group (ctx, on_write);
+	
+ 	return (total == frame_size);
 }
 
 
