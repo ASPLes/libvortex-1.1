@@ -3648,18 +3648,20 @@ bool               vortex_channel_ref                             (VortexChannel
 void               vortex_channel_unref                           (VortexChannel * channel)
 {
 #if defined(ENABLE_VORTEX_LOG)
-	VortexCtx     * ctx   = vortex_channel_get_ctx (channel);
+	VortexCtx     * ctx;
 #endif
 
 	/* check reference */
-	if (channel == NULL)
-		return;
+	v_return_if_fail (channel);
+	v_return_if_fail (channel->ref_count > 0);
 
 	/* lock the channel */
 	vortex_mutex_lock (&channel->ref_mutex);
 
 	/* decrease the channel */
 	channel->ref_count--;
+
+	ctx = vortex_channel_get_ctx (channel);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "channel=%d unref called, ref count status after calling=%d", 
 		    channel->channel_num, channel->ref_count);
@@ -7163,7 +7165,6 @@ VortexCtx         * vortex_channel_get_ctx                        (VortexChannel
 	
 	/* call to get the context associated to the cnonection */
 	ctx = channel->ctx;
-	vortex_log (VORTEX_LEVEL_DEBUG, "returning ctx %p because channel %p received", ctx, channel);
 
 	return ctx;
 } 
