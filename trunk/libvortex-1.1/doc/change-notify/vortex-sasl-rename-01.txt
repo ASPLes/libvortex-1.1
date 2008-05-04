@@ -1,0 +1,57 @@
+
+       #####################################
+       ####     Change notification     ####
+       #####################################
+
+    Change Id: [vortex-sasl-rename-01]
+ Project name: [Vortex Library 1.0/1.1]
+  Included in: [not included yet, patch proposed]
+       Status: [ACCEPTED]
+       Author: [Balazs Tirpak (mydexterid at gmail.com, dexter at koli.kando.hu)]
+
+Motivation
+~~~~~~~~~~
+
+Some function names contains a typo. Namely:
+
+vortex_tls_start_negociation_sync
+vortex_xml_rpc_accept_negociation
+vortex_sasl_accept_negociation_full
+vortex_sasl_accept_negociation
+vortex_tls_accept_negociation
+vortex_tls_start_negociation
+
+Change Description
+~~~~~~~~~~~~~~~~~~
+
+The function names should be:
+
+vortex_tls_start_negotiation_sync
+vortex_xml_rpc_accept_negotiation
+vortex_sasl_accept_negotiation_full
+vortex_sasl_accept_negotiation
+vortex_tls_accept_negotiation
+vortex_tls_start_negotiation
+
+Solution to incompatibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The easiest way to solve the incompatibility problem is to search and
+replace the old function names with the new ones.
+
+In particular, all calls done to vortex_sasl_accept_negociation,
+vortex_sasl_accept_negociation_full, vortex_tls_start_negotiation_sync,
+vortex_xml_rpc_accept_negotiation, vortex_tls_accept_negotiation and
+vortex_tls_start_negotiation must be changed replacing "negociation" by
+"negotiation".
+
+References
+~~~~~~~~~~
+[1] Project link: 
+    http://www.aspl.es/vortex/
+
+[2] Change notification published by the project:
+    http://other-change-notifications.com
+
+[3] Change notification definition
+    http://www.aspl.es/change/change-notification.txt

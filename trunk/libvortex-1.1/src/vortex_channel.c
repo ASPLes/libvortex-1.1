@@ -3485,26 +3485,39 @@ void               vortex_channel_set_serialize                   (VortexChannel
 }
 
 /** 
- * @brief Allows to store a pair key/value into the channel
+ * @brief Allows to store a pair key/value associated to the channel.
  * 
- * This allows application designers to use the channel as a way to
- * transport data among function or handler execution.
+ * This allows to associate application data to the channel which can
+ * be easily retrieved later using \ref vortex_channel_get_data.
  *
- * To remove store item you will have to store again the key used
- * passing in a NULL value. Example:
+ * In the case a NULL reference is passed to the function as the value
+ * parameter, the pair key/value is removed from the channel:
+ *
  * \code
  *          vortex_channel_set_data (my_channel, "my_key", NULL);
  *          // previous will remove "my_key" pair from the channel
  * \endcode
  *
- * If you are looking to store at value that is have to be deallocated
- * once the channel is released, you can check \ref
- * vortex_channel_set_data_full. That function allows to store
- * functions to be called to release the key and the value stored.
+ * If it is required to associate a "destroy handler" to the key or
+ * value stored, you can use \ref vortex_channel_set_data_full.
  *
- * @param channel channel where data will be stored.
- * @param key the key index to look up the data store
- * @param value the data to be stored.
+ * @param channel Channel where data will be stored.
+ *
+ * @param key The key index to look up for the data stored. Though the
+ * API expects an axlPointer, the hash storing values is configured to
+ * receive string keys.
+ *
+ * @param value The data to be stored. NULL to remove previous data
+ * stored under the provided key.
+ *
+ * See also:
+ *
+ * - \ref vortex_channel_set_data_full
+ * - \ref vortex_channel_get_data
+ * - \ref vortex_connection_set_data
+ * - \ref vortex_connection_set_data_full
+ *
+ * <i><b>NOTE:</b> the function do not allows storing NULL value pointers. </i>
  */
 void               vortex_channel_set_data                        (VortexChannel * channel,
 								   axlPointer key,
@@ -3517,25 +3530,41 @@ void               vortex_channel_set_data                        (VortexChannel
 }
 
 /** 
- * @brief Allows to store user space that, indexed by the provided
- * key, providing handlers to be called to release them, once the
- * channel is closed.
+ * @brief Allows to store a pair key/value associated to the channel,
+ * with optional destroy handlers.
  * 
- * This function works like: \ref vortex_channel_set_data but
- * extending the API to support two handler that are called to
- * deallocate memory used by the key and the value stored.
+ * This allows to associate application data to the channel which can
+ * be easily retrieved later using \ref vortex_channel_get_data. 
  * 
- * @param channel The channel where the data will be stored.
+ * The function allows to configure the set of destroy handlers to be
+ * called to dealloc key and value stored.
  *
- * @param key The key to index the data stored.
+ * In the case a NULL reference is passed to the function as the value
+ * parameter, the pair key/value is removed from the channel, calling
+ * to associated destroy functions.
  *
- * @param value The data to store.
+ * @param channel Channel where data will be stored.
+ *
+ * @param key The key index to look up for the data stored. Though the
+ * API expects an axlPointer, the hash storing values is configured to
+ * receive string keys.
+ *
+ * @param value The data to be stored. NULL to remove previous data
+ * stored under the provided key.
  *
  * @param key_destroy The optional key destroy handler to be called to
  * release the particular key provided.
  *
  * @param value_destroy The optional value destroy handler to be
  * called to release the particular value provided.
+ *
+ * See also:
+ * - \ref vortex_channel_set_data
+ * - \ref vortex_channel_get_data
+ * - \ref vortex_connection_set_data
+ * - \ref vortex_connection_set_data_full
+ *
+ * <i><b>NOTE:</b> the function do not allows storing NULL value pointers. </i>
  */
 void             vortex_channel_set_data_full (VortexChannel    * channel, 
 					       axlPointer         key, 
@@ -3587,10 +3616,17 @@ void               vortex_channel_delete_data                     (VortexChannel
 /** 
  * @brief Returns the value indexed by the given key inside the given
  * channel.
- * 
- * @param channel the channel where data will be looked up.
- * @param key the index key to use.
- * 
+ *
+ * User defined pointers returned by this function were stored by
+ * calls to \ref vortex_channel_set_data or \ref
+ * vortex_channel_set_data_full.
+ *
+ * @param channel The channel where data will be looked up.
+ *
+ * @param key The index key to use. Though the API expects an
+ * axlPointer, the hash storing values is configured to receive string
+ * keys.
+ *
  * @return the value or NULL if fails. 
  */
 axlPointer         vortex_channel_get_data                        (VortexChannel * channel,
@@ -5510,6 +5546,7 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 	char             * profile_content_reply = NULL;
 	char             * serverName            = NULL;
 	char             * error_msg             = NULL;
+	char             * aux                   = NULL;
 	char             * start_rpy             = NULL;
 	VortexEncoding     encoding;       
 	VortexChannel    * new_channel           = NULL;
@@ -5549,22 +5586,27 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 	}
 
 	/* check if the connection have masked the profile recevied */
-	if (vortex_connection_is_profile_filtered (connection, channel_num, profile, profile_content, serverName)) {
+	if (vortex_connection_is_profile_filtered (connection, channel_num, profile, profile_content, serverName, &aux)) {
 		/* send an error reply */
-		error_msg = vortex_frame_get_error_message ("554", "transaction failed: requested profile is not available on the connection", NULL);
+		if (aux == NULL)
+			error_msg = vortex_frame_get_error_message ("554", "transaction failed: requested profile is not available on the connection", NULL);
+		else
+			error_msg = vortex_frame_get_error_message ("554", aux, NULL);
 		vortex_channel_send_err (channel0, error_msg, strlen (error_msg), vortex_frame_get_msgno (frame));
 
 		/* deallocate unused memory */
-		vortex_support_free (4, 
+		vortex_support_free (5, 
 				     error_msg,       axl_free, 
 				     profile,         axl_free, 
 				     serverName,      axl_free, 
-				     profile_content, axl_free);
+				     profile_content, axl_free,
+				     aux,             axl_free);
 		return;
 	} /* end if */
 
 	/* check if profile already exists */
 	if (!vortex_profiles_is_registered (ctx, profile)) {
+		vortex_log (VORTEX_LEVEL_WARNING, "received request for an unsupported profile=%s, denying request",  profile);
 
 		/* send an error reply */
 		error_msg = vortex_frame_get_error_message ("554", "transaction failed: channel profile requested not supported", NULL);

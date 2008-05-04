@@ -1458,6 +1458,24 @@ typedef void     (* VortexIoDispatch)             (axlPointer             fd_gro
  * @param serverName A request for the connection to act as
  * serverName.
  *
+ * @param error_msg Optional variable to configure an error message to
+ * be returned to the remote peer extending the 554 error used by
+ * default. The handler can define a textual message on this variable
+ * (dinamically allocated) and then used by vortex to build the error
+ * reply. The message configured will be deallocated using
+ * axl_free. For example, you can use the following:
+ * \code
+ * // check we are not at the greetings process and also check error_msg
+ * // which may not be defined
+ * if (channel_num > 0 && error_msg) {
+ *      (* error_msg) = axl_strdup ("Profile not accepted due to policy configuration");
+ *      // return true to filter the uri
+ *      return true;
+ * }
+ * \endcode
+ * 
+ * NOTE: You must not define error_msg and return false. 
+ *
  * @param user_data User defined pointer passed to the function.
  * 
  * @return true to filter the uri, false if not.
@@ -1467,6 +1485,7 @@ typedef bool     (* VortexProfileMaskFunc)       (VortexConnection      * connec
 						  const char            * uri,
 						  const char            * profile_content,
 						  const char            * serverName,
+						  char                 ** error_msg,
 						  axlPointer              user_data);
 
 /** 
