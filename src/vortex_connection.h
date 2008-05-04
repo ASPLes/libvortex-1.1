@@ -145,7 +145,8 @@ bool                vortex_connection_is_profile_filtered    (VortexConnection  
 							      int                     channel_num,
 							      const char            * uri,
 							      const char            * profile_content,
-							      const char            * serverName);
+							      const char            * serverName,
+							      char                 ** error_msg);
 
 bool                vortex_connection_is_profile_supported   (VortexConnection * connection, 
 							      const char       * uri);

@@ -1,0 +1,98 @@
+
+       #####################################
+       ####     Change notification     ####
+       #####################################
+
+    Change Id: vortex-profile-mask-func-01
+ Project name: Vortex Library 1.1
+  Included in: already included and to be shipped with next stable
+               release for 1.1 series
+       Status: ACCEPTED
+       Author: Francis Brosnan Blázquez
+
+Motivation
+~~~~~~~~~~
+
+To make Turbulence and other applications that configure a profile
+mask function (VortexProfileMaskFunc) through
+vortex_connection_set_profile_mask to return a more specific error
+message, it is required to extend the handler definition
+(VortexProfileMaskFunc) with a new parameter that allows the handler
+implementor to optionally configure such error message.
+
+This has as main target to allow personalization on the default
+message actually returned if a profile is filtered:
+
+ 554 transaction failed: 
+     requested profile is not available on the connection
+
+Which do not represent an easy textual diagnostic error. For example,
+Turbulence now returns the following if Profile Path denies the
+profile:
+
+ 554 transaction failed: 
+     server profile path configuration denies creating a
+     channel with the profile requested.
+
+Change Description
+~~~~~~~~~~~~~~~~~~
+
+To implement the change, a new parameter to the handler
+VortexProfileMaskFunc is received: 
+
+    char  ** error_msg
+
+Which must be used by handler implementors to optionally return the
+message to be used for the 554 error message.
+
+The following symbols and functions gets affected by the change:
+
+    - VortexProfileMaskFunc                 (handler)
+    - vortex_connection_is_profile_filtered (function)
+
+Solution to incompatibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For the first case, VortexProfileMaskFunc, the implementor must extend
+its function definition, leaving it as is:
+
+ bool   profile_mask (VortexConnection      * connection,
+		      int                     channel_num,
+		      const char            * uri,
+		      const char            * profile_content,
+		      const char            * serverName,
+		      char                 ** error_msg,
+		      axlPointer              user_data) {
+      [..handler content..]
+
+      if (channel_num > 0 && error_msg) {
+            /* filter profile */
+            (* error_msg) = axl_strdup ("Profile not accepted");
+            return true;
+      }
+
+      [..more handler content..]
+ }
+
+In the case your application uses
+vortex_connection_is_profile_filtered, you must add a new argument
+
+   if (vortex_connection_is_profile_filtered (conn, 
+                                              channel_num,
+                                              uri, 
+                                              profile_content,
+                                              serverName, 
+        /* new parameter, it could be NULL */ error_msg)) {
+        [..error handling..]  
+   }
+
+References
+~~~~~~~~~~
+[1] Project link: 
+    http://www.aspl.es/vortex/
+
+[2] Change notification published by the project:
+    http://other-change-notifications.com
+
+[3] Change notification definition
+    http://www.aspl.es/change/change-notification.txt

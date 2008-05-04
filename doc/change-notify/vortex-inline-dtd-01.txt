@@ -1,0 +1,63 @@
+
+       #####################################
+       ####     Change notification     ####
+       #####################################
+
+    Change Id: vortex-inline-dtd-01
+ Project name: Vortex Library
+  Included in: already included and to be shipped with next stable release
+               1.0.14 (also updated 1.1 branch)
+       Status: NOTIFY
+       Author: Francis Brosnan Blázquez
+
+Motivation
+~~~~~~~~~~
+
+A common issue reported while using Vortex Library is its
+initialization and how to locate data files required for its functions
+(mainly DTD files). The change proposed uses the DTD to C features
+provided by axl-knife tool (included inside Axl Library, starting from
+0.4.15) to make all DTD used by the library to be included as inline
+code.
+
+The intention with the change is to remove a common problem reported,
+minimize installation files required by vortex, avoid including
+platform specific code to only locate data files and to keep on using
+DTD files to validate content.
+
+Change Description
+~~~~~~~~~~~~~~~~~~
+
+Using --dtd-to-c option from axl-knife command line tool, the
+following new files have been created:
+
+  - vortex-channel.dtd.h
+  - vortex-tls.dtd.h
+  - vortex-sasl.dtd.h
+  - xml-rpc-boot.dtd.h
+  - vortex-listener-conf.dtd.h
+
+Vortex Library building files have been also updated to refresh these
+files if the corresponding master copy change.
+
+These files are private headers included from vortex_dtd.c and
+vortex_listener.c module. They are only required at compilation time,
+and, in any case, required at the installation.
+
+Solution to incompatibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+No incompatibility has been created. Now DTD files from ../data
+directory are no longer required (they will be ignored by the
+running library).
+
+References
+~~~~~~~~~~
+[1] Project link: 
+    http://vortex.aspl.es
+
+[2] Change notification published by the project:
+    http://vortex.aspl.es/doc.html
+
+[3] Change notification definition
+    http://www.aspl.es/change/change-notification.txt

@@ -855,11 +855,12 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel          * channel,
  * @internal Mask installed to ensure that SASL profile isn't reused
  * again for the particular connection.
  */
-bool __vortex_sasl_mask (VortexConnection * connection,
-			 int                channel_num,
-			 const char       * uri,
-			 const char       * profile_content,
-			 const char       * serverName,
+bool __vortex_sasl_mask (VortexConnection  * connection,
+			 int                 channel_num,
+			 const char        * uri,
+			 const char        * profile_content,
+			 const char        * serverName,
+			 char             ** error_msg,
 			 axlPointer         user_data)
 {
 	/* if both strings are equal, filter the profile */

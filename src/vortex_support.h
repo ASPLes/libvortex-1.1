@@ -38,6 +38,11 @@
 #ifndef __VORTEX_SUPPORT_H__
 #define __VORTEX_SUPPORT_H__
 
+/**
+ * \addtogroup vortex_support
+ * @{
+ */
+
 #include <vortex.h>
 
 void     vortex_support_free                       (int  params, ...);
@@ -109,5 +114,7 @@ int      vortex_timeval_substract                  (struct timeval * a,
 						    struct timeval * result);
 
 #define copy_if_not_null(arg) (arg != NULL) ? axl_strdup (arg) : NULL;
+
+/* @} */
 
 #endif

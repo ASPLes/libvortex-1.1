@@ -2759,7 +2759,7 @@ axlList            * vortex_connection_get_remote_profiles (VortexConnection * c
 		/* check if the profile is filtered providing as
 		 * channel num -1, serverName NULL, and profile
 		 * content NULL */
-		if (! vortex_connection_is_profile_filtered (connection, -1, uri, NULL, NULL)) {
+		if (! vortex_connection_is_profile_filtered (connection, -1, uri, NULL, NULL, NULL)) {
 			/* profile is not filtered, add to the result */
 			axl_list_append (result, axl_strdup (uri));
 		} /* end if */
@@ -2868,7 +2868,8 @@ bool                vortex_connection_is_profile_filtered    (VortexConnection  
 							      int                     channel_num,
 							      const char            * uri,
 							      const char            * profile_content,
-							      const char            * serverName)
+							      const char            * serverName,
+							      char                 ** error_msg)
 {
 	int              iterator = 0;
 	VortexMaskNode * node;
@@ -2884,7 +2885,7 @@ bool                vortex_connection_is_profile_filtered    (VortexConnection  
 		node = axl_list_get_nth (connection->profile_masks, iterator);
 
 		/* check if the mask filter the provided profile */
-		if (node->mask (connection, channel_num, uri, profile_content, serverName, node->user_data)) {
+		if (node->mask (connection, channel_num, uri, profile_content, serverName, error_msg, node->user_data)) {
 			/* uri filtered, report */
 			return true;
 		}
@@ -4197,8 +4198,8 @@ int                vortex_connection_do_a_sending_round (VortexConnection * conn
 /** 
  * @brief Sets user defined data associated with the given connection.
  *
- * This function allows to store arbitrary data associated to the
- * given connection. Data stored in insided by the provided key,
+ * The function allows to store arbitrary data associated to the given
+ * connection. Data stored will be indexed by the provided key,
  * allowing to retrieve the information using: \ref
  * vortex_connection_get_data.
  *
@@ -4206,13 +4207,16 @@ int                vortex_connection_do_a_sending_round (VortexConnection * conn
  * removing request for the given key and its associated data.
  * 
  * See also \ref vortex_connection_set_data_full function. It is an
- * alternative API provided to allow providing destroy handlers for
- * key and data stored.
+ * alternative API that allows configuring a set of destroy handlers
+ * for key and data stored.
  *
+ * @param connection The connection where data will be associated.
  *
- * @param connection The connection to set data.
- * @param key The string key indexing the data.
- * @param value The value to be stored.
+ * @param key The string key indexing the data stored associated to
+ * the given key.
+ *
+ * @param value The value to be stored. NULL to remove previous data
+ * stored.
  */
 void               vortex_connection_set_data               (VortexConnection * connection,
 							     const char       * key,
@@ -4395,9 +4399,8 @@ void                vortex_connection_set_auto_tls           (VortexCtx  * ctx,
 /** 
  * @brief Gets stored value indexed by the given key inside the given connection.
  *
- * Returns value indexed by key inside connection. This function does
- * not retrieve data from remote peer, it just returns stored data
- * using \ref vortex_connection_set_data or \ref vortex_connection_set_data_full.
+ * The function returns stored data using \ref
+ * vortex_connection_set_data or \ref vortex_connection_set_data_full.
  * 
  * @param connection the connection where the value will be looked up.
  * @param key the key to look up.
