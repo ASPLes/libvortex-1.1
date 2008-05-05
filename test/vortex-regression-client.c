@@ -1917,7 +1917,7 @@ bool test_02g () {
 		return false;
 
 	/* configure 2048 frame size */
-	printf ("Test 02-g: testing 2048 frame size (faster)..\n");
+	printf ("Test 02-g: testing 2048 frame size (faster, but more content sent)..\n");
 	vortex_connection_set_next_frame_size_handler (connection, test_02g_frame_size, INT_TO_PTR(2048));
 
 	/* call common implementation */
