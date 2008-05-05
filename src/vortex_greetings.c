@@ -267,6 +267,7 @@ VortexFrame *  vortex_greetings_process (VortexConnection * connection)
 
 	/* check pending frame */
 	if (pending) {
+		vortex_log (VORTEX_LEVEL_WARNING, "have pending flag at greetings process (previous incomplete frame received).");
 		pending = vortex_frame_join (pending, frame);
 		vortex_frame_unref (frame);
 		frame   = pending;
@@ -274,7 +275,7 @@ VortexFrame *  vortex_greetings_process (VortexConnection * connection)
 
 	/* check if the frame returned is not complete, to store in
 	 * the connection and return NULL */
-	if (vortex_frame_get_more_flag (frame)) {
+	if (vortex_frame_get_more_flag (frame) > 0) {
 		/* store the frame */
 		vortex_connection_set_data_full (connection, 
 						 /* key and data */
