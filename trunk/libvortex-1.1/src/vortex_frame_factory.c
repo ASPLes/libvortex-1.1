@@ -745,6 +745,12 @@ int         vortex_frame_receive_raw  (VortexConnection * connection, char  * bu
 	return nread;
 }
 
+/** 
+ * @internal Key used to store and retrieve pending lines (not fully
+ * read) from vortex_frame_readline.
+ */
+#define VORTEX_FRAME_PENDING_LINE "vo:pe:li"
+
 /**
  * @internal
 
@@ -766,8 +772,10 @@ int         vortex_frame_receive_raw  (VortexConnection * connection, char  * bu
 int          __vortex_frame_readline (VortexConnection * connection, char  * buffer, int  maxlen)
 {
 	int         n, rc;
+	int         desp;
 	char        c, *ptr;
 	char      * error_msg;
+	char      * pending_line;
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 #endif
@@ -775,9 +783,31 @@ int          __vortex_frame_readline (VortexConnection * connection, char  * buf
 	/* clear the buffer received */
 	memset (buffer, 0, maxlen * sizeof (char ));
 
+	/* check for pending line read */
+	pending_line = vortex_connection_get_data (connection, VORTEX_FRAME_PENDING_LINE);
+	desp         = 0;
+	if (pending_line) {
+		/* get size and check exceeded values */
+		desp = strlen (pending_line);
+		if (desp >= maxlen) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, 
+				    "found fragmented frame line header but allowed size was exceeded (desp:%d >= maxlen:%d)",
+				    desp, maxlen);
+			__vortex_connection_set_not_connected (connection, "found fragmented frame line header but allowed size was exceeded");
+			return -1;
+		} /* end if */
+
+		/* now store content into the buffer */
+		memcpy (buffer, pending_line, desp);
+
+		/* clear from the connection the line */
+		vortex_connection_set_data (connection, VORTEX_FRAME_PENDING_LINE, NULL);
+	}
+
+
 	/* read current next line */
-	ptr = buffer;
-	for (n = 1; n < maxlen; n++) {
+	ptr = (buffer + desp);
+	for (n = 1; n < (maxlen - desp); n++) {
 	__vortex_frame_readline_again:
 		if (( rc = vortex_connection_invoke_receive (connection, &c, 1)) == 1) {
 			*ptr++ = c;
@@ -791,8 +821,18 @@ int          __vortex_frame_readline (VortexConnection * connection, char  * buf
 		} else {
 			if (errno == VORTEX_EINTR) 
 				goto __vortex_frame_readline_again;
-			if ((errno == VORTEX_EWOULDBLOCK) || (errno == VORTEX_EAGAIN) || (rc == -2))
+			if ((errno == VORTEX_EWOULDBLOCK) || (errno == VORTEX_EAGAIN) || (rc == -2)) {
+				if (n > 0) {
+					/* store content read until now */
+					pending_line = axl_strdup (buffer);
+					vortex_connection_set_data_full (connection, 
+									 /* key and value */
+									 VORTEX_FRAME_PENDING_LINE, pending_line, 
+									 /* key destroy and value destroy */
+									 NULL, axl_free);
+				} /* end if */
 				return (-2);
+			}
 			
 			/* if the connection is closed, just return
 			 * without logging a message */
@@ -804,9 +844,8 @@ int          __vortex_frame_readline (VortexConnection * connection, char  * buf
 			return (-1);
 		}
 	}
-	vortex_log (VORTEX_LEVEL_DEBUG, "line read from underlying transport: '%s'", buffer);
 	*ptr = 0;
-	return (n);
+	return (n + desp);
 
 }
 
@@ -1044,7 +1083,8 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	if (frame->type == VORTEX_FRAME_TYPE_UNKNOWN) {
 		/* unref frame value */
 		axl_free (frame);
-		vortex_log (VORTEX_LEVEL_CRITICAL, "poorly-formed frame: message type not defined");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "poorly-formed frame: message type not defined, line=%s",
+			    line);
 		__vortex_connection_set_not_connected (connection, "poorly-formed frame: message type not defined");
 		return NULL;
 	}
@@ -1965,7 +2005,28 @@ int           vortex_frame_get_msgno    (VortexFrame * frame)
  *
  * @param frame The frame where the more flag value is requested.
  *
- * Return value: the actual more flag status or -1 if fails
+ * Return value: the actual more flag status or -1 if fails. 1 have
+ * activated (*), 0 deactivated (.).
+ *
+ * <i><b>NOTE:</b> To properly use this function you must use the following to
+ * check if frame flag is activated:</i>
+ * 
+ * \code
+ * if (vortex_frame_get_more_flag (frame) > 0) {
+ *    // some handling 
+ * }
+ * \endcode
+ *
+ * <i>This is because the function could return -1 causing the
+ * following code to also report that the frame have the more flag
+ * activated: </i>
+ *
+ * \code
+ * if (vortex_frame_get_more_flag (frame)) {
+ *    // some handling (WRONG: frame might be NULL)
+ * }
+ * \endcode
+ *
  **/
 int           vortex_frame_get_more_flag (VortexFrame * frame)
 {

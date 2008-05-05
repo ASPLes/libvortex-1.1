@@ -1854,7 +1854,7 @@ bool test_02f () {
 
 	/* check no delay escenario */
 	printf ("Test 02-f: checking no delay scenario..\n");
-	if (! test_02f_send_data (channel, message, queue, 1, 140000))
+	if (! test_02f_send_data (channel, message, queue, 1, 270000))
 		return false;
 
 	/* free queue and message */

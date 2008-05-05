@@ -1373,7 +1373,8 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
         if (connect (connection->session, (struct sockaddr *)&saddr, sizeof(saddr)) < 0) {
 		if(d_timeout == 0 || (errno != VORTEX_EINPROGRESS && errno != VORTEX_EWOULDBLOCK)) { 
 			shutdown (connection->session, SHUT_RDWR);
-			vortex_log (VORTEX_LEVEL_WARNING, "unable to connect to remote host");
+			vortex_log (VORTEX_LEVEL_WARNING, "unable to connect to remote host errno=%d, d_timeout=%d",
+				    errno, d_timeout);
 			connection->message = axl_strdup ("unable to connect to remote host");
 			goto __vortex_connection_new_finalize;
 		}
@@ -1473,7 +1474,8 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 			} /* end if */
 		} else {
 			/* check if a pending frame was found */
-			if (vortex_connection_get_data (connection, VORTEX_GREETINGS_PENDING_FRAME)) {
+			if (vortex_connection_get_data (connection, VORTEX_GREETINGS_PENDING_FRAME) ||
+			    vortex_connection_get_data (connection, "frame")) {
 				vortex_log (VORTEX_LEVEL_DEBUG, "found partial greetings frame, reading rest..");
 				goto __vortex_connection_try_again;
 			} /* end if */
