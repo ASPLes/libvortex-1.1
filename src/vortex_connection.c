@@ -914,8 +914,12 @@ VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx       
 								       (axlDestroyFunc) vortex_channel_unref);
 		/* creates the user space data */
 		if (__connection != NULL) {
+			/* transfer hash used by previous connection into the new one */
 			connection->data       = __connection->data;
-			__connection->data     = NULL;
+			/* creates a new hash to keep the connection internal state consistent */
+			__connection->data     = vortex_hash_new_full (axl_hash_string, axl_hash_equal_string,
+								       NULL,
+								       NULL);
 			
 			/* remove being closed flag if found */
 			vortex_connection_set_data (connection, "being_closed", NULL);
@@ -4412,8 +4416,9 @@ void                vortex_connection_set_auto_tls           (VortexCtx  * ctx,
 axlPointer         vortex_connection_get_data               (VortexConnection * connection,
 							     const char       * key)
 {
-	if (connection == NULL || key == NULL)
-		return NULL;
+ 	v_return_val_if_fail (connection,       NULL);
+ 	v_return_val_if_fail (key,              NULL);
+ 	v_return_val_if_fail (connection->data, NULL);
 
 	return vortex_hash_lookup (connection->data, (axlPointer) key);
 }

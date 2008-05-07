@@ -3632,9 +3632,10 @@ void               vortex_channel_delete_data                     (VortexChannel
 axlPointer         vortex_channel_get_data                        (VortexChannel * channel,
 								   axlPointer key)
 {
-	/* check reference */
-	if (channel == NULL || key == NULL)
-		return NULL;
+ 	v_return_val_if_fail (channel,       NULL);
+ 	v_return_val_if_fail (key,           NULL);
+ 	v_return_val_if_fail (channel->data, NULL);
+
 
 	/* get the data stored */
 	return vortex_hash_lookup (channel->data, key);
