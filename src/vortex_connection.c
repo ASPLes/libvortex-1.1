@@ -5376,18 +5376,18 @@ void                vortex_connection_cleanup                (VortexCtx        *
  * 
  * @param connection The connection where to get maximum segment size.
  * 
- * @return The maximum segment size or -1 if fails.
+ * @return The maximum segment size or -1 if fails. The function is
+ * still not portable since the Microsoft Windows API do not allow
+ * getting TCP maximum segment size.
  */
 int                vortex_connection_get_mss                (VortexConnection * connection)
 {
-	long int max_seg_size;
 #if defined(AXL_OS_WIN32)
-	/* windows flavors */
-	int                  optlen;
+	/* no support */
+	return -1;
 #else
 	/* unix flavors */
 	socklen_t            optlen;
-#endif
 
 	v_return_val_if_fail (connection, -1);
 
@@ -5402,6 +5402,7 @@ int                vortex_connection_get_mss                (VortexConnection * 
 
 	/* return value found */
 	return -1;
+#endif
 }
 
 /* @} */

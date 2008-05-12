@@ -864,20 +864,6 @@ typedef enum {
 } VortexIoWaitingType;
 
 /**
- * @brief Opaque type representing a proxy configuration used by the
- * Vortex Engine to create a new connection to a remote point through
- * an application layer gateway implementing the TUNNEL profile.
- *
- * See for more details: 
- *  
- *   - \ref vortex_tunnel_settings_new
- *   - \ref vortex_tunnel_settings_add_hop
- * 
- */
-typedef struct _VortexTunnelSettings VortexTunnelSettings;
-
-
-/**
  * @brief Proxy TUNNEL item configuration. 
  * 
  * Each item provided allow to configure a particular value conforming
