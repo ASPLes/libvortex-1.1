@@ -5388,6 +5388,7 @@ int                vortex_connection_get_mss                (VortexConnection * 
 #else
 	/* unix flavors */
 	socklen_t            optlen;
+	long int             max_seg_size;
 
 	v_return_val_if_fail (connection, -1);
 
