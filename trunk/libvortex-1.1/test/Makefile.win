@@ -28,9 +28,10 @@ PROGRAMS = vortex-listener.exe \
 LIBS     = -Wall -g \
 	-lws2_32 $(search_lib_path) \
 	-L../src -L../../libaxl/src -L$(DEPEND_DIR)/bin -laxl -lvortex-1.1 \
+	-L../tunnel -lvortex-tunnel-1.1 \
 	-lreadline5
 
-INCS =  -I"." -I"../src" -I"../../libaxl/src" -I$(DEPEND_DIR)/include
+INCS =  -I"." -I"../src" -I"../tunnel" -I"../../libaxl/src" -I$(DEPEND_DIR)/include
 
 CFLAGS   = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" -Wall -g
 
