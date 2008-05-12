@@ -43,6 +43,48 @@
  * @{
  */
 
+/**
+ * @brief Opaque type representing a proxy configuration used by the
+ * Vortex Engine to create a new connection to a remote point through
+ * an application layer gateway implementing the TUNNEL profile.
+ *
+ * See for more details: 
+ *  
+ *   - \ref vortex_tunnel_settings_new
+ *   - \ref vortex_tunnel_settings_add_hop
+ * 
+ */
+typedef struct _VortexTunnelSettings VortexTunnelSettings;
+
+/** 
+ * @brief Handler definition for the tunnel location resolution.
+ *
+ * This handler is used by the TUNNEL implementation to provide a way
+ * to the user space code to translate tunnel locations provided. 
+ *
+ * Currently this is used by Turbulence to provide run-time
+ * translation for endpoint and profile configurations into host and
+ * port locations.
+ * 
+ * @param tunnel_spec The xml string defining the tunnel spec as
+ * defined in RFC3620.
+ * 
+ * @param tunnel_sepc_size The size of the xml content.
+ *
+ * @param user_data Reference to user defined data.
+ *
+ * @param doc A reference to an already parsed document. 
+ * 
+ * @return A reference to the \ref VortexTunnelSettings created with
+ * the new values. If null reference is returned, the TUNNEL engine
+ * will use the content as provided, without performing any
+ * translation.
+ */
+typedef VortexTunnelSettings * (* VortexTunnelLocationResolver) (const char  * tunnel_spec,
+								 int           tunnel_spec_size,
+								 axlDoc      * tunnel_doc,
+								 axlPointer    user_data);
+
 /** 
  * @brief Uri reference to the BEEP TUNNEL profile identifier.
  */

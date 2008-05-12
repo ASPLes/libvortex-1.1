@@ -58,7 +58,6 @@
  * @{
  */
 
-#if defined(ENABLE_TUNNEL_SUPPORT)
 /** 
  * @internal Configuration for the tunnel settings.
  */
@@ -66,7 +65,6 @@ struct _VortexTunnelSettings{
 	axlDoc    * doc;
 	VortexCtx * ctx;
 };
-#endif
 
 /** 
  * @brief Allows to check if the current library built have support
