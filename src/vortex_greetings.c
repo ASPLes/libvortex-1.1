@@ -284,6 +284,10 @@ VortexFrame *  vortex_greetings_process (VortexConnection * connection)
 		return NULL;
 	} /* end if */
 
+	/* call to update frame MIME status */
+	if (! vortex_frame_mime_process (frame))
+		vortex_log (VORTEX_LEVEL_WARNING, "failed to update MIME status for the frame, continue delivery");
+
 	/* frame complete, clear connection content */
 	vortex_connection_set_data (connection, 
 				    /* key and data */
@@ -317,6 +321,8 @@ bool           vortex_greetings_is_reply_ok    (VortexFrame      * frame, Vortex
 
 	/* check greetings reply */
 	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
+			    "frame error, expected RPY frame type on greetings process");
 		__vortex_connection_set_not_connected (connection, "frame error, expected RPY frame type on greetings process");
 		vortex_frame_unref (frame);
 		return false;
@@ -326,6 +332,8 @@ bool           vortex_greetings_is_reply_ok    (VortexFrame      * frame, Vortex
 	if (vortex_frame_get_channel (frame) != 0 || 
 	    vortex_frame_get_msgno   (frame) != 0 || 
 	    vortex_frame_get_seqno   (frame) != 0) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
+			    "frame error, expected greetings message on channel 0, message 0 or sequence number 0");
 		__vortex_connection_set_not_connected (connection, "frame error, expected greetings message on channel 0, message 0 or sequence number 0");
 		vortex_frame_unref (frame);
 		return false;
@@ -334,7 +342,8 @@ bool           vortex_greetings_is_reply_ok    (VortexFrame      * frame, Vortex
 	/* check content-type reply */
 	if ((vortex_frame_get_content_type (frame) == NULL) ||
 	    (! axl_cmp (vortex_frame_get_content_type (frame), "application/beep+xml"))) {
-
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
+			    "frame error, expected content type: application/beep+xml, not found");
 		__vortex_connection_set_not_connected (connection, 
 						       "frame error, expected content type: application/beep+xml, not found");
 		vortex_frame_unref (frame);
@@ -419,9 +428,7 @@ bool          vortex_greetings_client_send     (VortexConnection * connection)
  **/
 VortexFrame *  vortex_greetings_client_process (VortexConnection * connection)
 {
-	VortexFrame * frame = vortex_greetings_process (connection);
-
-	return frame;
+	return vortex_greetings_process (connection);
 }
 
 

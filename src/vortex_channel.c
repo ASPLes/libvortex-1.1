@@ -449,7 +449,6 @@ int  __vortex_channel_get_mime_headers_size (VortexChannel * channel)
 	/* mime configuration */
 	const char      * mime_type         = vortex_channel_get_mime_type (channel);
 	const char      * transfer_encoding = vortex_channel_get_transfer_encoding (channel);
-	bool              headers_found     = false;
 	int               size              = 0;
 
 	/* check for Content-Type header configuration */
@@ -458,19 +457,16 @@ int  __vortex_channel_get_mime_headers_size (VortexChannel * channel)
 		 * defined so, count 16 bytes for the "Content-Type: "
 		 * plus 2 bytes more due to ending \x0D\x0A. */
 		size           = 16 + strlen (mime_type);
-		headers_found  = true;
 	}
 
 	/* check for the Content-Transfer-Encoding header configuration */
 	if (transfer_encoding != NULL && !axl_cmp (transfer_encoding, "binary")) {
 		size          += 29 + strlen (transfer_encoding);
-		headers_found  = true;
 	}
 	
-	/* if some of the previous headers are defined, add 2 more
-	 * bytes for the ending \x0D\x0A */
-	if (headers_found)
-		size += 2;
+ 	/* add 2 more bytes for the ending \x0D\x0A MIME body
+ 	 * separation */
+ 	size += 2;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "mime headers size calculated for channel %d was: %d",
 	       channel->channel_num, size);
@@ -496,12 +492,9 @@ int  __vortex_channel_get_mime_headers_size (VortexChannel * channel)
 void __vortex_channel_get_mime_headers (VortexChannel * channel, char  * buffer)
 {
 	/* mime configuration */
-	const char      * mime_type         = vortex_channel_get_mime_type (channel);
-	const char      * transfer_encoding = vortex_channel_get_transfer_encoding (channel);
-
-	
-	bool        headers_found     = false;
-	int         size              = 0;
+	const char  * mime_type         = vortex_channel_get_mime_type (channel);
+	const char  * transfer_encoding = vortex_channel_get_transfer_encoding (channel);
+	int           size              = 0;
 
 	/* check for Content-Type header configuration */
 	if (mime_type != NULL && !axl_cmp (mime_type, "application/octet-stream")) {
@@ -516,7 +509,6 @@ void __vortex_channel_get_mime_headers (VortexChannel * channel, char  * buffer)
 
 		/* get current size dumped */
 		size           = 16 + strlen (mime_type);
-		headers_found  = true;
 	}
 
 	/* check for the Content-Transfer-Encoding header configuration */
@@ -531,13 +523,10 @@ void __vortex_channel_get_mime_headers (VortexChannel * channel, char  * buffer)
 		memcpy (buffer + size + 27 + strlen (mime_type), "\x0D\x0A", 2);
 
 		size          += 29 + strlen (transfer_encoding);
-		headers_found  = true;
 	}
 	
-	/* if some of the previous headers are defined, add 2 more
-	 * bytes for the ending \x0D\x0A */
-	if (headers_found)
-		memcpy (buffer + size, "\x0D\x0A", 2);
+	/* add MIME header ending \x0D\x0A */
+	memcpy (buffer + size, "\x0D\x0A", 2);
 
 	/* mime header built */
 	return;
@@ -1772,7 +1761,7 @@ VortexFrame      * vortex_channel_build_single_pending_frame   (VortexChannel * 
 		frame = axl_list_cursor_get (cursor);
 
 		/* accumulate size */
-		size += vortex_frame_get_payload_size (frame);
+		size += vortex_frame_get_content_size (frame);
 
 		/* next position */
 		axl_list_cursor_next (cursor);
@@ -1791,10 +1780,10 @@ VortexFrame      * vortex_channel_build_single_pending_frame   (VortexChannel * 
 		frame = axl_list_cursor_get (cursor);
 
 		/* write content */
-		memcpy (payload + size, vortex_frame_get_payload (frame), vortex_frame_get_payload_size (frame));
+		memcpy (payload + size, vortex_frame_get_payload (frame), vortex_frame_get_content_size (frame));
 		
 		/* update size */
-		size += vortex_frame_get_payload_size (frame);
+		size += vortex_frame_get_content_size (frame);
 
 		/* next position */
 		axl_list_cursor_next (cursor);
@@ -2370,7 +2359,7 @@ bool      __vortex_channel_common_rpy (VortexChannel    * channel,
 	       data->message_size, message_size, mime_header_size);
 	
 	/* copy the message to be send using memcpy */
-	if (message != NULL && data->message_size > 0) {
+	if (message != NULL || data->message_size > 0) {
 		/* copy mime header configuration if defined */
 		data->message = axl_new (char , data->message_size + 1);
 		if (mime_header_size > 0)
@@ -3210,9 +3199,18 @@ bool     vortex_channel_update_incoming_buffer (VortexChannel * channel,
 	new_max_seq_no_accepted = (consumed_seqno + window_size - 1) % (MAX_SEQ_NO);
 
 	/* check we have filled half window size advertised */
-	if ((new_max_seq_no_accepted - channel->max_seq_no_accepted) < (window_size / 2)) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: not updated, already not consumed half of window advertised: %d < (%d / 2)",
-			    new_max_seq_no_accepted - channel->max_seq_no_accepted, window_size);
+/*	if ((new_max_seq_no_accepted - channel->max_seq_no_accepted) < (window_size / 2)) { */
+ 	if ((consumed_seqno - (channel->max_seq_no_accepted - window_size)) < (window_size / 2)) {
+ 		if (vortex_log_is_enabled (ctx)) {
+ 			vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: not updated, already not consumed half of window advertised: %d < (%d / 2)",
+ 				    (consumed_seqno - (channel->max_seq_no_accepted - window_size)), window_size);
+ 			vortex_log (VORTEX_LEVEL_DEBUG, "           frame-content-size=%d, frame-payload-size=%d, ",
+ 				    vortex_frame_get_content_size (frame), vortex_frame_get_payload_size (frame));
+ 			vortex_log (VORTEX_LEVEL_DEBUG, "           window_size=%d, consumed_seqno=%d, new_max_seq_no_accepted=%d",
+ 				    window_size, consumed_seqno, new_max_seq_no_accepted);
+ 			vortex_log (VORTEX_LEVEL_DEBUG, "           max_seq_no_accepted=%d",
+ 				    channel->max_seq_no_accepted);
+ 		} /* end if */
 		goto not_update;
 	} /* end if */
 	
@@ -3236,9 +3234,9 @@ bool     vortex_channel_update_incoming_buffer (VortexChannel * channel,
  		}
 
 		vortex_log (VORTEX_LEVEL_DEBUG, 
-			    "SEQ FRAME: updating allowed max seq no to be received from %d to %d (delta: %d)",
-			    channel->max_seq_no_accepted, new_max_seq_no_accepted, 
-			    (new_max_seq_no_accepted - channel->max_seq_no_accepted));
+ 			    "SEQ FRAME: updating allowed max seq no to be received from %d to %d (delta: %d, ackno: %d, window_size: %d)",
+  			    channel->max_seq_no_accepted, new_max_seq_no_accepted, 
+ 			    (new_max_seq_no_accepted - channel->max_seq_no_accepted), consumed_seqno, window_size);
 
 		/* update new max seq no accepted value */
 		channel->max_seq_no_accepted = new_max_seq_no_accepted;
@@ -4706,7 +4704,13 @@ typedef struct _ReceivedInvokeData {
     case VORTEX_FRAME_TYPE_NUL:                                                         \
         /* always store */                                                              \
         status = vortex_frame_get_seqno (frame) != channel->last_ans_seqno_delivered;   \
-        index = -1;                                                                     \
+        if (status) {                                                                   \
+              vortex_log (VORTEX_LEVEL_DEBUG,                                           \
+			  "storing NUL frame, seqno (%d) != delivered (%d)",            \
+			  vortex_frame_get_seqno (frame),                               \
+			  channel->last_ans_seqno_delivered);                           \
+        }                                                                               \
+        index  = -1;                                                                    \
         break;                                                                          \
     default:                                                                            \
         /* default case, do not store anything */                                       \
@@ -4741,7 +4745,7 @@ typedef struct _ReceivedInvokeData {
    is_ans_frame = (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ANS);                                          \
    /* update last ans seqno delivered */                                                                             \
    if (is_ans_frame) {                                                                                               \
-         channel->last_ans_seqno_delivered = vortex_frame_get_seqno (frame) + vortex_frame_get_payload_size (frame); \
+         channel->last_ans_seqno_delivered = vortex_frame_get_seqno (frame) + vortex_frame_get_content_size (frame); \
    }                                                                                                                 \
                                                                                                                      \
    /* remove according to the frame type */                                                                          \
@@ -4810,6 +4814,7 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 	int                index;
 	bool               is_ans_frame;
 	bool               is_nul_frame;
+	VortexFrameType    type;
 
 	/* get a reference to channel number so we can check after
 	 * frame received handler if the channel have been closed.
@@ -4818,7 +4823,26 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 	int               channel_num   = data->channel_num;
 	VortexCtx       * ctx           = vortex_channel_get_ctx (channel);
 	
-	vortex_log (VORTEX_LEVEL_DEBUG, "inside the frame received handler (new task)");
+ 	if (vortex_log_is_enabled (ctx)) {
+ 		/* get type */
+ 		type = vortex_frame_get_type (frame);
+ 		vortex_log (VORTEX_LEVEL_DEBUG, "STARTED the frame received handler invocation (new task): %s%s%s%s%s %d %d %s %d %d",
+ 			    (type == VORTEX_FRAME_TYPE_MSG) ? "MSG" : "",
+ 			    (type == VORTEX_FRAME_TYPE_RPY) ? "RPY" : "",
+ 			    (type == VORTEX_FRAME_TYPE_ERR) ? "ERR" : "",
+ 			    (type == VORTEX_FRAME_TYPE_ANS) ? "ANS" : "",
+ 			    (type == VORTEX_FRAME_TYPE_NUL) ? "NUL" : "",
+ 			    /* channel */
+ 			    vortex_frame_get_channel (frame),
+ 			    /* msg no */
+ 			    vortex_frame_get_msgno   (frame),
+ 			    /* more indicator */
+ 			    vortex_frame_get_more_flag (frame) == 1 ? "*" : ".",
+ 			    /* seq no */
+ 			    vortex_frame_get_seqno   (frame),
+ 			    /* message size */
+ 			    vortex_frame_get_content_size (frame));
+ 	}
 
 	/* show received frame */
 	if (vortex_log2_is_enabled (ctx)) {
@@ -4872,7 +4896,26 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 	if (channel->received) {
 		channel->received (channel, channel->connection, frame, 
 				   channel->received_user_data);
-		vortex_log (VORTEX_LEVEL_DEBUG, "frame received invocation for second level finished");
+ 		if (vortex_log_is_enabled (ctx)) {
+ 			/* get type */
+ 			type = vortex_frame_get_type (frame);
+ 			vortex_log (VORTEX_LEVEL_DEBUG, "frame received invocation for second level FINISHED (new task): %s%s%s%s%s %d %d %s %d %d",
+ 				    (type == VORTEX_FRAME_TYPE_MSG) ? "MSG" : "",
+ 				    (type == VORTEX_FRAME_TYPE_RPY) ? "RPY" : "",
+ 				    (type == VORTEX_FRAME_TYPE_ERR) ? "ERR" : "",
+ 				    (type == VORTEX_FRAME_TYPE_ANS) ? "ANS" : "",
+ 				    (type == VORTEX_FRAME_TYPE_NUL) ? "NUL" : "",
+ 				    /* channel */
+ 				    vortex_frame_get_channel (frame),
+ 				    /* msg no */
+ 				    vortex_frame_get_msgno   (frame),
+ 				    /* more indicator */
+ 				    vortex_frame_get_more_flag (frame) == 1 ? "*" : ".",
+ 				    /* seq no */
+ 				    vortex_frame_get_seqno   (frame),
+ 				    /* message size */
+ 				    vortex_frame_get_content_size (frame));
+ 		} /* end if */
 	}else {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "invoking frame received on channel %d with not handler defined",
 		       vortex_channel_get_number (channel));

@@ -56,6 +56,73 @@
  *     http://en.wikipedia.org/wiki/CRLF
  */
 
+/** 
+ * @internal Node that allows to support several MIME headers defined
+ * on the same value, for example, "Received".
+ */
+struct _VortexMimeHeader {
+	/* @internal Pointer to the same header (a practical pointer
+	 * to allow getting which header correspond to the content) */
+	const char       * name;
+
+	/* @internal The MIME header content found for one declaration. */
+	char             * content;
+
+	/* @interanl Next pointer to the next content found. */
+	VortexMimeHeader * next;
+};
+
+
+/** 
+ * @internal Function used to destroy a set of headers pointed by the
+ * first header received.
+ */
+void vortex_frame_mime_header_free (VortexMimeHeader * header)
+{
+	VortexMimeHeader * header_aux;
+
+	/* do not operate if NULL is received */
+	if (header == NULL)
+		return;
+
+	/* for each header found: do */
+	while (header) {
+		/* free header content */
+		axl_free (header->content);
+
+		/* get current reference and update to the next */
+		header_aux = header;
+		header     = header->next;
+
+		/* free node */
+		axl_free (header_aux);
+	} /* end while */
+		
+	return;
+}
+
+unsigned int vortex_frame_case_hash_string (axlPointer _key)
+{
+	char          * tolower = axl_strdup (_key);
+	unsigned int    result;
+	axl_stream_to_lower (tolower);
+	
+	result = axl_hash_string (tolower);
+	axl_free (tolower);
+	
+	return result;
+}
+
+int  vortex_frame_case_equal_string (axlPointer keya, 
+				     axlPointer keyb)
+{
+	return axl_casecmp (keya, keyb) ? 0 : 1;
+}
+
+axlHash * vortex_frame_mime_hash_new ()
+{
+	return axl_hash_new (vortex_frame_case_hash_string, vortex_frame_case_equal_string);
+}
 
 struct _VortexFrame {
 	/**
@@ -80,23 +147,26 @@ struct _VortexFrame {
 	int               size;
 	int               ansno;
 	
-	/* content type */
-	char            * content_type;
-
-	/* transfer encoding */
-	char            * transfer_encoding;
-
-	/* the size of the mime headers, including last \x0D\x0A\x0D\x0A */
+	/* the size of the mime headers, including last
+	 * \x0D\x0A\x0D\x0A */
 	int               mime_headers_size;
 	
-	/* the payload message */
+	/* the payload message, that is, all the message content
+	 * (including MIME headers and body) */
 	axlPointer        payload;
+
+	/* reference to the payload content, from a MIME
+	 * perspective. This is the body part of the frame received */
+	axlPointer        content;
 
 	/* a reference to the channel where the frame was received */
 	VortexChannel   * channel_ref;
 	
 	/* frame reference counting */
 	int               ref_count;
+
+	/* a hash containing all MIME headers read from the frame */
+	axlHash         * mime_headers;
  };
 
 /** 
@@ -159,8 +229,8 @@ char  *       vortex_frame_get_raw_frame         (VortexFrame * frame)
 						    frame->seqno,
 						    frame->size,
 						    frame->ansno,
-						    frame->content_type,
-						    frame->transfer_encoding,
+						    vortex_frame_get_content_type (frame),
+						    vortex_frame_get_transfer_encoding (frame),
 						    frame->payload,
 						    NULL);
 }
@@ -514,7 +584,7 @@ VortexFrame * vortex_frame_create               (VortexCtx       * ctx,
  * @param payload The payload the frame hold.
  * 
  * @return A newly created \ref VortexFrame object that must be
- * unrefered using \ref vortex_frame_free when no longer needed.
+ * unrefered using \ref vortex_frame_free when no longer needed. 
  */
 VortexFrame * vortex_frame_create_full          (VortexCtx       * ctx,
 						 VortexFrameType   type,
@@ -555,19 +625,15 @@ VortexFrame * vortex_frame_create_full          (VortexCtx       * ctx,
 
 	/* copy content type */
 	if (content_type != NULL) {
-		result->content_type      = axl_strdup (content_type);
-		result->mime_headers_size = 16 + strlen (content_type);
+		/* set content type header */
+		vortex_frame_set_mime_header (result, MIME_CONTENT_TYPE, content_type);
 	}
 
 	/* copy content transfer encoding */
 	if (transfer_encoding != NULL) {
-		result->transfer_encoding = axl_strdup (transfer_encoding);
-		result->mime_headers_size += 29 + strlen (transfer_encoding);
+		/* set content type header */
+		vortex_frame_set_mime_header (result, MIME_CONTENT_TRANSFER_ENCODING, transfer_encoding);
 	}
-
-	/* establish a mime header size */
-	if (content_type != NULL || transfer_encoding != NULL)
-		result->mime_headers_size += 2; /* last \x0D\x0A */
 		
 	return result;	
 }
@@ -652,20 +718,16 @@ VortexFrame * vortex_frame_create_full_ref      (VortexCtx       * ctx,
 
 	/* copy content type */
 	if (content_type != NULL) {
-		result->content_type      = axl_strdup (content_type);
-		result->mime_headers_size = 16 + strlen (content_type);
+		/* set content type header */
+		vortex_frame_set_mime_header (result, MIME_CONTENT_TYPE, content_type);
 	}
 
 	/* copy content transfer encoding */
 	if (transfer_encoding != NULL) {
-		result->transfer_encoding = axl_strdup (transfer_encoding);
-		result->mime_headers_size += 29 + strlen (transfer_encoding);
+		/* set content type header */
+		vortex_frame_set_mime_header (result, MIME_CONTENT_TRANSFER_ENCODING, transfer_encoding);
 	}
 
-	/* establish a mime header size */
-	if (content_type != NULL || transfer_encoding != NULL)
-		result->mime_headers_size += 2; /* last \x0D\x0A */
-		
 	return result;	
 }
 
@@ -992,10 +1054,8 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 			bytes_read += PTR_TO_INT (vortex_connection_get_data (connection, "bytes_read"));
 			vortex_log (VORTEX_LEVEL_DEBUG, "the frame fragment isn't still complete, total read: %d", bytes_read);
 			goto save_buffer;
-			
 		}
 		
-
 		/* We have a complete buffer for the frame, let's
 		 * continue the process but, before doing that we have
 		 * to restore expected state of bytes_read. */
@@ -1200,25 +1260,6 @@ process_buffer:
 		return NULL;
 	}
 	
-	/* get if frame have a valid content type spec, get actual
-	 * content type */
-	frame->mime_headers_size = 0;
-	if (axl_stream_casecmp (buffer, "Content-Type: ", 14)) {
-
-		while (buffer[(frame->mime_headers_size + 14)] != '\x0D')
-			frame->mime_headers_size++;
-
-		frame->content_type = axl_new (char , frame->mime_headers_size + 1 );
-		memcpy (frame->content_type, buffer + 14, frame->mime_headers_size);
-		frame->content_type[frame->mime_headers_size] = 0;
-
-		/* update iterator index (skip over the next \n\r\n
-		 * values and point to the first value of the frame
-		 * stream) */
-		frame->mime_headers_size += 18;
-	}else
-		frame->content_type = NULL;
-
 	/* locate body frame init */
 	frame->size                 = frame->size - frame->mime_headers_size;
 
@@ -1234,10 +1275,10 @@ process_buffer:
 	/* log frame on channel received */
 	if (vortex_log_is_enabled (ctx)) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "Frame received on channel %d, content type=%s, transfer encoding=%s, payload size=%d, mime content size=%d", 
-		       frame->channel,
-		       (frame->content_type != NULL) ? frame->content_type : "" ,
-		       (frame->transfer_encoding != NULL) ? frame->transfer_encoding : "",
-		       frame->size, frame->mime_headers_size);
+ 			    frame->channel,
+ 			    (vortex_frame_get_content_type (frame) != NULL) ? vortex_frame_get_content_type (frame) : "" ,
+ 			    (vortex_frame_get_transfer_encoding (frame) != NULL) ? vortex_frame_get_transfer_encoding (frame) : "",
+ 			    frame->size, frame->mime_headers_size);
 	} /* end if */
 
 	return frame;
@@ -1411,8 +1452,7 @@ bool          vortex_frame_ref                   (VortexFrame * frame)
 {
 
 	/* check reference received */
-	if (frame == NULL)
-		return false;
+	v_return_val_if_fail (frame, false);
 
 	/* increase the frame counting */
 	frame->ref_count++;
@@ -1484,21 +1524,35 @@ void          vortex_frame_free (VortexFrame * frame)
 	ctx = frame->ctx;
 	vortex_log (VORTEX_LEVEL_DEBUG, "deallocating frame id=%d", frame->id);
 
-	/* free content type */
-	if (frame->content_type != NULL)
-		axl_free (frame->content_type);
+	/* free MIME headers */
+	axl_hash_free (frame->mime_headers);
 
-	/* free content transfer encoding */
-	if (frame->transfer_encoding != NULL)
-		axl_free (frame->transfer_encoding);
-
-	/* free frame payload */
-	if (frame->payload != NULL)
+	/* free frame payload (first checking for content, and, if not
+	 * defined, then payload) */
+	if (frame->content != NULL)
+		axl_free (frame->content);
+	else if (frame->payload != NULL)
 		axl_free (frame->payload);
 
 	/* free the frame node itself */
 	axl_free (frame);
 	return;
+}
+
+axlPointer vortex_frame_copy_mime_header (axlPointer     key, 
+					  axlDestroyFunc key_destroy, 
+					  axlPointer     data, 
+					  axlDestroyFunc data_destroy)
+{
+	return axl_strdup (key);
+}
+
+axlPointer vortex_frame_copy_mime_header_content (axlPointer     key, 
+						  axlDestroyFunc key_destroy, 
+						  axlPointer     data, 
+						  axlDestroyFunc data_destroy)
+{
+	return axl_strdup (data);
 }
 
 VortexFrame * __vortex_frame_join_common (VortexFrame * a, VortexFrame * b, bool     reuse)
@@ -1544,29 +1598,16 @@ VortexFrame * __vortex_frame_join_common (VortexFrame * a, VortexFrame * b, bool
 	memcpy ((unsigned char *) result->payload + a->size, 
 		    b->payload, b->size);
 
-	/* copy mime content type headers, do not make a memory copy
-	 * because it is not necessary */
-	if (a->content_type != NULL) {
-		if (reuse) {
-			/* just use the same memory and nullify source
-			 * reference */
-			result->content_type = a->content_type;
-			a->content_type      = NULL;
-		}else 
-			result->content_type = axl_strdup (a->content_type);
-	} /* end if */
-
-	/* copy mime content transfer header, do not make a memory
-	 * copy because it is not necessary */
-	if (a->transfer_encoding != NULL) {
-		if (reuse) {
-			/* just reuse the same memory and nullify
-			   source reference */
-			result->transfer_encoding = a->transfer_encoding;
-			a->transfer_encoding      = NULL;
-		}else 
-			result->transfer_encoding = axl_strdup (a->transfer_encoding);
-	} /* end if */
+	if (reuse) {
+		/* because we are reusing, move the hash */
+		result->mime_headers = a->mime_headers;
+		a->mime_headers      = NULL;
+	} else {
+		/* because we are not reusing, copy the hash */
+		result->mime_headers = axl_hash_copy (a->mime_headers, 
+						      vortex_frame_copy_mime_header,
+						      vortex_frame_copy_mime_header_content);
+	}
 
 	return result;
 }
@@ -1628,7 +1669,7 @@ VortexFrame * vortex_frame_join_extending (VortexFrame * a, VortexFrame * b)
  * 
  * @return 
  */
-bool     vortex_frame_common_string_check (char  * value_a, char  * value_b)
+bool     vortex_frame_common_string_check (const char  * value_a, const char  * value_b)
 {
 	if (value_a == NULL && value_b == NULL)
 		return true;
@@ -1793,13 +1834,15 @@ bool     vortex_frame_are_equal (VortexFrame * a, VortexFrame * b)
 	}
 
 	/* check frame content type */
-	if (!vortex_frame_common_string_check (a->content_type, b->content_type)) {
+ 	if (!vortex_frame_common_string_check (vortex_frame_get_content_type (a), 
+ 					       vortex_frame_get_content_type (b))) {
 		vortex_log (VORTEX_LEVEL_WARNING, "frames are not equal due to content type value");
 		return false;
 	}
 
 	/* check for frame transfer encoding type */
-	if (!vortex_frame_common_string_check (a->transfer_encoding, b->transfer_encoding)) {
+	if (!vortex_frame_common_string_check (vortex_frame_get_transfer_encoding (a), 
+					       vortex_frame_get_transfer_encoding (b))) {
 		vortex_log (VORTEX_LEVEL_WARNING, "frames are not equal due to content transfer encoding value");
 		return false;
 	}
@@ -1841,8 +1884,7 @@ bool     vortex_frame_are_equal (VortexFrame * a, VortexFrame * b)
  */
 int           vortex_frame_get_id                (VortexFrame * frame)
 {
-	if (frame == NULL)
-		return -1;
+	v_return_val_if_fail (frame, -1);
 	return frame->id;
 }
 
@@ -1858,14 +1900,16 @@ int           vortex_frame_get_id                (VortexFrame * frame)
  **/
 VortexFrameType vortex_frame_get_type   (VortexFrame * frame)
 {
-	if (frame == NULL)
-		return -1;
-	
+	v_return_val_if_fail (frame, -1);	
+
 	return frame->type;
 }
 
 /**
  * @brief Returns frame content type.
+ *
+ * <i><b>NOTE:</b> this function is deprecated. Use generic MIME
+ * header access through \ref vortex_frame_get_mime_header. </i>
  * 
  * Return actual frame's content type. Return value can be a NULL value
  * which means this frame has no content type defined.  You must not
@@ -1881,15 +1925,18 @@ VortexFrameType vortex_frame_get_type   (VortexFrame * frame)
  **/
 const char   * vortex_frame_get_content_type (VortexFrame * frame)
 {
-	if (frame == NULL)
-		return NULL;
+	v_return_val_if_fail (frame, NULL);
 
-	return frame->content_type;
+	/* return value associated to MIME_CONTENT_TYPE entry */
+	return VORTEX_FRAME_GET_MIME_HEADER (frame, MIME_CONTENT_TYPE);
 }
 
 /** 
  * @brief Allows to get current Content-Transfer-Encoding mime header
  * configuration for the given frame (if defined).
+ *
+ * <i><b>NOTE:</b> this function is deprecated. Use generic MIME
+ * header access through \ref vortex_frame_get_mime_header. </i>
  * 
  * @param frame The frame where the data request will be reported.
  * 
@@ -1898,10 +1945,10 @@ const char   * vortex_frame_get_content_type (VortexFrame * frame)
  */
 const char   * vortex_frame_get_transfer_encoding (VortexFrame * frame)
 {
-	if (frame == NULL)
-		return NULL;
+	v_return_val_if_fail (frame, NULL);
 
-	return frame->transfer_encoding;
+	/* return value associated to MIME_CONTENT_TRANSFER_ENCODING entry */
+	return VORTEX_FRAME_GET_MIME_HEADER (frame, MIME_CONTENT_TRANSFER_ENCODING);
 }
 
 /** 
@@ -1920,8 +1967,7 @@ const char   * vortex_frame_get_transfer_encoding (VortexFrame * frame)
  */
 int           vortex_frame_get_mime_header_size  (VortexFrame * frame)
 {
-	if (frame == NULL)
-		return 0;
+	v_return_val_if_fail (frame, 0);
 
 	return frame->mime_headers_size;
 }
@@ -1937,8 +1983,7 @@ int           vortex_frame_get_mime_header_size  (VortexFrame * frame)
  **/
 int           vortex_frame_get_channel  (VortexFrame * frame)
 {
-	if (frame == NULL)
-		return -1;
+	v_return_val_if_fail (frame, -1);
 
 	return frame->channel;
 }
@@ -1955,8 +2000,7 @@ int           vortex_frame_get_channel  (VortexFrame * frame)
  */
 VortexChannel * vortex_frame_get_channel_ref (VortexFrame * frame)
 {
-	if (frame == NULL)
-		return NULL;
+	v_return_val_if_fail (frame, NULL);
 
 	/* return the channel reference */
 	return frame->channel_ref;
@@ -1971,8 +2015,7 @@ VortexChannel * vortex_frame_get_channel_ref (VortexFrame * frame)
  */
 void vortex_frame_set_channel_ref (VortexFrame * frame, VortexChannel * channel)
 {
-	if (frame == NULL)
-		return;
+	v_return_if_fail (frame);
 	
 	/* configure the channel to the frame */
 	frame->channel_ref = channel;
@@ -1991,8 +2034,7 @@ void vortex_frame_set_channel_ref (VortexFrame * frame, VortexChannel * channel)
  **/
 int           vortex_frame_get_msgno    (VortexFrame * frame)
 {
-	if (frame == NULL)
-		return -1;
+	v_return_val_if_fail (frame, -1);
 
 	return frame->msgno;
 }
@@ -2030,8 +2072,7 @@ int           vortex_frame_get_msgno    (VortexFrame * frame)
  **/
 int           vortex_frame_get_more_flag (VortexFrame * frame)
 {
-	if (frame == NULL)
-		return -1;
+	v_return_val_if_fail (frame, -1);
 
 	if (frame->more)
 		return 1;
@@ -2050,14 +2091,13 @@ int           vortex_frame_get_more_flag (VortexFrame * frame)
  **/
 int           vortex_frame_get_seqno    (VortexFrame * frame)
 {
-	if (frame == NULL)
-		return -1;
+	v_return_val_if_fail (frame, -1);
 
 	return frame->seqno;
 }
 
 /**
- * @brief Returns the payload the given frame have.
+ * @brief Returns the payload associated to the given frame. 
  * 
  * Return actual frame payload. You must not free returned payload.
  *
@@ -2072,9 +2112,9 @@ int           vortex_frame_get_seqno    (VortexFrame * frame)
  **/
 const void *  vortex_frame_get_payload  (VortexFrame * frame)
 {
-	if (frame == NULL)
-		return NULL;
+	v_return_val_if_fail (frame, NULL);
 
+ 	/* if payload (MIME body) is defined, return it rather all the content */
 	return frame->payload;
 }
 
@@ -2089,8 +2129,7 @@ const void *  vortex_frame_get_payload  (VortexFrame * frame)
  **/
 int           vortex_frame_get_ansno    (VortexFrame * frame)
 {
-	if (frame == NULL)
-		return -1;
+	v_return_val_if_fail (frame, -1);
 
 	return frame->ansno;
 }
@@ -2118,8 +2157,7 @@ int           vortex_frame_get_ansno    (VortexFrame * frame)
  **/
 int    vortex_frame_get_payload_size (VortexFrame * frame)
 {
-	if (frame == NULL)
-		return -1;
+	v_return_val_if_fail (frame, -1);
 
 	return frame->size;
 
@@ -2130,8 +2168,7 @@ int    vortex_frame_get_payload_size (VortexFrame * frame)
  * and mime headers.
  *
  * Every frame have a payload that could be separated into the mime
- * headers and the mime content. Only the first one frame generated
- * due to a message splitting contains a mime header specification.
+ * headers and the mime content. 
  *
  * You can get current mime header size by using \ref
  * vortex_frame_get_mime_header_size and current payload size by
@@ -2144,8 +2181,7 @@ int    vortex_frame_get_payload_size (VortexFrame * frame)
  */
 int           vortex_frame_get_content_size      (VortexFrame * frame)
 {
-	if (frame == NULL)
-		return 0;
+	v_return_val_if_fail (frame, 0);
 	
 	return frame->size + frame->mime_headers_size;
 	
@@ -2167,6 +2203,22 @@ VortexCtx   * vortex_frame_get_ctx               (VortexFrame * frame)
 
 	/* return context configured */
 	return frame->ctx;
+}
+
+/** 
+ * @brief Allows to get all frame content including mime headers and
+ * mime body.
+ * 
+ * @param frame The frame that is required to return the content.
+ * 
+ * @return A reference to all the content the frame has.
+ */
+const char *  vortex_frame_get_content           (VortexFrame * frame)
+{
+	v_return_val_if_fail (frame, 0);
+
+	/* return all content */
+	return frame->content;
 }
 
 /* Mapping values \n -> \x0A \r -> \x0D */
@@ -2246,8 +2298,7 @@ bool          vortex_frame_is_error_message      (VortexFrame * frame,
 						  char  ** code,
 						  char  ** message)
 {
-	if (frame == NULL)
-		return false;
+	v_return_val_if_fail (frame, false);
 	return vortex_channel_validate_err (frame, code, message);
 }
 
@@ -2337,6 +2388,600 @@ char        * vortex_frame_get_start_rpy_message (const char  * profile,
 				  (profile_content != NULL) ? profile_content       : "",
 				  (profile_content != NULL) ? "]]>"                 : "",
 				  (profile_content != NULL) ? "</profile>\x0D\x0A"  : "");
+}
+
+/** 
+ * @internal Function that allows to lookup for MIME header fields
+ * (header name and content).
+ * 
+ * @return The function returns 1 if frame was found and its
+ * content. 0 if nothing was found, and -1 if a MIME header error was
+ * found.
+ */
+int vortex_frame_read_mime_header (VortexFrame  * frame, 
+				   int          * caller_iterator)
+{
+	char             * payload    = (char *) frame->payload;
+	int                iterator   = (* caller_iterator);
+	int                mark;
+	char             * mime_header;
+	int                mime_header_size;
+	VortexMimeHeader * header;
+	bool               first_definition = true;
+	VortexCtx        * ctx        = frame->ctx;
+
+	/* try to read until first ':' or ' ' or '\t' */
+	mark = iterator;
+	while (iterator < frame->size && 
+	       payload[iterator] != ':' &&
+	       payload[iterator] != ' ' &&
+	       payload[iterator] != '\t' &&
+	       /* limit allowed values inside MIME header field */
+	       (int) payload[iterator] <= 126 && (int) payload[iterator] >= 33 &&
+	       /* limit amount of content a header could contain */
+	       (iterator - mark) < 995)
+		iterator++;
+
+	/* check MIME header field content */
+	if ((int) payload[iterator] > 126 || (int) payload[iterator] < 33) {
+		vortex_log (VORTEX_LEVEL_WARNING, "found MIME header error, (RFC 2882, 2.2) using a not allowed value for header field name at %d (value '%c'(%d)",
+			    iterator, payload[iterator], (int) payload[iterator]);
+		return -1;
+	} /* end if */
+
+	/* check MIME header size */
+	if ((iterator - mark) >= 995) {
+		vortex_log (VORTEX_LEVEL_WARNING, "found MIME header error, (RFC 2882, 2.2) header field name reached maximum value allowed (998)");
+		return -1;
+	}
+
+	/* check if didnt found a MIME header */
+	if (iterator == frame->size) {
+		vortex_log (VORTEX_LEVEL_WARNING, "no MIME header was found..");
+		return -1;
+	} /* end if */
+
+	mime_header = axl_new (char, iterator - mark + 1);
+	if (mime_header == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to allocate memory to hold MIME header field");
+		return -1;
+	}
+	
+	/* copy content and configure mime header size */
+	memcpy (mime_header, payload + mark, iterator - mark);
+	mime_header_size = iterator - mark;
+
+	/* check if the mime header was already found */
+	header = axl_hash_get (frame->mime_headers, (axlPointer) mime_header);
+	if (header == NULL) {
+		/* first header found */
+		header       = axl_new (VortexMimeHeader, 1);
+		header->name = mime_header;
+	} else {
+		/* found, forward to the last found until now */
+		while (header->next != NULL) {
+			/* go the next */
+			header = header->next;
+		} /* end while */
+
+		/* create the new header */
+		header->next       = axl_new (VortexMimeHeader, 1);
+		header->next->name = header->name;
+		header             = header->next;
+
+		/* flag that the header was already defined */
+		first_definition = false;
+	} /* end if */
+		
+	/* consume all spaces before reaching ":" */
+	while (iterator < frame->size && payload[iterator] == ' ')
+		iterator++;
+	
+	/* now check for terminator : */
+	if (payload[iterator] != ':') {
+		vortex_log (VORTEX_LEVEL_WARNING, 
+			    "expected to find MIME field name delimitator ':' but found '%c', while reading for MIME header '%s'",
+			    payload[iterator], mime_header);
+		return -1;
+	} /* end if */
+		
+	/* mark mime content */
+	mark = iterator + 1;
+
+	/* get all content */
+	/* vortex_log (VORTEX_LEVEL_DEBUG, "reading mime header %s content at: %d", 
+	   mime_header, iterator2); */
+	while (true) {
+		/* check for CR-LF termination without being followed
+		 * by a WSP */
+		if (((iterator + 1) < frame->size) &&
+		    payload[iterator] == '\x0D' && payload[iterator + 1] == '\x0A') {
+			
+			if (payload[iterator + 2] != ' ' && payload[iterator + 2] != '\t')
+				break;
+		} /* end if */
+		
+		/* check for LF termination without being
+		 * followed by a WSP */
+		if (((iterator) < frame->size) &&
+		    payload[iterator] == '\x0A') {
+			
+			if (payload[iterator + 1] != ' ' && payload[iterator + 1] != '\t') 
+				break;
+		} /* end if */
+
+		/* next character */
+		iterator++;
+	} /* end while */
+	
+	/* found mime content */
+	header->content = axl_new (char, iterator - mark + 1);
+	memcpy (header->content, frame->payload + mark, iterator - mark);
+	
+	/* clean string */
+	axl_stream_trim (header->content);
+	
+	/* store in the hash (only store for the first time, next ones
+	 * are updates on an instance already stored)  */
+	if (first_definition) {
+		axl_hash_insert_full (frame->mime_headers, 
+				      /* key */
+				      (axlPointer) mime_header, axl_free,
+				      /* value */
+				      (axlPointer) header, (axlDestroyFunc) vortex_frame_mime_header_free);
+	} else {
+		/* free mime_header because it is not stored in the
+		 * hash (we have a previous copy) */
+		axl_free (mime_header);
+	} /* end if */
+	
+	/* skip to the next CRLF pairs */
+	if (payload[iterator] == '\x0A')
+		iterator += 1;
+	else
+		iterator += 2;
+	
+	vortex_log2 (VORTEX_LEVEL_DEBUG, "Found mime header (iterator=%d) '%s' : '%s'", 
+		     iterator, header->name, header->content);
+	
+	/* update caller iterator */
+	(*caller_iterator) = iterator;
+
+	return 1;
+}
+
+/** 
+ * @internal Reconfigures frames to make payload to point to the MIME
+ * body part and content to point to all message. It also reconfigures
+ * mime headers size and payload size.
+ */
+void vortex_frame_reconfigure_mime (VortexFrame * frame, int iterator, int step)
+{
+	VortexMimeHeader * header;
+
+	/* make frame->content to point to all content
+	 * received and frame->payload to point only
+	 * to the relevant user part */
+	frame->content = frame->payload;
+	frame->payload = (char*) (frame->content + iterator + step);
+	/* vortex_log (VORTEX_LEVEL_DEBUG, "reconfiguring mime body start at: %d ('%d'): %s",
+	   iterator + step, ((char *)frame->payload)[0], frame->payload); */
+	
+	/* update mime headers */
+	frame->mime_headers_size   = (iterator + step);
+	
+	/* update payload size */
+	frame->size               -= (iterator + step);
+
+	/* check to initialize the mime header internal hash */
+	if (frame->mime_headers == NULL)
+		frame->mime_headers = vortex_frame_mime_hash_new ();
+
+	/* configure default headers if not found */
+	header = vortex_frame_get_mime_header (frame, "Content-Type");
+	if (header == NULL) {
+		header          = axl_new (VortexMimeHeader, 1);
+		header->name    = "Content-Type";
+		header->content = "application/octet-stream";
+		axl_hash_insert_full (frame->mime_headers, 
+				      /* key to store */
+				      "Content-Type", NULL,
+				      /* value to store */
+				      header, axl_free);
+	} /* end if */
+
+	header = vortex_frame_get_mime_header (frame, "Content-Transfer-Encoding");
+	if (header == NULL) {
+		header          = axl_new (VortexMimeHeader, 1);
+		header->name    = "Content-Transfer-Encoding";
+		header->content = "binary";
+		axl_hash_insert_full (frame->mime_headers, 
+				      /* key to store */
+				      "Content-Transfer-Encoding", NULL,
+				      /* value to store */
+				      header, axl_free);
+	} /* end if */
+
+	return;
+}
+
+/** 
+ * @brief Function that prepares MIME status for the frame received,
+ * configuring variables, content, etc.
+ * 
+ * @param frame The frame to be reconfigured.
+ * 
+ * @return true if the frame processing was ok, otherwise false is
+ * returned. The function returns false if the reference received is
+ * NULL.
+ */
+bool          vortex_frame_mime_process          (VortexFrame * frame)
+{
+	int         iterator;
+	/* local reference to cast the frame content */
+	char      * payload;
+	int         step;
+	VortexCtx * ctx;
+
+	/* check reference */
+	v_return_val_if_fail (frame, false);
+
+	/* configure global variables */
+	iterator = 0; 
+	payload  = frame->payload;
+	ctx      = frame->ctx;
+
+	/* vortex_log (VORTEX_LEVEL_DEBUG, "frame content size=%d: '%s'",
+	   frame->size, frame->payload);  */
+	
+	/* check to initialize the mime header internal hash */
+	if (frame->mime_headers == NULL)
+		frame->mime_headers = vortex_frame_mime_hash_new ();
+
+	/* check for MIME message without headers */
+	if ((frame->size >= 2 && payload[0] == '\x0D' && payload[1] == '\x0A') ||
+	    (frame->size == 1 && payload[0] == '\x0A')) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "found MIME message without headers");
+		/* configure step */
+		step = (payload[0] == '\x0A') ? 1 : 2;
+		
+		/* reconfigure frame and terminate */
+		vortex_frame_reconfigure_mime (frame, iterator, step);
+		return true;
+	}
+
+	/* until frame content is exhausted.. */
+	while (iterator < frame->size) {
+
+		while (true) {
+			/* check to terminate mime body part */
+			if ((payload[iterator] == '\x0A') || 
+			    (payload[iterator] == '\x0D' && payload[iterator + 1] == '\x0A'))
+				break;
+
+			/* parse next MIME header found */
+			switch (vortex_frame_read_mime_header (frame, &iterator)) {
+			case -1:
+				/* clear all MIME headers */
+				axl_hash_free (frame->mime_headers);
+				frame->mime_headers = NULL;
+
+				/* MIME format error found */
+				return false;
+			case 1:
+				/* MIME header found, check for finish */
+				continue;
+			default:
+				/* no MIME header found, but no error, see next */
+				break;
+			} /* end switch */
+		}  /* end while */
+
+		/* check to stop processing: LF */
+		if (payload [iterator]     == '\x0A') {
+			vortex_log (VORTEX_LEVEL_DEBUG, "found MIME body (unix MIME terminator LF) header termination at: %d",
+				    iterator);
+
+			/* configure step and terminate: because we
+			 * found only LF, step = 1 */
+			step = 1;
+
+			/* reconfigure frame and terminate */
+			vortex_frame_reconfigure_mime (frame, iterator, step);
+			return true;
+			
+		}
+
+		/* check to stop processing: CR-LF */
+		if ((iterator + 1) < frame->size &&
+		    payload [iterator]     == '\x0D' &&
+		    payload [iterator + 1] == '\x0A') {
+			vortex_log (VORTEX_LEVEL_DEBUG, "Found MIME body (CR-LF) at %d, updating internal references..",
+				    iterator);
+			/* configure step: if we found CR-LF or only LF */
+			step = 2;
+
+			/* reconfigure frame and terminate */
+			vortex_frame_reconfigure_mime (frame, iterator, step);
+
+			return true;
+		} /* end if */
+
+		/* next iterator */
+		iterator++;
+	}
+	
+	/* unable to finish properly, clear all mime content state */ 
+	vortex_log (VORTEX_LEVEL_WARNING, "unable to perform MIME parse; failed to find mime body part");
+
+	/* clear all MIME headers */
+	axl_hash_free (frame->mime_headers);
+	frame->mime_headers = NULL;
+
+	return false;
+}
+
+/** 
+ * @brief Allows to configure a new MIME header on the provided \ref
+ * VortexFrame reference.
+ * 
+ * @param frame The frame that is going to be configured with a new
+ * MIME header. If the MIME header provided is already found, it will
+ * be overwritten.
+ *
+ * @param mime_header The mime header to configure. Use the following
+ * macros for recognized MIME headers: \ref MIME_VERSION, \ref
+ * MIME_CONTENT_TYPE, \ref MIME_CONTENT_TRANSFER_ENCODING. See \ref
+ * vortex_frame_get_mime_header for a full list.  In the case a NULL
+ * parameter is received, it is considered as a request to remove the
+ * header (only the first reference is removed).
+ *
+ * @param mime_header_content The mime header content to be
+ * configured. The function will copy the content provided. The
+ * function fail if mime_header or frame parameter are null. 
+ *
+ * <i><b>NOTE:</b>MIME (RFC 2045) allows to store some headers several
+ * times. Because BEEP only requires to support MIME structure, it
+ * must support storing several MIME header declarations (with same
+ * header name). </i>.
+ */
+void          vortex_frame_set_mime_header       (VortexFrame * frame,
+						  const char  * mime_header,
+						  const char  * mime_header_content)
+{
+	int                size = 0;
+	VortexMimeHeader * header;
+	VortexMimeHeader * header_aux;
+
+	v_return_if_fail (frame);
+	v_return_if_fail (mime_header);
+
+	/* check if the mime header hash is created */
+	if (frame->mime_headers == NULL)
+		frame->mime_headers = vortex_frame_mime_hash_new ();
+	
+	/* check for remove header request */
+	if (mime_header_content == NULL) {
+		header = axl_hash_get (frame->mime_headers, (axlPointer) mime_header);
+		if (header != NULL) {
+			/* check mime header size to remove */
+			size += strlen (mime_header);
+			size += strlen (header->content) + 2;
+
+			/* remove the header */
+			header_aux       = header;
+			header           = header->next;
+			header_aux->next = NULL;
+			vortex_frame_mime_header_free (header_aux);
+
+			/* update */
+			frame->mime_headers_size -= size;
+
+			/* in the case we removed the last mime
+			 * header, remove all content */
+			if (frame->mime_headers_size == 2)
+				frame->mime_headers_size = 0;
+		} /* end if */
+		return;
+	}
+
+	/* check if the header was previosly stored */
+	header = axl_hash_get (frame->mime_headers, (axlPointer) mime_header);
+	if (header == NULL) {
+		/* create the header */
+		header          = axl_new (VortexMimeHeader, 1);
+		header->name    = axl_strdup (mime_header);
+		header->content = axl_strdup (mime_header_content);
+
+		/* store content header */
+		axl_hash_insert_full (frame->mime_headers, 
+				      /* key */
+				      (axlPointer) header->name, axl_free,
+				      /* value */
+				      (axlPointer) header, (axlDestroyFunc) vortex_frame_mime_header_free);
+	} else {
+		/* go the last header defined */
+		while (header->next != NULL)
+			header = header->next;
+
+		/* create the header and the the header name */
+		header->next        = axl_new (VortexMimeHeader, 1);
+		header->next->name  = header->name;
+		
+		/* go to the next header and configure the content */
+		header              = header->next;
+		header->content     = axl_strdup (mime_header_content);
+
+		/* do not store nothing since it is already stored in
+		 * the hash */
+	} /* end if */
+
+	/* update mime header size */
+	size += strlen (mime_header);
+	size += strlen (mime_header_content) + 2;
+	if (frame->mime_headers_size == 0)
+		size += 2;
+
+	/* set calculated value */
+	frame->mime_headers_size += size;
+
+	return;
+}
+
+
+/** 
+ * @brief Allows to get the content associated to a particular header.
+ * 
+ * @param frame The frame where the MIME header content will be
+ * retrieved.
+ *
+ * @param mime_header The MIME header to get. See supported MIME headers. 
+ * 
+ * @return A reference to the content of the MIME header or NULL if it
+ * fails or nothing is found. The function can only fail if some
+ * parameter provided is NULL.
+ * 
+ * <b>Supported MIME headers</b>: 
+ * 
+ * The following are a set of macros that can be used to retrieve
+ * common MIME headers. You can still use direct string, but using
+ * them will disable compilation protection. For example:
+ * 
+ * \code
+ * // get content for MIME header "Content-Type"
+ * VortexMimeHeader * header = vortex_frame_get_mime_header (frame, MIME_CONTENT_TYPE);
+ *
+ * // now get the content 
+ * const char       * value  = vortex_frame_mime_header_content (header);
+ *
+ * // for other MIME header that have allowed repeatable value values use next
+ * header = vortex_frame_mime_header_next (header);
+ *
+ * // to simply get the first header do (returns first reference):
+ * value  = VORTEX_FRAME_GET_MIME_HEADER (frame, MIME_CONTENT_TYPE);
+ *
+ * \endcode
+ *
+ * - \ref MIME_VERSION
+ * - \ref MIME_CONTENT_TYPE
+ * - \ref MIME_CONTENT_TRANSFER_ENCODING
+ * - \ref MIME_CONTENT_ID
+ * - \ref MIME_CONTENT_DESCRIPTION
+ *
+ */
+VortexMimeHeader *  vortex_frame_get_mime_header       (VortexFrame * frame,
+							const char  * mime_header)
+{
+	VortexMimeHeader * header;
+	VortexCtx        * ctx;
+	v_return_val_if_fail (frame,       NULL);
+	v_return_val_if_fail (mime_header, NULL);
+
+	/* check basic case where the hash wasn't created */
+	if (frame->mime_headers == NULL)
+		return NULL;
+
+	/* return content */
+	header = axl_hash_get (frame->mime_headers, (axlPointer) mime_header);
+	ctx    = frame->ctx;
+	vortex_log (VORTEX_LEVEL_DEBUG, "returning pointer (GET_MIME_HEADER) %p", header);
+	return header;
+}
+
+/** 
+ * @brief Provided a reference to a MIME header \ref VortexMimeHeader,
+ * the function allows to get the MIME header field name.
+ * 
+ * @param header The header where the operation will be performed.
+ * 
+ * @return A reference to the MIME header field name or NULL if it
+ * fails. The function can only fail if the header reference received
+ * is NULL.
+ */
+const char       * vortex_frame_mime_header_name       (VortexMimeHeader * header)
+{
+	v_return_val_if_fail (header, NULL);
+	/* return header name */
+	return header->name;
+}
+
+/** 
+ * @brief Provided a reference to a MIME header \ref VortexMimeHeader,
+ * the function allows to get the MIME header content.
+ * 
+ * @param header The header where the operation will be performed.
+ * 
+ * @return A reference to the MIME header content or NULL if it
+ * fails. The function can only fail if the header reference received
+ * is NULL.
+ */
+const char       * vortex_frame_mime_header_content    (VortexMimeHeader * header)
+{
+	v_return_val_if_fail (header, NULL);
+	/* return header name */
+	return header->content;
+}
+
+/** 
+ * @brief Provided a reference to a MIME header \ref VortexMimeHeader,
+ * the function allows to get the next MIME header found on the \ref
+ * VortexFrame.
+ *
+ * Example: assuming you want to traverse all "Received" MIME header
+ * use:
+ * \code
+ * // get first header 
+ * VortexMimeHeader * header = vortex_frame_get_mime_header (frame, "Received");
+ * 
+ * // foreach header found 
+ * do {
+ *      printf ("MIME Header found %s : %s\n", 
+ *              vortex_frame_mime_header_name (header),
+ *              vortex_frame_mime_header_content (header));
+ *
+ *      // get next header 
+ *      header = vortex_frame_mime_header_next (header);
+ * } while (header != NULL);
+ * \endcode
+ * 
+ * @param header The header where the operation will be performed.
+ * 
+ * @return A reference to the next MIME header or NULL if it
+ * fails. The function can only fail if the header reference received
+ * is NULL.
+ */
+VortexMimeHeader * vortex_frame_mime_header_next       (VortexMimeHeader * header)
+{
+	v_return_val_if_fail (header, NULL);
+
+	/* return header name */
+	return header->next;
+}
+
+/** 
+ * @brief Allows to get the number of times the MIME header was
+ * defined or the number of (times - 1) a call to \ref
+ * vortex_frame_mime_header_next will succeed.
+ * 
+ * @param header The MIME header to check.
+ * 
+ * @return The number of times the MIME header was found in the
+ * message. The function returns -1 if the reference received is NULL.
+ */
+int                vortex_frame_mime_header_count      (VortexMimeHeader * header)
+{
+	int                count = 1;
+	VortexMimeHeader * header_aux;
+	v_return_val_if_fail (header, -1);
+
+	/* point to the received header */
+	header_aux = header;
+	while (header_aux->next) {
+		count++;
+		header_aux = header_aux->next;
+	}
+
+	return count;
 }
 
 /* @} */

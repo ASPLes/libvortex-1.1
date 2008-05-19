@@ -16,7 +16,8 @@ endif
 
 certfilesdir    = $(datadir)/libvortex-1.1
 certfiles_DATA  = test-certificate.pem test-private-key.pem
-EXTRA_DIST      = Makefile.win $(certfiles_DATA) vortex-regression-client.vcproj  vortex-regression-listener.vcproj vortex-regression-client.idl
+EXTRA_DIST      = Makefile.win $(certfiles_DATA) vortex-regression-client.vcproj  vortex-regression-listener.vcproj vortex-regression-client.idl \
+	mime.example.1.txt  mime.example.body.1.txt  mime.example.2.txt  mime.example.3.txt  mime.example.body.2.txt
 bin_PROGRAMS    = vortex-client 
 noinst_PROGRAMS = \
 	vortex-listener \

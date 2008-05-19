@@ -111,6 +111,12 @@
  */
 #define REGRESSION_URI_CLOSE_AFTER_LARGE_REPLY "http://iana.org/beep/transient/vortex-regression/close-after-large-reply"
 
+/** 
+ * Profile use to identify the regression test client and server mime
+ * support.
+ */
+#define REGRESSION_URI_MIME "http://iana.org/beep/transient/vortex-regression/mime"
+
 void frame_received_fake_listeners  (VortexChannel    * channel,
 				     VortexConnection * connection,
 				     VortexFrame      * frame,
@@ -800,6 +806,22 @@ void frame_received_close_after_large_reply (VortexChannel    * channel,
 	return;
 }
 
+void frame_received_mime_support (VortexChannel    * channel,
+				  VortexConnection * connection,
+				  VortexFrame      * frame,
+				  axlPointer           user_data)
+{
+	printf ("MIME message received (size %d): \n'%s'\n",
+		vortex_frame_get_content_size (frame),
+		vortex_frame_get_content (frame));
+	
+	/* just echo for this moment */
+	vortex_channel_send_rpy (channel,
+				 vortex_frame_get_content (frame),
+				 vortex_frame_get_content_size (frame),
+				 vortex_frame_get_msgno (frame));
+	return;
+}
 
 int  main (int  argc, char ** argv) 
 {
@@ -911,6 +933,12 @@ int  main (int  argc, char ** argv)
 				  NULL, NULL,
 				  /* frame received handler */
 				  frame_received_close_after_large_reply, NULL);
+
+	/* register a profile */
+	vortex_profiles_register (ctx, REGRESSION_URI_MIME,
+				  NULL, NULL, 
+				  NULL, NULL,
+				  frame_received_mime_support, NULL);
 				  
 
 	/* enable accepting incoming tls connections, this step could

@@ -1,0 +1,176 @@
+Return-Path: <cyrus@dolphin>
+Received: from dolphin ([unix socket]) by dolphin (Cyrus
+	v2.1.18-IPv6-Debian-2.1.18-5.1) with LMTP; Thu, 15 May 2008 15:23:27 +0200
+X-Sieve: CMU Sieve 2.2
+Return-path: <bounce-zdnetuk-1909492@newsletters.zdnetuk.cneteu.net>
+Received: from mail by dolphin.aspl.es with spam-scanned (ASPL Mail Server
+	XP#1) id 1JwdOA-00050S-00 for <acinom@aspl.es>; Thu, 15 May 2008 15:20:58
+	+0200
+X-Spam-Checker-Version: SpamAssassin 3.1.7-deb (2006-10-05) on
+	dolphin.aspl.es
+X-Spam-Level: **
+X-Spam-Status: No, score=2.2 required=5.0 tests=AWL,BAYES_50 autolearn=ham 
+	version=3.1.7-deb
+Received: from newsletters.cneteu.net ([62.108.136.190]
+	helo=newsletters.zdnetuk.cneteu.net) by dolphin.aspl.es with smtp (ASPL
+	Mail Server XP#1) id 1Jwd76-00047G-00 for <francis@aspl.es>; Thu, 15 May
+	2008 15:03:16 +0200
+From: "ZDNet UK Security Update" <zdnetuk@newsletters.zdnetuk.cneteu.net>
+To: Francis Brosnan <francis@aspl.es>
+Subject: FBI fears hardware backdoors in US military kit
+Date: Thu, 15 May 2008 13:59:42 +0100
+MIME-Version: 1.0
+Content-Type: text/plain; charset="ISO-8859-1"
+List-Unsubscribe:
+	<mailto:leave-zdnetuk-1909492M@newsletters.zdnetuk.cneteu.net>
+Message-Id: <LYRIS-1909492-337994-2008.05.15-13.59.43--francis#aspl.es@newsletters.zdnetuk.cneteu.net>
+X-Scanner: exiscan *1Jwd76-00047G-00*3k560vJeaaA*
+X-Evolution-Source: imap://acinom@dolphin.aspl.es/
+Content-Transfer-Encoding: 8bit
+
+ZDNet UK Security Newsletter
+
+News, Insight and Comment from ZDNet UK
+
+
+
+Security News
+
+FBI fears hardware backdoors in US military kit
+Fake Cisco networking equipment could lead to hardware backdoors
+on military and other systems, as well as increased failure
+rates, says the FBI
+http://newsletters.zdnetuk.cneteu.net/t/337994/1909492/434234/0/
+
+Privacy campaigner posts 6m personal details online
+Six million personal details, including names, addresses and
+tax-identification numbers, have been illegally posted online in
+Chile
+http://newsletters.zdnetuk.cneteu.net/t/337994/1909492/434609/0/
+
+Microsoft Patch Tuesday brings three critical fixes
+The software maker has released four patches as part of its
+monthly update cycle, three of which have a critical rating
+http://newsletters.zdnetuk.cneteu.net/t/337994/1909492/434610/0/
+
+
+***************************Advertisement***************************
+Security Product or Service of the Year
+
+The CNET Networks UK Business Technology Awards celebrate the
+greatest achievements of the UK's business technology
+innovators, leaders and doers. Enter the Security Product or
+Service of the Year category today for the opportunity to show
+the industry elite how your organisation is helping drive
+business technology forward.
+
+Click here to find out more:
+http://newsletters.zdnetuk.cneteu.net/t/337994/1909492/64975/0/
+
+******************************************************************
+
+Microsoft Patch Tuesday brings three critical fixes
+The software maker has released four patches as part of its
+monthly update cycle, three of which have a critical rating
+http://newsletters.zdnetuk.cneteu.net/t/337994/1909492/434610/0/
+
+Unisys defends ID cards scheme
+The systems integrator has rejected an independent government
+body's claims that the National Identity Scheme lacks
+information- assurance specifications
+http://newsletters.zdnetuk.cneteu.net/t/337994/1909492/433595/0/
+
+MoD encrypts laptops after data losses
+The Ministry of Defence is to protect 20,000 laptops with
+BeCrypt's Disk Protect Baseline after a number of recent data
+losses
+http://newsletters.zdnetuk.cneteu.net/t/337994/1909492/433320/0/
+
+Management group warns CEOs of data-breach risks
+The British-North American Committee and chief executive of
+ICANN claim business leaders are not taking data breaches
+seriously enough
+http://newsletters.zdnetuk.cneteu.net/t/337994/1909492/433327/0/
+
+
+Security Insight
+
+Dialogue Box 3.10: Memory lane
+There are a number of runners and riders in the next-generation
+memory stakes; Dialogue Box has the inside track, plus
+highlights from series 3
+http://newsletters.zdnetuk.cneteu.net/t/337994/1909492/434255/0/
+
+Babbage's Difference Engine No 2 brought to life
+The computing curator of London's Science Museum has spearheaded
+the construction of Charles Babbage's masterpiece, 150 years
+after its design
+http://newsletters.zdnetuk.cneteu.net/t/337994/1909492/434257/0/
+
+Neil Young demos Java multimedia project
+At JavaOne, veteran rocker Neil Young shows off a multimedia
+project, using Java and Blu-ray technology, spanning his music
+career
+http://newsletters.zdnetuk.cneteu.net/t/337994/1909492/433466/0/
+
+
+Security Comment
+
+America, your IT future is waiting
+Americans think Europe's not much cop at IT, but great in green
+thinking. Europe's real strength is evolving
+http://newsletters.zdnetuk.cneteu.net/t/337994/1909492/431773/0/
+
+
+
+
+Security Reviews
+
+ProCurve Switch 2610-24-PWR
+A feature-packed 10/100Mbps switch with PoE on every port, the
+2610-24-PWR is designed to deliver power and network connections
+to VoIP phones or other PoE devices.
+http://newsletters.zdnetuk.cneteu.net/t/337994/1909492/434160/0/
+
+Running Mac OS X on standard PCs
+Apple's operating system is officially available only for Mac
+hardware. However, it's possible, if legally questionable, to
+run Mac OS X Leopard on standard PCs.
+http://newsletters.zdnetuk.cneteu.net/t/337994/1909492/434159/0/
+
+
+Security Video
+
+
+
+
+
++++++++++++++ MORE FREE NEWSLETTERS FROM ZDNET ++++++++++++++
+
+ZDNet UK publishes many more FREE email newsletters on all your
+favourite topics: Communications, News, Security, Software
+Tools, Mobile, Reviews and Prices and more. Sign up today at: 
+http://newsletters.zdnetuk.cneteu.net/t/337994/1909492/754/0/
+
++++++++++++++++++++++ELSEWHERE ON ZDNET UK ++++++++++++++++++
+
+Research IT solutions using ZDNet's database of companies and
+White Papers: http://newsletters.zdnetuk.cneteu.net/t/337994/1909492/2796/0/
+
+++++++++++++++++++ MANAGE MY SUBSCRIPTIONS ++++++++++++++++++
+ 
+
+The email address for your subscription to this newsletter is
+francis@aspl.es. To unsubscribe from this newsletter please click
+here: 
+http://newsletters.zdnetuk.cneteu.net/t/337994/1909492/213659/0/
+
+Please note that you will need the email address above to
+unsubscribe.
+
+If you are having problems receiving our emails, please inform
+us so that we can work to resolve this:
+uk.customersupport@zdnet.co.uk
+
+
+
