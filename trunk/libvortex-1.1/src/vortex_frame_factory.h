@@ -40,6 +40,11 @@
 
 #include <vortex.h>
 
+/**
+ * \addtogroup vortex_frame
+ * @{
+ */
+
 char  *        vortex_frame_build_up_from_params (VortexFrameType   type,
 						  int               channel,
 						  int               msgno,
@@ -156,18 +161,20 @@ int           vortex_frame_get_more_flag         (VortexFrame * frame);
 
 int           vortex_frame_get_seqno             (VortexFrame * frame);
 
-int           vortex_frame_get_payload_size      (VortexFrame * frame);
-
-int           vortex_frame_get_content_size      (VortexFrame * frame);
-
 int           vortex_frame_get_ansno             (VortexFrame * frame);
+  
+const char * vortex_frame_get_ok_message        ();
+  
+int           vortex_frame_get_payload_size      (VortexFrame * frame);
 
 const void *  vortex_frame_get_payload           (VortexFrame * frame);
 
 VortexCtx   * vortex_frame_get_ctx               (VortexFrame * frame);
 
-const char  * vortex_frame_get_ok_message        (void);
-
+int           vortex_frame_get_content_size      (VortexFrame * frame);
+  
+const char *  vortex_frame_get_content           (VortexFrame * frame);
+ 
 char        * vortex_frame_get_error_message     (const char  * code, 
 						  const char  * error_content,
 						  const char  * xml_lang);
@@ -190,4 +197,46 @@ char        * vortex_frame_get_close_message     (int           number,
 						  const char  * code,
 						  const char  * xml_lang,
 						  const char  * close_content);
+
+bool          vortex_frame_is_mime_message       (VortexFrame * frame);
+
+bool          vortex_frame_mime_process          (VortexFrame * frame);
+
+void          vortex_frame_set_mime_header       (VortexFrame * frame,
+						  const char  * mime_header,
+						  const char  * mime_header_content);
+
+/** 
+ * @brief Allows to get the content of the first MIME header found,
+ * located by the header_name provided.
+ *
+ * This parameter only provides access to the first MIME header. In
+ * the case you are accessing a MIME header that could be defined
+ * several times, use \ref vortex_frame_get_mime_header combined with
+ * \ref vortex_frame_mime_header_next.
+ * 
+ * @param frame The frame where the content of the first MIME header
+ * will be returned.
+ *
+ * @param header_name The MIME header name to lookup. See \ref
+ * vortex_frame_get_mime_header for recognized values.
+ * 
+ * @return A reference to the content of the MIME header or NULL if
+ * nothing is found.
+ */
+#define VORTEX_FRAME_GET_MIME_HEADER(frame, header_name) ((vortex_frame_get_mime_header (frame, header_name)) ? vortex_frame_mime_header_content (vortex_frame_get_mime_header (frame, header_name)) : NULL)
+
+VortexMimeHeader *  vortex_frame_get_mime_header       (VortexFrame * frame,
+							const char  * mime_header);
+
+const char       * vortex_frame_mime_header_name       (VortexMimeHeader * header);
+
+const char       * vortex_frame_mime_header_content    (VortexMimeHeader * header);
+
+VortexMimeHeader * vortex_frame_mime_header_next       (VortexMimeHeader * header);
+
+int                vortex_frame_mime_header_count      (VortexMimeHeader * header);
+
+/* @} */
+
 #endif

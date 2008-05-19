@@ -160,6 +160,12 @@ void subs (struct timeval stop, struct timeval start, struct timeval * _result)
 #define REGRESSION_URI_CLOSE_AFTER_LARGE_REPLY "http://iana.org/beep/transient/vortex-regression/close-after-large-reply"
 
 /** 
+ * Profile use to identify the regression test client and server mime
+ * support.
+ */
+#define REGRESSION_URI_MIME "http://iana.org/beep/transient/vortex-regression/mime"
+
+/** 
  * @internal Allows to know if the connection must be created directly or
  * through the tunnel.
  */
@@ -574,6 +580,703 @@ bool test_01c () {
 		printf ("Test 01-c: (3) Failed to check connection, it should be running..\n");
 		return false;
 	} /* end if */
+
+	/* close the connection */
+	vortex_connection_close (connection);
+
+	vortex_async_queue_unref (queue);
+	
+	return true;
+
+} /* end test_01c */
+
+/** 
+ * @brief Reads the content of the file identified the string
+ * provided, filling the size in the integer reference received.
+ * 
+ * @param file The file that is going to be read.
+ *
+ * @param size The size of the file to be returned.
+ * 
+ * @return A reference to the content of the file allocated. The
+ * caller must unreference by returning axl_free.
+ */
+char * vortex_regression_client_read_file (const char * file, int * size)
+{
+	char * result;
+	FILE * handle;
+	struct stat status;
+	long   requested;
+
+	/* check parameter received */
+	if (file == NULL)
+		return NULL;
+
+	/* open the file */
+	handle = fopen (file, "r");
+	if (handle == NULL)
+		return NULL;
+
+	/* get the file size */
+	memset (&status, 0, sizeof (struct stat));
+	if (stat (file, &status) != 0) {
+		/* failed to get file size */
+		fprintf (stderr, "Failed to get file size for %s..\n", file);
+		fclose (handle);
+		return NULL;
+	} /* end if */
+	
+	result    = axl_new (char, status.st_size + 1);
+	requested = fread (result, 1, status.st_size, handle);
+#if ! defined(AXL_OS_WIN32)
+	/* disabled because windows could return a different size
+	 * reported that the actual size !!!!! */
+	if (status.st_size != requested) {
+		/* failed to read content */
+		fprintf (stdout, "Unable to properly read the file, size expected to read %ld (but found %ld), wasn't fulfilled\n",
+			 status.st_size, requested);
+		axl_free (result);
+		fclose (handle);
+		return NULL;
+	} /* end if */
+#endif
+	
+	/* close the file and return the content */
+	fclose (handle);
+
+	/* fill the optional size */
+	if (size)
+		*size = status.st_size;
+
+	return result;
+}
+
+bool test_01d_01 ()
+{
+	char             * mime_message;
+	int                mime_message_size;
+	char             * mime_body;
+	VortexFrame      * frame;
+	VortexMimeHeader * header;
+
+	printf ("Test 01-d: checking MIME support for wrong UNIX MIME (no CR-LF but LF)..\n");
+	mime_message = vortex_regression_client_read_file ("mime.example.1.txt", NULL);
+	if (mime_message == NULL) {
+		printf ("ERROR: failed to load mime message: %s", "mime.example.1.txt");
+		return false;
+	} /* end if */
+
+	/* create an artificial frame */
+	mime_message_size = strlen (mime_message);
+	frame             = vortex_frame_create (ctx, VORTEX_FRAME_TYPE_MSG,
+						 0, 0, false, 0, mime_message_size, 0, mime_message);
+	if (frame == NULL) {
+		printf ("ERROR: expected to create a frame but NULL reference was found..\n");
+		return false;
+	}
+
+	/* activate mime support on the frame */
+	if (! vortex_frame_mime_process (frame)) {
+		printf ("ERROR: expected to find proper MIME process, but a failure was found..\n");
+		return false;
+	} /* end if */
+
+	/* check mime header */
+	if (vortex_frame_get_mime_header_size (frame) != 1418) {
+		printf ("ERROR: expected to find MIME Headers %d but found %d..\n",
+			vortex_frame_get_mime_header_size (frame), 1418);
+		return false;
+	}
+
+	/* check mime body */
+	if (vortex_frame_get_payload_size (frame) != 4943) {
+		printf ("ERROR: expected to find MIME BODY %d but found %d (%s): '%s..\n",
+			vortex_frame_get_payload_size (frame), 4943, "mime.example.1.txt", 
+			(char*) vortex_frame_get_payload (frame));
+		return false;
+	}
+
+	/* check content */
+	mime_body = vortex_regression_client_read_file ("mime.example.body.1.txt", NULL);
+	if (mime_body == NULL) {
+		printf ("ERROR: failed to load mime message: %s", "mime.example.body.1.txt");
+		return false;
+	} /* end if */
+
+	/* check content */
+	if (! axl_cmp (mime_body, vortex_frame_get_payload (frame))) {
+		printf ("ERROR: expected to find same mime body (%s) content (size %d != %d)..\n", "mime.example.body.1.txt",
+			strlen (mime_body), strlen (vortex_frame_get_payload (frame)));
+		return false;
+	}
+
+	/* check headers */
+	if (! axl_cmp ("8bit", vortex_frame_get_transfer_encoding (frame))) {
+		printf ("ERROR: expected Content-Transfer-Encoding with 8bit, but found %s",
+			vortex_frame_get_transfer_encoding (frame));
+		return false;
+	}
+
+	if (! axl_cmp ("text/plain; charset=\"ISO-8859-1\"", vortex_frame_get_content_type (frame))) {
+		printf ("ERROR: expected Content-Type with %s, but found %s",
+			"text/plain; charset=\"ISO-8859-1\"", vortex_frame_get_content_type (frame));
+		return false;
+	}
+
+	/* check all headers */
+	printf ("Test 01-d: checking Return-Path..\n");
+	header = vortex_frame_get_mime_header (frame, "Return-Path");
+	if (! axl_cmp ("<cyrus@dolphin>", vortex_frame_mime_header_content (header))) {
+		printf ("ERROR: expected to find %s, but found %s..\n",
+			"<cyrus@dolphin>", vortex_frame_mime_header_content (header));
+		return false;
+	}
+	
+	/* check header count */
+	if (vortex_frame_mime_header_count (header) != 2) {
+		printf ("ERROR: expected to find HEADER count equal to 1, but found %d..\n",
+			vortex_frame_mime_header_count (header));
+		return false;
+	}
+
+	/* get next */
+	header = vortex_frame_mime_header_next (header);
+	if (header == NULL) {
+		printf ("ERROR: expected to find second Return-Path value but it wasn't found..\n");
+		return false;
+	}
+
+	if (! axl_cmp ("<bounce-zdnetuk-1909492@newsletters.zdnetuk.cneteu.net>", vortex_frame_mime_header_content (header))) {
+		printf ("ERROR: expected to find %s, but found %s..\n",
+			"<bounce-zdnetuk-1909492@newsletters.zdnetuk.cneteu.net>", vortex_frame_mime_header_content (header));
+		return false;
+	}
+
+	printf ("Test 01-d: checking Received..\n");
+	header = vortex_frame_get_mime_header (frame, "received");
+	if (! axl_cmp ("from dolphin ([unix socket]) by dolphin (Cyrus\n	v2.1.18-IPv6-Debian-2.1.18-5.1) with LMTP; Thu, 15 May 2008 15:23:27 +0200", 
+		       vortex_frame_mime_header_content (header))) {
+		printf ("ERROR: expected Received header to have value %s but found %s..\n",
+			"from dolphin ([unix socket]) by dolphin (Cyrus\n	v2.1.18-IPv6-Debian-2.1.18-5.1) with LMTP; Thu, 15 May 2008 15:23:27 +0200", 
+			vortex_frame_mime_header_content (header));
+		return false;
+	} /* end if */
+
+	/* check header count */
+	if (vortex_frame_mime_header_count (header) != 3) {
+		printf ("ERROR: expected to find HEADER count equal to 1, but found %d..\n",
+			vortex_frame_mime_header_count (header));
+		return false;
+	}
+
+	/* get next */
+	header = vortex_frame_mime_header_next (header);
+	if (header == NULL) {
+		printf ("ERROR: expected to find second Return-Path value but it wasn't found..\n");
+		return false;
+	}
+
+	if (! axl_cmp ("from mail by dolphin.aspl.es with spam-scanned (ASPL Mail Server\n	XP#1) id 1JwdOA-00050S-00 for <acinom@aspl.es>; Thu, 15 May 2008 15:20:58\n	+0200", vortex_frame_mime_header_content (header))) {
+		printf ("ERROR: expected Received header to have value %s but found %s..\n",
+			"from mail by dolphin.aspl.es with spam-scanned (ASPL Mail Server\n	XP#1) id 1JwdOA-00050S-00 for <acinom@aspl.es>; Thu, 15 May 2008 15:20:58\n	+0200", vortex_frame_mime_header_content (header));
+		return false;
+	} /* end if */
+
+	/* get next */
+	header = vortex_frame_mime_header_next (header);
+	if (header == NULL) {
+		printf ("ERROR: expected to find second Return-Path value but it wasn't found..\n");
+		return false;
+	}
+
+	if (! axl_cmp ("from newsletters.cneteu.net ([62.108.136.190]\n	helo=newsletters.zdnetuk.cneteu.net) by dolphin.aspl.es with smtp (ASPL\n	Mail Server XP#1) id 1Jwd76-00047G-00 for <francis@aspl.es>; Thu, 15 May\n	2008 15:03:16 +0200", vortex_frame_mime_header_content (header))) {
+		printf ("ERROR: expected Received header to have value %s but found %s..\n",
+			"from newsletters.cneteu.net ([62.108.136.190]\n	helo=newsletters.zdnetuk.cneteu.net) by dolphin.aspl.es with smtp (ASPL\n	Mail Server XP#1) id 1Jwd76-00047G-00 for <francis@aspl.es>; Thu, 15 May\n	2008 15:03:16 +0200", vortex_frame_mime_header_content (header));
+		return false;
+	} /* end if */
+
+	/* get next */
+	header = vortex_frame_mime_header_next (header);
+	if (header != NULL) {
+		printf ("ERROR: expected to NOT find any Received value but it was found..\n");
+		return false;
+	}
+
+	/* check mime version */
+	if (! axl_cmp (VORTEX_FRAME_GET_MIME_HEADER (frame, "MIME-version"), "1.0")) {
+		printf ("ERROR: Expected to find MIME header version 1.0 but found %s\n",
+			VORTEX_FRAME_GET_MIME_HEADER (frame, "MIME-version"));
+		return false;
+	}
+
+	/* check mime version */
+	if (! axl_cmp (VORTEX_FRAME_GET_MIME_HEADER (frame, "List-Unsubscribe"), "<mailto:leave-zdnetuk-1909492M@newsletters.zdnetuk.cneteu.net>")) {
+		printf ("ERROR: Expected to find List-Unsusbcribe '%s' != '%s'\n",
+			"<mailto:leave-zdnetuk-1909492M@newsletters.zdnetuk.cneteu.net>",
+			VORTEX_FRAME_GET_MIME_HEADER (frame, "List-Unsubscribe"));
+		return false;
+	}
+
+	vortex_frame_unref (frame);
+	axl_free (mime_message);
+	axl_free (mime_body);
+
+	return true;
+}
+
+bool test_01d_02 ()
+{
+	char        * mime_message;
+	int           mime_message_size;
+	char        * mime_body;
+	VortexFrame * frame;
+
+	printf ("Test 01-d: checking MIME support (right CR-LF terminated)..\n");
+	mime_message = vortex_regression_client_read_file ("mime.example.2.txt", NULL);
+	if (mime_message == NULL) {
+		printf ("ERROR: failed to load mime message: %s", "mime.example.2.txt");
+		return false;
+	} /* end if */
+
+	/* create an artificial frame */
+	mime_message_size = strlen (mime_message);
+	frame             = vortex_frame_create (ctx, VORTEX_FRAME_TYPE_MSG,
+						 0, 0, false, 0, mime_message_size, 0, mime_message);
+	if (frame == NULL) {
+		printf ("ERROR: expected to create a frame but NULL reference was found..\n");
+		return false;
+	}
+
+	/* activate mime support on the frame */
+	if (! vortex_frame_mime_process (frame)) {
+		printf ("ERROR: expected to find proper MIME process, but a failure was found..\n");
+		return false;
+	} /* end if */
+
+	/* check mime header */
+	if (vortex_frame_get_mime_header_size (frame) != 1123) {
+		printf ("ERROR: expected to find MIME Headers %d but found %d..\n",
+			vortex_frame_get_mime_header_size (frame), 1123);
+		return false;
+	}
+
+	/* check mime body */
+	if (vortex_frame_get_payload_size (frame) != 4) {
+		printf ("ERROR: expected to find MIME BODY %d but found %d..\n",
+			vortex_frame_get_payload_size (frame), 4);
+		return false;
+	}
+
+	/* check content */
+	mime_body = vortex_regression_client_read_file ("mime.example.body.2.txt", NULL);
+	if (mime_body == NULL) {
+		printf ("ERROR: failed to load mime message: %s", "mime.example.body.2.txt");
+		return false;
+	} /* end if */
+
+	/* check content */
+	if (! axl_cmp (mime_body, vortex_frame_get_payload (frame))) {
+		printf ("ERROR: expected to find same mime body content..\n");
+		return false;
+	}
+
+	vortex_frame_unref (frame);
+	axl_free (mime_message);
+	axl_free (mime_body);
+
+	return true;
+}
+
+bool test_01d_03 ()
+{
+	char        * mime_message;
+	char        * mime_body;
+	int           mime_message_size;
+	VortexFrame * frame;
+
+	printf ("Test 01-d: checking MIME support (no headers)..\n");
+	mime_message = vortex_regression_client_read_file ("mime.example.3.txt", NULL);
+	if (mime_message == NULL) {
+		printf ("ERROR: failed to load mime message: %s", "mime.example.3.txt");
+		return false;
+	} /* end if */
+
+	/* create an artificial frame */
+	mime_message_size = strlen (mime_message);
+	frame             = vortex_frame_create (ctx, VORTEX_FRAME_TYPE_MSG,
+						 0, 0, false, 0, mime_message_size, 0, mime_message);
+	if (frame == NULL) {
+		printf ("ERROR: expected to create a frame but NULL reference was found..\n");
+		return false;
+	}
+
+	/* activate mime support on the frame */
+	if (! vortex_frame_mime_process (frame)) {
+		printf ("ERROR: expected to find proper MIME process, but a failure was found..\n");
+		return false;
+	} /* end if */
+
+	/* check mime header */
+	if (vortex_frame_get_mime_header_size (frame) != 2) {
+		printf ("ERROR: expected to find MIME Headers %d but found %d..\n",
+			vortex_frame_get_mime_header_size (frame), 2);
+		return false;
+	}
+
+	/* check mime body */
+	if (vortex_frame_get_payload_size (frame) != 2) {
+		printf ("ERROR: expected to find MIME BODY %d but found %d..\n",
+			vortex_frame_get_payload_size (frame), 2);
+		return false;
+	}
+
+	/* check content */
+	mime_body = (char*) vortex_frame_get_payload (frame);
+	if (mime_body[0] != '\x0D' || mime_body[1] != '\x0A') {
+		printf ("ERROR: expected to find same mime body content..\n");
+		return false;
+	}
+
+	vortex_frame_unref (frame);
+	axl_free (mime_message);
+
+	return true;
+}
+
+bool test_01d_04 ()
+{
+	char        * mime_message;
+	int           mime_message_size;
+	VortexFrame * frame;
+
+	printf ("Test 01-d: checking MIME support (no content, CR-LF)..\n");
+	mime_message = axl_new (char, 2);
+	if (mime_message == NULL) {
+		printf ("ERROR: failed to allocate mime message memory..\n");
+		return false;
+	} /* end if */
+
+	/* configure the message */
+	mime_message[0] = '\x0D';
+	mime_message[1] = '\x0A';
+
+	/* create an artificial frame */
+	mime_message_size = 2;
+	frame             = vortex_frame_create (ctx, VORTEX_FRAME_TYPE_MSG,
+						 0, 0, false, 0, mime_message_size, 0, mime_message);
+	if (frame == NULL) {
+		printf ("ERROR: expected to create a frame but NULL reference was found..\n");
+		return false;
+	}
+
+	/* activate mime support on the frame */
+	if (! vortex_frame_mime_process (frame)) {
+		printf ("ERROR: expected to find proper MIME process, but a failure was found..\n");
+		return false;
+	} /* end if */
+
+	/* check mime header */
+	if (vortex_frame_get_mime_header_size (frame) != 2) {
+		printf ("ERROR: expected to find MIME Headers %d but found %d..\n",
+			vortex_frame_get_mime_header_size (frame), 2);
+		return false;
+	}
+
+	/* check mime body */
+	if (vortex_frame_get_payload_size (frame) != 0) {
+		printf ("ERROR: expected to find MIME BODY %d but found %d..\n",
+			vortex_frame_get_payload_size (frame), 0);
+		return false;
+	}
+
+	vortex_frame_unref (frame);
+	axl_free (mime_message);
+
+	return true;
+}
+
+bool test_01d_05 ()
+{
+	char        * mime_message;
+	int           mime_message_size;
+	VortexFrame * frame;
+
+	printf ("Test 01-d: checking MIME support (no content, LF, unix)..\n");
+	mime_message = axl_new (char, 1);
+	if (mime_message == NULL) {
+		printf ("ERROR: failed to allocate mime message memory..\n");
+		return false;
+	} /* end if */
+
+	/* configure the message */
+	mime_message[0] = '\x0A';
+
+	/* create an artificial frame */
+	mime_message_size = 1;
+	frame             = vortex_frame_create (ctx, VORTEX_FRAME_TYPE_MSG,
+						 0, 0, false, 0, mime_message_size, 0, mime_message);
+	if (frame == NULL) {
+		printf ("ERROR: expected to create a frame but NULL reference was found..\n");
+		return false;
+	}
+
+	/* activate mime support on the frame */
+	if (! vortex_frame_mime_process (frame)) {
+		printf ("ERROR: expected to find proper MIME process, but a failure was found..\n");
+		return false;
+	} /* end if */
+
+	/* check mime header */
+	if (vortex_frame_get_mime_header_size (frame) != 1) {
+		printf ("ERROR: expected to find MIME Headers %d but found %d..\n",
+			vortex_frame_get_mime_header_size (frame), 2);
+		return false;
+	}
+
+	/* check mime body */
+	if (vortex_frame_get_payload_size (frame) != 0) {
+		printf ("ERROR: expected to find MIME BODY %d but found %d..\n",
+			vortex_frame_get_payload_size (frame), 0);
+		return false;
+	}
+
+	vortex_frame_unref (frame);
+	axl_free (mime_message);
+
+	return true;
+}
+
+bool test_01d_06 ()
+{
+	char        * mime_message;
+	int           mime_message_size;
+	VortexFrame * frame;
+
+	printf ("Test 01-d: checking MIME support (no header, but content CR-LF)..\n");
+	mime_message = axl_new (char, 375);
+	if (mime_message == NULL) {
+		printf ("ERROR: failed to allocate mime message memory..\n");
+		return false;
+	} /* end if */
+
+	/* configure the message */
+	mime_message[0] = '\x0D';
+	mime_message[1] = '\x0A';
+
+	/* create an artificial frame */
+	mime_message_size = 375;
+	frame             = vortex_frame_create (ctx, VORTEX_FRAME_TYPE_MSG,
+						 0, 0, false, 0, mime_message_size, 0, mime_message);
+	if (frame == NULL) {
+		printf ("ERROR: expected to create a frame but NULL reference was found..\n");
+		return false;
+	}
+
+	/* activate mime support on the frame */
+	if (! vortex_frame_mime_process (frame)) {
+		printf ("ERROR: expected to find proper MIME process, but a failure was found..\n");
+		return false;
+	} /* end if */
+
+	/* check mime header */
+	if (vortex_frame_get_mime_header_size (frame) != 2) {
+		printf ("ERROR: expected to find MIME Headers %d but found %d..\n",
+			vortex_frame_get_mime_header_size (frame), 2);
+		return false;
+	}
+
+	/* check mime body */
+	if (vortex_frame_get_payload_size (frame) != 373) {
+		printf ("ERROR: expected to find MIME BODY %d but found %d..\n",
+			vortex_frame_get_payload_size (frame), 373);
+		return false;
+	}
+
+	/* check default headers: Content-Type */
+	if (! axl_cmp (VORTEX_FRAME_GET_MIME_HEADER (frame, "Content-Type"), "application/octet-stream")) {
+		printf ("ERROR: expected to find MIME header \"Content-Type\" equal to: %s, but found %s\n",
+			"application/octet-stream", VORTEX_FRAME_GET_MIME_HEADER (frame, "Content-Type"));
+		return false;
+	}
+
+	/* check defaul header: Content-Transfer-Encoding */
+	if (! axl_cmp (VORTEX_FRAME_GET_MIME_HEADER (frame, "Content-Transfer-Encoding"), "binary")) {
+		printf ("ERROR: expected to find MIME header \"Content-Transfer-Encoding\" equal to: %s, but found %s\n",
+			"binary", VORTEX_FRAME_GET_MIME_HEADER (frame, "Content-Transfer-Encoding"));
+		return false;
+	}
+
+	vortex_frame_unref (frame);
+	axl_free (mime_message);
+
+	return true;
+}
+
+bool test_01d_07 ()
+{
+	char        * mime_message;
+	int           mime_message_size;
+	VortexFrame * frame;
+
+	printf ("Test 01-d: checking MIME support (no header, not content (CR-LF)..\n");
+	mime_message = axl_new (char, 2);
+	if (mime_message == NULL) {
+		printf ("ERROR: failed to allocate mime message memory..\n");
+		return false;
+	} /* end if */
+
+	/* configure the message */
+	mime_message[0] = '\x0D';
+	mime_message[1] = '\x0A';
+
+	/* create an artificial frame */
+	mime_message_size = 2;
+	frame             = vortex_frame_create (ctx, VORTEX_FRAME_TYPE_MSG,
+						 0, 0, false, 0, mime_message_size, 0, mime_message);
+	if (frame == NULL) {
+		printf ("ERROR: expected to create a frame but NULL reference was found..\n");
+		return false;
+	}
+
+	/* activate mime support on the frame */
+	if (! vortex_frame_mime_process (frame)) {
+		printf ("ERROR: expected to find proper MIME process, but a failure was found..\n");
+		return false;
+	} /* end if */
+
+	/* check mime header */
+	if (vortex_frame_get_mime_header_size (frame) != 2) {
+		printf ("ERROR: expected to find MIME Headers %d but found %d..\n",
+			vortex_frame_get_mime_header_size (frame), 2);
+		return false;
+	}
+
+	/* check mime body */
+	if (vortex_frame_get_payload_size (frame) != 0) {
+		printf ("ERROR: expected to find MIME BODY %d but found %d..\n",
+			vortex_frame_get_payload_size (frame), 0);
+		return false;
+	}
+
+	/* check default headers: Content-Type */
+	if (! axl_cmp (VORTEX_FRAME_GET_MIME_HEADER (frame, "Content-Type"), "application/octet-stream")) {
+		printf ("ERROR: expected to find MIME header \"Content-Type\" equal to: %s, but found %s\n",
+			"application/octet-stream", VORTEX_FRAME_GET_MIME_HEADER (frame, "Content-Type"));
+		return false;
+	}
+
+	/* check defaul header: Content-Transfer-Encoding */
+	if (! axl_cmp (VORTEX_FRAME_GET_MIME_HEADER (frame, "Content-Transfer-Encoding"), "binary")) {
+		printf ("ERROR: expected to find MIME header \"Content-Transfer-Encoding\" equal to: %s, but found %s\n",
+			"binary", VORTEX_FRAME_GET_MIME_HEADER (frame, "Content-Transfer-Encoding"));
+		return false;
+	}
+
+	vortex_frame_unref (frame);
+	axl_free (mime_message);
+
+	return true;
+}
+
+bool test_01d () {
+	VortexConnection  * connection;
+	VortexAsyncQueue  * queue;
+	VortexChannel     * channel;
+	VortexFrame       * frame;
+	char              * mime_message;
+
+	/* check mime support first */
+	if (! test_01d_01 ())
+		return false;
+
+	if (! test_01d_02 ())
+		return false;
+
+	if (! test_01d_03 ())
+		return false;
+
+	if (! test_01d_04 ())
+		return false; 
+
+	if (! test_01d_05 ())
+		return false;
+
+	if (! test_01d_06 ())
+		return false;
+
+	if (! test_01d_07 ())
+		return false;
+
+	return true;
+
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+	}
+
+	/* create the queue */
+	queue   = vortex_async_queue_new ();
+
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_MIME,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* no frame received */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+		
+	if (channel == NULL) {
+		printf ("Unable to create channel to test MIME support..\n");
+		return false;
+	} /* end if */
+
+	/* open first test: mime.example.1.txt */
+	printf ("Test 01-d: opening MIME message..\n");
+	mime_message = vortex_regression_client_read_file ("mime.example.1.txt", NULL);
+	if (mime_message == NULL) {
+		printf ("ERROR: failed to load mime message: %s", "mime.example.1.txt");
+		return false;
+	} /* end if */
+
+	/* send mime message */
+	if (! vortex_channel_send_msg (channel, mime_message, strlen (mime_message), NULL)) {
+		printf ("Unable to send MIME message over channel=%d\n", vortex_channel_get_number (channel));
+		return false;
+	} /* end if */
+
+	/* get mime reply and check headers */
+	printf ("Test 01-d: waiting MIME message reply..\n");
+	frame = vortex_channel_get_reply (channel, queue);
+	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
+		printf ("Expected to find rpy reply after requesting to change remote step..\n");
+		return false;
+	} /* end if */
+
+	/* check MIME headers */
+	printf ("Test 01-d: Content-Type: %s..\n", vortex_frame_get_content_type (frame));
+	if (! axl_cmp (vortex_frame_get_content_type (frame), "text/plain; charset=\"ISO-8859-1\"")) {
+		printf ("Expected to find Content-Type: %s but found %s..\n", 
+			"text/plain; charset=\"ISO-8859-1\"", vortex_frame_get_content_type (frame));
+		return false;
+	}
+		
+
+	/* unref frame */
+	vortex_frame_unref (frame);
+	
+	/* check connection here */
+	if (! vortex_connection_is_ok (connection, false)) {
+		printf ("Test 01-d: (1) Failed to check connection, it should be running..\n");
+		return false;
+	} /* end if */
+
+	/* free mime */
+	axl_free (mime_message);
 
 	/* close the connection */
 	vortex_connection_close (connection);
@@ -2603,8 +3306,6 @@ void test_04_a_frame_received (VortexChannel    * channel,
 			       axlPointer         user_data)
 {
 	/* check for the last nul frame */
-/*	printf ("Received message reply: ansno=%d type=%d\n", 
-	vortex_frame_get_ansno (frame), vortex_frame_get_type (frame));  */
 	if (vortex_frame_get_ansno (frame) == 0 && vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
 		if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_NUL) {
 			printf ("Expected to find NUL terminator message, but found: %d frame type\n",
@@ -2769,6 +3470,9 @@ bool test_04_a () {
 #endif
 
 	printf ("Test 04-a:   now, perform the same operation without queue/reply, using frame received handler\n");
+/*	vortex_log_enable (true); */
+/*	vortex_color_log_enable (true); */
+/*	vortex_log2_enable (true); */
 
 	/* request for the file */
 #if defined(AXL_OS_UNIX)	
@@ -4302,11 +5006,38 @@ bool test_13 ()
 
 typedef bool (*VortexRegressionTest) ();
   
-void run_test (VortexRegressionTest test, const char * test_name, const char * message) {
  
- 	if (test ()) 
- 		printf ("%s: %s [   OK   ]\n", test_name, message);
- 	else {
+void run_test (VortexRegressionTest test, const char * test_name, const char * message, 
+ 	       long int limit_seconds, long int limit_microseconds) {
+
+ 	struct timeval      start;
+ 	struct timeval      stop;
+ 	struct timeval      result;
+  
+ 	/* start test */
+ 	gettimeofday (&start, NULL);
+ 	if (test ()) {
+ 		/* stop test */
+ 		gettimeofday (&stop, NULL);
+		
+ 		/* get result */
+ 		vortex_timeval_substract (&stop, &start, &result);
+		
+ 		/* check timing results */
+ 		if ((! disable_time_checks) && limit_seconds >= 0 && limit_microseconds > 0) {
+ 			if (result.tv_sec >= limit_seconds && result.tv_usec > limit_microseconds) {
+ 				printf ("%s: %s \n",
+ 					test_name, message);
+ 				printf ("***WARNING***: should finish in less than %ld secs, %ld microseconds\n",
+ 					limit_seconds, limit_microseconds);
+ 				printf ("                          but finished in %ld secs, %ld microseconds\n", 
+ 					result.tv_sec, result.tv_usec);
+ 				exit (-1);
+ 			} 
+ 		} /* end if */
+		
+ 		printf ("%s: %s [   OK   ] (finished in %ld secs, %ld microseconds)\n", test_name, message, result.tv_sec, result.tv_usec);
+ 	} else {
  		printf ("%s: %s [ FAILED ]\n", test_name, message);
  		exit (-1);
  	}
@@ -4351,11 +5082,11 @@ int main (int  argc, char ** argv)
         printf ("**       valgrind or similar tools.\n");
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
-	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_02, test_02a\n");
-	printf ("**                       test_02b, test_02c, test_02d, test_02e, test_02f, test_02g, test_02h\n");
-	printf ("**                       test_03, test_03a, test_04, test_04a, test_04b, test_004c\n");
-	printf ("**                       test_05, test_05a, test_06, test_07, test_08, test_09\n");
-	printf ("**                       test_10, test_11, test_12, test_13\n");
+	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, \n");
+	printf ("**                       test_02, test_02a, test_02b, test_02c, test_02d, test_02e, \n"); 
+	printf ("**                       test_02f, test_02g, test_02h, test_03, test_03a, test_04, \n");
+	printf ("**                       test_04a, test_04b, test_04c, test_05, test_05a, test_06, \n");
+	printf ("**                       test_07, test_08, test_09, test_10, test_11, test_12, test_13\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -4434,94 +5165,97 @@ int main (int  argc, char ** argv)
 
 	if (run_test_name) {
 		if (axl_cmp (run_test_name, "test_00"))
-			run_test (test_00, "Test 00", "Async Queue support");
+			run_test (test_00, "Test 00", "Async Queue support", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_01"))
-			run_test (test_01, "Test 01", "basic BEEP support");
+			run_test (test_01, "Test 01", "basic BEEP support", 0, 3000);
 
 		if (axl_cmp (run_test_name, "test_01a"))
-			run_test (test_01a, "Test 01-a", "transfer zeroed binary frames");
+			run_test (test_01a, "Test 01-a", "transfer zeroed binary frames", 0, 75000);
 
 		if (axl_cmp (run_test_name, "test_01b"))
-			run_test (test_01b, "Test 01-b", "channel close inside created notification (31/03/2008)");
+			run_test (test_01b, "Test 01-b", "channel close inside created notification (31/03/2008)", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_01c"))
-			run_test (test_01c, "Test 01-c", "check immediately send (31/03/2008)");
+			run_test (test_01c, "Test 01-c", "check immediately send (31/03/2008)", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_01d"))
+			run_test (test_01d, "Test 01-d", "MIME support", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02"))
-			run_test (test_02, "Test 02", "basic BEEP channel support");
+			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02a"))
-			run_test (test_02a, "Test 02-a", "connection close notification");
+			run_test (test_02a, "Test 02-a", "connection close notification", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02b"))
-			run_test (test_02b, "Test 02-b", "small message followed by close");
+			run_test (test_02b, "Test 02-b", "small message followed by close", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02c"))
-			run_test (test_02c, "Test 02-c", "huge amount of small message followed by close");
+			run_test (test_02c, "Test 02-c", "huge amount of small message followed by close", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02d"))
-			run_test (test_02d, "Test 02-d", "close after large reply");
+			run_test (test_02d, "Test 02-d", "close after large reply", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02e"))
-			run_test (test_02e, "Test 02-e", "check wait reply support");
+			run_test (test_02e, "Test 02-e", "check wait reply support", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02f"))
-			run_test (test_02f, "Test 02-f", "check vortex performance under packet delay scenarios");
+			run_test (test_02f, "Test 02-f", "check vortex performance under packet delay scenarios", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02g"))
-			run_test (test_02g, "Test 02-g", "check basic BEEP support with different frame sizes");
+			run_test (test_02g, "Test 02-g", "check basic BEEP support with different frame sizes", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02h"))
-			run_test (test_02h, "Test 02-h", "check bandwith performrace with different window and segmentator sizes");
+			run_test (test_02h, "Test 02-h", "check bandwith performrace with different window and segmentator sizes", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_03"))
-			run_test (test_03, "Test 03", "basic BEEP channel support (large messages)");
+			run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_03a"))
-			run_test (test_03a, "Test 03-a", "vortex channel pool support");
+			run_test (test_03a, "Test 03-a", "vortex channel pool support", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_04"))
-			run_test (test_04, "Test 04", "Handling many connections support");
+			run_test (test_04, "Test 04", "Handling many connections support", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_04a"))
-			run_test (test_04_a, "Test 04-a", "Check ANS/NUL support, sending large content");
+			run_test (test_04_a, "Test 04-a", "Check ANS/NUL support, sending large content", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_04ab"))
-			run_test (test_04_ab, "Test 04-ab", "Check ANS/NUL support, sending different files");
+			run_test (test_04_ab, "Test 04-ab", "Check ANS/NUL support, sending different files", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_04c"))
-			run_test (test_04_c, "Test 04-c", "check client adviced profiles");
+			run_test (test_04_c, "Test 04-c", "check client adviced profiles", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_05"))
-			run_test (test_05, "Test 05", "TLS profile support");
+			run_test (test_05, "Test 05", "TLS profile support", -1, -1);
 		
 		if (axl_cmp (run_test_name, "test_05a"))
-			run_test (test_05_a, "Test 05-a", "Check auto-tls on fail fix (24/03/2008)");
+			run_test (test_05_a, "Test 05-a", "Check auto-tls on fail fix (24/03/2008)", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_06"))
-			run_test (test_06, "Test 06", "SASL profile support");
+			run_test (test_06, "Test 06", "SASL profile support", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_07"))
-			run_test (test_07, "Test 07", "XML-RPC profile support");
+			run_test (test_07, "Test 07", "XML-RPC profile support", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_08"))
-			run_test (test_08, "Test 08", "serverName configuration");
+			run_test (test_08, "Test 08", "serverName configuration", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_09"))		
-			run_test (test_09, "Test 09", "close in transit support");
+			run_test (test_09, "Test 09", "close in transit support", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_10"))
-			run_test (test_10, "Test 10", "default channel close action");
+			run_test (test_10, "Test 10", "default channel close action", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_11"))
-			run_test (test_11, "Test 11", "reply to multiple messages in a wrong order without blocking");
+			run_test (test_11, "Test 11", "reply to multiple messages in a wrong order without blocking", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_12"))
-			run_test (test_12, "Test 12", "check connection creation timeout");
+			run_test (test_12, "Test 12", "check connection creation timeout", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_13"))
-			run_test (test_13, "Test 13", "test TUNNEL implementation");
+			run_test (test_13, "Test 13", "test TUNNEL implementation", -1, -1);
 
 		goto finish;
 	}
@@ -4545,65 +5279,67 @@ int main (int  argc, char ** argv)
 	} /* end if */
 	printf ("**\n");
 
- 	run_test (test_00, "Test 00", "Async Queue support");
+ 	run_test (test_00, "Test 00", "Async Queue support", -1, -1);
   
- 	run_test (test_01, "Test 01", "basic BEEP support");
+ 	run_test (test_01, "Test 01", "basic BEEP support", 0, 3000);
   
- 	run_test (test_01a, "Test 01-a", "transfer zeroed binary frames");
+ 	run_test (test_01a, "Test 01-a", "transfer zeroed binary frames", 0, 75000);
   
- 	run_test (test_01b, "Test 01-b", "channel close inside created notification (31/03/2008)");
+ 	run_test (test_01b, "Test 01-b", "channel close inside created notification (31/03/2008)", -1, -1);
   
- 	run_test (test_01c, "Test 01-c", "check immediately send (31/03/2008)");
+ 	run_test (test_01c, "Test 01-c", "check immediately send (31/03/2008)", -1, -1);
   
- 	run_test (test_02, "Test 02", "basic BEEP channel support");
+ 	run_test (test_01d, "Test 01-d", "MIME support", -1, -1);
   
- 	run_test (test_02a, "Test 02-a", "connection close notification");
+ 	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   
- 	run_test (test_02b, "Test 02-b", "small message followed by close");
+ 	run_test (test_02a, "Test 02-a", "connection close notification", -1, -1);
+ 
+ 	run_test (test_02b, "Test 02-b", "small message followed by close", -1, -1);
   	
- 	run_test (test_02c, "Test 02-c", "huge amount of small message followed by close");
- 	
- 	run_test (test_02d, "Test 02-d", "close after large reply");
-  
- 	run_test (test_02e, "Test 02-e", "check wait reply support");
-  
- 	run_test (test_02f, "Test 02-f", "check vortex performance under packet delay scenarios");
-  
- 	run_test (test_02g, "Test 02-g", "check basic BEEP support with different frame sizes");
-
- 	run_test (test_02h, "Test 02-h", "check bandwith performrace with different window and segmentator sizes");
-  
- 	run_test (test_03, "Test 03", "basic BEEP channel support (large messages)");
-  
- 	run_test (test_03a, "Test 03-a", "vortex channel pool support");
-  
- 	run_test (test_04, "Test 04", "Handling many connections support");
-  
- 	run_test (test_04_a, "Test 04-a", "Check ANS/NUL support, sending large content");
-  
- 	run_test (test_04_ab, "Test 04-ab", "Check ANS/NUL support, sending different files");
-  
- 	run_test (test_04_c, "Test 04-c", "check client adviced profiles");
-  
- 	run_test (test_05, "Test 05", "TLS profile support");
+ 	run_test (test_02c, "Test 02-c", "huge amount of small message followed by close", -1, -1);
   	
- 	run_test (test_05_a, "Test 05-a", "Check auto-tls on fail fix (24/03/2008)");
+ 	run_test (test_02d, "Test 02-d", "close after large reply", -1, -1);
   
- 	run_test (test_06, "Test 06", "SASL profile support");
+ 	run_test (test_02e, "Test 02-e", "check wait reply support", -1, -1);
   
- 	run_test (test_07, "Test 07", "XML-RPC profile support");
+ 	run_test (test_02f, "Test 02-f", "check vortex performance under packet delay scenarios", -1, -1);
   
- 	run_test (test_08, "Test 08", "serverName configuration");
+ 	run_test (test_02g, "Test 02-g", "check basic BEEP support with different frame sizes", -1, -1);
   
- 	run_test (test_09, "Test 09", "close in transit support");
+ 	run_test (test_02h, "Test 02-h", "check bandwith performrace with different window and segmentator sizes", -1, -1);
   
- 	run_test (test_10, "Test 10", "default channel close action");
+ 	run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
   
- 	run_test (test_11, "Test 11", "reply to multiple messages in a wrong order without blocking");
+ 	run_test (test_03a, "Test 03-a", "vortex channel pool support", -1, -1);
+  
+ 	run_test (test_04, "Test 04", "Handling many connections support", -1, -1);
+  
+ 	run_test (test_04_a, "Test 04-a", "Check ANS/NUL support, sending large content", -1, -1);
+  
+ 	run_test (test_04_ab, "Test 04-ab", "Check ANS/NUL support, sending different files", -1, -1);
+  
+ 	run_test (test_04_c, "Test 04-c", "check client adviced profiles", -1, -1);
+  
+ 	run_test (test_05, "Test 05", "TLS profile support", -1, -1);
   	
- 	run_test (test_12, "Test 12", "check connection creation timeout");
+ 	run_test (test_05_a, "Test 05-a", "Check auto-tls on fail fix (24/03/2008)", -1, -1);
   
- 	run_test (test_13, "Test 13", "test TUNNEL implementation");
+ 	run_test (test_06, "Test 06", "SASL profile support", -1, -1);
+  
+ 	run_test (test_07, "Test 07", "XML-RPC profile support", -1, -1);
+  
+ 	run_test (test_08, "Test 08", "serverName configuration", -1, -1);
+  
+ 	run_test (test_09, "Test 09", "close in transit support", -1, -1);
+  
+ 	run_test (test_10, "Test 10", "default channel close action", -1, -1);
+  
+ 	run_test (test_11, "Test 11", "reply to multiple messages in a wrong order without blocking", -1, -1);
+  	
+ 	run_test (test_12, "Test 12", "check connection creation timeout", -1, -1);
+  
+ 	run_test (test_13, "Test 13", "test TUNNEL implementation", -1, -1);
 
 #if defined(AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/**

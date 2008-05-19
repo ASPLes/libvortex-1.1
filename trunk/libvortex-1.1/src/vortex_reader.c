@@ -83,20 +83,31 @@ typedef struct _VortexReaderData {
 bool     __vortex_reader_process_socket_check_nul_frame (VortexFrame      * frame, 
 							 VortexConnection * connection)
 {
+	VortexCtx * ctx = CONN_CTX (connection);
+
+	/* call to update frame MIME status for NUL frame size we
+	 * check the MIME body content to be 0 */
+	if (! vortex_frame_mime_process (frame)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to update MIME status for the NUL frame (protocol error)");
+		return false;
+	} /* end if */
 	
 	switch (vortex_frame_get_type (frame)) {
 	case VORTEX_FRAME_TYPE_NUL:
 		/* check zero payload size at NUL frame */
 		if (vortex_frame_get_payload_size (frame) != 0) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "Received \"NUL\" frame with  non-zero payload (%d) content (%d)",
+				    vortex_frame_get_payload_size (frame), vortex_frame_get_content_size (frame));
 			__vortex_connection_set_not_connected (connection, 
-							       "Received header starts with \"NUL\", and the payload is non-zero");
+							       "Received \"NUL\" frame with  non-zero payload");
 			return false;
 		}
 
 		/* check more flag at NUL frame reply. */
 		if (vortex_frame_get_more_flag (frame)) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "Received \"NUL\" frame with the continuator indicator: *");
 			__vortex_connection_set_not_connected (connection, 
-							       "Received header starts with \"NUL\", and the continuator indicator is *");
+							       "Received \"NUL\" frame with the continuator indicator: *");
 			return false;
 		}
 		
@@ -520,7 +531,8 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		vortex_channel_flag_reply_processed (channel, false);
 
 		/* is a ERR or RPY type: update rpy no and seqno */
-		vortex_channel_update_status_received (channel, 0, UPDATE_RPY_NO);
+		vortex_channel_update_status_received (channel, 
+						       vortex_frame_get_content_size (frame), UPDATE_RPY_NO | UPDATE_SEQ_NO);
 		
 		break;
 	case VORTEX_FRAME_TYPE_ANS:
@@ -605,6 +617,13 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	} /* end if */
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "passed frame checking stage");
+
+ 	/* if the frame is complete, apply mime processing */
+ 	if (vortex_frame_get_more_flag (frame) == 0 && type != VORTEX_FRAME_TYPE_NUL) {
+ 		/* call to update frame MIME status */
+ 		if (! vortex_frame_mime_process (frame))
+ 			vortex_log (VORTEX_LEVEL_WARNING, "failed to update MIME status for the frame, continue delivery");
+ 	} 
 
 	/* invoke frame received handler for second level and, if not
 	 * defined, the first level handler */

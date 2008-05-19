@@ -291,6 +291,10 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 				    VORTEX_GREETINGS_PENDING_FRAME, NULL);
 
 
+	/* call to update frame MIME status */
+	if (! vortex_frame_mime_process (frame))
+		vortex_log (VORTEX_LEVEL_WARNING, "failed to update MIME status for the frame, continue delivery");
+
 	/* process greetings from init peer */
 	if (!vortex_greetings_is_reply_ok (frame, connection)) {
 		/* previous function already unref frame object

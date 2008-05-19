@@ -97,6 +97,41 @@ typedef enum {
 	VORTEX_LEVEL_CRITICAL 
 } VortexDebugLevel;
 
+/**
+ * @brief Macro declaration to protect code from misspelling
+ * "MIME-Version" MIME header. This macro can be used by \ref
+ * vortex_frame_set_mime_header and \ref vortex_frame_get_mime_header.
+ */
+#define MIME_VERSION "MIME-Version"
+  
+/**
+ * @brief Macro declaration to protect code from misspelling
+ * "Content-Type" MIME header. This macro can be used by \ref
+ * vortex_frame_set_mime_header and \ref vortex_frame_get_mime_header.
+ */
+#define MIME_CONTENT_TYPE "Content-Type"
+
+/**
+ * @brief Macro declaration to protect code from misspelling
+ * "Content-Transfer-Encoding" MIME header. This macro can be used by \ref
+ * vortex_frame_set_mime_header and \ref vortex_frame_get_mime_header.
+ */
+#define MIME_CONTENT_TRANSFER_ENCODING "Content-Transfer-Encoding"
+
+/**
+ * @brief Macro declaration to protect code from misspelling
+ * "Content-ID" MIME header. This macro can be used by \ref
+ * vortex_frame_set_mime_header and \ref vortex_frame_get_mime_header.
+ */
+#define MIME_CONTENT_ID "Content-ID"
+
+/**
+ * @brief Macro declaration to protect code from misspelling
+ * "Content-Description" MIME header. This macro can be used by \ref
+ * vortex_frame_set_mime_header and \ref vortex_frame_get_mime_header.
+ */
+#define MIME_CONTENT_DESCRIPTION "Content-Description"
+
 
 /** 
  * @brief Describes the type allowed for a frame or the type a frame actually have.
@@ -377,7 +412,12 @@ typedef struct _VortexQueue       VortexQueue;
  */
 typedef struct _VortexChannelPool VortexChannelPool;
 
-
+/** 
+ * @brief MIME header content representation, allowing to get the
+ * content associated and the next value associated on the same header
+ * (if were defined).
+ */
+typedef struct _VortexMimeHeader VortexMimeHeader;
 
 /**
  * @brief Vortex Operation Status 

@@ -141,7 +141,8 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 			return NULL;
 		}
 		
-		vortex_log (VORTEX_LEVEL_DEBUG, "a new message to be sequenced..");
+		vortex_log (VORTEX_LEVEL_DEBUG, "a new message to be sequenced: (channel=%d, size=%d, sequencer-queue=%d)..",
+			    data->channel_num, data->message_size, vortex_async_queue_items (ctx->sequencer_queue));
 
 		/* new message to be sent */
 		channel = data->channel;
