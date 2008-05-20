@@ -59,9 +59,9 @@ echo;
 touch NEWS README AUTHORS ChangeLog 
 libtoolize --force;
 aclocal $ACLOCAL_FLAGS; 
-autoheader; 
-automake --add-missing; 
-autoconf; 
+autoheader --warnings=error;
+automake --add-missing --Werror;
+autoconf --force --warnings=error;
 
 
 ./configure $@ --enable-maintainer-mode --enable-compile-warnings
