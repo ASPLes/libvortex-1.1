@@ -237,6 +237,8 @@ VortexMimeHeader * vortex_frame_mime_header_next       (VortexMimeHeader * heade
 
 int                vortex_frame_mime_header_count      (VortexMimeHeader * header);
 
+bool               vortex_frame_mime_status_is_available  (VortexFrame * frame);
+
 /* @} */
 
 #endif

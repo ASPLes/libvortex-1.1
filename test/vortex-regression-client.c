@@ -175,7 +175,7 @@ VortexTunnelSettings * tunnel_settings = NULL;
 /* listener context */
 VortexCtx * ctx = NULL;
 
-VortexConnection * connection_new ()
+VortexConnection * connection_new (void)
 {
 	/* create a new connection */
 	if (tunnel_tested) {
@@ -192,7 +192,7 @@ VortexConnection * connection_new ()
  *
  * @return true if checks runs ok, otherwise false is returned.
  */
-bool test_00 () 
+bool test_00 (void) 
 {
 	VortexAsyncQueue * queue;
 
@@ -255,7 +255,7 @@ bool test_00 ()
 	return true;
 }
 
-bool test_01 () {
+bool test_01 (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
@@ -297,7 +297,7 @@ bool test_01 () {
 	return true;
 }
 
-bool test_01a () {
+bool test_01a (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
@@ -440,7 +440,7 @@ void test_01b_created (int             channel_num,
 	return;
 }
 
-bool test_01b () {
+bool test_01b (void) {
 	VortexConnection  * connection;
 	VortexAsyncQueue  * queue;
 	int                 iterator;
@@ -490,7 +490,7 @@ bool test_01b () {
 
 } /* end test_01b */
 
-bool test_01c () {
+bool test_01c (void) {
 	VortexConnection  * connection;
 	VortexAsyncQueue  * queue;
 	VortexChannel     * channel;
@@ -651,7 +651,7 @@ char * vortex_regression_client_read_file (const char * file, int * size)
 	return result;
 }
 
-bool test_01d_01 ()
+bool test_01d_01 (void)
 {
 	char             * mime_message;
 	int                mime_message_size;
@@ -824,7 +824,7 @@ bool test_01d_01 ()
 	return true;
 }
 
-bool test_01d_02 ()
+bool test_01d_02 (void)
 {
 	char        * mime_message;
 	int           mime_message_size;
@@ -887,7 +887,7 @@ bool test_01d_02 ()
 	return true;
 }
 
-bool test_01d_03 ()
+bool test_01d_03 (void)
 {
 	char        * mime_message;
 	char        * mime_body;
@@ -943,7 +943,7 @@ bool test_01d_03 ()
 	return true;
 }
 
-bool test_01d_04 ()
+bool test_01d_04 (void)
 {
 	char        * mime_message;
 	int           mime_message_size;
@@ -995,7 +995,7 @@ bool test_01d_04 ()
 	return true;
 }
 
-bool test_01d_05 ()
+bool test_01d_05 (void)
 {
 	char        * mime_message;
 	int           mime_message_size;
@@ -1046,7 +1046,7 @@ bool test_01d_05 ()
 	return true;
 }
 
-bool test_01d_06 ()
+bool test_01d_06 (void)
 {
 	char        * mime_message;
 	int           mime_message_size;
@@ -1093,16 +1093,16 @@ bool test_01d_06 ()
 	}
 
 	/* check default headers: Content-Type */
-	if (! axl_cmp (VORTEX_FRAME_GET_MIME_HEADER (frame, "Content-Type"), "application/octet-stream")) {
-		printf ("ERROR: expected to find MIME header \"Content-Type\" equal to: %s, but found %s\n",
-			"application/octet-stream", VORTEX_FRAME_GET_MIME_HEADER (frame, "Content-Type"));
+	if (! axl_cmp (vortex_frame_get_content_type (frame), "application/octet-stream")) {
+		printf ("ERROR: (1) expected to find MIME header \"Content-Type\" equal to: %s, but found %s\n",
+			"application/octet-stream", vortex_frame_get_content_type (frame));
 		return false;
 	}
 
 	/* check defaul header: Content-Transfer-Encoding */
-	if (! axl_cmp (VORTEX_FRAME_GET_MIME_HEADER (frame, "Content-Transfer-Encoding"), "binary")) {
-		printf ("ERROR: expected to find MIME header \"Content-Transfer-Encoding\" equal to: %s, but found %s\n",
-			"binary", VORTEX_FRAME_GET_MIME_HEADER (frame, "Content-Transfer-Encoding"));
+	if (! axl_cmp (vortex_frame_get_transfer_encoding (frame), "binary")) {
+		printf ("ERROR: (2) expected to find MIME header \"Content-Transfer-Encoding\" equal to: %s, but found %s\n",
+			"binary", vortex_frame_get_transfer_encoding (frame));
 		return false;
 	}
 
@@ -1112,7 +1112,7 @@ bool test_01d_06 ()
 	return true;
 }
 
-bool test_01d_07 ()
+bool test_01d_07 (void)
 {
 	char        * mime_message;
 	int           mime_message_size;
@@ -1159,16 +1159,16 @@ bool test_01d_07 ()
 	}
 
 	/* check default headers: Content-Type */
-	if (! axl_cmp (VORTEX_FRAME_GET_MIME_HEADER (frame, "Content-Type"), "application/octet-stream")) {
-		printf ("ERROR: expected to find MIME header \"Content-Type\" equal to: %s, but found %s\n",
-			"application/octet-stream", VORTEX_FRAME_GET_MIME_HEADER (frame, "Content-Type"));
+	if (! axl_cmp (vortex_frame_get_content_type (frame), "application/octet-stream")) {
+		printf ("ERROR: (1) expected to find MIME header \"Content-Type\" equal to: %s, but found %s\n",
+			"application/octet-stream", vortex_frame_get_content_type (frame));
 		return false;
 	}
 
 	/* check defaul header: Content-Transfer-Encoding */
-	if (! axl_cmp (VORTEX_FRAME_GET_MIME_HEADER (frame, "Content-Transfer-Encoding"), "binary")) {
-		printf ("ERROR: expected to find MIME header \"Content-Transfer-Encoding\" equal to: %s, but found %s\n",
-			"binary", VORTEX_FRAME_GET_MIME_HEADER (frame, "Content-Transfer-Encoding"));
+	if (! axl_cmp (vortex_frame_get_transfer_encoding (frame), "binary")) {
+		printf ("ERROR: (2) expected to find MIME header \"Content-Transfer-Encoding\" equal to: %s, but found %s\n",
+			"binary", vortex_frame_get_transfer_encoding (frame));
 		return false;
 	}
 
@@ -1178,7 +1178,7 @@ bool test_01d_07 ()
 	return true;
 }
 
-bool test_01d () {
+bool test_01d (void) {
 	VortexConnection  * connection;
 	VortexAsyncQueue  * queue;
 	VortexChannel     * channel;
@@ -1900,7 +1900,7 @@ bool test_04_ab_common (VortexConnection * connection, int window_size, const ch
 }
 
 
-bool test_02 () {
+bool test_02 (void) {
 
 	VortexConnection * connection;
 
@@ -1970,7 +1970,7 @@ void test_02a_handler3_full (VortexConnection * connection, axlPointer data)
  * 
  * @return true if ok, otherwise false is returned.
  */
-bool test_02a () {
+bool test_02a (void) {
 
 	VortexConnection * connection;
 	int                count;
@@ -2058,7 +2058,7 @@ bool test_02a () {
 	return true;
 }
 
-bool test_02b () {
+bool test_02b (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
@@ -2116,7 +2116,7 @@ bool test_02b () {
 	return true;
 }
 
-bool test_02c () {
+bool test_02c (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
@@ -2180,7 +2180,7 @@ bool test_02c () {
 	return true;
 }
 
-bool test_02d () {
+bool test_02d (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
@@ -2328,7 +2328,7 @@ bool test_02d () {
 	return true;
 }
 
-bool test_02e () {
+bool test_02e (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -2512,7 +2512,7 @@ bool test_02f_send_data (VortexChannel * channel, const char * message, VortexAs
  * 
  * @return true if tests are passed.
  */
-bool test_02f () {
+bool test_02f (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -2599,7 +2599,7 @@ double test_02g_rate (int bytes, struct timeval result)
 	return kbytes / seconds;
 }
 
-bool test_02g () {
+bool test_02g (void) {
 
 	VortexConnection * connection;
 
@@ -2677,7 +2677,7 @@ bool test_02g () {
  * 
  * @return true if the test is ok, otherwise false is returned.
  */
-bool test_03 () {
+bool test_03 (void) {
 	VortexConnection * connection;
 
 	/* creates a new connection against localhost:44000 */
@@ -2698,7 +2698,7 @@ bool test_03 () {
 	return true;
 }
 
-bool test_02h () {
+bool test_02h (void) {
 
 	VortexConnection * connection;
 	struct timeval     start, stop, result;
@@ -2820,7 +2820,7 @@ bool test_02h () {
 	return true;
 }
 
-bool test_03a () {
+bool test_03a (void) {
 	
 	VortexConnection   * connection;
 	VortexChannelPool  * pool;
@@ -2935,7 +2935,7 @@ bool test_03a () {
 /* constant for test_04 */
 #define MAX_NUM_CON 1000
 
-bool test_04 ()
+bool test_04 (void)
 {
 	int                 iterator = 0;
 	VortexConnection  * connections[MAX_NUM_CON];
@@ -2987,7 +2987,7 @@ bool test_04 ()
  * 
  * @return true if ok, otherwise, false is returned.
  */
-bool test_05 ()
+bool test_05 (void)
 {
 	/* TLS status notification */
 	VortexStatus       status;
@@ -3114,7 +3114,7 @@ bool test_05 ()
  * 
  * @return true if ok, otherwise, false is returned.
  */
-bool test_05_a ()
+bool test_05_a (void)
 {
 	/* TLS status notification */
 	VortexStatus       status;
@@ -3326,6 +3326,7 @@ void test_04_a_frame_received (VortexChannel    * channel,
 	} /* end if */
 	
 	/* check content */
+	printf ("ANS frame received id=%d..\n", vortex_frame_get_ansno (frame));
 	if (!axl_cmp ((char *) vortex_frame_get_payload (frame), 
 		      TEST_REGRESION_URI_4_MESSAGE)) {
 		printf ("Expected to find different message at test: %s != '%s'..\n",
@@ -3343,20 +3344,15 @@ void test_04_a_frame_received (VortexChannel    * channel,
 	return;
 }
 
-/** 
- * @brief Checks BEEP support for ANS/NUL while sending large messages
- * that goes beyond default window size advertised.
- * 
- * 
- * @return true if the test is ok, otherwise false is returned.
- */
-bool test_04_a () {
+bool test_04_a_common (int block_size) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
 	VortexAsyncQueue * queue;
 	int                iterator;
 	VortexFrame      * frame;
+	char             * message;
+	int                total_bytes = 0;
 
 #if defined(AXL_OS_UNIX)
 	struct timeval      start;
@@ -3394,14 +3390,17 @@ bool test_04_a () {
 	/* take a start measure */
 	gettimeofday (&start, NULL);
 #endif
-	printf ("Test 04-a:   sending initial request\n");
-	if (! vortex_channel_send_msg (channel, "return large message", 20, NULL)) {
+	printf ("Test 04-a:   sending initial request block unit=%d\n", block_size);
+	message = axl_strdup_printf ("return large message,%d", block_size);
+	if (! vortex_channel_send_msg (channel, message, strlen (message), NULL)) {
 		printf ("Failed to send message requesting for large file..\n");
 		return false;
 	} /* end if */
+	axl_free (message);
 
 	/* wait for all replies */
-	iterator = 0;
+	iterator    = 0;
+	total_bytes = 0;
 	printf ("Test 04-a:   waiting replies\n");
 	while (true) {
 		/* get the next message, blocking at this call. */
@@ -3412,12 +3411,10 @@ bool test_04_a () {
 			continue;
 		}
 		
-		if (iterator == 8192) {
-			if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_NUL) {
-				printf ("Expected to find NUL terminator message, but found: %d frame type\n",
-					vortex_frame_get_type (frame));
-				return false;
-			} /* end if */
+		/* get payload size */
+		total_bytes += vortex_frame_get_payload_size (frame);
+
+		if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
 
 			/* check size */
 			if (vortex_frame_get_payload_size (frame) != 0) {
@@ -3431,9 +3428,11 @@ bool test_04_a () {
 
 			printf ("Test 04-a:   operation completed, ok\n");
 			break;
-		}
-		
+
+		} /* end if */
+
 		/* check content */
+		printf ("ANS frame received id=%d..\n", vortex_frame_get_ansno (frame));
 		if (!axl_cmp ((char *) vortex_frame_get_payload (frame),
 			      TEST_REGRESION_URI_4_MESSAGE)) {
 			printf ("Expected to find different message(%d) at test: %s != '%s'..\n",
@@ -3441,10 +3440,11 @@ bool test_04_a () {
 			return false;
 		} /* end if */
 
+
 		/* check size */
-		if (vortex_frame_get_payload_size (frame) != 4096) {
+		if (vortex_frame_get_payload_size (frame) != block_size) {
 			printf ("Expected to find different message(%d) size %d at test, but found: %d..\n",
-				iterator, 4096, vortex_frame_get_payload_size (frame));
+				iterator, block_size, vortex_frame_get_payload_size (frame));
 			return false;
 		}
 			
@@ -3466,7 +3466,7 @@ bool test_04_a () {
 	subs (stop, start, &stop);
 
 	printf ("Test 04-a:   Test ok, operation completed in: %ld.%ld seconds!  (bytes transfered: %d)!\n", 
-		stop.tv_sec, stop.tv_usec, 8192 * 4096);
+		stop.tv_sec, stop.tv_usec, total_bytes);
 #endif
 
 	printf ("Test 04-a:   now, perform the same operation without queue/reply, using frame received handler\n");
@@ -3505,7 +3505,7 @@ bool test_04_a () {
 	subs (stop, start, &stop);
 
 	printf ("Test 04-a:   Test ok, operation completed in: %ld.%ld seconds! (bytes transfered: %d)!\n", 
-		stop.tv_sec, stop.tv_usec, 8192 * 4096);
+		stop.tv_sec, stop.tv_usec, total_bytes);
 #endif
 
 	/* free the queue */
@@ -3536,12 +3536,24 @@ bool test_04_a () {
 }
 
 /** 
+ * @brief Checks BEEP support for ANS/NUL while sending large messages
+ * that goes beyond default window size advertised.
+ * 
+ * 
+ * @return true if the test is ok, otherwise false is returned.
+ */
+bool test_04_a (void) {
+	/* call to run default test */
+	return test_04_a_common (4096);
+}
+
+/** 
  * @brief Checks BEEP support for ANS/NUL while sending different
  * files in the same channel.
  *
  * @return true if the test is ok, otherwise false is returned.
  */
-bool test_04_ab () {
+bool test_04_ab (void) {
 
 	VortexConnection * connection;
 
@@ -3569,7 +3581,7 @@ bool test_04_ab () {
  *
  * @return true if the test is ok, otherwise false is returned.
  */
-bool test_04_c () {
+bool test_04_c (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -3676,7 +3688,7 @@ bool test_04_c () {
  * 
  * @return true if ok, otherwise, false is returned.
  */
-bool test_06 ()
+bool test_06 (void)
 {
 	VortexStatus       status;
 	char             * status_message = NULL;
@@ -3958,7 +3970,7 @@ bool test_06 ()
  * 
  * @return true if all test pass, otherwise false is returned.
  */
-bool test_07 () {
+bool test_07 (void) {
 	
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -4168,7 +4180,7 @@ bool test_07 () {
  * @return true if serverName is properly configured, otherwise false
  * is returned.
  */
-bool test_08 ()
+bool test_08 (void)
 {
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -4292,7 +4304,7 @@ bool test_08 ()
  * 
  * @return false if it fails, otherwise true is returned.
  */
-bool test_10 ()
+bool test_10 (void)
 {
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -4344,7 +4356,7 @@ bool test_10 ()
  * 
  * @return false if it fails, otherwise true is returned.
  */
-bool test_11 ()
+bool test_11 (void)
 {
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -4494,7 +4506,7 @@ bool test_11 ()
  * 
  * @return true if test pass, otherwise false is returned.
  */
-bool test_12 () {
+bool test_12 (void) {
 	VortexConnection  * connection;
 	VortexConnection  * control;
 	VortexChannel     * c_channel;
@@ -4820,7 +4832,7 @@ bool test_12 () {
  * 
  * @return true if goes ok.
  */
-bool test_09 () 
+bool test_09 (void) 
 {
 	VortexConnection * conn;
 	VortexChannel    * channel;
@@ -4902,7 +4914,7 @@ void __block_test (int value)
  * 
  * @return true if all test pass, otherwise false is returned.
  */
-bool test_13 ()
+bool test_13 (void)
 {
 	printf ("Test 13: ** \n");
 	printf ("Test 13: ** INFO: Running test, under the TUNNEL profile (BEEP proxy support)!\n");
