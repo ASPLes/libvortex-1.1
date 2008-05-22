@@ -651,6 +651,26 @@ do {\
 }while(0)
 
 /** 
+ * @brief Helper macro which allows to PRIORITY push data into a
+ * particular queue, checking some conditions, which are logged at the
+ * particular position if they fail. 
+ *
+ * @param queue The queue to be used to push the new data. This reference can't be null.
+ *
+ * @param data The data to be pushed. This data can't be null.
+ */
+#define QUEUE_PRIORITY_PUSH(queue, data)\
+do {\
+    if (queue == NULL) { \
+       vortex_log (VORTEX_LEVEL_CRITICAL, "trying to push priority data in a null reference queue at: %s:%d", __AXL_FILE__, __AXL_LINE__); \
+    } else if (data == NULL) {\
+       vortex_log (VORTEX_LEVEL_CRITICAL, "trying to push priority null data in a queue at: %s:%d", __AXL_FILE__, __AXL_LINE__); \
+    } else { \
+       vortex_async_queue_priority_push (queue,data);\
+    }\
+}while(0)
+
+/** 
  * @internal Definitions to accomodate the underlaying thread
  * interface to the Vortex thread API.
  */
