@@ -638,7 +638,7 @@ void     vortex_sequencer_signal_update        (VortexChannel       * channel)
 
 	/* check if we have data to be resequenced */
 	if (vortex_channel_next_pending_message (channel)) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "it seems that we have pending messages not sequenced, re-sequence them");
+
 		/* prepare data, flagging re-sequencing .. */
 		data                       = axl_new (VortexSequencerData, 1);
 		data->resequence           = true;
@@ -646,7 +646,10 @@ void     vortex_sequencer_signal_update        (VortexChannel       * channel)
 		data->channel              = channel;
 	
 		/* queue data */
-		QUEUE_PUSH (ctx->sequencer_queue, data);
+		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, 
+			    "doing PRIORITY push to skip current stored items=%d (it seems that we have pending messages not sequenced, re-sequence them)",
+			    vortex_async_queue_items (ctx->sequencer_queue));
+		QUEUE_PRIORITY_PUSH (ctx->sequencer_queue, data);
 	}else {
 		vortex_log (VORTEX_LEVEL_DEBUG, "there is no messages pending to be sequenced, over the channel=%d",
 		       vortex_channel_get_number (channel));
