@@ -646,7 +646,7 @@ void     vortex_sequencer_signal_update        (VortexChannel       * channel)
 		data->channel              = channel;
 	
 		/* queue data */
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, 
+		vortex_log (VORTEX_LEVEL_DEBUG, 
 			    "doing PRIORITY push to skip current stored items=%d (it seems that we have pending messages not sequenced, re-sequence them)",
 			    vortex_async_queue_items (ctx->sequencer_queue));
 		QUEUE_PRIORITY_PUSH (ctx->sequencer_queue, data);

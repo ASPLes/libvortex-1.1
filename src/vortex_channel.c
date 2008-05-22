@@ -1810,8 +1810,8 @@ VortexFrame      * vortex_channel_build_single_pending_frame   (VortexChannel * 
 		size,
 		/* frame asno */
 		vortex_frame_get_ansno (frame),
-		vortex_frame_get_content_type (frame),
-		vortex_frame_get_transfer_encoding (frame),
+		vortex_frame_mime_status_is_available (frame) ? vortex_frame_get_content_type (frame) : NULL,
+		vortex_frame_mime_status_is_available (frame) ? vortex_frame_get_transfer_encoding (frame) : NULL,
 		(char *) payload);
 
 	/* ensure we set the channel */
@@ -2404,8 +2404,8 @@ bool      __vortex_channel_common_rpy (VortexChannel    * channel,
 
 	/* do sending reply operation */
  send_reply:
-	vortex_log (VORTEX_LEVEL_DEBUG, "sending reply for message %d (size: %d)\n", 
-	       msg_no_rpy, message_size);
+	vortex_log (VORTEX_LEVEL_DEBUG, "sending reply for message %d (size: %d, sequencer queue status: %d, channel queue status: %d)\n", 
+ 		    msg_no_rpy, message_size, vortex_async_queue_items (ctx->sequencer_queue), axl_list_length (channel->pending_messages));
 
 	switch (type) {
 	case VORTEX_FRAME_TYPE_NUL:

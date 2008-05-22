@@ -856,6 +856,40 @@ void               vortex_async_queue_push      (VortexAsyncQueue * queue,
 }
 
 /** 
+ * @brief Allows to push data into the queue but moving the reference
+ * provided into the queue head (causing next call to
+ * vortex_async_queue_pop to receive this reference). This function
+ * performs the same as \ref vortex_async_queue_push but skiping all
+ * items already pushed.
+ * 
+ * @param queue The queue where data will be pushed.
+ *
+ * @param data A reference to the data to be pushed. It is not allowed
+ * to push null references.
+ */
+void               vortex_async_queue_priority_push  (VortexAsyncQueue * queue,
+						      axlPointer         data)
+{
+	v_return_if_fail (queue);
+	v_return_if_fail (data);
+	
+	/* get the mutex */
+	vortex_mutex_lock (&queue->mutex);
+
+	/* push the data at the head */
+	axl_list_append (queue->data, data);
+
+	/* signal if waiters are available */
+	if (queue->waiters > 0)
+		vortex_cond_signal (&queue->cond);
+
+	/* unlock the mutex */
+	vortex_mutex_unlock (&queue->mutex);
+	
+	return;
+}
+
+/** 
  * @brief Pop the first data available in the queue, locking
  * the calling if no data is available.
  *
