@@ -2022,9 +2022,14 @@ bool                   vortex_connection_close                  (VortexConnectio
 	}else 
 		vortex_log (VORTEX_LEVEL_DEBUG, "closing a connection which is not opened, unref resources..");
 
-	/* unref vortex connection resources */
-	vortex_log (VORTEX_LEVEL_DEBUG, "connection close finished, now unrefering..");
-	vortex_connection_unref (connection, "vortex_connection_close");
+ 	/* unref vortex connection resources, but check first this is
+ 	 * not a listener connection, which is already owned by the
+ 	 * vortex engine */
+ 	if (connection->role == VortexRoleInitiator) {
+ 		vortex_log (VORTEX_LEVEL_DEBUG, "connection close finished, now unrefering (refcount=%d..", 
+ 			    connection->ref_count);
+ 		vortex_connection_unref (connection, "vortex_connection_close");
+ 	} /* end if */
 
 	return true;
 }
