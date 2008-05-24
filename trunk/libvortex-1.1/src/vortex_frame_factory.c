@@ -1127,11 +1127,6 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	}
 
 	if (bytes_read == 0) {
-		if (errno == VORTEX_EAGAIN || errno == VORTEX_EWOULDBLOCK) {
-			vortex_log (VORTEX_LEVEL_DEBUG, "no data is available on the connection, returning");
-			return NULL;
-		} /* end if */
-
 		/* check if channel is expected to be closed */
 		if (vortex_connection_get_data (connection, "being_closed")) {
 			vortex_log (VORTEX_LEVEL_DEBUG, "properly connection close");
