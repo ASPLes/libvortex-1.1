@@ -152,6 +152,7 @@ bool     __vortex_reader_update_incoming_buffer_and_notify (VortexConnection  * 
 	case VORTEX_FRAME_TYPE_ANS:
 	case VORTEX_FRAME_TYPE_RPY:
 	case VORTEX_FRAME_TYPE_ERR:
+	case VORTEX_FRAME_TYPE_NUL:
 		/* only perform this task for those frames that have
 		 * actually payload content to report and the current
 		 * window size have changed. */
@@ -368,6 +369,11 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "passed connection existence stage");	
+ 	/* now update current incoming buffers to track SEQ frames */
+ 	if (! __vortex_reader_update_incoming_buffer_and_notify (connection, channel, frame)) {
+ 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to notify SEQ channel status, connection broken or protocol violation");
+ 		return;
+ 	} /* end if */
 
 	/* check message numbers and reply numbers sequencing */
 	switch (type) {
@@ -551,11 +557,6 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "passed channel update status due to frame received stage");
-	/* now update current incoming buffers to track SEQ frames */
-	if (! __vortex_reader_update_incoming_buffer_and_notify (connection, channel, frame)) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to notify SEQ channel status, connection broken or protocol violation");
-		return;
-	} /* end if */
 
 	/* If we have a frame to be joined then threat it instead of
 	 * invoke frame received handler. This is done by checking for

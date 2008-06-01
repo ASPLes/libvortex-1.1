@@ -3198,6 +3198,15 @@ bool     vortex_channel_update_incoming_buffer (VortexChannel * channel,
 	/* generate a new value for the seqno accepted */
 	new_max_seq_no_accepted = (consumed_seqno + window_size - 1) % (MAX_SEQ_NO);
 
+	/* particular case where NUL frame was received, consuming 2
+	 * bytes on the current window size, causing the next frame to
+	 * be sent without 2 bytes (in the case it is bigger than
+	 * window size) */
+	if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: updating due to NUL frame found");
+		goto send_seq_frame;
+	}
+
 	/* check we have filled half window size advertised */
 /*	if ((new_max_seq_no_accepted - channel->max_seq_no_accepted) < (window_size / 2)) { */
  	if ((consumed_seqno - (channel->max_seq_no_accepted - window_size)) < (window_size / 2)) {
@@ -3223,6 +3232,7 @@ bool     vortex_channel_update_incoming_buffer (VortexChannel * channel,
 	 * configured to be smaller. */
 	if (new_max_seq_no_accepted > channel->max_seq_no_accepted) {
 
+ 	send_seq_frame:
  		/* if the client wants to change the channel window
  		 * size, do so now */
  		if (window_size != channel->desired_window_size) {
@@ -6096,6 +6106,49 @@ void vortex_channel_notify_close (VortexChannel * channel, int  msg_no, bool    
 }
 
 /** 
+ * @brief Allows to get best message size for a message transfer. 
+ *
+ * The information returned by this function could be used to know the
+ * amount of information that should be included into the next message
+ * to be used (\ref vortex_channel_send_msg, \ref
+ * vortex_channel_send_rpy, etc).
+ *
+ * This function provides the effective message size to be used for a
+ * bulk transfer, avoiding BTF issue (see \ref
+ * http://www.aspl.es/vortex/btf.html).
+ *
+ * In general, if your intention is to produce a large set of messages
+ * for a long transfer (because you are sending a file) you should
+ * call this function to messages that do not produce bad interations
+ * inside the Vortex engine.
+ * 
+ * @param channel The channel where the transfer will be performed.
+ *
+ * @param mime_message Allows to inform the function that the content
+ * to be sent is a MIME message. 
+ * 
+ * @return The amount of bytes that should be included on each message
+ * to be transfered. NOTE: this function is just an indication. Your
+ * message will arrive, no matter its size (with common sense
+ * expections) and the size you use to transfer its fragments. Using
+ * the information from this function will make your transfer to get
+ * best throughput. If a NULL reference is received, 0 is returned.
+ */
+int                vortex_channel_get_effective_transfer_size    (VortexChannel    * channel,
+								  bool               mime_message)
+{
+	v_return_val_if_fail (channel, 0);
+
+	/* in the case a MIME message is found, let the caller to use
+	 * all available window */
+	if (mime_message)
+		return 4096;
+	/* if not, use only availabe window without two bytes (CR+LF)
+	 * required to implement the empty MIME header */
+	return 4094;
+}
+
+/** 
  * @internal
  * 
  * @param channel0 
@@ -6858,6 +6911,7 @@ VortexFrame   * vortex_channel_wait_reply              (VortexChannel * channel,
 	/* wait for the message to be replied */
 	vortex_log (VORTEX_LEVEL_DEBUG, "getting reply at wait reply from the queue");
 	frame = vortex_async_queue_timedpop (wait_reply->queue, vortex_connection_get_timeout (ctx));
+
 
 	/* because we have accept to deliver the frame to a waiting
 	 * thread, we understand this frame have being delivered */
