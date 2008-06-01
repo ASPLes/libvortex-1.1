@@ -195,6 +195,18 @@ div.link table {
   padding-right: 10px;               
 }
 
+.all-section { 
+  width: 100%
+/*  float: left; */
+  text-align: justify;
+/*  border-right: 1px dotted #a0a0a0; */
+/*  padding-right: 10px;                */
+}
+
+.all-section img { 
+  padding: 20px;
+}
+
 .support-section { 
   width: 66%;
   float: left;
@@ -229,3 +241,13 @@ div.link table {
   margin: 0;
   border: 0px;    
 }
+
+li.item-description { 
+  padding-bottom: 20px;
+}
+
+span.item-description { 
+  font-weight: bold;
+  text-decoration: underline;
+}
+
