@@ -191,6 +191,11 @@ struct _VortexCtx {
 	 */
 	VortexThread              sequencer_thread;
 
+	/* @internal buffer used by the sequencer to build frames to
+	 * be sent (and its associated size). */
+	char                    * sequencer_send_buffer;
+	int                       sequencer_send_buffer_size;
+
 	/**** vortex thread pool module state ****/
 	/** 
 	 * @internal Reference to the thread pool.
