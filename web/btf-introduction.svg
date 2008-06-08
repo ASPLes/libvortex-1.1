@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="1423.3745"
+   height="229.37418"
+   id="svg2"
+   sodipodi:version="0.32"
+   inkscape:version="0.45.1"
+   sodipodi:docbase="/home/acinom/af-arch/libvortex/web"
+   sodipodi:docname="btf-introduction.svg"
+   inkscape:output_extension="org.inkscape.output.svg.inkscape"
+   version="1.0"
+   inkscape:export-filename="/home/acinom/af-arch/libvortex/web/btf-introduction.png"
+   inkscape:export-xdpi="43.440437"
+   inkscape:export-ydpi="43.440437">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.49497475"
+     inkscape:cx="680.3527"
+     inkscape:cy="80.17513"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     inkscape:window-width="877"
+     inkscape:window-height="623"
+     inkscape:window-x="91"
+     inkscape:window-y="189" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Capa 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(474.86799,194.7416)">
+    <g
+       id="g2174"
+       transform="translate(-473.13709,-279.70563)">
+      <rect
+         y="160.51784"
+         x="35.298519"
+         height="120.83154"
+         width="319.40292"
+         id="rect2160"
+         style="opacity:1;fill:#204a87;fill-opacity:1;fill-rule:nonzero;stroke:#ffffff;stroke-width:2.26847291;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+      <text
+         id="text2162"
+         y="184.32712"
+         x="44.136993"
+         style="font-size:16.695364px;font-style:normal;font-weight:normal;fill:#eeeeec;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Sans"
+         xml:space="preserve"><tspan
+           style="font-weight:bold"
+           y="184.32712"
+           x="44.136993"
+           id="tspan2164"
+           sodipodi:role="line">MESSAGE 1:</tspan><tspan
+           id="tspan2166"
+           y="205.19632"
+           x="44.136993"
+           sodipodi:role="line">Payload: 4098</tspan><tspan
+           id="tspan2168"
+           y="226.06553"
+           x="44.136993"
+           sodipodi:role="line">User application data:</tspan><tspan
+           id="tspan2172"
+           y="246.93473"
+           x="44.136993"
+           sodipodi:role="line">4096 + 2 bytes for</tspan><tspan
+           id="tspan2170"
+           y="267.80394"
+           x="44.136993"
+           sodipodi:role="line">empty MIME headers (\x0D + \x0A).</tspan></text>
+    </g>
+    <g
+       id="g2206"
+       transform="translate(-275.04182,-178.27706)">
+      <rect
+         y="56.232128"
+         x="178.86996"
+         height="120.83154"
+         width="319.40292"
+         id="rect2185"
+         style="fill:#4e9a06;fill-opacity:1;fill-rule:nonzero;stroke:#ffffff;stroke-width:2.26847291;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+      <text
+         id="text2187"
+         y="80.041405"
+         x="187.70845"
+         style="font-size:16.695364px;font-style:normal;font-weight:normal;fill:#eeeeec;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Sans"
+         xml:space="preserve"><tspan
+           style="font-weight:bold"
+           y="80.041405"
+           x="187.70845"
+           id="tspan2189"
+           sodipodi:role="line">MESSAGE 2:</tspan><tspan
+           id="tspan2191"
+           y="100.91061"
+           x="187.70845"
+           sodipodi:role="line">Payload: 4098</tspan><tspan
+           id="tspan2193"
+           y="121.77981"
+           x="187.70845"
+           sodipodi:role="line">User application data:</tspan><tspan
+           id="tspan2195"
+           y="142.64902"
+           x="187.70845"
+           sodipodi:role="line">4096 + 2 bytes for</tspan><tspan
+           id="tspan2197"
+           y="163.51822"
+           x="187.70845"
+           sodipodi:role="line">empty MIME headers (\x0D + \x0A).</tspan></text>
+    </g>
+    <g
+       id="g2238"
+       transform="translate(-113.37509,-172.56277)">
+      <rect
+         y="50.517845"
+         x="358.86996"
+         height="120.83154"
+         width="319.40292"
+         id="rect2217"
+         style="fill:#5c3566;fill-opacity:1;fill-rule:nonzero;stroke:#ffffff;stroke-width:2.26847291;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+      <text
+         id="text2219"
+         y="74.327118"
+         x="367.70844"
+         style="font-size:16.695364px;font-style:normal;font-weight:normal;fill:#eeeeec;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Sans"
+         xml:space="preserve"><tspan
+           style="font-weight:bold"
+           y="74.327118"
+           x="367.70844"
+           id="tspan2221"
+           sodipodi:role="line">MESSAGE 3:</tspan><tspan
+           id="tspan2223"
+           y="95.196323"
+           x="367.70844"
+           sodipodi:role="line">Payload: 4098</tspan><tspan
+           id="tspan2225"
+           y="116.06553"
+           x="367.70844"
+           sodipodi:role="line">User application data:</tspan><tspan
+           id="tspan2227"
+           y="136.93473"
+           x="367.70844"
+           sodipodi:role="line">4096 + 2 bytes for</tspan><tspan
+           id="tspan2229"
+           y="157.80394"
+           x="367.70844"
+           sodipodi:role="line">empty MIME headers (\x0D + \x0A).</tspan></text>
+    </g>
+    <g
+       id="g2270"
+       transform="translate(-113.13696,-172.56277)">
+      <rect
+         y="50.517841"
+         x="700.29852"
+         height="120.83154"
+         width="319.40292"
+         id="rect2249"
+         style="fill:#a40000;fill-opacity:1;fill-rule:nonzero;stroke:#ffffff;stroke-width:2.26847291;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+      <text
+         id="text2251"
+         y="74.32711"
+         x="709.13702"
+         style="font-size:16.695364px;font-style:normal;font-weight:normal;fill:#eeeeec;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Sans"
+         xml:space="preserve"><tspan
+           style="font-weight:bold"
+           y="74.32711"
+           x="709.13702"
+           id="tspan2253"
+           sodipodi:role="line">MESSAGE 4:</tspan><tspan
+           id="tspan2255"
+           y="95.196315"
+           x="709.13702"
+           sodipodi:role="line">Payload: 4098</tspan><tspan
+           id="tspan2257"
+           y="116.06552"
+           x="709.13702"
+           sodipodi:role="line">User application data:</tspan><tspan
+           id="tspan2259"
+           y="136.93473"
+           x="709.13702"
+           sodipodi:role="line">4096 + 2 bytes for</tspan><tspan
+           id="tspan2261"
+           y="157.80393"
+           x="709.13702"
+           sodipodi:role="line">empty MIME headers (\x0D + \x0A).</tspan></text>
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-size:39.69228745px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
+       x="-440.81305"
+       y="-140.80154"
+       id="text3250"><tspan
+         sodipodi:role="line"
+         id="tspan3252"
+         x="-440.81305"
+         y="-140.80154">User application wants to send 4 messages of 4098 bytes</tspan></text>
+    <rect
+       style="opacity:1;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#2e3436;stroke-width:3.0999999;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect3342"
+       width="1420.2745"
+       height="226.27417"
+       x="-473.31799"
+       y="-193.1916"
+       rx="32.324883"
+       ry="32.324883" />
+  </g>
+</svg>
