@@ -866,6 +866,9 @@ VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx       
 	/* perform connection sanity check */
 	if (!vortex_connection_do_sanity_check (ctx, session)) 
 		return NULL;
+
+	/* disable nagle */
+	vortex_connection_set_sock_tcp_nodelay (session, true);
 	
 	/* get remote peer name */
 	if (role == VortexRoleMasterListener) {
@@ -1338,7 +1341,7 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 	}
 
 	/* create the socket and check if it */
-        connection->session      = socket(AF_INET, SOCK_STREAM, 0);
+        connection->session      = socket (AF_INET, SOCK_STREAM, 0);
 	if (connection->session == VORTEX_INVALID_SOCKET) {
 
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to create socket");
@@ -1354,6 +1357,9 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 		goto __vortex_connection_new_finalize;
 	}
 	
+	/* disable nagle */
+	vortex_connection_set_sock_tcp_nodelay (connection->session, true);
+
 	/* prepare socket configuration to operate using TCP/IP
 	 * socket */
         memset(&saddr, 0, sizeof(saddr));
