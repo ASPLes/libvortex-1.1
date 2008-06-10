@@ -131,16 +131,14 @@ bool     __vortex_reader_process_socket_check_nul_frame (VortexFrame      * fram
  * @param frame The frame that contains application data that is
  * meaningful to perform a right SEQ frame counting.
  */
-bool     __vortex_reader_update_incoming_buffer_and_notify (VortexConnection  * connection,
+bool     __vortex_reader_update_incoming_buffer_and_notify (VortexCtx         * ctx,
+							    VortexConnection  * connection,
 							    VortexChannel     * channel,
 							    VortexFrame       * frame)
 {
 
 
 	VortexChannel     * channel0;
-#if defined(ENABLE_VORTEX_LOG)
-	VortexCtx         * ctx = vortex_connection_get_ctx (connection);
-#endif
 	int                 ackno, window;
 	VortexWriterData    writer;
 
@@ -164,10 +162,15 @@ bool     __vortex_reader_update_incoming_buffer_and_notify (VortexConnection  * 
 			 * value have been updated. */
 			writer.type        = VORTEX_FRAME_TYPE_SEQ;
 			writer.msg_no      = 0;
-			writer.the_frame   = vortex_frame_seq_build_up_from_params (vortex_channel_get_number (channel),
-										    ackno,
-										    window);
-			writer.the_size    = strlen (writer.the_frame);
+			writer.the_frame   = vortex_frame_seq_build_up_from_params_buffer (vortex_channel_get_number (channel),
+											   ackno,
+											   window,
+											   ctx->reader_seq_frame,
+											   /* the following size value is found at the 
+											      reader_seq_frame declaration found at vortex_ctx_private.h */
+											   50,
+											   &(writer.the_size));
+			/* writer.the_size    = strlen (writer.the_frame); */
 			writer.is_complete = true;
 			vortex_log (VORTEX_LEVEL_DEBUG, "notifying remote side that current buffer status is %s",
 				    writer.the_frame);
@@ -177,9 +180,6 @@ bool     __vortex_reader_update_incoming_buffer_and_notify (VortexConnection  * 
 			 * apply this priority. */
 			channel0 = vortex_connection_get_channel (connection, 0);
 			if ((channel0 == NULL) || ! vortex_sequencer_direct_send (connection, channel0, &writer)) {
-				/* free frame */
-				axl_free (writer.the_frame);
-
 				vortex_log (VORTEX_LEVEL_CRITICAL, "unable to queue a SEQ frame");
 				/* deallocate memory on error, because no one
 				 * will do it. */
@@ -187,9 +187,6 @@ bool     __vortex_reader_update_incoming_buffer_and_notify (VortexConnection  * 
 				return false;
 			}
 			
-			/* free frame */
-			axl_free (writer.the_frame);
-
 		} /* end if */
 		break;
 	default:
@@ -370,7 +367,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "passed connection existence stage");	
  	/* now update current incoming buffers to track SEQ frames */
- 	if (! __vortex_reader_update_incoming_buffer_and_notify (connection, channel, frame)) {
+ 	if (! __vortex_reader_update_incoming_buffer_and_notify (ctx, connection, channel, frame)) {
  		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to notify SEQ channel status, connection broken or protocol violation");
  		return;
  	} /* end if */

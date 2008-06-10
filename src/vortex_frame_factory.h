@@ -66,10 +66,31 @@ char  *        vortex_frame_build_up_from_params_s (VortexFrameType   type,
 						    const void   *    payload,
 						    int    *          frame_size);
 
+char  * vortex_frame_build_up_from_params_s_buffer (VortexFrameType   type,
+ 						    int               channel,
+ 						    int               msgno,
+ 						    bool              more,
+ 						    unsigned int      seqno,
+ 						    int               size,
+ 						    int               ansno,
+ 						    const char   *    content_type,
+ 						    const char   *    transfer_encoding,
+ 						    const void   *    payload,
+ 						    int    *          frame_size,
+ 						    char         *    buffer,
+ 						    int               buffer_size);
 
 char  *        vortex_frame_seq_build_up_from_params (int  channel_num,
 						      int  ackno,
 						      int  window_size);
+
+char  * vortex_frame_seq_build_up_from_params_buffer (int    channel_num,
+ 						      int    ackno,
+ 						      int    window_size, 
+ 						      char * buffer,
+ 						      int    buffer_size,
+ 						      int  * result_size);
+ 
 
 VortexFrame * vortex_frame_create               (VortexCtx       * ctx,
 						 VortexFrameType   type,

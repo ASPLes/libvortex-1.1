@@ -312,6 +312,64 @@ char  * vortex_frame_seq_build_up_from_params (int  channel_num,
 }
 
 /** 
+ * @brief Allows to create a new SEQ frame placing the result into the
+ * provided buffer.
+ *
+ * SEQ frame are especial to BEEP because they allows to control how
+ * flow control is handled based on channel window size. 
+ *
+ * @param channel_num The channel number where the channel will 
+ *
+ * @param ackno The sequence number expected to be received at the
+ * time the SEQ frame was generated.
+ *
+ * @param window_size The window size that the SEQ frame will
+ * acknowledge.
+ *
+ * @param buffer The buffer that will hold the content.
+ *
+ * @param buffer_size The buffer size.
+ *
+ * @param result_size Reference to an integer variable where the size
+ * of the result will be returned.
+ * 
+ * @return A newly allocated raw SEQ frame. Returned value should be
+ * deallocated using axl_free.
+ */
+char  * vortex_frame_seq_build_up_from_params_buffer (int         channel_num,
+						      int         ackno,
+						      int         window_size, 
+						      char      * buffer,
+						      int         buffer_size,
+						      int       * result_size)
+{
+	int    real_size = 0;
+
+	/* just build and return the string */
+	if (buffer != NULL && buffer_size > 0) {
+		/* clear result size */
+		if (result_size)
+			(*result_size) = 0;
+
+		axl_stream_printf_buffer (buffer, buffer_size, &real_size, 
+					  "SEQ %d %d %d\x0D\x0A", channel_num, ackno, window_size);
+		if (real_size > buffer_size) {
+			return NULL;
+		} /* end if */
+		
+		/* configure resulting size */
+		if (result_size)
+			(*result_size) = real_size;
+
+		/* return the same reference */
+		return buffer;
+	} /* end if */
+
+	/* use allocated function */
+	return axl_stream_strdup_printf ("SEQ %d %d %d\x0D\x0A", channel_num, ackno, window_size);
+}
+
+/** 
  * @brief Builds a frame using the given parameters.
  *
  * This function should not be useful for Vortex Library consumer
@@ -355,6 +413,254 @@ char  * vortex_frame_build_up_from_params (VortexFrameType   type,
 					   const void *      payload)
 {
 	return vortex_frame_build_up_from_params_s (type, channel, msgno, more, seqno, size, ansno, NULL, NULL, payload, NULL);
+}
+
+/**
+ * @internal Common macro that holds all variables to be placed to
+ * create a BEEP header using the following printf format:
+ *
+ *   "%s %d %d %c %u %d %d\x0D\x0A%s%s%s%s%s%s%s"  -> for ans header
+ *   "%s %d %d %c %u %d%s\x0D\x0A%s%s%s%s%s%s%s"   -> for the rest
+ */
+#define VORTEX_FRAME_COMMON_BEEP_HEADER(ansno_decl)                           \
+    /* BEEP header values */                                                  \
+    message_type,                                                             \
+    channel,                                                                  \
+    msgno,                                                                    \
+    more ? '*' : '.',                                                         \
+    seqno,                                                                    \
+    /* payload size, do not use "size" because it specify                     \
+       the payload size without considering content type                      \
+       and content transfer encoding.                                         \
+                                                                              \
+       "header_size" is not the BEEP frame header size but                    \
+       the "size" value that goes inside the BEEP                             \
+       header. */                                                             \
+    header_size,                                                              \
+    /* place ansno decl if provided by the caller */                          \
+    ansno_decl,                                                               \
+    /* content type values */                                                 \
+    place_content_type ? "Content-Type: "   : "",                             \
+    place_content_type ? content_type       : "",                             \
+    place_content_type ? "\x0D\x0A"         : "",                             \
+    /* content transfer encoding */                                           \
+    place_transfer_encoding ? "Content-Transfer-Encoding: "   : "",           \
+    place_transfer_encoding ? transfer_encoding               : "",           \
+    place_transfer_encoding ? "\x0D\x0A"                      : "",           \
+    /* place entity header trailing header if some of them is defined */      \
+    ( place_content_type || place_transfer_encoding) ? "\x0D\x0A" : ""
+
+/** 
+ * @brief Creates a new frame, using the given data and returning
+ * current frame size resulting from the operation, and placing the
+ * content into the buffer provided if defined.
+ *
+ * This function replaces \ref vortex_frame_build_up_from_params and
+ * it is considered to be more accurate and secure.
+ *
+ * @param type              Frame type.
+ *
+ * @param channel           The channel number for the frame.
+ *
+ * @param msgno             The message number for the frame.
+ *
+ * @param more              More flag status for the frame.
+ *
+ * @param seqno             Sequence number for the frame
+ *
+ * @param size              The frame payload size.
+ *
+ * @param ansno             The answer number for the frame
+ *
+ * @param content_type Optional content type to be used for the
+ * channel being sent. If no value is provided no content type will be
+ * placed. If content type provided is also the default value then no
+ * content type will be placed.
+ *
+ * @param transfer_encoding Optional content transfer encoding. If no
+ * value is provided no content transfer type will be placed. If
+ * content transfer type provided is also the default value then no
+ * content type will be placed.
+ *
+ * @param payload           The payload is going to have the frame.
+ *
+ * @param frame_size An optional pointer to an integer value which
+ * holds current frame size.
+ *
+ * @param buffer The buffer where the content will be placed.
+ *
+ * @param buffer_size The size of the buffer.
+ *
+ * @return A newly created frame that should be freed using axl_free.
+ */
+char  * vortex_frame_build_up_from_params_s_buffer (VortexFrameType   type,
+ 						    int               channel,
+ 						    int               msgno,
+ 						    bool              more,
+ 						    unsigned int      seqno,
+ 						    int               size,
+ 						    int               ansno,
+ 						    const char   *    content_type,
+ 						    const char   *    transfer_encoding,
+ 						    const void   *    payload,
+ 						    int    *          frame_size,
+ 						    char         *    buffer,
+ 						    int               buffer_size)
+{
+	char     * message_type = NULL;
+	char     * value;
+	int        header_size;
+	int        header_length;
+ 	int        real_size    = 0;
+	bool       place_content_type;
+	bool       place_transfer_encoding;
+
+	/*
+	 * According to the frame type build the initial frame header
+	 * using BEEP prefix.
+	 */
+	switch (type) {
+	case VORTEX_FRAME_TYPE_UNKNOWN:
+		return NULL;
+	case VORTEX_FRAME_TYPE_MSG:
+		message_type = "MSG";
+		break;
+	case VORTEX_FRAME_TYPE_RPY:
+		message_type = "RPY";
+		break;
+	case VORTEX_FRAME_TYPE_ANS:
+		message_type = "ANS";
+		break;
+	case VORTEX_FRAME_TYPE_ERR:
+		message_type = "ERR";
+		break;
+	case VORTEX_FRAME_TYPE_NUL:
+		message_type = "NUL";
+		break;
+	case VORTEX_FRAME_TYPE_SEQ:
+		/* use seq frame building function */
+		return vortex_frame_seq_build_up_from_params_buffer (channel, seqno, size, buffer, buffer_size, NULL);
+	default:
+		if (frame_size != NULL)
+			(* frame_size ) = -1;
+		return NULL;
+	}
+
+	/*
+	 * check if we have to build content type and content transfer
+	 * encoding headers ... */
+	place_content_type      = (content_type      != NULL) && ! axl_stream_cmp (content_type, "application/octet-stream", 24);
+	place_transfer_encoding = (transfer_encoding != NULL) && ! axl_stream_cmp (transfer_encoding, "binary", 6);
+
+	/* payload size for the BEEP header */
+	header_size = size;
+	
+	/* aggregate the content type, if defined, to the payload
+	 * size */
+	if (place_content_type)
+		header_size += 16 + strlen (content_type);
+
+	/* aggregate the content transfer type, if defined, to the
+	 * payload size */
+	if (place_transfer_encoding)
+		header_size += 29 + strlen (transfer_encoding);
+
+	/* aggregate two bytes more to the payload size of one of the
+	 * previous entity headers were defined, representing \r\n */
+	if (place_transfer_encoding || place_content_type)
+		header_size += 2;
+
+	/* build BEEP header */
+	if (buffer && buffer_size > 0) {
+		/* check if we are building a BEEP ANS header */
+		if (type == VORTEX_FRAME_TYPE_ANS) {
+			header_length  = axl_stream_printf_buffer (
+				buffer,
+				buffer_size,
+				&real_size,
+				/* place printf format for ANS BEEP headers */
+				"%s %d %d %c %u %d %d\x0D\x0A%s%s%s%s%s%s%s",
+				/* place arguments */
+				VORTEX_FRAME_COMMON_BEEP_HEADER(ansno));
+			
+		} else {
+			header_length  = axl_stream_printf_buffer (
+				buffer,
+				buffer_size,
+				&real_size,
+				/* place printf format for the rest of BEEP headers */
+				"%s %d %d %c %u %d%s\x0D\x0A%s%s%s%s%s%s%s",
+				/* place arguments */
+				VORTEX_FRAME_COMMON_BEEP_HEADER(""));
+		} /* end if */
+
+		/* check return status */
+		if (real_size >= buffer_size) {
+			if (frame_size != NULL)
+				(* frame_size ) = -1;
+			return NULL;
+		} /* end if */
+
+		/* configue value to point to the buffer */
+		value = buffer;
+
+	} else {
+		if (type == VORTEX_FRAME_TYPE_ANS) {
+			value  = axl_stream_strdup_printf_len (
+				/* provide the printf message format */
+				"%s %d %d %c %u %d %d\x0D\x0A%s%s%s%s%s%s%s",
+				/* provide a reference to get the header length */
+				&header_length,
+				VORTEX_FRAME_COMMON_BEEP_HEADER(ansno));
+		} else {
+			value  = axl_stream_strdup_printf_len (
+				/* provide the printf message format */
+				"%s %d %d %c %u %d%s\x0D\x0A%s%s%s%s%s%s%s",
+				/* provide a reference to get the header length */
+				&header_length,
+				VORTEX_FRAME_COMMON_BEEP_HEADER(""));
+		} /* end if */
+	} /* end if */
+
+	/*
+	 * Now build the frame according to previous BEEP header and
+	 * payload size received.  Next memory allocation stands from
+	 * counting header size plus payload size and then 6
+	 * additional bytes: END\\x0D\\x0A which are 5 bytes ended by a
+	 * 0x0 value meaning 1 byte more.
+	 */
+
+	if (buffer == NULL && buffer_size == 0) {
+		/*
+		 * Allocate a memory chunk to hold frame values, including
+		 * header length and payload content. On this case we use
+		 * "size" rather than "header_size". This is because
+		 * header_length includes all size for the BEEP header
+		 * (including Content-Type and Content-Transfer-Encoding
+		 * entity headers) and "size" is the payload size. 
+		 */
+		value = axl_realloc (value, header_length + size + 6);
+	} /* end if */
+	
+	/* copy BEEP frame payload */
+	memcpy (value + header_length, payload, size);
+
+	/* copy BEEP frame trailing */
+	memcpy (value + header_length + size, "END\x0D\x0A", 5);
+
+	/* nullify the last char */
+	value [header_length + size + 5] = 0;
+
+	/*
+	 * return calculated frame size, NOTE: that the returned size
+	 * for constant value is 7 rather than 8 as stated on previous
+	 * statement allocating memory, this is because we don't want
+	 * to write to the socket a 0x0 value. 
+	 */
+	if (frame_size != NULL)
+		(* frame_size) = header_length + 5 + size;
+
+	return value;	
 }
 
 /** 
@@ -402,154 +708,24 @@ char  * vortex_frame_build_up_from_params_s (VortexFrameType   type,
 					     unsigned int      seqno,
 					     int               size,
 					     int               ansno,
-					     const char      * content_type,
-					     const char      * transfer_encoding,
-					     const void      * payload,
-					     int             * frame_size)
+					     const char   *    content_type,
+					     const char   *    transfer_encoding,
+					     const void   *    payload,
+					     int    *          frame_size)
 {
-	char     * message_type = NULL;
-	char     * ansno_string = NULL;
-	char     * value;
-	int        header_size;
-	int        header_length;
-	bool       place_content_type;
-	bool       place_transfer_encoding;
-
-	/*
-	 * According to the frame type build the initial frame header
-	 * using BEEP prefix.
-	 */
-	switch (type) {
-	case VORTEX_FRAME_TYPE_UNKNOWN:
-		return NULL;
-	case VORTEX_FRAME_TYPE_MSG:
-		message_type = "MSG";
-		break;
-	case VORTEX_FRAME_TYPE_RPY:
-		message_type = "RPY";
-		break;
-	case VORTEX_FRAME_TYPE_ANS:
-		message_type = "ANS";
-		break;
-	case VORTEX_FRAME_TYPE_ERR:
-		message_type = "ERR";
-		break;
-	case VORTEX_FRAME_TYPE_NUL:
-		message_type = "NUL";
-		break;
-	case VORTEX_FRAME_TYPE_SEQ:
-		/* use seq frame building function */
-		return vortex_frame_seq_build_up_from_params (channel, seqno, size);
-	default:
-		if (frame_size != NULL)
-			(* frame_size ) = -1;
-		return NULL;
-	}
-
-	/*
-	 * Now, for the frame ANS, we have to build the ansno value to
-	 * be included into the string to be built.
-	 */
-	if (type == VORTEX_FRAME_TYPE_ANS) 
-		ansno_string = axl_stream_strdup_printf (" %d", ansno);
-
-	/*
-	 * check if we have to build content type and content transfer
-	 * encoding headers ... */
-	place_content_type      = (content_type      != NULL) && ! axl_stream_cmp (content_type, "application/octet-stream", 24);
-	place_transfer_encoding = (transfer_encoding != NULL) && ! axl_stream_cmp (transfer_encoding, "binary", 6);
-
-	/* payload size for the BEEP header */
-	header_size = size;
-	
-	/* aggregate the content type, if defined, to the payload
-	 * size */
-	if (place_content_type)
-		header_size += 16 + strlen (content_type);
-
-	/* aggregate the content transfer type, if defined, to the
-	 * payload size */
-	if (place_transfer_encoding)
-		header_size += 29 + strlen (transfer_encoding);
-
-	/* aggregate two bytes more to the payload size of one of the
-	 * previous entity headers were defined, representing \r\n */
-	if (place_transfer_encoding || place_content_type)
-		header_size += 2;
-
-	/* build BEEP header */
-	value  = axl_stream_strdup_printf_len (
-		/* provide the printf message format */
-		"%s %d %d %c %u %d%s\x0D\x0A%s%s%s%s%s%s%s",
-		/* provide a reference to get the header length */
-		&header_length,
-		/* BEEP header values */
-		message_type,
-		channel,
-		msgno,
-		more ? '*' : '.',
-		seqno,
-		/* payload size, do not use "size" because it specify
-		   the payload size without considering content type
-		   and content transfer encoding. 
-		  
-		   "header_size" is not the BEEP frame header size but
-		   the "size" value that goes inside the BEEP
-		   header. */
-		header_size,
-		(ansno_string != NULL) ? ansno_string : "", /* ansno ? */
-		/* content type values */
-		place_content_type ? "Content-Type: "   : "",
-		place_content_type ? content_type       : "",
-		place_content_type ? "\x0D\x0A"         : "",
-		/* content transfer encoding */
-		place_transfer_encoding ? "Content-Transfer-Encoding: "   : "",
-		place_transfer_encoding ? transfer_encoding               : "",
-		place_transfer_encoding ? "\x0D\x0A"                      : "",
-		/* place entity header trailing header if some of them is defined */
-		( place_content_type || place_transfer_encoding) ? "\x0D\x0A" : "");
-
-	/*
-	 * Now build the frame according to previous BEEP header and
-	 * payload size received.  Next memory allocation stands from
-	 * counting header size plus payload size and then 6
-	 * additional bytes: END\\x0D\\x0A which are 5 bytes ended by a
-	 * 0x0 value meaning 1 byte more.
-	 */
-
-	/*
-	 * Allocate a memory chunk to hold frame values, including
-	 * header length and payload content. On this case we use
-	 * "size" rather than "header_size". This is because
-	 * header_length includes all size for the BEEP header
-	 * (including Content-Type and Content-Transfer-Encoding
-	 * entity headers) and "size" is the payload size. 
-	 */
-	value = axl_realloc (value, header_length + size + 6);
-	
-	/* copy BEEP frame payload */
-	memcpy (value + header_length, payload, size);
-
-	/* copy BEEP frame trailing */
-	memcpy (value + header_length + size, "END\x0D\x0A", 5);
-
-	/* nullify the last char */
-	value [header_length + size + 5] = 0;
-
-	/* deallocate value used to create the ansno value */
-	if (ansno_string != NULL)
-		axl_free (ansno_string);
-
-	/*
-	 * return calculated frame size, NOTE: that the returned size
-	 * for constant value is 7 rather than 8 as stated on previous
-	 * statement allocating memory, this is because we don't want
-	 * to write to the socket a 0x0 value. 
-	 */
-	if (frame_size != NULL)
-		(* frame_size) = header_length + 5 + size;
-
-	return value;	
+	/* call to common implementation without using a buffer */
+	return vortex_frame_build_up_from_params_s_buffer (type,
+							   channel, 
+							   msgno,
+							   more, 
+							   seqno,
+							   size, 
+							   ansno,
+							   content_type,
+							   transfer_encoding,
+							   payload,
+							   frame_size,
+							   NULL, 0);
 }
 
 /** 

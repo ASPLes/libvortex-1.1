@@ -277,26 +277,30 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
 		    data->type, data->channel_num, data->msg_no, !(data->message_size == size_to_copy), 
 		    data->first_seq_no, size_to_copy, data->ansno);
 
-	packet->the_frame = vortex_frame_build_up_from_params_s (data->type,        /* frame type to be created */
-						       data->channel_num, /* channel number the frame applies to */
-						       data->msg_no,      /* the message number */
-						       /* frame payload size to be created */
-						       !(data->message_size == size_to_copy), /* have more frames */
+	packet->the_frame = vortex_frame_build_up_from_params_s_buffer (
+		data->type,        /* frame type to be created */
+		data->channel_num, /* channel number the frame applies to */
+		data->msg_no,      /* the message number */
+		/* frame payload size to be created */
+		!(data->message_size == size_to_copy), /* have more frames */
 						       /* sequence number for the frame to be created */
-						       data->first_seq_no, 
-						       /* size for the payload starting from previous sequence number */
-						       size_to_copy,
-						       /* an optional ansno value, only used for ANS frames */
-						       data->ansno,
-						       /* no mime configuration, already handled from vortex channel module */
-						       NULL, 
-						       /* no mime configuration for transfer encoding, 
-							* already handler by vortex channel module */
-						       NULL, 
-						       /* the frame payload itself */
-						       (data->message != NULL) ? (data->message + data->step) : NULL,
-						       /* calculated frame size */
-						       &(packet->the_size));
+		data->first_seq_no, 
+		/* size for the payload starting from previous sequence number */
+		size_to_copy,
+		/* an optional ansno value, only used for ANS frames */
+		data->ansno,
+		/* no mime configuration, already handled from vortex channel module */
+		NULL, 
+		/* no mime configuration for transfer encoding, 
+		 * already handler by vortex channel module */
+		NULL, 
+		/* the frame payload itself */
+		(data->message != NULL) ? (data->message + data->step) : NULL,
+		/* calculated frame size */
+		&(packet->the_size),
+		/* buffer and its size */
+		ctx->sequencer_send_buffer, ctx->sequencer_send_buffer_size);
+	
 	/* set frame returned to the package */
 	packet->is_complete = (size_to_copy == data->message_size);
 
@@ -552,9 +556,6 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		if (! vortex_sequencer_direct_send (connection, channel, &packet)) {
 			vortex_log (VORTEX_LEVEL_WARNING, "unable to send data at this moment");
 			
-			/* free frame */
-			axl_free (packet.the_frame);
-			
 			if (! resequence) {
 				vortex_log (VORTEX_LEVEL_WARNING, "queuing data to be sent later because we aren't resending");
 				
@@ -573,9 +574,6 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 			__vortex_sequencer_unref_and_clear (connection, data, true);
 			continue;
 		}
-		
-		/* free frame */
-		axl_free (packet.the_frame);
 		
 		/* check for keep on sending flag activated */
 		if (keep_on_sending)
