@@ -3440,15 +3440,17 @@ int                vortex_channel_queue_length                    (VortexChannel
 }
 
 /** 
- * @brief Allows to serialize all replies received on a particular
- * channel, by checking that previous replies were delivered, avoiding
- * thread race conditions.
+ * @brief Allows to serialize all messages/replies (MSG, ERR, RPY,
+ * ANS/NUL) received on a particular channel, by checking that
+ * previous messages/replies were delivered, avoiding thread race conditions.
  *
  * This function allows to *ensure* that all calls to the frame
- * received handler are done in a way they are ordered. By calling to
+ * received handler (\ref VortexOnFrameReceived) are done in a way they are ordered. By calling to
  * this function, the vortex engine will ensure that all frames
  * received will be serialized without taking into consideration the
  * thread planner.
+ *
+ * <b>FUNCTION BACKGROUND: why?</b>
  * 
  * Though all frames received are ordered, once they are processed by
  * the vortex reader, they are passed in to the second level handler
@@ -3463,6 +3465,38 @@ int                vortex_channel_queue_length                    (VortexChannel
  * with its corresponding MSG, but under some circumstances where
  * replies have a relation, like chunks of a file transferred, it is
  * really required to process chunks received in an strict order.
+ *
+ * <b>CONFIGURING LISTENER SIDE:</b>
+ *
+ * Because the function enforces ordered delivery without considering
+ * how the thread planner will do, the function must be called at the
+ * side where it is required. If serial behaviour if required at the
+ * listener side, then a call on this side is required. The same
+ * applies to the initiator/client side.
+ *
+ * In the case you want ordered delivery at the listener side, you
+ * must configure the channel before receiving any message/reply. To
+ * do so, configure a start channel handler (\ref VortexOnStartChannel
+ * or \ref VortexOnStartChannelExtended), and get access to the
+ * channel being accepted by using \ref vortex_connection_get_channel,
+ * by providing the <b>channel_num</b> received:
+ *
+ * \code
+ * bool my_start_channel (int                channel_num, 
+ *                        VortexConnection * connection,
+ *                        axlPointer         user_data)
+ * {
+ *      // get channel reference 
+ *      VortexChannel * channel = vortex_connection_get_channel (connection, channel_num);
+ *
+ *      // configure serialize behaviour 
+ *      vortex_channel_set_serialize (channel, true);
+ *
+ *      // accept channel 
+ *      return true;
+ * }
+ * \endcode
+ *
  *
  * @param channel The channel to make frame received handler to behave
  * in a serialize fashion.
@@ -6103,49 +6137,6 @@ void vortex_channel_notify_close (VortexChannel * channel, int  msg_no, bool    
 	}
 
 	return;
-}
-
-/** 
- * @brief Allows to get best message size for a message transfer. 
- *
- * The information returned by this function could be used to know the
- * amount of information that should be included into the next message
- * to be used (\ref vortex_channel_send_msg, \ref
- * vortex_channel_send_rpy, etc).
- *
- * This function provides the effective message size to be used for a
- * bulk transfer, avoiding BTF issue (see \ref
- * http://www.aspl.es/vortex/btf.html).
- *
- * In general, if your intention is to produce a large set of messages
- * for a long transfer (because you are sending a file) you should
- * call this function to messages that do not produce bad interations
- * inside the Vortex engine.
- * 
- * @param channel The channel where the transfer will be performed.
- *
- * @param mime_message Allows to inform the function that the content
- * to be sent is a MIME message. 
- * 
- * @return The amount of bytes that should be included on each message
- * to be transfered. NOTE: this function is just an indication. Your
- * message will arrive, no matter its size (with common sense
- * expections) and the size you use to transfer its fragments. Using
- * the information from this function will make your transfer to get
- * best throughput. If a NULL reference is received, 0 is returned.
- */
-int                vortex_channel_get_effective_transfer_size    (VortexChannel    * channel,
-								  bool               mime_message)
-{
-	v_return_val_if_fail (channel, 0);
-
-	/* in the case a MIME message is found, let the caller to use
-	 * all available window */
-	if (mime_message)
-		return 4096;
-	/* if not, use only availabe window without two bytes (CR+LF)
-	 * required to implement the empty MIME header */
-	return 4094;
 }
 
 /** 
