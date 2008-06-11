@@ -340,9 +340,6 @@ void               vortex_channel_notify_close                   (VortexChannel 
 								  int                msg_no,
 								  bool               action);
 
-int                vortex_channel_get_effective_transfer_size    (VortexChannel    * channel,
-								  bool               mime_message);
-
 /* message validation */
 bool               vortex_channel_validate_err                   (VortexFrame * frame, 			  
 								  char  ** code, char  **msg);
