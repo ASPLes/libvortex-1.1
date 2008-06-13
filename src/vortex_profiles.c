@@ -705,8 +705,25 @@ axlPointer __vortex_profiles_invoke_frame_received (axlPointer __data)
 		goto free_resources;
 	} /* end if */
 
+	/* check to enforce serialize */
+	if (vortex_channel_check_serialize (connection, channel, frame)) {
+		/* if the function returns true, we must return
+		 * because the message was stored for later
+		 * delivery */
+		return NULL;
+	} /* end if */
+
+ deliver_frame:
+
 	/* invoke frame received on this channel */
 	profile->received (channel, connection, frame, profile->received_user_data);
+
+	/* check serialize to broadcast other waiting threads */
+	if (vortex_channel_check_serialize_pending (channel, &frame)) {
+		/* if previous function returns true, a new frame
+		 * reference we have to deliver */
+		goto deliver_frame;
+	}
 
 	/* before frame receive handler we have to check if client
 	 * have closed its connection */

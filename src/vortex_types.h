@@ -837,16 +837,6 @@ typedef enum  {
 }VortexThreadConf;
 
 /**
- * @internal definition for wait reply method.
- */
-struct _WaitReplyData {
-	int                 msg_no_reply;
-	VortexAsyncQueue  * queue;
-	VortexMutex         mutex;
-	int                 refcount;
-};
-
-/**
  * @brief Wait Reply data used for \ref vortex_manual_wait_reply "Wait Reply Method".
  *
  * See \ref vortex_manual_wait_reply "this section to know more about Wait Reply Method.
