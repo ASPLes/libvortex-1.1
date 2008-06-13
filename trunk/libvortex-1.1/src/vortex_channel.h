@@ -389,5 +389,12 @@ void                vortex_channel_cleanup                        (VortexCtx * c
 
 bool                vortex_channel_block_until_replies_are_sent   (VortexChannel * channel, 
 								   long int        microseconds_to_wait);
+
+bool                vortex_channel_check_serialize                (VortexConnection * connection, 
+								   VortexChannel    * channel, 
+								   VortexFrame      * frame);
+
+bool               vortex_channel_check_serialize_pending         (VortexChannel  * channel, 
+								   VortexFrame   ** caller_frame);
 								   
 #endif

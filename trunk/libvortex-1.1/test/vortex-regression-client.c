@@ -166,6 +166,12 @@ void subs (struct timeval stop, struct timeval start, struct timeval * _result)
 #define REGRESSION_URI_MIME "http://iana.org/beep/transient/vortex-regression/mime"
 
 /** 
+ * Profile use to identify the regression test client and server mime
+ * support.
+ */
+#define REGRESSION_URI_ORDERED_DELIVERY "http://iana.org/beep/transient/vortex-regression/ordered-delivery"
+
+/** 
  * @internal Allows to know if the connection must be created directly or
  * through the tunnel.
  */
@@ -2669,6 +2675,101 @@ bool test_02g (void) {
 	return true;
 }
 
+#define TEST_02I_MESSAGES (100)
+
+bool test_02i (void) {
+
+	VortexConnection * connection;
+	VortexChannel    * channel;
+	int                iterator;
+	VortexAsyncQueue * queue;
+	VortexFrame      * frame;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+		
+	} /* end if */
+
+	/* create a channel */
+	queue   = vortex_async_queue_new ();
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_ORDERED_DELIVERY,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* no frame received */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+
+	if (channel == NULL) {
+		printf ("ERROR: unable to create channel to check enforced server side ordered delivery..\n");
+		return false;
+	}
+
+	/* send one thousand messages */
+	iterator = 0;
+	while (iterator < TEST_02I_MESSAGES) {
+		/* send the message */
+		if (! vortex_channel_send_msg (channel, "this is a test", 14, NULL)) {
+			printf ("ERROR: failed to send message to check ordered delivery (iterator=%d)..\n", iterator);
+			return false;
+		} /* end if */
+
+		if (! vortex_connection_is_ok (connection, false)) {
+			printf ("ERROR: expected to find connection status = ok, but failure was found during ordered delivery checking..\n");
+			return false;
+		} /* end if */
+
+		/* next iterator */
+		iterator++;
+	}
+
+	/* get all messages */
+	iterator = 0;
+	while (iterator < TEST_02I_MESSAGES) {
+
+		frame = vortex_async_queue_pop (queue);
+		iterator++;
+
+		/* free frame */
+		if (frame != NULL) {
+			vortex_frame_unref (frame);
+		}
+
+		if (! vortex_connection_is_ok (connection, false)) {
+			printf ("ERROR (2): expected to find connection status = ok, but failure was found during ordered delivery checking..\n");
+			return false;
+		} /* end if */
+
+	} /* end if */
+	
+	/* check messages replies received */
+	if (iterator != TEST_02I_MESSAGES) {
+		printf ("ERROR (3): failed to check number of items that should be expected (%d != 1000)\n", iterator);
+		return false;
+	}
+
+	if (! vortex_connection_is_ok (connection, false)) {
+		printf ("ERROR (4): expected to find connection status = ok, but failure was found during ordered delivery checking..\n");
+		return false;
+	} /* end if */
+
+	/* unref the queue */
+	vortex_async_queue_unref (queue);
+	
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return false;
+	} /* end if */
+	
+	/* return true */
+	return true;
+}
+
 
 /** 
  * @brief Checks BEEP support to send large messages that goes beyond
@@ -3326,7 +3427,6 @@ void test_04_a_frame_received (VortexChannel    * channel,
 	} /* end if */
 	
 	/* check content */
-	printf ("ANS frame received id=%d..\n", vortex_frame_get_ansno (frame));
 	if (!axl_cmp ((char *) vortex_frame_get_payload (frame), 
 		      TEST_REGRESION_URI_4_MESSAGE)) {
 		printf ("Expected to find different message at test: %s != '%s'..\n",
@@ -3432,7 +3532,6 @@ bool test_04_a_common (int block_size) {
 		} /* end if */
 
 		/* check content */
-		printf ("ANS frame received id=%d..\n", vortex_frame_get_ansno (frame));
 		if (!axl_cmp ((char *) vortex_frame_get_payload (frame),
 			      TEST_REGRESION_URI_4_MESSAGE)) {
 			printf ("Expected to find different message(%d) at test: %s != '%s'..\n",
@@ -4836,6 +4935,7 @@ bool test_09 (void)
 {
 	VortexConnection * conn;
 	VortexChannel    * channel;
+	VortexAsyncQueue * queue;
 
 	int                iterator;
 
@@ -4858,10 +4958,6 @@ bool test_09 (void)
 					      NULL, NULL);
 		vortex_channel_ref (channel);
 		
-/*	vortex_color_log_enable (true);
-	vortex_log_enable (true);
-	vortex_log2_enable (true); */
-		
 		/* send a message and close */
 		vortex_channel_send_msg (channel, "", 0, NULL);
 		
@@ -4876,7 +4972,52 @@ bool test_09 (void)
 
 		/* check channels */
 		if (vortex_connection_channels_count (conn) != 1) {
-			printf ("failed, expected to find one 1 channel running in the connection..\n");
+			printf ("failed, expected to find one (1 != %d) channel running in the connection..\n",
+				vortex_connection_channels_count (conn));
+			return false;
+		}
+
+		iterator++;
+	} /* end if */
+
+	printf ("\n");
+
+	printf ("Test 09: now checking close in transit with a delay before calling to close..");
+	iterator = 0;
+	while (iterator < 10) {
+		printf (".");
+		fflush (stdout);
+		channel = vortex_channel_new (conn, 0,
+					      CLOSE_IN_TRANSIT_URI,
+					      /* no close handling */
+					      NULL, NULL,
+					      /* frame receive async handling */
+					      NULL, NULL,
+					      /* no async channel creation */
+					      NULL, NULL);
+		vortex_channel_ref (channel);
+		
+		/* send a message and close */
+		vortex_channel_send_msg (channel, "", 0, NULL);
+
+		/* create the queue and wait */
+		queue = vortex_async_queue_new ();
+		vortex_async_queue_timedpop (queue, 1000);
+		vortex_async_queue_unref (queue);
+		
+		/* close the channel */
+		if (! vortex_channel_close (channel, NULL)) {
+			printf ("Failed to close the channel..\n");
+			return false;
+		}
+
+		/* unref the channel */
+		vortex_channel_unref (channel);
+
+		/* check channels */
+		if (vortex_connection_channels_count (conn) != 1) {
+			printf ("failed, expected to find one (1 != %d) channel running in the connection..\n",
+				vortex_connection_channels_count (conn));
 			return false;
 		}
 
@@ -5096,7 +5237,7 @@ int main (int  argc, char ** argv)
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
 	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, \n");
 	printf ("**                       test_02, test_02a, test_02b, test_02c, test_02d, test_02e, \n"); 
-	printf ("**                       test_02f, test_02g, test_02h, test_03, test_03a, test_04, \n");
+	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_03, test_03a, test_04, \n");
 	printf ("**                       test_04a, test_04b, test_04c, test_05, test_05a, test_06, \n");
 	printf ("**                       test_07, test_08, test_09, test_10, test_11, test_12, test_13\n");
 	printf ("**\n");
@@ -5219,7 +5360,10 @@ int main (int  argc, char ** argv)
 			run_test (test_02g, "Test 02-g", "check basic BEEP support with different frame sizes", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02h"))
-			run_test (test_02h, "Test 02-h", "check bandwith performrace with different window and segmentator sizes", -1, -1);
+			run_test (test_02h, "Test 02-h", "check bandwith performance with different window and segmentator sizes", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_02i"))
+			run_test (test_02i, "Test 02-i", "check enforced ordered delivery at server side", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_03"))
 			run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
@@ -5320,7 +5464,9 @@ int main (int  argc, char ** argv)
  	run_test (test_02g, "Test 02-g", "check basic BEEP support with different frame sizes", -1, -1);
   
  	run_test (test_02h, "Test 02-h", "check bandwith performrace with different window and segmentator sizes", -1, -1);
-  
+
+ 	run_test (test_02i, "Test 02-i", "check enforced ordered delivery at server side", -1, -1);
+	
  	run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
   
  	run_test (test_03a, "Test 03-a", "vortex channel pool support", -1, -1);

@@ -404,6 +404,17 @@ typedef struct _VortexChannelData {
 	bool                      threaded;
 }VortexChannelData;
 
+/**
+ * @internal definition for wait reply method.
+ */
+struct _WaitReplyData {
+	int                 msg_no_reply;
+	VortexAsyncQueue  * queue;
+	VortexMutex         mutex;
+	int                 refcount;
+	VortexChannel     * channel;
+};
+
 /** 
  * @internal
  *
@@ -4497,9 +4508,9 @@ bool     __vortex_channel_close_full (VortexChannel * channel,
 		vortex_mutex_unlock (&channel->close_mutex);
 
 		/* notify close */
-		NOTIFY_CLOSE(channel, false, "554", "Channel in process on being closed before calling to this function.");
+		NOTIFY_CLOSE(channel, false, "554", "Channel in process of being closed before calling to this function.");
 
-		vortex_log (VORTEX_LEVEL_WARNING, "Channel in process on being closed before calling to this function.");
+		vortex_log (VORTEX_LEVEL_WARNING, "Channel in process of being closed before calling to this function.");
 		return true;
 	}
 
@@ -4510,6 +4521,7 @@ bool     __vortex_channel_close_full (VortexChannel * channel,
 	/* create and register the way reply here to ensure that we
 	 * support close in transit */
 	wait_reply = vortex_channel_create_wait_reply ();
+	wait_reply->channel = channel;
 	vortex_channel_set_data (channel, 
 				 /* the key */
 				 VORTEX_CHANNEL_WAIT_REPLY, 
@@ -4771,11 +4783,10 @@ typedef struct _ReceivedInvokeData {
         vortex_mutex_unlock (&mutex);                                                   \
         vortex_channel_unref (channel);                                                 \
         vortex_connection_unref (connection, "second level handler (frame received)");  \
-                                                                                        \
-        /* free received data */                                                        \
-        axl_free (data);                                                                \
         vortex_log (VORTEX_LEVEL_WARNING, "store frame because previous one is expected"); \
-        return NULL;                                                                    \
+                                                                                        \
+        /* signal that the message was stored */                                        \
+        return true;                                                                    \
     }                                                                                   \
     vortex_mutex_unlock (&mutex);                                                       \
 }while(0);
@@ -4806,7 +4817,9 @@ typedef struct _ReceivedInvokeData {
                                                                                                                      \
    /* check, unref and nullify the frame */                                                                          \
    if (! status) {                                                                                                   \
-        vortex_frame_unref (frame);                                                                                  \
+       /* deliver the frame as received */                                                                           \
+       (*caller_frame) = NULL;                                                                                       \
+       vortex_frame_unref (frame);                                                                                   \
    }                                                                                                                 \
    frame = NULL;                                                                                                     \
                                                                                                                      \
@@ -4829,9 +4842,119 @@ typedef struct _ReceivedInvokeData {
    if (frame != NULL) {                                                                                              \
        vortex_log (VORTEX_LEVEL_WARNING, "restored frame that can now be delivered");                    \
        /* deliver the frame as received */                                                                           \
-       goto deliver_frame;                                                                                           \
+       (*caller_frame) = frame;                                                                                      \
+       return true;                                                                                                  \
    } /* end if */                                                                                                    \
 }while(0);
+
+
+
+/** 
+ * @internal Function used to check for previously stored frames. If
+ * the function returns a reference, the caller must continue with the
+ * delivery.
+ * 
+ * @param channel The channel where the operation will be implemented.
+ * 
+ * @return true if the frame provided was deallocated and a new frame
+ * was configured on the reference to continue with the delivery. If
+ * false is returned the frame is left untouched.
+ */
+bool vortex_channel_check_serialize_pending (VortexChannel  * channel, 
+					     VortexFrame   ** caller_frame)
+{
+	bool          is_ans_frame;
+	bool          is_nul_frame;
+	bool          status;
+	VortexFrame * frame = (*caller_frame);
+	VortexCtx   * ctx   = vortex_channel_get_ctx (channel);
+
+	if (channel->serialize) {
+
+		if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_RPY ||
+		    vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ERR) {
+
+			/* check frames stored pending to be delivered */
+			CHECK_PENDING_FRAME(channel->serialize_rpy_mutex,
+					    channel->serialize_rpy,
+					    channel->last_reply_delivered);
+
+		} else if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_MSG) {
+
+			/* check frames stored pending to be delivered */
+			CHECK_PENDING_FRAME(channel->serialize_msg_mutex,
+					    channel->serialize_msg,
+					    channel->last_msg_delivered);
+
+		} else if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ANS ||
+			   vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
+
+			/* record nul type frame status */
+			is_nul_frame = (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL);
+
+			/* check frames stored pending to be delivered */
+			CHECK_PENDING_FRAME(channel->serialize_ans_mutex,
+					    channel->serialize_ans,
+					    channel->last_ans_delivered);
+
+			/* reset ANS/NUL delivery status */
+			if (is_nul_frame)
+				channel->last_ans_delivered = 0;
+		} /* end if */
+	}
+
+	/* if reached this point, no frame to deliver */
+	return false;
+}
+
+/** 
+ * @internal Function that implements channel ordered delivery
+ * (serialize) by checking its activation, and return true if the
+ * frame was stored for later delivery.
+ * 
+ * @param channel The channel were the check will be implemented.
+ * 
+ * @return true if the function is signaling that the frame was stored
+ * for later delivery, ortherwise false is returned and delivery
+ * continue.
+ */
+bool vortex_channel_check_serialize (VortexConnection * connection, 
+				     VortexChannel    * channel, 
+				     VortexFrame      * frame)
+{
+	bool               status;
+	int                index;
+	VortexCtx        * ctx   = vortex_channel_get_ctx (channel);
+
+	if (channel->serialize) {
+		if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_RPY ||
+		    vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ERR) {
+			/* check that the frame to deliver is the one next
+			 * expected */
+			CHECK_AND_STORE_FRAME(channel->serialize_rpy_mutex, 
+					      channel->last_reply_delivered,
+					      channel->serialize_rpy);
+		} else if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_MSG) {
+			/* check that the frame to deliver is the one
+			 * expected */
+			CHECK_AND_STORE_FRAME(channel->serialize_msg_mutex,
+					      channel->last_msg_delivered,
+					      channel->serialize_msg);
+		} else if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ANS ||
+			   vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
+			/* check that the frame to deliver is the one
+			 * expected */
+			CHECK_AND_STORE_FRAME(channel->serialize_ans_mutex,
+					      channel->last_ans_delivered,
+					      channel->serialize_ans);
+		} /* end if */
+	} /* end if */
+
+	/* continue delivery (true -> stop delivery) */
+	return false;
+}
+
+
 
 /** 
  * @internal
@@ -4852,12 +4975,6 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 	VortexFrame      * frame        = data->frame;
 	char             * raw_frame    = NULL;
 	bool               is_connected;
-	
-	/* variables used by the CHECK_AND_STORE_FRAME macro */
-	bool               status;
-	int                index;
-	bool               is_ans_frame;
-	bool               is_nul_frame;
 	VortexFrameType    type;
 
 	/* get a reference to channel number so we can check after
@@ -4909,29 +5026,14 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 	}
 
 	/* check to enforce serialize */
-	if (channel->serialize) {
-		if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_RPY ||
-		    vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ERR) {
-			/* check that the frame to deliver is the one next
-			 * expected */
-			CHECK_AND_STORE_FRAME(channel->serialize_rpy_mutex, 
-					      channel->last_reply_delivered,
-					      channel->serialize_rpy);
-		} else if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_MSG) {
-			/* check that the frame to deliver is the one
-			 * expected */
-			CHECK_AND_STORE_FRAME(channel->serialize_msg_mutex,
-					      channel->last_msg_delivered,
-					      channel->serialize_msg);
+	if (vortex_channel_check_serialize (connection, channel, frame)) {
+		/* free received data */
+		axl_free (data);
 
-		} else if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ANS ||
-			   vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
-			/* check that the frame to deliver is the one
-			 * expected */
-			CHECK_AND_STORE_FRAME(channel->serialize_ans_mutex,
-					      channel->last_ans_delivered,
-					      channel->serialize_ans);
-		} /* end if */
+		/* if the function returns true, we must return
+		 * because the message was stored for later
+		 * delivery */
+		return NULL;
 	} /* end if */
 
  deliver_frame:
@@ -4966,38 +5068,10 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 	}
 
 	/* check serialize to broadcast other waiting threads */
-	if (channel->serialize) {
-
-		if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_RPY ||
-		    vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ERR) {
-
-			/* check frames stored pending to be delivered */
-			CHECK_PENDING_FRAME(channel->serialize_rpy_mutex,
-					    channel->serialize_rpy,
-					    channel->last_reply_delivered);
-
-		} else if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_MSG) {
-
-			/* check frames stored pending to be delivered */
-			CHECK_PENDING_FRAME(channel->serialize_msg_mutex,
-					    channel->serialize_msg,
-					    channel->last_msg_delivered);
-
-		} else if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ANS ||
-			   vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
-
-			/* record nul type frame status */
-			is_nul_frame = (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL);
-
-			/* check frames stored pending to be delivered */
-			CHECK_PENDING_FRAME(channel->serialize_ans_mutex,
-					    channel->serialize_ans,
-					    channel->last_ans_delivered);
-
-			/* reset ANS/NUL delivery status */
-			if (is_nul_frame)
-				channel->last_ans_delivered = 0;
-		} /* end if */
+	if (vortex_channel_check_serialize_pending (channel, &frame)) {
+		/* if previous function returns true, a new frame
+		 * reference we have to deliver */
+		goto deliver_frame;
 	}
 
 	/* before frame receive handler we have to check if client
@@ -5885,6 +5959,7 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 	
 	/* get channel to remove */
 	channel = vortex_connection_get_channel (connection, channel_num);
+	vortex_channel_ref (channel);
 
 	/* check if the channel is in process of being closed */
 	vortex_mutex_lock (&channel->close_mutex);
@@ -5921,15 +5996,17 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 			
 			/* queue frame received */
 			QUEUE_PUSH (wait_reply->queue, ok_frame);
+ 			vortex_channel_unref (channel);
 
 			return;
 		} /* end if */
 
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to find wait reply structure to queue a fake reply, channel=%d, conn=%d",
 			    channel->channel_num, vortex_connection_get_id (channel->connection));
-		
+		vortex_channel_unref (channel);
 		return;
 	}
+ 	vortex_channel_unref (channel);
 
 	/* check if the channel has a close notify */
 	if (channel->close_notify != NULL) {
@@ -5940,7 +6017,6 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 
 		/* close unlock the mutex */
 		vortex_mutex_unlock (&channel->close_mutex);
-
 		return;
 		
 	} /* end if */
@@ -6102,7 +6178,7 @@ void vortex_channel_notify_close (VortexChannel * channel, int  msg_no, bool    
 			vortex_log (VORTEX_LEVEL_DEBUG, "message <ok />, sent, closing the connection");
 		}else {
 			/* log that the connection is broken */
-			vortex_log (VORTEX_LEVEL_WARNING," not setn <ok /> message because the connection is broken");
+			vortex_log (VORTEX_LEVEL_WARNING," not sending <ok /> message because the connection is broken");
 		}
 		
 		/* flag the connection to be closed and non usable */ 
@@ -6115,6 +6191,8 @@ void vortex_channel_notify_close (VortexChannel * channel, int  msg_no, bool    
 		       channel->channel_num, channel->profile);
 
 		/* send the positive reply (ok message) */
+		vortex_channel_ref (channel);
+		vortex_mutex_lock (&channel->close_mutex);
 		if (ok_on_wait) {
 			vortex_log (VORTEX_LEVEL_DEBUG, "sending reply to close channel=%d", channel->channel_num);
 			vortex_channel_send_rpyv (channel0, msg_no,
@@ -6134,6 +6212,10 @@ void vortex_channel_notify_close (VortexChannel * channel, int  msg_no, bool    
 
 		/* remove channel from connection */
 		vortex_connection_remove_channel (connection, channel);
+		vortex_log (VORTEX_LEVEL_DEBUG, "channel id=%d removed from connection id=%d",
+			    channel->channel_num, vortex_connection_get_id (connection));
+		vortex_mutex_unlock (&channel->close_mutex);
+		vortex_channel_unref (channel);
 	}
 
 	return;
@@ -6903,7 +6985,6 @@ VortexFrame   * vortex_channel_wait_reply              (VortexChannel * channel,
 	vortex_log (VORTEX_LEVEL_DEBUG, "getting reply at wait reply from the queue");
 	frame = vortex_async_queue_timedpop (wait_reply->queue, vortex_connection_get_timeout (ctx));
 
-
 	/* because we have accept to deliver the frame to a waiting
 	 * thread, we understand this frame have being delivered */
 	channel->reply_processed = true;
@@ -6915,6 +6996,19 @@ VortexFrame   * vortex_channel_wait_reply              (VortexChannel * channel,
 	}else {
 		vortex_log (VORTEX_LEVEL_DEBUG, "received reply, freeing wait reply object");
 
+		/* before releasing check if the wait reply was stored
+		 * to close the channel, and remove it because we have
+		 * received the reply. This is a close in transit case
+		 * where the wait reply could be used to wait for an
+		 * incoming <ok> message, but it could be received
+		 * <close> for the same channel  */
+		if (wait_reply->channel != NULL && 
+		    wait_reply == vortex_channel_get_data (wait_reply->channel, VORTEX_CHANNEL_WAIT_REPLY)) {
+			/* clear wait reply reference to avoid
+			 * triggering close in transit handling  */
+			vortex_channel_set_data (wait_reply->channel, VORTEX_CHANNEL_WAIT_REPLY, NULL);
+			wait_reply->channel = NULL;
+		}
 		/* free data no longer needed */
 		vortex_channel_free_wait_reply (wait_reply);
 	}

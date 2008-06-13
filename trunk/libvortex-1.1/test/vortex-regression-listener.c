@@ -117,6 +117,12 @@
  */
 #define REGRESSION_URI_MIME "http://iana.org/beep/transient/vortex-regression/mime"
 
+/** 
+ * Profile use to identify the regression test client and server mime
+ * support.
+ */
+#define REGRESSION_URI_ORDERED_DELIVERY "http://iana.org/beep/transient/vortex-regression/ordered-delivery"
+
 void frame_received_fake_listeners  (VortexChannel    * channel,
 				     VortexConnection * connection,
 				     VortexFrame      * frame,
@@ -823,6 +829,50 @@ void frame_received_mime_support (VortexChannel    * channel,
 	return;
 }
 
+int ordered_delivery_message_no;
+
+bool start_ordered_delivery (int                channel_num, 
+			     VortexConnection * connection,
+			     axlPointer         user_data)
+{
+	VortexChannel * channel;
+
+	/* configure channel serialize */
+	channel = vortex_connection_get_channel (connection, channel_num);
+	vortex_channel_set_serialize (channel, true);
+
+	/* reseting message no */
+	ordered_delivery_message_no = 0;
+
+	return true;
+}
+
+void frame_received_ordered_delivery (VortexChannel    * channel,
+				      VortexConnection * connection,
+				      VortexFrame      * frame,
+				      axlPointer         user_data)
+{
+	VortexAsyncQueue * queue;
+
+	vortex_channel_send_rpy (channel, "received ok", 11, vortex_frame_get_msgno (frame));
+
+	/* implement some articifial delay */
+	queue = vortex_async_queue_new ();
+	vortex_async_queue_timedpop (queue, 1000);
+	vortex_async_queue_unref (queue);
+
+	if (ordered_delivery_message_no != vortex_frame_get_msgno (frame)) {
+		printf ("ERROR: found different message number than expected during ordered delivery transfer (%d != %d)..\n",
+			ordered_delivery_message_no, vortex_frame_get_msgno (frame));
+		vortex_connection_shutdown (connection);
+		return;
+	} /* end if */
+
+	/* next message to check */
+	ordered_delivery_message_no++;
+	return;
+}
+
 int  main (int  argc, char ** argv) 
 {
 
@@ -939,6 +989,12 @@ int  main (int  argc, char ** argv)
 				  NULL, NULL, 
 				  NULL, NULL,
 				  frame_received_mime_support, NULL);
+
+	/* register a profile */
+	vortex_profiles_register (ctx, REGRESSION_URI_ORDERED_DELIVERY,
+				  start_ordered_delivery, NULL,
+				  NULL, NULL,
+				  frame_received_ordered_delivery, NULL);
 				  
 
 	/* enable accepting incoming tls connections, this step could
