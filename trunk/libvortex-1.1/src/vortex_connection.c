@@ -333,6 +333,11 @@ struct _VortexConnection {
 	 * to the function once executed.
 	 */
 	axlPointer              next_frame_size_data;
+	
+	/** 
+	 * @internal Reference to implement connection I/O block.
+	 */
+	bool                    is_blocked;
 };
 
 
@@ -3833,11 +3838,6 @@ void                vortex_connection_notify_new_connections       (VortexCtx   
 }
 
 /** 
- * @internal Key to access conn blocking state.
- */
-#define VORTEX_CONNECTION_BLOCK "vo:co:blk"
-
-/** 
  * @brief Enable/disable connection blocking on the provided
  * reference. Activating the connection blocking will cause the BEEP
  * session associated to stop accepting any data. This is done by
@@ -3857,9 +3857,9 @@ void                vortex_connection_block                        (VortexConnec
 								    bool               enable)
 {
 	v_return_if_fail (conn);
-
+	
 	/* set blocking state */
-	vortex_connection_set_data (conn, VORTEX_CONNECTION_BLOCK, INT_TO_PTR (enable));
+	conn->is_blocked = enable;
 
 	/* call to restart the reader */
 	vortex_reader_restart (vortex_connection_get_ctx (conn));
@@ -3883,7 +3883,7 @@ bool                vortex_connection_is_blocked                   (VortexConnec
 	v_return_val_if_fail (conn, false);
 
 	/* set blocking state */
-	return PTR_TO_INT (vortex_connection_get_data (conn, VORTEX_CONNECTION_BLOCK));
+	return conn->is_blocked;
 }
 
 /** 

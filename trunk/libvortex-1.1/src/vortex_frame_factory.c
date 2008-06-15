@@ -206,6 +206,13 @@ struct _VortexFrame {
 	 * (including MIME headers and body) */
 	axlPointer           payload;
 
+	/* real reference to the memory allocated, having all the
+	 * frame received (including trailing END\x0A\x0D but
+	 * nullified), this is used to avoid double allocating memory
+	 * to receive the content and memory to place the content. See
+	 * vortex_frame_get_next for more information. */
+	axlPointer           buffer;
+
 	/* reference to the payload content, from a MIME
 	 * perspective. This is the body part of the frame received */
 	axlPointer           content;
@@ -1356,15 +1363,15 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	frame->type = VORTEX_FRAME_TYPE_UNKNOWN;
 	if (axl_stream_cmp (line, "MSG", 3))
 		frame->type = VORTEX_FRAME_TYPE_MSG;
-	if (axl_stream_cmp (line, "RPY", 3))
+	else if (axl_stream_cmp (line, "RPY", 3))
 		frame->type = VORTEX_FRAME_TYPE_RPY;
-	if (axl_stream_cmp (line, "ANS", 3))
+	else if (axl_stream_cmp (line, "ANS", 3))
 		frame->type = VORTEX_FRAME_TYPE_ANS;
-	if (axl_stream_cmp (line, "ERR", 3))
+	else if (axl_stream_cmp (line, "ERR", 3))
 		frame->type = VORTEX_FRAME_TYPE_ERR;
-	if (axl_stream_cmp (line, "NUL", 3))
+	else if (axl_stream_cmp (line, "NUL", 3))
 		frame->type = VORTEX_FRAME_TYPE_NUL;
-	if (axl_stream_cmp (line, "SEQ", 3))
+	else if (axl_stream_cmp (line, "SEQ", 3))
 		frame->type = VORTEX_FRAME_TYPE_SEQ;
 
 	if (frame->type == VORTEX_FRAME_TYPE_UNKNOWN) {
@@ -1488,16 +1495,14 @@ process_buffer:
 	}
 	
 	/* locate body frame init */
-	frame->size                 = frame->size - frame->mime_headers_size;
+	frame->size      = frame->size - frame->mime_headers_size;
 
-	/* allocate memory from frame payload and limit it */
-	frame->payload              = axl_new (char , frame->size + 1);
+	/* point to the content received and nullify trailing BEEP frame */
+	frame->payload   = buffer + frame->mime_headers_size;
+	((char*)frame->payload) [frame->size] = 0;
 
-	/* copy content */
-	memcpy (frame->payload, buffer + frame->mime_headers_size, frame->size);
-
-	/* free allocated buffer */
-	axl_free (buffer);
+	/* get a reference to the buffer to dealloc it */
+	frame->buffer    = buffer;
 
 	/* log frame on channel received */
 	if (vortex_log_is_enabled (ctx)) {
@@ -1756,7 +1761,9 @@ void          vortex_frame_free (VortexFrame * frame)
 
 	/* free frame payload (first checking for content, and, if not
 	 * defined, then payload) */
-	if (frame->content != NULL)
+	if (frame->buffer != NULL)
+		axl_free (frame->buffer);
+	else if (frame->content != NULL)
 		axl_free (frame->content);
 	else if (frame->payload != NULL)
 		axl_free (frame->payload);
