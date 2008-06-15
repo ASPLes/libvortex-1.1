@@ -255,20 +255,33 @@ void frame_received_ans_replies (VortexChannel    * channel,
 				 VortexFrame      * frame,
 				 axlPointer         user_data)
 {
-	int iterator;
+	int     iterator;
+	int     block_size;
+	int     block_num;
+	char ** values;
+
 
 	/* ack message received */
 	if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_MSG) {
 		printf ("Sending content (ANS/NUL test: %s)\n", REGRESSION_URI_4);
+
+		/* parse message received */
+		values     = axl_split (vortex_frame_get_payload (frame), 1, ",");
+		block_size = atoi (values[1]);
+		block_num  = atoi (values[2]);
+		axl_freev (values);
+		printf ("Sending content (ANS/NUL test: %s, block size: %d, block num: %d)\n", 
+			REGRESSION_URI_4, block_size, block_num);
+
 		/* reply with a file (simulating it) */ 
 		iterator = 0;
 		
-		/* send 8192 messages of 4096 octects = 32768K = 32M */
-		while (iterator < 8192) {
+		/* send block_num messages of block_size octects  */
+		while (iterator < block_num) {
 			/* send the reply */
 			if (!vortex_channel_send_ans_rpy (channel, 
 							  /* the message reply */
-							  TEST_REGRESION_URI_4_MESSAGE, 4096,
+							  TEST_REGRESION_URI_4_MESSAGE, block_size,
 							  /* the MSG num we are replying to */
 							  vortex_frame_get_msgno (frame))) {
 
