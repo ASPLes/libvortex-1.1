@@ -3421,45 +3421,39 @@ void test_04_a_frame_received (VortexChannel    * channel,
 			return;
 		} /* end if */
 		
-		printf ("Test 04-a:   Operation completed..Ok!\n");
+		printf ("Test 04-a:     Operation completed..Ok!\n");
 		vortex_async_queue_push ((axlPointer) user_data, INT_TO_PTR (1));
 		return;
 	} /* end if */
 	
 	/* check content */
-	if (!axl_cmp ((char *) vortex_frame_get_payload (frame), 
-		      TEST_REGRESION_URI_4_MESSAGE)) {
+	if (!axl_memcmp ((char *) vortex_frame_get_payload (frame), 
+			 TEST_REGRESION_URI_4_MESSAGE,
+			 vortex_frame_get_payload_size (frame))) {
 		printf ("Expected to find different message at test: %s != '%s'..\n",
 			(char *) vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE);
 		return;
 	} /* end if */
 	
-	/* check size */
-	if (vortex_frame_get_payload_size (frame) != 4096) {
-		printf ("Expected to find different message(%d) size %d at test, but found: %d..\n",
-			vortex_frame_get_ansno (frame), 4096, vortex_frame_get_payload_size (frame));
-		return;
-	}
-	
 	return;
 }
 
-bool test_04_a_common (int block_size) {
+bool test_04_a_common (int block_size, int num_blocks, int num_times) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
 	VortexAsyncQueue * queue;
 	int                iterator;
+	int                times;
 	VortexFrame      * frame;
 	char             * message;
 	int                total_bytes = 0;
-
+	int                blocks_received;
+	
 #if defined(AXL_OS_UNIX)
 	struct timeval      start;
 	struct timeval      stop;
 #endif
-	bool                second_round = true;
-
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
 	if (!vortex_connection_is_ok (connection, false)) {
@@ -3484,143 +3478,157 @@ bool test_04_a_common (int block_size) {
 		return false;
 	}
 
- second_round_label:
-	/* request for the file */
+	times           = 0;
+	blocks_received = 0;
+	while (times < num_times) {
+		/* request for the file */
 #if defined(AXL_OS_UNIX)	
-	/* take a start measure */
-	gettimeofday (&start, NULL);
+		/* take a start measure */
+		gettimeofday (&start, NULL);
 #endif
-	printf ("Test 04-a:   sending initial request block unit=%d\n", block_size);
-	message = axl_strdup_printf ("return large message,%d", block_size);
-	if (! vortex_channel_send_msg (channel, message, strlen (message), NULL)) {
-		printf ("Failed to send message requesting for large file..\n");
-		return false;
-	} /* end if */
-	axl_free (message);
-
-	/* wait for all replies */
-	iterator    = 0;
-	total_bytes = 0;
-	printf ("Test 04-a:   waiting replies\n");
-	while (true) {
-		/* get the next message, blocking at this call. */
-		frame = vortex_channel_get_reply (channel, queue);
+		printf ("Test 04-a:   sending initial request block unit size=%d, block num=%d\n", block_size, num_blocks);
+		message = axl_strdup_printf ("return large message,%d,%d", block_size, num_blocks);
+		if (! vortex_channel_send_msg (channel, message, strlen (message), NULL)) {
+			printf ("Failed to send message requesting for large file..\n");
+			return false;
+		} /* end if */
+		axl_free (message);
 		
-		if (frame == NULL) {
-			printf ("Timeout received for regression test: %s\n", REGRESSION_URI_4);
-			continue;
-		}
-		
-		/* get payload size */
-		total_bytes += vortex_frame_get_payload_size (frame);
+		/* wait for all replies */
+		iterator    = 0;
+		total_bytes = 0;
+		printf ("Test 04-a:     waiting replies\n");
+		while (true) {
+			/* get the next message, blocking at this call. */
+			frame = vortex_channel_get_reply (channel, queue);
+			
+			if (frame == NULL) {
+				printf ("Timeout received for regression test: %s\n", REGRESSION_URI_4);
+				continue;
+			}
+			
+			/* get payload size */
+			total_bytes += vortex_frame_get_payload_size (frame);
+			blocks_received ++;
+			
+			if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
 
-		if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
+				/* check blocks received (-1 because
+				 * last NUL frame do not contain
+				 * data) */
+				if ((blocks_received - 1) != num_blocks) {
+					printf ("ERROR: Expected to find %d blocks but received %d..\n",
+						num_blocks, (blocks_received - 1));
+					return false;
+				}
 
-			/* check size */
-			if (vortex_frame_get_payload_size (frame) != 0) {
-				printf ("Expected to find NUL terminator message, with empty content, but found: %d frame size\n",
-					vortex_frame_get_payload_size (frame));
+				/* check size */
+				if (vortex_frame_get_payload_size (frame) != 0) {
+					printf ("Expected to find NUL terminator message, with empty content, but found: %d frame size\n",
+						vortex_frame_get_payload_size (frame));
+					return false;
+				} /* end if */
+				
+				/* deallocate the frame received */
+				vortex_frame_unref (frame);
+				
+				printf ("Test 04-a:     operation completed, ok\n");
+				break;
+				
+			} /* end if */
+			
+			/* check content */
+			if (!axl_memcmp ((char *) vortex_frame_get_payload (frame),
+					 TEST_REGRESION_URI_4_MESSAGE,
+					 block_size)) {
+				printf ("Expected to find different message(%d) at test: %s != '%s'..\n",
+					iterator, (char *) vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE);
 				return false;
 			} /* end if */
-
+			
+			
+			/* check size */
+			if (vortex_frame_get_payload_size (frame) != block_size) {
+				printf ("Expected to find different message(%d) size %d at test, but found: %d..\n",
+					iterator, block_size, vortex_frame_get_payload_size (frame));
+				return false;
+			}
+			
 			/* deallocate the frame received */
 			vortex_frame_unref (frame);
-
-			printf ("Test 04-a:   operation completed, ok\n");
-			break;
-
-		} /* end if */
-
-		/* check content */
-		if (!axl_cmp ((char *) vortex_frame_get_payload (frame),
-			      TEST_REGRESION_URI_4_MESSAGE)) {
-			printf ("Expected to find different message(%d) at test: %s != '%s'..\n",
-				iterator, (char *) vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE);
-			return false;
-		} /* end if */
-
-
-		/* check size */
-		if (vortex_frame_get_payload_size (frame) != block_size) {
-			printf ("Expected to find different message(%d) size %d at test, but found: %d..\n",
-				iterator, block_size, vortex_frame_get_payload_size (frame));
-			return false;
-		}
 			
-		/* deallocate the frame received */
-		vortex_frame_unref (frame);
-
-		/* update iterator */
-		iterator++;
-	} /* end while */
-
-	/* free the queue */
-	vortex_async_queue_unref (queue);
-
+			/* update iterator */
+			iterator++;
+		} /* end while */
+		
+		/* free the queue */
+		vortex_async_queue_unref (queue);
+		
 #if defined(AXL_OS_UNIX)
-	/* take a stop measure */
-	gettimeofday (&stop, NULL);
-
-	/* substract */
-	subs (stop, start, &stop);
-
-	printf ("Test 04-a:   Test ok, operation completed in: %ld.%ld seconds!  (bytes transfered: %d)!\n", 
-		stop.tv_sec, stop.tv_usec, total_bytes);
+		/* take a stop measure */
+		gettimeofday (&stop, NULL);
+		
+		/* substract */
+		subs (stop, start, &stop);
+		
+		printf ("Test 04-a:     Test ok, operation completed in: %ld.%ld seconds!  (bytes transfered: %d)!\n", 
+			stop.tv_sec, stop.tv_usec, total_bytes);
 #endif
+		
+		printf ("Test 04-a:     now, perform the same operation without queue/reply, using frame received handler\n");
 
-	printf ("Test 04-a:   now, perform the same operation without queue/reply, using frame received handler\n");
-/*	vortex_log_enable (true); */
-/*	vortex_color_log_enable (true); */
-/*	vortex_log2_enable (true); */
-
-	/* request for the file */
+		/* request for the file */
 #if defined(AXL_OS_UNIX)	
-	/* take a start measure */
-	gettimeofday (&start, NULL);
+		/* take a start measure */
+		gettimeofday (&start, NULL);
 #endif
-
-	/* create a new queue to wait */
-	queue = vortex_async_queue_new ();
-
-	/* reconfigure frame received */
-	vortex_channel_set_received_handler (channel, test_04_a_frame_received, queue);
-
-	/* request for the file */
-	if (! vortex_channel_send_msg (channel, "return large message", 20, NULL)) {
-		printf ("Failed to send message requesting for large file..\n");
-		return false;
-	} /* end if */
-
-	/* wait until the file is received */
-	printf ("Test 04-a:   waiting for file to be received\n");
-	vortex_async_queue_pop (queue);
-	printf ("Test 04-a:   file received, ok\n");
-
+		
+		/* create a new queue to wait */
+		queue = vortex_async_queue_new ();
+		
+		/* reconfigure frame received */
+		vortex_channel_set_received_handler (channel, test_04_a_frame_received, queue);
+		
+		/* request for the file */
+		message = axl_strdup_printf ("return large message,%d,%d", block_size, num_blocks);
+		if (! vortex_channel_send_msg (channel, message, strlen (message), NULL)) {
+			printf ("Failed to send message requesting for large file..\n");
+			return false;
+		} /* end if */
+		axl_free (message);
+		
+		/* wait until the file is received */
+		printf ("Test 04-a:     waiting for file to be received\n");
+		vortex_async_queue_pop (queue);
+		printf ("Test 04-a:     file received, ok\n");
+		
 #if defined(AXL_OS_UNIX)
-	/* take a stop measure */
-	gettimeofday (&stop, NULL);
-
-	/* substract */
-	subs (stop, start, &stop);
-
-	printf ("Test 04-a:   Test ok, operation completed in: %ld.%ld seconds! (bytes transfered: %d)!\n", 
-		stop.tv_sec, stop.tv_usec, total_bytes);
+		/* take a stop measure */
+		gettimeofday (&stop, NULL);
+		
+		/* substract */
+		subs (stop, start, &stop);
+		
+		printf ("Test 04-a:     Test ok, operation completed in: %ld.%ld seconds! (bytes transfered: %d)!\n", 
+			stop.tv_sec, stop.tv_usec, total_bytes);
 #endif
-
-	/* free the queue */
-	vortex_async_queue_unref (queue);
-
-	/* if second round label activated, rerun tests .. */
-	if (second_round) {
+		
+		/* free the queue */
+		vortex_async_queue_unref (queue);
+		
 		/* release the queue */
 		queue = vortex_async_queue_new ();
-
+		
 		/* reconfigure frame received */
 		vortex_channel_set_received_handler (channel, vortex_channel_queue_reply, queue);
 
-		second_round = false;
-		goto second_round_label;
-	} /* end if */
+		/* next position */
+		times++;
+	
+	} /* end while */
+
+	/* unref queue */
+	vortex_async_queue_unref (queue);
 
 	/* ok, close the channel */
 	if (! vortex_channel_close (channel, NULL))
@@ -3642,8 +3650,21 @@ bool test_04_a_common (int block_size) {
  * @return true if the test is ok, otherwise false is returned.
  */
 bool test_04_a (void) {
-	/* call to run default test */
-	return test_04_a_common (4096);
+	/* call to run default test: block=4096, block-num=4096 */
+	if (! test_04_a_common (4096, 4096, 1))
+		return false;
+
+	/* call to run test: block=4094, block-num=4096 */
+	if (! test_04_a_common (4094, 4096, 1))
+		return false;
+
+	/* call to run test: block=4094, block-num=8192 */
+	if (! test_04_a_common (4094, 8192, 1))
+		return false;
+
+
+	/* all tests ok */
+	return true;
 }
 
 /** 
@@ -5321,10 +5342,10 @@ int main (int  argc, char ** argv)
 			run_test (test_00, "Test 00", "Async Queue support", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_01"))
-			run_test (test_01, "Test 01", "basic BEEP support", 0, 3000);
+			run_test (test_01, "Test 01", "basic BEEP support", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_01a"))
-			run_test (test_01a, "Test 01-a", "transfer zeroed binary frames", 0, 75000);
+			run_test (test_01a, "Test 01-a", "transfer zeroed binary frames", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_01b"))
 			run_test (test_01b, "Test 01-b", "channel close inside created notification (31/03/2008)", -1, -1);
@@ -5437,9 +5458,9 @@ int main (int  argc, char ** argv)
 
  	run_test (test_00, "Test 00", "Async Queue support", -1, -1);
   
- 	run_test (test_01, "Test 01", "basic BEEP support", 0, 3000);
+ 	run_test (test_01, "Test 01", "basic BEEP support", -1, -1);
   
- 	run_test (test_01a, "Test 01-a", "transfer zeroed binary frames", 0, 75000);
+ 	run_test (test_01a, "Test 01-a", "transfer zeroed binary frames", -1, -1);
   
  	run_test (test_01b, "Test 01-b", "channel close inside created notification (31/03/2008)", -1, -1);
   
