@@ -833,6 +833,10 @@ void frame_received_mime_support (VortexChannel    * channel,
 	printf ("MIME message received (size %d): \n'%s'\n",
 		vortex_frame_get_content_size (frame),
 		vortex_frame_get_content (frame));
+
+	/* before sending the content, reconfigure channel to not
+	 * append CR+LF to the message */
+	vortex_channel_set_automatic_mime (channel, 2);
 	
 	/* just echo for this moment */
 	vortex_channel_send_rpy (channel,

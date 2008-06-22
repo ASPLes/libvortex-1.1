@@ -2883,6 +2883,9 @@ int                 vortex_connection_set_profile_mask       (VortexConnection  
  * value if you are only checking if a particular profile is being
  * filtered on the particular connection.
  * 
+ * @param error_msg Optional reference where the error message to be
+ * returned can be configured.
+ * 
  * @return true if the if the profile is filtered, otherwise false is
  * returned.
  */

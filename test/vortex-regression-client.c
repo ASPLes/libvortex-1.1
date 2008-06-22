@@ -712,7 +712,7 @@ bool test_01d_01 (void)
 	/* check content */
 	if (! axl_cmp (mime_body, vortex_frame_get_payload (frame))) {
 		printf ("ERROR: expected to find same mime body (%s) content (size %d != %d)..\n", "mime.example.body.1.txt",
-			strlen (mime_body), strlen (vortex_frame_get_payload (frame)));
+			(int) strlen (mime_body), (int) strlen (vortex_frame_get_payload (frame)));
 		return false;
 	}
 
@@ -1190,6 +1190,8 @@ bool test_01d (void) {
 	VortexChannel     * channel;
 	VortexFrame       * frame;
 	char              * mime_message;
+	char              * mime_body;
+	VortexMimeHeader  * mime_header;
 
 	/* check mime support first */
 	if (! test_01d_01 ())
@@ -1213,9 +1215,6 @@ bool test_01d (void) {
 	if (! test_01d_07 ())
 		return false;
 
-	return true;
-
-
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
 	if (!vortex_connection_is_ok (connection, false)) {
@@ -1235,11 +1234,14 @@ bool test_01d (void) {
 				      vortex_channel_queue_reply, queue,
 				      /* no async channel creation */
 				      NULL, NULL);
-		
+
 	if (channel == NULL) {
 		printf ("Unable to create channel to test MIME support..\n");
 		return false;
 	} /* end if */
+
+	printf ("Test 01-d: disabling automatic MIME handling for outgoing messages..\n");
+	vortex_channel_set_automatic_mime (channel, 2);
 
 	/* open first test: mime.example.1.txt */
 	printf ("Test 01-d: opening MIME message..\n");
@@ -1270,7 +1272,127 @@ bool test_01d (void) {
 			"text/plain; charset=\"ISO-8859-1\"", vortex_frame_get_content_type (frame));
 		return false;
 	}
-		
+
+	/* check MIME header: Return-path */
+	printf ("Test 01-d: Return-path: %s..\n", VORTEX_FRAME_GET_MIME_HEADER (frame, "Return-path"));
+	if (! axl_cmp (VORTEX_FRAME_GET_MIME_HEADER (frame, "Return-path"), 
+		       "<cyrus@dolphin>")) {
+		printf ("Expected to find Return-path: %s but found %s..\n", 
+			"<cyrus@dolphin>",
+			VORTEX_FRAME_GET_MIME_HEADER (frame, "Return-path"));
+		return false;
+	} 
+
+	/* check MIME header: Received */
+	printf ("Test 01-d: Received: %s..\n", VORTEX_FRAME_GET_MIME_HEADER (frame, "Received"));
+	if (! axl_cmp (VORTEX_FRAME_GET_MIME_HEADER (frame, "received"), 
+		       "from dolphin ([unix socket]) by dolphin (Cyrus\n\
+	v2.1.18-IPv6-Debian-2.1.18-5.1) with LMTP; Thu, 15 May 2008 15:23:27 +0200")) {
+		printf ("Expected to find Return-path: %s but found %s..\n", 
+			"from dolphin ([unix socket]) by dolphin (Cyrus\n\
+	v2.1.18-IPv6-Debian-2.1.18-5.1) with LMTP; Thu, 15 May 2008 15:23:27 +0200",
+			VORTEX_FRAME_GET_MIME_HEADER (frame, "received"));
+		return false;
+	} 
+
+	/* check MIME header: Message-Id */
+	printf ("Test 01-d: Message-Id: %s..\n", VORTEX_FRAME_GET_MIME_HEADER (frame, "message-Id"));
+	if (! axl_cmp (VORTEX_FRAME_GET_MIME_HEADER (frame, "Message-Id"), 
+		       "<LYRIS-1909492-337994-2008.05.15-13.59.43--francis#aspl.es@newsletters.zdnetuk.cneteu.net>")) {
+		printf ("Expected to find Return-path: %s but found %s..\n", 
+			"<LYRIS-1909492-337994-2008.05.15-13.59.43--francis#aspl.es@newsletters.zdnetuk.cneteu.net>",
+			VORTEX_FRAME_GET_MIME_HEADER (frame, "message-id"));
+		return false;
+	} 
+
+	printf ("Test 01-d: MIME message received %d size, with body %d..\n",
+		vortex_frame_get_content_size (frame), vortex_frame_get_payload_size (frame));
+
+	/* check all content size */
+	if (vortex_frame_get_content_size (frame) != 6361) {  
+		printf ("ERROR: expected to find full content size of %d but found %d..\n",
+			6361, vortex_frame_get_content_size (frame));
+		return false;
+	} /* end if */
+
+	/* check payload (MIME message body) size */
+	if (vortex_frame_get_payload_size (frame) != 4943) {  
+		printf ("ERROR: expected to find MIME message body size of %d but found %d..\n",
+			4943, vortex_frame_get_payload_size (frame));
+		return false;
+	} /* end if */
+
+	/* check mime message content */
+	if (! axl_cmp (vortex_frame_get_content (frame), mime_message)) {
+		printf ("ERROR: expected to find same MIME message as sent..\n");
+		return false;
+	}
+
+	/* check MIME message body */
+	mime_body = vortex_regression_client_read_file ("mime.example.body.1.txt", NULL);
+	if (! axl_cmp (vortex_frame_get_payload (frame), mime_body)) {
+		printf ("ERROR: expected to find same MIME message as sent..\n");
+		return false;
+	}
+
+	/* check extended MIME support (several mime headers defined) */
+	mime_header = vortex_frame_get_mime_header (frame, "received");
+	if (vortex_frame_mime_header_count (mime_header) != 3) {
+		printf ("ERROR: expected to find %d times the MIME header %s but found %d times..\n",
+			3, "Received", vortex_frame_mime_header_count (mime_header));
+		return false;
+	}
+	
+	/* check first ocurrence of "Received" */
+	if (! axl_cmp (vortex_frame_mime_header_content (mime_header), 
+		       "from dolphin ([unix socket]) by dolphin (Cyrus\n\
+	v2.1.18-IPv6-Debian-2.1.18-5.1) with LMTP; Thu, 15 May 2008 15:23:27 +0200")) {
+		printf ("ERROR: Expected to find MIME header content %s, but found %s..\n",
+			"from dolphin ([unix socket]) by dolphin (Cyrus\n\
+	v2.1.18-IPv6-Debian-2.1.18-5.1) with LMTP; Thu, 15 May 2008 15:23:27 +0200",
+			vortex_frame_mime_header_content (mime_header));
+		return false;
+	}
+
+	/* next MIME header */
+	mime_header = vortex_frame_mime_header_next (mime_header);
+	
+	if (! axl_cmp (vortex_frame_mime_header_content (mime_header), 
+		       "from mail by dolphin.aspl.es with spam-scanned (ASPL Mail Server\n\
+	XP#1) id 1JwdOA-00050S-00 for <acinom@aspl.es>; Thu, 15 May 2008 15:20:58\n\
+	+0200")) {
+		printf ("ERROR: Expected to find MIME header content %s, but found %s..\n",
+			"from mail by dolphin.aspl.es with spam-scanned (ASPL Mail Server\n\
+	XP#1) id 1JwdOA-00050S-00 for <acinom@aspl.es>; Thu, 15 May 2008 15:20:58\n\
+	+0200",
+			vortex_frame_mime_header_content (mime_header));
+		return false;
+	}
+
+	/* next MIME header */
+	mime_header = vortex_frame_mime_header_next (mime_header);
+	
+	if (! axl_cmp (vortex_frame_mime_header_content (mime_header), 
+		       "from newsletters.cneteu.net ([62.108.136.190]\n\
+	helo=newsletters.zdnetuk.cneteu.net) by dolphin.aspl.es with smtp (ASPL\n\
+	Mail Server XP#1) id 1Jwd76-00047G-00 for <francis@aspl.es>; Thu, 15 May\n\
+	2008 15:03:16 +0200")) {
+		printf ("ERROR: Expected to find MIME header content %s, but found %s..\n",
+			"from newsletters.cneteu.net ([62.108.136.190]\n\
+	helo=newsletters.zdnetuk.cneteu.net) by dolphin.aspl.es with smtp (ASPL\n\
+	Mail Server XP#1) id 1Jwd76-00047G-00 for <francis@aspl.es>; Thu, 15 May\n\
+	2008 15:03:16 +0200",
+			vortex_frame_mime_header_content (mime_header));
+		return false;
+	} /* end if */
+
+	/* get next should return NULL */
+	mime_header = vortex_frame_mime_header_next (mime_header);
+	if (mime_header != NULL) {
+		printf ("ERROR: expected to find NULL reference after call to vortex_frame_mime_header_next..\n");
+		return false;
+	}
+	printf ("Test 01-d: multiple MIME header instances ok..\n");
 
 	/* unref frame */
 	vortex_frame_unref (frame);
@@ -1283,6 +1405,7 @@ bool test_01d (void) {
 
 	/* free mime */
 	axl_free (mime_message);
+	axl_free (mime_body);
 
 	/* close the connection */
 	vortex_connection_close (connection);
