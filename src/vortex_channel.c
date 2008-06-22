@@ -385,6 +385,12 @@ struct _VortexChannel {
 	 * to the function once executed.
 	 */
 	axlPointer              next_frame_size_data;
+
+	/**
+	 * @internal Reference to store configuration for automatic
+	 * MIME header handling at channel level.
+	 */
+	int                     automatic_mime;
 };
 
 typedef struct _VortexChannelData {
@@ -458,9 +464,55 @@ int  __vortex_channel_get_mime_headers_size (VortexChannel * channel)
 	VortexCtx       * ctx               = vortex_channel_get_ctx (channel);
 #endif
 	/* mime configuration */
-	const char      * mime_type         = vortex_channel_get_mime_type (channel);
-	const char      * transfer_encoding = vortex_channel_get_transfer_encoding (channel);
+	const char      * mime_type;
+	const char      * transfer_encoding;
 	int               size              = 0;
+
+	/* Get channel MIME automatic configuration:
+	 *
+	 * The following code check current automatic MIME header
+	 * handling configuration at channel level. If it is found to
+	 * be configured (2 -> disabled or 1 -> enabled) no more is
+	 * checked.
+	 * 
+	 * In the case the no configuration is found (0 -> not
+	 * configured) the code check next level calling to profile
+	 * level configuration and then library level configuration
+	 * until a decision is found. 
+	 *
+	 * In the case all levels (channel, profile, library) returns
+	 * 0 (no significant configuration found) then it is assumed
+	 * to be implictly activated automatic MIME header addition (1).
+	 */
+ process_mime_configuration:
+	switch (channel->automatic_mime) {
+	case 2:
+		/* MIME automatic handling disabled for this channel */
+		return 0;
+	case 0:
+		/* no configuration found, try profile and library
+		 * level */
+		channel->automatic_mime = vortex_profiles_get_automatic_mime (ctx, channel->profile);
+		if (channel->automatic_mime != 0)
+			goto process_mime_configuration;
+
+		/* no configuration found at profile level, try at library level */
+		vortex_conf_get (ctx, VORTEX_AUTOMATIC_MIME_HANDLING, &channel->automatic_mime);
+		if (channel->automatic_mime == 0)
+			channel->automatic_mime = 1;
+
+		/* reprocess again */
+		goto process_mime_configuration;
+	case 1:
+		/* MIME automatic handling enabled */
+		break;
+	} /* end if */
+	vortex_log (VORTEX_LEVEL_DEBUG, "  finished checking for MIME configuration=%d for channel=%d", 
+		    channel->automatic_mime, channel->channel_num);
+
+	/* get current values */
+	mime_type         = vortex_channel_get_mime_type (channel);
+	transfer_encoding = vortex_channel_get_transfer_encoding (channel);
 
 	/* check for Content-Type header configuration */
 	if (mime_type != NULL && !axl_cmp (mime_type, "application/octet-stream")) {
@@ -503,9 +555,14 @@ int  __vortex_channel_get_mime_headers_size (VortexChannel * channel)
 void __vortex_channel_get_mime_headers (VortexChannel * channel, char  * buffer)
 {
 	/* mime configuration */
-	const char  * mime_type         = vortex_channel_get_mime_type (channel);
-	const char  * transfer_encoding = vortex_channel_get_transfer_encoding (channel);
+	const char  * mime_type;
+	const char  * transfer_encoding;
 	int           size              = 0;
+
+	
+	/* get current values */
+	mime_type         = vortex_channel_get_mime_type (channel);
+	transfer_encoding = vortex_channel_get_transfer_encoding (channel);
 
 	/* check for Content-Type header configuration */
 	if (mime_type != NULL && !axl_cmp (mime_type, "application/octet-stream")) {
@@ -544,11 +601,11 @@ void __vortex_channel_get_mime_headers (VortexChannel * channel, char  * buffer)
 	
 }
 
-/**
+/** 
  * \defgroup vortex_channel Vortex Channel: Related function to create and manage Vortex Channels.
  */
 
-/**
+/** 
  * \addtogroup vortex_channel
  * @{
  */
@@ -2105,19 +2162,15 @@ bool        __vortex_channel_send_msg_common (VortexChannel   * channel,
 }
 
 /** 
- * @brief Allows to send a message.
+ * @brief Sends the <i>message</i> over the selected
+ * <i>channel</i>. 
  *
- * Sends the <i>message</i> over the selected <i>channel</i>. It will
- * create the needed frames to be sent to remote peer connected by
- * session where <i>channel</i> is created.
+ * If <i>msg_no</i> is defined, the function will return the message
+ * number used for this delivery. This can be useful to perform a wait
+ * for the message response.
  *
- * On <i>msg_no</i> will be returned the message number used for this
- * delivery. This can be useful for waiting response for this message
- * on this channel. 
- *
- * A usual question you may have is: could I remove the message chunk
- * I've used to call this function. The answer is yes. This function
- * makes a local copy you can directly free used message as follows:
+ * The function makes a local copy of the data received
+ * (message). Here is an example:
  *
  * \code 
  *
@@ -2138,12 +2191,23 @@ bool        __vortex_channel_send_msg_common (VortexChannel   * channel,
  *
  * \endcode
  * 
- * @param channel where message will be sent
- * @param message the message to send
- * @param message_size the message size (user space calculated, that is actual <i>message</i> size)
- * @param msg_no returns the message number used for this deliver. If NULL the message number will not be returned.
+ * @param channel The channel used to send the message.
+ *
+ * @param message The message to send. The function will create a
+ * local copy so you can provide static and dinamic references.
+ *
+ * @param message_size The message size.
+ *
+ * @param msg_no Optional reference. If defined returns the message
+ * number used for this deliver (BEEP msgno). 
  * 
- * @return true if message could be sent, false if fail
+ * @return true if no error was reported after queueing the message to
+ * be sent. Otherwise false is returned. Keep in mind the function do
+ * not send the message directly. This is because the channel could be
+ * stalled at the time the message was sent or because the message is
+ * too large that requires several frames to be sent. Having said
+ * that, it is recommended to not consider a "true" value returned by
+ * this function as a successful send.
  */
 bool            vortex_channel_send_msg   (VortexChannel    * channel,
 					   const void       * message,
@@ -2214,7 +2278,7 @@ bool            vortex_channel_send_msgv       (VortexChannel * channel,
  *
  * Because in some cases the thread sending the message can run
  * faster, or simply the thread planner have chosen to give greeter
- * priority, than the thread actually does the wait, this function
+ * priority, than the thread that actually perform the wait, this function
  * allows to avoid this race condition.
  *
  * Application designer which are planning to call \ref vortex_channel_wait_reply
@@ -2480,14 +2544,14 @@ bool      __vortex_channel_common_rpy (VortexChannel    * channel,
  * @brief printf-like version for \ref vortex_channel_send_rpy function.
  *
  * This function is a wrapper to \ref vortex_channel_send_rpy but allowing
- * you to use a prinf-style message format definition. See also
- * vortex_channel_send_rpy.
+ * you to use a prinf-style message format definition. 
  * 
  * @param channel the channel where the message will be sent.
  * @param msg_no_rpy the message number to reply over this channel.
  * @param format a printf-like string format to build the message reply to be sent.
  * 
- * @return true if reply was sent, false if not.
+ * @return true if message was queued to be sent, otherwise false is
+ * returned.
  */
 bool            vortex_channel_send_rpyv       (VortexChannel * channel,
 						int             msg_no_rpy,
@@ -2545,7 +2609,7 @@ bool            vortex_channel_send_rpyv       (VortexChannel * channel,
  * matter how long each one have taken to be processed on the server
  * side.
  *
- * As a side effect, it maybe happen you don't want to get hang until
+ * As a side effect, it maybe happen you don't want to get hanged until
  * reply is received just because it doesn't make sense for the
  * application to receive all replies in the same order msg were sent.
  * 
@@ -2558,7 +2622,13 @@ bool            vortex_channel_send_rpyv       (VortexChannel * channel,
  * <ul>
  *
  *  <li>Message sent over the same channel will receive its replies in
- *  the same order the message were sent. This have a <i>"serial behavior"</i></li>
+ *  the same order the message were sent. This have a <i>"serial
+ *  behavior"</i>. 
+ *  
+ *  <i><b>NOTE:</b> Take also a look into \ref
+ *  vortex_channel_set_serialize to avoid thread planner decisions
+ *  that could make frame received handlers to "appear" to be invoked
+ *  in an unordered fashion.</i></li>
  *  
  *  <li>Message sent over different channels will receive replies as
  *  fast as the remote BEEP node replies to them. This have a <i>"parallel behavior"</i></li>
@@ -2571,7 +2641,8 @@ bool            vortex_channel_send_rpyv       (VortexChannel * channel,
  * @param message_size the message size
  * @param msg_no_rpy the message number this function is going to reply to.
  * 
- * @return true if message could be sent, false if fail
+ * @return true if message was queued to be sent, otherwise false is
+ * returned.
  */
 bool            vortex_channel_send_rpy        (VortexChannel    * channel,  
 						const void       * message,
@@ -2605,7 +2676,7 @@ bool            vortex_channel_send_rpy        (VortexChannel    * channel,
  * We have described that a series of ANS frame types must be used
  * ended by a NUL frame type. This description is handled using
  * both function \ref vortex_channel_send_ans_rpy and \ref
- * vortex_channel_send_ans_rpyv, to generate ANS message reply and
+ * vortex_channel_send_ans_rpyv, to generate ANS message replies and
  * using \ref vortex_channel_finalize_ans_rpy to generate the last
  * one, payload-empty message, using NUL frame type.
  * 
@@ -2938,6 +3009,68 @@ const char             * vortex_channel_get_transfer_encoding        (VortexChan
 		return NULL;
 	
 	return channel->transfer_encoding;
+}
+
+/** 
+ * @brief Allows to configure automatic MIME header addition handling
+ * at channel level (only the channel is affected).
+ * 
+ * See \ref vortex_manual_using_mime for a long explanation. In sort,
+ * this function allows to configure if MIME headers should be added
+ * or not automatically on each message sent using the family of functions vortex_channel_send_*.
+ *
+ * The function allows to configure at channel level automatic MIME
+ * handling. This configuration will override configuration provided
+ * at (\ref vortex_conf_set \ref VORTEX_AUTOMATIC_MIME_HANDLING) and
+ * \ref vortex_profiles_set_automatic_mime.
+ *
+ * Use the following values for "value":
+ * 
+ * - 1: Enable automatic MIME handling for messages send under the
+ * channel provided, making the configuration process to not check
+ * next levels.
+ *
+ * - 0: Makes automatic MIME handling configuration at channel level
+ * to have no signification, making the configuration process to check
+ * next levels.
+ *
+ * - 2: Disable automatic MIME handling, making the configuration
+ * process to not check next levels.
+ *
+ * @param channel The channel to configure.
+ *
+ * @param value The value to be configured.
+ */
+void      vortex_channel_set_automatic_mime      (VortexChannel  * channel,
+						  int              value)
+{
+	v_return_if_fail (channel);
+	v_return_if_fail (value == 0 || value == 1 || value == 2);
+
+	/* configuring automatic MIME handling */
+	channel->automatic_mime = value;
+	return;
+}
+
+/** 
+ * @brief Allows to get current automatic MIME header handling associated to
+ * the channel provided. See \ref vortex_channel_set_automatic_mime
+ * function for values returned.
+ * 
+ * @param channel The channel that is required to return the value
+ * associated.
+ * 
+ * @return The value associated to the automatic MIME handling
+ * configured on the channel provided. The function return 0 (not
+ * configured) if the parameter is NULL or the profile wasn't
+ * registered.
+ */
+int       vortex_channel_get_automatic_mime      (VortexChannel * channel)
+{
+	v_return_val_if_fail (channel, 0);
+
+	/* configuring automatic MIME handling */
+	return channel->automatic_mime;
 }
 
 /** 
@@ -4817,11 +4950,11 @@ typedef struct _ReceivedInvokeData {
                                                                                                                      \
    /* check, unref and nullify the frame */                                                                          \
    if (! status) {                                                                                                   \
-       /* deliver the frame as received */                                                                           \
-       (*caller_frame) = NULL;                                                                                       \
        vortex_frame_unref (frame);                                                                                   \
    }                                                                                                                 \
-   frame = NULL;                                                                                                     \
+   /* nullify caller frame */                                                                                        \
+   (*caller_frame) = NULL;                                                                                           \
+   frame           = NULL;                                                                                           \
                                                                                                                      \
    /* check if the next reply is stored in the hash */                                                               \
    frame = axl_hash_get (hash, INT_TO_PTR(last_msgno_delivered));                                                    \

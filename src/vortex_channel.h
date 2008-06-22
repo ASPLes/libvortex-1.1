@@ -155,6 +155,11 @@ const char       * vortex_channel_get_mime_type                (VortexChannel * 
 
 const char       * vortex_channel_get_transfer_encoding        (VortexChannel * channel);
 
+void               vortex_channel_set_automatic_mime           (VortexChannel  * channel,
+								int              value);
+
+int                vortex_channel_get_automatic_mime           (VortexChannel * channel);
+
 int                vortex_channel_get_max_seq_no_remote_accepted (VortexChannel * channel);
 
 int                vortex_channel_get_next_frame_size         (VortexChannel * channel,

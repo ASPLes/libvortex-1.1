@@ -67,6 +67,7 @@ struct _VortexCtx {
 	/* default configurations */
 	int                  backlog;
 	bool                 enforce_profiles_supported;
+	int                  automatic_mime;
 	
 	/* local log variables */
 	bool                 debug_checked;
