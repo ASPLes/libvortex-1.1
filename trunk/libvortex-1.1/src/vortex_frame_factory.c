@@ -93,6 +93,10 @@ typedef struct _VortexMimeStatus {
 	
 	/* headers count */
 	int                counting;
+	
+	/* ref counting */
+	int                ref_count;
+	VortexMutex        ref_mutex;
 } VortexMimeStatus;
 
 /** 
@@ -109,7 +113,26 @@ VortexMimeStatus * vortex_frame_mime_status_new ()
 	status->mime_headers_content = axl_string_factory_create ();
 	status->header_factory       = axl_factory_create (sizeof (VortexMimeHeader));
 
+	/* init reference counting */
+	vortex_mutex_create (&status->ref_mutex);
+	status->ref_count = 1;
+
 	return status;
+}
+
+/** 
+ * @internal Function that allows to update current internal reference
+ * counting. There is no unref because it is implicitly called at
+ * vortex_frame_mime_status_free.
+ */
+void vortex_frame_mime_status_ref (VortexMimeStatus * status)
+{
+	if (status == NULL)
+		return;
+	vortex_mutex_lock (&status->ref_mutex);
+	status->ref_count ++;
+	vortex_mutex_unlock (&status->ref_mutex);
+	return;
 }
 
 void vortex_frame_mime_status_free (VortexMimeStatus * status)
@@ -117,10 +140,21 @@ void vortex_frame_mime_status_free (VortexMimeStatus * status)
 	if (status == NULL)
 		return;
 
+	/* check reference counting */
+	vortex_mutex_lock (&status->ref_mutex);
+	status->ref_count--;
+	if (status->ref_count != 0) {
+		/* this caller won't terminate this mime status */
+		vortex_mutex_unlock (&status->ref_mutex);
+		return;
+	}
+	vortex_mutex_unlock (&status->ref_mutex);
+
 	/* free factories */
 	axl_string_factory_free (status->mime_headers_name);
 	axl_string_factory_free (status->mime_headers_content);
 	axl_factory_free        (status->header_factory);
+	vortex_mutex_destroy    (&status->ref_mutex);
 	axl_free (status);
 
 	return;
@@ -223,7 +257,9 @@ struct _VortexFrame {
 	/* frame reference counting */
 	int                  ref_count;
 
-	/* mime status for the current frame */
+	/* mime status for the current frame (a reference that could
+	 * be shared with other frames, mostly due to
+	 * vortex_frame_copy and vortex_frame_join* functions */
 	VortexMimeStatus   * mime_headers;
 };
 
@@ -976,20 +1012,64 @@ VortexFrame * vortex_frame_create_full_ref      (VortexCtx       * ctx,
  * @param frame A frame to copy.
  * 
  * @return A newly allocated frame that must be unrefered when no
- * longer needed using \ref vortex_frame_free. NULL will be returned if the frame received is NULL.
+ * longer needed using \ref vortex_frame_free. NULL will be returned
+ * if the frame received is NULL.
  */
 VortexFrame * vortex_frame_copy                 (VortexFrame      * frame)
 {
 	VortexFrame * result; 
+ 	int           content_size;
 
 	if (frame == NULL)
 		return NULL;
 
-	/* create the frame */
-	result = vortex_frame_create (frame->ctx, 
-				      frame->type, frame->channel, frame->msgno,
-				      frame->more, frame->seqno, frame->size, 
-				      frame->ansno, frame->payload);
+ 	/* create the frame, but check first if the frame have MIME
+ 	 * parsing activated. If "content" is defined, this means that
+ 	 * internal references were configured  */
+ 	if (frame->content) {
+ 		/* all frame content (including MIME headers) */
+ 		content_size = frame->size + frame->mime_headers_size;
+ 
+ 		/* create the frame copy using all the content. The
+ 		 * following function copy all the content but leaves
+ 		 * the result in the reference payload. The following
+ 		 * lines updates internal references to keep correct
+ 		 * consistency: "content" points to all the content
+ 		 * and "payload" points to the MIME message body.  */
+ 		result = vortex_frame_create (frame->ctx, 
+					      frame->type, frame->channel, frame->msgno,
+ 					      frame->more, frame->seqno, content_size,
+ 					      frame->ansno, frame->content);
+ 
+ 		/* reconfigure payload pointer */
+ 		result->content      = result->payload;
+ 		result->payload      = result->content + (content_size - frame->size);
+ 
+ 		/* update content sizes */
+ 		result->mime_headers_size = frame->mime_headers_size;
+ 		result->size              = frame->size;
+ 	} else {
+ 		/* the frame is porting all the content inside
+ 		 * "payload". */
+ 		result = vortex_frame_create (frame->ctx,
+					      frame->type, frame->channel, frame->msgno,
+ 					      frame->more, frame->seqno, frame->size, 
+ 					      frame->ansno, frame->payload);
+ 	} /* end if */
+ 
+  	/* set same channel */
+  	result->channel_ref = frame->channel_ref;
+  
+ 	/* copy mime headers if found to be defined */
+ 	if (frame->mime_headers) {
+ 		/* increase reference counting on the MIME header
+ 		 * description */
+ 		vortex_frame_mime_status_ref (frame->mime_headers);
+ 
+ 		/* configure the reference */
+ 		result->mime_headers = frame->mime_headers;
+ 	} /* end if */
+ 
 	/* set same channel */
 	result->channel_ref = frame->channel_ref;
 
@@ -1732,7 +1812,7 @@ int           vortex_frame_ref_count             (VortexFrame * frame)
 }
 
 
-/**
+/** 
  * @brief Deallocate the frame. You shouldn't call this directly,
  * instead use \ref vortex_frame_unref.
  *
@@ -1771,22 +1851,6 @@ void          vortex_frame_free (VortexFrame * frame)
 	/* free the frame node itself */
 	axl_free (frame);
 	return;
-}
-
-axlPointer vortex_frame_copy_mime_header (axlPointer     key, 
-					  axlDestroyFunc key_destroy, 
-					  axlPointer     data, 
-					  axlDestroyFunc data_destroy)
-{
-	return axl_strdup (key);
-}
-
-axlPointer vortex_frame_copy_mime_header_content (axlPointer     key, 
-						  axlDestroyFunc key_destroy, 
-						  axlPointer     data, 
-						  axlDestroyFunc data_destroy)
-{
-	return axl_strdup (data);
 }
 
 VortexFrame * __vortex_frame_join_common (VortexFrame * a, VortexFrame * b, bool     reuse)
@@ -2133,7 +2197,7 @@ VortexFrameType vortex_frame_get_type   (VortexFrame * frame)
 	return frame->type;
 }
 
-/**
+/** 
  * @brief Returns frame content type.
  *
  * Return actual frame's content type. The function always return a
