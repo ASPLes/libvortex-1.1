@@ -399,6 +399,43 @@ typedef enum {
 	 * to create channels under profiles even not adviced.
 	 */
 	VORTEX_ENFORCE_PROFILES_SUPPORTED = 4,
+	/** 
+	 * @brief If configured, makes all messages send via
+	 * vortex_channel_send_* to automatically add MIME headers
+	 * configured.
+	 * 
+	 * This means that all messages sent will be configured with a
+	 * CR+LF prefix assuming the application level is sending the
+	 * MIME body. 
+	 *
+	 * See \ref vortex_manual_using_mime for a long
+	 * explanation. In sort, this function allows to configure if
+	 * MIME headers should be added or not automatically on each
+	 * message sent using the family of functions
+	 * vortex_channel_send_*.
+	 *
+	 * The set of functions that are affected by this configuration are:
+	 * 
+	 *  - \ref vortex_channel_send_msg
+	 *  - \ref vortex_channel_send_msgv
+	 *  - \ref vortex_channel_send_msg_and_wait
+	 *  - \ref vortex_channel_send_rpy
+	 *  - \ref vortex_channel_send_rpyv
+	 *  - \ref vortex_channel_send_err
+	 *  - \ref vortex_channel_send_errv
+	 *  - \ref vortex_channel_send_ans_rpy
+	 *  - \ref vortex_channel_send_ans_rpyv
+	 *
+	 * Use the following values to configure this feature:
+	 * 
+	 * - true: Enable automatic MIME handling for each message
+	 * sent. This is the default value.
+	 *
+	 * - false: Disable automatic MIME handling. The application
+	 * will have to produce MIME compliant messages taking full
+	 * control over the MIME process.
+	 */
+	VORTEX_AUTOMATIC_MIME_HANDLING = 5
 } VortexConfItem;
 
 bool      vortex_conf_get             (VortexCtx      * ctx,

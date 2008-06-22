@@ -356,6 +356,10 @@ bool      vortex_conf_get             (VortexCtx      * ctx,
 		/* return current enforce profiles supported values */
 		*value = ctx->enforce_profiles_supported;
 		return true;
+	case VORTEX_AUTOMATIC_MIME_HANDLING:
+		/* configure automatic MIME handling */
+		*value = ctx->automatic_mime;
+		return true;
 	default:
 		/* configuration found, return false */
 		vortex_log (VORTEX_LEVEL_CRITICAL, "found a requested for a non existent configuration item");
@@ -468,6 +472,10 @@ bool      vortex_conf_set             (VortexCtx      * ctx,
 	case VORTEX_ENFORCE_PROFILES_SUPPORTED:
 		/* return current enforce profiles supported values */
 		ctx->enforce_profiles_supported = value;
+		return true;
+	case VORTEX_AUTOMATIC_MIME_HANDLING:
+		/* configure automatic MIME handling */
+		ctx->automatic_mime    = value;
 		return true;
 	default:
 		/* configuration found, return false */
@@ -1783,7 +1791,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *  - \ref vortex_manual_sasl_for_client_side
  *  - \ref vortex_manual_sasl_for_server_side
  * 
- * \section vortex_manual_concepts Some concepts before starting to use Vortex
+ * \section vortex_manual_concepts 1.1 Some concepts before starting to use Vortex
  * 
  * Before beginning, we have to review some definitions about the
  * protocol that <b>Vortex Library</b> implements. This will help you
@@ -1998,7 +2006,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * have connected, created a channel, send a message, close the
  * channel and terminated Vortex Library function.
  * 
- * \section vortex_manual_listener How a Vortex Listener works (or how to create one)
+ * \section vortex_manual_listener 1.2 How a Vortex Listener works (or how to create one)
  *
  * To create a vortex listener, which waits for incoming beep connection
  * on a given port the following must be done:
@@ -2114,7 +2122,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * As a test, you can run the server defined above, and use the
  * <b>vortex-client</b> tool to check it.
  * 
- * \section vortex_manual_client How a vortex client works (or how to create a connection)
+ * \section vortex_manual_client 1.3 How a vortex client works (or how to create a connection)
  * 
  * A vortex client peer works in a different way than listener
  * does. In order to connect to a vortex listener server (or a BEEP
@@ -2218,7 +2226,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * creation. See \ref vortex_manual_dispatch_schema "this section" to understand how
  * the frame dispatch schema works.
  * 
- * \section vortex_manual_sending_frames How an application must use Vortex Library to send and receive data
+ * \section vortex_manual_sending_frames 2.1 How an application must use Vortex Library to send and receive data
  * 
  * As defined on RFC 3080, any BEEP enabled application should define
  * a profile to be used for its message exchange. That profile will
@@ -2292,7 +2300,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * message and RPY as a request reply message. The point is: <b>do not
  * use MSG to reply message received, use RPY/ERR/ANS/NUL types.</b>
  *
- * \section vortex_manual_dispatch_schema The Vortex Library Frame receiving dispatch schema (or how incoming frames are read)
+ * \section vortex_manual_dispatch_schema 2.2 The Vortex Library Frame receiving dispatch schema (or how incoming frames are read)
  *
  * Once a frame is received and validated, the Vortex Reader tries to
  * deliver it following next rules:
@@ -2339,7 +2347,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * data: asynchronous method and synchronous method. This is also
  * applied to sending user data.
  *
- * \section vortex_manual_printf_like Printf like interface while sending messages and replies
+ * \section vortex_manual_printf_like 2.3 Printf like interface while sending messages and replies
  *
  * Additionally, there are also function versions for the previous ones
  * which accepts a variable argument list so you can send message in a
@@ -2356,7 +2364,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * 
  * They are the same function names but appending a "v" at the end.
  * 
- * \section vortex_manual_wait_reply Sending data and wait for a specific reply (or how get blocked until a reply arrives)
+ * \section vortex_manual_wait_reply 2.4 Sending data and wait for a specific reply (or how get blocked until a reply arrives)
  *
  * We have seen in previous section we can use several function to send
  * message in a non-blocking fashion no matter how big the message is:
@@ -2400,7 +2408,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *  \endcode
  * 
  * 
- * \section vortex_manual_invocation_chain Invocation level for frames receive handler
+ * \section vortex_manual_invocation_chain 2.5 Invocation level for frames receive handler
  * 
  * Application designer has to keep in mind the following invocation
  * order for frame received handler:
@@ -2451,7 +2459,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *
  * </ul>
  * 
- * \section vortex_manual_profiles Defining a profile inside Vortex (or How profiles concept confuse people)
+ * \section vortex_manual_profiles 3.1 Defining a profile inside Vortex (or How profiles concept confuse people)
  * 
  * Now we have to consider to spend some time learning more about
  * profiles. The profile concept inside the BEEP Core definition is
@@ -2508,7 +2516,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * Now see the tutorial about \ref profile_example "creating a simple profile" involving a simple server
  * creation with a simple client.
  *
- * \section vortex_manual_piggyback_support Using piggyback to save one round trip at channel startup
+ * \section vortex_manual_piggyback_support 4.1 Using piggyback to save one round trip at channel startup
  *
  * Once defined the application protocol on top of Vortex Library or
  * any other BEEP implementation we could find that creating a
@@ -2651,7 +2659,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * many standard BEEP profiles makes use of this feature to be more
  * efficient, like TLS and SASL profiles.
  *
- * \section vortex_manual_using_mime Using MIME configuration for data exchanged under Vortex Library
+ * \section vortex_manual_using_mime 4.2 Using MIME configuration for data exchanged under Vortex Library
  *
  * We have to consider several issues while talking about MIME and
  * MIME inside BEEP.
@@ -2664,78 +2672,178 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *
  * But, what happens when application protocol designers just ignore
  * MIME information, no matter which transport protocol they are
- * using? Again, this is not clear, mainly because MIME is just an
- * indicator.
+ * using? Again, this only depends on the requirements of the
+ * application protocol, mainly because MIME is just an indicator. 
  *
- * If you pretend to develop a kind of bridge that is able to
- * transport <b>everything</b> without a previous knowledge (both
- * peers can't make assumptions about the content to be received), it
- * is likely MIME is required (or some short of content notificator).
+ * In any case, any message exchanged by a BEEP peer must be a
+ * conforming MIME message. This implies that at least the empty MIME
+ * meader must be appended to each message sent. 
+ *
+ * For example, you if you send the following message: "test", you or
+ * your BEEP toolkit must take care of adding the CR+LF prefix:
+ * 
+ * \code
+ * MSG 3 1 . 11 6
+ * 
+ * testEND
+ * \endcode
+ *
+ * So, the remote BEEP peer will receive a message with empty MIME headers: CR+LF + "test". 
+ *
+ * <h3>4.2.1 When should I consider using MIME for a BEEP profile?</h3>
+ *
+ * First of all, no matter how you design your profile, MIME will stay
+ * at the core of BEEP. You can ignore its function and nothing will
+ * happen (beyond its basic implications that you must consider).
+ *
+ * Now, if you pretend to develop a profile that is able to transport
+ * <b>everything</b> without previous knowledge (both peers can't make
+ * assumptions about the content to be received), it is likely MIME is
+ * required. Think about using the more appropiate helper program to
+ * open the content received: PNG files, PDF or a C# assembly.
+ *
+ * Because MIME is implemented inside Vortex in a way you access to
+ * the content (MIME body) and MIME headers (\ref
+ * vortex_frame_get_mime_header if defined) in a separated way, it
+ * becomes an interesting mechanism to allow extending your profile
+ * without modifying its content. 
  *
  * As a conclusion: if your system will be the message producer and
- * the message consumer at the same time, you can safely ignore MIME,
- * because you can make assumptions about the kind of messages to be
+ * the message consumer at the same time, you can safely ignore MIME
+ * (but Vortex will produce MIME compliat messages for you, see \ref vortex_channel_set_automatic_mime), because
+ * you can make assumptions about the kind of messages to be
  * exchanged. However, if a third party software is required to be
- * supported, that is initially unknown, you'll need MIME.
+ * supported, that is initially unknown, or it is required to have some flexible
+ * mechanism to notify "additional" information along with your
+ * profile messages, you'll need MIME.
  *
- * Now, let's talk about MIME support inside Vortex.
+ * <h3>4.2.2 How is MIME implemented inside Vortex Library</h3>
  *
  * The BEEP protocol definition states that all messages exchanged are
  * MIME objects, that is, arbitrary user application data, that have a
- * MIME header which configures/specify the content type.
+ * MIME header which configures/specify the content. MIME support
+ * implemented inside Vortex Library is only structural, that is, it
+ * will implement structure requirements from RFC 2045.
  *
- * Initially, if you send a message, without taking into account the
- * MIME type, either because you didn't configure anything nor your
- * messages didn't include any MIME headers, then frames generated
- * won't have any MIME headers. 
+ * Initially, if you send a message, without using MIME, either
+ * because you didn't configure anything then frames generated won't
+ * include any MIME header. However even in this case, the MIME body
+ * start indicator (CR+LF) will be added, to allow remote BEEP peer to
+ * detect the MIME header (nothing configured) and the MIME body (your
+ * message). 
+ *
+ * For example, if you send message "test" (4 bytes) and no MIME
+ * header is configured at any mechanism, it is required to send the
+ * following:
  * 
- * However, even in that case, BEEP suppose a MIME IMPLICIT
- * information, which are the following values:
+ * \image html mime-structure.png "MIME struct overview and how it applies to a message without MIME headers"
+ *
+ * That is, even if you do not pay attention to MIME, your messages
+ * will still include an inicial CR+LF appended to your message to
+ * indicate the remote side no MIME header is defined and to make your
+ * message MIME parseable.
+ * 
+ * However, even in that case, <b>BEEP assume a MIME implicit
+ * configuration</b>, which have the following values:
  *
  * \code
  *        Content-Type: application/octet-stream
  *        Content-Transfer-Encoding: binary
  * \endcode
  *
+ * <b>Automatic MIME configuration support:</b>
  *
- * This means that the remote peer will have to recognize that the
- * frame received doesn't have any MIME configuration and previous
- * values should be implicitly notified (again, even when they are not
- * found).
- * 
- * If you require to set a MIME type configuration, but you don't want
- * to append such information for every message you send, you can
- * configure default MIME headers to be used for every profile
- * registered, using the following set of functions:
+ * The following set of function allows to configure (and check) the
+ * value to be configured or each message send on a particular channel
+ * (running a particular profile) for the MIME headers: "Content-Type"
+ * and "Content-Transfer-Encoding":
  * 
  * - \ref vortex_profiles_set_mime_type
  * - \ref vortex_profiles_get_mime_type
  * - \ref vortex_profiles_get_transfer_encoding
  * 
  * However, this mechanism doesn't fit very well if it is required to
- * send arbitrary MIME objects under the same profile, that is, the
- * same running channel, because previous configuration will append
- * the same MIME information to every message being sent.
+ * send arbitrary MIME objects (with diffent MIME headers) under the
+ * same profile, because previous configuration will append the same
+ * MIME information to every message being sent via:
  * 
- * Obviously this is not a good option, as well as the initial
- * solution: to create a profile per MIME object type you have. This
- * will create you lot of problems, making your software fragile to
- * future changes.
- * 
- * What you can do is to take advantage of the implicit MIME headers
- * configuration. Just don't configure anything about MIME headers,
- * and include your MIME configuration in the message you are passing
- * in to the sending API as normal.
- * 
- * Because you didn't configure anything about MIME headers, Vortex
- * will take you message as a hole, sending it to the remote peer. 
+ * - \ref vortex_channel_send_msg
+ * - \ref vortex_channel_send_msgv
+ * - \ref vortex_channel_send_msg_and_wait
+ * - \ref vortex_channel_send_rpy
+ * - \ref vortex_channel_send_rpyv
+ * - \ref vortex_channel_send_err
+ * - \ref vortex_channel_send_errv
+ * - \ref vortex_channel_send_ans_rpy
+ * - \ref vortex_channel_send_ans_rpyv
  *
- * At the remote peer, the framing mechanism will detect the MIME
- * configuration, setting it to frames delivered into your
- * application.
+ * In the case no MIME configuration is found for the profile,
+ * previous functions will prepend the MIME header separator "CR+LF"
+ * on each message sent. This allows to produce MIME compliant
+ * messages that have an empty MIME header configuration.
+ *
+ * <b>Disabling automatic MIME configuration:</b>
+ *
+ * Under some situations it is required to send already configured MIME
+ * objects through the set of functions previously described. Because
+ * those functions will automatically add an empty MIME header (CR+LF)
+ * to each message sent, is required to disable this behavior to avoid
+ * breaking message MIME configuration. 
  * 
- * Conclusion: under the same profile, without configuring any MIME
- * information, you are able to send any arbitrary MIME object.
+ * This is done using the following set of functions, working at
+ * library, profile and channel level, having preference the channel
+ * level. In order of preference:
+ *
+ * - \ref vortex_channel_set_automatic_mime 
+ * - \ref vortex_channel_get_automatic_mime 
+ * - \ref vortex_profiles_set_automatic_mime
+ * - \ref vortex_profiles_get_automatic_mime
+ * - \ref vortex_conf_set (\ref VORTEX_AUTOMATIC_MIME_HANDLING)
+ *
+ * For example, disabling automatic MIME handling at profile level
+ * while cause Vortex Engine to not append any MIME header (including
+ * the body separator) to messages sent:
+ * 
+ * \code
+ * // disable MIME automatic headers 
+ * vortex_profiles_set_automatic_mime ("urn:beep:some-profile", 2);
+ * \endcode
+ *
+ * Special attention is required to the following code because it
+ * doesn't disable MIME handling but deffer the decision to the global
+ * library configuration, which is by default activated:
+ *
+ * \code
+ * // signal to use library current configuration
+ * vortex_profiles_set_automatic_mime ("urn:beep:some-profile", 0);
+ * \endcode
+ *
+ * In any case, if the Vortex Engine finds the MIME automatic headers
+ * disabled, it will take/send messages received "as is", being the
+ * application level the responsible of producting MIME compliant
+ * messages.
+ *
+ * <i><b>NOTE:</b> If the channel MIME handling (\ref
+ * vortex_channel_set_automatic_mime) isn't configured (\ref
+ * vortex_channel_get_automatic_mime returns 0) but the profile level
+ * (\ref vortex_profiles_get_automatic_mime) or library level (\ref
+ * vortex_conf_get \ref VORTEX_AUTOMATIC_MIME_HANDLING) are
+ * configured, then the configuration is copied into the channel. This
+ * is done to improve library performance.</i>
+ * 
+ *
+ * <b>Default configuration for automatic MIME header handling:</b>
+ *
+ * By default only library level comes activates (\ref vortex_conf_set
+ * \ref VORTEX_AUTOMATIC_MIME_HANDLING). This means that, without any
+ * configuration, all channels creates will automatically add a MIME
+ * header for each message sent.
+ *
+ * <i><b>NOTE:</b> In the case no configuration is found on every level (0 is returned
+ * at \ref vortex_channel_get_automatic_mime, \ref
+ * vortex_profiles_get_automatic_mime, \ref vortex_conf_get \ref
+ * VORTEX_AUTOMATIC_MIME_HANDLING), then it is assumed automatic MIME
+ * handling is activated.</i>
  *
  * \section vortex_manual_implementing_request_response_pattern Implementing the request-response pattern
  *
@@ -2943,7 +3051,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * once, the channel must be release to the channel pool so it could
  * be reused for other request.
  *
- * \section vortex_manual_changing_vortex_io Configuring Vortex Library IO layer
+ * \section vortex_manual_changing_vortex_io 3.3 Configuring Vortex Library IO layer
  *
  * Default Vortex Library implementation doesn't require you to pay
  * attention to such details like: 
@@ -3057,7 +3165,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * As an example, inside the IO module (<b>vortex_io.c</b>) can be
  * found current implementation for all I/O mechanism supported by the library.
  *
- * \section vortex_manual_securing_your_session Securing a Vortex Connection (or How to use the TLS profile)
+ * \section vortex_manual_securing_your_session 5.1 Securing a Vortex Connection (or How to use the TLS profile)
  * 
  * As we have said, the main advantage the BEEP protocol have is that
  * is solves many common problems that the network protocol designer
@@ -3199,7 +3307,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * default provided by Vortex Library. See next section.
  *
  * 
- * \section vortex_manual_creating_certificates How to create a certificate and a private key to be used by the TLS profile
+ * \section vortex_manual_creating_certificates 5.2 How to create a certificate and a private key to be used by the TLS profile
  *
  * Now we have successfully configured the TLS profile for listener
  * side we need to create a certificate/private key pair. Currently
@@ -3333,7 +3441,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *
  *</ol>
  *   
- * \section vortex_manual_using_sasl Authenticating BEEP peers (or How to use SASL profiles family)
+ * \section vortex_manual_using_sasl 5.3 Authenticating BEEP peers (or How to use SASL profiles family)
  * 
  * While using or designing network protocols, a common issue to solve
  * and support is to identify and authenticate users on top of
@@ -3495,7 +3603,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * </li>
  * </ul>
  *
- * \section vortex_manual_sasl_for_client_side How to use SASL at the client side
+ * \section vortex_manual_sasl_for_client_side 5.4 How to use SASL at the client side
  * Now you have an overview for SASL profiles supported here is how to
  * use them. 
  *
@@ -3579,7 +3687,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *  <tr><td><b>VORTEX_SASL_ANONYMOUS_TOKEN</b></td><td>required</td><td></td><td></td><td></td><td></td></tr>
  * </table>
  *
- * \section vortex_manual_sasl_for_server_side How to use SASL at the server side
+ * \section vortex_manual_sasl_for_server_side 5.5 How to use SASL at the server side
  *
  * Well, as we have seeing in the previous section, SASL at the client
  * side is entirely driven by properties (through \ref
