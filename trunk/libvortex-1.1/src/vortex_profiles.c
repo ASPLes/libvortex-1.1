@@ -55,7 +55,7 @@ typedef struct _VortexProfile
 	axlPointer                     received_user_data;
 	char                         * mime_type;
 	char                         * transfer_encoding;
-
+	int                            automatic_mime;
 } VortexProfile;
 
 /**
@@ -959,6 +959,96 @@ bool     vortex_profiles_is_registered (VortexCtx  * ctx,
 		return false;
 
 	return (vortex_hash_lookup (ctx->registered_profiles, (axlPointer) uri) != NULL);
+}
+
+/** 
+ * @brief Allows to configure automatic MIME header addition handling
+ * at profile level.
+ * 
+ * See \ref vortex_manual_using_mime for a long explanation. In sort,
+ * this function allows to configure if MIME headers should be added
+ * or not automatically on each message sent using the family of
+ * functions vortex_channel_send_*.
+ *
+ * The function allows to configure at profile level automatic MIME
+ * handling associated to the profile. This configuration will
+ * override configuration provided at \ref vortex_conf_set and \ref
+ * VORTEX_AUTOMATIC_MIME_HANDLING.
+ *
+ * Use the following values for "value":
+ * 
+ * - 1: Enable automatic MIME handling for messages send under the
+ * profile provided, making the configuration process to not check
+ * next levels.
+ *
+ * - 0: Makes automatic MIME handling configuration at profile level
+ * to have no signification, making the configuration process to check
+ * next levels.
+ *
+ * - 2: Disable automatic MIME handling, making the configuration
+ * process to not check next levels.
+ *
+ * @param ctx The context where the operation will be performed.
+ *
+ * @param uri The uri profile to be configured.
+ *
+ * @param value The value to be configured.
+ */
+void      vortex_profiles_set_automatic_mime      (VortexCtx   * ctx,
+						   const char  * uri, 
+						   int           value)
+{
+	VortexProfile             * profile;
+
+	v_return_if_fail (uri);
+	v_return_if_fail (ctx);
+	v_return_if_fail (value == 0 || value == 1 || value == 2);
+
+	profile = vortex_hash_lookup (ctx->registered_profiles, (axlPointer)uri);
+	if (profile == NULL) {
+		vortex_log (VORTEX_LEVEL_DEBUG, 
+			    "configuring automatic mime handling on a profile not registered=%s (value=%d)", 
+			    uri, value);
+		return;
+	} /* end if */
+
+	/* configuring automatic MIME handling */
+	profile->automatic_mime = value;
+	return;
+}
+
+/** 
+ * @brief Allows to get current automatic MIME handling associated to
+ * the profile provided. See \ref vortex_profiles_set_automatic_mime
+ * function for values returned.
+ *
+ * @param ctx The context where the operation will be performed.
+ * 
+ * @param uri The profile that is required to return the value
+ * associated.
+ * 
+ * @return The value associated to the automatic MIME handling
+ * configured on the profile provided. The function return 0 (not
+ * configured) if the parameter is NULL or the profile wasn't
+ * registered.
+ */
+int       vortex_profiles_get_automatic_mime      (VortexCtx   * ctx,
+						   const char  * uri)
+{
+	VortexProfile             * profile;
+
+	v_return_val_if_fail (uri, 0);
+
+	profile = vortex_hash_lookup (ctx->registered_profiles, (axlPointer)uri);
+	if (profile == NULL) {
+		vortex_log (VORTEX_LEVEL_DEBUG, 
+			    "accessing to automatic mime handling on a profile not registered=%s", 
+			    uri);
+		return 0;
+	} /* end if */
+
+	/* configuring automatic MIME handling */
+	return profile->automatic_mime;
 }
 
 /** 

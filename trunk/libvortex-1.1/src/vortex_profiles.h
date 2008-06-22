@@ -100,6 +100,13 @@ int       vortex_profiles_registered              (VortexCtx        * ctx);
 bool      vortex_profiles_is_registered           (VortexCtx        * ctx,
 						   const char       * uri);
 
+void      vortex_profiles_set_automatic_mime      (VortexCtx        * ctx,
+						   const char       * uri, 
+						   int                value);
+
+int       vortex_profiles_get_automatic_mime      (VortexCtx        * ctx,
+						   const char       * uri);
+
 void      vortex_profiles_init                    (VortexCtx   * ctx);
 
 void      vortex_profiles_cleanup                 (VortexCtx   * ctx);
