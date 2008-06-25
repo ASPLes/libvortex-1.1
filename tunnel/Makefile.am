@@ -22,7 +22,7 @@ libvortex_tunnel_1_1_la_SOURCES = vortex_tunnel.c
 libvortex_tunnel_1_1_include_HEADERS = vortex_tunnel.h
 
 libvortex_tunnel_1_1_la_LIBADD = \
-	$(AXL_LIBS) $(PTHREAD_LIBS) ../src/libvortex-1.1.la
+	$(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS) ../src/libvortex-1.1.la
 
 libvortex_tunnel_1_1_la_LDFLAGS = -no-undefined -export-symbols-regex '^(vortex|__vortex|_vortex).*'
 

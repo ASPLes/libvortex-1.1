@@ -38,7 +38,7 @@ INCLUDES = -I../src -I../tunnel $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
 	-I$(READLINE_PATH)/include -Wall -g -ansi \
         -DVERSION=\""$(VORTEX_VERSION)"\" -I../src $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_VORTEX_LOG) $(INCLUDE_TUNNEL_SUPPORT)
 
-LIBS            = $(AXL_LIBS) $(PTHREAD_LIBS)
+LIBS            = $(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
 
 vortex_listener_SOURCES        = vortex-listener.c
 vortex_listener_LDADD          = $(LIBS) ../src/libvortex-1.1.la 

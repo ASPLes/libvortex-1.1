@@ -16,7 +16,7 @@ EXTRA_DIST = $(dtd_DATA) \
 
 INCLUDES = -g -Wall -ansi -I. -I$(top_srcdir)/libvortex-1.1/src $(AXL_CFLAGS) $(EXARG_CFLAGS) $(PTHREAD_CFLAGS) -DVERSION=\""$(VORTEX_VERSION)"\" -DINSTALL_DIR=\"$(datadir)/libvortex-1.1\" -I../src
 
-LIBS     = $(AXL_LIBS) $(EXARG_LIBS) $(PTHREAD_LIBS)
+LIBS     = $(AXL_LIBS) $(EXARG_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
 
 bin_PROGRAMS = xml-rpc-gen
 
