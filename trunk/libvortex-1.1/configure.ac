@@ -263,6 +263,24 @@ dnl general libries subsitution
 dnl AC_SUBST(LIBRARIES_CFLAGS)
 dnl AC_SUBST(LIBRARIES_LIBS)
 
+dnl get current platform and add especific flags
+case $host in
+  *-*-beos*)
+    echo "Found BEOS platform: $host.."
+    ;;
+  *-*-cygwin*)
+    echo "Found cygwin platform: $host.."
+    ;;
+  *-*-mingw*)
+    echo "Found mingw platform: $host.."
+    ADDITIONAL_LIBS=-lws2_32
+    ;;
+  *)
+    echo "Found platform: $host.."
+    ;;
+esac
+AC_SUBST(ADDITIONAL_LIBS)
+
 AC_OUTPUT([
 Makefile
 src/Makefile
@@ -286,6 +304,7 @@ echo "      epoll(2) support:            [$enable_epoll]"
 echo "      default:                     [$default_platform]"
 echo "      debug log support:           [$enable_vortex_log]"
 echo "      pthread cflags=$PTHREAD_CFLAGS, libs=$PTHREAD_LIBS"
+echo "      additional libs=$ADDITIONAL_LIBS"
 if test x$enable_vortex_log = xyes ; then
 echo "      NOTE: To disable log reporting use: "
 echo "            --disable-vortex-log"               
