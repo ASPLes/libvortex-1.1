@@ -2693,8 +2693,9 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * <h3>4.2.1 When should I consider using MIME for a BEEP profile?</h3>
  *
  * First of all, no matter how you design your profile, MIME will stay
- * at the core of BEEP. You can ignore its function and nothing will
- * happen (beyond its basic implications that you must consider).
+ * at the core of BEEP, and therefore inside your profile. You can
+ * ignore its function and nothing will happen (beyond its basic
+ * implications that you must consider).
  *
  * Now, if you pretend to develop a profile that is able to transport
  * <b>everything</b> without previous knowledge (both peers can't make
@@ -2723,17 +2724,17 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * MIME objects, that is, arbitrary user application data, that have a
  * MIME header which configures/specify the content. MIME support
  * implemented inside Vortex Library is only structural, that is, it
- * will implement structure requirements from RFC 2045.
+ * implements MIME structure requirements defined at RFC 2045.
  *
- * Initially, if you send a message, without using MIME, either
- * because you didn't configure anything then frames generated won't
- * include any MIME header. However even in this case, the MIME body
- * start indicator (CR+LF) will be added, to allow remote BEEP peer to
+ * Initially, if you send a message, without using MIME, because you
+ * didn't configure anything, then frames generated won't include any
+ * MIME header. <b><i>However even in this case, the MIME body start
+ * indicator (CR+LF) will be added</i></b>, to allow remote BEEP peer to
  * detect the MIME header (nothing configured) and the MIME body (your
- * message). 
+ * message).
  *
  * For example, if you send message "test" (4 bytes) and no MIME
- * header is configured at any mechanism, it is required to send the
+ * header is configured at any level, it is required to send the
  * following:
  * 
  * \image html mime-structure.png "MIME struct overview and how it applies to a message without MIME headers"
