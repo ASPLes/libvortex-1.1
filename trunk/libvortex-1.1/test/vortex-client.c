@@ -73,9 +73,11 @@ void vortex_client_show_help () {
 	printf ("  new channel       - Creates a new channel using the vortex API.\n");
 	printf ("  close channel     - Close a channel using the vortex API.\n");
 	printf ("  send message      - Send a message using the vortex API.\n\n");
+#if defined(ENABLE_XML_RPC_SUPPORT)
 	printf ("\n -- xml-rpc (RFC3529) invocation --\n");
 	printf ("  new invoke        - Creates and launch an XML-RPC invocation\n");
 	printf ("                      against the BEEP peer already connected.\n");
+#endif
 
 }
 
@@ -771,6 +773,7 @@ void vortex_client_begin_auth () {
 	return;
 }
 
+#if defined(ENABLE_XML_RPC_SUPPORT)
 /** 
  * @brief Perform an XML-RPC invocation on the given connection.
  * 
@@ -864,6 +867,7 @@ void vortex_client_begin_xml_rpc_invocation (VortexConnection * connection)
 
 	return;
 }
+#endif
 
 
 /** 
@@ -1274,6 +1278,7 @@ int main (int argc, char *argv[])
 			vortex_client_write_frame (connection, true);
 			continue;
 		}
+#if defined(ENABLE_XML_RPC_SUPPORT)
 		if (axl_memcmp ("new invoke", line, 10)) {
 			if (!check_connected ("can't perform a XML-RPC invocation if not connected first", connection))
 				continue;
@@ -1281,6 +1286,7 @@ int main (int argc, char *argv[])
 			vortex_client_begin_xml_rpc_invocation (connection);
 			continue;
 		}
+#endif
 
 		/* show help if a command was not recognized */
 		if (line != NULL && strlen (line) >= 1) {

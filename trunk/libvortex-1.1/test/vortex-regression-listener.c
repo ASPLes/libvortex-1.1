@@ -1077,6 +1077,7 @@ int  main (int  argc, char ** argv)
 	/* configure support for TUNNEL profile support */
 	vortex_tunnel_accept_negotiation (ctx, NULL, NULL);
 	
+#if defined(ENABLE_XML_RPC_SUPPORT)
 	/* enable XML-RPC profile */
         vortex_xml_rpc_accept_negotiation (
 		/* context */
@@ -1089,6 +1090,7 @@ int  main (int  argc, char ** argv)
                 service_dispatch,
                 /* no user space data for the dispatch function. */
                 NULL);
+#endif
 
 	/* configure close in transit profile */
 	vortex_profiles_register (ctx, CLOSE_IN_TRANSIT_URI,

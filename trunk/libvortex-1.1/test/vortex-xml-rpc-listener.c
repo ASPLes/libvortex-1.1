@@ -1,11 +1,12 @@
 /* include base library */
 #include <vortex.h>
 
-/* include xml-rpc library */
-#include <vortex_xml_rpc.h>
-
 /* listener context */
 VortexCtx * ctx = NULL;
+
+#if defined(ENABLE_XML_RPC_SUPPORT)
+/* include xml-rpc library */
+#include <vortex_xml_rpc.h>
 
 /** 
  * @brief Validation resource function. 
@@ -129,6 +130,7 @@ XmlRpcMethodResponse *  service_dispatch (VortexChannel * channel, XmlRpcMethodC
 	/* return that the method to be invoked, is not supported */
 	return CREATE_FAULT_REPLY (-1, "Method call received couldn't be dispatched because it not supported by this server");
 }
+#endif
 
 
 int  main (int  argc, char ** argv) 
@@ -144,6 +146,7 @@ int  main (int  argc, char ** argv)
 		return -1;
 	} /* end if */
 
+#if defined(ENABLE_XML_RPC_SUPPORT)
 	/* enable XML-RPC profile */
 	vortex_xml_rpc_accept_negotiation (ctx, 
 					   validate_resource,
@@ -155,6 +158,10 @@ int  main (int  argc, char ** argv)
 					   /* no user space data for
 					    * the dispatch function. */
 					   NULL);
+#else
+	printf ("Found no support for XML-RPC built, failed to run listener...\n");
+	return -1;
+#endif
 
 	/* create a vortex server */
 	vortex_listener_new (ctx, "0.0.0.0", "44000", NULL, NULL);

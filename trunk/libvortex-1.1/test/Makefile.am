@@ -16,6 +16,50 @@ endif
 
 if ENABLE_XML_RPC_SUPPORT
 INCLUDE_XML_RPC_SUPPORT = -DENABLE_XML_RPC_SUPPORT
+XML_RPC_SUPPORT_LIBS    = ../xml-rpc/libvortex-xml-rpc-1.1.la 
+vortex_regression_listener_xml_rpc_files = \
+	service_dispatch.h \
+	service_dispatch.c \
+	test_sum_int_int.h \
+	test_sum_int_int.c \
+	test_operate_int_int.h \
+	test_operate_int_int.c \
+	test_get_the_string.h \
+	test_get_the_string.c \
+	test_get_the_bool_1.h \
+	test_get_the_bool_1.c \
+	test_get_the_bool_2.h \
+	test_get_the_bool_2.c \
+	test_get_double_sum_double_double.h \
+	test_get_double_sum_double_double.c \
+	test_struct_values_xml_rpc.h \
+	test_struct_values_xml_rpc.c \
+	test_get_struct_values_values.h \
+	test_get_struct_values_values.c \
+	test_struct_item_xml_rpc.h \
+	test_struct_item_xml_rpc.c \
+	test_array_itemarray_xml_rpc.h \
+	test_array_itemarray_xml_rpc.c \
+	test_get_array.h \
+	test_get_array.c \
+	test_get_list.h \
+	test_get_list.c \
+	test_struct_node_xml_rpc.h \
+	test_struct_node_xml_rpc.c \
+	test_sum2_int_int.h \
+	test_sum2_int_int.c
+vortex_regression_client_xml_rpc_files = \
+	test_types.h \
+	test_xml_rpc.h \
+	test_xml_rpc.c \
+	test_struct_values_xml_rpc.h \
+	test_struct_values_xml_rpc.c \
+	test_struct_item_xml_rpc.h \
+	test_struct_item_xml_rpc.c \
+	test_array_itemarray_xml_rpc.h \
+	test_array_itemarray_xml_rpc.c \
+	test_struct_node_xml_rpc.h \
+	test_struct_node_xml_rpc.c
 endif
 
 certfilesdir    = $(datadir)/libvortex-1.1
@@ -54,7 +98,7 @@ vortex_tls_listener_SOURCES    = vortex-tls-listener.c
 vortex_tls_listener_LDADD      = $(LIBS) ../src/libvortex-1.1.la
 
 vortex_client_SOURCES          = vortex-client.c 
-vortex_client_LDADD            = $(LIBS) ../src/libvortex-1.1.la -L$(READLINE_PATH)/lib -lreadline ../xml-rpc/libvortex-xml-rpc-1.1.la 
+vortex_client_LDADD            = $(LIBS) ../src/libvortex-1.1.la -L$(READLINE_PATH)/lib -lreadline $(XML_RPC_SUPPORT_LIBS)
 
 vortex_simple_listener_SOURCES = vortex-simple-listener.c
 vortex_simple_listener_LDADD   = $(LIBS) ../src/libvortex-1.1.la
@@ -66,53 +110,13 @@ vortex_client_connections_SOURCES   = vortex-client-connections.c
 vortex_client_connections_LDADD     = $(LIBS) ../src/libvortex-1.1.la ../tunnel/libvortex-tunnel-1.1.la 
 
 vortex_regression_client_SOURCES   = \
-	vortex-regression-client.c \
-	test_types.h \
-	test_xml_rpc.h \
-	test_xml_rpc.c \
-	test_struct_values_xml_rpc.h \
-	test_struct_values_xml_rpc.c \
-	test_struct_item_xml_rpc.h \
-	test_struct_item_xml_rpc.c \
-	test_array_itemarray_xml_rpc.h \
-	test_array_itemarray_xml_rpc.c \
-	test_struct_node_xml_rpc.h \
-	test_struct_node_xml_rpc.c
-vortex_regression_client_LDADD     = $(LIBS) ../src/libvortex-1.1.la  ../tunnel/libvortex-tunnel-1.1.la  ../xml-rpc/libvortex-xml-rpc-1.1.la 
+	vortex-regression-client.c $(vortex_regression_client_xml_rpc_files)
+
+vortex_regression_client_LDADD     = $(LIBS) ../src/libvortex-1.1.la  ../tunnel/libvortex-tunnel-1.1.la  $(XML_RPC_SUPPORT_LIBS)
 
 vortex_regression_listener_SOURCES   = \
-	vortex-regression-listener.c \
-	service_dispatch.h \
-	service_dispatch.c \
-	test_sum_int_int.h \
-	test_sum_int_int.c \
-	test_operate_int_int.h \
-	test_operate_int_int.c \
-	test_get_the_string.h \
-	test_get_the_string.c \
-	test_get_the_bool_1.h \
-	test_get_the_bool_1.c \
-	test_get_the_bool_2.h \
-	test_get_the_bool_2.c \
-	test_get_double_sum_double_double.h \
-	test_get_double_sum_double_double.c \
-	test_struct_values_xml_rpc.h \
-	test_struct_values_xml_rpc.c \
-	test_get_struct_values_values.h \
-	test_get_struct_values_values.c \
-	test_struct_item_xml_rpc.h \
-	test_struct_item_xml_rpc.c \
-	test_array_itemarray_xml_rpc.h \
-	test_array_itemarray_xml_rpc.c \
-	test_get_array.h \
-	test_get_array.c \
-	test_get_list.h \
-	test_get_list.c \
-	test_struct_node_xml_rpc.h \
-	test_struct_node_xml_rpc.c \
-	test_sum2_int_int.h \
-	test_sum2_int_int.c
-vortex_regression_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la  ../tunnel/libvortex-tunnel-1.1.la ../xml-rpc/libvortex-xml-rpc-1.1.la 
+	vortex-regression-listener.c $(vortex_regression_listener_xml_rpc_files)
+vortex_regression_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la  ../tunnel/libvortex-tunnel-1.1.la $(XML_RPC_SUPPORT_LIBS)
 
 vortex_server_without_cbs_SOURCES   = vortex-server-without-cbs.c
 vortex_server_without_cbs_LDADD     = $(LIBS) ../src/libvortex-1.1.la
@@ -127,7 +131,7 @@ vortex_sasl_listener_SOURCES   = vortex-sasl-listener.c
 vortex_sasl_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la
 
 vortex_xml_rpc_listener_SOURCES   = vortex-xml-rpc-listener.c
-vortex_xml_rpc_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la ../xml-rpc/libvortex-xml-rpc-1.1.la 
+vortex_xml_rpc_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la $(XML_RPC_SUPPORT_LIBS)
 
 vortex_file_transfer_server_SOURCES   = vortex-file-transfer-server.c
 vortex_file_transfer_server_LDADD     = $(LIBS) ../src/libvortex-1.1.la
