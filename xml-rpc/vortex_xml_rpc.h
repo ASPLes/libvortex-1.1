@@ -240,8 +240,6 @@ typedef enum {
 	XmlRpcStateReady,
 }VortexXmlRpcState;
 
-bool                vortex_xml_rpc_is_enabled              (void);
-
 void                vortex_xml_rpc_boot_channel            (VortexConnection        * connection,
 							    const char              * serverName,
 							    const char              * resourceName,

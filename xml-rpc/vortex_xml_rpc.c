@@ -53,7 +53,6 @@
  */
 #define VORTEX_XML_RPC_BOOT_DTD         "vo:xml-rpc:dtd"
 
-#if defined (ENABLE_XML_RPC_SUPPORT)
 /** 
  * @internal The following data definition is used to hold one service
  * dispatch node and its associated data, along with the validation
@@ -80,48 +79,12 @@ typedef struct _VortexXmlRpcServiceDispatchNode {
 	axlPointer                    validate_data;
 } VortexXmlRpcServiceDispatchNode;
 
-#endif
-
 /**
  * \defgroup vortex_xml_rpc Vortex XML-RPC: XML-RPC profile support and related functions
  */
 
 /* \addtogroup vortex_xml_rpc */
 /* @{ */
-
-/** 
- * @brief Allows to get current Vortex Library XML-RPC built-in
- * support.
- *
- * Because XML-RPC profile support could be disabled from be built,
- * this function allows to get current supporting status for the
- * Vortex Library. 
- *
- * Any source code built on top of this API (to get access to XML-RPC
- * features) should call to this function first to ensure the Vortex
- * Library was built with XML-RPC support:
- *
- * \code
- * // check for XML-RPC profile support
- * if (!vortex_xml_rpc_is_enabled ()) {
- *     printf ("Current vortex library doesn't support XML-RPC\n");
- *     return;
- * }
- *
- * // perform XML-RPC operations.
- * \endcode
- *
- * @return true when the library have built-in XML-RPC support, otherwise false is returned.
- */
-bool     vortex_xml_rpc_is_enabled (void) 
-{
-#ifndef ENABLE_XML_RPC_SUPPORT
-	return false;
-#else
-	/* just return true (nothing to initialize) */
-	return true;
-#endif
-}
 
 /** 
  * @internal
@@ -239,8 +202,6 @@ void __vortex_xml_rpc_notify_response (XmlRpcInvokeNotify     notify,
 	return;
 }
 				       
-
-#ifdef ENABLE_XML_RPC_SUPPORT
 
 /** 
  * @internal
@@ -658,7 +619,6 @@ axlPointer __vortex_xml_rpc_boot_channel_process (VortexXmlRpcBootData * data)
 
 	return channel;
 }
-#endif
 
 /** 
  * @brief Perform initial boot step to get confirmation from remote
@@ -701,9 +661,6 @@ void     vortex_xml_rpc_boot_channel (VortexConnection        * connection,
 				      VortexXmlRpcBootNotify    process_status,
 				      axlPointer                user_data)
 {
-#ifndef ENABLE_XML_RPC_SUPPORT
-	return;
-#else
 	VortexXmlRpcBootData * data;
 	VortexCtx            * ctx = vortex_connection_get_ctx (connection);
 
@@ -732,10 +689,8 @@ void     vortex_xml_rpc_boot_channel (VortexConnection        * connection,
 	/* perform rpc boot process */
 	vortex_thread_pool_new_task (ctx, (VortexThreadFunc) __vortex_xml_rpc_boot_channel_process,  data);
 	return;
-#endif	
 }
 
-#ifdef ENABLE_XML_RPC_SUPPORT
 /** 
  * @internal
  *
@@ -765,7 +720,6 @@ void __vortex_xml_rpc_boot_channel_sync_process  (VortexChannel    * booted_chan
 	
 	return;
 }
-#endif
 
 /** 
  * @brief Perform a synchronous (blocking) XML-RPC channel boot.
@@ -814,17 +768,6 @@ VortexChannel     * vortex_xml_rpc_boot_channel_sync       (VortexConnection    
 							    VortexStatus            * status,
 							    char                   ** status_message)
 {
-#ifndef ENABLE_XML_RPC_SUPPORT
-	/* fill status value if defined */
-	if (status != NULL)
-		(* status)  = VortexError;
-
-	/* fill message value if defined */
-	if (status_message != NULL)
-		(* status_message) = "Trying to initialize a XML-RPC channel but, current Vortex Library doesn't provide XML-RPC services";
-
-	return NULL;
-#else
 	VortexAsyncQueue   * queue     = NULL;
 	VortexChannel      * _channel  = NULL;
 	VortexStatus       * _status   = NULL;
@@ -875,10 +818,8 @@ VortexChannel     * vortex_xml_rpc_boot_channel_sync       (VortexConnection    
 
 	/* return received value */
 	return _channel;
-#endif	
 }
 
-#ifdef ENABLE_XML_RPC_SUPPORT
 /** 
  * @internal Structure used by the channel pool mechanism inside the
  * xml-rpc module.
@@ -956,7 +897,6 @@ VortexChannel * __vortex_xml_rpc_create_channel (VortexConnection     * connecti
 	/* return the channel created */
 	return channel;
 }
-#endif
 
 /** 
  * @brief Allows to create and attach a channel pool containing
@@ -1039,9 +979,6 @@ VortexChannelPool * vortex_xml_rpc_create_channel_pool     (VortexConnection    
 							    VortexOnChannelPoolCreated    on_pool_created,
 							    axlPointer                    user_data)
 {
-#ifndef ENABLE_XML_RPC_SUPPORT
-	return NULL;
-#else
 	VortexChannelPool       * result;
 	XmlRpcCreateChannelData * data;
 
@@ -1079,7 +1016,6 @@ VortexChannelPool * vortex_xml_rpc_create_channel_pool     (VortexConnection    
 
 	/* return channel pool reference */
 	return result;
-#endif
 }
 
 /** 
@@ -1119,9 +1055,6 @@ VortexChannel     * vortex_xml_rpc_channel_pool_get_next   (VortexConnection * c
 							    bool               auto_inc, 
 							    int                pool_id)
 {
-#ifndef ENABLE_XML_RPC_SUPPORT
-	return NULL;
-#else
 	VortexChannelPool       * pool = NULL;
 	XmlRpcCreateChannelData * data = NULL;
 	char                    * key;
@@ -1145,13 +1078,9 @@ VortexChannel     * vortex_xml_rpc_channel_pool_get_next   (VortexConnection * c
 
 	/* get the channel */
 	return vortex_channel_pool_get_next_ready_full (pool, auto_inc, data);
-	
-#endif
 }
 
 
-
-#ifdef ENABLE_XML_RPC_SUPPORT
 /** 
  * @internal
  *
@@ -1431,8 +1360,6 @@ axlPointer __vortex_xml_rpc_invoke (VortexXmlRpcInvokeData * data)
 	return NULL;
 }
 
-#endif
-
 /** 
  * @brief Perform an asynchronous invocation using the XML-RPC profile. 
  *
@@ -1474,9 +1401,6 @@ bool                vortex_xml_rpc_invoke                  (VortexChannel       
 							    XmlRpcInvokeNotify        reply_notify,
 							    axlPointer                user_data)
 {
-#ifndef ENABLE_XML_RPC_SUPPORT
-	return false;
-#else
 	VortexXmlRpcInvokeData * data;
 	VortexCtx              * ctx;
 
@@ -1523,10 +1447,7 @@ bool                vortex_xml_rpc_invoke                  (VortexChannel       
 	/* perform the invocation in a non blocking manner */
 	vortex_thread_pool_new_task (ctx, (VortexThreadFunc) __vortex_xml_rpc_invoke, data);
 	return false;
-#endif
 }
-
-#ifdef ENABLE_XML_RPC_SUPPORT
 
 /** 
  * @internal
@@ -1557,7 +1478,7 @@ void __vortex_xml_rpc_invoke_sync_process (VortexChannel        * channel,
 	
 	return;
 }
-#endif
+
 
 /** 
  * @brief Perform a synchronous XML-RPC invocation using a method call
@@ -1607,9 +1528,6 @@ void __vortex_xml_rpc_invoke_sync_process (VortexChannel        * channel,
 XmlRpcMethodResponse * vortex_xml_rpc_invoke_sync          (VortexChannel           * channel,
 							    XmlRpcMethodCall        * method_call)
 {
-#ifndef ENABLE_XML_RPC_SUPPORT
-	return NULL;
-#else
 	VortexAsyncQueue     * queue;
 	XmlRpcMethodResponse * response;
 	VortexCtx            * ctx;
@@ -1640,7 +1558,6 @@ XmlRpcMethodResponse * vortex_xml_rpc_invoke_sync          (VortexChannel       
 	if (response == NULL)
 		response = method_response_new (XML_RPC_TIMEOUT_ERROR, -1, "Invocation timeout, timeout have been reached while waiting for method response.", NULL);
 	return response;
-#endif
 }
 
 /** 
@@ -1664,9 +1581,6 @@ XmlRpcMethodResponse * vortex_xml_rpc_invoke_sync          (VortexChannel       
  */
 VortexXmlRpcState   vortex_xml_rpc_channel_status   (VortexChannel * channel)
 {
-#ifndef ENABLE_XML_RPC_SUPPORT
-	return XmlRpcStateUnknown;
-#else
 	char      * boot_state;
 	/* get a reference to the context */
 #if defined(ENABLE_VORTEX_LOG)
@@ -1688,10 +1602,8 @@ VortexXmlRpcState   vortex_xml_rpc_channel_status   (VortexChannel * channel)
 	
 	vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get current XML-RPC channel status, returning channel state: unknown");
 	return XmlRpcStateUnknown;
-#endif
 }
 
-#ifdef ENABLE_XML_RPC_SUPPORT
 
 /** 
  * @internal
@@ -2066,7 +1978,6 @@ bool     __vortex_xml_rpc_start_msg (char              * profile,
 	
 	return true;
 }
-#endif
 
 /** 
  * @brief Allows to get the channel resource used to boot the provided
@@ -2080,12 +1991,8 @@ bool     __vortex_xml_rpc_start_msg (char              * profile,
  */
 const char  * vortex_xml_rpc_channel_get_resource (VortexChannel * channel)
 {
-#ifndef ENABLE_XML_RPC_SUPPORT
-	return NULL;
-#else
 	/* get the channel resource */
 	return vortex_channel_get_data (channel, XML_RPC_RESOURCE);
-#endif
 }
 
 /** 
@@ -2110,9 +2017,6 @@ const char  * vortex_xml_rpc_channel_get_resource (VortexChannel * channel)
 bool vortex_xml_rpc_notify_reply (XmlRpcMethodCall     * method_call, 
 				  XmlRpcMethodResponse * method_response)
 {
-#ifndef ENABLE_XML_RPC_SUPPORT
-	return false;
-#else
 	VortexChannel * channel      = NULL;
 	int             msg_no       = -1;
 	char          * reply_string = NULL;
@@ -2154,10 +2058,8 @@ bool vortex_xml_rpc_notify_reply (XmlRpcMethodCall     * method_call,
 		    vortex_connection_get_id (vortex_channel_get_connection (channel)),
 		    ctx);
 	return true;
-#endif	
 }
 
-#ifdef ENABLE_XML_RPC_SUPPORT
 /** 
  * @internal Handler used by vortex_xml_rpc_accept_negotiation.
  */
@@ -2172,7 +2074,6 @@ bool __vortex_xml_rpc_default_validate (VortexConnection * connection,
 	 * handler is provided */
 	return true;
 }
-#endif
 
 /** 
  * @brief Allow to start receiving incoming XML-RPC request, setting
@@ -2337,13 +2238,22 @@ bool                vortex_xml_rpc_accept_negotiation      (VortexCtx           
 							    
 {
 	VortexXmlRpcServiceDispatchNode * node;
-	axlList                         * service_dispatch_nodes = vortex_ctx_get_data (ctx, VORTEX_XML_RPC_SERVICE_DISPATCH);
+	axlList                         * service_dispatch_nodes;
 
 	/* validate incoming values */
 	if (service_dispatch == NULL || ctx == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "passed in a null value for the service dispatcher");
 		return false;
 	}
+
+	/* call to init vortex xml-rpc module */
+	if (! vortex_xml_rpc_init (ctx)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to start accepting incoming XML-RPC requests, failed to start xml-rpc library");
+		return false;
+	} /* end if */
+
+	/* get reference to the list */
+	service_dispatch_nodes = vortex_ctx_get_data (ctx, VORTEX_XML_RPC_SERVICE_DISPATCH);
 
 	/* store both handlers */
 	node                = axl_new (VortexXmlRpcServiceDispatchNode, 1);
@@ -3045,6 +2955,13 @@ bool vortex_xml_rpc_init    (VortexCtx * ctx)
 	axlDtd  * dtd;
 
 	v_return_val_if_fail (ctx, false);
+
+	/* check if the xml-rpc module was already initialized */
+	service_dispatch  = vortex_ctx_get_data (ctx, VORTEX_XML_RPC_SERVICE_DISPATCH);
+	if (service_dispatch != NULL) {
+		vortex_log (VORTEX_LEVEL_WARNING, "xml-rpc module was already initialized, return as initialized");
+		return true;
+	} /* end if */
 
 	/* create the service dispatch list */
 	service_dispatch  = axl_list_new (axl_list_always_return_1, axl_free);
