@@ -4215,6 +4215,7 @@ bool test_06 (void)
  */
 bool test_07 (void) {
 	
+#if defined(ENABLE_XML_RPC_SUPPORT)
 	VortexConnection * connection;
 	VortexChannel    * channel;
 	int                iterator;
@@ -4421,6 +4422,9 @@ bool test_07 (void) {
 
 	/* terminate xml-rpc library */
 	vortex_xml_rpc_cleanup (ctx);
+#else
+	printf ("--- WARNING: unable to run XML-RPC tests, no xml-rpc library was built\n");
+#endif
 
 	return true;
 }
