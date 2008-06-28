@@ -4391,6 +4391,12 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * // the ctx variable represents a context already initialized with
  * // vortex_ctx_new followed by vortex_init_ctx
  *
+ * // call to enable XML-RPC on the context 
+ * if (! vortex_xml_rpc_init (ctx)) {
+ *     printf ("Unable to init XML-RPC support..\n");
+ *     return;
+ * }
+ *
  * // create the connection to a known location (in a blocking manner for
  * // demostration purposes)
  * connection = vortex_connection_new (ctx, "localhost", "22000", NULL, NULL);
