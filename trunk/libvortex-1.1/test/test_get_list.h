@@ -12,7 +12,10 @@
 #ifndef __SERVER_TEST_GET_LIST_XML_RPC_H__
 #define __SERVER_TEST_GET_LIST_XML_RPC_H__
 
+/* include base library */
 #include <vortex.h>
+/* include xml-rpc library */
+#include <vortex_xml_rpc.h>
 #include <test_types.h>
 
 Node * get_list_0 (char ** fault_error, int * fault_code, VortexChannel * channel);

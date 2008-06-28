@@ -9,7 +9,10 @@
  * Axl Library homepage:              http://xml.aspl.es
  * Advanced Software Production Line: http://www.aspl.es
  */
+/* include base library */
 #include <vortex.h>
+/* include xml-rpc library */
+#include <vortex_xml_rpc.h>
 #include <test_types.h>
 
 ItemArray * get_array_0 (char ** fault_error, int * fault_code, VortexChannel * channel)

@@ -21,6 +21,8 @@
 #include <test_sum2_int_int.h>
 
 
+/* include xml-rpc library */
+#include <vortex_xml_rpc.h>
 XmlRpcMethodResponse *  service_dispatch (VortexChannel * channel, XmlRpcMethodCall * method_call, axlPointer user_data)
 {
 
@@ -43,7 +45,7 @@ XmlRpcMethodResponse *  service_dispatch (VortexChannel * channel, XmlRpcMethodC
 	if (method_call_is (method_call, "get_double_sum", 2, XML_RPC_DOUBLE_VALUE, XML_RPC_DOUBLE_VALUE,  -1))
 		return __get_double_sum_2_double_double (method_call, channel);
 
-	if (method_call_is (method_call, "get_struct", 2,  -1))
+	if (method_call_is (method_call, "get_struct", 2, XML_RPC_STRUCT_VALUE, XML_RPC_STRUCT_VALUE,  -1))
 		return __get_struct_2_values_values (method_call, channel);
 
 	if (method_call_is (method_call, "get_array", 0,  -1))

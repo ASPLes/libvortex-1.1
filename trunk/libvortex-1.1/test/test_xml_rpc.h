@@ -12,7 +12,10 @@
 #define __XML_RPC_TEST_H__
 
 #include <test_types.h>
+/* include base library */
 #include <vortex.h>
+/* include xml-rpc library */
+#include <vortex_xml_rpc.h>
 
 /* support for c++ declarations */
 BEGIN_C_DECLS

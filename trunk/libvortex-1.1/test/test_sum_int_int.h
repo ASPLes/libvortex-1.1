@@ -12,7 +12,10 @@
 #ifndef __SERVER_TEST_SUM_XML_RPC_H__
 #define __SERVER_TEST_SUM_XML_RPC_H__
 
+/* include base library */
 #include <vortex.h>
+/* include xml-rpc library */
+#include <vortex_xml_rpc.h>
 #include <test_types.h>
 
 int sum_2_int_int (int a, int b, char ** fault_error, int * fault_code, VortexChannel * channel);

@@ -14,6 +14,10 @@ if ENABLE_TUNNEL_SUPPORT
 INCLUDE_TUNNEL_SUPPORT = -DENABLE_TUNNEL_SUPPORT
 endif
 
+if ENABLE_XML_RPC_SUPPORT
+INCLUDE_XML_RPC_SUPPORT = -DENABLE_XML_RPC_SUPPORT
+endif
+
 certfilesdir    = $(datadir)/libvortex-1.1
 certfiles_DATA  = test-certificate.pem test-private-key.pem
 EXTRA_DIST      = Makefile.win $(certfiles_DATA) vortex-regression-client.vcproj  vortex-regression-listener.vcproj vortex-regression-client.idl \
@@ -34,9 +38,9 @@ noinst_PROGRAMS = \
 	vortex-client-without-cbs \
 	vortex-close-listeners vortex-file-transfer-server vortex-file-transfer-client
 
-INCLUDES = -I../src -I../tunnel $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
+INCLUDES = -I../src -I../tunnel -I../xml-rpc $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
 	-I$(READLINE_PATH)/include -Wall -g -ansi \
-        -DVERSION=\""$(VORTEX_VERSION)"\" -I../src $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_VORTEX_LOG) $(INCLUDE_TUNNEL_SUPPORT)
+        -DVERSION=\""$(VORTEX_VERSION)"\" -I../src $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_VORTEX_LOG) $(INCLUDE_TUNNEL_SUPPORT)  $(INCLUDE_XML_RPC_SUPPORT)
 
 LIBS            = $(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
 
@@ -50,7 +54,7 @@ vortex_tls_listener_SOURCES    = vortex-tls-listener.c
 vortex_tls_listener_LDADD      = $(LIBS) ../src/libvortex-1.1.la
 
 vortex_client_SOURCES          = vortex-client.c 
-vortex_client_LDADD            = $(LIBS) ../src/libvortex-1.1.la -L$(READLINE_PATH)/lib -lreadline 
+vortex_client_LDADD            = $(LIBS) ../src/libvortex-1.1.la -L$(READLINE_PATH)/lib -lreadline ../xml-rpc/libvortex-xml-rpc-1.1.la 
 
 vortex_simple_listener_SOURCES = vortex-simple-listener.c
 vortex_simple_listener_LDADD   = $(LIBS) ../src/libvortex-1.1.la
@@ -74,7 +78,7 @@ vortex_regression_client_SOURCES   = \
 	test_array_itemarray_xml_rpc.c \
 	test_struct_node_xml_rpc.h \
 	test_struct_node_xml_rpc.c
-vortex_regression_client_LDADD     = $(LIBS) ../src/libvortex-1.1.la  ../tunnel/libvortex-tunnel-1.1.la 
+vortex_regression_client_LDADD     = $(LIBS) ../src/libvortex-1.1.la  ../tunnel/libvortex-tunnel-1.1.la  ../xml-rpc/libvortex-xml-rpc-1.1.la 
 
 vortex_regression_listener_SOURCES   = \
 	vortex-regression-listener.c \
@@ -108,7 +112,7 @@ vortex_regression_listener_SOURCES   = \
 	test_struct_node_xml_rpc.c \
 	test_sum2_int_int.h \
 	test_sum2_int_int.c
-vortex_regression_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la  ../tunnel/libvortex-tunnel-1.1.la 
+vortex_regression_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la  ../tunnel/libvortex-tunnel-1.1.la ../xml-rpc/libvortex-xml-rpc-1.1.la 
 
 vortex_server_without_cbs_SOURCES   = vortex-server-without-cbs.c
 vortex_server_without_cbs_LDADD     = $(LIBS) ../src/libvortex-1.1.la
@@ -123,7 +127,7 @@ vortex_sasl_listener_SOURCES   = vortex-sasl-listener.c
 vortex_sasl_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la
 
 vortex_xml_rpc_listener_SOURCES   = vortex-xml-rpc-listener.c
-vortex_xml_rpc_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la
+vortex_xml_rpc_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la ../xml-rpc/libvortex-xml-rpc-1.1.la 
 
 vortex_file_transfer_server_SOURCES   = vortex-file-transfer-server.c
 vortex_file_transfer_server_LDADD     = $(LIBS) ../src/libvortex-1.1.la
@@ -133,4 +137,4 @@ vortex_file_transfer_client_LDADD     = $(LIBS) ../src/libvortex-1.1.la
 
 # build xml-rpc source files required by the regression test.
 test_types.h:
-	../xml-rpc-gen/xml-rpc-gen --out-server-dir . --out-stub-dir .  vortex-regression-client.idl --disable-autoconf --disable-main-file
+	../xml-rpc-gen/xml-rpc-gen-1.1 --out-server-dir . --out-stub-dir .  vortex-regression-client.idl --disable-autoconf --disable-main-file

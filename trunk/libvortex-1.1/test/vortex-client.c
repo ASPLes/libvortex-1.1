@@ -17,7 +17,13 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/* include base library */
 #include <vortex.h>
+
+/* include xml-rpc implementation */
+#include <vortex_xml_rpc.h>
+
+/* additional libraries */
 #include <readline/readline.h>
 #include <readline/history.h>
 

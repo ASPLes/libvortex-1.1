@@ -9,7 +9,10 @@
  * Axl Library homepage:              http://xml.aspl.es
  * Advanced Software Production Line: http://www.aspl.es
  */
+/* include base library */
 #include <vortex.h>
+/* include xml-rpc library */
+#include <vortex_xml_rpc.h>
 #include <test_types.h>
 
 int operate_2_int_int (int a, int b, char ** fault_error, int * fault_code, VortexChannel * channel)

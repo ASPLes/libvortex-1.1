@@ -12,6 +12,8 @@
 #ifndef __SERVICE_DISPATCH_H__
 #define __SERVICE_DISPATCH_H__
 
+/* include xml-rpc library */
+#include <vortex_xml_rpc.h>
 XmlRpcMethodResponse *  service_dispatch (VortexChannel * channel, XmlRpcMethodCall * method_call, axlPointer user_data);
 
 #endif
