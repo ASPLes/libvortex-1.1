@@ -9,10 +9,6 @@ if ENABLE_SASL_SUPPORT
 INCLUDE_SASL_SUPPORT=-DENABLE_SASL_SUPPORT
 endif
 
-if ENABLE_XML_RPC_SUPPORT
-INCLUDE_XML_RPC_SUPPORT=-DENABLE_XML_RPC_SUPPORT
-endif
-
 if ENABLE_VORTEX_LOG
 INCLUDE_VORTEX_LOG=-DENABLE_VORTEX_LOG
 endif
@@ -35,7 +31,7 @@ endif
 
 INCLUDES = -Wall -ansi -g -I$(top_srcdir) -D__COMPILING_VORTEX__ \
 	$(AXL_CFLAGS) $(SASL_CFLAGS) $(INCLUDE_VORTEX_LOG) $(PTHREAD_CFLAGS) \
-	-DVERSION=\""$(VORTEX_VERSION)"\" $(INCLUDE_TLS_SUPPORT) $(INCLUDE_SASL_SUPPORT) $(INCLUDE_XML_RPC_SUPPORT) \
+	-DVERSION=\""$(VORTEX_VERSION)"\" $(INCLUDE_TLS_SUPPORT) $(INCLUDE_SASL_SUPPORT) \
 	-DPACKAGE_DTD_DIR=\""$(datadir)"\" \
 	-DPACKAGE_TOP_DIR=\""$(top_srcdir)"\" $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_DEFAULT_EPOLL) $(INCLUDE_DEFAULT_POLL)
 
@@ -65,8 +61,6 @@ libvortex_1_1_la_SOURCES =	\
 	vortex_sasl.c \
 	vortex_tls.c \
 	vortex_win32.c \
-	vortex_xml_rpc.c \
-	vortex_xml_rpc_types.c \
 	vortex_errno.c \
 	vortex_thread.c 
 
@@ -92,15 +86,12 @@ libvortex_1_1_include_HEADERS = vortex.h \
 	vortex_channel_pool.h \
 	vortex_tls.h \
 	vortex_sasl.h \
-	vortex_xml_rpc.h \
-	vortex_xml_rpc_types.h \
 	vortex_win32.h \
 	vortex_errno.h \
 	vortex_thread.h \
 	vortex-sasl.dtd.h \
 	vortex-tls.dtd.h \
 	vortex-channel.dtd.h \
-	xml-rpc-boot.dtd.h \
 	vortex-listener-conf.dtd.h 
 
 libvortex_1_1_la_LIBADD = \
@@ -114,8 +105,9 @@ update-dtds:
 	axl-knife --input ../data/channel.dtd --dtd-to-c --output vortex-channel.dtd.h --ifnewer
 	axl-knife --input ../data/tls.dtd --dtd-to-c  --output vortex-tls.dtd.h  --ifnewer
 	axl-knife --input ../data/sasl.dtd --dtd-to-c  --output vortex-sasl.dtd.h  --ifnewer
-	axl-knife --input ../data/xml-rpc-boot.dtd --dtd-to-c  --output xml-rpc-boot.dtd.h  --ifnewer
 	axl-knife --input ../data/vortex-listener-conf.dtd --dtd-to-c  --output vortex-listener-conf.dtd.h  --ifnewer
+#	axl-knife --input ../data/xml-rpc-boot.dtd --dtd-to-c  --output xml-rpc-boot.dtd.h  --ifnewer
+
 
 update-def:
 	echo "EXPORTS" > libvortex-1.1.def

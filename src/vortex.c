@@ -840,9 +840,6 @@ bool   vortex_init_ctx (VortexCtx * ctx)
 	/* init profiles module */
 	vortex_profiles_init (ctx);
 
-	/* init xml-rpc module */
-	vortex_xml_rpc_init (ctx); 
-
 	/* init vortex support module on the context provided: 
 	 * 
 	 * A list containing all search paths with its domains to
@@ -1002,9 +999,6 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
 
 	/* stop vortex profiles process */
 	vortex_profiles_cleanup (ctx);
-
-	/* cleanup xml rpc module if defined */
-	vortex_xml_rpc_cleanup (ctx); 
 
 	/* clean up tls module */
 	vortex_tls_cleanup (ctx);

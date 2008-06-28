@@ -209,7 +209,6 @@ BEGIN_C_DECLS
  * consumers. */
 #include <vortex_types.h>
 #include <vortex_ctx.h>
-#include <vortex_xml_rpc_types.h>
 #include <vortex_support.h>
 #include <vortex_handlers.h>
 #include <vortex_thread.h>
@@ -235,9 +234,6 @@ BEGIN_C_DECLS
 
 /* SASL profile */
 #include <vortex_sasl.h>
-
-/* XML-RPC profile */
-#include <vortex_xml_rpc.h>
 
 END_C_DECLS
 
