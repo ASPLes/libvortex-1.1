@@ -28,7 +28,7 @@ initial_build_doc:
 
 build_doc:
 	@echo "Generating module documentation..";
-	(cd ../xml-rpc-gen; ./xml-rpc-gen reg-test01.idl;)
+	(cd ../xml-rpc-gen; ./xml-rpc-gen-1.1 reg-test01.idl;)
 	doxygen vortex-doc.doxygen
 	cp main-page-logo.png html
 	cp vortex.css html
