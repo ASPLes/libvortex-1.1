@@ -285,6 +285,7 @@ AC_OUTPUT([
 Makefile
 src/Makefile
 tunnel/Makefile
+xml-rpc/Makefile
 doc/Makefile
 doc/vortex-doc.doxygen
 test/Makefile
@@ -292,6 +293,7 @@ xml-rpc-gen/Makefile
 data/Makefile
 logo/Makefile
 vortex-1.1.pc
+vortex-xml-rpc-1.1.pc
 vortex-tunnel-1.1.pc])
 
 echo "------------------------------------------"
@@ -346,6 +348,7 @@ else
 fi
 if test x$enable_xml_rpc_support = xyes ; then
    echo "   Build XML-RPC profile support:  enabled"
+   echo "     (libvortex-xml-rpc-1.1)"
 else
    echo "   Build XML-RPC profile support:  disabled"
    echo 

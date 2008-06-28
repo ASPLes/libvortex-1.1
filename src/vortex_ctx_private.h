@@ -209,11 +209,6 @@ struct _VortexCtx {
 	VortexThreadPool *        thread_pool;
 	bool                      thread_pool_being_stoped;
 
-	/**** vortex xml rpc module state ****/
-	/* @internal List of dispatch handlers and its associated
-	 * mutex to handle it. */
-	axlList                 * xml_rpc_service_dispatch;
-
 	/**** vortex greetings module state ****/
 	char                    * greetings_features;
 	char                    * greetings_localize;
