@@ -2208,6 +2208,54 @@ bool        __vortex_channel_send_msg_common (VortexChannel   * channel,
  * too large that requires several frames to be sent. Having said
  * that, it is recommended to not consider a "true" value returned by
  * this function as a successful send.
+ *
+ * <h3>MIME considerations while using this function</h3>
+ *
+ * This function, if nothing especial is configured, assumes the
+ * message to be sent is not MIME prepared, that is, it is considered
+ * as a MIME body. In this context, the function append, at least, the
+ * MIME header separator (CR+LF) to notify no MIME header was
+ * configured, or those MIME headers configured at \ref
+ * vortex_profiles_set_mime_type. 
+ *
+ * It could happen this not fit your requirements because you need to
+ * send another MIME header configuration, maybe one different per
+ * message.  In this case, you'll have to disable automatic MIME
+ * header handling (see relevant portions about this issue at \ref
+ * vortex_manual_using_mime), and send a MIME ready message.
+ *
+ * For example, the following could be used to send arbitrary MIME
+ * content. First, disable automatic MIME handling for the channel (it
+ * can also be done at library or profile level). This is only
+ * required once. You can do it after the channel was created.
+ *
+ * \code
+ * // make the channel to let the application level to handle MIME configuration
+ * vortex_channel_set_automatic_mime (channel, 2);
+ * \endcode
+ * 
+ * Then, at the sending phase, you'll have to build a properly
+ * formated MIME message. In our example, we'll send a MIME message
+ * with a body part defined by (<b>message_content</b>) and two MIME
+ * headers: <b>Message-ID</b> and <b>X-Transaction-ID</b>:
+ *
+ * \code
+ * // prepare a MIME message
+ * char * mime_message = axl_strdup_printf ("Message-ID: %s\r\nX-Transaction-ID: %s\r\n\r\n%s",
+ *                                          message_id,
+ *                                          transaction_id,
+ *                                          message_content);
+ * // send it over a properly configured channel
+ * if (! vortex_channel_send_msg (channel, mime_message, strlen (mime_message), NULL)) {
+ *       // failed to send the message, do some handling here
+ *       axl_free (mime_message);
+ *       return -1;
+ * } 
+ * // mime message properly sent
+ * axl_free (mime_message);
+ * \endcode
+ *
+ * See a detailed discusion about MIME activation at: \ref vortex_manual_using_mime
  */
 bool            vortex_channel_send_msg   (VortexChannel    * channel,
 					   const void       * message,
@@ -2241,6 +2289,9 @@ bool            vortex_channel_send_msg   (VortexChannel    * channel,
  * @param format the message format (printf-style) 
  * 
  * @return the same as \ref vortex_channel_send_msg.
+ *
+ * <i><b>NOTE:</b> See MIME considerations described at \ref
+ * vortex_channel_send_msg which also applies to this function.</i>
  */
 bool            vortex_channel_send_msgv       (VortexChannel * channel,
 						int           * msg_no,
@@ -2293,6 +2344,9 @@ bool            vortex_channel_send_msgv       (VortexChannel * channel,
  * @param wait_reply a Wait Reply object created using \ref vortex_channel_create_wait_reply 
  * 
  * @return the same as \ref vortex_channel_send_msg
+ *
+ * <i><b>NOTE:</b> See MIME considerations described at \ref
+ * vortex_channel_send_msg which also applies to this function.</i>
  */
 bool               vortex_channel_send_msg_and_wait               (VortexChannel    * channel,
 								   const void       * message,
@@ -2316,7 +2370,10 @@ bool               vortex_channel_send_msg_and_wait               (VortexChannel
  * @param wait_reply a wait reply object created with \ref vortex_channel_create_wait_reply
  * @param format a printf-like string format defining the message to be sent.
  * 
- * @return 
+ * @return the same as \ref vortex_channel_send_msg
+ *
+ * <i><b>NOTE:</b> See MIME considerations described at \ref
+ * vortex_channel_send_msg which also applies to this function.</i>
  */
 bool               vortex_channel_send_msg_and_waitv              (VortexChannel   * channel,
 								   int             * msg_no,
@@ -2552,6 +2609,9 @@ bool      __vortex_channel_common_rpy (VortexChannel    * channel,
  * 
  * @return true if message was queued to be sent, otherwise false is
  * returned.
+ *
+ * <i><b>NOTE:</b> See MIME considerations described at \ref
+ * vortex_channel_send_msg which also applies to this function.</i>
  */
 bool            vortex_channel_send_rpyv       (VortexChannel * channel,
 						int             msg_no_rpy,
@@ -2643,6 +2703,9 @@ bool            vortex_channel_send_rpyv       (VortexChannel * channel,
  * 
  * @return true if message was queued to be sent, otherwise false is
  * returned.
+ *
+ * <i><b>NOTE:</b> See MIME considerations described at \ref
+ * vortex_channel_send_msg which also applies to this function.</i>
  */
 bool            vortex_channel_send_rpy        (VortexChannel    * channel,  
 						const void       * message,
@@ -2752,6 +2815,9 @@ bool            vortex_channel_send_rpy        (VortexChannel    * channel,
  * 
  * @return true if the given reply was sent, otherwise false is
  * returned.
+ *
+ * <i><b>NOTE:</b> See MIME considerations described at \ref
+ * vortex_channel_send_msg which also applies to this function.</i>
  */
 bool               vortex_channel_send_ans_rpy                    (VortexChannel    * channel,
 								   const void       * message,
@@ -2785,6 +2851,9 @@ bool               vortex_channel_send_ans_rpy                    (VortexChannel
  * @param format       StdArg (printf-like) message format.
  * 
  * @return true if the message was sent properly.
+ *
+ * <i><b>NOTE:</b> See MIME considerations described at \ref
+ * vortex_channel_send_msg which also applies to this function.</i>
  */
 bool               vortex_channel_send_ans_rpyv                   (VortexChannel * channel,
 								   int             msg_no_rpy,
@@ -2859,6 +2928,9 @@ bool               vortex_channel_finalize_ans_rpy                (VortexChannel
  * @param msg_no_rpy the message number to reply
  * 
  * @return true if message was sent or false if fails
+ *
+ * <i><b>NOTE:</b> See MIME considerations described at \ref
+ * vortex_channel_send_msg which also applies to this function.</i>
  */
 bool       vortex_channel_send_err        (VortexChannel    * channel,  
 					   const void       * message,
@@ -2879,6 +2951,9 @@ bool       vortex_channel_send_err        (VortexChannel    * channel,
  * @param format a printf-like string format.
  * 
  * @return true if message was sent of false if fails
+ *
+ * <i><b>NOTE:</b> See MIME considerations described at \ref
+ * vortex_channel_send_msg which also applies to this function.</i>
  */
 bool            vortex_channel_send_errv       (VortexChannel * channel,
 						int             msg_no_err,
