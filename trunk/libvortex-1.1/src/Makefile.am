@@ -106,8 +106,6 @@ update-dtds:
 	axl-knife --input ../data/tls.dtd --dtd-to-c  --output vortex-tls.dtd.h  --ifnewer
 	axl-knife --input ../data/sasl.dtd --dtd-to-c  --output vortex-sasl.dtd.h  --ifnewer
 	axl-knife --input ../data/vortex-listener-conf.dtd --dtd-to-c  --output vortex-listener-conf.dtd.h  --ifnewer
-#	axl-knife --input ../data/xml-rpc-boot.dtd --dtd-to-c  --output xml-rpc-boot.dtd.h  --ifnewer
-
 
 update-def:
 	echo "EXPORTS" > libvortex-1.1.def

@@ -45,7 +45,6 @@
 #include <vortex-sasl.dtd.h>
 #include <vortex-tls.dtd.h>
 #include <vortex-channel.dtd.h>
-#include <xml-rpc-boot.dtd.h>
 
 #define LOG_DOMAIN "vortex-dtds"
 
@@ -58,7 +57,7 @@
  * 
  * @return true if the DTD file was read, parsed and pointer updated. false if not.
  */
-bool     __vortex_dtds_load_dtd (VortexCtx * ctx, axlDtd ** dtd_pointer, char * dtd_to_load)
+bool     vortex_dtds_load_dtd (VortexCtx * ctx, axlDtd ** dtd_pointer, char * dtd_to_load)
 {
 	axlError  * error;
 
@@ -90,20 +89,14 @@ bool     vortex_dtds_init (VortexCtx * ctx)
 	v_return_val_if_fail (ctx, false);
 
 	/* load BEEP channel management DTD definition */
-        if (!__vortex_dtds_load_dtd (ctx, &ctx->channel_dtd, CHANNEL_DTD)) {
+        if (!vortex_dtds_load_dtd (ctx, &ctx->channel_dtd, CHANNEL_DTD)) {
                 fprintf (stderr, "VORTEX_ERROR: unable to load channel.dtd file.\n");
 		return false;
         }
 	
 	/* load SASL DTD definition */
-	if (!__vortex_dtds_load_dtd (ctx, &ctx->sasl_dtd, SASL_DTD)) {
+	if (!vortex_dtds_load_dtd (ctx, &ctx->sasl_dtd, SASL_DTD)) {
                 fprintf (stderr, "VORTEX_ERROR: unable to load sasl.dtd file.\n");
-		return false;
-        }
-
-	/* load SASL DTD definition */
-	if (!__vortex_dtds_load_dtd (ctx, &ctx->xml_rpc_boot_dtd, XML_RPC_BOOT_DTD)) {
-                fprintf (stderr, "VORTEX_ERROR: unable to load xml-rpc-boot.dtd file.\n");
 		return false;
         }
 
@@ -125,9 +118,6 @@ void vortex_dtds_cleanup (VortexCtx * ctx)
 
 	axl_dtd_free (ctx->sasl_dtd);
 	ctx->sasl_dtd = NULL;
-
-	axl_dtd_free (ctx->xml_rpc_boot_dtd);
-	ctx->xml_rpc_boot_dtd = NULL;
 
 	return;
 }
@@ -162,17 +152,4 @@ axlDtd * vortex_dtds_get_sasl_dtd (VortexCtx * ctx)
 	return ctx->sasl_dtd;
 }
 
-/** 
- * @internal
- * @brief Returns current XML-RPC DTD definition.
- * 
- * @return Current pointer to the DTD definition for XML-RPC profile.
- */
-axlDtd * vortex_dtds_get_xml_rpc_boot_dtd (VortexCtx * ctx)
-{
-	if (ctx == NULL)
-		return NULL;
-
-	return ctx->xml_rpc_boot_dtd;
-}
 

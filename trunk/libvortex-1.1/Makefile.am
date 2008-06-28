@@ -14,8 +14,12 @@ if ENABLE_TUNNEL_SUPPORT
 TUNNEL_SUPPORT_DIR = tunnel
 endif
 
+if ENABLE_XML_RPC_SUPPORT
+XML_RPC_SUPPORT_DIR = xml-rpc
+endif
 
-SUBDIRS = src $(TUNNEL_SUPPORT_DIR) $(VORTEX_TEST_DIR) $(VORTEX_XML_RPC_GEN_TOOL_DIR) $(VORTEX_DOC_DIR) data logo
+
+SUBDIRS = src $(TUNNEL_SUPPORT_DIR) $(XML_RPC_SUPPORT_DIR) $(VORTEX_TEST_DIR) $(VORTEX_XML_RPC_GEN_TOOL_DIR) $(VORTEX_DOC_DIR) data logo
 EXTRA_DIST = vortex-1.1.pc.in VERSION libvortex.sln
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = vortex-1.1.pc vortex-tunnel-1.1.pc
+pkgconfig_DATA = vortex-1.1.pc vortex-tunnel-1.1.pc vortex-xml-rpc-1.1.pc
