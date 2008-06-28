@@ -216,6 +216,10 @@ void xml_rpc_write_c_server_default_service_dispath (axlDoc   * doc,
 	axlHash       * resources;
 	axlHashCursor * iter;
 
+	/* write depedency to the xml-rpc implementation */
+	xml_rpc_support_write ("/* include xml-rpc library */\n");
+	xml_rpc_support_write ("#include <vortex_xml_rpc.h>\n");
+
 	/* write initial header */
 	xml_rpc_support_write ("XmlRpcMethodResponse *  service_dispatch (VortexChannel * channel, XmlRpcMethodCall * method_call, axlPointer user_data)%s\n\n",
 			       also_body ? "\n{" : ";");
@@ -471,7 +475,10 @@ void xml_rpc_c_server_create_main_c (axlDoc * doc,
 	xml_rpc_c_server_write_header (comp_name);
 
 	/* write all header includes that correspond to services */
+	xml_rpc_support_write ("/* include base library */\n");
 	xml_rpc_support_write ("#include <vortex.h>\n");
+	xml_rpc_support_write ("/* include xml-rpc library */\n");
+	xml_rpc_support_write ("#include <vortex_xml_rpc.h>\n");
 	xml_rpc_support_write ("#include <service_dispatch.h>\n\n");
 
 	/* write main function */
@@ -902,7 +909,10 @@ void xml_rpc_c_server_create_write_service (axlNode * service,
 	xml_rpc_support_write ("#define __SERVER_%s_%s_XML_RPC_H__\n\n",
 			       comp_name_upper, service_name_upper);
 
+	xml_rpc_support_write ("/* include base library */\n");
 	xml_rpc_support_write ("#include <vortex.h>\n");
+	xml_rpc_support_write ("/* include xml-rpc library */\n");
+	xml_rpc_support_write ("#include <vortex_xml_rpc.h>\n");
 	xml_rpc_support_write ("#include <%s_types.h>\n\n",
 			       comp_name_lower);
 
@@ -929,7 +939,10 @@ void xml_rpc_c_server_create_write_service (axlNode * service,
 	/* write initial header */
 	xml_rpc_c_server_write_header (comp_name);
 
+	xml_rpc_support_write ("/* include base library */\n");
 	xml_rpc_support_write ("#include <vortex.h>\n");
+	xml_rpc_support_write ("/* include xml-rpc library */\n");
+	xml_rpc_support_write ("#include <vortex_xml_rpc.h>\n");
 	xml_rpc_support_write ("#include <%s_types.h>\n\n",
 			       comp_name_lower);
 

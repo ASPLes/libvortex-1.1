@@ -665,7 +665,10 @@ void xml_rpc_c_stub_write_struct_def (char  * out_dir,
 	xml_rpc_support_write ("#ifndef __XML_RPC_STRUCT_%s_H__\n", struct_upper);
 	xml_rpc_support_write ("#define __XML_RPC_STRUCT_%s_H__\n\n", struct_upper);
 	
+	xml_rpc_support_write ("/* include base library */\n");
 	xml_rpc_support_write ("#include <vortex.h>\n");
+	xml_rpc_support_write ("/* include xml-rpc library */\n");
+	xml_rpc_support_write ("#include <vortex_xml_rpc.h>\n");
 	xml_rpc_support_write ("#include <%s_types.h>\n\n", comp_name_lower);
 
 	xml_rpc_support_write ("/* %s type declaration */\n", struct_name);
@@ -1222,7 +1225,10 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 	xml_rpc_support_write ("#ifndef __XML_RPC_ARRAY_%s_H__\n",   name_upper);
 	xml_rpc_support_write ("#define __XML_RPC_ARRAY_%s_H__\n\n", name_upper);
 	
+	xml_rpc_support_write ("/* include base library */\n");
 	xml_rpc_support_write ("#include <vortex.h>\n");
+	xml_rpc_support_write ("/* include xml-rpc library */\n");
+	xml_rpc_support_write ("#include <vortex_xml_rpc.h>\n");
 	xml_rpc_support_write ("#include <%s_types.h>\n\n", comp_name_lower);
 
 	xml_rpc_support_multiple_write ("/* support for c++ declarations */\n",
@@ -1961,7 +1967,10 @@ void xml_rpc_c_stub_create_header_file (axlDoc * doc, char  * result, char  * co
 	/* write C headers includes */
 	xml_rpc_support_write ("#include <%s_types.h>\n", comp_name_lower);
 
-	xml_rpc_support_multiple_write ("#include <vortex.h>\n\n",
+	xml_rpc_support_multiple_write ("/* include base library */\n",
+					"#include <vortex.h>\n",
+					"/* include xml-rpc library */\n",
+					"#include <vortex_xml_rpc.h>\n\n",
 					"/* support for c++ declarations */\n",
 					"BEGIN_C_DECLS\n\n", NULL);
 

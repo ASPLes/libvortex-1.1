@@ -18,7 +18,7 @@ INCLUDES = -g -Wall -ansi -I. -I$(top_srcdir)/libvortex-1.1/src $(AXL_CFLAGS) $(
 
 LIBS     = $(AXL_LIBS) $(EXARG_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
 
-bin_PROGRAMS = xml-rpc-gen
+bin_PROGRAMS = xml-rpc-gen-1.1
 
 # tests: reg-test01 reg-test02 reg-test03
 
@@ -55,11 +55,11 @@ exarg.h exarg.c:
 	test -e exarg.c || cp ../../libexarg/src/exarg.c .
 
 
-xml_rpc_gen_SOURCES = exarg.h exarg.c xml-rpc-gen.c xml-rpc.h \
+xml_rpc_gen_1_1_SOURCES = exarg.h exarg.c xml-rpc-gen.c xml-rpc.h \
 	xml-rpc-support.h xml-rpc-support.c \
 	xml-rpc-c-stub.h xml-rpc-c-stub.c \
 	xml-rpc-autoconf.h xml-rpc-autoconf.c \
 	xml-rpc-c-server.h xml-rpc-c-server.c \
 	xml-rpc-gen-translate.h xml-rpc-gen-translate.c
 
-xml_rpc_gen_LDADD = ../src/libvortex-1.1.la
+xml_rpc_gen_1_1_LDADD = ../src/libvortex-1.1.la

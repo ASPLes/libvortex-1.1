@@ -23,7 +23,7 @@
 #include <xml-rpc.h>
 
 
-#define HELP_HEADER "xml-rpc-gen: a protocol compiler for the XDL language\n\
+#define HELP_HEADER "xml-rpc-gen-1.1: a protocol compiler for the XDL language\n\
 Copyright (C) 2006  Advanced Software Production Line, S.L.\n\n"
 
 
@@ -44,13 +44,13 @@ VortexCtx * ctx = NULL;
 void show_tutorial ()
 {
 	printf (HELP_HEADER);
-	printf ("To use xml-rpc-gen:\n\n");
+	printf ("To use xml-rpc-gen-1.1:\n\n");
 	printf ("1) Define an XDL file (or IDL file), describing your \n");
 	printf ("   XML-RPC interface as defined in the documentation. \n");
 	printf ("2) Comple the example using the following:\n");
 	printf ("   xml-rpc-gen test.xdl\n\n");
 
-	printf ("Try also xml-rpc-gen --help\n");
+	printf ("Try also xml-rpc-gen-1.1 --help\n");
 }
 
 
