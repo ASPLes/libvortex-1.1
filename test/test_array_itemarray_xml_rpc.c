@@ -129,7 +129,9 @@ void test_itemarray_free (ItemArray * ref)
 
 Item * test_itemarray_get (ItemArray * ref, int index)
 {
+	/* check received reference */
 	v_return_val_if_fail (ref, NULL);
+
 	/* check index access */
 	v_return_val_if_fail (index >= 0 &&  index < ref->count,  NULL);
 

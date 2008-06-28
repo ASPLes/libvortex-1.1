@@ -11,7 +11,10 @@
 #ifndef __XML_RPC_STRUCT_NODE_H__
 #define __XML_RPC_STRUCT_NODE_H__
 
+/* include base library */
 #include <vortex.h>
+/* include xml-rpc library */
+#include <vortex_xml_rpc.h>
 #include <test_types.h>
 
 /* Node type declaration */

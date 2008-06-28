@@ -4235,10 +4235,10 @@ bool test_07 (void) {
 	Node             * node;
 	Node             * node_result;
 
-	/* check xml rpc profile support */
-	if (! vortex_xml_rpc_is_enabled ()) {
-		printf ("--- WARNING: XML-RPC profile support is not enabled, unable to check\n");
-		return true;
+	/* init xml-rpc module */
+	if (! vortex_xml_rpc_init (ctx)) {
+		printf ("--- WARNING: unable to start XML-RPC profile, failed to init XML-RPC library\n");
+		return false;
 	} /* end if */
 
 	/* create a new connection */
@@ -4248,6 +4248,7 @@ bool test_07 (void) {
 	channel = BOOT_CHANNEL (connection, NULL);
 
 	/*** TEST 01 ***/
+	printf ("Test 07: xml-rpc test 01..ok\n");
 	if (7 != test_sum_int_int_s (3, 4, channel, NULL, NULL, NULL)) {
 		fprintf (stderr, "ERROR: An error was found while invoking..\n");
 		return false;
@@ -4263,6 +4264,7 @@ bool test_07 (void) {
 		}
 		iterator++;
 	}
+	printf ("Test 07: xml-rpc test 01..ok\n");
 
 	/*** TEST 02 ***/
 	/* get the string from the function */
@@ -4280,6 +4282,7 @@ bool test_07 (void) {
 
 	/* free the result */
 	axl_free (result);
+	printf ("Test 07: xml-rpc test 02..ok\n");
 
 	/*** TEST 03 ***/
 	/* get the string from the function */
@@ -4294,6 +4297,7 @@ bool test_07 (void) {
 		fprintf (stderr, "Expected to receive a true bool value..\n");
 		return false;
 	}
+	printf ("Test 07: xml-rpc test 03..ok\n");
 
 	/*** TEST 04 ***/
 	/* get the string from the function */
@@ -4302,6 +4306,7 @@ bool test_07 (void) {
 		fprintf (stderr, "Expected to receive double value 15.5 but received: %g..\n", dresult);
 		return false;
 	}
+	printf ("Test 07: xml-rpc test 04..ok\n");
 
 	/*** TEST 05 ***/
 	/* get the string from the function */
@@ -4337,6 +4342,7 @@ bool test_07 (void) {
 	test_values_free (a);
 	test_values_free (b);
 	test_values_free (struct_result);
+	printf ("Test 07: xml-rpc test 05..ok\n");
 
 	/*** TEST 06 ***/
 	/* get the array content */
@@ -4377,7 +4383,7 @@ bool test_07 (void) {
 
 	/* free result */
 	test_itemarray_free (array);
-
+	printf ("Test 07: xml-rpc test 06..ok\n");
 
 	/*** TEST 07 ***/
 	/* get the array content */
@@ -4408,9 +4414,13 @@ bool test_07 (void) {
 
 	/* free node_result */
 	test_node_free (node_result);
+	printf ("Test 07: xml-rpc test 07..ok\n");
 
 	/* close the connection */
 	vortex_connection_close (connection);
+
+	/* terminate xml-rpc library */
+	vortex_xml_rpc_cleanup (ctx);
 
 	return true;
 }

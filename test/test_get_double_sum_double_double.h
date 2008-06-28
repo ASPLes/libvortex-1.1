@@ -12,7 +12,10 @@
 #ifndef __SERVER_TEST_GET_DOUBLE_SUM_XML_RPC_H__
 #define __SERVER_TEST_GET_DOUBLE_SUM_XML_RPC_H__
 
+/* include base library */
 #include <vortex.h>
+/* include xml-rpc library */
+#include <vortex_xml_rpc.h>
 #include <test_types.h>
 
 double get_double_sum_2_double_double (double a, double b, char ** fault_error, int * fault_code, VortexChannel * channel);

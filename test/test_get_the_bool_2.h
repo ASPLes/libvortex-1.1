@@ -12,7 +12,10 @@
 #ifndef __SERVER_TEST_GET_THE_BOOL_2_XML_RPC_H__
 #define __SERVER_TEST_GET_THE_BOOL_2_XML_RPC_H__
 
+/* include base library */
 #include <vortex.h>
+/* include xml-rpc library */
+#include <vortex_xml_rpc.h>
 #include <test_types.h>
 
 int get_the_bool_2_0 (char ** fault_error, int * fault_code, VortexChannel * channel);

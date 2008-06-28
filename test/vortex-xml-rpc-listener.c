@@ -1,4 +1,8 @@
+/* include base library */
 #include <vortex.h>
+
+/* include xml-rpc library */
+#include <vortex_xml_rpc.h>
 
 /* listener context */
 VortexCtx * ctx = NULL;
