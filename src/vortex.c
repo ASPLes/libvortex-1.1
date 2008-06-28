@@ -2743,27 +2743,58 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * will still include an inicial CR+LF appended to your message to
  * indicate the remote side no MIME header is defined and to make your
  * message MIME parseable.
+ *
+ * <h3>4.2.3 Implicit MIME headers to all messages without MIME information</h3>
  * 
- * However, even in that case, <b>BEEP assume a MIME implicit
- * configuration</b>, which have the following values:
+ * <b>BEEP assume a MIME implicit configuration</b>, which have the
+ * following values for those messages that do not configured
+ * "content-type" and "content-transfer-encoding":
  *
  * \code
  *        Content-Type: application/octet-stream
  *        Content-Transfer-Encoding: binary
  * \endcode
  *
- * <b>Automatic MIME configuration support:</b>
+ * <h3>4.2.4 How can I access MIME information on a frame received?</h3>
+ *
+ * First of all, in order to complete MIME support, you must have
+ * automatic frame joining activated (\ref
+ * vortex_channel_set_complete_flag). This is by default activated. In
+ * the case you are taking full control on frames received you must
+ * take care of MIME structure parsing by other means. You still can
+ * use \ref vortex_frame_mime_process function, but the function will
+ * require a frame that contains all the MIME message to work.
+ *
+ * Assuming you did receive a complete frame with a MIME message, you
+ * can access to the <b>MIME body by calling to</b>: \ref vortex_frame_get_payload. 
+ * 
+ * To access all the message received, including MIME headers and MIME
+ * body separator, use \ref vortex_frame_get_content.
+ *
+ * You can use \ref vortex_frame_get_mime_header to access all MIME
+ * headers found on the message received (stored on the frame). 
+ *
+ * Because MIME could allow to have several instances for the same
+ * MIME header, \ref vortex_frame_get_mime_header returns a structure (\ref VortexMimeHeader)
+ * that allows to get the content of the MIME header (\ref
+ * vortex_frame_mime_header_content) but it also allows to get the
+ * next instance found for the same MIME header by using \ref
+ * vortex_frame_mime_header_next.
+ *
+ * 
+ *
+ * <h3>4.2.5 Automatic MIME configuration for outgoing messages</h3>
  *
  * The following set of function allows to configure (and check) the
- * value to be configured or each message send on a particular channel
- * (running a particular profile) for the MIME headers: "Content-Type"
- * and "Content-Transfer-Encoding":
+ * values to be configured, on each message sent, for the MIME
+ * headers: "Content-Type" and "Content-Transfer-Encoding", in an
+ * automatic manner:
  * 
  * - \ref vortex_profiles_set_mime_type
  * - \ref vortex_profiles_get_mime_type
  * - \ref vortex_profiles_get_transfer_encoding
- * 
- * However, this mechanism doesn't fit very well if it is required to
+ *
+ * However, this mechanism doesn't fit properly if it is required to
  * send arbitrary MIME objects (with diffent MIME headers) under the
  * same profile, because previous configuration will append the same
  * MIME information to every message being sent via:
@@ -2783,7 +2814,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * on each message sent. This allows to produce MIME compliant
  * messages that have an empty MIME header configuration.
  *
- * <b>Disabling automatic MIME configuration:</b>
+ * <h3>4.2.5 Disabling automatic MIME configuration for outgoing messages</h3>
  *
  * Under some situations it is required to send already configured MIME
  * objects through the set of functions previously described. Because
@@ -2791,7 +2822,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * to each message sent, is required to disable this behavior to avoid
  * breaking message MIME configuration. 
  * 
- * This is done using the following set of functions, working at
+ * This is done using the following set of functions. They work at
  * library, profile and channel level, having preference the channel
  * level. In order of preference:
  *
@@ -2803,10 +2834,11 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *
  * For example, disabling automatic MIME handling at profile level
  * while cause Vortex Engine to not append any MIME header (including
- * the body separator) to messages sent:
+ * the body separator) to messages sent over a channel running a
+ * particular profile:
  * 
  * \code
- * // disable MIME automatic headers 
+ * // disable MIME automatic headers for the following profile
  * vortex_profiles_set_automatic_mime ("urn:beep:some-profile", 2);
  * \endcode
  *
@@ -2832,12 +2864,11 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * configured, then the configuration is copied into the channel. This
  * is done to improve library performance.</i>
  * 
- *
- * <b>Default configuration for automatic MIME header handling:</b>
+ * <h3>4.2.6 Default configuration for automatic MIME header handling. </h3>
  *
  * By default only library level comes activates (\ref vortex_conf_set
  * \ref VORTEX_AUTOMATIC_MIME_HANDLING). This means that, without any
- * configuration, all channels creates will automatically add a MIME
+ * configuration, all channels created will automatically add a MIME
  * header for each message sent.
  *
  * <i><b>NOTE:</b> In the case no configuration is found on every level (0 is returned

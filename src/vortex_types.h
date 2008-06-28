@@ -416,6 +416,16 @@ typedef struct _VortexChannelPool VortexChannelPool;
  * @brief MIME header content representation, allowing to get the
  * content associated and the next value associated on the same header
  * (if were defined).
+ *
+ * This structure represents a single MIME header instance found on a
+ * message. To get the MIME header name (left part of a MIME heeader
+ * definition) use \ref vortex_frame_mime_header_name.
+ *
+ * To get the content associated to this MIME header instance use \ref
+ * vortex_frame_mime_header_content. 
+ *
+ * To check if there are more instances defined for the same MIME
+ * header name, use \ref vortex_frame_mime_header_next.
  */
 typedef struct _VortexMimeHeader VortexMimeHeader;
 
