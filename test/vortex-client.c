@@ -23,6 +23,9 @@
 /* include xml-rpc implementation */
 #include <vortex_xml_rpc.h>
 
+/* include sasl implementation */
+#include <vortex_sasl.h>
+
 /* additional libraries */
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -668,8 +671,8 @@ void vortex_client_begin_auth () {
 	if (!check_connected ("can't start SASL auth if not connected first", connection))
 		return;
 	
-	/* check for SASL support */
-	if (!vortex_sasl_is_enabled ()) {
+	/* check and init SASL state on the provided context */
+	if (! vortex_sasl_init (ctx)) {
 		printf ("Unable to begin SASL negotiation. Current Vortex Library doesn't support SASL");
 		return;
 	}

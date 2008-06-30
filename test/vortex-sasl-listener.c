@@ -17,7 +17,11 @@
  *  02111-1307 USA
  */
 
+/* include base library */
 #include <vortex.h>
+
+/* include sasl component */
+#include <vortex_sasl.h>
 
 #define COYOTE_PROFILE "http://fact.aspl.es/profiles/coyote_profile"
 
@@ -250,8 +254,8 @@ int  main (int  argc, char  ** argv)
 		return -1;
 	} /* end if */
 
-	/* check for SASL initialization */
-	if (! vortex_sasl_is_enabled ()) {
+	/* check and initiliaze SASL */
+	if (! vortex_sasl_init (ctx)) {
 		printf ("Current Vortex Library is not prepared for SASL profile");
 		return -1;
 	}
