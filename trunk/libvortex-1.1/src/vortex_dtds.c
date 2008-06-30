@@ -42,7 +42,6 @@
 #include <vortex_ctx_private.h>
 
 /* include inline dtds */
-#include <vortex-sasl.dtd.h>
 #include <vortex-tls.dtd.h>
 #include <vortex-channel.dtd.h>
 
@@ -94,12 +93,6 @@ bool     vortex_dtds_init (VortexCtx * ctx)
 		return false;
         }
 	
-	/* load SASL DTD definition */
-	if (!vortex_dtds_load_dtd (ctx, &ctx->sasl_dtd, SASL_DTD)) {
-                fprintf (stderr, "VORTEX_ERROR: unable to load sasl.dtd file.\n");
-		return false;
-        }
-
 	return true;
 }
 
@@ -115,9 +108,6 @@ void vortex_dtds_cleanup (VortexCtx * ctx)
 
 	axl_dtd_free (ctx->channel_dtd);
 	ctx->channel_dtd = NULL;
-
-	axl_dtd_free (ctx->sasl_dtd);
-	ctx->sasl_dtd = NULL;
 
 	return;
 }
@@ -136,20 +126,6 @@ axlDtd * vortex_dtds_get_channel_dtd (VortexCtx * ctx)
 		return NULL;
 
 	return ctx->channel_dtd;
-}
-
-/** 
- * @internal
- * @brief Returns current SASL DTD definition.
- * 
- * @return Current pointer to the DTD definition for SASL profile.
- */
-axlDtd * vortex_dtds_get_sasl_dtd (VortexCtx * ctx)
-{
-	if (ctx == NULL)
-		return NULL;
-
-	return ctx->sasl_dtd;
 }
 
 

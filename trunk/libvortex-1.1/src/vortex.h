@@ -232,9 +232,6 @@ BEGIN_C_DECLS
 /* TLS profile */
 #include <vortex_tls.h>
 
-/* SASL profile */
-#include <vortex_sasl.h>
-
 END_C_DECLS
 
 #if defined(AXL_OS_WIN32)
