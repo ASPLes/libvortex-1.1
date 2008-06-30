@@ -43,6 +43,9 @@
 /* include vortex tunnel support */
 #include <vortex_tunnel.h>
 
+/* include sasl support */
+#include <vortex_sasl.h>
+
 /* include local headers produced by xml-rpc-gen */
 #include <test_xml_rpc.h>
 
@@ -3933,12 +3936,13 @@ bool test_04_c (void) {
  */
 bool test_06 (void)
 {
+#if defined(ENABLE_SASL_SUPPORT)
 	VortexStatus       status;
 	char             * status_message = NULL;
 	VortexConnection * connection;
 
-	/* check for SASL support */
-	if (! vortex_sasl_is_enabled ()) {
+	/* check and initialize  SASL support */
+	if (! vortex_sasl_init (ctx)) {
 		printf ("--- WARNING: Unable to begin SASL negotiation. Current Vortex Library doesn't support SASL");
 		return true;
 	}
@@ -4201,8 +4205,9 @@ bool test_06 (void)
 
 	printf ("[   OK   ]\n");
 #endif
-	
-	
+#else
+	printf ("--- WARNING: unable to run SASL tests, no sasl library was built\n");
+#endif	
 	return true;
 	
 }
