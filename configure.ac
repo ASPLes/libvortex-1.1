@@ -286,6 +286,7 @@ Makefile
 src/Makefile
 tunnel/Makefile
 xml-rpc/Makefile
+sasl/Makefile
 doc/Makefile
 doc/vortex-doc.doxygen
 test/Makefile
@@ -294,7 +295,8 @@ data/Makefile
 logo/Makefile
 vortex-1.1.pc
 vortex-xml-rpc-1.1.pc
-vortex-tunnel-1.1.pc])
+vortex-tunnel-1.1.pc
+vortex-sasl-1.1.pc])
 
 echo "------------------------------------------"
 echo "--     VORTEX LIBRARY 1.1 SETTINGS      --"
@@ -338,6 +340,7 @@ else
 fi
 if test x$enable_sasl_support = xyes ; then
    echo "   Build SASL profile support:     enabled"
+   echo "     (libvortex-sasl-1.1)"
 else
    echo "   Build SASL profile support:     disabled"
    echo 
