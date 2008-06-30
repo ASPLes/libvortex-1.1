@@ -166,7 +166,6 @@ struct _VortexCtx {
 
 	/**** vortex dtd module state ****/
 	axlDtd               * channel_dtd;
-	axlDtd               * sasl_dtd;
 	axlDtd               * xml_rpc_boot_dtd;
 
 	/**** vortex reader module state ****/
@@ -252,82 +251,6 @@ struct _VortexCtx {
 	bool                               tls_already_init;
 #endif /* end ENABLE_TLS_SUPPORT */
 
-	/**** vortex sasl module state ****/
-#if defined(ENABLE_SASL_SUPPORT)
-	/* @internal ANONYMOUS validation handler. This is
-	 * actually invoked by the library to notify user space that a
-	 * ANONYMOUS auth request was received. */
-	VortexSaslAuthAnonymous            sasl_anonymous_auth_handler;
-	
-	/* @internal PLAIN validation handler. This is actually
-	 * invoked by the library to notify user space that a PLAIN
-	 * auth request was received. */
-	VortexSaslAuthPlain                sasl_plain_auth_handler;
-
-	/** 
-	 * @internal
-	 * @brief CRAM-MD5 validation handler. This is actually invoked by
-	 * the library to notify user space that a CRAM-MD5 auth request was
-	 * received.
-	 */
-	VortexSaslAuthCramMd5              sasl_cram_md5_auth_handler;
-
-	/** 
-	 * @internal
-	 * @brief DIGEST-MD5 validation handler. This is actually invoked by
-	 * the library to notify user space that a DIGEST-MD5 auth request was
-	 * received.
-	 */
-	VortexSaslAuthDigestMd5            sasl_digest_md5_auth_handler;
-
-	/** 
-	 * @internal
-	 * @brief EXTERNAL validation handler. This is actually invoked by
-	 * the library to notify user space that a EXTERNAL auth request was
-	 * received.
-	 */
-	VortexSaslAuthExternal             sasl_external_auth_handler;
-
-	/** 
-	 * @internal
-	 * @brief ANONYMOUS validation handler. This is actually invoked by
-	 * the library to notify user space that a ANONYMOUS auth request was
-	 * received. Passes the user-defined pointer.
-	 */
-	VortexSaslAuthAnonymousFull        sasl_anonymous_auth_handler_full;
-
-	/** 
-	 * @internal
-	 * @brief PLAIN validation handler. This is actually invoked by
-	 * the library to notify user space that a PLAIN auth request was
-	 * received. Passes the user-defined pointer.
-	 */
-	VortexSaslAuthPlainFull            sasl_plain_auth_handler_full;
-
-	/** 
-	 * @internal
-	 * @brief CRAM-MD5 validation handler. This is actually invoked by
-	 * the library to notify user space that a CRAM-MD5 auth request was
-	 * received. Passes the user-defined pointer.
-	 */
-	VortexSaslAuthCramMd5Full          sasl_cram_md5_auth_handler_full;
-	
-	/** 
-	 * @internal
-	 * @brief DIGEST-MD5 validation handler. This is actually invoked by
-	 * the library to notify user space that a DIGEST-MD5 auth request was
-	 * received. Passes the user-defined pointer.
-	 */
-	VortexSaslAuthDigestMd5Full        sasl_digest_md5_auth_handler_full;
-	
-	/** 
-	 * @internal
-	 * @brief EXTERNAL validation handler. This is actually invoked by
-	 * the library to notify user space that a EXTERNAL auth request was
-	 * received. Passes the user-defined pointer.
-	 */
-	VortexSaslAuthExternalFull         sasl_external_auth_handler_full;
-#endif	/* end ENABLE_SASL_SUPPORT */
 
 };
 
