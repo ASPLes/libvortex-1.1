@@ -2866,6 +2866,63 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * VORTEX_AUTOMATIC_MIME_HANDLING), then it is assumed automatic MIME
  * handling is activated.</i>
  *
+ * <h3>4.2.7 What happens if a wrong MIME formated message is received. </h3>
+ *
+ * From a frame perspective (BEEP framing mechanism), the vortex engine
+ * considers as valid frames all of them as long as BEEP framing
+ * rules are observed. 
+ *
+ * From a MIME perspective, which is considered on top of the BEEP
+ * framing mechanism, if the message inside a \ref VortexFrame is not
+ * MIME ready, the content returned by the function \ref
+ * vortex_frame_get_content and \ref vortex_frame_get_payload will be
+ * same, that is, <b><i>the message received is returned untouched</i></b>. 
+ *
+ * Obviously, under this situation, all API that belongs to the MIME
+ * support will provide no function:
+ * 
+ * - For example, \ref vortex_frame_get_mime_header and \ref
+ * vortex_frame_get_mime_header_size will provide NULL and 0 content.
+ *
+ * So, <b><i>if a message not conforming MIME rules is received,
+ * Vortex won't discard it, and it will be delivered "as is" to frame
+ * delivery handlers defined.</i></b> Under this situation, a log will
+ * be reported to signal that a MIME parse error was found:
+ * \code
+ * (proc 25045): (warning) vortex-reader: failed to update MIME status for the frame, continue delivery
+ * \endcode
+ *
+ * <h3>4.2.8 Could new MIME support break compatibility with previous Vortex Library? </h3>
+ *
+ * It is possible under some situations. Before Vortex Library 1.0.15
+ * and its corresponding 1.1.0 release, a bug was fixed in the way
+ * messages was produced. In the case no MIME header was configured,
+ * the message produced wasn't prefixed by a CR+LF pair. This is wrong
+ * since the remote BEEP peer expects to receive a MIME compliant
+ * message, with at least the CR+LF to signal that no MIME header was
+ * configured.
+ *
+ * In any case, if problems are found, these are the solutions:
+ *
+ * 1) The obvious solution is to upgrade both (client and server)
+ * peers to support same MIME implementation.
+ *
+ * 2) In the case you want to only update your BEEP client but still
+ * connect to Vortex peers running 1.0.14 or previous, you have to
+ * disable automatic MIME header handling. See previous sections. A
+ * direct hack to disable it globally could be:
+ *
+ * \code
+ * // library level desactivation for automatic MIME header 
+ * vortex_conf_set (ctx, VORTEX_AUTOMATIC_MIME_HANDLING, 2, NULL);
+ * \endcode
+ *
+ * 3) In the case you want to only upgrade your BEEP listener, but you still want
+ * to receive connections from old and new clients, nothing special is
+ * required. This is automatically supported by new vortex engine.
+ *
+ * No other compatibility issue is reported.
+ *
  * \section vortex_manual_implementing_request_response_pattern Implementing the request-response pattern
  *
  * When it comes to implement the request/response interaction

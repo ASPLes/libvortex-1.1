@@ -418,12 +418,11 @@ typedef enum {
 	 *
 	 * Use the following values to configure this feature:
 	 * 
-	 * - true: Enable automatic MIME handling for each message
-	 * sent. This is the default value.
+	 * - 1: Enable automatic MIME handling for messages send over
+	 * any channel that is not configured.
 	 *
-	 * - false: Disable automatic MIME handling. The application
-	 * will have to produce MIME compliant messages taking full
-	 * control over the MIME process.
+	 * - 2: Disable automatic MIME handling for channels that
+	 * aren't configured.
 	 */
 	VORTEX_AUTOMATIC_MIME_HANDLING = 5
 } VortexConfItem;
