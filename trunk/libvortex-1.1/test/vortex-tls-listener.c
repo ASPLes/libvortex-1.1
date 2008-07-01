@@ -16,7 +16,11 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/* include base library */
 #include <vortex.h>
+
+/* include tls library */
+#include <vortex_tls.h>
 
 #define PLAIN_PROFILE "http://fact.aspl.es/profiles/plain_profile"
 
@@ -87,7 +91,7 @@ int  main (int  argc, char  ** argv)
 	} /* end if */
 
 	/* check for TLS initialization */
-	if (! vortex_tls_is_enabled (ctx)) {
+	if (! vortex_tls_init (ctx)) {
 		printf ("Current Vortex Library is not prepared for TLS profile");
 		return -1;
 	}

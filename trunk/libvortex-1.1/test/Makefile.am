@@ -67,6 +67,11 @@ INCLUDE_SASL_SUPPORT = -DENABLE_SASL_SUPPORT
 SASL_SUPPORT_LIBS    = ../sasl/libvortex-sasl-1.1.la 
 endif
 
+if ENABLE_TLS_SUPPORT
+INCLUDE_TLS_SUPPORT = -DENABLE_TLS_SUPPORT
+TLS_SUPPORT_LIBS    = ../tls/libvortex-tls-1.1.la 
+endif
+
 certfilesdir    = $(datadir)/libvortex-1.1
 certfiles_DATA  = test-certificate.pem test-private-key.pem
 EXTRA_DIST      = Makefile.win $(certfiles_DATA) vortex-regression-client.vcproj  vortex-regression-listener.vcproj vortex-regression-client.idl \
@@ -87,7 +92,7 @@ noinst_PROGRAMS = \
 	vortex-client-without-cbs \
 	vortex-close-listeners vortex-file-transfer-server vortex-file-transfer-client
 
-INCLUDES = -I../src -I../tunnel -I../xml-rpc -I../sasl $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
+INCLUDES = -I../src -I../tunnel -I../xml-rpc -I../sasl -I../tls $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
 	-I$(READLINE_PATH)/include -Wall -g -ansi \
         -DVERSION=\""$(VORTEX_VERSION)"\" -I../src $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_VORTEX_LOG) $(INCLUDE_TUNNEL_SUPPORT)  $(INCLUDE_XML_RPC_SUPPORT) $(INCLUDE_SASL_SUPPORT)
 
@@ -100,10 +105,10 @@ vortex_omr_server_SOURCES      = vortex-omr-server.c
 vortex_omr_server_LDADD        = $(LIBS) ../src/libvortex-1.1.la
 
 vortex_tls_listener_SOURCES    = vortex-tls-listener.c
-vortex_tls_listener_LDADD      = $(LIBS) ../src/libvortex-1.1.la
+vortex_tls_listener_LDADD      = $(LIBS) ../src/libvortex-1.1.la $(TLS_SUPPORT_LIBS)
 
 vortex_client_SOURCES          = vortex-client.c 
-vortex_client_LDADD            = $(LIBS) ../src/libvortex-1.1.la -L$(READLINE_PATH)/lib -lreadline $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS)
+vortex_client_LDADD            = $(LIBS) ../src/libvortex-1.1.la -L$(READLINE_PATH)/lib -lreadline $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS)
 
 vortex_simple_listener_SOURCES = vortex-simple-listener.c
 vortex_simple_listener_LDADD   = $(LIBS) ../src/libvortex-1.1.la
@@ -117,11 +122,11 @@ vortex_client_connections_LDADD     = $(LIBS) ../src/libvortex-1.1.la ../tunnel/
 vortex_regression_client_SOURCES   = \
 	vortex-regression-client.c $(vortex_regression_client_xml_rpc_files)
 
-vortex_regression_client_LDADD     = $(LIBS) ../src/libvortex-1.1.la  ../tunnel/libvortex-tunnel-1.1.la  $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS)
+vortex_regression_client_LDADD     = $(LIBS) ../src/libvortex-1.1.la  ../tunnel/libvortex-tunnel-1.1.la  $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS)
 
 vortex_regression_listener_SOURCES   = \
 	vortex-regression-listener.c $(vortex_regression_listener_xml_rpc_files) 
-vortex_regression_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la  ../tunnel/libvortex-tunnel-1.1.la $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS)
+vortex_regression_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la  ../tunnel/libvortex-tunnel-1.1.la $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS)
 
 vortex_server_without_cbs_SOURCES   = vortex-server-without-cbs.c
 vortex_server_without_cbs_LDADD     = $(LIBS) ../src/libvortex-1.1.la
@@ -133,7 +138,7 @@ vortex_close_listeners_SOURCES      = vortex-close-listeners.c
 vortex_close_listeners_LDADD        = $(LIBS) ../src/libvortex-1.1.la 
 
 vortex_sasl_listener_SOURCES   = vortex-sasl-listener.c
-vortex_sasl_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la $(SASL_SUPPORT_LIBS)
+vortex_sasl_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS)
 
 vortex_xml_rpc_listener_SOURCES   = vortex-xml-rpc-listener.c
 vortex_xml_rpc_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la $(XML_RPC_SUPPORT_LIBS)
