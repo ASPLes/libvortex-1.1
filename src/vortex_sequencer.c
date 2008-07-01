@@ -199,13 +199,11 @@ void vortex_sequencer_queue_message_and_update_status (VortexCtx            * ct
  * @return true if the channel is stalled and the message was stored,
  * otherwise the loop can continue with the delivery of this message.
  */
-bool vortex_sequencer_if_channel_stalled_queue_message (VortexConnection    * connection, 
+bool vortex_sequencer_if_channel_stalled_queue_message (VortexCtx           * ctx,
+							VortexConnection    * connection, 
 							VortexSequencerData * data, 
 							bool                  resequence)
 {
-	/* get context */
-	VortexCtx * ctx = vortex_connection_get_ctx (connection);
-
 	/**    
 	 * We need to check that remote buffer is willing to
 	 * accept more data. On this context, the message
@@ -480,7 +478,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
   		
  		/* check if the channel is stalled and queue the
  		 * message if it is found stalled */
- 		if (vortex_sequencer_if_channel_stalled_queue_message (connection, data, resequence)) {
+ 		if (vortex_sequencer_if_channel_stalled_queue_message (ctx, connection, data, resequence)) {
  			continue; /* no required to unref the
  				   * connection here since it is done
  				   * by previous function */
