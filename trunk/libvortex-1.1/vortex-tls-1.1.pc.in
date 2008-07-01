@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libvortex-tls
+Description: Robust, full featured BEEP implementation (RFC 3080/RFC 3081)
+  TLS RFC3080 implementation for Vortex 1.1
+Requires: vortex-1.1
+Version: @VORTEX_VERSION@
+Libs: -L${libdir} -lvortex-tls-1.1
+Cflags: -I${includedir}/vortex-1.1

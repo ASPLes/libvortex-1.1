@@ -215,8 +215,8 @@ if test x$enable_tls_support = xyes ; then
       enable_tls_support=no
    else
       dnl configure additional TLS flags
-      TLS_SUPPORT_FLAGS="-lssl -lcrypto"
-      AC_SUBST(TLS_SUPPORT_FLAGS)
+      TLS_LIBS="-lssl -lcrypto"
+      AC_SUBST(TLS_LIBS)
    fi
 fi
 AM_CONDITIONAL(ENABLE_TLS_SUPPORT, test "x$enable_tls_support" = "xyes")
@@ -287,6 +287,7 @@ src/Makefile
 tunnel/Makefile
 xml-rpc/Makefile
 sasl/Makefile
+tls/Makefile
 doc/Makefile
 doc/vortex-doc.doxygen
 test/Makefile
@@ -296,7 +297,8 @@ logo/Makefile
 vortex-1.1.pc
 vortex-xml-rpc-1.1.pc
 vortex-tunnel-1.1.pc
-vortex-sasl-1.1.pc])
+vortex-sasl-1.1.pc
+vortex-tls-1.1.pc])
 
 echo "------------------------------------------"
 echo "--     VORTEX LIBRARY 1.1 SETTINGS      --"
@@ -330,6 +332,7 @@ else
 fi
 if test x$enable_tls_support = xyes ; then
    echo "   Build TLS profile support:      enabled"
+   echo "     (libvortex-tls-1.1)"
 else
    echo "   Build TLS profile support:      disabled"
    echo 
