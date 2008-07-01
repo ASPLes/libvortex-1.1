@@ -217,10 +217,14 @@ void                vortex_connection_set_data_full          (VortexConnection *
 							      axlDestroyFunc     key_destroy,
 							      axlDestroyFunc     value_destroy);
 
-void                vortex_connection_set_auto_tls           (VortexCtx        * ctx,
-							      bool               enabled,
-							      bool               allow_tls_failures,
-							      const char       * serverName);
+void                vortex_connection_set_connection_actions (VortexCtx              * ctx,
+							      VortexConnectionStage    stage,
+							      VortexConnectionAction   action_handler,
+							      axlPointer               handler_data);
+
+
+bool                vortex_connection_actions_notify         (VortexConnection        ** caller_conn,
+							      VortexConnectionStage      stage);
 
 axlPointer          vortex_connection_get_data               (VortexConnection * connection,
 							      const char       * key);
@@ -300,12 +304,6 @@ void                vortex_connection_set_channel_added_handler   (VortexConnect
 void                vortex_connection_set_channel_removed_handler  (VortexConnection                * connection,
 								    VortexConnectionOnChannelUpdate   removed_handler,
 								    axlPointer                        user_data);
-
-void                vortex_connection_notify_new_connections       (VortexCtx                       * ctx,
-								    VortexConnectionNotifyNew         notify_new,
-								    axlPointer                        user_data);
-
-void                vortex_connection_notify_created               (VortexConnection                * conn);
 
 void                vortex_connection_block                        (VortexConnection * conn,
 								    bool               enable);

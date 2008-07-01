@@ -49,10 +49,15 @@
 #define LOG_DOMAIN "vortex-connection"
 #define VORTEX_CONNECTION_BUFFER_SIZE 32768
 
-typedef struct _VortexConnectionNotifyData {
-	VortexConnectionNotifyNew handler;
-	axlPointer                user_data;
-} VortexConnectionNotifyData;
+/**
+ * @internal Type definition to hold all actions to be executed during
+ * the connection creation.
+ */
+typedef struct _VortexConnectionActionData {
+	VortexConnectionStage  stage;
+	VortexConnectionAction action;
+	axlPointer             action_data;
+} VortexConnectionActionData;
 
 
 /** 
@@ -1340,7 +1345,8 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 	 */
 	haddr = vortex_gethostbyname (ctx, connection->host);
         if (haddr == NULL) {
-		vortex_log (VORTEX_LEVEL_WARNING, "unable to get host name by using gethostbyname");
+		vortex_log (VORTEX_LEVEL_WARNING, "unable to get host name by using gethostbyname host=%s",
+			    connection->host);
 		connection->message      = axl_strdup ("unable to get host name by using gethostbyname");
 		goto __vortex_connection_new_finalize;
 	}
@@ -1529,38 +1535,9 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 		if (!vortex_connection_parse_greetings_and_enable (connection, frame))
 			goto __vortex_connection_new_finalize;
 
-		/* check for auto TLS negotiation */
-		if (ctx->connection_auto_tls) {
-			/* seems automatic TLS profile negotiation is
-			 * activated, check for TLS support */
-			if  (! vortex_tls_is_enabled (ctx) && !ctx->connection_auto_tls_allow_failures) {
-				__vortex_connection_set_not_connected (connection, "Unable to create a new connection, auto TLS activated and current Vortex Library doesn't have support for TLS profile");
-				goto __vortex_connection_new_invoke_caller;
-			}
-
-			/* seems that current Vortex Library have TLS
-			 * profile built-in support and auto TLS is
-			 * activated */
-			connection = vortex_tls_start_negotiation_sync (connection,
-									ctx->connection_auto_tls_server_name,
-									NULL, NULL);
-			if (!vortex_connection_is_ok (connection, false)) {
-				goto __vortex_connection_new_invoke_caller;
-			}
-			
-			/* the connection is ok, check if the TLS
-			 * profile was activated, but only if auto tls
-			 * allow failures is not set */
-			if (! ctx->connection_auto_tls_allow_failures) {
-				if (! vortex_connection_is_tlsficated (connection)) {
-					__vortex_connection_set_not_connected (connection,
-									       "Automatic TLS-fication have failed, the connection have been flagged to be closed due to not allowing TLS failure settings");
-					goto __vortex_connection_new_invoke_caller;
-				} /* end if */
-			} /* end if */
-			
-			/* lets continue calling the user space code */
-		}
+		/* call to notify CONECTION_STAGE_POST_CREATED */
+		vortex_log (VORTEX_LEVEL_DEBUG, "doing post creation notification for connection id=%d", connection->id);
+		vortex_connection_actions_notify (&connection, CONNECTION_STAGE_POST_CREATED);
 	}
  __vortex_connection_new_invoke_caller: 
 	/* notify on callback or simply return */
@@ -1650,10 +1627,10 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
  * Vortex Library client peer to automatically negotiate the TLS
  * profile for every connection created, allowing to get from this
  * function a connection that already have TLS profile activated. You
- * can configure this behavior using \ref vortex_connection_set_auto_tls. 
+ * can configure this behavior using \ref vortex_tls_set_auto_tls. 
  *
- * Check out the \ref vortex_connection_set_auto_tls "documentation"
- * for \ref vortex_connection_set_auto_tls to know more about using
+ * Check out the \ref vortex_tls_set_auto_tls "documentation"
+ * for \ref vortex_tls_set_auto_tls to know more about using
  * automatic TLS profile negotiation.
  *
  * Finally, while considering how to transport user space data that
@@ -3799,48 +3776,6 @@ void                vortex_connection_set_channel_removed_handler  (VortexConnec
 }
 
 /** 
- * @brief Allows to configure a handler which is called for each
- * connection created. The function supports configuring several handlers.
- *
- * @param ctx The context where the operation will be performed.
- * 
- * @param notify_new The function to be called to produce the
- * notification.
- *
- * @param user_data User defined data which is provided to the handler
- * once executed.
- */
-void                vortex_connection_notify_new_connections       (VortexCtx                       * ctx,
-								    VortexConnectionNotifyNew         notify_new,
-								    axlPointer                        user_data)
-{
-	/* get current context */
-	VortexConnectionNotifyData * data;
-
-	v_return_if_fail (notify_new);
-
-	/* get a reference to the data */
-	data            = axl_new (VortexConnectionNotifyData, 1);
-	data->handler   = notify_new;
-	data->user_data = user_data;
-
-	/* lock mutex */
-	vortex_mutex_lock (&ctx->connection_new_notify_mutex);
-
-	/* create the list if it is not defined */
-	if (ctx->connection_new_notify_list == NULL)
-		ctx->connection_new_notify_list = axl_list_new (axl_list_always_return_1, axl_free);
-
-	/* store data */
-	axl_list_add (ctx->connection_new_notify_list, data);
-
-	/* unlock mutex */
-	vortex_mutex_unlock (&ctx->connection_new_notify_mutex);
-
-	return;
-}
-
-/** 
  * @brief Enable/disable connection blocking on the provided
  * reference. Activating the connection blocking will cause the BEEP
  * session associated to stop accepting any data. This is done by
@@ -4020,42 +3955,75 @@ VortexChannelFrameSize  vortex_connection_set_default_next_frame_size_handler (V
 /** 
  * @internal Function used to perform notifications for a connection
  * created.
+ *
+ * @return An error was found during the processing.
  */
-void                vortex_connection_notify_created               (VortexConnection                * conn)
+bool                vortex_connection_actions_notify   (VortexConnection        ** caller_conn,
+							VortexConnectionStage      stage)
 {
 	/* get current context */
+	VortexConnection           * conn = (*caller_conn);
 	VortexCtx                  * ctx;
 	int                          iterator;
-	VortexConnectionNotifyData * data;
+	int                          result;
+	VortexConnectionActionData * data;
+	VortexConnection           * new_conn;
 
 	/* do not notify if the connection is not running */
 	if (! vortex_connection_is_ok (conn, false))
-		return;
+		return false;
 
 	/* get a reference to the context */
 	ctx = conn->ctx;
 	
 	/* lock mutex */
-	vortex_mutex_lock (&ctx->connection_new_notify_mutex);
+	vortex_mutex_lock (&ctx->connection_actions_mutex);
 	
 	/* for each chandler stored */
 	iterator = 0;
-	while (iterator < axl_list_length (ctx->connection_new_notify_list)) {
+	while (iterator < axl_list_length (ctx->connection_actions)) {
 
 		/* get data associated */
-		data = axl_list_get_nth (ctx->connection_new_notify_list, iterator);
+		data = axl_list_get_nth (ctx->connection_actions, iterator);
 
-		/* call to notify */
-		data->handler (conn, data->user_data);
+		/* call to notify if the stage matches */
+		if (data->stage == stage) {
+			new_conn = NULL;
+			result    = data->action (ctx, conn, &new_conn, stage, data->action_data);
+
+			switch (result) {
+			case -1:
+				if (vortex_connection_is_ok (conn, false))
+					__vortex_connection_set_not_connected (conn,
+									       "connection action failed, closing session");
+				/* unlock mutex */
+				vortex_mutex_unlock (&ctx->connection_actions_mutex);	
+				return false;
+			case 0:
+				vortex_log (VORTEX_LEVEL_DEBUG, "found connection action returning 0, blocking rest of connection actions");
+				/* unlock mutex */
+				vortex_mutex_unlock (&ctx->connection_actions_mutex);	
+				return true;
+			case 1:
+				/* nothing to do */
+				break;
+			case 2:
+				/* request to replace received connection */
+				(*caller_conn) = new_conn;
+				conn           = new_conn;
+			default:
+				vortex_log (VORTEX_LEVEL_WARNING, "found unsupported value returned by a connection action=%d", result);
+			} /* end if */
+		}
 
 		/* next iterator */
 		iterator++;
 	} /* end while */
 
 	/* unlock mutex */
-	vortex_mutex_unlock (&ctx->connection_new_notify_mutex);	
+	vortex_mutex_unlock (&ctx->connection_actions_mutex);	
 
-	return;
+	return true;
 }
 
 
@@ -4319,100 +4287,49 @@ void                vortex_connection_set_data_full          (VortexConnection *
 
 
 /** 
- * @brief Allows to activate TLS profile automatic negotiation for every connection created.
+ * @brief Allows to define custom actions to be implemented (by
+ * calling the function provided) at the connection creation.
  * 
- * Once a user application is developed using Vortex Library it could
- * be interesting to instruct Vortex Library to automatically
- * negotiate the TLS profile for every connection created. This will
- * make that every call to \ref vortex_connection_new will return not
- * only an instance already connected but also with the TLS profile
- * already activated.
- * 
- * This allows to take advantage of the support developed to create
- * and wait for a \ref VortexConnection to be created rather than
- * having two steps at the user space: first create the connection and
- * the TLS-fixate it with \ref vortex_tls_start_negotiation.
+ * @param ctx The context that is going to be configured.
  *
- * The function allows to specify the optional serverName value to be
- * used when \ref vortex_tls_start_negotiation is called. The values
- * set on this function will make effect to all connections created.
- * 
- * Once a \ref VortexConnection "connection" is created, the TLS
- * profile negotiation could fail. This is because the remote peer could be not
- * accepting TLS request, or the serverName request is not accepted or
- * any other issue. 
- * 
- * This could be a security problem because there is no difference from
- * using a \ref VortexConnection with TLS profile activated from other
- * one without it. This could cause user application to start using a
- * connection that is successfully connected but the TLS profile have
- * actually failed, sending and receiving text in plain mode.
- * 
- * The parameter <b>allow_tls_failures</b> allows to configure what is
- * the default action is to be taken on TLS failures. By default, if
- * TLS profile negotiation fails, the connection is closed, returning that the TLS
- * profile have failed. 
- * 
- * Using a true value allows to still keep on working even if the TLS
- * profile negotiation have failed.
+ * @param stage The stage where  the connection action will be installed. 
  *
- * By default, Vortex Library have auto TLS feature disabled.
- * 
- * @param ctx The context where the operation will be performed.
- * 
- * @param enabled true to activate the automatic TLS profile
- * negotiation for every connection created, false to disable it.
+ * @param action_handler The handler to be executed. The function can
+ * have several actions registered on a stage. All of them will be
+ * called in order as they were added.
  *
- * @param allow_tls_failures Configure how to handle errors produced
- * while activating automatic TLS negotiation.
- *
- * @param serverName The server name value to be passed in to \ref
- * vortex_tls_start_negotiation. If the received is not NULL the
- * function will perform a local copy
- *
- * <i><b>NOTE:</b> If current Vortex Library doesn't have built-in
- * support for TLS profile, automatic TLS profile negotiation will
- * always fail. This means that setting <b>allow_tls_failures </b> to
- * false will cause Vortex Library client peer to always fail to
- * create new connections.</i>
- *
- * <i><b>NOTE2: About could fail during the TLS handshake</b> <br> A
- * TLS handshake could fail at two points: before the tuning start or
- * a failure during the TLS handshake itself. In the second case the error
- * is not recoverable because is not possible to restore the BEEP
- * state on both peers.
- * 
- * In the first case, the connection is still working and BEEP state
- * remains untouched because the error at this phase is caused because
- * the partner peer have denied accepting the TLS handshare by
- * rejecting to create the TLS channel, leaving both peers at the BEEP
- * level.
- *
- * Having this in mind, you must always call to \ref
- * vortex_connection_is_ok after a connection create operation. 
- * </i>
+ * @param handler_data A user defined pointer to be passed to the
+ * action function.
  */
-void                vortex_connection_set_auto_tls           (VortexCtx  * ctx,
-							      bool         enabled,
-							      bool         allow_tls_failures,
-							      const char * serverName)
+void                vortex_connection_set_connection_actions (VortexCtx              * ctx,
+							      VortexConnectionStage    stage,
+							      VortexConnectionAction   action_handler,
+							      axlPointer               handler_data)
 {
+	/* get current context */
+	VortexConnectionActionData * data;
 
-	/* check reference received */
-	if (ctx == NULL)
-		return;
+	v_return_if_fail (ctx && action_handler);
 
-	/* save boolean values */
-	ctx->connection_auto_tls                = enabled;
-	ctx->connection_auto_tls_allow_failures = allow_tls_failures;
+	/* get a reference to the data */
+	data              = axl_new (VortexConnectionActionData, 1);
+	data->stage       = stage;
+	data->action      = action_handler;
+	data->action_data = handler_data;
 
-	/* unref previous values */
-	if (ctx->connection_auto_tls_server_name != NULL)
-		axl_free (ctx->connection_auto_tls_server_name);
+	/* lock mutex */
+	vortex_mutex_lock (&ctx->connection_actions_mutex);
 
-	/* store new value */
-	ctx->connection_auto_tls_server_name    = (serverName != NULL) ? axl_strdup (serverName) : NULL;
-	
+	/* create the list if it is not defined */
+	if (ctx->connection_actions == NULL)
+		ctx->connection_actions = axl_list_new (axl_list_always_return_1, axl_free);
+
+	/* store data */
+	axl_list_add (ctx->connection_actions, data);
+
+	/* unlock mutex */
+	vortex_mutex_unlock (&ctx->connection_actions_mutex);
+
 	return;
 }
 
@@ -5229,9 +5146,6 @@ bool     vortex_connection_parse_greetings_and_enable (VortexConnection * connec
 		
 		vortex_log (VORTEX_LEVEL_DEBUG, "new connection created to %s:%s", connection->host, connection->port);
 
-		/* call to notify connection created */
-		vortex_connection_notify_created (connection);
-		
 		/* now, every initial message have been sent, we need
 		 * to send this to the reader manager */
 		vortex_reader_watch_connection (ctx, connection);
@@ -5346,7 +5260,7 @@ void                vortex_connection_init                   (VortexCtx        *
 
 	vortex_mutex_create (&ctx->connection_xml_cache_mutex);
 	vortex_mutex_create (&ctx->connection_hostname_mutex);
-	vortex_mutex_create (&ctx->connection_new_notify_mutex);
+	vortex_mutex_create (&ctx->connection_actions_mutex);
 
 	/* init hashes */
 	ctx->connection_xml_cache = axl_hash_new (axl_hash_string, axl_hash_equal_string);
@@ -5369,7 +5283,7 @@ void                vortex_connection_cleanup                (VortexCtx        *
 	/**** vortex_connection.c: cleanup ****/
 	vortex_mutex_destroy (&ctx->connection_xml_cache_mutex);
 	vortex_mutex_destroy (&ctx->connection_hostname_mutex);
-	vortex_mutex_create  (&ctx->connection_new_notify_mutex);
+	vortex_mutex_destroy (&ctx->connection_actions_mutex);
 
 	/* drop hashes */
 	axl_hash_free (ctx->connection_xml_cache);
@@ -5378,9 +5292,9 @@ void                vortex_connection_cleanup                (VortexCtx        *
 	ctx->connection_hostname = NULL;
 
 	/* free list */
-	if (ctx->connection_new_notify_list != NULL)
-		axl_list_free (ctx->connection_new_notify_list);
-	ctx->connection_new_notify_list = NULL;
+	if (ctx->connection_actions != NULL)
+		axl_list_free (ctx->connection_actions);
+	ctx->connection_actions = NULL;
 
 	return;
 }

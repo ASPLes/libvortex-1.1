@@ -58,7 +58,6 @@ struct _VortexCtx {
 	VortexMutex          connection_id_mutex;
 	VortexMutex          search_path_mutex;
 	VortexMutex          exit_mutex;
-	VortexMutex          tls_init_mutex;
 	VortexMutex          listener_mutex;
 	VortexMutex          listener_unlock;
 	VortexMutex          log_mutex;
@@ -98,14 +97,6 @@ struct _VortexCtx {
 	long int             connection_id;
 	bool                 connection_enable_sanity_check;
 
-	/** 
-	 * @internal
-	 * @brief Auto TLS profile negotiation internal support variables.
-	 */
-	bool                 connection_auto_tls;
-	bool     	     connection_auto_tls_allow_failures;
-	char  *              connection_auto_tls_server_name;
-	
 	/**
 	 * @internal xml caching functions:
 	 */ 
@@ -115,10 +106,10 @@ struct _VortexCtx {
 	VortexMutex          connection_hostname_mutex;
 	
 	/**
-	 * @internal Vortex reporting.
+	 * @internal Vortex connection creation status reporting
 	 */
-	VortexMutex          connection_new_notify_mutex;
-	axlList           *  connection_new_notify_list;
+	VortexMutex          connection_actions_mutex;
+	axlList           *  connection_actions;
 
 	/** 
 	 * @internal Default timeout used by vortex connection operations.
@@ -232,25 +223,6 @@ struct _VortexCtx {
 	 * to the function once executed.
 	 */
 	axlPointer              next_frame_size_data;
-
-	/**** vortex tls module state ****/
-#if defined(ENABLE_TLS_SUPPORT)
-	/* @internal Internal default handlers used to define the TLS
-	 * profile support. */
-	VortexTlsAcceptQuery               tls_accept_handler;
-	VortexTlsCertificateFileLocator    tls_certificate_handler;
-	VortexTlsPrivateKeyFileLocator     tls_private_key_handler;
-
-	/* default ctx creation */
-	VortexTlsCtxCreation               tls_default_ctx_creation;
-	axlPointer                         tls_default_ctx_creation_user_data;
-
-	/* default post check */
-	VortexTlsPostCheck                 tls_default_post_check;
-	axlPointer                         tls_default_post_check_user_data;
-	bool                               tls_already_init;
-#endif /* end ENABLE_TLS_SUPPORT */
-
 
 };
 

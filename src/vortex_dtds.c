@@ -42,7 +42,6 @@
 #include <vortex_ctx_private.h>
 
 /* include inline dtds */
-#include <vortex-tls.dtd.h>
 #include <vortex-channel.dtd.h>
 
 #define LOG_DOMAIN "vortex-dtds"

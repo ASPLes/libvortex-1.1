@@ -1188,6 +1188,48 @@ typedef void (*VortexConnectionOnChannelUpdate) (VortexChannel * channel, axlPoi
  */
 typedef void (*VortexConnectionNotifyNew) (VortexConnection * created, axlPointer user_data);
 
+
+/** 
+ * @brief Handler definition for the set of functions that are called
+ * during the connection creation and configured by \ref
+ * vortex_connection_set_connection_actions.
+ *
+ * @param ctx The context where the operation is taking place.
+ * 
+ * @param conn The connection that is notified.
+ *
+ * @param new_conn In the case the action creates a new connection
+ * that must replace the connection received, this variable is used to
+ * notify the new reference.
+ *
+ * @param state The stage during the notification is taking place.
+ *
+ * @param user_data User defined data associated to the action. This
+ * was configured at \ref vortex_connection_set_connection_actions.
+ * 
+ * @return The function must return a set of codes that are used by
+ * the library to handle errors. The action must return:
+ *
+ * - (-1) in the case an error was found during the action
+ * processing. In this case, the connection is closed and a closed
+ * connection is returned to the caller of \ref vortex_connection_new.
+ *
+ * - (0) in the case the function want to stop action processing. This
+ * is useful to block other actions.
+ *
+ * - (1) in the case the function executed the action without errors.
+ *
+ * - (2) in the case the function creates a new connection and it must
+ * be replaced, the caller must return (2) and fill the variable
+ * new_connection. In this case, the action is entirely responsible of
+ * the connection received and its deallocation.
+ */
+typedef int (*VortexConnectionAction)    (VortexCtx               * ctx,
+					  VortexConnection        * conn,
+					  VortexConnection       ** new_conn,
+					  VortexConnectionStage     state,
+					  axlPointer                user_data);
+
 /** 
  * @brief Handler definition that allows to get a notification that
  * the channel is being disconnected from the connection (because the
