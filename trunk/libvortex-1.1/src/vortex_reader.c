@@ -80,11 +80,10 @@ typedef struct _VortexReaderData {
  * 
  * @return true if all checks have been passed. Otherwise false is returned.
  */
-bool     __vortex_reader_process_socket_check_nul_frame (VortexFrame      * frame, 
+bool     __vortex_reader_process_socket_check_nul_frame (VortexCtx        * ctx,
+							 VortexFrame      * frame, 
 							 VortexConnection * connection)
 {
-	VortexCtx * ctx = CONN_CTX (connection);
-
 	/* call to update frame MIME status for NUL frame size we
 	 * check the MIME body content to be 0 */
 	if (! vortex_frame_mime_process (frame)) {
@@ -470,7 +469,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 
 	/* check other environment conditions */
 	if ((type == VORTEX_FRAME_TYPE_NUL) && 
-	    !__vortex_reader_process_socket_check_nul_frame (frame, connection)) {
+	    !__vortex_reader_process_socket_check_nul_frame (ctx, frame, connection)) {
 		/* free the frame */
 		vortex_frame_unref (frame);	
 		return;

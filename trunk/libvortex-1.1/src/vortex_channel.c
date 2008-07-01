@@ -458,11 +458,8 @@ void vortex_channel_data_free (VortexChannelData * data)
  * @param channel The channel where the mime header size will be
  * reported.
  */
-int  __vortex_channel_get_mime_headers_size (VortexChannel * channel)
+int  __vortex_channel_get_mime_headers_size (VortexCtx * ctx, VortexChannel * channel)
 {
-#if defined(ENABLE_VORTEX_LOG)
-	VortexCtx       * ctx               = vortex_channel_get_ctx (channel);
-#endif
 	/* mime configuration */
 	const char      * mime_type;
 	const char      * transfer_encoding;
@@ -2098,7 +2095,7 @@ bool        __vortex_channel_send_msg_common (VortexChannel   * channel,
 	channel->being_sending = true;
 
 	/* get current mime header configuration */
-	mime_header_size       = __vortex_channel_get_mime_headers_size (channel);
+	mime_header_size       = __vortex_channel_get_mime_headers_size (ctx, channel);
 
 	/* prepare data to be sent */
 	data                   = axl_new (VortexSequencerData, 1);
@@ -2483,7 +2480,7 @@ bool      __vortex_channel_common_rpy (VortexChannel    * channel,
 	data->first_seq_no    = vortex_channel_get_next_seq_no (channel);
 
 	/* get current mime header configuration */
-	mime_header_size      = __vortex_channel_get_mime_headers_size (channel);
+	mime_header_size      = __vortex_channel_get_mime_headers_size (ctx, channel);
 	data->message_size    = message_size + mime_header_size;
 	data->ansno           = channel->last_ansno_sent;
 
@@ -3382,9 +3379,7 @@ bool     vortex_channel_update_incoming_buffer (VortexChannel * channel,
 	int         new_max_seq_no_accepted;
 	int         consumed_seqno;
 	int         window_size;
-#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx     = vortex_channel_get_ctx (channel);
-#endif
 
 	if (channel == NULL || frame == NULL)
 		return false;
@@ -3944,9 +3939,7 @@ bool               vortex_channel_ref                             (VortexChannel
  */
 void               vortex_channel_unref                           (VortexChannel * channel)
 {
-#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx;
-#endif
 
 	/* check reference */
 	v_return_if_fail (channel);
@@ -5068,14 +5061,14 @@ typedef struct _ReceivedInvokeData {
  * was configured on the reference to continue with the delivery. If
  * false is returned the frame is left untouched.
  */
-bool vortex_channel_check_serialize_pending (VortexChannel  * channel, 
+bool vortex_channel_check_serialize_pending (VortexCtx      * ctx,
+					     VortexChannel  * channel, 
 					     VortexFrame   ** caller_frame)
 {
 	bool          is_ans_frame;
 	bool          is_nul_frame;
 	bool          status;
 	VortexFrame * frame = (*caller_frame);
-	VortexCtx   * ctx   = vortex_channel_get_ctx (channel);
 
 	if (channel->serialize) {
 
@@ -5126,13 +5119,13 @@ bool vortex_channel_check_serialize_pending (VortexChannel  * channel,
  * for later delivery, ortherwise false is returned and delivery
  * continue.
  */
-bool vortex_channel_check_serialize (VortexConnection * connection, 
+bool vortex_channel_check_serialize (VortexCtx        * ctx,
+				     VortexConnection * connection, 
 				     VortexChannel    * channel, 
 				     VortexFrame      * frame)
 {
 	bool               status;
 	int                index;
-	VortexCtx        * ctx   = vortex_channel_get_ctx (channel);
 
 	if (channel->serialize) {
 		if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_RPY ||
@@ -5234,7 +5227,7 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 	}
 
 	/* check to enforce serialize */
-	if (vortex_channel_check_serialize (connection, channel, frame)) {
+	if (vortex_channel_check_serialize (ctx, connection, channel, frame)) {
 		/* free received data */
 		axl_free (data);
 
@@ -5276,7 +5269,7 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 	}
 
 	/* check serialize to broadcast other waiting threads */
-	if (vortex_channel_check_serialize_pending (channel, &frame)) {
+	if (vortex_channel_check_serialize_pending (ctx, channel, &frame)) {
 		/* if previous function returns true, a new frame
 		 * reference we have to deliver */
 		goto deliver_frame;

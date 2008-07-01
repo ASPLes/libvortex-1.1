@@ -2708,7 +2708,9 @@ int vortex_frame_read_mime_header (VortexFrame  * frame,
 	int                mime_header_size;
 	VortexMimeHeader * header;
 	bool               first_definition = true;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx        = frame->ctx;
+#endif
 
 	/* try to read until first ':' or ' ' or '\t' */
 	mark = iterator;
