@@ -625,7 +625,11 @@ char * vortex_regression_client_read_file (const char * file, int * size)
 		return NULL;
 
 	/* open the file */
+#if defined(AXL_OS_WIN32)
+	handle = fopen (file, "rb");
+#else
 	handle = fopen (file, "r");
+#endif
 	if (handle == NULL)
 		return NULL;
 
