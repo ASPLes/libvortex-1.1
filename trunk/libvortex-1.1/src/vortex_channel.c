@@ -482,6 +482,8 @@ int  __vortex_channel_get_mime_headers_size (VortexCtx * ctx, VortexChannel * ch
 	 * to be implictly activated automatic MIME header addition (1).
 	 */
  process_mime_configuration:
+	vortex_log (VORTEX_LEVEL_DEBUG, "getting mime header size channel->automatic_mime == %d",
+		    channel->automatic_mime);
 	switch (channel->automatic_mime) {
 	case 2:
 		/* MIME automatic handling disabled for this channel */

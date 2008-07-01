@@ -502,7 +502,7 @@ void __vortex_tls_free_mutex (VortexMutex * mutex)
  * 
  * @param connection The connection to configure
  * @param ssl The ssl object.
- * @param ctx The ssl context
+ * @param _ctx The ssl context
  */
 void vortex_tls_set_common_data (VortexConnection * connection, 
 				 SSL* ssl, SSL_CTX * _ctx)
@@ -983,7 +983,7 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
  * This function implements the client side for the TLS
  * profile. Inside the BEEP protocol definition, the TLS profile
  * provides a way to secure peer to peer data transmission, allowing
- * to take advantage of it for any profile implemented on top of the
+ * to take advantage of it from any profile implemented on top of the
  * BEEP stack.  TLS profile allows to secure underlying network
  * connection using the TLS v1.0 protocol.
  *
@@ -991,10 +991,10 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
  * 
  * \code
  * // simple function with triggers the TLS process
- * void activate_tls (VortexConnection * connection) 
+ * void activate_tls (VortexCtx * ctx, VortexConnection * connection) 
  * {
  *     // initialize and check if current vortex library supports TLS
- *     if (! vortex_tls_is_enabled ()) {
+ *     if (! vortex_tls_init (ctx)) {
  *         printf ("Unable to activate TLS, Vortex is not prepared\n");
  *         return;
  *     }
@@ -1072,14 +1072,10 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
  * could check TLS status for a given connection using \ref
  * vortex_connection_is_tlsficated.
  *
- * Vortex Library TLS design allows to build the library
- * enabling/disabling the TLS support. User space code doesn't need to
- * perform any especial check than calling to \ref vortex_tls_is_enabled function.
- * 
- * If previous function returns false means that the Vortex Library
- * being used have no TLS support and any call to the TLS API will
- * perform no operation. This allows to write the same source code
- * without worry about Vortex Library TLS built-in support.
+ * A call to \ref vortex_tls_init is required to start the TLS context
+ * inside the provided \ref VortexCtx. Next calls won't perform any
+ * operation than returning true (signaling the library is
+ * initialized).
  *
  * If you need to know more about how to activate TLS support on
  * server side (well, actually for the listener role) check out this
@@ -1087,7 +1083,7 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
  * 
  * Additionally, you can also consider to make Vortex Library to
  * automatically handle TLS profile negotiation for every connection
- * created. This is done by using \ref vortex_connection_set_auto_tls
+ * created. This is done by using \ref vortex_tls_set_auto_tls
  * function. Once activated, every call to \ref vortex_connection_new
  * will automatically negotiate the TLS profile once connected before
  * notifying user space code for the connection creation.  *
@@ -1644,8 +1640,8 @@ void __vortex_tls_start_negotiation_sync_process (VortexConnection * connection,
  * activating TLS profile.
  * 
  * If TLS profile is not supported the function returns the same
- * connection received. To avoid problems you should use \ref
- * vortex_tls_is_enabled first.
+ * connection received. A call to \ref vortex_tls_init is required
+ * before calling to this function. 
  *
  * @param connection The connection where the TLS profile negotiation will take place.
  * @param serverName The serverName optional value to request remote peer to act as server name.

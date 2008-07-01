@@ -1402,6 +1402,132 @@ bool test_01d (void) {
 
 	/* unref frame */
 	vortex_frame_unref (frame);
+
+	/* now send non-MIME content */
+	if (! vortex_channel_send_msg (channel, "this is a non-MIME message", 26, NULL)) {
+		printf ("Unable to send MIME message over channel=%d\n", vortex_channel_get_number (channel));
+		return false;
+	} /* end if */
+
+	/* get mime reply and check headers */
+	printf ("Test 01-d: waiting non-MIME message reply..\n");
+	frame = vortex_channel_get_reply (channel, queue);
+	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
+		printf ("Expected to find rpy reply after requesting to change remote step..\n");
+		return false;
+	} /* end if */
+	
+	printf ("Test 01-d: message received: %s..\n", 
+		(char*)vortex_frame_get_payload (frame));
+
+	/* check content */
+	if (vortex_frame_get_payload_size (frame) != vortex_frame_get_content_size (frame)) {
+		printf ("Test 01-d: expected same payload and content size for non-MIME message received..\n");
+		return false;
+	}
+
+	if (vortex_frame_get_payload_size (frame) != 26) {
+		printf ("Test 01-d: expected to find %d as frame size but found %d..\n",
+			vortex_frame_get_payload_size (frame), 26);
+		return false;
+	}
+
+	if (! axl_cmp (vortex_frame_get_content (frame), 
+		       vortex_frame_get_payload (frame))) {
+		printf ("Test 01-d: expected to find the same content on a non-MIME message received..\n");
+		return false;
+	}
+
+	/* check content type */
+	if (vortex_frame_get_content_type (frame) != NULL) {
+		printf ("Test 01-d: expected to find NULL content type for a non-MIME message received..\n");
+		return false;
+	}
+
+	/* check content transfer encoding */
+	if (vortex_frame_get_content_type (frame) != NULL) {
+		printf ("Test 01-d: expected to find NULL content transfer encoding for a non-MIME message received..\n");
+		return false;
+	}
+
+	/* check mime headers size */
+	if (vortex_frame_get_mime_header_size (frame) != 0) {
+		printf ("Test 01-d: expected to find empty MIME headers (size) non-MIME message received..\n");
+		return false;
+	}
+
+	/* unref frame */
+	vortex_frame_unref (frame);
+
+	/* check to unconfigure channel level and access to the
+	 * library level */
+	vortex_channel_set_automatic_mime (channel, 0);
+
+	/* now configure library level */
+	vortex_conf_set (ctx, VORTEX_AUTOMATIC_MIME_HANDLING, 1, NULL);
+
+	/* now send non-MIME content, but will be arrive as MIME content at the remote side */
+	printf ("Test 01-d: sending content with empty MIME headers...\n");
+	if (! vortex_channel_send_msg (channel, "this is a non-MIME message", 26, NULL)) {
+		printf ("Unable to send MIME message over channel=%d\n", vortex_channel_get_number (channel));
+		return false;
+	} /* end if */
+
+	/* get mime reply and check headers */
+	printf ("Test 01-d: waiting non-MIME message reply..\n");
+	frame = vortex_channel_get_reply (channel, queue);
+	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
+		printf ("Expected to find rpy reply after requesting to change remote step..\n");
+		return false;
+	} /* end if */
+
+	/* check MIME header size */
+	if (vortex_frame_get_content_size (frame) != 28) {
+		printf ("Test 01-d: expected to find frame content size %d but found %d..\n",
+			28, vortex_frame_get_content_size (frame));
+		return false;
+	} /* end if */
+
+	/* check mime headers size */
+	if (vortex_frame_get_mime_header_size (frame) != 2) {
+		printf ("Test 01-d: expected to find frame content size %d but found %d..\n",
+			2, vortex_frame_get_mime_header_size (frame));
+		return false;
+	}
+	
+	/* check content transfer encoding */
+	if (vortex_frame_get_content_type (frame) == NULL) {
+		printf ("Test 01-d: expected to NOT find NULL content type for a non-MIME message received..\n");
+		return false;
+	}
+
+	/* check content transfer encoding */
+	if (vortex_frame_get_transfer_encoding (frame) == NULL) {
+		printf ("Test 01-d: expected to NOT find NULL content transfer encoding for a non-MIME message received..\n");
+		return false;
+	}
+
+	/* check content type */
+	if (! axl_cmp (vortex_frame_get_content_type (frame),
+		       "application/octet-stream")) {
+		printf ("Test 01-d: expected to find content type %s but found %s..\n",
+			vortex_frame_get_content_type (frame),
+			"application/octet-stream");
+		return false;
+	}
+
+	/* check content type */
+	if (! axl_cmp (vortex_frame_get_transfer_encoding (frame),
+		       "binary")) {
+		printf ("Test 01-d: expected to find content transfer encoding %s but found %s..\n",
+			vortex_frame_get_content_type (frame),
+			"binary");
+		return false;
+	}
+
+	/* unref frame */
+	vortex_frame_unref (frame);
+	
 	
 	/* check connection here */
 	if (! vortex_connection_is_ok (connection, false)) {

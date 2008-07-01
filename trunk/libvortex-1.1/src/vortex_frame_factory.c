@@ -2206,22 +2206,25 @@ VortexFrameType vortex_frame_get_type   (VortexFrame * frame)
  *
  * @param frame The frame where the content type will be returned.
  *
- * @return The content type or NULL if the function fail. The function
- * can only fail if a NULL frame is received.
+ * @return The content type or NULL if the function fail (because the
+ * frame received is NULL or because the frame do not contains a MIME
+ * message).
  **/
 const char   * vortex_frame_get_content_type (VortexFrame * frame)
 {
  	VortexMimeHeader * header;
- 
+	
   	v_return_val_if_fail (frame, NULL);
   
   	/* return value associated to MIME_CONTENT_TYPE entry */
- 	if (frame->mime_headers) {
+ 	if (frame->mime_headers || frame->content != NULL) {
  		header = vortex_frame_get_mime_header (frame, "content-type");
  		if (header != NULL)
  			return header->content;
+		return "application/octet-stream";
  	} /* end if */
- 	return "application/octet-stream";
+
+	return NULL;
 }
 
 /** 
@@ -2234,7 +2237,8 @@ const char   * vortex_frame_get_content_type (VortexFrame * frame)
  * @param frame The frame where the data request will be reported.
  * 
  * @return Current mime header configuration request or NULL if not
- * defined.
+ * defined (because the frame received is NULL or because the frame do
+ * not contains a MIME message).
  */
 const char   * vortex_frame_get_transfer_encoding (VortexFrame * frame)
 {
@@ -2243,12 +2247,14 @@ const char   * vortex_frame_get_transfer_encoding (VortexFrame * frame)
 	v_return_val_if_fail (frame, NULL);
 
 	/* return value associated to MIME_CONTENT_TYPE entry */
-	if (frame->mime_headers) {
+	if (frame->mime_headers || frame->content != NULL) {
 		header = vortex_frame_get_mime_header (frame, "content-transfer-encoding");
 		if (header != NULL)
 			return header->content;
+		return "binary";
 	} /* end if */
-	return "binary";
+
+	return NULL;
 }
 
 /** 
@@ -2507,7 +2513,7 @@ VortexCtx   * vortex_frame_get_ctx               (VortexFrame * frame)
 
 /** 
  * @brief Allows to get all frame content including mime headers and
- * mime body.
+ * mime body. 
  * 
  * @param frame The frame that is required to return the content.
  * 
@@ -2518,7 +2524,11 @@ const char *  vortex_frame_get_content           (VortexFrame * frame)
 	v_return_val_if_fail (frame, 0);
 
 	/* return all content */
-	return frame->content;
+	if (frame->content != NULL)
+		return frame->content;
+	if (frame->payload != NULL)
+		return frame->payload;
+	return NULL;
 }
 
 /* Mapping values \n -> \x0A \r -> \x0D */

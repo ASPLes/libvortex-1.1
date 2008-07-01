@@ -1174,23 +1174,6 @@ typedef void (*VortexConnectionOnChannelUpdate) (VortexChannel * channel, axlPoi
 
 /** 
  * @brief Handler definition for the set of functions that are called
- * once a connection is created. This handler is used by the
- * following function:
- *
- * - \ref vortex_connection_notify_new_connections
- *
- * @param created The connection that was created and properly
- * registered.
- *
- * @param user_data User defined data configured at the same time as
- * the handler.
- * 
- */
-typedef void (*VortexConnectionNotifyNew) (VortexConnection * created, axlPointer user_data);
-
-
-/** 
- * @brief Handler definition for the set of functions that are called
  * during the connection creation and configured by \ref
  * vortex_connection_set_connection_actions.
  *
