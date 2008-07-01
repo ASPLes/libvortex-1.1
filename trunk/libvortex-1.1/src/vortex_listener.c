@@ -154,7 +154,7 @@ void vortex_listener_accept_connection    (VortexConnection * connection, bool s
 	vortex_connection_set_data (connection, "initial_accept", INT_TO_PTR (true));
 
 	/* call to notify connection created */
-	vortex_connection_notify_created (connection);
+	vortex_connection_actions_notify (&connection, CONNECTION_STAGE_POST_CREATED);
 
 	/*
 	 * register the connection on vortex reader from here, the

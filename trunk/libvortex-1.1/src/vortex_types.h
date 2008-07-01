@@ -923,6 +923,19 @@ typedef enum {
 	VORTEX_IO_WAIT_EPOLL  = 3,
 } VortexIoWaitingType;
 
+
+/**
+ * @brief Enum definition to configure stages during the connection
+ * creation.
+ */
+typedef enum {
+	/**
+	 * @brief Actions to be executed after the connection
+	 * creation. Only connections properly created are notified.
+	 */
+	CONNECTION_STAGE_POST_CREATED = 1
+} VortexConnectionStage;
+
 #endif
 
 /* @} */

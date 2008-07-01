@@ -826,7 +826,6 @@ bool   vortex_init_ctx (VortexCtx * ctx)
 	/**** vortex.c: init global mutex *****/
 	vortex_mutex_create (&ctx->frame_id_mutex);
 	vortex_mutex_create (&ctx->connection_id_mutex);
-	vortex_mutex_create (&ctx->tls_init_mutex);
 	vortex_mutex_create (&ctx->listener_mutex);
 	vortex_mutex_create (&ctx->listener_unlock);
 	vortex_mutex_create (&ctx->exit_mutex);
@@ -1000,9 +999,6 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
 	/* stop vortex profiles process */
 	vortex_profiles_cleanup (ctx);
 
-	/* clean up tls module */
-	vortex_tls_cleanup (ctx);
-
 #if defined(AXL_OS_WIN32)
 	WSACleanup ();
 	vortex_log (VORTEX_LEVEL_DEBUG, "shutting down WinSock2(tm) API");
@@ -1054,7 +1050,6 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
 	/* destroy global mutex */
 	vortex_mutex_destroy (&ctx->frame_id_mutex);
 	vortex_mutex_destroy (&ctx->connection_id_mutex);
-	vortex_mutex_destroy (&ctx->tls_init_mutex);
 	vortex_mutex_destroy (&ctx->listener_mutex);
 	vortex_mutex_destroy (&ctx->listener_unlock);
 

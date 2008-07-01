@@ -229,9 +229,6 @@ BEGIN_C_DECLS
 #include <vortex_channel_pool.h>
 #include <vortex_errno.h>
 
-/* TLS profile */
-#include <vortex_tls.h>
-
 END_C_DECLS
 
 #if defined(AXL_OS_WIN32)
