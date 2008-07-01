@@ -23,6 +23,9 @@
 /* include sasl component */
 #include <vortex_sasl.h>
 
+/* include tls component */
+#include <vortex_tls.h>
+
 #define COYOTE_PROFILE "http://fact.aspl.es/profiles/coyote_profile"
 
 /* listener context */
@@ -361,7 +364,7 @@ int  main (int  argc, char  ** argv)
 
 
 	/* check for TLS initialization */
-	if (! vortex_tls_is_enabled (ctx)) {
+	if (! vortex_tls_init (ctx)) {
 		printf ("Current Vortex Library is not prepared for TLS profile");
 		return -1;
 	}

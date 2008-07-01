@@ -26,6 +26,9 @@
 /* include sasl implementation */
 #include <vortex_sasl.h>
 
+/* include tls implementation */
+#include <vortex_tls.h>
+
 /* additional libraries */
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -1094,7 +1097,7 @@ int main (int argc, char *argv[])
 
 		if (axl_memcmp ("auto tls", line, 8)) {
 			/* enable auto tls profile negotiation not allowing TLS failures */
-			vortex_connection_set_auto_tls (ctx, auto_tls_profile, false, NULL);
+			vortex_tls_set_auto_tls (ctx, auto_tls_profile, false, NULL);
 			printf ("Auto TLS profile negotiation is: %s\n", auto_tls_profile ? "ON" : "OFF");
 			auto_tls_profile = !auto_tls_profile;
 			continue;
@@ -1105,7 +1108,7 @@ int main (int argc, char *argv[])
 				continue;
 
 			/* initialize and check if current vortex library supports TLS */
-			if (! vortex_tls_is_enabled (ctx)) {
+			if (! vortex_tls_init (ctx)) {
 				printf ("Unable to activate TLS, Vortex Library is not prepared\n");
 				continue;
 			}

@@ -46,6 +46,9 @@
 /* include sasl support */
 #include <vortex_sasl.h>
 
+/* include tls support */
+#include <vortex_tls.h> 
+
 /* include local headers produced by xml-rpc-gen */
 #include <test_xml_rpc.h>
 
@@ -3229,7 +3232,7 @@ bool test_05 (void)
 	VortexConnection * connection;
 
 	/* initialize and check if current vortex library supports TLS */
-	if (! vortex_tls_is_enabled (ctx)) {
+	if (! vortex_tls_init (ctx)) {
 		printf ("--- WARNING: Unable to activate TLS, current vortex library has not TLS support activated. \n");
 		return true;
 	}
@@ -3354,7 +3357,7 @@ bool test_05_a (void)
 	VortexConnection * connection2;
 
 	/* initialize and check if current vortex library supports TLS */
-	if (! vortex_tls_is_enabled (ctx)) {
+	if (! vortex_tls_init (ctx)) {
 		printf ("--- WARNING: Unable to activate TLS, current vortex library has not TLS support activated. \n");
 		return true;
 	}
@@ -3448,7 +3451,7 @@ bool test_05_a (void)
 	}
 
 	/* enable autotls */
-	vortex_connection_set_auto_tls (ctx, true, false, NULL);
+	vortex_tls_set_auto_tls (ctx, true, false, NULL);
 
 	/* now check autotls */
 	connection2 = connection_new ();
@@ -3471,13 +3474,13 @@ bool test_05_a (void)
 	connection2 = connection_new ();
 
 	if (connection2 == NULL) {
-		printf ("Test 05-a: expected a proper connection using auto-tls but not a null reference..\n");
+		printf ("Test 05-a: expected a proper connection using auto-tls but not a null reference (1)..\n");
 		return false;
 	}
 
 	/* check connection status */
 	if (! vortex_connection_is_ok (connection2, false)) {
-		printf ("Test 05-a: expected a proper connection using auto-tls but a failure was found...\n");
+		printf ("Test 05-a: expected a proper connection using auto-tls but a failure was found (2)...\n");
 		return false;
 	}
 
@@ -3491,19 +3494,19 @@ bool test_05_a (void)
 	vortex_connection_close (connection2);
 	
 	/* restore auto-tls */
-	vortex_connection_set_auto_tls (ctx, false, false, NULL);
+	vortex_tls_set_auto_tls (ctx, false, false, NULL);
 
 	/* now create a connection with auto tls activated */
 	connection2 = connection_new ();
 
 	if (connection2 == NULL) {
-		printf ("Test 05-a: expected a proper connection using auto-tls but not a null reference..\n");
+		printf ("Test 05-a: expected a proper connection using auto-tls but not a null reference(3)..\n");
 		return false;
 	}
 
 	/* check connection status */
 	if (! vortex_connection_is_ok (connection2, false)) {
-		printf ("Test 05-a: expected a proper connection using auto-tls but a failure was found...\n");
+		printf ("Test 05-a: expected a proper connection using auto-tls but a failure was found(4)...\n");
 		return false;
 	}
 
