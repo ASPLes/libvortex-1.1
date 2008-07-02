@@ -7,5 +7,5 @@ Name: libvortex
 Description: Robust, full featured BEEP implementation (RFC 3080/RFC 3081)
 Requires: axl
 Version: @VORTEX_VERSION@
-Libs: -L${libdir} -lvortex-1.1 @TLS_SUPPORT_FLAGS@ @SASL_LIBS@ @PTHREAD_LIBS@
-Cflags: -I${includedir}/vortex-1.1 @SASL_CFLAGS@ @PTHREAD_CFLAGS@
+Libs: -L${libdir} -lvortex-1.1 @PTHREAD_LIBS@
+Cflags: -I${includedir}/vortex-1.1 @PTHREAD_CFLAGS@
