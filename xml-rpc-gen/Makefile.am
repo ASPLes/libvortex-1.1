@@ -1,18 +1,15 @@
 dtddir = $(datadir)/libvortex-1.1
 dtd_DATA =  xml-rpc.dtd
 
-EXTRA_DIST = $(dtd_DATA) \
-	\ # .idl files
-	reg-test08.idl reg-test02.idl reg-test06.idl reg-test07.idl \
-	reg-test01.idl reg-test05.idl reg-test04.idl reg-test03.idl \
-	test01.idl \
-	\ # .xdl files
-	reg-test06.xdl reg-test07.xdl reg-test08.xdl reg-test05.xdl \
+idl_files = reg-test08.idl reg-test02.idl reg-test06.idl reg-test07.idl \
+	reg-test01.idl reg-test05.idl reg-test04.idl reg-test03.idl 
+xdl_files = reg-test06.xdl reg-test07.xdl reg-test08.xdl reg-test05.xdl \
 	reg-test01.xdl reg-test04.xdl reg-test03.xdl reg-test02.xdl \
-	test01.xdl \
-	\ # .c files
-	reg-test03.c reg-test01a.c reg-test01.c reg-test02.c \
+	test01.xdl 
+c_files   = reg-test03.c reg-test01a.c reg-test01.c reg-test02.c \
 	reg-test04.c reg-test05.c reg-test06.c reg-test07.c  _support.c 
+
+EXTRA_DIST = $(dtd_DATA) $(idl_files) $(xdl_files) $(c_files)
 
 INCLUDES = -g -Wall -ansi -I. -I$(top_srcdir)/libvortex-1.1/src $(AXL_CFLAGS) $(EXARG_CFLAGS) $(PTHREAD_CFLAGS) -DVERSION=\""$(VORTEX_VERSION)"\" -DINSTALL_DIR=\"$(datadir)/libvortex-1.1\" -I../src
 
