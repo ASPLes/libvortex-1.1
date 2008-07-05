@@ -1245,6 +1245,7 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 	/* write memory allocators */
 	xml_rpc_support_write ("/* memory (de)allocation functions */\n");
 	xml_rpc_support_write ("%s * %s_%s_new  (int count);\n", name, comp_name_lower, name_lower);
+	write ("%s * %s_%s_copy (%s * ref);\n", name, comp_name_lower, name_lower, name);
 	xml_rpc_support_write ("void %s_%s_free (%s * ref);\n\n", comp_name_lower, name_lower, name);
 
 	/* write manipulation functions */
@@ -1540,6 +1541,51 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 	xml_rpc_support_pop_indent ();
 
 	xml_rpc_support_write ("}\n\n");
+
+	write ("%s * %s_%s_copy (%s * ref)\n{\n", name, comp_name_lower, name_lower, name);
+
+	push_indent ();
+
+	write ("%s * array;\n", name);
+	write ("int         iterator = 0;\n\n");
+
+	write ("if (ref == NULL)\n");
+	write ("\treturn NULL;\n\n");
+
+	write ("/* create the reference */\n");
+	write ("array        = axl_new (%s, 1);\n", name);
+	write ("array->count = ref->count;\n");
+	write ("if (array->count == 0)\n");
+	write ("\treturn array;\n\n");
+
+	write ("/* allocate enough space */\n");
+	write ("array->array = axl_new (%s *, array->count);\n", type);
+	write ("while (iterator < ref->count) {\n\n");
+
+	push_indent ();
+
+	write ("/* copy position */\n");
+	if (axl_cmp (type, "string") || axl_cmp (type, "base64")) {
+		write ("array->array[iterator] = axl_strdup (ref->array[iterator]);\n\n");
+	} else if (xml_rpc_c_stub_type_is_array (doc, type) || xml_rpc_c_stub_type_is_struct (doc, type)) {
+		write ("array->array[iterator] = %s_%s_copy (ref->array[iterator]);\n\n", comp_name_lower, type_lower);
+	} else {
+		write ("array->array[iterator] = ref->array[iterator];\n\n");
+	}
+
+	write ("/* update the iterator */\n");
+	write ("iterator++;\n");
+	
+	pop_indent ();
+
+	write ("}\n\n");
+
+	write ("/* return array created */\n");
+	write ("return array;\n");
+
+	pop_indent ();
+
+	write ("}\n\n");
 
 	/* create the deallocator function */
 	xml_rpc_support_write ("void %s_%s_free (%s * ref)\n{\n",
