@@ -429,25 +429,105 @@ typedef struct _VortexChannelPool VortexChannelPool;
  */
 typedef struct _VortexMimeHeader VortexMimeHeader;
 
-/**
- * @brief Vortex Operation Status 
- * This enum is used to represent different Vortex Library status. 
+/** 
+ * @brief Vortex Operation Status.
+ * 
+ * This enum is used to represent different Vortex Library status,
+ * especially while operating with \ref VortexConnection
+ * references. Values described by this enumeration are returned by
+ * \ref vortex_connection_get_status.
  */
 typedef enum {
-	/**
+	/** 
 	 * @brief Represents an Error while Vortex Library was operating.
 	 *
 	 * The operation asked to be done by Vortex Library could be
 	 * completed.
 	 */
-	VortexError = 1,
+	VortexError                   = 1,
 	/** 
 	 * @brief Represents the operation have been successfully completed.
 	 *
 	 * The operation asked to be done by Vortex Library have been
 	 * completed.
 	 */
-	VortexOk    = 2
+	VortexOk                     = 2,
+
+	/** 
+	 * @brief The operation wasn't completed because an error to
+	 * tcp bind call. This usually means the listener can be
+	 * started because the port is already in use.
+	 */
+	VortexBindError              = 3,
+
+	/** 
+	 * @brief The operation can't be completed because a wrong
+	 * reference (memory address) was received.
+	 */
+	VortexWrongReference         = 4,
+
+	/** 
+	 * @brief The operation can't be completed because a failure
+	 * resolving a name was found (usually a failure in the
+	 * gethostbyname function). 
+	 */ 
+	VortexNameResolvFailure      = 5,
+
+	/** 
+	 * @brief A failure was found while creating a socket.
+	 */
+	VortexSocketCreationError    = 6,
+
+	/** 
+	 * @brief Found socket created to be using reserved system
+	 * socket descriptors. This will cause problems.
+	 */
+	VortexSocketSanityError      = 7,
+
+	/** 
+	 * @brief Connection error. Unable to connect to remote
+	 * host. Remote hosting is refusing the connection.
+	 */
+	VortexConnectionError        = 8,
+
+	/** 
+	 * @brief Connection error after timeout. Unable to connect to
+	 * remote host after after timeout expired.
+	 */
+	VortexConnectionTimeoutError = 9,
+
+	/** 
+	 * @brief Greetings error found. Initial BEEP senquence not
+	 * completed, failed to connect.
+	 */
+	VortexGreetingsFailure       = 10,
+	/** 
+	 * @brief Failed to complete operation due to an xml
+	 * validation error.
+	 */
+	VortexXmlValidationError     = 11,
+	/** 
+	 * @brief Connection is in transit to be closed. This is not
+	 * an error just an indication that the connection is being
+	 * closed at the time the call to \ref
+	 * vortex_connection_get_status was done.
+	 */
+	VortexConnectionCloseCalled  = 12,
+	/** 
+	 * @brief The connection was terminated due to a call to \ref
+	 * vortex_connection_shutdown or an internal implementation
+	 * tha closes the connection without taking place the BEEP
+	 * session close negociation.
+	 */
+	VortexConnectionForcedClose  = 13,
+	/** 
+	 * @brief Found a protocol error while operating.
+	 */
+	VortexProtocolError          = 14,
+	/** 
+	 * @brief  The connection was closed or not accepted due to a filter installed. 
+	 */
+	VortexConnectionFiltered     = 15
 } VortexStatus;
 
 

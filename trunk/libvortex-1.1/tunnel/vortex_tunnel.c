@@ -649,7 +649,8 @@ VortexConnection     * __vortex_tunnel_new_common     (VortexTunnelSettings * se
 
 	/* unref the vortex connection and create a new empty one */
 	__vortex_connection_set_not_connected (connection_aux, 
-					       "connection instance being closed, without closing session, due to underlying TUNNEL negotiation");
+					       "connection instance being closed, without closing session, due to underlying TUNNEL negotiation",
+					       VortexConnectionCloseCalled);
 	/* dealloc the connection */
 	vortex_connection_unref (connection_aux, "(vortex tunnel process)");
 
@@ -762,7 +763,8 @@ void __vortex_tunnel_prepare_listener (VortexConnection * connection)
 	
 	/* 3) close the previous connection */
 	__vortex_connection_set_not_connected (connection, 
-					       "connection instance being closed, without closing session, due to underlaying TUNNEL negoctiation");
+					       "connection instance being closed, without closing session, due to underlaying TUNNEL negoctiation",
+					       VortexConnectionCloseCalled);
 	
 	/* 4) Accept the connection in an initial step, sending the
 	 * greetings. This function flag the connection to be on the

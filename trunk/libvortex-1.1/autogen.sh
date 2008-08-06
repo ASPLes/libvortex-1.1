@@ -27,14 +27,14 @@
 #  You can also contact us to negociate other license term you may be
 #  interested different from LGPL. Contact us at:
 #          
-#      Postal address:
-#         Advanced Software Production Line, S.L.
-#         C/ Dr. Michavila Nº 14
-#         Coslada 28820 Madrid
-#         Spain
-#
-#      Email address:
-#         info@aspl.es - http://fact.aspl.es
+#        Postal address:
+#           Advanced Software Production Line, S.L.
+#           C/ Antonio Suarez Nº10, Edificio Alius A, Despacho 102
+#           Alcalá de Henares 28802 Madrid
+#           Spain
+#  
+#        Email address:
+#           info@aspl.es - http://www.aspl.es/vortex
 #
 
 PACKAGE="Vortex Library 1.1:  A BEEP (RFC3080/RFC3081) implementation."

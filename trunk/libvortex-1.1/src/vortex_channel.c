@@ -934,6 +934,8 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 		       "something have failed while received start message response for channel %d under profile %s",
 		       vortex_channel_get_number (channel), 
 		       vortex_channel_get_profile (channel));
+		/* free wait reply */
+		vortex_channel_free_wait_reply (wait_reply);
 
 		/* remove the channel and nullify */
 		vortex_connection_remove_channel (data->connection, channel);
@@ -1574,6 +1576,12 @@ void            vortex_channel_set_close_handler (VortexChannel * channel,
  *
  * @param user_data User defined pointer to be provided to the handler
  * called.
+ *
+ * <i><b>NOTE: </b> this function is not called if a channel was
+ * created but properly closed. The handler configured (closed) is
+ * called at connection termination. This means that channels that
+ * aren't available at this phase (because they was closed properly)
+ * aren't notified.</i>
  */
 void               vortex_channel_set_closed_handler           (VortexChannel          * channel,
 								VortexOnClosedChannel    closed,
@@ -3212,7 +3220,8 @@ void vortex_channel_update_remote_incoming_buffer (VortexChannel * channel,
 		       vortex_frame_get_content_size (frame),
 		       channel->max_seq_no_remote_accepted);
 		__vortex_connection_set_not_connected (vortex_channel_get_connection (channel), 
-						       "Received a SEQ frame specifying a new seq no maximum value that is smaller than the max seq no stored, protocol violation");
+						       "Received a SEQ frame specifying a new seq no maximum value that is smaller than the max seq no stored, protocol violation",
+						       VortexProtocolError);
 		return;
 	}
 
@@ -4588,6 +4597,16 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
 	vortex_channel_block_until_replies_are_sent (channel, -1);
 
 	frame = vortex_channel_wait_reply (channel0, msg_no, wait_reply);
+
+	/* check frame returned and connection status */
+	if ((! vortex_connection_is_ok (connection, false)) && frame == NULL) {
+		/* seems the connection was closed during the operation. */
+		vortex_channel_free_wait_reply (wait_reply);
+		result             = true;
+		channel->is_opened = false;
+		goto __vortex_channel_close_invoke_caller;
+	}
+
 	switch (vortex_frame_get_type (frame)) {
 	case VORTEX_FRAME_TYPE_ERR:
 		/* remote peer do not agree to close the channel, get
@@ -5519,7 +5538,8 @@ bool     __vortex_channel_0_frame_received_validate (VortexChannel * channel0, V
 
 		/* drop the connection */
 		__vortex_connection_set_not_connected (vortex_channel_get_connection (channel0),
-						       "general syntax error: xml parse error");
+						       "general syntax error: xml parse error",
+						       VortexProtocolError);
 		return false;		 
 	}
 	
@@ -5532,7 +5552,8 @@ bool     __vortex_channel_0_frame_received_validate (VortexChannel * channel0, V
 
 		/* set the channel to be not connected */
 		__vortex_connection_set_not_connected (vortex_channel_get_connection (channel0),
-						       "501 syntax error in parameters: non-valid XML");
+						       "501 syntax error in parameters: non-valid XML",
+						       VortexProtocolError);
 
 		/* report a log and free the error reported */
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
@@ -6385,7 +6406,8 @@ void vortex_channel_notify_close (VortexChannel * channel, int  msg_no, bool    
 		}
 		
 		/* flag the connection to be closed and non usable */ 
-		__vortex_connection_set_not_connected (connection, "channel closed properly");
+		__vortex_connection_set_not_connected (connection, "channel closed properly",
+						       VortexConnectionCloseCalled);
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "connection closed..");
 		
@@ -6469,7 +6491,8 @@ void vortex_channel_0_frame_received (VortexChannel    * channel0,
 		vortex_log (VORTEX_LEVEL_DEBUG, "invoked channel 0 frame received over a different channel (%d)\n",
 		       vortex_channel_get_number (channel0));
 		__vortex_connection_set_not_connected (connection, 
-						       "invoked channel 0 frame received over a different channel (%d)\n");
+						       "invoked channel 0 frame received over a different channel",
+						       VortexProtocolError);
 		return;
 	}
 
@@ -6745,6 +6768,12 @@ void     vortex_channel_free_wait_reply (WaitReplyData * wait_reply)
 	while (vortex_async_queue_items (wait_reply->queue) > 0) {
 		/* get the frame and unref */
 		frame = vortex_async_queue_pop (wait_reply->queue);
+
+		/* avoid deallocating the beacon used to signal broken
+		 * pipe during wait reply; see
+		 * vortex_channel_wait_reply implementation */
+		if (PTR_TO_INT (frame) == -3)
+			continue;
 		vortex_frame_unref (frame);
 	}
 	vortex_async_queue_unref (wait_reply->queue);
@@ -6858,6 +6887,20 @@ void               vortex_channel_queue_reply                    (VortexChannel 
 	frame_copy = vortex_frame_copy (frame);
 	
 	QUEUE_PUSH (queue, frame_copy);
+	return;
+}
+
+/** 
+ * @brief Handler used by vortex_channel_get_reply function to detect
+ * broken connections during wait reply operation. In the function is
+ * called, the connection is considered to be broken and a -4 value is
+ * pushed into the queue received as optional parameter. This is used
+ * by the waiter to detect the situation.
+ */
+void __vortex_channel_get_reply_connection_broken (VortexConnection * conn, axlPointer data)
+{
+	/* push the value */
+	vortex_async_queue_push ((VortexAsyncQueue *) data, INT_TO_PTR (-4));
 	return;
 }
 
@@ -6994,13 +7037,27 @@ VortexFrame      * vortex_channel_get_reply                      (VortexChannel 
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "getting next frame from remote peer at get_reply");
 
+	/* install a set on close to avoid getting hanged during a
+	 * connection close */
+	vortex_async_queue_ref (queue);
+	vortex_connection_set_on_close_full (channel->connection, __vortex_channel_get_reply_connection_broken, queue);
+
 	/* get reply from queue */
 	frame = vortex_async_queue_timedpop (queue, vortex_connection_get_timeout (ctx));
-	if (frame == NULL) {
+	if (PTR_TO_INT(frame) == -4) {
+		/* drop a log in case connection broken detected. */
+		vortex_log (VORTEX_LEVEL_CRITICAL, "connection broken detected during get-reply operation");
+
+		/* update value to return */
+		frame = NULL;
+	} else if (frame == NULL) {
 		/* drop a log in case of a timeout is reached. */
-		vortex_log (VORTEX_LEVEL_CRITICAL, 
-		       "timeout was expired while waiting at get-reply");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "timeout was expired while waiting at get-reply");
 	}
+
+	/* uninstall connection broken detector */
+	vortex_connection_remove_on_close_full (channel->connection, __vortex_channel_get_reply_connection_broken, queue);
+	vortex_async_queue_unref (queue);
 	
 	/* return whatever is returned */
 	return frame;
@@ -7135,9 +7192,23 @@ WaitReplyData * vortex_channel_create_wait_reply ()
 }
 
 /** 
+ * @brief Handler used by vortex_channel_wait_reply function to detect
+ * broken connections during wait reply operation. In the function is
+ * called, the connection is considered to be broken and a -3 value is
+ * pushed into the queue received as optional parameter. This is used
+ * by the waiter to detect the situation.
+ */
+void __vortex_channel_wait_reply_connection_broken (VortexConnection * conn, axlPointer data)
+{
+	/* push the value */
+	vortex_async_queue_push ((VortexAsyncQueue *) data, INT_TO_PTR (-3));
+	return;
+}
+
+/** 
  * @brief Allows caller to wait for a particular reply to be received. 
  * 
- * Check \ref vortex_manual_wait_reply "this section" to know more about how using
+ * Check \ref vortex_manual_wait_reply "this section" to know more about how to use
  * this function inside the Wait Reply Method.
  *
  * Keep in mind that this function could return a NULL frame while
@@ -7165,24 +7236,37 @@ WaitReplyData * vortex_channel_create_wait_reply ()
  * 
  * <i><b>NOTE:</b> In the case the function returns a valid frame, your
  * application must terminate it by using \ref vortex_frame_unref.  The reference to
- * the wait_reply object is also terminated (with \ref
- * vortex_channel_free_wait_reply) in the case a valid frame is
- * returned.</i>
+ * the wait_reply object is also terminated in this case (with \ref
+ * vortex_channel_free_wait_reply). If the function returns NULL (frame) the caller must dealloc the wait_reply object (or reuse it for a future call).</i>
  *
  * <i><b>NOTE 2:</b> You cannot use the same \ref WaitReplyData for
- * several wait operations. You must create a new one \ref
- * WaitReplyData object for each call done to this function (\ref vortex_channel_wait_reply).</i>
- */
+ * several successful wait operations. You must create a new one \ref
+ * WaitReplyData object for each call done to this function (\ref
+ * vortex_channel_wait_reply). You can only reuse a wait_reply object
+ * in the case the function returns NULL (frame).</i>
+ */ 
 VortexFrame   * vortex_channel_wait_reply              (VortexChannel * channel, int msg_no, 
 							WaitReplyData * wait_reply)
 {
 
-	VortexFrame * frame;
-	VortexCtx   * ctx     = vortex_channel_get_ctx (channel);
+	VortexFrame      * frame;
+	VortexAsyncQueue * queue;
+	VortexCtx        * ctx     = vortex_channel_get_ctx (channel);
 
 	/* get channel profile */
 	if (channel == NULL || wait_reply == NULL)
 		return NULL;
+
+	if (! vortex_connection_is_ok (channel->connection, false)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to perform wait reply operation because the connection is not operational");
+		return NULL;
+	} /* end if */
+
+	/* configure a connection close notification to avoid getting
+	 * locked for an event that will never come */
+	queue = wait_reply->queue;
+	vortex_async_queue_ref (queue);
+	vortex_connection_set_on_close_full (channel->connection, __vortex_channel_wait_reply_connection_broken, queue);
 	
 	/* wait for the message to be replied */
 	vortex_log (VORTEX_LEVEL_DEBUG, "getting reply at wait reply from the queue");
@@ -7192,7 +7276,13 @@ VortexFrame   * vortex_channel_wait_reply              (VortexChannel * channel,
 	 * thread, we understand this frame have being delivered */
 	channel->reply_processed = true;
 
-	if (frame == NULL) {
+	if (PTR_TO_INT (frame) == -3) {
+		vortex_log (
+			VORTEX_LEVEL_CRITICAL, 
+			"Receiving connection broken pipe during wait reply operation.");
+		/* update the value to return NULL */
+		frame = NULL;
+	} else if (frame == NULL) {
 		vortex_log (
 			    VORTEX_LEVEL_CRITICAL, 
 			    "received a timeout while waiting performing a 'wait reply'");
@@ -7216,6 +7306,10 @@ VortexFrame   * vortex_channel_wait_reply              (VortexChannel * channel,
 		vortex_channel_free_wait_reply (wait_reply);
 	}
 
+	/* uninstall handler */
+	vortex_connection_remove_on_close_full (channel->connection, __vortex_channel_wait_reply_connection_broken, queue);
+	vortex_async_queue_unref (queue);
+	
 	/* return whatever we have get */
 	return frame;
 }

@@ -1,4 +1,4 @@
-/**
+/** 
  *  LibVortex:  A BEEP implementation for af-arch
  *  Copyright (C) 2005 Advanced Software Production Line, S.L.
  *
@@ -770,10 +770,12 @@ void vortex_client_begin_auth () {
 		printf ("OK: SASL successfully negociated, message reported: %s\n", 
 			 status_message);
 		break;
+	default:
 	case VortexError:
 		printf ("FAIL: There was an error for SASL negotiation, message reported: %s\n",
 			 status_message);
 		break;
+
 	}
 
 	return;

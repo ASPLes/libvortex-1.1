@@ -67,6 +67,7 @@ void vortex_writer_data_free (VortexWriterData * writer_data)
 	return;
 }
 
+#if !defined(AXL_OS_WIN32)
 void __vortex_sigpipe_do_nothing (int _signal)
 {
 	/* do nothing sigpipe handler to be able to manage EPIPE error
@@ -75,15 +76,14 @@ void __vortex_sigpipe_do_nothing (int _signal)
 	 * a connection and that changes include remote peer
 	 * closing. So, EPIPE (or receive SIGPIPE) can't happen. */
 	
-#if !defined(AXL_OS_WIN32)
+
 	/* the following line is to ensure ancient glibc version that
 	 * restores to the default handler once the signal handling is
 	 * executed. */
 	signal (SIGPIPE, __vortex_sigpipe_do_nothing);
-#endif
-	
 	return;
 }
+#endif
 
 /** 
  * @brief Allows to get current status for log debug info to console.

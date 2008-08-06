@@ -478,6 +478,7 @@ void __vortex_sasl_notify (VortexSaslAuthNotify   process_status,
 
 	/* drop to the console a log */
 	switch (status) {
+	default:
 	case VortexError:
 		vortex_log (VORTEX_LEVEL_WARNING, (message != NULL) ? message : "no message to report");
 		/* flag the connection to be *NOT* authenticated

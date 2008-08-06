@@ -178,6 +178,12 @@ void subs (struct timeval stop, struct timeval start, struct timeval * _result)
 #define REGRESSION_URI_ORDERED_DELIVERY "http://iana.org/beep/transient/vortex-regression/ordered-delivery"
 
 /** 
+ * Profile use to identify the regression test client and server mime
+ * support.
+ */
+#define REGRESSION_URI_SUDDENTLY_CLOSE "http://iana.org/beep/transient/vortex-regression/suddently-close"
+
+/** 
  * @internal Allows to know if the connection must be created directly or
  * through the tunnel.
  */
@@ -2761,12 +2767,12 @@ bool test_02f_send_data (VortexChannel * channel, const char * message, VortexAs
 		TEST_03_MSGSIZE * 10, (TEST_03_MSGSIZE * 10) / 1024 , result.tv_sec, result.tv_usec);
 
 	/* check time results if not enabled */
-	if (! disable_time_checks) {
+/*	if (! disable_time_checks) {
 		if (result.tv_sec >= max_tv_sec && result.tv_usec > max_tv_usec) {
 			printf ("Test 02-f:    ERROR: transfer limit delay reached..test failed\n");
 			return false;
 		} 
-	} /* end if */
+		}  */
 
 	return true;
 }
@@ -3029,6 +3035,168 @@ bool test_02i (void) {
 	return true;
 }
 
+
+bool test_02j (void) {
+
+	VortexConnection * connection;
+	VortexChannel    * channel;
+	VortexFrame      * frame;
+	VortexAsyncQueue * queue;
+
+	/****** CONNECTION BROKEN DURING CLOSE OPERATION ******/
+	printf ("Test 02-j: checking connection broken during close operation..\n");
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+		
+	} /* end if */
+
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_SUDDENTLY_CLOSE,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* no frame received */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+
+	if (channel == NULL) {
+		printf ("ERROR: unable to create channel to check enforced server side ordered delivery..\n");
+		return false;
+	}
+
+
+	/* close the channel */
+	vortex_channel_close (channel, NULL);
+
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return false;
+	} /* end if */
+
+	/****** CONNECTION BROKEN DURING CLOSE OPERATION WITH DELAY ******/
+	printf ("Test 02-j: checking connection broken during close operation with delay..\n");
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+		
+	} /* end if */
+
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_SUDDENTLY_CLOSE,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* no frame received */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+
+	if (channel == NULL) {
+		printf ("ERROR: unable to create channel to check enforced server side ordered delivery..\n");
+		return false;
+	}
+
+
+	/* close the channel */
+	vortex_channel_close (channel, NULL);
+
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return false;
+	} /* end if */
+
+	/****** CONNECTION BROKEN DURING START OPERATION ******/
+	printf ("Test 02-j: checking connection broken during start operation..\n");
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+		
+	} /* end if */
+
+	/* create a channel (support for broken channel start) */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_SUDDENTLY_CLOSE,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* no frame received */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+
+	if (channel != NULL) {
+		printf ("ERROR: expected NULL channel reference..\n");
+		return false;
+	}
+
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return false;
+	} /* end if */
+
+	/****** CONNECTION BROKEN DURING FRAME RECEPTION OPERATION ******/
+	printf ("Test 02-j: checking connection broken during frame reception operation..\n");
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+		
+	} /* end if */
+
+	/* create a channel (support for broken channel start) */
+	queue   = vortex_async_queue_new ();
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_SUDDENTLY_CLOSE,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* no frame received */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("ERROR: expected NULL channel reference..\n");
+		return false;
+	}
+	
+	/* send a message */
+	if (! vortex_channel_send_msg (channel, "this is a test", 14, NULL)) {
+		printf ("ERROR: expected to be able to send a message ..\n");
+		return false;
+	}
+
+	/* get the reply (it should not come and it should not block
+	 * us) */
+	printf ("Test 02-j: getting reply..");
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame != NULL) {
+		printf ("ERROR: expected to receive a NULL reply but received content..\n");
+		return false;
+	}
+	printf ("ok\n");
+
+	/* unref queue */
+	vortex_async_queue_unref (queue);
+
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return false;
+	} /* end if */
+
+	/* operation completed */
+	return true;
+}
 
 /** 
  * @brief Checks BEEP support to send large messages that goes beyond
@@ -5533,9 +5701,10 @@ int main (int  argc, char ** argv)
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
 	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, \n");
 	printf ("**                       test_02, test_02a, test_02b, test_02c, test_02d, test_02e, \n"); 
-	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_03, test_03a, test_04, \n");
-	printf ("**                       test_04a, test_04b, test_04c, test_05, test_05a, test_06, \n");
-	printf ("**                       test_07, test_08, test_09, test_10, test_11, test_12, test_13\n");
+	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_03, \n");
+	printf ("**                       test_03a, test_04, test_04a, test_04b, test_04c, test_05, \n");
+	printf ("**                       test_05a, test_06, test_07, test_08, test_09, test_10, \n");
+	printf ("**                       test_11, test_12, test_13\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -5661,6 +5830,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_02i"))
 			run_test (test_02i, "Test 02-i", "check enforced ordered delivery at server side", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_02j"))
+			run_test (test_02j, "Test 02-j", "suddently connection close while operating", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_03"))
 			run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
 
@@ -5762,6 +5934,8 @@ int main (int  argc, char ** argv)
  	run_test (test_02h, "Test 02-h", "check bandwith performrace with different window and segmentator sizes", -1, -1);
 
  	run_test (test_02i, "Test 02-i", "check enforced ordered delivery at server side", -1, -1);
+
+	run_test (test_02j, "Test 02-j", "suddently connection close while operating", -1, -1);
 	
  	run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
   

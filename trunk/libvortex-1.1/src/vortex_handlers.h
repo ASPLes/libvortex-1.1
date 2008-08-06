@@ -244,7 +244,7 @@ typedef bool     (*VortexOnStartChannelExtended) (char              * profile,
  * false must be returned.
  *
  * If you need to not perform an answer at this function, allowing to
- * deffer the decesion, you can use \ref
+ * deffer the decision, you can use \ref
  * VortexOnNotifyCloseChannel. That handler will allow to hold the
  * close channel notification, to later complete the request by
  * calling to a finish function.
@@ -262,7 +262,7 @@ typedef  bool     (*VortexOnCloseChannel)      (int  channel_num,
 						VortexConnection * connection,
 						axlPointer user_data);
 
-/**
+/** 
  * @brief Async notification for incoming close channel requests that
  * allows to only get notifications about that situation, deferring
  * the channel close decision.

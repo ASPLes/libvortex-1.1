@@ -1,4 +1,4 @@
-/**
+/** 
  *  LibVortex:  A BEEP implementation for af-arch
  *  Copyright (C) 2006 Advanced Software Production Line, S.L.
  *
@@ -128,6 +128,12 @@
  * support.
  */
 #define REGRESSION_URI_ORDERED_DELIVERY "http://iana.org/beep/transient/vortex-regression/ordered-delivery"
+
+/** 
+ * Profile use to identify the regression test client and server mime
+ * support.
+ */
+#define REGRESSION_URI_SUDDENTLY_CLOSE "http://iana.org/beep/transient/vortex-regression/suddently-close"
 
 void frame_received_fake_listeners  (VortexChannel    * channel,
 				     VortexConnection * connection,
@@ -896,6 +902,70 @@ void frame_received_ordered_delivery (VortexChannel    * channel,
 	return;
 }
 
+int close_channel_connection_delay = 0;
+
+void frame_channel_connection (VortexChannel    * channel,
+			       VortexConnection * connection,
+			       VortexFrame      * frame,
+			       axlPointer         user_data)
+{
+	/* check the signal to close the connection */
+	if (close_channel_connection_delay == 3) {
+		printf ("suddently-close(%d): close connection on receive data\n", close_channel_connection_delay);
+
+		/* reset value */
+		close_channel_connection_delay = 0;
+
+		/* close the connection */
+		vortex_connection_shutdown (connection);
+	} /* end if */
+}
+
+bool start_channel_connection (int                channel_num, 
+			       VortexConnection * connection,
+			       axlPointer         user_data)
+{
+
+	/* check the signal to close the connection */
+	if (close_channel_connection_delay == 2) {
+		printf ("suddently-close(%d): close connection on start operation\n", close_channel_connection_delay);
+		/* close the connection */
+		vortex_connection_shutdown (connection);
+
+		/* update indicator */
+		close_channel_connection_delay++;
+	} /* end if */
+
+
+	return true;
+}
+
+/** 
+ * @internal Handler that closes the connection when received the
+ * close channel request.
+ */
+bool close_channel_connection (int channel_num, VortexConnection * conn, axlPointer user_data)
+{
+	VortexAsyncQueue * queue;
+
+	if (close_channel_connection_delay == 1) {
+		printf ("suddently-close(%d): close connection with delay\n", close_channel_connection_delay);
+		/* create a queue, wait and unref */
+		queue = vortex_async_queue_new ();
+		vortex_async_queue_timedpop (queue, 200000);
+		vortex_async_queue_unref (queue);
+	} else {
+		printf ("suddently-close(%d): close connection without delay\n", close_channel_connection_delay);
+	}
+
+	/* reverse value for the next invocation */
+	close_channel_connection_delay++;
+
+	/* disconnect */
+	vortex_connection_shutdown (conn);
+	return true;
+}
+
 int  main (int  argc, char ** argv) 
 {
 
@@ -1018,7 +1088,16 @@ int  main (int  argc, char ** argv)
 				  start_ordered_delivery, NULL,
 				  NULL, NULL,
 				  frame_received_ordered_delivery, NULL);
-				  
+
+	/* register a profile */
+	vortex_profiles_register (ctx, REGRESSION_URI_SUDDENTLY_CLOSE,
+				  /* start channel connection which
+				   * closes it on third attempt */
+				  start_channel_connection, NULL,
+				  /* close request where the connection is closed. */
+				  close_channel_connection, NULL, 
+				  /* no frame received */
+				  frame_channel_connection, NULL);
 
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */

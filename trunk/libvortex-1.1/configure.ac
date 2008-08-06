@@ -27,12 +27,12 @@ dnl  For comercial support on build BEEP enabled solutions contact us:
 dnl          
 dnl      Postal address:
 dnl         Advanced Software Production Line, S.L.
-dnl         C/ Dr. Michavila Nº 14
-dnl         Coslada 28820 Madrid
+dnl         C/ Antonio Suarez Nº10, Edificio Alius A, Despacho 102
+dnl         Alcalá de Henares 28802 Madrid
 dnl         Spain
 dnl
 dnl      Email address:
-dnl         info@aspl.es - http://fact.aspl.es
+dnl         info@aspl.es - http://www.aspl.es/vortex
 dnl
 
 AC_INIT(src/vortex.h)
