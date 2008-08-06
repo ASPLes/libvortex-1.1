@@ -98,7 +98,8 @@ bool     __vortex_reader_process_socket_check_nul_frame (VortexCtx        * ctx,
 			vortex_log (VORTEX_LEVEL_CRITICAL, "Received \"NUL\" frame with  non-zero payload (%d) content (%d)",
 				    vortex_frame_get_payload_size (frame), vortex_frame_get_content_size (frame));
 			__vortex_connection_set_not_connected (connection, 
-							       "Received \"NUL\" frame with  non-zero payload");
+							       "Received \"NUL\" frame with  non-zero payload",
+							       VortexProtocolError);
 			return false;
 		}
 
@@ -106,7 +107,8 @@ bool     __vortex_reader_process_socket_check_nul_frame (VortexCtx        * ctx,
 		if (vortex_frame_get_more_flag (frame)) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "Received \"NUL\" frame with the continuator indicator: *");
 			__vortex_connection_set_not_connected (connection, 
-							       "Received \"NUL\" frame with the continuator indicator: *");
+							       "Received \"NUL\" frame with the continuator indicator: *",
+							       VortexProtocolError);
 			return false;
 		}
 		
@@ -247,7 +249,8 @@ bool     vortex_channel_check_incoming_msgno (VortexCtx     * ctx,
 
 	/* perform the check */
 	if (vortex_channel_get_next_expected_msg_no (channel) != vortex_frame_get_msgno (frame)) {
-		__vortex_connection_set_not_connected (connection, "expected message number for channel wasn't found");
+		__vortex_connection_set_not_connected (connection, "expected message number for channel wasn't found",
+						       VortexProtocolError);
 		
 		/* log a critical log */
 		vortex_log (VORTEX_LEVEL_CRITICAL, "expected message number %d for channel %d wasn't found, but received %d",
@@ -358,7 +361,8 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	if (channel == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "received a frame referring to a non-opened channel, closing session");
 		__vortex_connection_set_not_connected (connection, 
-						       "received a frame referring to a non-opened channel, closing session");
+						       "received a frame referring to a non-opened channel, closing session",
+						       VortexProtocolError);
 		/* free the frame */
 		vortex_frame_unref (frame);
 		return;		
@@ -385,7 +389,8 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		/* RPY or ERR frame type: check if reply is expected */
 		if (vortex_channel_get_next_expected_reply_no (channel) != vortex_frame_get_msgno (frame)) {
 
-			__vortex_connection_set_not_connected (connection, "expected reply message previous to received");
+			__vortex_connection_set_not_connected (connection, "expected reply message previous to received",
+							       VortexProtocolError);
 
 			vortex_log (VORTEX_LEVEL_CRITICAL, "expected reply message %d previous to received %d",
 			       vortex_channel_get_next_expected_reply_no (channel),
@@ -410,7 +415,8 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 			       vortex_frame_get_seqno (frame), vortex_channel_get_next_seq_no (channel));
 			
 			__vortex_connection_set_not_connected (connection, 
-							       "received a SEQ frame specifying a seqno reference value that wasn't used");
+							       "received a SEQ frame specifying a seqno reference value that wasn't used",
+							       VortexProtocolError);
 			/* unref frame due to errors */
 			vortex_frame_unref (frame);
 			return;
@@ -418,7 +424,8 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		
 		/* check that the window size is not bigger than MAX_BUFFER_SIZE */
 		if (MAX_BUFFER_SIZE < vortex_frame_get_payload_size (frame)) {
-			__vortex_connection_set_not_connected (connection, "received a SEQ frame specifying a not allowed value for the window size");
+			__vortex_connection_set_not_connected (connection, "received a SEQ frame specifying a not allowed value for the window size",
+							       VortexProtocolError);
 
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
 			       "received a SEQ frame specifying a not allowed value for the window size");
@@ -460,7 +467,8 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 			    vortex_frame_get_seqno (frame));
 
 		/* close the connection due to a protocol violation */
-		__vortex_connection_set_not_connected (connection, "expected seq no number for channel wan't found");
+		__vortex_connection_set_not_connected (connection, "expected seq no number for channel wan't found",
+						       VortexProtocolError);
 
 		/* free the frame */
 		vortex_frame_unref (frame);
@@ -488,7 +496,8 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		       vortex_frame_get_seqno (frame), vortex_frame_get_content_size (frame),
 		       vortex_channel_get_max_seq_no_accepted (channel));
 		__vortex_connection_set_not_connected (connection,
-						       "Protocol violation, received a frame larger than the maximum buffer expected, your session will be closed");
+						       "Protocol violation, received a frame larger than the maximum buffer expected, your session will be closed",
+						       VortexProtocolError);
 		/* unref no longer needed frame */
 		vortex_frame_unref (frame);
 		return;
@@ -585,7 +594,8 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 				vortex_log (VORTEX_LEVEL_CRITICAL, "frame fragment received is not valid, giving up for this session");
 				vortex_frame_unref (frame);
 				__vortex_connection_set_not_connected (vortex_channel_get_connection (channel), 
-								       "frame fragment received is not valid, giving up for this session");
+								       "frame fragment received is not valid, giving up for this session",
+								       VortexProtocolError);
 				return;
 			} /* end if */
 
@@ -974,7 +984,7 @@ VORTEX_SOCKET __vortex_reader_build_set_to_watch_aux (axlPointer      on_reading
 
 			/* set it as not connected */
 			if (vortex_connection_is_ok (connection, false))
-				__vortex_connection_set_not_connected (connection, "vortex reader (process)");
+				__vortex_connection_set_not_connected (connection, "vortex reader (process)", VortexError);
 			vortex_connection_unref (connection, "vortex reader (process)");
 
 			/* and remove current cursor */

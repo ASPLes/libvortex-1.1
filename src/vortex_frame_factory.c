@@ -1169,7 +1169,8 @@ int          __vortex_frame_readline (VortexConnection * connection, char  * buf
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
 				    "found fragmented frame line header but allowed size was exceeded (desp:%d >= maxlen:%d)",
 				    desp, maxlen);
-			__vortex_connection_set_not_connected (connection, "found fragmented frame line header but allowed size was exceeded");
+			__vortex_connection_set_not_connected (connection, "found fragmented frame line header but allowed size was exceeded", 
+							       VortexProtocolError);
 			return -1;
 		} /* end if */
 
@@ -1355,7 +1356,8 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 			vortex_connection_set_data (connection, "buffer", NULL);
 			vortex_connection_set_data (connection, "frame", NULL);
 			vortex_log (VORTEX_LEVEL_CRITICAL, "remote peer have closed connection while reading the rest of the frame having received part of it");
-			__vortex_connection_set_not_connected (connection, "remote peer have closed connection while reading the rest of the frame");
+			__vortex_connection_set_not_connected (connection, "remote peer have closed connection while reading the rest of the frame",
+							       VortexProtocolError);
 			return NULL;
 		}
 
@@ -1393,7 +1395,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 		/* check if channel is expected to be closed */
 		if (vortex_connection_get_data (connection, "being_closed")) {
 			vortex_log (VORTEX_LEVEL_DEBUG, "properly connection close");
-			__vortex_connection_set_not_connected (connection, "connection properly closed");
+			__vortex_connection_set_not_connected (connection, "connection properly closed", VortexConnectionCloseCalled);
 			return NULL;
 		}
 
@@ -1404,19 +1406,22 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 			 * step, but after the second step) */
 			vortex_log (VORTEX_LEVEL_WARNING, "found connection closed before finishing negotiation, dropping..");
 			vortex_connection_unref (connection, "vortex listener (initial accept not finished)");
-			__vortex_connection_set_not_connected (connection, "connection closed during session connection");
+			__vortex_connection_set_not_connected (connection, "connection closed during session connection", 
+							       VortexProtocolError);
 			return NULL;
 		}
 	
 		/* check if we have a non-blocking connection */
 		vortex_log (VORTEX_LEVEL_CRITICAL, "client have disconnected without closing properly this session id=%d",
 			    vortex_connection_get_id (connection));
-		__vortex_connection_set_not_connected (connection, "client have disconnected without closing session");
+		__vortex_connection_set_not_connected (connection, "client have disconnected without closing session",
+						       VortexProtocolError);
 		return NULL;
 	}
 	if (bytes_read == -1) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "an error have ocurred while reading socket");
-		__vortex_connection_set_not_connected (connection, "client have disconnected without closing session");
+		__vortex_connection_set_not_connected (connection, "client have disconnected without closing session",
+						       VortexProtocolError);
 		return NULL;
 	}
 
@@ -1425,7 +1430,8 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 			    "no line definition found for frame, over connection id=%d, bytes read: %d, line: '%s' errno=%d, closing session",
 			    vortex_connection_get_id (connection),
 			    bytes_read, line, errno);
-		__vortex_connection_set_not_connected (connection, "no line definition found for frame");
+		__vortex_connection_set_not_connected (connection, "no line definition found for frame",
+						       VortexProtocolError);
 		return NULL;
 	}
 
@@ -1459,7 +1465,8 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 		axl_free (frame);
 		vortex_log (VORTEX_LEVEL_CRITICAL, "poorly-formed frame: message type not defined, line=%s",
 			    line);
-		__vortex_connection_set_not_connected (connection, "poorly-formed frame: message type not defined");
+		__vortex_connection_set_not_connected (connection, "poorly-formed frame: message type not defined",
+						       VortexProtocolError);
 		return NULL;
 	}
 
@@ -1477,7 +1484,8 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	if (bytes_read < 5) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
 		       "poorly-formed frame: message values are wrong  (%d < 9)", bytes_read);
-		__vortex_connection_set_not_connected (connection, "poorly-formed frame: message values are wrong (%d < 9)");
+		__vortex_connection_set_not_connected (connection, "poorly-formed frame: message values are wrong (%d < 9)",
+						       VortexProtocolError);
 
 		/* unref frame node allocated */
 		axl_free (frame);
@@ -1487,7 +1495,8 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	/* check more flag */
 	if (frame->more_char != '.' && frame->more_char != '*') {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "poorly-formed frame: more char is wrong");
-		__vortex_connection_set_not_connected (connection, "poorly-formed frame: more char is wrong");
+		__vortex_connection_set_not_connected (connection, "poorly-formed frame: more char is wrong",
+						       VortexProtocolError);
 
 		/* unref frame node allocated */
 		axl_free (frame);
@@ -1503,7 +1512,8 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	/* check incoming frame size */
 	if (frame->size >= MAX_BUFFER_SIZE) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "received an excessive sized frame, closing session");
-		__vortex_connection_set_not_connected (connection, "received an excessive sized frame, closing session");
+		__vortex_connection_set_not_connected (connection, "received an excessive sized frame, closing session",
+						       VortexProtocolError);
 
 		/* unref frame node allocated */
 		axl_free (frame);
@@ -1517,7 +1527,8 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	bytes_read = vortex_frame_receive_raw (connection, buffer, frame->size + 5);
  	if (bytes_read == 0 && errno != VORTEX_EAGAIN && errno != VORTEX_EWOULDBLOCK) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "remote peer have closed connection while reading the rest of the frame");
-		__vortex_connection_set_not_connected (connection, "remote peer have closed connection while reading the rest of the frame");
+		__vortex_connection_set_not_connected (connection, "remote peer have closed connection while reading the rest of the frame",
+						       VortexProtocolError);
 
 		/* unref frame node allocated */
 		axl_free (frame);
@@ -1564,7 +1575,8 @@ process_buffer:
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
 		       "poorly formed frame: frame trailer CR LF not found, discarding content: '%s'",
 		       (buffer != NULL) ? buffer : "(null content)");
-		__vortex_connection_set_not_connected (connection, "poorly formed frame: frame trailer CR LF not found, discarding content");
+		__vortex_connection_set_not_connected (connection, "poorly formed frame: frame trailer CR LF not found, discarding content",
+						       VortexProtocolError);
 
 		/* unref frame node allocated */
 		axl_free (frame);
@@ -1648,7 +1660,8 @@ bool              vortex_frame_send_raw     (VortexConnection * connection, cons
  				vortex_log (VORTEX_LEVEL_CRITICAL, 
  					    "failed to add connection to waiting set for write operation, closing connection");
  				__vortex_connection_set_not_connected (connection,
- 								       "failed to add connection to waiting set for write operation, closing connection");
+ 								       "failed to add connection to waiting set for write operation, closing connection",
+								       VortexError);
  				result = false;
  				goto end;
  			} /* en dif */
@@ -1659,7 +1672,8 @@ bool              vortex_frame_send_raw     (VortexConnection * connection, cons
  			case -3: /* unrecoberable error */
  				vortex_log (VORTEX_LEVEL_CRITICAL, "unrecoberable error was found while waiting to perform write operation, closing connection");
  				__vortex_connection_set_not_connected (connection,
- 								       "failed to add connection to waiting set for write operation, closing connection");
+ 								       "failed to add connection to waiting set for write operation, closing connection",
+								       VortexError);
  				result = false;
  				goto end;
  			case -2: /* error received while waiting (soft error like signals) */
@@ -1669,7 +1683,8 @@ bool              vortex_frame_send_raw     (VortexConnection * connection, cons
  				tries --;
  				if (tries == 0) {
  					__vortex_connection_set_not_connected (connection,
- 									       "found timeout while waiting to perform write operation and maximum tries were reached");
+ 									       "found timeout while waiting to perform write operation and maximum tries were reached",
+									       VortexError);
  					result = false;
  					goto end;
  				} /* end if */
@@ -1687,14 +1702,15 @@ bool              vortex_frame_send_raw     (VortexConnection * connection, cons
 		 * definition at vortex.h) */
 		if (vortex_is_disconnected) {
 			__vortex_connection_set_not_connected (connection, 
-							       "remote peer have closed connection");
+							       "remote peer have closed connection",
+							       VortexProtocolError);
 			result = false;
 			goto end;
 		}
 		error_msg = vortex_errno_get_last_error ();
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to write data to socket: %s",
 		       error_msg ? error_msg : "");
-		__vortex_connection_set_not_connected (connection, "unable to write data to socket:");
+		__vortex_connection_set_not_connected (connection, "unable to write data to socket:", VortexError);
 		result = false;
 		goto end;
 	}
@@ -1705,7 +1721,8 @@ bool              vortex_frame_send_raw     (VortexConnection * connection, cons
 		vortex_log (VORTEX_LEVEL_DEBUG, 
 			    "remote peer have closed before sending proper close connection, closing");
 		__vortex_connection_set_not_connected (connection, 
-						       "remote peer have closed before sending proper close connection, closing");
+						       "remote peer have closed before sending proper close connection, closing",
+						       VortexProtocolError);
 		result = false;
 		goto end;
 	}

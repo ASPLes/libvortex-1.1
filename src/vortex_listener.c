@@ -130,7 +130,7 @@ void vortex_listener_accept_connection    (VortexConnection * connection, bool s
 					 75, 0);
 					 
 		/* flag the connection to be not connected */
-		__vortex_connection_set_not_connected (connection, "connection filtered by on accept handler");
+		__vortex_connection_set_not_connected (connection, "connection filtered by on accept handler", VortexConnectionFiltered);
 		vortex_connection_unref (connection, "vortex listener");
 		return;
 
@@ -300,7 +300,7 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 		/* previous function already unref frame object
 		 * received is something goes wrong */
 		vortex_log (VORTEX_LEVEL_CRITICAL, "wrong greeting rpy from init peer, closing session");
-		__vortex_connection_set_not_connected (connection, "wrong greeting rpy from init peer, closing session");
+		__vortex_connection_set_not_connected (connection, "wrong greeting rpy from init peer, closing session", VortexProtocolError);
 		goto unref;
 	}
 
@@ -311,7 +311,7 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 		vortex_frame_unref (frame);
 		
 		vortex_log (VORTEX_LEVEL_CRITICAL, "wrong greetings received, closing session");
-		__vortex_connection_set_not_connected (connection, "wrong greetings received, closing session");
+		__vortex_connection_set_not_connected (connection, "wrong greetings received, closing session", VortexProtocolError);
 		goto unref;
 	}
 
@@ -431,6 +431,7 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	VortexConnection   * listener;
 	VortexCtx          * ctx       = data->ctx;
 	int                  backlog   = 0;
+	VortexStatus         status    = VortexOk;
 
 	/* handlers received (may be both null) */
 	VortexListenerReady      on_ready       = data->on_ready;
@@ -442,12 +443,14 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	he = gethostbyname (host);
         if (he == NULL) {
 		message = "unable to get hostname by calling gethostbyname";
+		status  = VortexNameResolvFailure;
 		goto error;
 	}
 
 	haddr = ((struct in_addr *) (he->h_addr_list)[0]);
 	if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		message = "unable to create a new socket";
+		status  = VortexSocketCreationError;
 		goto error;
         }
 
@@ -465,6 +468,7 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
         if (bind(fd, (struct sockaddr *)&saddr,  sizeof (struct sockaddr_in)) == VORTEX_SOCKET_ERROR) {
 		vortex_close_socket (fd);
 		message = "unable to bind address";
+		status  = VortexBindError;
 		goto error;
         }
 
@@ -473,12 +477,14 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 
 	if (listen(fd, backlog) == VORTEX_SOCKET_ERROR) {
 		message = "an error have occur while executing listen";
+		status  = VortexSocketCreationError;
 		goto error;
         }
 
 	/* notify listener */
 	if (getsockname (fd, (struct sockaddr *) &sin, &sin_size) < -1) {
 		message = "an error have occur while executing getsockname";
+		status  = VortexNameResolvFailure;
 		goto error;
 	}
 
@@ -513,9 +519,9 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	if (threaded) {
 		/* notify error found to handlers */
 		if (on_ready != NULL) 
-			on_ready      (NULL, 0, VortexError, message, user_data);
+			on_ready      (NULL, 0, status, message, user_data);
 		if (on_ready_full != NULL) 
-			on_ready_full (NULL, 0, VortexError, message, NULL, user_data);
+			on_ready_full (NULL, 0, status, message, NULL, user_data);
 	} else {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to start vortex server, error was: %s, unblocking vortex_listener_wait",
 		       message);

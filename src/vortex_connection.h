@@ -125,6 +125,8 @@ bool                vortex_connection_is_ok                  (VortexConnection *
 
 char              * vortex_connection_get_message            (VortexConnection * connection);
 
+VortexStatus        vortex_connection_get_status             (VortexConnection * connection);
+
 bool                vortex_connection_pop_channel_error      (VortexConnection  * connection, 
 							      int               * code,
 							      char             ** msg);
@@ -263,12 +265,13 @@ void                   vortex_connection_set_default_io_handler (VortexConnectio
 VortexConnectionOnClose vortex_connection_set_on_close       (VortexConnection * connection,
 							      VortexConnectionOnClose on_close_handler);
 
-VortexConnectionOnCloseFull vortex_connection_set_on_close_full  (VortexConnection * connection,
-								  VortexConnectionOnCloseFull on_close_handler,
-								  axlPointer data);
+void                    vortex_connection_set_on_close_full  (VortexConnection * connection,
+							      VortexConnectionOnCloseFull on_close_handler,
+							      axlPointer data);
 
-axlPointer                 vortex_connection_remove_on_close_full (VortexConnection              * connection, 
-								   VortexConnectionOnCloseFull     on_close_handler);
+bool                vortex_connection_remove_on_close_full    (VortexConnection              * connection, 
+							       VortexConnectionOnCloseFull     on_close_handler,
+							       axlPointer                      data);
 
 int                 vortex_connection_invoke_receive         (VortexConnection * connection,
 							      char             * buffer,
@@ -334,7 +337,8 @@ void                vortex_connection_init                   (VortexCtx        *
 void                vortex_connection_cleanup                (VortexCtx        * ctx);
 
 void                __vortex_connection_set_not_connected    (VortexConnection * connection, 
-							      const char       * message);
+							      const char       * message,
+							      VortexStatus       status);
 
 int                 vortex_connection_do_a_sending_round     (VortexConnection * connection);
 

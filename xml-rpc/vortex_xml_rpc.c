@@ -108,6 +108,7 @@ void __vortex_xml_rpc_notify (VortexXmlRpcBootNotify    process_status,
 
 	/* drop to the console a log */
 	switch (status) {
+	default:
 	case VortexError:
 		vortex_log (VORTEX_LEVEL_CRITICAL, (message != NULL) ? message : "no message to report");
 

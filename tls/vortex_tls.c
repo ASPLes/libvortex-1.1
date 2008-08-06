@@ -663,7 +663,8 @@ bool     vortex_tls_invoke_tls_activation (VortexConnection * connection)
 			 * are in the middle of a tuning process we
 			 * have to close the connection because is not
 			 * possible to recover previous BEEP state */
-			__vortex_connection_set_not_connected (connection, "tls handshake failed");
+			__vortex_connection_set_not_connected (connection, "tls handshake failed",
+							       VortexProtocolError);
 			return false;
 		default:
 			vortex_log (VORTEX_LEVEL_CRITICAL, "there was an error with the TLS negotiation, ssl error (code:%d) : %s",
@@ -698,7 +699,8 @@ bool     vortex_tls_invoke_tls_activation (VortexConnection * connection)
 		/* post check function found, call it */
 		if (! post_check (connection, post_check_data, ssl, ssl_ctx)) {
 			/* found that the connection didn't pass post checks */
-			__vortex_connection_set_not_connected (connection, "post checks failed");
+			__vortex_connection_set_not_connected (connection, "post checks failed",
+							       VortexProtocolError);
 			return false;
 		} /* end if */
 	} /* end if */
@@ -891,7 +893,8 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 
 	/* unref the vortex connection and create a new empty one */
 	__vortex_connection_set_not_connected (connection_aux, 
-					       "connection instance being closed, without closing session, due to underlying TLS negotiation");
+					       "connection instance being closed, without closing session, due to underlying TLS negotiation",
+					       VortexConnectionCloseCalled);
 	/* dealloc the connection */
 	vortex_connection_unref (connection_aux, "(vortex tls process)");
 	
@@ -1257,7 +1260,8 @@ void vortex_tls_initial_accept (VortexConnection * connection)
 			/* post check function found, call it */
 			if (! post_check (connection, post_check_data, ssl, ssl_ctx)) {
 				/* found that the connection didn't pass post checks */
-				__vortex_connection_set_not_connected (connection, "post checks failed");
+				__vortex_connection_set_not_connected (connection, "post checks failed",
+								       VortexProtocolError);
 				return;
 			} /* end if */
 		} /* end if */
@@ -1401,7 +1405,8 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 
 	/* release previous objet */
 	__vortex_connection_set_not_connected (connection, 
-					       "connection instance being closed, without closing session, due to underlaying TLS negoctiation");
+					       "connection instance being closed, without closing session, due to underlaying TLS negoctiation",
+					       VortexConnectionCloseCalled);
 
 
 	/* set default handlers to write/read and default objects to
@@ -2102,7 +2107,8 @@ int vortex_tls_auto_tlsfixate_conection (VortexCtx               * ctx,
 		if (! tls_ctx->connection_auto_tls_allow_failures) {
 			if (! vortex_connection_is_tlsficated (connection)) {
 				__vortex_connection_set_not_connected (connection,
-								       "Automatic TLS-fication have failed, the connection have been flagged to be closed due to not allowing TLS failure settings");
+								       "Automatic TLS-fication have failed, the connection have been flagged to be closed due to not allowing TLS failure settings",
+								       VortexError);
 				return -1;
 			} /* end if */
 		} /* end if */

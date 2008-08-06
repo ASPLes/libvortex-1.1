@@ -209,7 +209,8 @@ bool     vortex_greetings_send (VortexConnection * connection)
 		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to build greetings message, closing the connection");
 		/* and drop */
 		__vortex_connection_set_not_connected (connection, 
-						       "failed to build greetings message, closing the connection");
+						       "failed to build greetings message, closing the connection",
+						       VortexError);
 		return false;
 	} /* end if */
 
@@ -218,7 +219,8 @@ bool     vortex_greetings_send (VortexConnection * connection)
 				      greetings_buffer,
 				      next_index,
 				      0)) {
-		__vortex_connection_set_not_connected (connection, "unable to send listener greetings message");
+		__vortex_connection_set_not_connected (connection, "unable to send listener greetings message", 
+						       VortexError);
 		return false;
 	} /* end if */
 	
@@ -323,7 +325,8 @@ bool           vortex_greetings_is_reply_ok    (VortexFrame      * frame, Vortex
 	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
 			    "frame error, expected RPY frame type on greetings process");
-		__vortex_connection_set_not_connected (connection, "frame error, expected RPY frame type on greetings process");
+		__vortex_connection_set_not_connected (connection, "frame error, expected RPY frame type on greetings process",
+						       VortexProtocolError);
 		vortex_frame_unref (frame);
 		return false;
 	}
@@ -334,7 +337,8 @@ bool           vortex_greetings_is_reply_ok    (VortexFrame      * frame, Vortex
 	    vortex_frame_get_seqno   (frame) != 0) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
 			    "frame error, expected greetings message on channel 0, message 0 or sequence number 0");
-		__vortex_connection_set_not_connected (connection, "frame error, expected greetings message on channel 0, message 0 or sequence number 0");
+		__vortex_connection_set_not_connected (connection, "frame error, expected greetings message on channel 0, message 0 or sequence number 0",
+						       VortexProtocolError);
 		vortex_frame_unref (frame);
 		return false;
 	}
@@ -345,7 +349,8 @@ bool           vortex_greetings_is_reply_ok    (VortexFrame      * frame, Vortex
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
 			    "frame error, expected content type: application/beep+xml, not found");
 		__vortex_connection_set_not_connected (connection, 
-						       "frame error, expected content type: application/beep+xml, not found");
+						       "frame error, expected content type: application/beep+xml, not found",
+						       VortexProtocolError);
 		vortex_frame_unref (frame);
 		return false;
 	}
@@ -398,7 +403,8 @@ bool          vortex_greetings_client_send     (VortexConnection * connection)
 		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to build greetings message, closing the connection");
 		/* and drop */
 		__vortex_connection_set_not_connected (connection, 
-						       "failed to build greetings message, closing the connection");
+						       "failed to build greetings message, closing the connection",
+						       VortexError);
 		return false;
 	} /* end if */
 
@@ -409,7 +415,8 @@ bool          vortex_greetings_client_send     (VortexConnection * connection)
 				      0)) {
 		vortex_log (VORTEX_LEVEL_CRITICAL,  "unable to send initial client greetings message");
 		__vortex_connection_set_not_connected (connection, 
-						       "unable to send initial client greetings message");
+						       "unable to send initial client greetings message",
+						       VortexError);
 		return false;
 	} /* end if */
 
