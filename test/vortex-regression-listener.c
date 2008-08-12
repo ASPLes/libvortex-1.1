@@ -966,7 +966,7 @@ bool close_channel_connection (int channel_num, VortexConnection * conn, axlPoin
 	return true;
 }
 
-int  main (int  argc, char ** argv) 
+int main (int  argc, char ** argv) 
 {
 
 	/* install default handling to get notification about
