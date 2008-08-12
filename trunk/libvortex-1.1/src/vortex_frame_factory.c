@@ -997,7 +997,7 @@ VortexFrame * vortex_frame_create_full_ref      (VortexCtx       * ctx,
 		/* set content type header */
 		vortex_frame_set_mime_header (result, MIME_CONTENT_TRANSFER_ENCODING, transfer_encoding);
 	}
-
+	
 	return result;	
 }
 
@@ -1043,7 +1043,7 @@ VortexFrame * vortex_frame_copy                 (VortexFrame      * frame)
  
  		/* reconfigure payload pointer */
  		result->content      = result->payload;
- 		result->payload      = result->content + (content_size - frame->size);
+ 		result->payload      = ((char*)result->content) + (content_size - frame->size);
  
  		/* update content sizes */
  		result->mime_headers_size = frame->mime_headers_size;
@@ -2849,7 +2849,7 @@ int vortex_frame_read_mime_header (VortexFrame  * frame,
 	
 	/* found mime content */
 	header->content = axl_string_factory_alloc (frame->mime_headers->mime_headers_content, iterator - mark + 1);
-	memcpy (header->content, frame->payload + mark, iterator - mark);
+	memcpy (header->content, ((char*)frame->payload) + mark, iterator - mark);
 	
 	/* clean string */
 	axl_stream_trim (header->content);
@@ -2890,7 +2890,7 @@ void vortex_frame_reconfigure_mime (VortexFrame * frame, int iterator, int step)
 	 * received and frame->payload to point only
 	 * to the relevant user part */
 	frame->content = frame->payload;
-	frame->payload = (char*) (frame->content + iterator + step);
+	frame->payload = (((char*)frame->content) + iterator + step);
 	/* vortex_log (VORTEX_LEVEL_DEBUG, "reconfiguring mime body start at: %d ('%d'): %s",
 	   iterator + step, ((char *)frame->payload)[0], frame->payload); */
 	

@@ -262,8 +262,8 @@ VortexReceiveHandler   vortex_connection_set_receive_handler (VortexConnection *
 void                   vortex_connection_set_default_io_handler (VortexConnection * connection);
 								 
 
-VortexConnectionOnClose vortex_connection_set_on_close       (VortexConnection * connection,
-							      VortexConnectionOnClose on_close_handler);
+void                   vortex_connection_set_on_close       (VortexConnection * connection,
+							     VortexConnectionOnClose on_close_handler);
 
 void                    vortex_connection_set_on_close_full  (VortexConnection * connection,
 							      VortexConnectionOnCloseFull on_close_handler,

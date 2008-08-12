@@ -4895,18 +4895,14 @@ void                   vortex_connection_set_default_io_handler (VortexConnectio
  * @param connection The connection being closed
  * @param on_close_handler The handler that will be executed.
  * 
- * @return In the past, the function was returning the previous
- * handler configured. However, because the function now support
- * receiving several on close handlers to be invoked, this have
- * changed. The function always return NULL.
  */
-VortexConnectionOnClose vortex_connection_set_on_close       (VortexConnection * connection,
-							      VortexConnectionOnClose on_close_handler)
+void vortex_connection_set_on_close       (VortexConnection * connection,
+					   VortexConnectionOnClose on_close_handler)
 {
 
 	/* check reference received */
-	if (connection == NULL || on_close_handler == NULL)
-		return NULL;
+	v_return_if_fail (connection);
+	v_return_if_fail (on_close_handler);
 
 	/* lock until done */
 	vortex_mutex_lock (&connection->handlers_mutex);
@@ -4918,7 +4914,7 @@ VortexConnectionOnClose vortex_connection_set_on_close       (VortexConnection *
 	vortex_mutex_unlock (&connection->handlers_mutex);
 
 	/* returns previous handler */
-	return NULL;
+	return;
 }
 
 /** 
@@ -4999,8 +4995,8 @@ bool       vortex_connection_remove_on_close_full (VortexConnection             
 	VortexConnectionOnCloseData * handler;
 
 	/* check reference received */
-	if (connection == NULL || on_close_handler == NULL)
-		return false;
+	v_return_val_if_fail (connection, false);
+	v_return_val_if_fail (on_close_handler, false);
 
 	/* look during the operation */
 	vortex_mutex_lock (&connection->handlers_mutex);

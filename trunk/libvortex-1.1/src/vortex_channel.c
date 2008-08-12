@@ -6771,8 +6771,9 @@ void     vortex_channel_free_wait_reply (WaitReplyData * wait_reply)
 
 		/* avoid deallocating the beacon used to signal broken
 		 * pipe during wait reply; see
-		 * vortex_channel_wait_reply implementation */
-		if (PTR_TO_INT (frame) == -3)
+		 * vortex_channel_wait_reply and
+		 * vortex_channel_get_reply implementation */
+		if (PTR_TO_INT (frame) == -3 || PTR_TO_INT (frame) == -4)
 			continue;
 		vortex_frame_unref (frame);
 	}
@@ -7037,6 +7038,11 @@ VortexFrame      * vortex_channel_get_reply                      (VortexChannel 
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "getting next frame from remote peer at get_reply");
 
+	if (! vortex_connection_is_ok (channel->connection, false)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to perform get reply operation because the connection is not operational");
+		return NULL;
+	} /* end if */
+
 	/* install a set on close to avoid getting hanged during a
 	 * connection close */
 	vortex_async_queue_ref (queue);
@@ -7053,7 +7059,7 @@ VortexFrame      * vortex_channel_get_reply                      (VortexChannel 
 	} else if (frame == NULL) {
 		/* drop a log in case of a timeout is reached. */
 		vortex_log (VORTEX_LEVEL_CRITICAL, "timeout was expired while waiting at get-reply");
-	}
+	} /* end if */
 
 	/* uninstall connection broken detector */
 	vortex_connection_remove_on_close_full (channel->connection, __vortex_channel_get_reply_connection_broken, queue);
