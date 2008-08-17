@@ -165,8 +165,12 @@ struct _XmlRpcMethodValue {
 
 struct _XmlRpcStruct {
 	/**
-	 * @internal
-	 * @brief How many member does this struct have.
+	 * @internal reference counting.
+	 */
+	int                   refcount;
+
+	/**
+	 * @internal How many member does this struct have.
 	 */
 	int                   count;
 
@@ -203,6 +207,11 @@ struct _XmlRpcStructMember {
 };
 
 struct _XmlRpcArray {
+	/**
+	 * @internal reference counting.
+	 */
+	int                   refcount;
+
 	/**
 	 * @internal
 	 * @brief How many array elements this array have.
@@ -514,8 +523,12 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_copy (XmlRpcMethodValue * value)
 	case XML_RPC_DOUBLE_VALUE:
 		return method_value_new (value->type, (axlPointer) &value->value.double_value);
 	case XML_RPC_STRUCT_VALUE:
+		/* update reference counting */
+		vortex_xml_rpc_struct_ref (value->value.rpc_struct);
 		return method_value_new (value->type, value->value.rpc_struct);
 	case XML_RPC_ARRAY_VALUE:
+		/* update reference counting */
+		vortex_xml_rpc_array_ref (value->value.rpc_array);
 		return method_value_new (value->type, value->value.rpc_array);
 	case XML_RPC_NONE_VALUE:
 		return method_value_new (value->type, NULL);
@@ -2273,7 +2286,28 @@ XmlRpcStruct         * vortex_xml_rpc_struct_new                       (int  cou
 	value->count   = count;
 	value->members = axl_new (XmlRpcStructMember *, count);
 
+	/* reference counting */
+	value->refcount = 1;
+
 	return value;
+}
+
+/**
+ * @brief Allows to update reference counting on the provided xml rpc
+ * struct. To decrease a reference updated by this function call to
+ * \ref vortex_xml_rpc_struct_free.
+ *
+ * @param _struct The XmlRpcStruct to update by one its reference
+ * counting.
+ */
+bool                    vortex_xml_rpc_struct_ref                       (XmlRpcStruct * _struct)
+{
+	v_return_val_if_fail (_struct, false);
+	
+	/* update reference counting */
+	_struct->refcount++;
+
+	return true;
 }
 
 /** 
@@ -2805,6 +2839,11 @@ void                    vortex_xml_rpc_struct_free                      (XmlRpcS
 	if (_struct == NULL)
 		return;
 
+	/* decrease reference counting and check if 0 is reached */
+	_struct->refcount--;
+	if (_struct->refcount != 0)
+		return;
+
 	/* release items added */
 	while (iterator < _struct->added_count) {
 
@@ -2883,8 +2922,9 @@ XmlRpcArray          * vortex_xml_rpc_array_new                        (int  cou
 	v_return_val_if_fail (count >= 0, NULL);
 
 	/* create the reference */
-	result         = axl_new (XmlRpcArray, 1);
-	result->count  = count;
+	result           = axl_new (XmlRpcArray, 1);
+	result->count    = count;
+	result->refcount = 1;
 
 	/* allocate memory to hold method values */
 	if (count > 0) 
@@ -2893,6 +2933,28 @@ XmlRpcArray          * vortex_xml_rpc_array_new                        (int  cou
 	/* return the result */
 	return result;
 }
+
+/**
+ * @brief Allows to update reference counting on the provided xml rpc
+ * array. To decrease a reference updated by this function call to
+ * \ref vortex_xml_rpc_array_free.
+ *
+ * @param _struct The XmlRpcArray to update by one its reference
+ * counting.
+ *
+ * @return true if the function was able to update the reference,
+ * otherwise false is returned.
+ */
+bool                    vortex_xml_rpc_array_ref                       (XmlRpcArray * array)
+{
+	v_return_val_if_fail (array, false);
+	
+	/* update reference counting */
+	array->refcount++;
+
+	return true;
+}
+
 
 /** 
  * @brief Deallocates the provided \ref XmlRpcArray reference.
@@ -2904,6 +2966,11 @@ void                   vortex_xml_rpc_array_free                       (XmlRpcAr
 	int  iterator;
 
 	v_return_if_fail (array);
+
+	/* decrease reference counting and check if 0 is reached */
+	array->refcount--;
+	if (array->refcount != 0)
+		return;
 
 	/* release all method values inside */
 	for (iterator = 0; iterator < array->added_count; iterator++) {
