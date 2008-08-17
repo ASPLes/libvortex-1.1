@@ -824,6 +824,8 @@ char                 * vortex_xml_rpc_method_response_get_fault_string (XmlRpcMe
  */
 XmlRpcStruct         * vortex_xml_rpc_struct_new                       (int  count);
 
+bool                   vortex_xml_rpc_struct_ref                       (XmlRpcStruct * _struct);
+
 int                    vortex_xml_rpc_struct_get_member_count          (XmlRpcStruct * _struct);
 
 bool                   vortex_xml_rpc_struct_check_member_names        (XmlRpcStruct * _struct,
@@ -873,6 +875,8 @@ void                   vortex_xml_rpc_struct_member_free               (XmlRpcSt
  * \ref XmlRpcArray.
  */
 XmlRpcArray          * vortex_xml_rpc_array_new                        (int  count);
+
+bool                   vortex_xml_rpc_array_ref                        (XmlRpcArray * _struct);
 
 void                   vortex_xml_rpc_array_free                       (XmlRpcArray * array);
 
