@@ -2939,7 +2939,7 @@ XmlRpcArray          * vortex_xml_rpc_array_new                        (int  cou
  * array. To decrease a reference updated by this function call to
  * \ref vortex_xml_rpc_array_free.
  *
- * @param _struct The XmlRpcArray to update by one its reference
+ * @param array The XmlRpcArray to update by one its reference
  * counting.
  *
  * @return true if the function was able to update the reference,

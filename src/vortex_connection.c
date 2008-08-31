@@ -2256,7 +2256,8 @@ void               vortex_connection_timeout (VortexCtx * ctx,
  * @param ctx The context where the operation will be performed.
  *
  * @param microseconds_to_wait Timeout value to be used. The value
- * provided is measured in microseconds.
+ * provided is measured in microseconds. Use 0 to restore the connect
+ * timeout to the default value.
  */
 void               vortex_connection_connect_timeout (VortexCtx * ctx,
 						      long int    microseconds_to_wait)
