@@ -1983,6 +1983,11 @@ void vortex_channel_update_status (VortexChannel * channel, int  frame_size, int
 		channel->last_reply_sent   += 1;
 	}
 
+	/* decrease rpy no */
+	if ((update & DECREASE_RPY_NO) == DECREASE_RPY_NO) {
+		channel->last_reply_sent   -= 1;
+	}
+
 	/* update seqno */
 	if ((update & UPDATE_SEQ_NO) == UPDATE_SEQ_NO) {
 		channel->last_seq_no        = ((channel->last_seq_no + frame_size) % (MAX_SEQ_NO));
@@ -2034,6 +2039,11 @@ void vortex_channel_update_status_received (VortexChannel * channel, int  frame_
 	/* update expected msgno */
 	if ((update & UPDATE_MSG_NO) == UPDATE_MSG_NO) {
 		channel->last_message_received += 1;
+	}
+
+	/* update expected msgno */
+	if ((update & DECREASE_MSG_NO) == DECREASE_MSG_NO) {
+		channel->last_message_received -= 1;
 	}
 
 	/* update expected rpy no */
