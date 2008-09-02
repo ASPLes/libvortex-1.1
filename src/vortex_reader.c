@@ -249,6 +249,33 @@ bool     vortex_channel_check_incoming_msgno (VortexCtx     * ctx,
 
 	/* perform the check */
 	if (vortex_channel_get_next_expected_msg_no (channel) != vortex_frame_get_msgno (frame)) {
+
+ 
+ 		/* compatibility test, out of the BEEP standard to
+ 		 * interop with BEEP implementations that re-uses as a
+ 		 * starting message the value 0 for channel 0. That
+ 		 * is, they send MSG 0 over channel 0, but that
+ 		 * message is actually used in reply form at the
+ 		 * greettings phase. */
+ 		if (vortex_channel_get_number (channel) == 0 && 
+ 		    vortex_channel_get_next_expected_msg_no (channel) == 1 &&
+ 		    vortex_frame_get_msgno (frame) == 0) {
+ 			vortex_log (VORTEX_LEVEL_WARNING,
+ 				    "received first message over channel 0, connection id=%d with msgno=0 but it was expected msgno=1. This is a BEEP protocol bug since msgno=0 is used at greetings phase. ");
+ 			if (ctx->reader_accept_reuse_msgno0_for_channel0) {
+ 				/* accept this buggy message. Reconfigure message 
+ 				   numbers expected to make it work. */
+ 				
+ 				/* next sentence makes the vortex library to assume
+ 				 * that the message msgno=0 have been received. */
+ 				vortex_channel_update_status_received (channel, 0, DECREASE_MSG_NO);
+ 				vortex_channel_update_status          (channel, 0, 0, DECREASE_RPY_NO);
+ 				return true;
+ 			}
+ 			vortex_log (VORTEX_LEVEL_WARNING, "if you want to make vortex reader to accept these messages, you can use vortex_reader_allow_channel0_starting_from_0");
+ 		}
+ 
+
 		__vortex_connection_set_not_connected (connection, "expected message number for channel wasn't found",
 						       VortexProtocolError);
 		
@@ -1540,6 +1567,27 @@ void vortex_reader_allow_msgno_starting_from_1 (VortexCtx * ctx,
 		return;
 
 	ctx->reader_accept_msgno_startig_from_1 = value;
+	return;
+}
+
+/**
+ * @brief Allows to configure vortex reader to detect buggy BEEP peers
+ * that reuse the msgno 0 over the channel 0, to send the first
+ * message.
+ *
+ * This allows to interop with BEEP implementations that re-uses as
+ * starting message the value 0 for channel 0. That is, they send MSG
+ * 0 over channel 0, but that message number is actually used in reply
+ * form at the greettings phase.
+ *
+ * @param ctx The context where this configuration will be applied.
+ *
+ * @param value true to activate supporting buggy peers implementing
+ * this behaviour. 
+ */
+void vortex_reader_allow_channel0_starting_from_0 (VortexCtx * ctx, bool     value)
+{
+	ctx->reader_accept_reuse_msgno0_for_channel0 = value;
 	return;
 }
 

@@ -284,6 +284,8 @@ typedef enum {
  UPDATE_RPY_NO         = 1 << 2,
  UPDATE_ANS_NO         = 1 << 3,
  UPDATE_RPY_NO_WRITTEN = 1 << 4,
+ DECREASE_MSG_NO       = 1 << 5,
+ DECREASE_RPY_NO       = 1 << 6,
 } WhatUpdate;
 
 /** 
