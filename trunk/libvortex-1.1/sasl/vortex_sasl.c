@@ -917,8 +917,12 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel          * channel,
 
 			/* we need to send more data to the server */
 			if (!vortex_channel_send_msgv (channel, NULL, "<blob>%s</blob>", new_blob)) {
+#if defined(HAVE_GSASL_FREE)
 				/* free new blob (gsasl_free verified) */
 				gsasl_free (new_blob);
+#else
+				axl_free (new_blob);
+#endif
 
 				(*status_msg) = "Unable to negotiate SASL profile selected, an error have happen while sending data";
 				return false;
@@ -926,7 +930,11 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel          * channel,
 		} /* end if */
 
 		/* unref blob generated and nullify loop variables (gsasl_free verified) */
+#if defined(HAVE_GSASL_FREE)
 		gsasl_free (new_blob);
+#else
+		axl_free (new_blob);
+#endif	       
 		new_blob = NULL;
 		blob     = NULL;
 		status   = NULL;
@@ -1055,7 +1063,11 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 					    (strlen (base64_blob) != 0) ? "<blob>%s</blob>" : "",
 					    (strlen (base64_blob) != 0) ? base64_blob       : NULL);
 	/* unref no longer needed blob (gsasl_free verified) */
+#if defined(HAVE_GSASL_FREE)
 	gsasl_free (base64_blob);
+#else
+	axl_free (base64_blob);
+#endif
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "SASL channel creation reply received");
 	if (channel == NULL) {
@@ -1837,8 +1849,14 @@ char  * __build_blob_reply (char  * status, char  * blob_content)
 					     (blob_content != NULL && (strlen (blob_content) > 0)) ? blob_content : "",
 					     (blob_content != NULL && (strlen (blob_content) > 0)) ? "</blob>"    : "");
 	/* deallocate the blob content (gsasl_free verified) */
-	if (blob_content != NULL)
+	if (blob_content != NULL) {
+#if defined(HAVE_GSASL_FREE)
 		gsasl_free (blob_content);
+#else
+		axl_free (blob_content);
+#endif
+	}
+
 
 	/* return built message */
 	return result;
