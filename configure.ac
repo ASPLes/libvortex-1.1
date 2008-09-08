@@ -228,18 +228,29 @@ AC_ARG_ENABLE(sasl-support, [  --disable-sasl-support    Makes Vortex Library to
 if test "$enable_sasl_support" != "no" ; then
     PKG_CHECK_MODULES(GSASL, libgsasl >= 0.2.21,	[enable_sasl_support=yes], [enable_sasl_support=no])
     if test "$enable_sasl_support" = "no" ; then
-        AC_MSG_WARN([Cannot find GNU SASL installaton, disabling it. This will disable SASL family profile support.])
-	enable_sasl_support=no
+        PKG_CHECK_MODULES(GSASL, libgsasl >= 0.2.12,	[enable_sasl_support=yes], [enable_sasl_support=no])
+	if test "$enable_sasl_support" = "yes" ; then
+	        AC_MSG_WARN([Found old GSASL installation, this could cause problems.])
+		found_old_sasl=yes
+        else 
+	        AC_MSG_WARN([Cannot find GNU SASL installaton, disabling it. This will disable SASL family profile support.])
+		enable_sasl_support=no
+        fi
     else
-dnl Enable SASL cflags and link headers
-	SASL_LIBS=`pkg-config --libs libgsasl`
-	SASL_CFLAGS=`pkg-config --cflags libgsasl`
-	dnl SASL libraries subsitution
-	AC_SUBST(SASL_CFLAGS)
-	AC_SUBST(SASL_LIBS)
+	# flag that we have gsasl
+	HAVE_GSASL_FREE=-DGSASL_HAVE_FREE
     fi
 fi
-AM_CONDITIONAL(ENABLE_SASL_SUPPORT, test "x$enable_sasl_support" = "xyes")
+if test "$enable_sasl_support" = "yes" ; then
+   dnl Enable SASL cflags and link headers
+   SASL_LIBS=`pkg-config --libs libgsasl`
+   SASL_CFLAGS=`pkg-config --cflags libgsasl`
+   dnl SASL libraries subsitution
+   AC_SUBST(SASL_CFLAGS)
+   AC_SUBST(SASL_LIBS)
+   AC_SUBST(HAVE_GSASL_FREE)
+   AM_CONDITIONAL(ENABLE_SASL_SUPPORT, test "x$enable_sasl_support" = "xyes")
+fi
 
 dnl check for XML-RPC RFC3529 support
 AC_ARG_ENABLE(xml-rpc-support, [  --disable-xml-rpc-support    Makes Vortex Library to be built without XML-RPC (RFC3529) support], 
@@ -344,6 +355,10 @@ fi
 if test x$enable_sasl_support = xyes ; then
    echo "   Build SASL profile support:     enabled"
    echo "     (libvortex-sasl-1.1)"
+   if test x$found_old_sasl = xyes ; then
+      echo "     WARNING: found GSASL installation previous to 0.2.21 release."
+      echo "              This could cause unexpected memory errors."
+   fi 
 else
    echo "   Build SASL profile support:     disabled"
    echo 

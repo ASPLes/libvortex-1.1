@@ -1,0 +1,109 @@
+Source: libvortex-1.1
+Priority: extra
+Maintainer: Francis Brosnan <francis@aspl.es>
+Build-Depends: debhelper (>= 5), autotools-dev, pkg-config, 
+  libaxl-dev (>= 0.5.3), libreadline5-dev, libssl-dev,
+  libgsasl7-dev
+Standards-Version: 3.7.2
+Section: libs
+
+Package: libvortex-1.1
+Section: libs
+Architecture: any
+Depends: libc6, libaxl1 (>= 0.5.3)
+Description: BEEP core implemetation written in C
+  Vortex Library is an implementation of the RFC 3080 / RFC 3081
+  standard definitions, known as the BEEP Core protocol, implemented
+  on top of the TCP/IP stack, using C language. Additionally, it comes
+  with a complete XML-RPC over BEEP RFC 3529 support and complete
+  support for TUNNEL profile, which allows to perform proxy operations
+  for every BEEP profile developed.
+
+Package: libvortex-1.1-dev
+Section: libdevel
+Architecture: any
+Depends: libaxl-dev (>= 0.5.3), libvortex-1.1 (= ${Source-Version})
+Description: BEEP core implementation written in C 
+  Development headers for the core library implementation. 
+
+Package: libvortex-tls-1.1
+Section: libs
+Architecture: any
+Depends: libc6, libaxl1 (>= 0.5.3), libvortex-1.1 (= ${Source-Version}),
+  libssl0.9.8
+Description: BEEP TLS profile support for Vortex Library
+ This package contains the extension library to add support for TLS
+ profile to core Vortex Library.
+
+Package: libvortex-tls-1.1-dev
+Section: libdevel
+Architecture: any
+Depends: libaxl-dev (>= 0.5.3), libvortex-1.1-dev (= ${Source-Version}),
+  libssl-dev
+Description: BEEP TLS profile support for Vortex Library (devel headers).
+ Development headers for BEEP TLS profile.
+
+Package: libvortex-sasl-1.1
+Section: libs
+Architecture: any
+Depends: libc6, libaxl1 (>= 0.5.3), libvortex-1.1 (= ${Source-Version}),
+  libgsasl7
+Description: BEEP SASL profiles support for Vortex Library
+ This package contains the extension library to add support for SASL
+ profiles to the core Vortex Library.
+
+Package: libvortex-sasl-1.1-dev
+Section: libdevel
+Architecture: any
+Depends: libaxl-dev (>= 0.5.3), libvortex-1.1-dev (= ${Source-Version}),
+ libgsasl7-dev
+Description: BEEP SASL profiles support for Vortex Library (devel headers).
+ Development headers for BEEP SASL profiles for Vortex Library.
+
+Package: libvortex-tunnel-1.1
+Section: libs
+Architecture: any
+Depends: libc6, libaxl1 (>= 0.5.3), libvortex-1.1 (= ${Source-Version})
+Description: BEEP TUNNEL profile support for Vortex Library
+ This package contains the extension library to add support for TUNNEL
+ profile to the core Vortex Library. TUNNEL profile is the proxy standard
+ definition for BEEP protocol.
+
+Package: libvortex-tunnel-1.1-dev
+Section: libdevel
+Architecture: any
+Depends: libaxl-dev (>= 0.5.3), libvortex-1.1-dev (= ${Source-Version})
+Description: BEEP SASL profiles support for Vortex Library (devel headers).
+ Development headers for BEEP TUNNEL profile for Vortex Library.
+
+Package: libvortex-xml-rpc-1.1
+Section: libs
+Architecture: any
+Depends: libc6, libaxl1 (>= 0.5.3), libvortex-1.1 (= ${Source-Version})
+Description: BEEP XML-RPC profile support for Vortex Library
+ This package contains the extension library to add support for XML-RPC
+ over BEEP profile to the core Vortex Library. 
+
+Package: libvortex-xml-rpc-1.1-dev
+Section: libdevel
+Architecture: any
+Depends: libaxl-dev (>= 0.5.3), libvortex-1.1-dev (= ${Source-Version})
+Description: XML-RPC over BEEP profile support for Vortex Library (devel headers).
+ Development headers for XML-RPC over BEEP profile for Vortex Library.
+
+Package: vortex-xml-rpc-gen-1.1
+Section: net
+Architecture: any
+Depends: libreadline5, libaxl1 (>= 0.5.3), 
+  libvortex-1.1 (= ${Source-Version})
+Description: tool to create support files to execute XML-RPC services.
+  This package contains the xml-rpc-gen tool which is used to create 
+  client and server side files to support XML-RPC over BEEP.
+
+Package: vortex-client-1.1
+Section: net
+Architecture: any
+Depends: libreadline5
+Description: BEEP core implemetation client.
+  This package contains vortex-client, a command line that allows
+  to connect to and debug BEEP peers.

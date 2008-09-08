@@ -1,0 +1,6 @@
+libvortex-1.1 (1.1.0-1) unstable; urgency=low
+
+  * First debian package version.
+
+ -- Francis Brosnan <francis@aspl.es>  Wed,  9 Sep 2007 18:20:35 +0200
+
