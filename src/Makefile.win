@@ -19,10 +19,6 @@ OBJ  = vortex.o \
        vortex_thread.o\
        vortex_thread_pool.o\
        vortex_errno.o \
-       vortex_sasl.o \
-       vortex_tls.o \
-       vortex_xml_rpc.o \
-       vortex_xml_rpc_types.o \
        vortex_win32.o
 
 DLL        = $(vortex_1_1_dll).dll

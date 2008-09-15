@@ -29,9 +29,13 @@ LIBS     = -Wall -g \
 	-lws2_32 $(search_lib_path) \
 	-L../src -L../../libaxl/src -L$(DEPEND_DIR)/bin -laxl -lvortex-1.1 \
 	-L../tunnel -lvortex-tunnel-1.1 \
+	-L../xml-rpc -lvortex-xml-rpc-1.1 \
+	-L../tls -lvortex-tls-1.1 \
+	-L../sasl -lvortex-sasl-1.1 \
 	-lreadline5
 
-INCS =  -I"." -I"../src" -I"../tunnel" -I"../../libaxl/src" -I$(DEPEND_DIR)/include
+INCS =  -I"." -I"../src" -I"../tunnel" -I"../tls" -I"../sasl" -I"../xml-rpc" \
+        -I"../../libaxl/src" -I$(DEPEND_DIR)/include
 
 CFLAGS   = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" -Wall -g
 
@@ -86,9 +90,14 @@ vortex-client-connections.exe: vortex-client-connections.o
 links:
 	cp $(READLINE_LIBS) .
 	cp ../src/libvortex-1.1.dll .
+	cp ../sasl/libvortex-sasl-1.1.dll .
+	cp ../tls/libvortex-tls-1.1.dll .
+	cp ../tunnel/libvortex-tunnel-1.1.dll .
+	cp ../xml-rpc/libvortex-xml-rpc-1.1.dll .
 	cp ../data/*.dtd .
 	cp ../../libaxl/src/libaxl.dll .
 	cp $(OPENSSL_LIBS) .
+	cp $(GSASL_LIBS) .
 
 %.o: %.c
 	$(CC) -c $< -o $@ $(CFLAGS)

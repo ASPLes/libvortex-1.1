@@ -1,12 +1,11 @@
 # xml-rpc-gen makefile for windows
 
 CC       = gcc.exe -g -Wall
-OBJ      = xml-rpc-support.o xml-rpc-gen-translate.o xml-rpc-gen.o xml-rpc-autoconf.o xml-rpc-c-server.o xml-rpc-c-stub.o
+OBJ      = exarg.o xml-rpc-support.o xml-rpc-gen-translate.o xml-rpc-gen.o xml-rpc-autoconf.o xml-rpc-c-server.o xml-rpc-c-stub.o
 
 PROGRAMS = xml-rpc-gen.exe 
 
 LIBS     = -Wall -g \
-	-L../../libexarg/src -lexarg \
 	-L../../libaxl/src -L$(DEPEND_DIR)/bin -laxl  \
 	-L../src/ -lvortex-1.1
 
