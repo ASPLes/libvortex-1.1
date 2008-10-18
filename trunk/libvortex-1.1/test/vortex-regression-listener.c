@@ -153,6 +153,12 @@
  */
 #define REGRESSION_URI_SUDDENTLY_CLOSE "http://iana.org/beep/transient/vortex-regression/suddently-close"
 
+/**
+ * Profile use to identify the regression test to check replies mixed
+ * (ANS..NUL with RPY).
+ */
+#define REGRESSION_URI_MIXING_REPLIES "http://iana.org/beep/transient/vortex-regression/mixing-replies"
+
 void frame_received_fake_listeners  (VortexChannel    * channel,
 				     VortexConnection * connection,
 				     VortexFrame      * frame,
@@ -939,6 +945,32 @@ void frame_channel_connection (VortexChannel    * channel,
 	} /* end if */
 }
 
+bool frame_received_mix_replies_state = false;
+
+void frame_received_mix_replies (VortexChannel    * channel,
+				 VortexConnection * connection,
+				 VortexFrame      * frame,
+				 axlPointer         user_data)
+{
+	if (frame_received_mix_replies_state) {
+		/* reply with RPY */
+		printf ("Test-02k: sending RPY type...\n");
+		vortex_channel_send_rpy (channel, "a reply", 7, vortex_frame_get_msgno (frame));
+	} else {
+		/* reply with ANS .. NUL */
+		printf ("Test-02k: sending ANS..NUL type...\n");
+		vortex_channel_send_ans_rpy (channel, "a reply 1", 9, vortex_frame_get_msgno (frame));
+		vortex_channel_send_ans_rpy (channel, "a reply 2", 9, vortex_frame_get_msgno (frame));
+		vortex_channel_finalize_ans_rpy (channel, vortex_frame_get_msgno (frame));
+	} /* end if */
+
+	/* alternate replies with RPY and ANS */
+	frame_received_mix_replies_state = ! frame_received_mix_replies_state;
+
+	return;
+}
+				 
+
 bool start_channel_connection (int                channel_num, 
 			       VortexConnection * connection,
 			       axlPointer         user_data)
@@ -1116,6 +1148,14 @@ int main (int  argc, char ** argv)
 				  close_channel_connection, NULL, 
 				  /* no frame received */
 				  frame_channel_connection, NULL);
+
+	/* regiester a profile */
+ 	vortex_profiles_register (ctx, REGRESSION_URI_MIXING_REPLIES,
+ 				  /* default start and close */
+ 				  NULL, NULL,
+ 				  NULL, NULL,
+ 				  frame_received_mix_replies, NULL);
+ 
 
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */
