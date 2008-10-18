@@ -172,16 +172,20 @@ void subs (struct timeval stop, struct timeval start, struct timeval * _result)
 #define REGRESSION_URI_MIME "http://iana.org/beep/transient/vortex-regression/mime"
 
 /** 
- * Profile use to identify the regression test client and server mime
- * support.
+ * Profile use to identify the regression test to check ordered delivered
  */
 #define REGRESSION_URI_ORDERED_DELIVERY "http://iana.org/beep/transient/vortex-regression/ordered-delivery"
 
 /** 
- * Profile use to identify the regression test client and server mime
- * support.
+ * Profile use to identify the regression test to check close operation.
  */
 #define REGRESSION_URI_SUDDENTLY_CLOSE "http://iana.org/beep/transient/vortex-regression/suddently-close"
+
+/**
+ * Profile use to identify the regression test to check replies mixed
+ * (ANS..NUL with RPY).
+ */
+#define REGRESSION_URI_MIXING_REPLIES "http://iana.org/beep/transient/vortex-regression/mixing-replies"
 
 /** 
  * @internal Allows to know if the connection must be created directly or
@@ -3198,6 +3202,129 @@ bool test_02j (void) {
 	return true;
 }
 
+bool test_02k (void) {
+
+	VortexConnection * connection;
+	VortexChannel    * channel;
+	VortexFrame      * frame; 
+	VortexAsyncQueue * queue;
+	int                iterator;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+		
+	} /* end if */
+
+	/* create a channel */
+	queue   = vortex_async_queue_new ();
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_MIXING_REPLIES,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* no frame received */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+
+	if (channel == NULL) {
+		printf ("ERROR: unable to create channel to check mixed replies types (RPY + ANS..NUL..\n");
+		return false;
+	}
+
+	/* set serialize */
+	vortex_channel_set_serialize (channel, true);
+
+	/* send frame */
+	iterator = 0;
+	while (iterator < 10) {
+		/* send a message */
+		vortex_channel_send_msg (channel, "this is a test", 14, NULL);
+
+		/* get a reply */
+		frame = vortex_channel_get_reply (channel, queue);
+		if (frame == NULL) {
+			printf ("ERROR: expected reply from remote side while running mixed replies tests..\n");
+		}
+		
+		/* check connection status */
+		if (! vortex_connection_is_ok (connection, false)) {
+			printf ("ERROR: found connection broken while running mixed replies test\n");
+			return false;
+		} /* end if */
+
+		/* check reply content */
+		switch (vortex_frame_get_type (frame)) {
+		case VORTEX_FRAME_TYPE_RPY:
+			if (! axl_cmp (vortex_frame_get_payload (frame), "a reply")) {
+				printf ("ERROR: failed to check content expected inside frame (RPY type)..\n");
+				return false;
+			}
+			break;
+		case VORTEX_FRAME_TYPE_ANS:
+			if (! axl_cmp (vortex_frame_get_payload (frame), "a reply 1")) {
+				printf ("ERROR: failed to check content expected inside frame (ANS type)..\n");
+				return false;
+			}
+
+			/* release frame */
+			vortex_frame_unref (frame);
+
+			/* get next reply received */
+			frame = vortex_channel_get_reply (channel, queue);
+			if (! axl_cmp (vortex_frame_get_payload (frame), "a reply 2")) {
+				printf ("ERROR: failed to check content expected inside frame (ANS type, second reply)..\n");
+				return false;
+			} /* end if */
+
+			/* release frame received */
+			vortex_frame_unref (frame);
+
+			/* get next reply */
+			frame = vortex_channel_get_reply (channel, queue);
+			if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_NUL) {
+				printf ("ERROR: failed to check content expected inside frame (NUL type)..\n");
+				return false;
+			}
+
+			break;
+		default:
+			/* not handled case */
+			break;
+		} /* end switch */
+
+		/* release frame received */
+		vortex_frame_unref (frame);
+
+		/* check connection status */
+		if (! vortex_connection_is_ok (connection, false)) {
+			printf ("ERROR: found connection broken while running mixed replies test (second check)\n");
+			return false;
+		} /* end if */
+
+		/* next step */
+		iterator++;
+
+	} /* end while */
+
+	/* close the channel */
+	vortex_channel_close (channel, NULL);
+
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return false;
+	} /* end if */
+
+	/* terminate queue */
+	vortex_async_queue_unref (queue);
+
+	/* operation completed */
+	return true;
+}
+
 /** 
  * @brief Checks BEEP support to send large messages that goes beyond
  * default window size advertised.
@@ -5701,10 +5828,10 @@ int main (int  argc, char ** argv)
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
 	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, \n");
 	printf ("**                       test_02, test_02a, test_02b, test_02c, test_02d, test_02e, \n"); 
-	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_03, \n");
-	printf ("**                       test_03a, test_04, test_04a, test_04b, test_04c, test_05, \n");
-	printf ("**                       test_05a, test_06, test_07, test_08, test_09, test_10, \n");
-	printf ("**                       test_11, test_12, test_13\n");
+	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
+	printf ("**                       test_03, test_03a, test_04, test_04a, test_04b, test_04c, \n");
+	printf ("**                       test_05, test_05a, test_06, test_07, test_08, test_09,\n");
+	printf ("**                       test_10, test_11, test_12, test_13\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -5833,6 +5960,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_02j"))
 			run_test (test_02j, "Test 02-j", "suddently connection close while operating", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_02k"))
+			run_test (test_02k, "Test 02-k", "mixing replies to messages received in the same channel (ANS..NUL, RPY)", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_03"))
 			run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
 
@@ -5936,6 +6066,8 @@ int main (int  argc, char ** argv)
  	run_test (test_02i, "Test 02-i", "check enforced ordered delivery at server side", -1, -1);
 
 	run_test (test_02j, "Test 02-j", "suddently connection close while operating", -1, -1);
+
+	run_test (test_02k, "Test 02-k", "mixing replies to messages received in the same channel (ANS..NUL, RPY)", -1, -1);
 	
  	run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
   

@@ -5129,9 +5129,18 @@ bool vortex_channel_check_serialize_pending (VortexCtx      * ctx,
 					    channel->serialize_ans,
 					    channel->last_ans_delivered);
 
-			/* reset ANS/NUL delivery status */
-			if (is_nul_frame)
+			if (is_nul_frame) {
+				/* reset ANS/NUL delivery status */
 				channel->last_ans_delivered = 0;
+				
+				/* also update last_reply_delivered since ANS..NUL series also
+				 * represent a single delivered RPY that will be checked in the future,
+				 * that is, if the following reply receved to an ANS..NUL series is an
+				 * RPY, the code will check if the previous reply (no mather if it was
+				 * ANS..NUL or RPY) was received */
+				channel->last_reply_delivered++; 
+			}
+			
 		} /* end if */
 	}
 

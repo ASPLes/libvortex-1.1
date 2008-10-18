@@ -588,7 +588,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		break;
 	}
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "passed channel update status due to frame received stage");
+	vortex_log (VORTEX_LEVEL_DEBUG, "passed channel update status due to frame received stage type=%d", type);
 
 	/* If we have a frame to be joined then threat it instead of
 	 * invoke frame received handler. This is done by checking for
