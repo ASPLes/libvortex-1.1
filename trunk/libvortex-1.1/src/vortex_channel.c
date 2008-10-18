@@ -7733,7 +7733,7 @@ void                vortex_channel_init                           (VortexCtx * c
 }
 
 /** 
- * @brief Terminates the vortex channel module state (cleanup) on the
+ * @internal Terminates the vortex channel module state (cleanup) on the
  * provided vortex context (\ref VortexCtx).
  * 
  * @param ctx The vortex context to cleanup.
