@@ -156,7 +156,7 @@ void    xml_rpc_support_open_file       (char  * format, ...)
  * @param must_exit A variable that controls if the function must
  * perform a call to the exit or not.
  */
-void    xml_rpc_support_error           (char  * message, bool     must_exit, ...)
+void    xml_rpc_support_error           (char  * message, int      must_exit, ...)
 {
 	char     * result;
 	va_list    args;
@@ -217,7 +217,7 @@ void   xml_rpc_support_move_file (char  * from, char  * to)
  * 
  * @return true if both files are equal (false if not).
  */
-bool xml_rpc_support_are_equal (char * file1 , char * file2)
+int  xml_rpc_support_are_equal (char * file1 , char * file2)
 {
 	int fd1;
 	int fd2;
@@ -771,7 +771,7 @@ char   * xml_rpc_support_find_data_file      (char  * name)
  * Internal implementation that support xml_rpc_support_to_lower and
  * xml_rpc_support_to_upper.
  */
-char  * __xml_rpc_support_common_name (char  * name, bool     to_upper)
+char  * __xml_rpc_support_common_name (char  * name, int      to_upper)
 {
 	char  * result;
 	int     iterator;
@@ -839,11 +839,11 @@ char   * xml_rpc_support_to_upper            (char  * name)
  * 
  * @return true if all test returns true. Otherwise false is returned.
  */
-bool xml_rpc_file_test_v (const char * format, VortexFileTest test, ...)
+int  xml_rpc_file_test_v (const char * format, VortexFileTest test, ...)
 {
 	va_list   args;
 	char    * path;
-	bool      result;
+	int       result;
 
 	/* open arguments */
 	va_start (args, test);

@@ -207,7 +207,7 @@ void __xml_rpc_c_server_service_dispach (axlNode * service)
  */
 void xml_rpc_write_c_server_default_service_dispath (axlDoc   * doc, 
 						     char     * comp_name,
-						     bool       also_body)
+						     int        also_body)
 {
 	/* service location */
 	axlNode * service;
@@ -501,7 +501,7 @@ void xml_rpc_c_server_write_service_header (char    * service_name,
 					    char    * return_type, 
 					    char    * type_prefix,
 					    axlNode * aux,
-					    bool      is_header)
+					    int       is_header)
 {
 	axlDoc * doc = axl_node_get_doc (aux);
 
@@ -550,7 +550,7 @@ void xml_rpc_c_server_write_service_header (char    * service_name,
  * 
  * @param params The root node that contains the parameters.
  */
-bool     xml_rpc_c_server_write_temporal_parameter_getting (char  * comp_name, axlNode * params)
+int      xml_rpc_c_server_write_temporal_parameter_getting (char  * comp_name, axlNode * params)
 {
 	axlNode * aux;
 	axlNode * aux2;
@@ -563,7 +563,7 @@ bool     xml_rpc_c_server_write_temporal_parameter_getting (char  * comp_name, a
 	char    * name;
 
 	int       iterator;
-	bool      first_time = true;
+	int       first_time = true;
 
 	/* now write the service parameter spec */
 	iterator = 0;
@@ -593,7 +593,7 @@ bool     xml_rpc_c_server_write_temporal_parameter_getting (char  * comp_name, a
 			    xml_rpc_c_stub_type_is_array (doc, type)) {
 				if (first_time) {
 					xml_rpc_support_write ("/* temporal variable declaration */\n");
-					xml_rpc_support_write ("bool     unmarshall_failure = false;\n\n");
+					xml_rpc_support_write ("int      unmarshall_failure = false;\n\n");
 					first_time = false;
 				}
 			}
@@ -676,7 +676,7 @@ bool     xml_rpc_c_server_write_temporal_parameter_getting (char  * comp_name, a
  * 
  * @param params The root node that contains the parameters.
  */
-bool xml_rpc_c_server_write_temporal_parameter_releasing (char  * comp_name, 
+int  xml_rpc_c_server_write_temporal_parameter_releasing (char  * comp_name, 
 							  axlNode * params)
 {
 	axlNode * aux;
@@ -690,8 +690,8 @@ bool xml_rpc_c_server_write_temporal_parameter_releasing (char  * comp_name,
 	char    * name;
 
 	int       iterator;
-	bool      first_time = true;
-	bool      found      = false;
+	int       first_time = true;
+	int       found      = false;
 
 
 	/* now write the service parameter spec */

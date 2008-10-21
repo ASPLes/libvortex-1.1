@@ -32,11 +32,11 @@ void    xml_rpc_support_open_file       (char  * format,
 
 void    xml_rpc_support_close_file      ();
 
-bool    xml_rpc_support_are_equal       (char * file1 , 
+int     xml_rpc_support_are_equal       (char * file1 , 
 					 char * file2);
 
 void    xml_rpc_support_error           (char  * message, 
-					 bool    must_exit, 
+					 int     must_exit, 
 					 ...);
 
 void    xml_rpc_support_move_file       (char  * from, 
@@ -97,7 +97,7 @@ char   * xml_rpc_support_to_upper            (char  * name);
  */
 #define file_test_v xml_rpc_file_test_v
 
-bool xml_rpc_file_test_v (const char * format, VortexFileTest test, ...);
+int  xml_rpc_file_test_v (const char * format, VortexFileTest test, ...);
 
 char   * xml_rpc_support_get_function_type_prefix (axlNode * params);
 

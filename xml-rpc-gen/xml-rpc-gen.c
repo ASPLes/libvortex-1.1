@@ -86,7 +86,7 @@ void show_version ()
  * @brief Compiles the provided file.
  * 
  */
-bool     xml_rpc_gen_compile_selected (const char  * selected)
+int      xml_rpc_gen_compile_selected (const char  * selected)
 {
 	axlError * error;
 	axlDoc   * doc = NULL;

@@ -101,7 +101,7 @@ void xml_rpc_support_write_function_parameters (axlDoc * doc, axlNode * params)
 	char    * type;
 	char    * name;
 
-	bool      first = true;
+	int       first = true;
 
 	/* now write the service parameter spec */
 	if (axl_node_have_childs (params)) {
@@ -159,7 +159,7 @@ void xml_rpc_support_write_function_parameters_names (axlNode * aux)
 	axlNode * aux3;	
 
 	char    * name;
-	bool      first = true;
+	int       first = true;
 
 	/* now write the service parameter spec */
 	if (axl_node_have_childs (aux)) {
@@ -301,7 +301,7 @@ void xml_rpc_support_write_method_create_values (axlDoc * doc, axlNode * aux, ch
  * @param is_header Signal that the service is a C header rather than
  * a C header for a body.
  */
-void xml_rpc_c_stub_write_service_sync (axlDoc * doc, char  * comp_name, axlNode * node, bool is_header)
+void xml_rpc_c_stub_write_service_sync (axlDoc * doc, char  * comp_name, axlNode * node, int  is_header)
 {
 	char    * service_name;
 	char    * return_type;
@@ -378,7 +378,7 @@ void xml_rpc_c_stub_write_service_sync (axlDoc * doc, char  * comp_name, axlNode
  * @return true if the provided type is a struct or an array according
  * to the value received at type.
  */
-bool __xml_rpc_c_stub_type_is_common (axlDoc * doc, char  * type_name, char  * type)
+int  __xml_rpc_c_stub_type_is_common (axlDoc * doc, char  * type_name, char  * type)
 {
 	axlNode * node;
 	axlNode * node_name;
@@ -417,7 +417,7 @@ bool __xml_rpc_c_stub_type_is_common (axlDoc * doc, char  * type_name, char  * t
  * 
  * @return 
  */
-bool xml_rpc_c_stub_type_is_struct (axlDoc * doc, char  * type_name)
+int  xml_rpc_c_stub_type_is_struct (axlDoc * doc, char  * type_name)
 {
 	return __xml_rpc_c_stub_type_is_common (doc, type_name, "struct");
 }
@@ -434,7 +434,7 @@ bool xml_rpc_c_stub_type_is_struct (axlDoc * doc, char  * type_name)
  * 
  * @return 
  */
-bool xml_rpc_c_stub_type_is_array (axlDoc * doc, char  * type_name)
+int  xml_rpc_c_stub_type_is_array (axlDoc * doc, char  * type_name)
 {
 	return __xml_rpc_c_stub_type_is_common (doc, type_name, "array");
 }
@@ -458,7 +458,7 @@ bool xml_rpc_c_stub_type_is_array (axlDoc * doc, char  * type_name)
 void xml_rpc_c_stub_write_service (axlDoc  * doc,
 				   char    * comp_name, 
 				   axlNode * node, 
-				   bool is_header)
+				   int  is_header)
 {
 	char    * service_name;
 	char    * return_type;
@@ -628,7 +628,7 @@ void xml_rpc_c_stub_write_struct_def (char  * out_dir,
 	char    * comp_name_lower;
 
 	axlNode * member;
-	bool      written;
+	int       written;
 
 	axlNode * type_node;
 	char    * type;
@@ -691,7 +691,7 @@ void xml_rpc_c_stub_write_struct_def (char  * out_dir,
 		if (axl_cmp (type, "string"))
 			xml_rpc_support_write ("char * %s;\n", _name);
 		else if (axl_cmp (type, "bool"))
-			xml_rpc_support_write ("bool %s;\n", _name);
+			xml_rpc_support_write ("int  %s;\n", _name);
 		else if (xml_rpc_c_stub_type_is_array (doc, type))
 			xml_rpc_support_write ("%s * %s;\n", type, _name);
 		else if (xml_rpc_c_stub_type_is_struct (doc, type))
@@ -711,9 +711,9 @@ void xml_rpc_c_stub_write_struct_def (char  * out_dir,
 
 	/* write marshallers */
 	xml_rpc_support_write ("/* (un)marshaller support functions  */\n");
-	xml_rpc_support_write ("XmlRpcStruct * %s_%s_marshall (%s * ref, bool dealloc);\n",
+	xml_rpc_support_write ("XmlRpcStruct * %s_%s_marshall (%s * ref, int  dealloc);\n",
 			       comp_name_lower, struct_lower, struct_name);
-	xml_rpc_support_write ("%s * %s_%s_unmarshall (XmlRpcStruct * ref, bool dealloc);\n\n",
+	xml_rpc_support_write ("%s * %s_%s_unmarshall (XmlRpcStruct * ref, int  dealloc);\n\n",
 			       struct_name, comp_name_lower, struct_lower);
 	
 	xml_rpc_support_write ("/* memory (de)allocation functions */\n");
@@ -738,7 +738,7 @@ void xml_rpc_c_stub_write_struct_def (char  * out_dir,
 		if (axl_cmp (type, "string"))
 			xml_rpc_support_sl_write ("const char * %s", _name);
 		else if (axl_cmp (type, "bool"))
-			xml_rpc_support_sl_write ("bool %s", _name);
+			xml_rpc_support_sl_write ("int  %s", _name);
 		else if (xml_rpc_c_stub_type_is_array (doc, type))
 			xml_rpc_support_write ("%s * %s", type, _name);
 		else if (xml_rpc_c_stub_type_is_struct (doc, type))
@@ -778,7 +778,7 @@ void xml_rpc_c_stub_write_struct_def (char  * out_dir,
 	xml_rpc_support_write ("#include <%s_types.h>\n\n", comp_name_lower);
 
 	xml_rpc_support_write ("/* (un)marshaller support functions  */\n");
-	xml_rpc_support_write ("XmlRpcStruct * %s_%s_marshall (%s * ref, bool dealloc)\n{\n",
+	xml_rpc_support_write ("XmlRpcStruct * %s_%s_marshall (%s * ref, int  dealloc)\n{\n",
 			       comp_name_lower, struct_lower, struct_name);
 
 	/* push indent to write the marshall function  */
@@ -853,7 +853,7 @@ void xml_rpc_c_stub_write_struct_def (char  * out_dir,
 	xml_rpc_support_write ("}\n\n");
 
 	/* write the unmarshall implementation */
-	xml_rpc_support_write ("%s * %s_%s_unmarshall (XmlRpcStruct * ref, bool dealloc)\n{\n",
+	xml_rpc_support_write ("%s * %s_%s_unmarshall (XmlRpcStruct * ref, int  dealloc)\n{\n",
 			       struct_name, comp_name_lower, struct_lower);
 
 	xml_rpc_support_push_indent ();
@@ -948,7 +948,7 @@ void xml_rpc_c_stub_write_struct_def (char  * out_dir,
 		if (axl_cmp (type, "string"))
 			xml_rpc_support_sl_write ("const char * %s", _name);
 		else if (axl_cmp (type, "bool"))
-			xml_rpc_support_sl_write ("bool %s", _name);
+			xml_rpc_support_sl_write ("int  %s", _name);
 		else if (xml_rpc_c_stub_type_is_array (doc, type))
 			xml_rpc_support_write ("%s * %s", type, _name);
 		else if (xml_rpc_c_stub_type_is_struct (doc, type))
@@ -1125,7 +1125,7 @@ void xml_rpc_c_stub_write_struct_def (char  * out_dir,
  * @param same_line Writes the type into the same line or use the API
  * provided to produce tabular indentation.
  */
-void xml_rpc_c_stub_write_native_type (axlDoc * doc, char  * type, bool     same_line)
+void xml_rpc_c_stub_write_native_type (axlDoc * doc, char  * type, int      same_line)
 {
 	char  * type_write = "";
 
@@ -1134,7 +1134,7 @@ void xml_rpc_c_stub_write_native_type (axlDoc * doc, char  * type, bool     same
 	else if (axl_cmp (type, "int"))
 		type_write = "int";
 	else if (axl_cmp (type, "bool"))
-		type_write = "bool";
+		type_write = "int";
 	else if (axl_cmp (type, "double"))
 		type_write = "double";
 	else if (axl_cmp (type, "date"))
@@ -1237,9 +1237,9 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 					NULL);
 
 	/* write marshallers */
-	xml_rpc_support_write ("XmlRpcArray    * %s_%s_marshall   (%s * ref, bool dealloc);\n",
+	xml_rpc_support_write ("XmlRpcArray    * %s_%s_marshall   (%s * ref, int  dealloc);\n",
 			       comp_name_lower, name_lower, name);
-	xml_rpc_support_write ("%s * %s_%s_unmarshall (XmlRpcArray * ref, bool dealloc);\n\n",
+	xml_rpc_support_write ("%s * %s_%s_unmarshall (XmlRpcArray * ref, int  dealloc);\n\n",
 			       name, comp_name_lower, name_lower);
 
 	/* write memory allocators */
@@ -1306,7 +1306,7 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 	if (axl_cmp (type, "int") || axl_cmp (type, "double"))
 		xml_rpc_support_write ("%s * array;\n", type);
 	else if (axl_cmp (type, "bool"))
-		xml_rpc_support_write ("bool * array;\n");
+		xml_rpc_support_write ("int  * array;\n");
 	else if (axl_cmp (type, "string")) 
 		xml_rpc_support_write ("char ** array;\n");
 	else 
@@ -1318,7 +1318,7 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 	xml_rpc_support_write ("};\n\n");
 
 	/* write marshallers */
-	xml_rpc_support_write ("XmlRpcArray    * %s_%s_marshall   (%s * ref, bool dealloc)\n{\n",
+	xml_rpc_support_write ("XmlRpcArray    * %s_%s_marshall   (%s * ref, int  dealloc)\n{\n",
 			       comp_name_lower, name_lower, name);
 
 	/* push indent */
@@ -1336,7 +1336,7 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 	if (axl_cmp (type, "int") || axl_cmp (type, "double"))
 		xml_rpc_support_write ("%s _value;\n", type);
 	else if (axl_cmp (type, "bool"))
-		xml_rpc_support_write ("bool _value;\n", type);
+		xml_rpc_support_write ("int  _value;\n", type);
 	else if (axl_cmp (type, "string")) 
 		xml_rpc_support_write ("char * _value;\n");
 	else 
@@ -1424,7 +1424,7 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 
 	xml_rpc_support_write ("}\n\n");	
 
-	xml_rpc_support_write ("%s * %s_%s_unmarshall (XmlRpcArray * ref, bool dealloc)\n{\n",
+	xml_rpc_support_write ("%s * %s_%s_unmarshall (XmlRpcArray * ref, int  dealloc)\n{\n",
 			       name, comp_name_lower, name_lower);
 
 	xml_rpc_support_push_indent ();
@@ -1433,7 +1433,7 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 	if (axl_cmp (type, "int") || axl_cmp (type, "double"))
 		xml_rpc_support_write ("%s _value;\n", type);
 	else if (axl_cmp (type, "bool"))
-		xml_rpc_support_write ("bool _value;\n", type);
+		xml_rpc_support_write ("int  _value;\n", type);
 	else if (axl_cmp (type, "string") || (axl_cmp (type, "base64")))
 		xml_rpc_support_write ("char  * _value;\n");
 	else {
@@ -1523,7 +1523,7 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 	if (axl_cmp (type, "double"))
 		xml_rpc_support_sl_write ("double");
 	else if (axl_cmp (type, "bool"))
-		xml_rpc_support_sl_write ("bool");
+		xml_rpc_support_sl_write ("int");
 	else if (axl_cmp (type, "string") || (axl_cmp (type, "base64")))
 		xml_rpc_support_sl_write ("char  *");
 	else {
@@ -2359,7 +2359,7 @@ void xml_rpc_c_stub_create_body_file (axlDoc * doc, char  * result, char  * comp
  * Produces the C client stub, according to the data received at the
  * \ref axlDoc reference. 
  */
-bool     xml_rpc_c_stub_create (axlDoc * doc, 
+int      xml_rpc_c_stub_create (axlDoc * doc, 
 				char  * out_dir, 
 				char  * comp_name)
 {

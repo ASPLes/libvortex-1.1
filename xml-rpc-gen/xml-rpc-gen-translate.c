@@ -29,7 +29,7 @@ axlHash * resources = NULL;
 
 void xml_rpc_gen_translate_consume_comments (axlStream * stream, axlError ** error)
 {
-	bool found_item;
+	int  found_item;
 	int  size;
 	
 	/* know, try to read comments a process instructions.  Do this
@@ -79,7 +79,7 @@ void xml_rpc_gen_translate_consume_comments (axlStream * stream, axlError ** err
 	return;
 }
 
-axlNode * __xml_rpc_gen_translate_struct (axlDoc * doc, bool * result, axlStream * stream, axlError ** error) 
+axlNode * __xml_rpc_gen_translate_struct (axlDoc * doc, int  * result, axlStream * stream, axlError ** error) 
 {
 	char    * name;
 	char    * type;
@@ -191,7 +191,7 @@ axlNode * __xml_rpc_gen_translate_struct (axlDoc * doc, bool * result, axlStream
  * @internal Parse IDL definition file and translate it into an
  * in-memory XDL definition.
  */
-axlNode * __xml_rpc_gen_translate_array (axlDoc * doc, bool * result, axlStream * stream, axlError ** error)
+axlNode * __xml_rpc_gen_translate_array (axlDoc * doc, int  * result, axlStream * stream, axlError ** error)
 {
 	axlNode * array;
 	axlNode * root;
@@ -279,11 +279,11 @@ axlNode * __xml_rpc_gen_translate_array (axlDoc * doc, bool * result, axlStream 
 	return array;
 }
 
-bool __xml_rpc_gen_translate_service_check_method_name_decl (axlNode   * service, 
+int  __xml_rpc_gen_translate_service_check_method_name_decl (axlNode   * service, 
 							     char      * service_name,
 							     axlHash   * attributes,
 							     axlStream * stream, 
-							     bool      * result,
+							     int       * result,
 							     axlError ** error)
 {
 	char    * name;
@@ -350,12 +350,12 @@ char * xml_rpc_gen_translate_copy_and_escape (const char * content,
 	return result;
 }
 
-bool      xml_rpc_gen_translate_invalid_chars        (const char * content,
+int       xml_rpc_gen_translate_invalid_chars        (const char * content,
 						      int          content_size,
 						      int        * added_size)
 {
 	int      iterator = 0;
-	bool     result   = false;
+	int      result   = false;
 	axl_return_val_if_fail (content, false);
 
 	/* reset additional size value */
@@ -501,7 +501,7 @@ char * __get_all_user_content_from_file (char * fileName)
  */
 axlNode * __xml_rpc_gen_translate_service (char      * return_type, 
 					   axlDoc    * doc, 
-					   bool      * result, 
+					   int       * result, 
 					   axlStream * stream, 
 					   axlHash   * attributes, 
 					   axlError ** error)
@@ -829,7 +829,7 @@ axlNode * __xml_rpc_gen_translate_service (char      * return_type,
  * which allows to enforce resource declaration for services found
  * inside the IDL file.
  */
-bool __xml_rpc_gen_parse_allowed_resources_decl (axlStream  * stream, 
+int  __xml_rpc_gen_parse_allowed_resources_decl (axlStream  * stream, 
 						 axlError  ** error)
 {
 	char * attr_value = NULL;
@@ -905,7 +905,7 @@ bool __xml_rpc_gen_parse_allowed_resources_decl (axlStream  * stream,
 }
 	
 axlNode * xml_rpc_gen_translate_parse_interface_item (axlDoc * doc, axlStream * stream, 
-						      bool * result, axlError ** error)
+						      int  * result, axlError ** error)
 {
 	/* [attribute declaration] */
 	char      * attr_decl  = NULL;
@@ -1091,13 +1091,13 @@ axlNode * xml_rpc_gen_translate_parse_interface_item (axlDoc * doc, axlStream * 
 	return res;
 }
 
-bool xml_rpc_gen_translate_parse_services (axlDoc     * doc, 
+int  xml_rpc_gen_translate_parse_services (axlDoc     * doc, 
 					   axlStream  * stream, 
 					   axlError  ** error)
 {
 	axlNode * service;
 	axlNode * root;
-	bool      result;
+	int       result;
 
 	/* get the root node */
 	root = axl_doc_get_root (doc);
