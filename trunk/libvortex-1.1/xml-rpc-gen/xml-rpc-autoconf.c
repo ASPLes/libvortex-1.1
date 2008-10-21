@@ -32,7 +32,7 @@
 void xml_rpc_autoconf_autogen_sh_create (axlDoc   * doc, 
 					 char     * out_dir, 
 					 char     * comp_name,
-					 bool       is_server)
+					 int        is_server)
 {
 
 
@@ -122,7 +122,7 @@ void xml_rpc_autoconf_autogen_sh_create (axlDoc   * doc,
 void xml_rpc_autoconf_configure_ac_create (axlDoc * doc, 
 					   char   * out_dir, 
 					   char   * comp_name,
-					   bool     is_server)
+					   int      is_server)
 {
 
 	char  * comp_name_upper;
@@ -258,7 +258,7 @@ void xml_rpc_autoconf_write_struct_and_arrays (axlDoc * doc, char  * comp_name)
 void xml_rpc_autoconf_makefile_am_create (axlDoc   * doc, 
 					  char     * new_out_dir, 
 					  char     * comp_name,
-					  bool       is_server)
+					  int        is_server)
 {
 	/* xml document */
 	axlNode * service;
