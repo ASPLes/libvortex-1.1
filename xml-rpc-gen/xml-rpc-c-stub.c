@@ -1559,7 +1559,16 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 	write ("\treturn array;\n\n");
 
 	write ("/* allocate enough space */\n");
-	write ("array->array = axl_new (%s *, array->count);\n", type);
+	if (axl_cmp (type, "string")) 
+		write ("array->array = axl_new (char *, array->count);\n");
+	else if (axl_cmp (type, "bool")) 
+		write ("array->array = axl_new (int, array->count);\n");
+	else if (axl_cmp (type, "int")) 
+		write ("array->array = axl_new (int, array->count);\n");
+	else if (axl_cmp (type, "double")) 
+		write ("array->array = axl_new (double, array->count);\n");
+	else
+		write ("array->array = axl_new (%s *, array->count);\n", type);
 	write ("while (iterator < ref->count) {\n\n");
 
 	push_indent ();
