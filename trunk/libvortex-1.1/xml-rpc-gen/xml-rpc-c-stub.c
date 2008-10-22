@@ -126,6 +126,8 @@ void xml_rpc_support_write_function_parameters (axlDoc * doc, axlNode * params)
 				xml_rpc_support_sl_write ("%s * ", type);
 			else if (axl_cmp (type, "string"))
 				xml_rpc_support_sl_write ("const char * ");
+			else if (axl_cmp (type, "bool"))
+				xml_rpc_support_sl_write ("int ");
 			else
 				xml_rpc_support_sl_write ("%s ", type);
 
