@@ -169,7 +169,7 @@ typedef struct _VortexSaslCtx {
  * @return true if the initialization was properly done, otherwise
  * false is returned.
  */
-bool               vortex_sasl_init                      (VortexCtx            * ctx)
+int                vortex_sasl_init                      (VortexCtx            * ctx)
 {
 	axlDtd * dtd = NULL;
 
@@ -263,7 +263,7 @@ void               vortex_sasl_cleanup                   (VortexCtx            *
  * in properties values that are required to be unrefered when the
  * session is closed.
  */
-bool               vortex_sasl_set_propertie             (VortexConnection     * connection,
+int                vortex_sasl_set_propertie             (VortexConnection     * connection,
 							  VortexSaslProperties   prop,
 							  char                 * value,
 							  axlDestroyFunc         value_destroy)
@@ -419,7 +419,7 @@ char             * vortex_sasl_get_propertie             (VortexConnection     *
  * 
  * @return true if the connection is authenticated, false if not. 
  */
-bool               vortex_sasl_is_authenticated          (VortexConnection     * connection)
+int                vortex_sasl_is_authenticated          (VortexConnection     * connection)
 {
 	v_return_val_if_fail (connection, false);
 
@@ -548,7 +548,7 @@ void __vortex_sasl_destroy_context (axlPointer _data)
  * @return true if the library have been initialized or it is already
  * initialized. Otherwise false is returned.
  */
-bool     __vortex_sasl_create_context (VortexConnection * connection) 
+int      __vortex_sasl_create_context (VortexConnection * connection) 
 {
 	VortexGsaslData * data;
 	int               rc;
@@ -634,7 +634,7 @@ typedef struct __VortexSaslStartData {
 	const char           * profile;
 	VortexSaslAuthNotify   process_status;
 	axlPointer             user_data;
-	bool                   threaded;
+	int                    threaded;
 }VortexSaslStartData ;
 
 /** 
@@ -719,7 +719,7 @@ char  * __vortex_sasl_initiator_do_initial_step (const char           * profile,
  * @return false if the frame received implies that the SASL
  * authentication couldn't be performed. Otherwise true is returned.
  */
-bool     __vortex_sasl_is_error_content (VortexFrame * frame,
+int      __vortex_sasl_is_error_content (VortexFrame * frame,
 					 VortexConnection       * connection, 
 					 VortexSaslAuthNotify     process_status, 
 					 char                  ** status_msg,
@@ -827,7 +827,7 @@ char    * __vortex_sasl_get_base64_blob (char                  * frame_content,
 
 /* perform the next additional steps needed to authenticate the
  * peer */
-bool     __vortex_sasl_initiator_do_steps (VortexChannel          * channel, 
+int      __vortex_sasl_initiator_do_steps (VortexChannel          * channel, 
 					   VortexAsyncQueue       * queue,
 					   VortexConnection       * connection, 
 					   VortexSaslAuthNotify     process_status, 
@@ -960,7 +960,7 @@ bool     __vortex_sasl_initiator_do_steps (VortexChannel          * channel,
  * @internal Mask installed to ensure that SASL profile isn't reused
  * again for the particular connection.
  */
-bool __vortex_sasl_mask (VortexConnection  * connection,
+int  __vortex_sasl_mask (VortexConnection  * connection,
 			 int                 channel_num,
 			 const char        * uri,
 			 const char        * profile_content,
@@ -1160,7 +1160,7 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
  * @return true if all properties was provided for the selected mech
  * or false if something is wrong.
  */
-bool     __vortex_sasl_auth_data_sanity_check (VortexConnection     * connection,
+int      __vortex_sasl_auth_data_sanity_check (VortexConnection     * connection,
 					       const char           * profile, 
 					       VortexSaslAuthNotify   process_status,
 					       axlPointer             user_data)
@@ -1435,7 +1435,7 @@ void               vortex_sasl_start_auth_sync           (VortexConnection     *
  * each mechanism, ensuring all of them receives the minimum set of
  * required values.
  */
-bool     __validation_handler_check_properties (Gsasl_session * sctx, 
+int      __validation_handler_check_properties (Gsasl_session * sctx, 
 						char          * sasl_profile,
 						VortexCtx     * ctx)
 {
@@ -1871,7 +1871,7 @@ char  * __build_blob_reply (char  * status, char  * blob_content)
  * 
  * @return 
  */
-bool     __vortex_sasl_server_iterate (VortexConnection * connection, 
+int      __vortex_sasl_server_iterate (VortexConnection * connection, 
 				       char             * payload,
 				       char            ** payload_reply)
 {
@@ -1975,7 +1975,7 @@ bool     __vortex_sasl_server_iterate (VortexConnection * connection,
  * 
  * @return 
  */
-bool     __vortex_sasl_accept_negotiation_start (char              * profile,
+int      __vortex_sasl_accept_negotiation_start (char              * profile,
 						 int                 channel_num,
 						 VortexConnection  * connection,
 						 char              * serverName,
@@ -2288,7 +2288,7 @@ void           vortex_sasl_set_digest_md5_validation_full  (VortexCtx * ctx, Vor
  * 
  * @return true the mechanism was enabled to be accepted.
  */
-bool               vortex_sasl_accept_negotiation_full        (VortexCtx  * ctx, 
+int                vortex_sasl_accept_negotiation_full        (VortexCtx  * ctx, 
 							       const char * mech, 
 							       axlPointer user_data)
 {
@@ -2358,7 +2358,7 @@ bool               vortex_sasl_accept_negotiation_full        (VortexCtx  * ctx,
  * 
  * @return true the mechanism was enabled to be accepted.
  */
-bool               vortex_sasl_accept_negotiation        (VortexCtx * ctx, const char  * mech)
+int                vortex_sasl_accept_negotiation        (VortexCtx * ctx, const char  * mech)
 {
     return vortex_sasl_accept_negotiation_full (ctx, mech, NULL);
 }

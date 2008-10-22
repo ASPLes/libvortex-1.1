@@ -313,7 +313,7 @@ typedef void     (*VortexSaslAuthNotify)          (VortexConnection * connection
  * 
  * @return true to authenticate and allow request received or false to deny it.
  */
-typedef bool         (*VortexSaslAuthExternal)        (VortexConnection * connection,
+typedef int          (*VortexSaslAuthExternal)        (VortexConnection * connection,
 						       const char       * authorization_id);
 
 /** 
@@ -329,7 +329,7 @@ typedef bool         (*VortexSaslAuthExternal)        (VortexConnection * connec
  * 
  * @return true to authenticate and allow request received or false to deny it.
  */
-typedef bool         (*VortexSaslAuthExternalFull)        (VortexConnection * connection,
+typedef int          (*VortexSaslAuthExternalFull)        (VortexConnection * connection,
 						       const char       * authorization_id,
 							   axlPointer         user_data);
 
@@ -347,7 +347,7 @@ typedef bool         (*VortexSaslAuthExternalFull)        (VortexConnection * co
  * 
  * @return true to validate the incoming anonymous auth request. false to deny it.
  */
-typedef bool         (*VortexSaslAuthAnonymous)       (VortexConnection * connection,
+typedef int          (*VortexSaslAuthAnonymous)       (VortexConnection * connection,
 						       const char       * anonymous_token);
 
 							   /** 
@@ -366,7 +366,7 @@ typedef bool         (*VortexSaslAuthAnonymous)       (VortexConnection * connec
  *
  * @return true to validate the incoming anonymous auth request. false to deny it.
  */
-typedef bool         (*VortexSaslAuthAnonymousFull)       (VortexConnection * connection,
+typedef int          (*VortexSaslAuthAnonymousFull)       (VortexConnection * connection,
 						       const char       * anonymous_token,
 							   axlPointer         user_data);
 
@@ -385,7 +385,7 @@ typedef bool         (*VortexSaslAuthAnonymousFull)       (VortexConnection * co
  * 
  * @return true to accept incoming SASL request or false to deny it.
  */
-typedef bool         (*VortexSaslAuthPlain)           (VortexConnection * connection,
+typedef int          (*VortexSaslAuthPlain)           (VortexConnection * connection,
 						       const char       * auth_id,
 						       const char       * authorization_id,
 						       const char       * password);
@@ -406,7 +406,7 @@ typedef bool         (*VortexSaslAuthPlain)           (VortexConnection * connec
  * 
  * @return true to accept incoming SASL request or false to deny it.
  */
-typedef bool         (*VortexSaslAuthPlainFull)           (VortexConnection * connection,
+typedef int          (*VortexSaslAuthPlainFull)           (VortexConnection * connection,
 							   const char       * auth_id,
 							   const char       * authorization_id,
 							   const char       * password,
@@ -521,11 +521,11 @@ typedef char  *      (*VortexSaslAuthDigestMd5Full)       (VortexConnection * co
 							   axlPointer         user_data);
 
 
-bool               vortex_sasl_init                      (VortexCtx            * ctx);
+int                vortex_sasl_init                      (VortexCtx            * ctx);
 
 void               vortex_sasl_cleanup                   (VortexCtx            * ctx);
 
-bool               vortex_sasl_set_propertie             (VortexConnection     * connection,
+int                vortex_sasl_set_propertie             (VortexConnection     * connection,
 							  VortexSaslProperties   prop,
 							  char                 * value,
 							  axlDestroyFunc         value_destroy);
@@ -533,7 +533,7 @@ bool               vortex_sasl_set_propertie             (VortexConnection     *
 char             * vortex_sasl_get_propertie             (VortexConnection     * connection,
 							  VortexSaslProperties   prop);
 
-bool               vortex_sasl_is_authenticated          (VortexConnection     * connection);
+int                vortex_sasl_is_authenticated          (VortexConnection     * connection);
 
 char             * vortex_sasl_auth_method_used          (VortexConnection     * connection);
 
@@ -564,9 +564,9 @@ void               vortex_sasl_set_digest_md5_validation      (VortexCtx * ctx, 
 void               vortex_sasl_set_digest_md5_validation_full (VortexCtx * ctx, VortexSaslAuthDigestMd5Full auth_handler);
 
 
-bool               vortex_sasl_accept_negotiation             (VortexCtx  * ctx, 
+int                vortex_sasl_accept_negotiation             (VortexCtx  * ctx, 
 							       const char * mech);
-bool               vortex_sasl_accept_negotiation_full        (VortexCtx  * ctx,
+int                vortex_sasl_accept_negotiation_full        (VortexCtx  * ctx,
 							       const char * mech, 
 							       axlPointer user_data);
 
