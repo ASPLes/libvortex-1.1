@@ -81,7 +81,7 @@ struct _XmlRpcMethodCall {
 	 * all invocators are released, however, for serveral, and
 	 * continuous invocations, this could be configured.
 	 */
-	bool                  release_after_invoke;
+	int                   release_after_invoke;
 
 	/** 
 	 * @internal
@@ -492,7 +492,7 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_new_double      (double         
  * @return A reference to the \ref XmlRpcMethodValue holding a bool
  * value.
  */
-XmlRpcMethodValue * vortex_xml_rpc_method_value_new_bool        (bool                value)
+XmlRpcMethodValue * vortex_xml_rpc_method_value_new_bool        (int                 value)
 {
 	/* create and return the xml method value */
 	return vortex_xml_rpc_method_value_new (XML_RPC_BOOLEAN_VALUE, INT_TO_PTR (value ? 1 : 0));
@@ -824,7 +824,7 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string2 (const char  * 
  * @return true if the operation was completed, otherwise false is
  * returned. 
  */
-bool                vortex_xml_rpc_method_call_add_value    (XmlRpcMethodCall  * method_call,
+int                 vortex_xml_rpc_method_call_add_value    (XmlRpcMethodCall  * method_call,
 							     XmlRpcMethodValue * value)
 {
 	/* perform a sanity check */
@@ -875,7 +875,7 @@ bool                vortex_xml_rpc_method_call_add_value    (XmlRpcMethodCall  *
  * received is NULL or the position configured is not compatible with
  * the method call configuration.
  */
-bool                vortex_xml_rpc_method_call_set_value    (XmlRpcMethodCall  * method_call,
+int                 vortex_xml_rpc_method_call_set_value    (XmlRpcMethodCall  * method_call,
 							     int                 position,
 							     XmlRpcMethodValue * value)
 {
@@ -919,7 +919,7 @@ bool                vortex_xml_rpc_method_call_set_value    (XmlRpcMethodCall  *
  * @return true if the operation was completed, otherwise false is
  * returned.
  */
-bool                vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  * method_call,
+int                 vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  * method_call,
 							     XmlRpcParamType     type,
 							     axlPointer            value)
 {
@@ -952,7 +952,7 @@ bool                vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  *
  * @return true if the operation was completed, otherwise false is
  * returned.
  */
-bool                vortex_xml_rpc_method_call_create_value_from_string (XmlRpcMethodCall * method_call,
+int                 vortex_xml_rpc_method_call_create_value_from_string (XmlRpcMethodCall * method_call,
 									 XmlRpcParamType    type,
 									 const char       * string_value)
 {
@@ -1547,7 +1547,7 @@ void                vortex_xml_rpc_method_call_free         (XmlRpcMethodCall  *
  * invocation, false to not deallocate it.
  */
 void                vortex_xml_rpc_method_call_release_after_invoke (XmlRpcMethodCall * method_call, 
-								     bool     release)
+								     int      release)
 {
 	v_return_if_fail (method_call);
 
@@ -1566,7 +1566,7 @@ void                vortex_xml_rpc_method_call_release_after_invoke (XmlRpcMetho
  * @return true if the given method call object should be deallocated
  * after the invoke is performed. Otherwise false is returned.
  */
-bool                vortex_xml_rpc_method_call_must_release (XmlRpcMethodCall * method_call)
+int                 vortex_xml_rpc_method_call_must_release (XmlRpcMethodCall * method_call)
 {
 	v_return_val_if_fail (method_call, false);
 
@@ -1610,7 +1610,7 @@ bool                vortex_xml_rpc_method_call_must_release (XmlRpcMethodCall * 
  * 
  * @return true if method match, otherwise false is returned.
  */
-bool                vortex_xml_rpc_method_call_is           (XmlRpcMethodCall * method_call, 
+int                 vortex_xml_rpc_method_call_is           (XmlRpcMethodCall * method_call, 
 							     const char       * method_name,
 							     int                param_num,
 							     ...)
@@ -2300,7 +2300,7 @@ XmlRpcStruct         * vortex_xml_rpc_struct_new                       (int  cou
  * @param _struct The XmlRpcStruct to update by one its reference
  * counting.
  */
-bool                    vortex_xml_rpc_struct_ref                       (XmlRpcStruct * _struct)
+int                     vortex_xml_rpc_struct_ref                       (XmlRpcStruct * _struct)
 {
 	v_return_val_if_fail (_struct, false);
 	
@@ -2338,7 +2338,7 @@ int                    vortex_xml_rpc_struct_get_member_count          (XmlRpcSt
  * order for the ones found on the provided struct. Otherwise, false
  * if it fails.
  */
-bool                   vortex_xml_rpc_struct_check_member_names        (XmlRpcStruct * _struct,
+int                    vortex_xml_rpc_struct_check_member_names        (XmlRpcStruct * _struct,
 									int            member_count,
 									...)
 {
@@ -2387,13 +2387,13 @@ bool                   vortex_xml_rpc_struct_check_member_names        (XmlRpcSt
  * @return true if all types received matched with members
  * stored. Otherwise false is returned.
  */
-bool                   vortex_xml_rpc_struct_check_member_types        (XmlRpcStruct * _struct,
+int                    vortex_xml_rpc_struct_check_member_types        (XmlRpcStruct * _struct,
 									int            member_count,
 									...)
 {
 	char      * member_type;
 	int         iterator = 0;
-	bool        error = false;
+	int         error = false;
 	va_list     args;
 
 	v_return_val_if_fail (_struct, false);
@@ -2945,7 +2945,7 @@ XmlRpcArray          * vortex_xml_rpc_array_new                        (int  cou
  * @return true if the function was able to update the reference,
  * otherwise false is returned.
  */
-bool                    vortex_xml_rpc_array_ref                       (XmlRpcArray * array)
+int                     vortex_xml_rpc_array_ref                       (XmlRpcArray * array)
 {
 	v_return_val_if_fail (array, false);
 	
