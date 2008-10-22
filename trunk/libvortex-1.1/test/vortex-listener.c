@@ -64,7 +64,7 @@ void frame_received (VortexChannel    * channel,
 	return;
 }
 
-bool     start_channel (int  channel_num, VortexConnection * connection, axlPointer user_data)
+int      start_channel (int  channel_num, VortexConnection * connection, axlPointer user_data)
 {
 	printf ("A new channel to be created..");
 

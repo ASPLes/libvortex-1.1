@@ -29,7 +29,7 @@ VortexCtx * ctx = NULL;
  * 
  * @return 
  */
-bool     validate_resource (VortexConnection * connection, 
+int      validate_resource (VortexConnection * connection, 
 			    int                channel_number,
 			    const char       * serverName,
 			    const char       * resource_path,

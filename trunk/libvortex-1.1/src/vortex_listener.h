@@ -68,7 +68,7 @@ void          vortex_listener_accept_connections   (VortexCtx        * ctx,
 						    VortexConnection * listener);
 
 void          vortex_listener_accept_connection    (VortexConnection * connection, 
-						    bool               send_greetings);
+						    int                send_greetings);
 
 void          __vortex_listener_second_step_accept (VortexFrame * frame, 
 						    VortexConnection * connection);
@@ -80,7 +80,7 @@ void          vortex_listener_init                 (VortexCtx * ctx);
 
 void          vortex_listener_cleanup              (VortexCtx * ctx);
 
-bool          vortex_listener_parse_conf_and_start (VortexCtx * ctx);
+int           vortex_listener_parse_conf_and_start (VortexCtx * ctx);
 
 void          vortex_listener_set_default_realm    (VortexCtx   * ctx,
 						    const char  * realm);
@@ -92,7 +92,7 @@ void          vortex_listener_set_on_connection_accepted (VortexCtx             
 							  axlPointer                   data);
 
 void          vortex_listener_shutdown (VortexConnection * listener,
-					bool               also_created_conns);
+					int                also_created_conns);
 
 
 /* @} */

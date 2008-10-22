@@ -55,7 +55,7 @@
  * 
  * @return true if the DTD file was read, parsed and pointer updated. false if not.
  */
-bool     vortex_dtds_load_dtd (VortexCtx * ctx, axlDtd ** dtd_pointer, char * dtd_to_load)
+int      vortex_dtds_load_dtd (VortexCtx * ctx, axlDtd ** dtd_pointer, char * dtd_to_load)
 {
 	axlError  * error;
 
@@ -82,7 +82,7 @@ bool     vortex_dtds_load_dtd (VortexCtx * ctx, axlDtd ** dtd_pointer, char * dt
  * 
  * @return true if all DTD files where loaded.
  */
-bool     vortex_dtds_init (VortexCtx * ctx) 
+int      vortex_dtds_init (VortexCtx * ctx) 
 {
 	v_return_val_if_fail (ctx, false);
 

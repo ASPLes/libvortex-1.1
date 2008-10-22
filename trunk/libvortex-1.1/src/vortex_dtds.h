@@ -41,13 +41,13 @@
 
 #include <vortex.h>
 
-bool       vortex_dtds_init                 (VortexCtx * ctx);
+int        vortex_dtds_init                 (VortexCtx * ctx);
 
 axlDtd   * vortex_dtds_get_channel_dtd      (VortexCtx * ctx);
 
 void       vortex_dtds_cleanup              (VortexCtx * ctx);
 
-bool       vortex_dtds_load_dtd             (VortexCtx  * ctx, 
+int        vortex_dtds_load_dtd             (VortexCtx  * ctx, 
 					     axlDtd    ** dtd_pointer, 
 					     char       * dtd_to_load);
 

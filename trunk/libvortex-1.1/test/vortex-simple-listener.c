@@ -25,7 +25,7 @@ void frame_received (VortexChannel    * channel,
 	return;
 }
 
-bool     start_channel (int                channel_num, 
+int      start_channel (int                channel_num, 
 			VortexConnection * connection, 
 			axlPointer           user_data)
 {
@@ -37,7 +37,7 @@ bool     start_channel (int                channel_num,
 	return true;
 }
 
-bool     close_channel (int                channel_num, 
+int      close_channel (int                channel_num, 
 			VortexConnection * connection, 
 			axlPointer           user_data)
 {
@@ -47,7 +47,7 @@ bool     close_channel (int                channel_num,
 	return true;
 }
 
-bool     on_accepted (VortexConnection * connection, axlPointer data)
+int      on_accepted (VortexConnection * connection, axlPointer data)
 {
 	printf ("New connection accepted from: %s:%s\n", 
 		 vortex_connection_get_host (connection),

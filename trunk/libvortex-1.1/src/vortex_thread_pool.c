@@ -416,7 +416,7 @@ int  vortex_thread_pool_get_num             (void)
  * pool to behave in a non-exclusive form.
  */
 void vortex_thread_pool_set_exclusive_pool  (VortexCtx * ctx,
-					     bool        value)
+					     int         value)
 {
 	/* set the new value */
 	ctx->thread_pool_exclusive = value;

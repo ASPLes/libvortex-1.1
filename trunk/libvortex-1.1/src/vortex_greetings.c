@@ -181,7 +181,7 @@ int __vortex_greetings_build_message (VortexConnection * connection, char * gree
  *
  * @return true if greetings message was sent or false if not
  **/
-bool     vortex_greetings_send (VortexConnection * connection)
+int      vortex_greetings_send (VortexConnection * connection)
 {
 	
 	axlList       * registered_profiles;
@@ -314,7 +314,7 @@ VortexFrame *  vortex_greetings_process (VortexConnection * connection)
  *
  * @return true if frame greeting reply is ok or false if not.
  **/
-bool           vortex_greetings_is_reply_ok    (VortexFrame      * frame, VortexConnection * connection)
+int            vortex_greetings_is_reply_ok    (VortexFrame      * frame, VortexConnection * connection)
 {
 	VortexChannel * channel;
 #if defined(ENABLE_VORTEX_LOG)
@@ -379,7 +379,7 @@ bool           vortex_greetings_is_reply_ok    (VortexFrame      * frame, Vortex
  * 
  * @return true greetings message was sent or false if not.
  **/
-bool          vortex_greetings_client_send     (VortexConnection * connection)
+int           vortex_greetings_client_send     (VortexConnection * connection)
 {
 	/* tecnically, the greetings initial message can't be larger
 	 * than 4096 initial window. */

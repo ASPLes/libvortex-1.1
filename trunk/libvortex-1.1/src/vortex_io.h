@@ -41,10 +41,10 @@
 #include <vortex.h>
 
 /* api to configure current I/O system */
-bool                 vortex_io_waiting_use                     (VortexCtx           * ctx,
+int                  vortex_io_waiting_use                     (VortexCtx           * ctx,
 								VortexIoWaitingType   type);
 
-bool                 vortex_io_waiting_is_available            (VortexIoWaitingType type);
+int                  vortex_io_waiting_is_available            (VortexIoWaitingType type);
 
 VortexIoWaitingType  vortex_io_waiting_get_current             (VortexCtx           * ctx);
 
@@ -82,17 +82,17 @@ void                 vortex_io_waiting_invoke_destroy_fd_group (VortexCtx       
 void                 vortex_io_waiting_invoke_clear_fd_group   (VortexCtx           * ctx,
 								axlPointer            fd_group);
 
-bool                 vortex_io_waiting_invoke_add_to_fd_group  (VortexCtx           * ctx,
+int                  vortex_io_waiting_invoke_add_to_fd_group  (VortexCtx           * ctx,
 								int                   fds, 
 								VortexConnection    * connection, 
 								axlPointer            fd_group);
 
-bool                 vortex_io_waiting_invoke_is_set_fd_group  (VortexCtx           * ctx,
+int                  vortex_io_waiting_invoke_is_set_fd_group  (VortexCtx           * ctx,
 								int                   fds, 
 								axlPointer fd_group,
 								axlPointer user_data);
 
-bool                 vortex_io_waiting_invoke_have_dispatch    (VortexCtx           * ctx,
+int                  vortex_io_waiting_invoke_have_dispatch    (VortexCtx           * ctx,
 								axlPointer            fd_group);
 
 void                 vortex_io_waiting_invoke_dispatch         (VortexCtx           * ctx,

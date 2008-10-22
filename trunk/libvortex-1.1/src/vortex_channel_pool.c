@@ -80,7 +80,7 @@ struct _VortexChannelPool {
 
 
 typedef struct _VortexChannelPoolData {
-	bool                        threaded;
+	int                         threaded;
 	VortexConnection          * connection;
 	const char                * profile;
 	int                         init_num;
@@ -112,7 +112,7 @@ typedef struct _VortexChannelPoolData {
  * 
  * @return true if ready to be used or false if not
  */
-bool     __vortex_channel_pool_is_ready (VortexChannel * channel) 
+int      __vortex_channel_pool_is_ready (VortexChannel * channel) 
 {
 
 	return (vortex_channel_is_opened (channel)          && 
@@ -215,7 +215,7 @@ axlPointer __vortex_channel_pool_new (VortexChannelPoolData * data)
 {
 
 	/* parameters from main function */
-	bool                          threaded                = data->threaded;
+	int                           threaded                = data->threaded;
 	VortexConnection            * connection              = data->connection;
 
 	const char                  * profile                 = data->profile;
@@ -744,7 +744,7 @@ void                vortex_channel_pool_remove         (VortexChannelPool * pool
  * @param deattach_from_connection Flag to dettach the pool or not.
  */
 void           __vortex_channel_pool_close_common (VortexChannelPool * pool, 
-						   bool deattach_from_connection)
+						   int  deattach_from_connection)
 {
 	int                 channels;
 	VortexConnection  * connection;
@@ -847,7 +847,7 @@ void __vortex_channel_pool_close_internal (VortexChannelPool * pool)
  * @param pool the pool to check.
  * @param channel the channel to check.
  **/
-bool     __vortex_channel_check_same_connections (VortexChannelPool * pool, 
+int      __vortex_channel_check_same_connections (VortexChannelPool * pool, 
 						  VortexChannel     * channel)
 {
 	VortexConnection * connection;
@@ -871,7 +871,7 @@ bool     __vortex_channel_check_same_connections (VortexChannelPool * pool,
 	return true;
 }
 
-bool __find_channel (axlPointer channel, axlPointer channel_in_list)
+int  __find_channel (axlPointer channel, axlPointer channel_in_list)
 {
 	/* return if the channel match */
 	return vortex_channel_get_number (channel) == vortex_channel_get_number (channel_in_list);
@@ -893,7 +893,7 @@ bool __find_channel (axlPointer channel, axlPointer channel_in_list)
  *
  * @return false if channel doesn't exists and true if it does.
  **/
-bool     __vortex_channel_pool_channel_exists (VortexChannelPool * pool, 
+int      __vortex_channel_pool_channel_exists (VortexChannelPool * pool, 
 					       VortexChannel     * channel) 
 {
 	/* lookup the channel */
@@ -1112,13 +1112,13 @@ void __vortex_channel_pool_print_status (VortexChannelPool * pool, char  * actio
  * @return the next channel ready to use or NULL if fails. Note NULL may also be returned even setting auto_inc to true.
  **/
 VortexChannel     * vortex_channel_pool_get_next_ready (VortexChannelPool * pool,
-							bool     auto_inc)
+							int      auto_inc)
 {
 	/* call to the full implementation */
 	return vortex_channel_pool_get_next_ready_full (pool, auto_inc, NULL);
 }
 
-bool __find_ready (axlPointer channel, axlPointer data)
+int  __find_ready (axlPointer channel, axlPointer data)
 {
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx = vortex_channel_get_ctx (channel);
@@ -1167,7 +1167,7 @@ bool __find_ready (axlPointer channel, axlPointer data)
  * fails.
  */
 VortexChannel     * vortex_channel_pool_get_next_ready_full (VortexChannelPool * pool,
-							     bool                auto_inc,
+							     int                 auto_inc,
 							     axlPointer          user_data)
 {
 	VortexChannel * channel   = NULL;

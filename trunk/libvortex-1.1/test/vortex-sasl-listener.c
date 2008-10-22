@@ -91,7 +91,7 @@ void frame_received (VortexChannel    * channel,
 /** 
  * @brief Validates external mechanism.
  */
-bool     sasl_external_validation (VortexConnection * connection,
+int      sasl_external_validation (VortexConnection * connection,
 				   const char       * auth_id)
 {
 	if (axl_cmp ("acinom", auth_id)) {
@@ -103,7 +103,7 @@ bool     sasl_external_validation (VortexConnection * connection,
 	return false;
 }
 
-bool     sasl_external_validation_full (VortexConnection * connection,
+int      sasl_external_validation_full (VortexConnection * connection,
 					const char       * auth_id,
 					axlPointer           user_data)
 {
@@ -125,7 +125,7 @@ bool     sasl_external_validation_full (VortexConnection * connection,
  * 
  * @return 
  */
-bool     sasl_anonymous_validation (VortexConnection * connection,
+int      sasl_anonymous_validation (VortexConnection * connection,
 				    const char       * anonymous_token)
 {
 	if (axl_cmp ("test@aspl.es", anonymous_token)) {
@@ -137,7 +137,7 @@ bool     sasl_anonymous_validation (VortexConnection * connection,
 	return false;
 }
 
-bool     sasl_anonymous_validation_full (VortexConnection * connection,
+int      sasl_anonymous_validation_full (VortexConnection * connection,
 				    const char       * anonymous_token,
 					axlPointer user_data)
 {
@@ -162,7 +162,7 @@ bool     sasl_anonymous_validation_full (VortexConnection * connection,
  * 
  * @return true accept and validate, false to deny request.
  */
-bool     sasl_plain_validation  (VortexConnection * connection,
+int      sasl_plain_validation  (VortexConnection * connection,
 				 const char       * auth_id,
 				 const char       * auth_proxy_id,
 				 const char       * password)
@@ -179,11 +179,11 @@ bool     sasl_plain_validation  (VortexConnection * connection,
 	return false;
 }
 
-bool     sasl_plain_validation_full  (VortexConnection * connection,
-				 const char       * auth_id,
-				 const char       * auth_proxy_id,
-				 const char       * password,
-				 axlPointer user_data)
+int      sasl_plain_validation_full  (VortexConnection * connection,
+				      const char       * auth_id,
+				      const char       * auth_proxy_id,
+				      const char       * password,
+				      axlPointer user_data)
 {
 	printf ("received incoming SASL PLAIN request (full)\n");
 	if (axl_cmp ("plain!", (char*)user_data )) {

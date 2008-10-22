@@ -173,7 +173,7 @@ int __vortex_io_waiting_default_wait_on (axlPointer __fd_group, int max_fds, Vor
  *
  * @param fd_set The fd set where the socket descriptor will be added.
  */
-bool __vortex_io_waiting_default_add_to (int                fds, 
+int  __vortex_io_waiting_default_add_to (int                fds, 
 					 VortexConnection * connection,
 					 axlPointer         __fd_set)
 {
@@ -225,7 +225,7 @@ bool __vortex_io_waiting_default_add_to (int                fds,
  *
  * @param fd_set The fd set where the socket descriptor will be checked.
  */
-bool     __vortex_io_waiting_default_is_set (int        fds, 
+int      __vortex_io_waiting_default_is_set (int        fds, 
 					     axlPointer __fd_set, 
 					     axlPointer user_data)
 {
@@ -324,7 +324,7 @@ void    __vortex_io_waiting_poll_clear (axlPointer __fd_group)
  *
  * @param fd_set The fd set where the socket descriptor will be added.
  */
-bool __vortex_io_waiting_poll_add_to (int                fds, 
+int  __vortex_io_waiting_poll_add_to (int                fds, 
 				      VortexConnection * connection,
 				      axlPointer         __fd_set)
 {
@@ -403,7 +403,7 @@ int __vortex_io_waiting_poll_wait_on (axlPointer __fd_group, int max_fds, Vortex
 /** 
  * @internal Notify that we have dispatch support.
  */
-bool     __vortex_io_waiting_poll_have_dispatch (axlPointer fd_group)
+int      __vortex_io_waiting_poll_have_dispatch (axlPointer fd_group)
 {
 	return true;
 }
@@ -578,7 +578,7 @@ void    __vortex_io_waiting_epoll_clear (axlPointer __fd_group)
  *
  * @param fd_set The fd set where the socket descriptor will be added.
  */
-bool __vortex_io_waiting_epoll_add_to (int                fds, 
+int  __vortex_io_waiting_epoll_add_to (int                fds, 
 				       VortexConnection * connection,
 				       axlPointer         __fd_set)
 {
@@ -667,7 +667,7 @@ int __vortex_io_waiting_epoll_wait_on (axlPointer __fd_group, int max_fds, Vorte
 /** 
  * @internal Notify that we have dispatch support.
  */
-bool     __vortex_io_waiting_epoll_have_dispatch (axlPointer fd_group)
+int      __vortex_io_waiting_epoll_have_dispatch (axlPointer fd_group)
 {
 	return true;
 }
@@ -778,11 +778,11 @@ void     __vortex_io_waiting_epoll_dispatch (axlPointer           fd_group,
  * @return true if the mechanism was activated, otherwise false
  * is returned.
  */
-bool                 vortex_io_waiting_use (VortexCtx * ctx, VortexIoWaitingType type)
+int                  vortex_io_waiting_use (VortexCtx * ctx, VortexIoWaitingType type)
 {
 	/* get current context */
-	bool        result = false;
-	bool        do_notify;
+	int         result = false;
+	int         do_notify;
 	char      * mech = "";
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "about to change I/O waiting API");
@@ -898,7 +898,7 @@ bool                 vortex_io_waiting_use (VortexCtx * ctx, VortexIoWaitingType
  * 
  * @return true if available, otherwise false is returned.
  */
-bool                 vortex_io_waiting_is_available (VortexIoWaitingType type)
+int                  vortex_io_waiting_is_available (VortexIoWaitingType type)
 {
 	switch (type) {
 	case VORTEX_IO_WAIT_SELECT:
@@ -1141,7 +1141,7 @@ void                 vortex_io_waiting_set_add_to_fd_group     (VortexCtx       
  * @param on_reading The fd set where the socket descriptor will be
  * added.
  */
-bool              vortex_io_waiting_invoke_add_to_fd_group  (VortexCtx        * ctx,
+int               vortex_io_waiting_invoke_add_to_fd_group  (VortexCtx        * ctx,
 							     int                fds, 
 							     VortexConnection * connection, 
 							     axlPointer         fd_group)
@@ -1237,7 +1237,7 @@ void                 vortex_io_waiting_set_dispatch            (VortexCtx       
  * @param user_data User defined pointer provided to the is set
  * function.
  */
-bool                  vortex_io_waiting_invoke_is_set_fd_group  (VortexCtx * ctx,
+int                   vortex_io_waiting_invoke_is_set_fd_group  (VortexCtx * ctx,
 								 int         fds, 
 								 axlPointer  fd_group, 
 								 axlPointer  user_data)
@@ -1273,7 +1273,7 @@ bool                  vortex_io_waiting_invoke_is_set_fd_group  (VortexCtx * ctx
  * @return true if the current I/O mechanism support automatic
  * dispatch, otherwise false is returned.
  */
-bool                 vortex_io_waiting_invoke_have_dispatch    (VortexCtx  * ctx, 
+int                  vortex_io_waiting_invoke_have_dispatch    (VortexCtx  * ctx, 
 								axlPointer   fd_group)
 {
 	/* check the references received */

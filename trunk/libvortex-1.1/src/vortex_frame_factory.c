@@ -226,7 +226,7 @@ struct _VortexFrame {
 	VortexFrameType   type;
 	int               channel;
 	int               msgno;
-	bool              more;
+	int               more;
 	char              more_char;
 	unsigned int      seqno;
 	int               size;
@@ -449,7 +449,7 @@ char  * vortex_frame_seq_build_up_from_params_buffer (int         channel_num,
 char  * vortex_frame_build_up_from_params (VortexFrameType   type,
 					   int               channel,
 					   int               msgno,
-					   bool              more,
+					   int               more,
 					   unsigned int      seqno,
 					   int               size,
 					   int               ansno,
@@ -539,7 +539,7 @@ char  * vortex_frame_build_up_from_params (VortexFrameType   type,
 char  * vortex_frame_build_up_from_params_s_buffer (VortexFrameType   type,
  						    int               channel,
  						    int               msgno,
- 						    bool              more,
+ 						    int               more,
  						    unsigned int      seqno,
  						    int               size,
  						    int               ansno,
@@ -555,8 +555,8 @@ char  * vortex_frame_build_up_from_params_s_buffer (VortexFrameType   type,
 	int        header_size;
 	int        header_length;
  	int        real_size    = 0;
-	bool       place_content_type;
-	bool       place_transfer_encoding;
+	int        place_content_type;
+	int        place_transfer_encoding;
 
 	/*
 	 * According to the frame type build the initial frame header
@@ -747,7 +747,7 @@ char  * vortex_frame_build_up_from_params_s_buffer (VortexFrameType   type,
 char  * vortex_frame_build_up_from_params_s (VortexFrameType   type,
 					     int               channel,
 					     int               msgno,
-					     bool              more,
+					     int               more,
 					     unsigned int      seqno,
 					     int               size,
 					     int               ansno,
@@ -803,7 +803,7 @@ VortexFrame * vortex_frame_create               (VortexCtx       * ctx,
 						 VortexFrameType   type,
 						 int               channel,
 						 int               msgno,
-						 bool              more,
+						 int               more,
 						 unsigned int      seqno,
 						 int               size,
 						 int               ansno,
@@ -860,7 +860,7 @@ VortexFrame * vortex_frame_create_full          (VortexCtx       * ctx,
 						 VortexFrameType   type,
 						 int               channel,
 						 int               msgno,
-						 bool              more,
+						 int               more,
 						 unsigned int      seqno,
 						 int               size,
 						 int               ansno,
@@ -954,7 +954,7 @@ VortexFrame * vortex_frame_create_full_ref      (VortexCtx       * ctx,
 						 VortexFrameType   type,
 						 int               channel,
 						 int               msgno,
-						 bool              more,
+						 int               more,
 						 unsigned int      seqno,
 						 int               size,
 						 int               ansno,
@@ -1621,11 +1621,11 @@ process_buffer:
  * 
  * @return 
  */
-bool              vortex_frame_send_raw     (VortexConnection * connection, const char  * a_frame, int  frame_size)
+int               vortex_frame_send_raw     (VortexConnection * connection, const char  * a_frame, int  frame_size)
 {
 
 	VortexCtx  * ctx    = vortex_connection_get_ctx (connection);
-	bool         result = true;
+	int          result = true;
 	int          bytes  = 0;
  	int          total  = 0;
 	char       * error_msg;
@@ -1777,7 +1777,7 @@ bool              vortex_frame_send_raw     (VortexConnection * connection, cons
  * increased. Otherwise, false is returned and the reference counting
  * is left untouched.
  */
-bool          vortex_frame_ref                   (VortexFrame * frame)
+int           vortex_frame_ref                   (VortexFrame * frame)
 {
 
 	/* check reference received */
@@ -1870,7 +1870,7 @@ void          vortex_frame_free (VortexFrame * frame)
 	return;
 }
 
-VortexFrame * __vortex_frame_join_common (VortexFrame * a, VortexFrame * b, bool     reuse)
+VortexFrame * __vortex_frame_join_common (VortexFrame * a, VortexFrame * b, int      reuse)
 {
 	VortexFrame * result;
 	
@@ -1978,7 +1978,7 @@ VortexFrame * vortex_frame_join_extending (VortexFrame * a, VortexFrame * b)
  * 
  * @return 
  */
-bool     vortex_frame_common_string_check (const char  * value_a, const char  * value_b)
+int      vortex_frame_common_string_check (const char  * value_a, const char  * value_b)
 {
 	if (value_a == NULL && value_b == NULL)
 		return true;
@@ -1998,7 +1998,7 @@ bool     vortex_frame_common_string_check (const char  * value_a, const char  * 
  * @return true if the frame b comes after a being possible to be both
  * joinable into only one frame.
  */
-bool     vortex_frame_are_joinable (VortexFrame * a, VortexFrame * b) 
+int      vortex_frame_are_joinable (VortexFrame * a, VortexFrame * b) 
 {
 	VortexCtx * ctx;
 	/*
@@ -2081,7 +2081,7 @@ bool     vortex_frame_are_joinable (VortexFrame * a, VortexFrame * b)
  * 
  * @return true if both frames are equal, false if not.
  */
-bool     vortex_frame_are_equal (VortexFrame * a, VortexFrame * b)
+int      vortex_frame_are_equal (VortexFrame * a, VortexFrame * b)
 {
 	VortexCtx * ctx;
 	
@@ -2621,7 +2621,7 @@ char        * vortex_frame_get_error_message    (const char  * code,
  * 
  * @return true if the frame contains an error message, false if not.
  */
-bool          vortex_frame_is_error_message      (VortexFrame * frame,
+int           vortex_frame_is_error_message      (VortexFrame * frame,
 						  char  ** code,
 						  char  ** message)
 {
@@ -2734,7 +2734,7 @@ int vortex_frame_read_mime_header (VortexFrame  * frame,
 	char             * mime_header;
 	int                mime_header_size;
 	VortexMimeHeader * header;
-	bool               first_definition = true;
+	int                first_definition = true;
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx        = frame->ctx;
 #endif
@@ -2913,7 +2913,7 @@ void vortex_frame_reconfigure_mime (VortexFrame * frame, int iterator, int step)
  * returned. The function returns false if the reference received is
  * NULL.
  */
-bool          vortex_frame_mime_process          (VortexFrame * frame)
+int           vortex_frame_mime_process          (VortexFrame * frame)
 {
 	int         iterator;
 	/* local reference to cast the frame content */
@@ -2925,8 +2925,9 @@ bool          vortex_frame_mime_process          (VortexFrame * frame)
 	v_return_val_if_fail (frame, false);
 
 	/* internal check */
+	ctx = frame->ctx;
 	if (frame->type == VORTEX_FRAME_TYPE_SEQ) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "something is not working properly because a SEQ frame was received to reconfigure its MIME");
+		vortex_log (VORTEX_LEVEL_WARNING, "something is not working properly because a SEQ frame was received to reconfigure its MIME");
 		return false;
 	}
 
@@ -3317,7 +3318,7 @@ int                vortex_frame_mime_header_count      (VortexMimeHeader * heade
  * @return true if the mime status is activated, otherwise false is
  * returned.
  */
-bool               vortex_frame_mime_status_is_available  (VortexFrame * frame)
+int                vortex_frame_mime_status_is_available  (VortexFrame * frame)
 {
 	v_return_val_if_fail (frame, false);
 	/* return a reference check */

@@ -16,7 +16,7 @@ struct __ItemArray {
 	int count;
 };
 
-XmlRpcArray    * test_itemarray_marshall   (ItemArray * ref, bool dealloc)
+XmlRpcArray    * test_itemarray_marshall   (ItemArray * ref, int  dealloc)
 {
 	/* array and method value */
 	XmlRpcArray * _result;
@@ -58,7 +58,7 @@ XmlRpcArray    * test_itemarray_marshall   (ItemArray * ref, bool dealloc)
 	return _result;
 }
 
-ItemArray * test_itemarray_unmarshall (XmlRpcArray * ref, bool dealloc)
+ItemArray * test_itemarray_unmarshall (XmlRpcArray * ref, int  dealloc)
 {
 	ItemArray * _result;
 	Item * _value;
@@ -102,6 +102,35 @@ ItemArray * test_itemarray_new  (int count)
 	array->array = axl_new (Item *, count);
 
 	/* return the result */
+	return array;
+}
+
+ItemArray * test_itemarray_copy (ItemArray * ref)
+{
+	ItemArray * array;
+	int         iterator = 0;
+
+	if (ref == NULL)
+		return NULL;
+
+	/* create the reference */
+	array        = axl_new (ItemArray, 1);
+	array->count = ref->count;
+	if (array->count == 0)
+		return array;
+
+	/* allocate enough space */
+	array->array = axl_new (Item *, array->count);
+	while (iterator < ref->count) {
+
+		/* copy position */
+		array->array[iterator] = test_item_copy (ref->array[iterator]);
+
+		/* update the iterator */
+		iterator++;
+	}
+
+	/* return array created */
 	return array;
 }
 

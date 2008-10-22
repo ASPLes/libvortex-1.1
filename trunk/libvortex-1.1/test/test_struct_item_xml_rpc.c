@@ -11,7 +11,7 @@
 #include <test_types.h>
 
 /* (un)marshaller support functions  */
-XmlRpcStruct * test_item_marshall (Item * ref, bool dealloc)
+XmlRpcStruct * test_item_marshall (Item * ref, int  dealloc)
 {
 	XmlRpcStruct       * _result;
 	XmlRpcStructMember * _member;
@@ -38,7 +38,7 @@ XmlRpcStruct * test_item_marshall (Item * ref, bool dealloc)
 	return _result;
 }
 
-Item * test_item_unmarshall (XmlRpcStruct * ref, bool dealloc)
+Item * test_item_unmarshall (XmlRpcStruct * ref, int  dealloc)
 {
 	Item * _result;
 

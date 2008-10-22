@@ -576,7 +576,7 @@ VortexConnection     * __vortex_tunnel_new_common     (VortexTunnelSettings * se
 	axl_free (content);
 
 	if (channel == NULL) {
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "failed to create TUNNEL channel, unable to proxy BEEP connection");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to create TUNNEL channel, unable to proxy BEEP connection");
 
 		/* close the connection */
 		vortex_connection_close (connection);

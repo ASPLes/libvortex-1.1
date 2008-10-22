@@ -43,11 +43,11 @@
 
 BEGIN_C_DECLS
 
-bool          vortex_win32_init (VortexCtx * ctx);
+int           vortex_win32_init (VortexCtx * ctx);
 
-bool          vortex_win32_nonblocking_enable (VORTEX_SOCKET socket);
+int           vortex_win32_nonblocking_enable (VORTEX_SOCKET socket);
 
-bool          vortex_win32_blocking_enable    (VORTEX_SOCKET socket);
+int           vortex_win32_blocking_enable    (VORTEX_SOCKET socket);
 
 BOOL APIENTRY DllMain                         (HINSTANCE hInst,
 					       DWORD reason,

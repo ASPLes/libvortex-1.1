@@ -41,7 +41,7 @@
 
 #if defined(AXL_OS_WIN32)
 
-bool vortex_win32_init (VortexCtx * ctx)
+int  vortex_win32_init (VortexCtx * ctx)
 {
 	WORD wVersionRequested; 
 	WSADATA wsaData; 
@@ -68,7 +68,7 @@ BOOL APIENTRY DllMain (HINSTANCE hInst,
     return true;
 }
 
-bool     __vortex_win32_blocking_socket_set (VORTEX_SOCKET socket,
+int      __vortex_win32_blocking_socket_set (VORTEX_SOCKET socket,
                                              int           status) 
 {
         unsigned long enable = status;
@@ -76,12 +76,12 @@ bool     __vortex_win32_blocking_socket_set (VORTEX_SOCKET socket,
 	return (ioctlsocket (socket, FIONBIO, &enable) == 0);
 }
 
-bool     vortex_win32_nonblocking_enable (VORTEX_SOCKET socket)
+int      vortex_win32_nonblocking_enable (VORTEX_SOCKET socket)
 {
         return __vortex_win32_blocking_socket_set (socket, 1);
 }
 
-bool     vortex_win32_blocking_enable (VORTEX_SOCKET socket)
+int      vortex_win32_blocking_enable (VORTEX_SOCKET socket)
 {
         return __vortex_win32_blocking_socket_set (socket, 0);
 }

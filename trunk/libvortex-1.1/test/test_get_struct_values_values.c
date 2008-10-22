@@ -40,7 +40,7 @@ XmlRpcMethodResponse * __get_struct_2_values_values (XmlRpcMethodCall * method_c
 
 	XmlRpcStruct * _result;
 	/* temporal variable declaration */
-	bool     unmarshall_failure = false;
+	int      unmarshall_failure = false;
 
 	/* marshall the struct parameter into a native type */
 	Values * a = test_values_unmarshall (method_call_get_param_value_as_struct (method_call, 0), false);

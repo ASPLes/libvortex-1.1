@@ -684,7 +684,7 @@ typedef struct _VortexSequencerData {
 	 * maximum number of bytes to be able to receive remote peer
 	 * has been increased.
 	 */
-	bool              resequence;
+	int               resequence;
 
 	/** 
 	 * @brief The ansno value to be used.
@@ -695,7 +695,7 @@ typedef struct _VortexSequencerData {
 	 * @brief Discard flag used internally to drop packages that
 	 * were queued to be sent.
 	 */
-	bool             discard;
+	int              discard;
 
 } VortexSequencerData;
 
@@ -719,7 +719,7 @@ typedef struct _VortexWriterData {
 	int               msg_no;
 	char            * the_frame;
 	int               the_size;
-	bool              is_complete;
+	int               is_complete;
 }VortexWriterData;
 
 /** 

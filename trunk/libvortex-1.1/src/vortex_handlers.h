@@ -155,7 +155,7 @@ typedef void (*VortexConnectionNew) (VortexConnection * connection, axlPointer u
  * 
  * @return true if the new channel can be created or false if not.
  */
-typedef  bool     (*VortexOnStartChannel)      (int  channel_num,
+typedef  int      (*VortexOnStartChannel)      (int  channel_num,
 						VortexConnection * connection,
 						axlPointer user_data);
 
@@ -220,7 +220,7 @@ typedef  bool     (*VortexOnStartChannel)      (int  channel_num,
  * 
  * @return true if the new channel can be created or false if not. 
  */
-typedef bool     (*VortexOnStartChannelExtended) (char              * profile,
+typedef int      (*VortexOnStartChannelExtended) (char              * profile,
 						  int                 channel_num,
 						  VortexConnection  * connection,
 						  char              * serverName,
@@ -258,7 +258,7 @@ typedef bool     (*VortexOnStartChannelExtended) (char              * profile,
  * @return true if channel can be closed. To reject the close request
  * return false.
  */
-typedef  bool     (*VortexOnCloseChannel)      (int  channel_num,
+typedef  int      (*VortexOnCloseChannel)      (int  channel_num,
 						VortexConnection * connection,
 						axlPointer user_data);
 
@@ -444,7 +444,7 @@ typedef VortexChannel * (* VortexChannelPoolCreate) (VortexConnection     * conn
  */
 typedef void     (*VortexOnClosedNotificationFull) (VortexConnection * connection,
 						    int                channel_num,
-						    bool               was_closed,
+						    int                was_closed,
 						    const char       * code,
 						    const char       * msg,
 						    axlPointer         user_data);
@@ -478,7 +478,7 @@ typedef void     (*VortexOnClosedNotificationFull) (VortexConnection * connectio
  * which received this handler.
  */
 typedef void     (*VortexOnClosedNotification) (int             channel_num,
-						bool            was_closed,
+						int             was_closed,
 						const char     * code,
 						const char     * msg);
 
@@ -587,7 +587,7 @@ typedef void     (*VortexConnectionOnCloseFull)  (VortexConnection * connection,
  * @return true if the connection is finally accepted. false to drop
  * the connection, rejecting the incoming connection.
  */
-typedef bool     (*VortexOnAcceptedConnection)   (VortexConnection * connection, axlPointer data);
+typedef int      (*VortexOnAcceptedConnection)   (VortexConnection * connection, axlPointer data);
 
 /** 
  * @brief Async notifications for TLS activation.
@@ -645,7 +645,7 @@ typedef void     (*VortexTlsActivation)          (VortexConnection * connection,
  * @return true if the TLS request should be accepted. false to deny
  * the session TLS-fication.
  */
-typedef bool     (*VortexTlsAcceptQuery) (VortexConnection * connection,
+typedef int      (*VortexTlsAcceptQuery) (VortexConnection * connection,
 					  char             * serverName);
 
 /** 
@@ -830,7 +830,7 @@ typedef axlPointer (* VortexTlsCtxCreation) (VortexConnection * connection,
  * @return true to accept the connection, otherwise, false must be
  * returned.
  */
-typedef bool (*VortexTlsPostCheck) (VortexConnection * connection, 
+typedef int  (*VortexTlsPostCheck) (VortexConnection * connection, 
 				    axlPointer         user_data, 
 				    axlPointer         ssl, 
 				    axlPointer         ctx);
@@ -923,7 +923,7 @@ typedef int      (* VortexIoWaitOnFdGroup)       (axlPointer             fd_grou
  * @return returns true if the socket descriptor was added, otherwise,
  * false is returned.
  */
-typedef bool     (* VortexIoAddToFdGroup)        (int                    fds,
+typedef int      (* VortexIoAddToFdGroup)        (int                    fds,
 						  VortexConnection     * connection,
 						  axlPointer             fd_group);
 
@@ -942,7 +942,7 @@ typedef bool     (* VortexIoAddToFdGroup)        (int                    fds,
  * group.
  *
  */
-typedef bool     (* VortexIoIsSetFdGroup)        (int                    fds,
+typedef int      (* VortexIoIsSetFdGroup)        (int                    fds,
 						  axlPointer             fd_group,
 						  axlPointer             user_data);
 
@@ -964,7 +964,7 @@ typedef bool     (* VortexIoIsSetFdGroup)        (int                    fds,
  * @return Returns true if the I/O waiting mechanism support automatic
  * dispatch, otherwise false is returned.
  */
-typedef bool     (* VortexIoHaveDispatch)         (axlPointer             fd_group);
+typedef int      (* VortexIoHaveDispatch)         (axlPointer             fd_group);
 
 /** 
  * @brief User space handler to implement automatic dispatch for I/O
@@ -1086,7 +1086,7 @@ typedef void     (* VortexIoDispatch)             (axlPointer             fd_gro
  * 
  * @return true to filter the uri, false if not.
  */
-typedef bool     (* VortexProfileMaskFunc)       (VortexConnection      * connection,
+typedef int      (* VortexProfileMaskFunc)       (VortexConnection      * connection,
 						  int                     channel_num,
 						  const char            * uri,
 						  const char            * profile_content,
@@ -1147,7 +1147,7 @@ typedef int (*VortexChannelFrameSize) (VortexChannel * channel,
  * @return true to select the channel, otherwise false must be
  * returned.
  */
-typedef bool (*VortexChannelSelector) (VortexChannel * channel, 
+typedef int  (*VortexChannelSelector) (VortexChannel * channel, 
 				       axlPointer      user_data);
 
 /** 

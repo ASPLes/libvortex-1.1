@@ -46,19 +46,19 @@ void vortex_reader_watch_listener              (VortexCtx        * ctx,
 void vortex_reader_watch_connection            (VortexCtx        * ctx,
 						VortexConnection * connection);
 
-bool vortex_reader_run                         (VortexCtx * ctx);
+int  vortex_reader_run                         (VortexCtx * ctx);
 
 void vortex_reader_stop                        (VortexCtx * ctx);
 
-bool vortex_reader_notify_change_io_api        (VortexCtx * ctx);
+int  vortex_reader_notify_change_io_api        (VortexCtx * ctx);
 
 void vortex_reader_notify_change_done_io_api   (VortexCtx * ctx);
 
 void vortex_reader_allow_msgno_starting_from_1 (VortexCtx * ctx,
-						bool        value);
+						int         value);
 
 void vortex_reader_allow_channel0_starting_from_0 (VortexCtx * ctx, 
-						   bool        value);
+						   int         value);
 
 /* internal API */
 typedef void (*VortexForeachFunc) (VortexConnection * conn, axlPointer user_data);

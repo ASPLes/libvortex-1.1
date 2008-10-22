@@ -124,7 +124,7 @@ void vortex_support_init (VortexCtx * ctx)
 	vortex_mutex_create (&ctx->search_path_mutex);
 
 	/* init inet_ntoa mutex */
-	vortex_mutex_create(&ctx->inet_ntoa_mutex);
+	vortex_mutex_create (&ctx->inet_ntoa_mutex);
 
 	return;
 }
