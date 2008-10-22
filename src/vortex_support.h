@@ -74,10 +74,10 @@ void     vortex_support_cleanup                    (VortexCtx * ctx);
 
 int      vortex_support_getenv_int                 (const char * env_name);
 
-bool     vortex_support_setenv                     (const char * env_name, 
+int      vortex_support_setenv                     (const char * env_name, 
 						    const char * env_value);
 
-bool     vortex_support_unsetenv                   (const char * env_name);
+int      vortex_support_unsetenv                   (const char * env_name);
 
 /** 
  * @brief Available tests to be performed while using \ref
@@ -102,7 +102,8 @@ typedef enum {
 	FILE_IS_REGULAR = 1 << 3,
 } VortexFileTest;
 
-bool vortex_support_file_test   (const char * path,   VortexFileTest test);
+int      vortex_support_file_test                  (const char * path,   
+						    VortexFileTest test);
 
 char   * vortex_support_build_filename             (const char  * name, ...);
 
@@ -112,6 +113,10 @@ double   vortex_support_strtod                     (const char  * param,
 int      vortex_timeval_substract                  (struct timeval * a, 
 						    struct timeval * b,
 						    struct timeval * result);
+
+char   * vortex_support_inet_ntoa                  (VortexCtx          * ctx, 
+ 						    struct sockaddr_in * sin);
+ 						    
 
 #define copy_if_not_null(arg) (arg != NULL) ? axl_strdup (arg) : NULL;
 
