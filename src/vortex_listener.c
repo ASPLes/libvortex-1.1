@@ -432,6 +432,7 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	VortexCtx          * ctx       = data->ctx;
 	int                  backlog   = 0;
 	VortexStatus         status    = VortexOk;
+	char               * host_used;
 
 	/* handlers received (may be both null) */
 	VortexListenerReady      on_ready       = data->on_ready;
@@ -499,16 +500,18 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	vortex_reader_watch_listener (ctx, listener);
 	if (threaded) {
 		/* notify listener created */
+		host_used = vortex_support_inet_ntoa (ctx, &sin);
 		if (on_ready != NULL) {
-			on_ready (inet_ntoa(sin.sin_addr), ntohs (sin.sin_port), VortexOk,
+			on_ready (host_used, ntohs (sin.sin_port), VortexOk,
 				  "server ready for requests", user_data);
 		} /* end if */
 		
 		if (on_ready_full != NULL) {
-			on_ready_full (inet_ntoa(sin.sin_addr), ntohs (sin.sin_port), VortexOk,
+			on_ready_full (host_used, ntohs (sin.sin_port), VortexOk,
 				       "server ready for requests", listener, user_data);
 		} /* end if */
-	}
+		axl_free (host_used);
+	} /* end if */
 
 	/* the listener reference */
 	return listener;
