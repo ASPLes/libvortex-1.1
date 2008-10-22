@@ -79,7 +79,7 @@ void vortex_sequencer_queue_data (VortexCtx * ctx, VortexSequencerData * data)
 
 void __vortex_sequencer_unref_and_clear (VortexConnection    * connection,
 					 VortexSequencerData * data, 
-					 bool                  unref)
+					 int                   unref)
 {
 
 	if (data != NULL) {
@@ -123,8 +123,8 @@ void vortex_sequencer_queue_message_and_update_status (VortexCtx            * ct
 						       VortexSequencerData ** _data, 
 						       int                    size_to_copy,
 						       int                    max_seq_no,
-						       bool                   resequence, 
-						       bool                 * keep_on_sending)
+						       int                    resequence, 
+						       int                  * keep_on_sending)
 {
 	VortexSequencerData * data = (*_data);
 
@@ -199,10 +199,10 @@ void vortex_sequencer_queue_message_and_update_status (VortexCtx            * ct
  * @return true if the channel is stalled and the message was stored,
  * otherwise the loop can continue with the delivery of this message.
  */
-bool vortex_sequencer_if_channel_stalled_queue_message (VortexCtx           * ctx,
+int  vortex_sequencer_if_channel_stalled_queue_message (VortexCtx           * ctx,
 							VortexConnection    * connection, 
 							VortexSequencerData * data, 
-							bool                  resequence)
+							int                   resequence)
 {
 	/**    
 	 * We need to check that remote buffer is willing to
@@ -318,8 +318,8 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 	int                   message_size;
 	int                   max_seq_no            = 0;
 	int                   size_to_copy;
-	bool                  keep_on_sending;
-	bool                  resequence;
+	int                   keep_on_sending;
+	int                   resequence;
 	VortexAsyncQueue    * queue;
 
 	while (true) {
@@ -639,7 +639,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
  * @return true if the sequencer was init, otherwise false is
  * returned.
  **/
-bool vortex_sequencer_run (VortexCtx * ctx)
+int  vortex_sequencer_run (VortexCtx * ctx)
 {
 
 	v_return_val_if_fail (ctx, false);
@@ -701,12 +701,12 @@ void vortex_sequencer_stop (VortexCtx * ctx)
 
 
 
-bool     vortex_sequencer_direct_send (VortexConnection * connection,
+int      vortex_sequencer_direct_send (VortexConnection * connection,
 				       VortexChannel    * channel,
 				       VortexWriterData * packet)
 {
 	/* reply number */
-	bool        result = true;
+	int         result = true;
 	VortexCtx * ctx    = vortex_connection_get_ctx (connection);
 
 	/* reference the channel during the transmission */
@@ -732,7 +732,7 @@ bool     vortex_sequencer_direct_send (VortexConnection * connection,
 	}
 	
 	/* signal the message have been sent */
-	if (packet->type == VORTEX_FRAME_TYPE_RPY && packet->is_complete) {
+	if ((packet->type == VORTEX_FRAME_TYPE_RPY || packet->type == VORTEX_FRAME_TYPE_NUL) && packet->is_complete) {  
 
 		/* update reply sent */
 		vortex_channel_update_status (channel, 0, packet->msg_no, UPDATE_RPY_NO_WRITTEN);
