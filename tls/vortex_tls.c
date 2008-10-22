@@ -49,6 +49,10 @@
 /* include tls header */
 #include <vortex_tls.h>
 
+#include <openssl/x509v3.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
 /* some keys to store creation handlers and its associate data */
 #define CTX_CREATION      "tls:ctx-creation"
 #define CTX_CREATION_DATA "tls:ctx-creation:data"
@@ -59,14 +63,14 @@
 /**
  * @internal Function that dumps all errors found on current ssl context.
  */
-int vortex_tls_log_ssl (void)
+int vortex_tls_log_ssl (VortexCtx * ctx)
 {
 	char          log_buffer [512];
 	unsigned long err;
 	
 	while ((err = ERR_get_error()) != 0) {
 		ERR_error_string_n (err, log_buffer, sizeof (log_buffer));
-		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "tls stack: %s (find reason(code) at openssl/ssl.h)", log_buffer);
+		vortex_log (VORTEX_LEVEL_CRITICAL, "tls stack: %s (find reason(code) at openssl/ssl.h)", log_buffer);
 	}
 	
 	return (0);
@@ -99,24 +103,6 @@ typedef struct _VortexTlsCtx {
 
 } VortexTlsCtx;
 
-
-/** 
- * @internal
- *
- * @brief Include headers and default global variables declarations if
- * the library build have built-in support.
- * 
- * What we seek is to support applications that are linked to Vortex
- * Library but in a manner that they do not get undefined function
- * references while using a Vortex Library without TLS support.
- *
- * All function defined at this module have especial handling code
- * done to not perform any operation if the library wasn't built with
- * TLS support.
- */
-#include <openssl/x509v3.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
 
 
 /** 
@@ -667,7 +653,7 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
  
  		vortex_log (VORTEX_LEVEL_WARNING, "accept function have failed (for initiator side) : dumping error stack..");
  		/* dump error stack */
- 		vortex_tls_log_ssl ();
+ 		vortex_tls_log_ssl (ctx);
 
 		switch (ssl_error) {
 		case SSL_ERROR_WANT_READ:
@@ -762,7 +748,7 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 
 	/* disable SEQ frame generation for the connection to avoid
 	 * producing "noise" in the middle of the TLS handshake */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "TLS STATE[0]: disable SEQ frame generation on connection=%d",
+	vortex_log (VORTEX_LEVEL_DEBUG, "TLS STATE[0]: disable SEQ frame generation on connection=%d",
 		    vortex_connection_get_id (connection));
 	vortex_connection_seq_frame_updates (connection, true);
 
@@ -950,7 +936,7 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 	}
 
 	/* reenable seq frame generation */
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, "TLS STATE[7.1]: enable SEQ frame generation on connection=%d",
+	vortex_log (VORTEX_LEVEL_DEBUG, "TLS STATE[7.1]: enable SEQ frame generation on connection=%d",
 		    vortex_connection_get_id (connection));
 	vortex_connection_seq_frame_updates (connection, false);
 
@@ -1257,7 +1243,7 @@ void vortex_tls_initial_accept (VortexConnection * connection)
  
  		vortex_log (VORTEX_LEVEL_WARNING, "accept function have failed (for listener side) ssl_error=%d : dumping error stack..", ssl_error);
  		/* dump error stack */
- 		vortex_tls_log_ssl ();
+ 		vortex_tls_log_ssl (ctx);
  
 		switch (SSL_get_error (ssl, -1)) {
 		case SSL_ERROR_WANT_READ:

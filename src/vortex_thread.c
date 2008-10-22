@@ -106,7 +106,7 @@ static unsigned __stdcall vortex_thread_proxy (axlPointer _data)
  *
  * @see vortex_thread_destroy
  */
-bool vortex_thread_create (VortexThread      * thread_def,
+int  vortex_thread_create (VortexThread      * thread_def,
 			   VortexThreadFunc    func, 
 			   axlPointer          user_data,
 			   ...)
@@ -114,7 +114,7 @@ bool vortex_thread_create (VortexThread      * thread_def,
 	va_list           args;
 	VortexThreadConf  conf;
 	/* default configuration for joinable state, true */
-	bool              joinable = true;
+	int               joinable = true;
 #if defined(AXL_OS_UNIX)
 	pthread_attr_t    attr;
 #elif defined(AXL_OS_WIN32)
@@ -139,7 +139,7 @@ bool vortex_thread_create (VortexThread      * thread_def,
 		switch (conf) {
 		case VORTEX_THREAD_CONF_JOINABLE:
 			/* thread joinable state configuration, get the parameter */
-			joinable = va_arg (args, bool);
+			joinable = va_arg (args, int );
 			break;
 		default:
 			return false;
@@ -221,7 +221,7 @@ bool vortex_thread_create (VortexThread      * thread_def,
  * @return true if the destroy operation was ok, otherwise false is
  * returned.
  */
-bool vortex_thread_destroy (VortexThread * thread_def, bool free_data)
+int  vortex_thread_destroy (VortexThread * thread_def, int  free_data)
 {
 #if defined(AXL_OS_WIN32)
 
@@ -299,7 +299,7 @@ bool vortex_thread_destroy (VortexThread * thread_def, bool free_data)
  * @return true if the function created the mutex, otherwise false is
  * returned.
  */
-bool vortex_mutex_create  (VortexMutex       * mutex_def)
+int  vortex_mutex_create  (VortexMutex       * mutex_def)
 {
 	v_return_val_if_fail (mutex_def, false);
 
@@ -327,7 +327,7 @@ bool vortex_mutex_create  (VortexMutex       * mutex_def)
  * @return true if the destroy operation was ok, otherwise false is
  * returned.
  */
-bool vortex_mutex_destroy (VortexMutex       * mutex_def)
+int  vortex_mutex_destroy (VortexMutex       * mutex_def)
 {
 	v_return_val_if_fail (mutex_def, false);
 
@@ -410,7 +410,7 @@ void vortex_mutex_unlock  (VortexMutex       * mutex_def)
  * @return true if the conditional variable was initialized, otherwise
  * false is returned.
  */
-bool vortex_cond_create    (VortexCond        * cond)
+int  vortex_cond_create    (VortexCond        * cond)
 {
 	v_return_val_if_fail (cond, false);
 
@@ -556,10 +556,10 @@ void vortex_cond_broadcast (VortexCond        * cond)
  * @internal Implementation to support vortex_cond_wait and
  * vortex_cond_timedwait under windows.
  */
-bool __vortex_cond_common_wait_win32 (VortexCond * cond, VortexMutex * mutex, 
-				      int milliseconds, bool wait_infinite)
+int  __vortex_cond_common_wait_win32 (VortexCond * cond, VortexMutex * mutex, 
+				      int milliseconds, int  wait_infinite)
 {
-	bool  last_waiter;
+	int   last_waiter;
 	DWORD result;
 
 	/* Avoid race conditions. */
@@ -629,7 +629,7 @@ bool __vortex_cond_common_wait_win32 (VortexCond * cond, VortexMutex * mutex,
  *
  * @return true if no error was found, otherwise false is returned.
  */
-bool vortex_cond_wait      (VortexCond        * cond, 
+int  vortex_cond_wait      (VortexCond        * cond, 
 			    VortexMutex       * mutex)
 {
 	v_return_val_if_fail (cond, false);
@@ -661,7 +661,7 @@ bool vortex_cond_wait      (VortexCond        * cond,
  *
  * @return true if no error was found, otherwise false is returned.
  */
-bool vortex_cond_timedwait (VortexCond        * cond, 
+int  vortex_cond_timedwait (VortexCond        * cond, 
 			    VortexMutex       * mutex,
 			    long int            microseconds)
 {
@@ -953,7 +953,7 @@ axlPointer         vortex_async_queue_timedpop  (VortexAsyncQueue * queue,
 						 long int           microseconds)
 {
 	axlPointer _result;
-	bool       r;
+	int        r;
 
 #if defined(AXL_OS_WIN32)
 	struct timeval stamp;

@@ -44,7 +44,7 @@ VortexConnection * connection;
 /** 
  * @brief Next auto tls value to be used
  */
-bool               auto_tls_profile = true;
+int                auto_tls_profile = true;
 
 
 void vortex_client_show_help () {
@@ -164,7 +164,7 @@ unsigned int get_number_long (char  * ans, long limit) {
 	return num;
 }
 
-void vortex_client_write_frame (VortexConnection * connection, bool     fragment)
+void vortex_client_write_frame (VortexConnection * connection, int      fragment)
 {
 	char             * response          = NULL;
 	VortexFrameType    type              = VORTEX_FRAME_TYPE_UNKNOWN;
@@ -176,7 +176,7 @@ void vortex_client_write_frame (VortexConnection * connection, bool     fragment
 	char             * payload           = NULL;
 	char             * str               = NULL;
 	char             * the_whole_payload = NULL;
-	bool               continuator;
+	int                continuator;
 	char             * the_frame;
 	int                iterator;
 	int                length;
@@ -323,7 +323,7 @@ void vortex_client_get_channel_status (VortexConnection * connection)
 	return;
 }
 
-bool      check_connected (char  * error, VortexConnection * connection) {
+int       check_connected (char  * error, VortexConnection * connection) {
 	
 	if ((connection == NULL) || (!vortex_connection_is_ok (connection, false))) {
 		printf ("%s, connect first\n", error);
@@ -424,7 +424,7 @@ void vortex_client_write_start_msg (VortexConnection * connection)
 	return;
 }
 
-bool     vortex_client_on_close_received (int                channel_num, 
+int      vortex_client_on_close_received (int                channel_num, 
 					  VortexConnection * connection, 
 					  axlPointer           user_data) {
 
@@ -571,8 +571,8 @@ void vortex_client_send_message (VortexConnection * connection)
 	WaitReplyData   * wait_reply   = NULL;
 	char            * msg_to_send;
 	char            * wait;
-	bool              do_a_wait;
-	bool              result;
+	int               do_a_wait;
+	int               result;
 	int               msg_no;
 
 	printf ("This procedure will send a message using the vortex API.\n");
@@ -633,7 +633,7 @@ void vortex_client_send_message (VortexConnection * connection)
 	return;
 }
 
-bool __vortex_client_connection_status (axlPointer key, axlPointer value, axlPointer user_data)
+int  __vortex_client_connection_status (axlPointer key, axlPointer value, axlPointer user_data)
 {
 	VortexChannel * channel = value;
 
@@ -882,11 +882,11 @@ void vortex_client_begin_xml_rpc_invocation (VortexConnection * connection)
  * @brief Support function to __vortex_connection_has_uri_from that
  * finally extract uri information into the provided values.
  */
-bool     __vortex_connection_has_uri_from_aux (char  * uri, char  ** host, char  ** port, bool     * activate_tls)
+int      __vortex_connection_has_uri_from_aux (char  * uri, char  ** host, char  ** port, int      * activate_tls)
 {
 	char     ** pieces     = NULL;
 	char     ** host_part  = NULL;
-	bool        result     = false;
+	int         result     = false;
 
 	/* first check if we have an uri from using :// */
 	pieces = axl_stream_split (uri, 1, "://");
@@ -957,14 +957,14 @@ bool     __vortex_connection_has_uri_from_aux (char  * uri, char  ** host, char 
  * @return true if the URI is activated or false if the data must be
  * required.
  */
-bool     __vortex_connection_has_uri_from (char  * line, 
+int      __vortex_connection_has_uri_from (char  * line, 
 					   char  ** host, 
 					   char  ** port, 
-					   bool     * activate_tls)
+					   int      * activate_tls)
 {
 	char  ** line_pieces = NULL;
 	int      iterator    = 0;
-	bool     result      = false;
+	int      result      = false;
 
         /* set default values for the host and the port */
         (* host ) = NULL;
@@ -1001,7 +1001,7 @@ int main (int argc, char *argv[])
 {
         char             * host         = NULL;
         char             * port         = NULL;
-        bool               activate_tls = false;
+        int                activate_tls = false;
         axlList          * profiles     = NULL;
 	int                iterator;
 	char             * line         = NULL;

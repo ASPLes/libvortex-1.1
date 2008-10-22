@@ -80,7 +80,7 @@ typedef struct _VortexReaderData {
  * 
  * @return true if all checks have been passed. Otherwise false is returned.
  */
-bool     __vortex_reader_process_socket_check_nul_frame (VortexCtx        * ctx,
+int      __vortex_reader_process_socket_check_nul_frame (VortexCtx        * ctx,
 							 VortexFrame      * frame, 
 							 VortexConnection * connection)
 {
@@ -132,7 +132,7 @@ bool     __vortex_reader_process_socket_check_nul_frame (VortexCtx        * ctx,
  * @param frame The frame that contains application data that is
  * meaningful to perform a right SEQ frame counting.
  */
-bool     __vortex_reader_update_incoming_buffer_and_notify (VortexCtx         * ctx,
+int      __vortex_reader_update_incoming_buffer_and_notify (VortexCtx         * ctx,
 							    VortexConnection  * connection,
 							    VortexChannel     * channel,
 							    VortexFrame       * frame)
@@ -215,7 +215,7 @@ bool     __vortex_reader_update_incoming_buffer_and_notify (VortexCtx         * 
  * @return true if the reader check is passed. Otherwise false is
  * returned.
  */
-bool     vortex_channel_check_incoming_msgno (VortexCtx     * ctx,
+int      vortex_channel_check_incoming_msgno (VortexCtx     * ctx,
 					      VortexChannel * channel, 
 					      VortexFrame   * frame)
 {
@@ -334,7 +334,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	VortexFrame      * previous;
 	VortexFrameType    type;
 	VortexChannel    * channel;
-	bool               more;
+	int                more;
 	char             * raw_frame;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "something to read");
@@ -716,7 +716,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
  * @return true if the item to be managed was clearly read or false if
  * an error on registering the item was produced.
  */
-bool     vortex_reader_register_watch (VortexReaderData * data, axlList * con_list, axlList * srv_list)
+int      vortex_reader_register_watch (VortexReaderData * data, axlList * con_list, axlList * srv_list)
 {
 	VortexConnection * connection;
 	VortexCtx        * ctx;
@@ -866,14 +866,14 @@ void vortex_reader_foreach_impl (VortexCtx        * ctx,
  * @return true to keep vortex reader working, false if vortex reader
  * should stop.
  */
-bool     vortex_reader_read_queue (VortexCtx  * ctx,
+int      vortex_reader_read_queue (VortexCtx  * ctx,
 				   axlList    * con_list, 
 				   axlList    * srv_list, 
 				   axlPointer * on_reading)
 {
 	/* get current context */
 	VortexReaderData * data;
-	bool               should_continue;
+	int                should_continue;
 
 	do {
 		data            = vortex_async_queue_pop (ctx->reader_queue);
@@ -914,7 +914,7 @@ bool     vortex_reader_read_queue (VortexCtx  * ctx,
  * 
  * @return true to flag the process to continue working to to stop.
  */
-bool     vortex_reader_read_pending (VortexCtx  * ctx,
+int      vortex_reader_read_pending (VortexCtx  * ctx,
 				     axlList    * con_list, 
 				     axlList    * srv_list, 
 				     axlPointer * on_reading)
@@ -922,7 +922,7 @@ bool     vortex_reader_read_pending (VortexCtx  * ctx,
 	/* get current context */
 	VortexReaderData * data;
 	int                length;
-	bool               should_continue = true;
+	int                should_continue = true;
 
 	length = vortex_async_queue_length (ctx->reader_queue);
 	while (length > 0) {
@@ -1409,7 +1409,7 @@ void vortex_reader_watch_listener   (VortexCtx        * ctx,
  * @return The function returns true if the vortex reader was started
  * properly, otherwise false is returned.
  **/
-bool vortex_reader_run (VortexCtx * ctx) 
+int  vortex_reader_run (VortexCtx * ctx) 
 {
 	v_return_val_if_fail (ctx, false);
 
@@ -1470,7 +1470,7 @@ void vortex_reader_stop (VortexCtx * ctx)
  * notified and false if not. In the later case it means that the
  * reader is not running.
  */
-bool vortex_reader_notify_change_io_api               (VortexCtx * ctx)
+int  vortex_reader_notify_change_io_api               (VortexCtx * ctx)
 {
 	VortexReaderData * data;
 
@@ -1560,7 +1560,7 @@ void vortex_reader_notify_change_done_io_api   (VortexCtx * ctx)
  * with 1 rather than 0.
  */
 void vortex_reader_allow_msgno_starting_from_1 (VortexCtx * ctx, 
-						bool        value)
+						int         value)
 {
 	/* do not configure anything if a null value is received */
 	if (ctx == NULL)
@@ -1585,7 +1585,7 @@ void vortex_reader_allow_msgno_starting_from_1 (VortexCtx * ctx,
  * @param value true to activate supporting buggy peers implementing
  * this behaviour. 
  */
-void vortex_reader_allow_channel0_starting_from_0 (VortexCtx * ctx, bool     value)
+void vortex_reader_allow_channel0_starting_from_0 (VortexCtx * ctx, int      value)
 {
 	ctx->reader_accept_reuse_msgno0_for_channel0 = value;
 	return;

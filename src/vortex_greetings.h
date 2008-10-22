@@ -40,14 +40,14 @@
 
 #include <vortex.h>
 
-bool           vortex_greetings_send           (VortexConnection * connection);
+int            vortex_greetings_send           (VortexConnection * connection);
 
-bool           vortex_greetings_is_reply_ok    (VortexFrame      * frame,
+int            vortex_greetings_is_reply_ok    (VortexFrame      * frame,
 						VortexConnection * connection);
 
 VortexFrame *  vortex_greetings_process        (VortexConnection * connection);
 
-bool           vortex_greetings_client_send    (VortexConnection * connection);
+int            vortex_greetings_client_send    (VortexConnection * connection);
 
 VortexFrame *  vortex_greetings_client_process (VortexConnection * connection);
 

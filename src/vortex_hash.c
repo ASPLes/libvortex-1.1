@@ -309,7 +309,7 @@ axlPointer   vortex_hash_lookup_and_clear   (VortexHash   *hash_table,
  *
  * @return true if found and removed and false if not removed
  **/
-bool         vortex_hash_remove   (VortexHash *hash_table,
+int          vortex_hash_remove   (VortexHash *hash_table,
 				   axlPointer key)
 {
 	/* check hash table reference */
@@ -369,7 +369,7 @@ void         vortex_hash_destroy  (VortexHash *hash_table)
  * @return true if the item was removed (current implementation always
  * return true).
  */
-bool         vortex_hash_delete   (VortexHash   *hash_table,
+int          vortex_hash_delete   (VortexHash   *hash_table,
 				   axlPointer    key)
 {
 	v_return_val_if_fail (hash_table, false);
@@ -478,7 +478,7 @@ void         vortex_hash_foreach3  (VortexHash         * hash_table,
  * 
  * It just returns true.
  */
-bool     vortex_hash_clear_allways_true (axlPointer key, axlPointer value, axlPointer user_data) 
+int      vortex_hash_clear_allways_true (axlPointer key, axlPointer value, axlPointer user_data) 
 {
 	return true;
 }

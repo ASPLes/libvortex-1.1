@@ -95,7 +95,7 @@ void __vortex_profiles_destroy_profile_item (axlPointer data)
  * @brief Default start handler, that is, accept to create a channel
  * always.
  */
-bool     __vortex_profiles_default_start (int                channel_num,
+int      __vortex_profiles_default_start (int                channel_num,
 					  VortexConnection * connection,
 					  axlPointer         user_data)
 {
@@ -108,7 +108,7 @@ bool     __vortex_profiles_default_start (int                channel_num,
  * @brief Default close handler, that is, accept to close the channel
  * always.
  */
-bool     __vortex_profiles_default_close (int                channel_num,
+int      __vortex_profiles_default_close (int                channel_num,
 					  VortexConnection * connection,
 					  axlPointer         user_data)
 {
@@ -216,7 +216,7 @@ bool     __vortex_profiles_default_close (int                channel_num,
  * @return The function return true if the profile was properly
  * registered. Otherwise false is returned.
  */
-bool vortex_profiles_register (VortexCtx             * ctx,
+int  vortex_profiles_register (VortexCtx             * ctx,
 			       const char            * uri,
 			       VortexOnStartChannel    start,
 			       axlPointer              start_user_data,
@@ -283,7 +283,7 @@ bool vortex_profiles_register (VortexCtx             * ctx,
  * @return true if the profile was unregistered, otherwise false is
  * returned.
  */
-bool     vortex_profiles_unregister              (VortexCtx             * ctx,
+int      vortex_profiles_unregister              (VortexCtx             * ctx,
 						  const char            * uri)
 {
 	/* get current context */
@@ -336,7 +336,7 @@ bool     vortex_profiles_unregister              (VortexCtx             * ctx,
  * @return true if the basic MIME configuration was done, otherwise
  * false is returned.
  */
-bool     vortex_profiles_set_mime_type           (VortexCtx             * ctx,
+int      vortex_profiles_set_mime_type           (VortexCtx             * ctx,
 						  const char            * uri,
 						  const char            * mime_type,
 						  const char            * transfer_encoding)
@@ -466,7 +466,7 @@ const char  * vortex_profiles_get_transfer_encoding (VortexCtx   * ctx,
  * @return true if the extended start handler was configured,
  * otherwise false is returned.
  */
-bool     vortex_profiles_register_extended_start (VortexCtx                    * ctx,
+int      vortex_profiles_register_extended_start (VortexCtx                    * ctx,
 						  const char                   * uri,
 						  VortexOnStartChannelExtended   extended_start,
 						  axlPointer                     extended_start_user_data)
@@ -529,7 +529,7 @@ bool     vortex_profiles_register_extended_start (VortexCtx                    *
  * 
  * @return true if the channel was allowed to be created or false if it fails.
  */
-bool     vortex_profiles_invoke_start (char             * uri, 
+int      vortex_profiles_invoke_start (char             * uri, 
 				       int                channel_num, 
 				       VortexConnection * connection,
 				       char             * serverName, 
@@ -581,7 +581,7 @@ bool     vortex_profiles_invoke_start (char             * uri,
  * 
  * @return true if close handler is defined or false if not
  */
-bool     vortex_profiles_is_defined_start (VortexCtx   * ctx,
+int      vortex_profiles_is_defined_start (VortexCtx   * ctx,
 					   const char  * uri)
 {
 	VortexProfile * profile;
@@ -607,7 +607,7 @@ bool     vortex_profiles_is_defined_start (VortexCtx   * ctx,
  * library. 
  * 
  */
-bool     vortex_profiles_invoke_close (char             * uri, 
+int      vortex_profiles_invoke_close (char             * uri, 
 				       int                channel_num,
 				       VortexConnection * connection)
 {
@@ -640,7 +640,7 @@ bool     vortex_profiles_invoke_close (char             * uri,
  * 
  * @return true if close handler is defined or false if not
  */
-bool     vortex_profiles_is_defined_close (VortexCtx * ctx,
+int      vortex_profiles_is_defined_close (VortexCtx * ctx,
 					   const char  * uri)
 {
 	VortexProfile * profile;
@@ -671,7 +671,7 @@ axlPointer __vortex_profiles_invoke_frame_received (axlPointer __data)
 	VortexConnection          * connection   = data->connection;
 	VortexFrame               * frame        = data->frame;
 	VortexChannel             * channel      = NULL;
-	bool                        is_connected = false;
+	int                         is_connected = false;
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx                 * ctx          = vortex_connection_get_ctx (connection);
 #endif
@@ -776,7 +776,7 @@ axlPointer __vortex_profiles_invoke_frame_received (axlPointer __data)
  * @return true if frame was delivered to a handler or false if
  * frame was not delivered.
  */
-bool     vortex_profiles_invoke_frame_received (const char       * uri,
+int      vortex_profiles_invoke_frame_received (const char       * uri,
 						int                channel_num,
 						VortexConnection * connection,
 						VortexFrame      * frame)
@@ -849,7 +849,7 @@ bool     vortex_profiles_invoke_frame_received (const char       * uri,
  * 
  * @return true if received handler is defined or false if not
  */
-bool     vortex_profiles_is_defined_received (VortexCtx   * ctx,
+int      vortex_profiles_is_defined_received (VortexCtx   * ctx,
 					      const char  * uri)
 {
 	VortexProfile * profile;
@@ -869,7 +869,7 @@ bool     vortex_profiles_is_defined_received (VortexCtx   * ctx,
 
 
 
-bool __get_actual_list (axlPointer     key,
+int  __get_actual_list (axlPointer     key,
 			axlPointer     value,
 			axlPointer     user_data)
 {
@@ -951,7 +951,7 @@ int     vortex_profiles_registered (VortexCtx * ctx)
  * 
  * @return true if the profile is registered or false if not. 
  */
-bool     vortex_profiles_is_registered (VortexCtx  * ctx, 
+int      vortex_profiles_is_registered (VortexCtx  * ctx, 
 					const char  * uri)
 {
 	/* check references */

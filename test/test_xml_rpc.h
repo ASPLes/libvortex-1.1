@@ -33,11 +33,11 @@ char * test_get_the_string_s (VortexChannel * channel, XmlRpcResponseStatus * st
 void test_get_the_string (VortexChannel * channel, XmlRpcProcessString process);
 
 /* service: get_the_bool_1 */
-bool test_get_the_bool_1_s (VortexChannel * channel, XmlRpcResponseStatus * status, int * fault_code, char ** fault_string);
+int test_get_the_bool_1_s (VortexChannel * channel, XmlRpcResponseStatus * status, int * fault_code, char ** fault_string);
 void test_get_the_bool_1 (VortexChannel * channel, XmlRpcProcessInt process);
 
 /* service: get_the_bool_2 */
-bool test_get_the_bool_2_s (VortexChannel * channel, XmlRpcResponseStatus * status, int * fault_code, char ** fault_string);
+int test_get_the_bool_2_s (VortexChannel * channel, XmlRpcResponseStatus * status, int * fault_code, char ** fault_string);
 void test_get_the_bool_2 (VortexChannel * channel, XmlRpcProcessInt process);
 
 /* service: get_double_sum */

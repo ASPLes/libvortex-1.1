@@ -28,8 +28,8 @@ struct __Node {
 BEGIN_C_DECLS
 
 /* (un)marshaller support functions  */
-XmlRpcStruct * test_node_marshall (Node * ref, bool dealloc);
-Node * test_node_unmarshall (XmlRpcStruct * ref, bool dealloc);
+XmlRpcStruct * test_node_marshall (Node * ref, int  dealloc);
+Node * test_node_unmarshall (XmlRpcStruct * ref, int  dealloc);
 
 /* memory (de)allocation functions */
 Node * test_node_new (int position, Node * next);

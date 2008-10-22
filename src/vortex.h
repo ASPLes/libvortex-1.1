@@ -288,30 +288,30 @@ if (!(expr)) { return val;}
 
 BEGIN_C_DECLS
 
-bool     vortex_init_ctx             (VortexCtx * ctx);
+int      vortex_init_ctx             (VortexCtx * ctx);
 
 void     vortex_exit_ctx             (VortexCtx * ctx, 
-				      bool        free_ctx);
+				      int         free_ctx);
 
-bool     vortex_log_is_enabled       (VortexCtx * ctx);
+int      vortex_log_is_enabled       (VortexCtx * ctx);
 
-bool     vortex_log2_is_enabled      (VortexCtx * ctx);
+int      vortex_log2_is_enabled      (VortexCtx * ctx);
 
 void     vortex_log_enable           (VortexCtx * ctx, 
-				      bool        status);
+				      int         status);
 
 void     vortex_log2_enable          (VortexCtx * ctx, 
-				      bool        status);
+				      int         status);
 
-bool     vortex_color_log_is_enabled (VortexCtx * ctx);
+int      vortex_color_log_is_enabled (VortexCtx * ctx);
 
 void     vortex_color_log_enable     (VortexCtx * ctx, 
-				      bool        status);
+				      int         status);
 
-bool     vortex_log_is_enabled_acquire_mutex (VortexCtx * ctx);
+int      vortex_log_is_enabled_acquire_mutex (VortexCtx * ctx);
 
 void     vortex_log_acquire_mutex            (VortexCtx * ctx, 
-					      bool        status);
+					      int         status);
 
 void     vortex_log_set_handler      (VortexCtx         * ctx,
 				      VortexLogHandler    handler);
@@ -427,11 +427,11 @@ typedef enum {
 	VORTEX_AUTOMATIC_MIME_HANDLING = 5
 } VortexConfItem;
 
-bool      vortex_conf_get             (VortexCtx      * ctx,
+int       vortex_conf_get             (VortexCtx      * ctx,
 				       VortexConfItem   item, 
 				       int            * value);
 
-bool      vortex_conf_set             (VortexCtx      * ctx,
+int       vortex_conf_set             (VortexCtx      * ctx,
 				       VortexConfItem   item, 
 				       int              value, 
 				       const char     * str_value);

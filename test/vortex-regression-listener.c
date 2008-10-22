@@ -159,6 +159,12 @@
  */
 #define REGRESSION_URI_MIXING_REPLIES "http://iana.org/beep/transient/vortex-regression/mixing-replies"
 
+/**
+ * Profile used to identify the regression test to check connection
+ * close after ans/nul reply.
+ */
+#define REGRESSION_URI_ANS_NUL_REPLY_CLOSE "http://iana.org/beep/transient/vortex-regression/ans-nul-reply-close"
+
 void frame_received_fake_listeners  (VortexChannel    * channel,
 				     VortexConnection * connection,
 				     VortexFrame      * frame,
@@ -442,7 +448,7 @@ void frame_received_ans_transfer_selected_file (VortexChannel    * channel,
 	return;
 }
 
-bool     start_channel (int                channel_num, 
+int      start_channel (int                channel_num, 
 			VortexConnection * connection, 
 			axlPointer           user_data)
 {
@@ -452,7 +458,7 @@ bool     start_channel (int                channel_num,
 	return true;
 }
 
-bool     close_channel (int                channel_num, 
+int      close_channel (int                channel_num, 
 			VortexConnection * connection, 
 			axlPointer           user_data)
 {
@@ -462,7 +468,7 @@ bool     close_channel (int                channel_num,
 	return true;
 }
 
-bool     on_accepted (VortexConnection * connection, axlPointer data)
+int      on_accepted (VortexConnection * connection, axlPointer data)
 {
 	printf ("New connection accepted from: %s:%s\n", 
 		 vortex_connection_get_host (connection),
@@ -472,7 +478,7 @@ bool     on_accepted (VortexConnection * connection, axlPointer data)
 	return true;
 }
 
-bool     sasl_anonymous_validation (VortexConnection * connection,
+int      sasl_anonymous_validation (VortexConnection * connection,
 				    const char       * anonymous_token)
 {
 	if (axl_cmp ("test@aspl.es", anonymous_token)) {
@@ -482,7 +488,7 @@ bool     sasl_anonymous_validation (VortexConnection * connection,
 	return false;
 }
 
-bool     sasl_external_validation (VortexConnection * connection,
+int      sasl_external_validation (VortexConnection * connection,
 				   const char       * auth_id)
 {
 	if (axl_cmp ("acinom", auth_id)) {
@@ -493,7 +499,7 @@ bool     sasl_external_validation (VortexConnection * connection,
 	return false;
 }
 
-bool     sasl_external_validation_full (VortexConnection * connection,
+int      sasl_external_validation_full (VortexConnection * connection,
 					const char       * auth_id,
 					axlPointer           user_data)
 {
@@ -510,7 +516,7 @@ bool     sasl_external_validation_full (VortexConnection * connection,
 
 
 /* sasl validation handlers */
-bool     sasl_plain_validation  (VortexConnection * connection,
+int      sasl_plain_validation  (VortexConnection * connection,
 				 const char       * auth_id,
 				 const char       * auth_proxy_id,
 				 const char       * password)
@@ -524,7 +530,7 @@ bool     sasl_plain_validation  (VortexConnection * connection,
 	return false;
 }
 
-bool     sasl_plain_validation_full  (VortexConnection * connection,
+int      sasl_plain_validation_full  (VortexConnection * connection,
 				 const char       * auth_id,
 				 const char       * auth_proxy_id,
 				 const char       * password,
@@ -598,7 +604,7 @@ void __block_test (int value)
 #endif
 
 VortexMutex doing_exit_mutex;
-bool        __doing_exit = false;
+int         __doing_exit = false;
 
 /* listener context */
 VortexCtx * ctx = NULL;
@@ -642,7 +648,7 @@ void close_in_transit_received (VortexChannel    * channel,
 	return;
 }
 
-bool check_profiles_adviced (int channel_num, VortexConnection *connection, axlPointer user_data)
+int  check_profiles_adviced (int channel_num, VortexConnection *connection, axlPointer user_data)
 {
 	axlList    * profiles = vortex_connection_get_remote_profiles (connection);
 	int          iterator;
@@ -700,7 +706,7 @@ bool check_profiles_adviced (int channel_num, VortexConnection *connection, axlP
 
 }
 
-bool check_profiles_adviced_bis (int channel_num, VortexConnection *connection, axlPointer user_data)
+int  check_profiles_adviced_bis (int channel_num, VortexConnection *connection, axlPointer user_data)
 {
 	/* check profiles */
 	if (vortex_connection_is_profile_supported (connection, 
@@ -732,9 +738,9 @@ bool check_profiles_adviced_bis (int channel_num, VortexConnection *connection, 
 }
 
 /* a flag that allows to configure if the TLS request is accepted */
-bool enable_block_tls_queries = false;
+int  enable_block_tls_queries = false;
 
-bool start_channel_block_tls (int channel_num, VortexConnection * connection, axlPointer user_data)
+int  start_channel_block_tls (int channel_num, VortexConnection * connection, axlPointer user_data)
 {
 	printf ("Received request to block TLS query..\n");
 
@@ -750,7 +756,7 @@ axlPointer block_ctx_creation (VortexConnection * connection, axlPointer user_da
 	return NULL;
 }
 
-bool regression_tls_handle_query (VortexConnection * connection, char * serverName)
+int  regression_tls_handle_query (VortexConnection * connection, char * serverName)
 {
 
 	printf ("Receiving request to start tls auth, with status=%d..\n", enable_block_tls_queries);
@@ -785,7 +791,7 @@ void added_channel_fast_send (VortexChannel * channel, axlPointer user_data)
 	}
 }
 
-bool on_accepted_fast_send (VortexConnection * connection, axlPointer data)
+int  on_accepted_fast_send (VortexConnection * connection, axlPointer data)
 {
 	/* configure the added channel handler */
 	vortex_connection_set_channel_added_handler (connection, added_channel_fast_send, NULL);
@@ -793,8 +799,34 @@ bool on_accepted_fast_send (VortexConnection * connection, axlPointer data)
 	return true;
 }
 
+void added_channel_ans_nul_reply_close (VortexChannel * channel, axlPointer user_data)
+{
+	/* check if the channel is running the fast send profile */
+	if (vortex_channel_is_running_profile (channel, REGRESSION_URI_ANS_NUL_REPLY_CLOSE)) {
+		printf ("Found channel running %s..sending message\n", REGRESSION_URI_ANS_NUL_REPLY_CLOSE);
 
-bool deny_supported (int channel_num, VortexConnection *connection, axlPointer user_data) 
+		/* send message */
+		if (! vortex_channel_send_msg (channel, "message 1", 9, NULL)) {
+			printf ("FAILED TO SEND MESSAGE 1 at fast send..\n");
+		}		
+
+		/* report */
+		printf ("Reply sent for uri %s, 2 ANS followed by 1 NUL..\n",
+			REGRESSION_URI_ANS_NUL_REPLY_CLOSE);
+	} /* end if */
+}
+
+
+int  on_accepted_ans_nul_reply_close (VortexConnection * connection, axlPointer data)
+{
+	/* configure the added channel handler */
+	vortex_connection_set_channel_added_handler (connection, added_channel_ans_nul_reply_close, NULL);
+
+	return true;
+}
+
+
+int  deny_supported (int channel_num, VortexConnection *connection, axlPointer user_data) 
 {
 	/* do not accept channel; never */
 	return false;
@@ -884,7 +916,7 @@ void frame_received_mime_support (VortexChannel    * channel,
 
 int ordered_delivery_message_no;
 
-bool start_ordered_delivery (int                channel_num, 
+int  start_ordered_delivery (int                channel_num, 
 			     VortexConnection * connection,
 			     axlPointer         user_data)
 {
@@ -945,7 +977,7 @@ void frame_channel_connection (VortexChannel    * channel,
 	} /* end if */
 }
 
-bool frame_received_mix_replies_state = false;
+int  frame_received_mix_replies_state = false;
 
 void frame_received_mix_replies (VortexChannel    * channel,
 				 VortexConnection * connection,
@@ -971,7 +1003,7 @@ void frame_received_mix_replies (VortexChannel    * channel,
 }
 				 
 
-bool start_channel_connection (int                channel_num, 
+int  start_channel_connection (int                channel_num, 
 			       VortexConnection * connection,
 			       axlPointer         user_data)
 {
@@ -994,7 +1026,7 @@ bool start_channel_connection (int                channel_num,
  * @internal Handler that closes the connection when received the
  * close channel request.
  */
-bool close_channel_connection (int channel_num, VortexConnection * conn, axlPointer user_data)
+int  close_channel_connection (int channel_num, VortexConnection * conn, axlPointer user_data)
 {
 	VortexAsyncQueue * queue;
 
@@ -1156,6 +1188,14 @@ int main (int  argc, char ** argv)
  				  NULL, NULL,
  				  frame_received_mix_replies, NULL);
  
+
+	/* register a profile */
+	vortex_profiles_register (ctx, REGRESSION_URI_ANS_NUL_REPLY_CLOSE,
+				  /* default start, close and frame received */
+				  NULL, NULL,
+				  NULL, NULL,
+				  NULL, NULL);
+	vortex_listener_set_on_connection_accepted (ctx, on_accepted_ans_nul_reply_close, NULL);
 
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */

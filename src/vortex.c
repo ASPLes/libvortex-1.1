@@ -93,7 +93,7 @@ void __vortex_sigpipe_do_nothing (int _signal)
  * 
  * @return true if console debug is enabled. Otherwise false.
  */
-bool     vortex_log_is_enabled (VortexCtx * ctx)
+int      vortex_log_is_enabled (VortexCtx * ctx)
 {
 #ifdef ENABLE_VORTEX_LOG	
 	/* no context, no log */
@@ -123,7 +123,7 @@ bool     vortex_log_is_enabled (VortexCtx * ctx)
  * 
  * @return true if console debug is enabled. Otherwise false.
  */
-bool     vortex_log2_is_enabled (VortexCtx * ctx)
+int      vortex_log2_is_enabled (VortexCtx * ctx)
 {
 #ifdef ENABLE_VORTEX_LOG	
 
@@ -153,7 +153,7 @@ bool     vortex_log2_is_enabled (VortexCtx * ctx)
  *
  * @param status true enable log, false disables it.
  */
-void     vortex_log_enable       (VortexCtx * ctx, bool     status)
+void     vortex_log_enable       (VortexCtx * ctx, int      status)
 {
 #ifdef ENABLE_VORTEX_LOG	
 	/* no context, no log */
@@ -183,7 +183,7 @@ void     vortex_log_enable       (VortexCtx * ctx, bool     status)
  *
  * @param status true enable log, false disables it.
  */
-void     vortex_log2_enable       (VortexCtx * ctx, bool     status)
+void     vortex_log2_enable       (VortexCtx * ctx, int      status)
 {
 #ifdef ENABLE_VORTEX_LOG	
 	/* no context, no log */
@@ -213,7 +213,7 @@ void     vortex_log2_enable       (VortexCtx * ctx, bool     status)
  * 
  * @return true if enabled, false if not.
  */
-bool     vortex_color_log_is_enabled (VortexCtx * ctx)
+int      vortex_color_log_is_enabled (VortexCtx * ctx)
 {
 #ifdef ENABLE_VORTEX_LOG	
 	/* no context, no log */
@@ -249,7 +249,7 @@ bool     vortex_color_log_is_enabled (VortexCtx * ctx)
  *
  * @param status true enable color log, false disables it.
  */
-void     vortex_color_log_enable (VortexCtx * ctx, bool     status)
+void     vortex_color_log_enable (VortexCtx * ctx, int      status)
 {
 
 #ifdef ENABLE_VORTEX_LOG
@@ -287,7 +287,7 @@ void     vortex_color_log_enable (VortexCtx * ctx, bool     status)
  * @return The function returns true if the configuration item is
  * returned. 
  */
-bool      vortex_conf_get             (VortexCtx      * ctx,
+int       vortex_conf_get             (VortexCtx      * ctx,
 				       VortexConfItem   item, 
 				       int            * value)
 {
@@ -385,7 +385,7 @@ bool      vortex_conf_get             (VortexCtx      * ctx,
  * @return true if the configuration was done properly, otherwise
  * false is returned.
  */
-bool      vortex_conf_set             (VortexCtx      * ctx,
+int       vortex_conf_set             (VortexCtx      * ctx,
 				       VortexConfItem   item, 
 				       int              value, 
 				       const char     * str_value)
@@ -514,7 +514,7 @@ bool      vortex_conf_set             (VortexCtx      * ctx,
  * mutex status.
  */
 void     vortex_log_acquire_mutex    (VortexCtx * ctx, 
-				      bool        status)
+				      int         status)
 {
 	/* get current context */
 	v_return_if_fail (ctx);
@@ -531,7 +531,7 @@ void     vortex_log_acquire_mutex    (VortexCtx * ctx,
  * 
  * @return Current status configured.
  */
-bool     vortex_log_is_enabled_acquire_mutex (VortexCtx * ctx)
+int      vortex_log_is_enabled_acquire_mutex (VortexCtx * ctx)
 {
 	/* get current context */
 	v_return_val_if_fail (ctx, false);
@@ -603,7 +603,7 @@ void _vortex_log_common (VortexCtx        * ctx,
 	return;
 #else
 	/* log with mutex */
-	bool use_log_mutex = false;
+	int  use_log_mutex = false;
 
 	if (ctx == NULL) {
 #if defined (__GNUC__)
@@ -813,7 +813,7 @@ void _vortex_log2 (VortexCtx        * ctx,
  * @return true if the context was initialized, otherwise false is
  * returned.
  */
-bool   vortex_init_ctx (VortexCtx * ctx)
+int    vortex_init_ctx (VortexCtx * ctx)
 {
 	int          thread_num;
 	int          soft_limit;
@@ -964,7 +964,7 @@ bool   vortex_init_ctx (VortexCtx * ctx)
  * @param free_ctx Allows to signal the function if the context
  * provided must be deallocated (by calling to \ref vortex_ctx_free).
  */
-void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
+void vortex_exit_ctx (VortexCtx * ctx, int  free_ctx)
 {
 
 	/* check if the library is already started */
@@ -2582,7 +2582,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * Here is an example for the \ref VortexOnStartChannelExtended
  * "OnStartChannelExtended" handler:
  * \code
- *  bool     extended_start_channel (char              * profile,
+ *  int      extended_start_channel (char              * profile,
  *                                   int                 channel_num,
  *                                   VortexConnection  * connection,
  *                                   char              * serverName,
@@ -3307,7 +3307,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  *  control how are accepted incoming TLS requests. Here is an example:
  * \code
  * // return true if we agree to accept the TLS negotiation
- * bool     check_and_accept_tls_request (VortexConnection * connection, 
+ * int      check_and_accept_tls_request (VortexConnection * connection, 
  *                                        char             * serverName)
  * {
  *     // perform some especial operations against the serverName
@@ -3800,7 +3800,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * }
  * [...]
  * // validation handler for SASL PLAIN profile
- * bool     sasl_plain_validation  (VortexConnection * connection,
+ * int      sasl_plain_validation  (VortexConnection * connection,
  *                                  const char       * auth_id,
  *                                  const char       * authorization_id,
  *                                  const char       * password)
@@ -4684,7 +4684,7 @@ void vortex_exit_ctx (VortexCtx * ctx, bool free_ctx)
  * Here is an example of a validation resource function that only
  * accept some resources names:
  * \code
- * bool     validate_resource (VortexConnection * connection, 
+ * int      validate_resource (VortexConnection * connection, 
  *                             int                channel_number,
  *                             char             * serverName,
  *                             char             * resource_path)

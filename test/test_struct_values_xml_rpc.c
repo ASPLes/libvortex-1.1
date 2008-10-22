@@ -11,7 +11,7 @@
 #include <test_types.h>
 
 /* (un)marshaller support functions  */
-XmlRpcStruct * test_values_marshall (Values * ref, bool dealloc)
+XmlRpcStruct * test_values_marshall (Values * ref, int  dealloc)
 {
 	XmlRpcStruct       * _result;
 	XmlRpcStructMember * _member;
@@ -42,7 +42,7 @@ XmlRpcStruct * test_values_marshall (Values * ref, bool dealloc)
 	return _result;
 }
 
-Values * test_values_unmarshall (XmlRpcStruct * ref, bool dealloc)
+Values * test_values_unmarshall (XmlRpcStruct * ref, int  dealloc)
 {
 	Values * _result;
 
@@ -70,7 +70,7 @@ Values * test_values_unmarshall (XmlRpcStruct * ref, bool dealloc)
 }
 
 /* memory (de)allocation functions */
-Values * test_values_new (int count, double fraction, bool status)
+Values * test_values_new (int count, double fraction, int  status)
 {
 	Values * _result = axl_new (Values, 1);
 

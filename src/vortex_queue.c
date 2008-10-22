@@ -89,9 +89,9 @@ VortexQueue * vortex_queue_new           (void)
  * 
  * @return true if the \ref VortexQueue is empty, false if not.
  **/
-bool          vortex_queue_is_empty      (VortexQueue * queue)
+int           vortex_queue_is_empty      (VortexQueue * queue)
 {
-	bool     result;
+	int      result;
 
 	/* check parameter */
 	if (queue == NULL)
@@ -141,7 +141,7 @@ unsigned int   vortex_queue_get_length    (VortexQueue * queue)
  * 
  * @return true if the data was queue, false if not
  **/
-bool          vortex_queue_push          (VortexQueue * queue, axlPointer data)
+int           vortex_queue_push          (VortexQueue * queue, axlPointer data)
 {
 
 	/* check parameter */
@@ -171,7 +171,7 @@ bool          vortex_queue_push          (VortexQueue * queue, axlPointer data)
  * 
  * @return true if the data was queue, false if not
  **/
-bool          vortex_queue_head_push    (VortexQueue * queue, axlPointer data)
+int           vortex_queue_head_push    (VortexQueue * queue, axlPointer data)
 {
 	/* check parameter */
 	if (queue == NULL || data == NULL)

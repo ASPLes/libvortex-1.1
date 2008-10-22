@@ -72,10 +72,10 @@ int  __vortex_listener_get_port (const char  * port)
  *
  * @param send_greetings If the greetings message must be sent or not.
  */
-void vortex_listener_accept_connection    (VortexConnection * connection, bool send_greetings)
+void vortex_listener_accept_connection    (VortexConnection * connection, int  send_greetings)
 {
 	VortexCtx                  * ctx;
-	bool                         result;
+	int                          result;
 	int                          iterator;
 	VortexListenerOnAcceptData * data;
 
@@ -404,7 +404,7 @@ typedef struct _VortexListenerData {
 	VortexListenerReady        on_ready;
 	VortexListenerReadyFull    on_ready_full;
 	axlPointer                 user_data;
-	bool                       threaded;
+	int                        threaded;
 	VortexCtx                * ctx;
 }VortexListenerData;
 
@@ -424,7 +424,7 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	socklen_t            sin_size  = sizeof (sin);
 #endif	
 	char               * host      = data->host;
-	bool                 threaded  = data->threaded;
+	int                  threaded  = data->threaded;
 	uint16_t             int_port  = (uint16_t) data->port;
 	axlPointer           user_data = data->user_data;
 	char               * message   = NULL;
@@ -646,7 +646,7 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
  *        return;
  * }
  *
- * bool     start_channel (int                channel_num, 
+ * int      start_channel (int                channel_num, 
  *                        VortexConnection * connection, 
  *                        axlPointer         user_data)
  * {
@@ -659,7 +659,7 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
  *        return true;
  * }
  *
- * bool     close_channel (int                channel_num, 
+ * int      close_channel (int                channel_num, 
  *                         VortexConnection * connection, 
  *                         axlPointer         user_data)
  * {
@@ -1069,7 +1069,7 @@ void          vortex_listener_set_on_connection_accepted (VortexCtx             
  * @return true if the listener was started because the file was read
  * successfully otherwise false is returned.
  */
-bool              vortex_listener_parse_conf_and_start (VortexCtx * ctx)
+int               vortex_listener_parse_conf_and_start (VortexCtx * ctx)
 {
 	/* listener xml configuration */
 	axlDoc   * doc;
@@ -1267,7 +1267,7 @@ void __vortex_listener_shutdown_foreach (VortexConnection * conn,
  * @param also_created_conns true to shutdown all connections 
  */
 void          vortex_listener_shutdown (VortexConnection * listener,
-					bool               also_created_conns)
+					int                also_created_conns)
 {
 	VortexCtx        * ctx;
 	VortexAsyncQueue * notify = NULL;

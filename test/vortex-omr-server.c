@@ -57,7 +57,7 @@ void frame_received (VortexChannel    * channel,
 	return;
 }
 
-bool     start_channel (int                channel_num, 
+int      start_channel (int                channel_num, 
 			VortexConnection * connection, 
 			axlPointer           user_data)
 {
@@ -67,7 +67,7 @@ bool     start_channel (int                channel_num,
 	return true;
 }
 
-bool     close_channel (int                channel_num, 
+int      close_channel (int                channel_num, 
 			VortexConnection * connection, 
 			axlPointer         user_data)
 {

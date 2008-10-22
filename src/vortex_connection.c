@@ -389,7 +389,7 @@ int      vortex_connection_do_sanity_check (VortexCtx * ctx, VORTEX_SOCKET sessi
 	if (ctx && ctx->connection_enable_sanity_check) {
 		
 		if (session < 0) {
-			vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL,
+			vortex_log (VORTEX_LEVEL_CRITICAL,
 				    "Socket receive is not working, invalid socket descriptor=%d", session);
 			return false;
 		} /* end if */
@@ -1312,10 +1312,10 @@ int __vortex_connection_wait_on (VortexIoWaitingFor    wait_for,
 			 * really connected */
 			sock_err_len = sizeof(sock_err);
 			if (getsockopt (conn->session, SOL_SOCKET, SO_ERROR, (char*)&sock_err, &sock_err_len) < 0){
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "failed to get error level on waiting socket");
+				vortex_log (VORTEX_LEVEL_WARNING, "failed to get error level on waiting socket");
 				err = -5;
 			} else if (sock_err) {
-				vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "error level set on waiting socket");
+				vortex_log (VORTEX_LEVEL_WARNING, "error level set on waiting socket");
 				err = -6;
 			}
 #endif
@@ -3953,7 +3953,7 @@ int                 vortex_connection_get_next_frame_size          (VortexConnec
  *
  * @param connection The connection to be configured.
  *
- * @param status true to disable SEQ frames update. false to allow SEQ
+ * @param is_disabled true to disable SEQ frames update. false to allow SEQ
  * frames to be sent. (Default value is false, that is, SEQ frames allowed).
  *
  * NOTE: Value configured by this function can be retrieved by \ref
@@ -3965,14 +3965,14 @@ int                 vortex_connection_get_next_frame_size          (VortexConnec
 void                vortex_connection_seq_frame_updates            (VortexConnection * connection,
 								    int                is_disabled)
 {
+	VortexCtx * ctx = CONN_CTX (connection);
 	v_return_if_fail (connection);
 	v_return_if_fail (vortex_connection_is_ok (connection, false));
 
 	/* set the flag */
 	vortex_connection_set_data (connection, "_vo:se:up", INT_TO_PTR(is_disabled));
 
-	vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, 
-		    "configuring SEQ frame generation status: is-disabled=%d", is_disabled);
+	vortex_log (VORTEX_LEVEL_DEBUG, "configuring SEQ frame generation status: is-disabled=%d", is_disabled);
 	
 	return;
 }

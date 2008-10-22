@@ -57,7 +57,7 @@
 #endif
 
 /* disable time checks */
-bool    disable_time_checks = false;
+int     disable_time_checks = false;
 
 /* listener location */
 char   * listener_host = NULL;
@@ -187,11 +187,17 @@ void subs (struct timeval stop, struct timeval start, struct timeval * _result)
  */
 #define REGRESSION_URI_MIXING_REPLIES "http://iana.org/beep/transient/vortex-regression/mixing-replies"
 
+/**
+ * Profile used to identify the regression test to check connection
+ * close after ans/nul reply.
+ */
+#define REGRESSION_URI_ANS_NUL_REPLY_CLOSE "http://iana.org/beep/transient/vortex-regression/ans-nul-reply-close"
+
 /** 
  * @internal Allows to know if the connection must be created directly or
  * through the tunnel.
  */
-bool                   tunnel_tested   = false;
+int                    tunnel_tested   = false;
 VortexTunnelSettings * tunnel_settings = NULL;
 
 /* listener context */
@@ -214,7 +220,7 @@ VortexConnection * connection_new (void)
  *
  * @return true if checks runs ok, otherwise false is returned.
  */
-bool test_00 (void) 
+int  test_00 (void) 
 {
 	VortexAsyncQueue * queue;
 
@@ -277,7 +283,7 @@ bool test_00 (void)
 	return true;
 }
 
-bool test_01 (void) {
+int  test_01 (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
@@ -319,7 +325,7 @@ bool test_01 (void) {
 	return true;
 }
 
-bool test_01a (void) {
+int  test_01a (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
@@ -462,7 +468,7 @@ void test_01b_created (int             channel_num,
 	return;
 }
 
-bool test_01b (void) {
+int  test_01b (void) {
 	VortexConnection  * connection;
 	VortexAsyncQueue  * queue;
 	int                 iterator;
@@ -512,7 +518,7 @@ bool test_01b (void) {
 
 } /* end test_01b */
 
-bool test_01c (void) {
+int  test_01c (void) {
 	VortexConnection  * connection;
 	VortexAsyncQueue  * queue;
 	VortexChannel     * channel;
@@ -677,7 +683,7 @@ char * vortex_regression_client_read_file (const char * file, int * size)
 	return result;
 }
 
-bool test_01d_01 (void)
+int  test_01d_01 (void)
 {
 	char             * mime_message;
 	int                mime_message_size;
@@ -850,7 +856,7 @@ bool test_01d_01 (void)
 	return true;
 }
 
-bool test_01d_02 (void)
+int  test_01d_02 (void)
 {
 	char        * mime_message;
 	int           mime_message_size;
@@ -913,7 +919,7 @@ bool test_01d_02 (void)
 	return true;
 }
 
-bool test_01d_03 (void)
+int  test_01d_03 (void)
 {
 	char        * mime_message;
 	char        * mime_body;
@@ -969,7 +975,7 @@ bool test_01d_03 (void)
 	return true;
 }
 
-bool test_01d_04 (void)
+int  test_01d_04 (void)
 {
 	char        * mime_message;
 	int           mime_message_size;
@@ -1021,7 +1027,7 @@ bool test_01d_04 (void)
 	return true;
 }
 
-bool test_01d_05 (void)
+int  test_01d_05 (void)
 {
 	char        * mime_message;
 	int           mime_message_size;
@@ -1072,7 +1078,7 @@ bool test_01d_05 (void)
 	return true;
 }
 
-bool test_01d_06 (void)
+int  test_01d_06 (void)
 {
 	char        * mime_message;
 	int           mime_message_size;
@@ -1138,7 +1144,7 @@ bool test_01d_06 (void)
 	return true;
 }
 
-bool test_01d_07 (void)
+int  test_01d_07 (void)
 {
 	char        * mime_message;
 	int           mime_message_size;
@@ -1204,7 +1210,7 @@ bool test_01d_07 (void)
 	return true;
 }
 
-bool test_01d (void) {
+int  test_01d (void) {
 	VortexConnection  * connection;
 	VortexAsyncQueue  * queue;
 	VortexChannel     * channel;
@@ -1584,7 +1590,7 @@ void test_02_channel_created (int channel_num, VortexChannel * channel, axlPoint
 	return;
 }
 
-bool test_02_common (VortexConnection * connection)
+int  test_02_common (VortexConnection * connection)
 {
 
 	VortexChannel    * channel[TEST_02_MAX_CHANNELS];
@@ -1846,7 +1852,7 @@ void test_03_reply (VortexChannel    * channel,
 	return;
 }
 
-bool test_03_common (VortexConnection * connection) {
+int  test_03_common (VortexConnection * connection) {
 
 	VortexChannel    * channel;
 	VortexFrame      * frame;
@@ -1997,7 +2003,7 @@ char * test_04_ab_gen_md5 (const char * file)
 /** 
  * Common implementation for test_04_ab test
  */
-bool test_04_ab_common (VortexConnection * connection, int window_size, const char * prefix, int * amount_transferred, int times, bool change_mss) {
+int  test_04_ab_common (VortexConnection * connection, int window_size, const char * prefix, int * amount_transferred, int times, int  change_mss) {
 
 	VortexChannel    * channel;
 	VortexAsyncQueue * queue;
@@ -2008,7 +2014,7 @@ bool test_04_ab_common (VortexConnection * connection, int window_size, const ch
 	FILE             * file;
 	int                bytes_written;
 	int                iterator = 0;
-	bool               disable_log = (times == 4);
+	int                disable_log = (times == 4);
 
 	if (amount_transferred)
 		(*amount_transferred) = 0;
@@ -2175,7 +2181,7 @@ bool test_04_ab_common (VortexConnection * connection, int window_size, const ch
 }
 
 
-bool test_02 (void) {
+int  test_02 (void) {
 
 	VortexConnection * connection;
 
@@ -2245,7 +2251,7 @@ void test_02a_handler3_full (VortexConnection * connection, axlPointer data)
  * 
  * @return true if ok, otherwise false is returned.
  */
-bool test_02a (void) {
+int  test_02a (void) {
 
 	VortexConnection * connection;
 	int                count;
@@ -2333,7 +2339,7 @@ bool test_02a (void) {
 	return true;
 }
 
-bool test_02b (void) {
+int  test_02b (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
@@ -2391,7 +2397,7 @@ bool test_02b (void) {
 	return true;
 }
 
-bool test_02c (void) {
+int  test_02c (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
@@ -2455,7 +2461,7 @@ bool test_02c (void) {
 	return true;
 }
 
-bool test_02d (void) {
+int  test_02d (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
@@ -2603,7 +2609,7 @@ bool test_02d (void) {
 	return true;
 }
 
-bool test_02e (void) {
+int  test_02e (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -2700,7 +2706,7 @@ bool test_02e (void) {
 	return true;
 }
 
-bool test_02f_send_data (VortexChannel * channel, const char * message, VortexAsyncQueue * queue, 
+int  test_02f_send_data (VortexChannel * channel, const char * message, VortexAsyncQueue * queue, 
 			 long max_tv_sec, long max_tv_usec)
 {
 	int               iterator;
@@ -2787,7 +2793,7 @@ bool test_02f_send_data (VortexChannel * channel, const char * message, VortexAs
  * 
  * @return true if tests are passed.
  */
-bool test_02f (void) {
+int  test_02f (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -2874,7 +2880,7 @@ double test_02g_rate (int bytes, struct timeval result)
 	return kbytes / seconds;
 }
 
-bool test_02g (void) {
+int  test_02g (void) {
 
 	VortexConnection * connection;
 
@@ -2946,7 +2952,7 @@ bool test_02g (void) {
 
 #define TEST_02I_MESSAGES (100)
 
-bool test_02i (void) {
+int  test_02i (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -3040,7 +3046,7 @@ bool test_02i (void) {
 }
 
 
-bool test_02j (void) {
+int  test_02j (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -3202,7 +3208,7 @@ bool test_02j (void) {
 	return true;
 }
 
-bool test_02k (void) {
+int  test_02k (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -3332,7 +3338,7 @@ bool test_02k (void) {
  * 
  * @return true if the test is ok, otherwise false is returned.
  */
-bool test_03 (void) {
+int  test_03 (void) {
 	VortexConnection * connection;
 
 	/* creates a new connection against localhost:44000 */
@@ -3353,7 +3359,7 @@ bool test_03 (void) {
 	return true;
 }
 
-bool test_02h (void) {
+int  test_02h (void) {
 
 	VortexConnection * connection;
 	struct timeval     start, stop, result;
@@ -3475,7 +3481,7 @@ bool test_02h (void) {
 	return true;
 }
 
-bool test_03a (void) {
+int  test_03a (void) {
 	
 	VortexConnection   * connection;
 	VortexChannelPool  * pool;
@@ -3590,7 +3596,7 @@ bool test_03a (void) {
 /* constant for test_04 */
 #define MAX_NUM_CON 1000
 
-bool test_04 (void)
+int  test_04 (void)
 {
 	int                 iterator = 0;
 	VortexConnection  * connections[MAX_NUM_CON];
@@ -3642,7 +3648,7 @@ bool test_04 (void)
  * 
  * @return true if ok, otherwise, false is returned.
  */
-bool test_05 (void)
+int  test_05 (void)
 {
 	/* TLS status notification */
 	VortexStatus       status;
@@ -3717,6 +3723,7 @@ bool test_05 (void)
 		
 	} /* end while */
 	
+	printf ("Test 05: receiving replies (20)..");
 	iterator = 0;
 	while (iterator < 20) {
 
@@ -3764,12 +3771,101 @@ bool test_05 (void)
 	return true;
 }
 
+int  test_02l (void) {
+
+	VortexConnection * connection;
+	VortexChannel    * channel;
+	VortexFrame      * frame; 
+	VortexAsyncQueue * queue;
+	int                msg_no;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+		
+	} /* end if */
+
+	/* create a channel */
+	queue   = vortex_async_queue_new ();
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_ANS_NUL_REPLY_CLOSE,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* no frame received */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+
+	if (channel == NULL) {
+		printf ("ERROR: unable to create channel to check connection close after ANS..NUL reply\n");
+		return false;
+	} /* end if */
+
+
+	/* get a reply */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL) {
+		printf ("ERROR: expected reply from remote side while running mixed replies tests..\n");
+		return false;
+	}
+
+	/* check reply type */
+	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_MSG) {
+		printf ("ERROR: expected to receive a MSG frame..\n");
+		return false;
+	}
+
+	/* check content received */
+	if (! axl_cmp (vortex_frame_get_payload (frame), "message 1")) {
+		printf ("ERROR: expected to find different content than received..\n");
+		return false;
+	}
+	
+	/* get msgno number */
+	msg_no = vortex_frame_get_msgno (frame);
+
+	/* release frame */
+	vortex_frame_unref (frame);
+	
+	/* now reply with two ANS frames with NUL frame */
+	if (! vortex_channel_send_ans_rpy (channel, "this is a reply 1", 17, msg_no)) {
+		printf ("ERROR: failed to send first ANS reply ..\n");
+		return false;
+	}
+	
+	/* second reply */
+	if (! vortex_channel_send_ans_rpy (channel, "this is a reply 2", 17, msg_no)) {
+		printf ("ERROR: failed to send second ANS reply ..\n");
+		return false;
+	}
+
+	/* finalize reply */
+	if (!vortex_channel_finalize_ans_rpy (channel, msg_no)) {
+		printf ("ERROR: failed to finalize ANS .. NUL reply series..\n");
+		return false;
+	} /* end if */
+	    
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return false;
+	} /* end if */
+
+	/* terminate queue */
+	vortex_async_queue_unref (queue);
+
+	/* operation completed */
+	return true;
+}
+
 /** 
  * @brief Checking TLS profile support.
  * 
  * @return true if ok, otherwise, false is returned.
  */
-bool test_05_a (void)
+int  test_05_a (void)
 {
 	/* TLS status notification */
 	VortexStatus       status;
@@ -3992,7 +4088,7 @@ void test_04_a_frame_received (VortexChannel    * channel,
 	return;
 }
 
-bool test_04_a_common (int block_size, int num_blocks, int num_times) {
+int  test_04_a_common (int block_size, int num_blocks, int num_times) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -4031,6 +4127,7 @@ bool test_04_a_common (int block_size, int num_blocks, int num_times) {
 		printf ("Unable to create the channel..");
 		return false;
 	}
+	printf ("ok\n");
 
 	times           = 0;
 	blocks_received = 0;
@@ -4203,7 +4300,7 @@ bool test_04_a_common (int block_size, int num_blocks, int num_times) {
  * 
  * @return true if the test is ok, otherwise false is returned.
  */
-bool test_04_a (void) {
+int  test_04_a (void) {
 	/* call to run default test: block=4096, block-num=4096 */
 	if (! test_04_a_common (4096, 4096, 1))
 		return false;
@@ -4227,7 +4324,7 @@ bool test_04_a (void) {
  *
  * @return true if the test is ok, otherwise false is returned.
  */
-bool test_04_ab (void) {
+int  test_04_ab (void) {
 
 	VortexConnection * connection;
 
@@ -4255,7 +4352,7 @@ bool test_04_ab (void) {
  *
  * @return true if the test is ok, otherwise false is returned.
  */
-bool test_04_c (void) {
+int  test_04_c (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -4362,7 +4459,7 @@ bool test_04_c (void) {
  * 
  * @return true if ok, otherwise, false is returned.
  */
-bool test_06 (void)
+int  test_06 (void)
 {
 #if defined(ENABLE_SASL_SUPPORT)
 	VortexStatus       status;
@@ -4646,7 +4743,7 @@ bool test_06 (void)
  * 
  * @return true if all test pass, otherwise false is returned.
  */
-bool test_07 (void) {
+int  test_07 (void) {
 	
 #if defined(ENABLE_XML_RPC_SUPPORT)
 	VortexConnection * connection;
@@ -4655,7 +4752,7 @@ bool test_07 (void) {
 	/* test 02 */
 	char             * result;
 	/* test 03 */
-	bool               bresult;
+	int                bresult;
 	/* test 04 */
 	double             dresult;
 	/* test 05 */
@@ -4870,7 +4967,7 @@ bool test_07 (void) {
  * @return true if serverName is properly configured, otherwise false
  * is returned.
  */
-bool test_08 (void)
+int  test_08 (void)
 {
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -4994,7 +5091,7 @@ bool test_08 (void)
  * 
  * @return false if it fails, otherwise true is returned.
  */
-bool test_10 (void)
+int  test_10 (void)
 {
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -5046,7 +5143,7 @@ bool test_10 (void)
  * 
  * @return false if it fails, otherwise true is returned.
  */
-bool test_11 (void)
+int  test_11 (void)
 {
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -5196,7 +5293,7 @@ bool test_11 (void)
  * 
  * @return true if test pass, otherwise false is returned.
  */
-bool test_12 (void) {
+int  test_12 (void) {
 	VortexConnection  * connection;
 	VortexConnection  * control;
 	VortexChannel     * c_channel;
@@ -5522,7 +5619,7 @@ bool test_12 (void) {
  * 
  * @return true if goes ok.
  */
-bool test_09 (void) 
+int  test_09 (void) 
 {
 	VortexConnection * conn;
 	VortexChannel    * channel;
@@ -5646,7 +5743,7 @@ void __block_test (int value)
  * 
  * @return true if all test pass, otherwise false is returned.
  */
-bool test_13 (void)
+int  test_13 (void)
 {
 	printf ("Test 13: ** \n");
 	printf ("Test 13: ** INFO: Running test, under the TUNNEL profile (BEEP proxy support)!\n");
@@ -5748,7 +5845,7 @@ bool test_13 (void)
 	return true;
 }
 
-typedef bool (*VortexRegressionTest) ();
+typedef int  (*VortexRegressionTest) ();
   
  
 void run_test (VortexRegressionTest test, const char * test_name, const char * message, 
@@ -5796,11 +5893,11 @@ int main (int  argc, char ** argv)
 
 #if defined (AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/* if poll(2) mechanism is available, check it */
-	bool poll_tested = true;
+	int  poll_tested = true;
 #endif
 #if defined (AXL_OS_UNIX) && defined (VORTEX_HAVE_EPOLL)
 	/* if epoll(2) mechanism is available, check it */
-	bool epoll_tested = true;
+	int  epoll_tested = true;
 #endif
 
 	printf ("** Vortex Library: A BEEP core implementation.\n");
@@ -5829,9 +5926,9 @@ int main (int  argc, char ** argv)
 	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, \n");
 	printf ("**                       test_02, test_02a, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
-	printf ("**                       test_03, test_03a, test_04, test_04a, test_04b, test_04c, \n");
-	printf ("**                       test_05, test_05a, test_06, test_07, test_08, test_09,\n");
-	printf ("**                       test_10, test_11, test_12, test_13\n");
+	printf ("**                       test_02l, test_03, test_03a, test_04, test_04a, test_04b, \n");
+	printf ("**                       test_04c, test_05, test_05a, test_06, test_07, test_08,\n");
+	printf ("**                       test_09, test_10, test_11, test_12, test_13\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -5963,6 +6060,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_02k"))
 			run_test (test_02k, "Test 02-k", "mixing replies to messages received in the same channel (ANS..NUL, RPY)", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_02l"))
+			run_test (test_02l, "Test 02-l", "detect last reply written when using ANS/NUL reply.", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_03"))
 			run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
 
@@ -6068,6 +6168,8 @@ int main (int  argc, char ** argv)
 	run_test (test_02j, "Test 02-j", "suddently connection close while operating", -1, -1);
 
 	run_test (test_02k, "Test 02-k", "mixing replies to messages received in the same channel (ANS..NUL, RPY)", -1, -1);
+
+	run_test (test_02l, "Test 02-l", "detect last reply written when using ANS/NUL reply.", -1, -1);
 	
  	run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
   

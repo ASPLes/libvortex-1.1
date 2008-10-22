@@ -171,7 +171,7 @@ XmlRpcMethodCall * __common_get_the_bool_1 ()
 }
 
 /* service: get_the_bool_1 */
-bool test_get_the_bool_1_s (VortexChannel * channel, XmlRpcResponseStatus * status, int * fault_code, char ** fault_string)
+int test_get_the_bool_1_s (VortexChannel * channel, XmlRpcResponseStatus * status, int * fault_code, char ** fault_string)
 {
 	XmlRpcMethodCall     * _invocator_;
 	XmlRpcMethodResponse * _response_;
@@ -218,7 +218,7 @@ XmlRpcMethodCall * __common_get_the_bool_2 ()
 }
 
 /* service: get_the_bool_2 */
-bool test_get_the_bool_2_s (VortexChannel * channel, XmlRpcResponseStatus * status, int * fault_code, char ** fault_string)
+int test_get_the_bool_2_s (VortexChannel * channel, XmlRpcResponseStatus * status, int * fault_code, char ** fault_string)
 {
 	XmlRpcMethodCall     * _invocator_;
 	XmlRpcMethodResponse * _response_;

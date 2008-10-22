@@ -47,23 +47,23 @@
 
 BEGIN_C_DECLS
 
-bool               vortex_thread_create   (VortexThread      * thread_def,
+int                vortex_thread_create   (VortexThread      * thread_def,
 					   VortexThreadFunc    func,
 					   axlPointer          user_data,
 					   ...);
 
-bool               vortex_thread_destroy  (VortexThread      * thread_def, 
-					   bool                free_data);
+int                vortex_thread_destroy  (VortexThread      * thread_def, 
+					   int                 free_data);
 
-bool               vortex_mutex_create    (VortexMutex       * mutex_def);
+int                vortex_mutex_create    (VortexMutex       * mutex_def);
 
-bool               vortex_mutex_destroy   (VortexMutex       * mutex_def);
+int                vortex_mutex_destroy   (VortexMutex       * mutex_def);
 
 void               vortex_mutex_lock      (VortexMutex       * mutex_def);
 
 void               vortex_mutex_unlock    (VortexMutex       * mutex_def);
 
-bool               vortex_cond_create     (VortexCond        * cond);
+int                vortex_cond_create     (VortexCond        * cond);
 
 void               vortex_cond_signal     (VortexCond        * cond);
 
@@ -81,7 +81,7 @@ void               vortex_cond_broadcast  (VortexCond        * cond);
 vortex_cond_wait (c, mutex);\
 }while(0);
 
-bool               vortex_cond_wait       (VortexCond        * cond, 
+int                vortex_cond_wait       (VortexCond        * cond, 
 					   VortexMutex       * mutex);
 
 /** 
@@ -99,7 +99,7 @@ r = vortex_cond_timedwait (c, mutex, m);\
 }while(0)
 
 
-bool               vortex_cond_timedwait  (VortexCond        * cond, 
+int                vortex_cond_timedwait  (VortexCond        * cond, 
 					   VortexMutex       * mutex,
 					   long int            microseconds);
 
