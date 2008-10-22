@@ -169,7 +169,7 @@ typedef VortexTunnelSettings * (* VortexTunnelLocationResolver) (const char  * t
 
 #include <vortex.h>
 
-bool                   vortex_tunnel_is_enabled         (void);
+int                    vortex_tunnel_is_enabled         (void);
 
 VortexTunnelSettings * vortex_tunnel_settings_new       (VortexCtx * ctx);
 
@@ -186,7 +186,7 @@ VortexConnection     * vortex_tunnel_new                (VortexTunnelSettings * 
 							 VortexConnectionNew    on_connected,
 							 axlPointer             user_data);
 
-bool                   vortex_tunnel_accept_negotiation (VortexCtx                  * ctx,
+int                    vortex_tunnel_accept_negotiation (VortexCtx                  * ctx,
 							 VortexOnAcceptedConnection   accept_tunnel,
 							 axlPointer                   accept_tunnel_data);
 
@@ -196,7 +196,7 @@ void                   vortex_tunnel_set_resolver       (VortexCtx              
 
 /* private api, do not use directly (use vortex_tunnel_new) */
 VortexConnection     * __vortex_tunnel_new_common       (VortexTunnelSettings * settings,
-							 bool                   do_tunning_rest,
+							 int                    do_tunning_rest,
 							 VortexConnectionNew    on_connected,
 							 axlPointer             user_data);
 #endif
