@@ -80,7 +80,7 @@ struct _VortexTunnelSettings{
  * @return true if the current vortex library used provides TUNNEL
  * profile support. Otherwise false is returned.
  */
-bool                   vortex_tunnel_is_enabled       (void)
+int                    vortex_tunnel_is_enabled       (void)
 {
 #if ! defined(ENABLE_TUNNEL_SUPPORT)
 	/* beep general application proxy not supported */
@@ -435,7 +435,7 @@ VortexConnection     * vortex_tunnel_new              (VortexTunnelSettings * se
  * @return A reference to the connection created or NULL if it fails.
  */
 VortexConnection     * __vortex_tunnel_new_common     (VortexTunnelSettings * settings,
-						       bool                   do_tunning_reset,
+						       int                    do_tunning_reset,
 						       VortexConnectionNew    on_connected,
 						       axlPointer             user_data)
 {
@@ -544,8 +544,9 @@ VortexConnection     * __vortex_tunnel_new_common     (VortexTunnelSettings * se
 		return NULL;
 	} /* end if */
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "connection created with host=%s port=%s, creating TUNNEL ",
-		    host, port);
+ 	vortex_log (VORTEX_LEVEL_DEBUG, "connection created with host=%s port=%s, disabling SEQ frames, creating TUNNEL ",
+  		    host, port);
+ 	vortex_connection_seq_frame_updates (connection, true);
 	
 	/* create a new channel and a queue to receive all replies */
 	queue   = vortex_async_queue_new ();
@@ -573,6 +574,17 @@ VortexConnection     * __vortex_tunnel_new_common     (VortexTunnelSettings * se
 	
 	/* free piggyback */
 	axl_free (content);
+
+	if (channel == NULL) {
+		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_CRITICAL, "failed to create TUNNEL channel, unable to proxy BEEP connection");
+
+		/* close the connection */
+		vortex_connection_close (connection);
+
+		/* dealloc queue */
+		vortex_async_queue_unref (queue);
+		return NULL;
+	}
 	
 	/* now wait for the reply to the request for creating a BEEP
 	 * application level tunnel */
@@ -616,8 +628,9 @@ VortexConnection     * __vortex_tunnel_new_common     (VortexTunnelSettings * se
 
 	/* if the caller didn't ask to perform the tunning reset
 	 * (likely to be a middle hop), just return */
-	if (! do_tunning_reset)
+	if (! do_tunning_reset) {
 		return connection;
+	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "now performing tunning reset");
 
@@ -647,12 +660,23 @@ VortexConnection     * __vortex_tunnel_new_common     (VortexTunnelSettings * se
 	 * functions to store and retrieve data.  */
 	connection = vortex_connection_new_empty_from_connection (ctx, socket, connection_aux, VortexRoleInitiator);
 
+ 	/* check connection */
+ 	if (! vortex_connection_is_ok (connection, false)) {
+ 		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to create initial connection to prepare TUNNEL");
+ 		return NULL;
+ 	}
+
 	/* unref the vortex connection and create a new empty one */
 	__vortex_connection_set_not_connected (connection_aux, 
 					       "connection instance being closed, without closing session, due to underlying TUNNEL negotiation",
 					       VortexConnectionCloseCalled);
 	/* dealloc the connection */
 	vortex_connection_unref (connection_aux, "(vortex tunnel process)");
+
+ 	/* reenable tunning reset */
+ 	vortex_log (VORTEX_LEVEL_DEBUG, "reenabling SEQ frames for the TUNNEL connection=%d created",
+ 		    vortex_connection_get_id (connection));
+ 	vortex_connection_seq_frame_updates (connection, false);
 
 	/* the the connection to be blocking during the TUNNEL
 	 * negotiation, once called
@@ -835,7 +859,7 @@ void __vortex_tunnel_pass_octets (VortexConnection * connection)
  * @internal Implementation for the start tunnel request on the
  * connection provided.
  */
-bool __vortex_tunnel_start_request (char             * profile, 
+int  __vortex_tunnel_start_request (char             * profile, 
 				    int                channel_num, 
 				    VortexConnection * connection, 
 				    char             * serverName, 
@@ -851,7 +875,7 @@ bool __vortex_tunnel_start_request (char             * profile,
 	VortexConnection       * new_connection;
 	VortexTunnelSettings   * settings = NULL;
 	char                   * buffer;
-	bool                     result;
+	int                      result;
 	VortexCtx              * ctx;
 	
 	/* references to handlers */
@@ -1066,7 +1090,7 @@ bool __vortex_tunnel_start_request (char             * profile,
  * @return true if the profile have been activated, or false if
  * something have failed.
  */
-bool                   vortex_tunnel_accept_negotiation (VortexCtx                  * ctx,
+int                    vortex_tunnel_accept_negotiation (VortexCtx                  * ctx,
 							 VortexOnAcceptedConnection   accept_tunnel,
 							 axlPointer                   accept_tunnel_data)
 {
