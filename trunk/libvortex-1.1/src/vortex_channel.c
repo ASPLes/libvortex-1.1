@@ -3405,6 +3405,15 @@ bool     vortex_channel_update_incoming_buffer (VortexChannel * channel,
 	if (channel == NULL || frame == NULL)
 		return false;
 
+	/* check if SEQ frame generation is disabled for the
+	 * connection */
+	if (vortex_connection_seq_frame_updates_status (channel->connection)) {
+		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_DEBUG, 
+			    "avoiding generate SEQ frame for channel=%d due to administrative configuration on the connection (vortex_connection_seq_frame_updates)",
+			    channel->channel_num);
+		return false; 
+	} /* end if */
+
 	/* check if the channel is being close, is that is right, do
 	 * not generate more SEQ frames for the given channel. This is
 	 * to avoid generating a SEQ frame replaying to the <ok /> *
@@ -3415,7 +3424,8 @@ bool     vortex_channel_update_incoming_buffer (VortexChannel * channel,
 	 * must keep on replying SEQ frames until the <ok /> is
 	 * recevied.  This only applies to channel 0 */
 	if (channel->being_closed && channel->channel_num == 0) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "avoiding generate SEQ frame for a channel that is being closed");
+		vortex_log (VORTEX_LEVEL_DEBUG, "avoiding generate SEQ frame for a channel=%d that is being closed", 
+			    channel->channel_num);
 		return false;
 	}
 

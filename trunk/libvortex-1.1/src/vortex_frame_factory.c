@@ -2924,6 +2924,12 @@ bool          vortex_frame_mime_process          (VortexFrame * frame)
 	/* check reference */
 	v_return_val_if_fail (frame, false);
 
+	/* internal check */
+	if (frame->type == VORTEX_FRAME_TYPE_SEQ) {
+		vortex_log (LOG_DOMAIN, VORTEX_LEVEL_WARNING, "something is not working properly because a SEQ frame was received to reconfigure its MIME");
+		return false;
+	}
+
 	/* configure global variables */
 	iterator = 0; 
 	payload  = frame->payload;
