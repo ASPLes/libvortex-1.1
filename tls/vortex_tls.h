@@ -68,7 +68,7 @@ typedef enum {
  */
 #define VORTEX_TLS_PROFILE_URI "http://iana.org/beep/TLS"
 
-bool               vortex_tls_init                       (VortexCtx            * ctx);
+int                vortex_tls_init                       (VortexCtx            * ctx);
 
 void               vortex_tls_set_ctx_creation           (VortexConnection     * connection,
 							  VortexTlsCtxCreation   ctx_creation, 
@@ -97,11 +97,11 @@ VortexConnection * vortex_tls_start_negotiation_sync     (VortexConnection  * co
 							  char             ** status_message);
 
 void               vortex_tls_set_auto_tls               (VortexCtx         * ctx,
-							  bool                enabled,
-							  bool                allow_tls_failures,
+							  int                 enabled,
+							  int                 allow_tls_failures,
 							  const char        * serverName);
 
-bool               vortex_tls_accept_negotiation         (VortexCtx         * ctx, 
+int                vortex_tls_accept_negotiation         (VortexCtx         * ctx, 
 							  VortexTlsAcceptQuery            accept_handler, 
 							  VortexTlsCertificateFileLocator certificate_handler,
 							  VortexTlsPrivateKeyFileLocator  private_key_handler);
