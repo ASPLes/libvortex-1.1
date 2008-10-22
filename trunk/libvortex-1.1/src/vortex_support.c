@@ -123,6 +123,9 @@ void vortex_support_init (VortexCtx * ctx)
 	/* init hte mutex */
 	vortex_mutex_create (&ctx->search_path_mutex);
 
+	/* init inet_ntoa mutex */
+	vortex_mutex_create(&ctx->inet_ntoa_mutex);
+
 	return;
 }
 
@@ -145,6 +148,9 @@ void vortex_support_cleanup (VortexCtx * ctx)
 
 	/* destroy mutex */
 	vortex_mutex_destroy (&ctx->search_path_mutex);
+
+	/* terminate inet_ntoa mutex */
+	vortex_mutex_destroy (&ctx->inet_ntoa_mutex);
 
 	return;
 }
@@ -537,8 +543,8 @@ int      vortex_support_getenv_int                 (const char * env_name)
  * @return true if the operation was successfully completed, otherwise
  * false is returned.
  */
-bool     vortex_support_setenv                     (const char * env_name, 
-						    const char * env_value)
+int     vortex_support_setenv                     (const char * env_name, 
+						   const char * env_value)
 {
 	/* check values received */
 	if (env_name == NULL || env_value == NULL)
@@ -561,7 +567,7 @@ bool     vortex_support_setenv                     (const char * env_name,
  * @return true if the operation was successfully completed, otherwise
  * false is returned.
  */
-bool     vortex_support_unsetenv                   (const char * env_name)
+int      vortex_support_unsetenv                   (const char * env_name)
 {
 	/* check values received */
 	if (env_name == NULL)
@@ -639,7 +645,7 @@ char   * vortex_support_build_filename      (const char * name, ...)
 double   vortex_support_strtod                     (const char * param, char ** string_aux)
 {
 	double   double_value;
-	bool     second_try = false;
+	int      second_try = false;
 	char   * alt_string = NULL;
 
 	/* provide a local reference */
@@ -717,6 +723,37 @@ int     vortex_timeval_substract                  (struct timeval * a,
        return a->tv_sec < b->tv_sec;	
 }
 
+/**
+ * @brief Thread safe implementation for inet_ntoa.
+ *
+ * @param ctx The vortex context where the operation will be
+ * performed.  @param sin Socket information where to get inet_ntoa
+ * result.
+ *
+ * @return A newly allocated string that must be deallocated with
+ * axl_free that contains the host information. The function return
+ * NULL if it fails.
+ */
+char   * vortex_support_inet_ntoa                  (VortexCtx           * ctx, 
+						    struct sockaddr_in  * sin)
+{
+	char * result;
+
+	v_return_val_if_fail (ctx && sin, NULL);
+
+	/* lock during operation */
+	vortex_mutex_lock (&ctx->inet_ntoa_mutex);
+
+	/* allocate the string */
+	result = axl_strdup (inet_ntoa (sin->sin_addr));
+
+	/* unlock */
+	vortex_mutex_unlock (&ctx->inet_ntoa_mutex);
+
+	/* return the string */
+	return result;
+}
+
 /** 
  * @brief Allows to perform a set of test for the provided path.
  * 
@@ -727,9 +764,9 @@ int     vortex_timeval_substract                  (struct timeval * a,
  * 
  * @return true if all test returns true. Otherwise false is returned.
  */
-bool   vortex_support_file_test (const char * path, VortexFileTest test)
+int    vortex_support_file_test (const char * path, VortexFileTest test)
 {
-	bool result = false;
+	int  result = false;
 	struct stat file_info;
 
 	/* perform common checks */
