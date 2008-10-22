@@ -126,7 +126,7 @@ typedef void (* VortexXmlRpcBootNotify)               (VortexChannel    * booted
  * Here is an example of a resource validation handler that accept all
  * resources:
  * \code
- * bool     validate_all_resources (VortexConnection * connection,
+ * int      validate_all_resources (VortexConnection * connection,
  *                                  int                channel_number,
  *                                  char             * serverName,
  *                                  char             * resource_path,
@@ -150,7 +150,7 @@ typedef void (* VortexXmlRpcBootNotify)               (VortexChannel    * booted
  * 
  * @return true to accept resource requested. false if not.
  */
-typedef bool     (*VortexXmlRpcValidateResource) (VortexConnection * connection, 
+typedef int      (*VortexXmlRpcValidateResource) (VortexConnection * connection, 
 						  int                channel_number,
 						  const char       * serverName,
 						  const char       * resource_path,
@@ -291,16 +291,16 @@ VortexChannelPool * vortex_xml_rpc_create_channel_pool     (VortexConnection    
 							    axlPointer                    user_data);
 
 VortexChannel     * vortex_xml_rpc_channel_pool_get_next   (VortexConnection * connection, 
-							    bool               auto_inc, 
+							    int                auto_inc, 
 							    int                pool_id);
 
 
-bool                 vortex_xml_rpc_invoke               (VortexChannel           * channel,
+int                  vortex_xml_rpc_invoke               (VortexChannel           * channel,
 							  XmlRpcMethodCall        * method_call,
 							  XmlRpcInvokeNotify        reply_notify,
 							  axlPointer                user_data);
 
-bool                   vortex_xml_rpc_notify_reply         (XmlRpcMethodCall        * method_call, 
+int                    vortex_xml_rpc_notify_reply         (XmlRpcMethodCall        * method_call, 
 							    XmlRpcMethodResponse    * method_response);
 
 XmlRpcMethodResponse * vortex_xml_rpc_invoke_sync          (VortexChannel           * channel,
@@ -311,13 +311,13 @@ VortexXmlRpcState   vortex_xml_rpc_channel_status          (VortexChannel * chan
 
 const char        * vortex_xml_rpc_channel_get_resource    (VortexChannel * channel);
 
-bool                vortex_xml_rpc_accept_negotiation      (VortexCtx                    * ctx,
+int                 vortex_xml_rpc_accept_negotiation      (VortexCtx                    * ctx,
 							    VortexXmlRpcValidateResource   validate_resource,
 							    axlPointer                     validate_user_data,
 							    VortexXmlRpcServiceDispatch    service_dispatch,
 							    axlPointer                     dispatch_user_data);
 
-bool                vortex_xml_rpc_listener_parse_conf_and_start_listeners (VortexCtx * ctx);
+int                 vortex_xml_rpc_listener_parse_conf_and_start_listeners (VortexCtx * ctx);
 
 /** 
  * @internal
@@ -385,7 +385,7 @@ axlPointer vortex_xml_rpc_unmarshall_array_sync (XmlRpcMethodResponse    * respo
 						 int                     * fault_code,
 						 char                   ** fault_string);
 
-bool vortex_xml_rpc_init    (VortexCtx * ctx);
+int  vortex_xml_rpc_init    (VortexCtx * ctx);
 
 void vortex_xml_rpc_cleanup (VortexCtx * ctx);
 

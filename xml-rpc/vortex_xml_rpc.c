@@ -1053,7 +1053,7 @@ VortexChannelPool * vortex_xml_rpc_create_channel_pool     (VortexConnection    
  * NULL if it fails.
  */
 VortexChannel     * vortex_xml_rpc_channel_pool_get_next   (VortexConnection * connection, 
-							    bool               auto_inc, 
+							    int                auto_inc, 
 							    int                pool_id)
 {
 	VortexChannelPool       * pool = NULL;
@@ -1105,7 +1105,7 @@ typedef struct _VortexXmlRpcInvokeData {
  * <value> node which contains the <struct> structure with the desired
  * values.
  */
-bool     __vortex_xml_rpc_get_fault_values (VortexCtx          * ctx,
+int      __vortex_xml_rpc_get_fault_values (VortexCtx          * ctx,
 					    axlNode            * node, 
 					    int                * faultCode, 
 					    char              ** faultString,
@@ -1397,7 +1397,7 @@ axlPointer __vortex_xml_rpc_invoke (VortexXmlRpcInvokeData * data)
  * @return true if the invocation was performed (only the RPC call),
  * otherwise false is returned.
  */
-bool                vortex_xml_rpc_invoke                  (VortexChannel           * channel,
+int                 vortex_xml_rpc_invoke                  (VortexChannel           * channel,
 							    XmlRpcMethodCall        * method_call,
 							    XmlRpcInvokeNotify        reply_notify,
 							    axlPointer                user_data)
@@ -1815,7 +1815,7 @@ void __vortex_xml_rpc_frame_received (VortexChannel    * channel,
  * some error have happened. In that case, profile_content_reply is
  * filled.
  */
-bool     __vortex_xml_rpc_parse_bootmsg (VortexCtx   * ctx,
+int      __vortex_xml_rpc_parse_bootmsg (VortexCtx   * ctx,
 					 char        *  profile_content, 
 					 char       ** resource, 
 					 char       ** profile_content_reply)
@@ -1911,7 +1911,7 @@ bool     __vortex_xml_rpc_parse_bootmsg (VortexCtx   * ctx,
  * is accepted or not accepted but so the channel. false should be
  * returned only if the channel and the resource are denied.
  */
-bool     __vortex_xml_rpc_start_msg (char              * profile,
+int      __vortex_xml_rpc_start_msg (char              * profile,
 				     int                 channel_num,
 				     VortexConnection  * connection,
 				     char              * serverName,
@@ -1925,7 +1925,7 @@ bool     __vortex_xml_rpc_start_msg (char              * profile,
 	char                             * resource;
 	int                                iterator;
 	VortexXmlRpcServiceDispatchNode  * dispatch_node;
-	bool                               accept = false;
+	int                                accept = false;
 	VortexChannel                    * channel;
 	axlList                          * service_dispatch;
 
@@ -2015,7 +2015,7 @@ const char  * vortex_xml_rpc_channel_get_resource (VortexChannel * channel)
  * if the parameters provided are NULL or rpc support is not
  * enabled. Otherwise, true is returned.
  */
-bool vortex_xml_rpc_notify_reply (XmlRpcMethodCall     * method_call, 
+int  vortex_xml_rpc_notify_reply (XmlRpcMethodCall     * method_call, 
 				  XmlRpcMethodResponse * method_response)
 {
 	VortexChannel * channel      = NULL;
@@ -2064,7 +2064,7 @@ bool vortex_xml_rpc_notify_reply (XmlRpcMethodCall     * method_call,
 /** 
  * @internal Handler used by vortex_xml_rpc_accept_negotiation.
  */
-bool __vortex_xml_rpc_default_validate (VortexConnection * connection,
+int  __vortex_xml_rpc_default_validate (VortexConnection * connection,
 					int                channel_number,
 					const char       * serverName,
 					const char       * resource_path,
@@ -2108,7 +2108,7 @@ bool __vortex_xml_rpc_default_validate (VortexConnection * connection,
  * // global context to be used
  * VortexCtx * ctx = NULL;
  *
- * bool     validate_resource (VortexConnection * connection, 
+ * int      validate_resource (VortexConnection * connection, 
  *                             int                channel_number,
  *                             char             * serverName,
  *                             char             * resource_path)
@@ -2231,7 +2231,7 @@ bool __vortex_xml_rpc_default_validate (VortexConnection * connection,
  * @return true if activation is complete, otherwise false is
  * returned. 
  */
-bool                vortex_xml_rpc_accept_negotiation      (VortexCtx                    * ctx,
+int                 vortex_xml_rpc_accept_negotiation      (VortexCtx                    * ctx,
 							    VortexXmlRpcValidateResource   validate_resource,
 							    axlPointer                     validate_user_data,
 							    VortexXmlRpcServiceDispatch    service_dispatch,
@@ -2293,7 +2293,7 @@ bool                vortex_xml_rpc_accept_negotiation      (VortexCtx           
  * @return true if the listener was started because the file was read
  * successfully otherwise false is returned.
  */
-bool                vortex_xml_rpc_listener_parse_conf_and_start_listeners (VortexCtx * ctx)
+int                 vortex_xml_rpc_listener_parse_conf_and_start_listeners (VortexCtx * ctx)
 {
 	/* call to legacy implementation */
 	return vortex_listener_parse_conf_and_start (ctx);
@@ -2950,7 +2950,7 @@ axlPointer vortex_xml_rpc_unmarshall_array_sync (XmlRpcMethodResponse    * respo
  * @return true if the initialization was properly done, otherwise
  * false is returned.
  */
-bool vortex_xml_rpc_init    (VortexCtx * ctx)
+int  vortex_xml_rpc_init    (VortexCtx * ctx)
 {
 	axlList * service_dispatch;
 	axlDtd  * dtd;
