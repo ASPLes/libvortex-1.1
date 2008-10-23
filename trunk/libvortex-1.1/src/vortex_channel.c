@@ -3615,10 +3615,14 @@ axlPointer         vortex_channel_next_pending_message          (VortexChannel *
 }
 
 /** 
- * @internal
+ * @brief Allows to check if the provided channel has pending channels
+ * to be sent (they are queued due to performance reasons like remote
+ * window exhausted).
  * 
- * Internal function which allows to check if the provided channel
- * have pending messages to be sequenced.
+ * @param channel The channel to check for its pending messages.
+ *
+ * @return true in the case pending queue is empty, otherwise false is
+ * returned.
  */
 int              vortex_channel_is_empty_pending_message (VortexChannel * channel)
 {
