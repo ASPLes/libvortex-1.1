@@ -509,19 +509,19 @@ void xml_rpc_c_server_write_service_header (char    * service_name,
 	if (axl_cmp (return_type, "int"))
 		xml_rpc_support_write ("int ");
 
-	if (axl_cmp (return_type, "bool"))
+	else if (axl_cmp (return_type, "bool"))
 		xml_rpc_support_write ("int ");
 
-	if (axl_cmp (return_type, "double"))
+	else if (axl_cmp (return_type, "double"))
 		xml_rpc_support_write ("double ");
 
-	if (axl_cmp (return_type, "string"))
+	else if (axl_cmp (return_type, "string"))
 		xml_rpc_support_write ("char * ");
 
-	if (axl_cmp (return_type, "base64"))
+	else if (axl_cmp (return_type, "base64"))
 		xml_rpc_support_write ("char * ");
 
-	if (xml_rpc_c_stub_type_is_array (doc, return_type) ||
+	else if (xml_rpc_c_stub_type_is_array (doc, return_type) ||
 	    xml_rpc_c_stub_type_is_struct (doc, return_type))
 		xml_rpc_support_write ("%s * ", return_type);
 	    
