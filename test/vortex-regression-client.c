@@ -193,6 +193,12 @@ void subs (struct timeval stop, struct timeval start, struct timeval * _result)
  */
 #define REGRESSION_URI_ANS_NUL_REPLY_CLOSE "http://iana.org/beep/transient/vortex-regression/ans-nul-reply-close"
 
+/**
+ * Profile used to identify the regression test to check connection
+ * close after ans/nul reply.
+ */
+#define REGRESSION_URI_CLOSE_AFTER_ANS_NUL_REPLIES "http://iana.org/beep/transient/vortex-regression/close-after-ans-nul-replies"
+
 /** 
  * @internal Allows to know if the connection must be created directly or
  * through the tunnel.
@@ -3331,6 +3337,152 @@ int  test_02k (void) {
 	return true;
 }
 
+/* message size: 4096 */
+#define TEST_REGRESION_URI_4_MESSAGE "This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary ."
+
+
+
+int  test_02m (void) {
+
+	VortexConnection * connection;
+	VortexChannel    * channel;
+	VortexFrame      * frame; 
+	VortexAsyncQueue * queue;
+	int                iterator;
+	int                code;
+	char             * msg;
+	int                count = 0;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+		
+	} /* end if */
+
+	/* create a channel */
+	queue   = vortex_async_queue_new ();
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_CLOSE_AFTER_ANS_NUL_REPLIES,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* no frame received */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+
+	if (channel == NULL) {
+		printf ("ERROR: unable to create channel to check connection close after ANS..NUL reply\n");
+		return false;
+	} /* end if */
+
+	/* get a reference to the channel to avoid close conditions
+	 * because remote side will send a close operation */
+	vortex_channel_ref (channel);
+
+	/* send a message to start retrieval */
+	if (! vortex_channel_send_msg (channel, "get-content", 11, NULL)) {
+		printf ("ERROR: failed to send first message to get list of ans-nul replies\n");
+		return false;
+	}
+
+	/* get all replies */
+	iterator = 0;
+	while (iterator < 10000) {
+		/* get a reply */
+		frame = vortex_channel_get_reply (channel, queue);
+		if (frame == NULL) {
+			printf ("ERROR: expected reply from remote side while running mixed replies tests..\n");
+			return false;
+		}
+
+		/* check reply type */
+		if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_ANS) {
+			printf ("ERROR: expected to receive a ANS frame (iterator=%d)..\n", iterator);
+			return false;
+		}
+
+		/* check content received */
+		if (! axl_cmp (vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE)) {
+			printf ("ERROR: expected to find different content than received..\n");
+			return false;
+		}
+
+		/* update count */
+		count += vortex_frame_get_payload_size (frame);
+	
+		/* release frame */
+		vortex_frame_unref (frame);
+
+		/* check channel */
+		if (! vortex_channel_is_opened (channel)) {
+			printf ("ERROR: expected to find channel opened..\n");
+			return false;
+		}
+
+		/* check connection */
+		if (! vortex_connection_is_ok (connection, false)) {
+			printf ("ERROR: expected to find connection opened..\n");
+			return false;
+		} 
+	
+		/* update iterator */
+		iterator++;
+	} /* end while */
+
+	printf ("Test 02m: bytes transferred %d..\n", count);
+
+	/* get a reply */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL) {
+		printf ("ERROR: expected reply from remote side while running mixed replies tests..\n");
+		return false;
+	}
+	
+	/* check reply type */
+	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_NUL) {
+		printf ("ERROR: expected to receive a MSG frame..\n");
+		return false;
+	}
+
+	/* unref nul reply */
+	vortex_frame_unref (frame);
+	
+	/* try to close the channel */
+	/* vortex_log_enable (true);
+	   vortex_color_log_enable (true); */
+	if (! vortex_channel_close (channel, NULL)) {
+		printf ("ERROR: failed to close channel: ..\n");
+
+		/* close operation have failed */
+		while (vortex_connection_pop_channel_error (connection, &code, &msg)) {
+			/* drop a error message */
+			printf ("Close failed, error was: code=%d, %s\n",
+				code, msg);
+			/* dealloc resources */
+			axl_free (msg);
+		} /* end while */
+
+		return false;
+	} /* end if */
+
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return false;
+	} /* end if */
+
+	/* terminate queue */
+	vortex_async_queue_unref (queue);
+
+	/* ..and channel reference */
+	vortex_channel_unref (channel);
+
+	/* operation completed */
+	return true;
+}
+
 /** 
  * @brief Checks BEEP support to send large messages that goes beyond
  * default window size advertised.
@@ -4127,7 +4279,6 @@ int  test_04_a_common (int block_size, int num_blocks, int num_times) {
 		printf ("Unable to create the channel..");
 		return false;
 	}
-	printf ("ok\n");
 
 	times           = 0;
 	blocks_received = 0;
@@ -5926,9 +6077,9 @@ int main (int  argc, char ** argv)
 	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, \n");
 	printf ("**                       test_02, test_02a, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
-	printf ("**                       test_02l, test_03, test_03a, test_04, test_04a, test_04b, \n");
-	printf ("**                       test_04c, test_05, test_05a, test_06, test_07, test_08,\n");
-	printf ("**                       test_09, test_10, test_11, test_12, test_13\n");
+	printf ("**                       test_02l, test_02m, test_03, test_03a, test_04, test_04a, \n");
+	printf ("**                       test_04b, test_04c, test_05, test_05a, test_06, test_07, \n");
+	printf ("**                       test_08, test_09, test_10, test_11, test_12, test_13\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -6063,6 +6214,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_02l"))
 			run_test (test_02l, "Test 02-l", "detect last reply written when using ANS/NUL reply.", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_02m"))
+			run_test (test_02m, "Test 02-m", "blocking close after ANS/NUL replies.", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_03"))
 			run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
 
@@ -6170,6 +6324,8 @@ int main (int  argc, char ** argv)
 	run_test (test_02k, "Test 02-k", "mixing replies to messages received in the same channel (ANS..NUL, RPY)", -1, -1);
 
 	run_test (test_02l, "Test 02-l", "detect last reply written when using ANS/NUL reply.", -1, -1);
+
+ 	run_test (test_02m, "Test 02-m", "blocking close after ANS/NUL replies.", -1, -1);
 	
  	run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
   

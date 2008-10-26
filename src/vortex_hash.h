@@ -49,6 +49,10 @@ VortexHash * vortex_hash_new_full (axlHashFunc    hash_func,
 VortexHash * vortex_hash_new      (axlHashFunc    hash_func,
 				   axlEqualFunc   key_equal_func);
 
+void         vortex_hash_ref      (VortexHash   * hash_table);
+
+void         vortex_hash_unref    (VortexHash   * hash_table);
+
 void         vortex_hash_insert   (VortexHash *hash_table,
 				   axlPointer  key,
 				   axlPointer  value);
@@ -70,6 +74,9 @@ axlPointer   vortex_hash_lookup   (VortexHash   *hash_table,
 
 axlPointer   vortex_hash_lookup_and_clear   (VortexHash   *hash_table,
 					     axlPointer    key);
+
+int          vortex_hash_lock_until_changed (VortexHash   *hash_table,
+					     long int      wait_microseconds);
 
 int          vortex_hash_remove   (VortexHash   *hash_table,
 				   axlPointer    key);

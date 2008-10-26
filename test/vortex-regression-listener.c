@@ -165,6 +165,12 @@
  */
 #define REGRESSION_URI_ANS_NUL_REPLY_CLOSE "http://iana.org/beep/transient/vortex-regression/ans-nul-reply-close"
 
+/**
+ * Profile used to identify the regression test to check connection
+ * close after ans/nul reply.
+ */
+#define REGRESSION_URI_CLOSE_AFTER_ANS_NUL_REPLIES "http://iana.org/beep/transient/vortex-regression/close-after-ans-nul-replies"
+
 void frame_received_fake_listeners  (VortexChannel    * channel,
 				     VortexConnection * connection,
 				     VortexFrame      * frame,
@@ -1001,6 +1007,50 @@ void frame_received_mix_replies (VortexChannel    * channel,
 
 	return;
 }
+
+void send_ans_replies_and_close (VortexChannel    * channel,
+				 VortexConnection * connection,
+				 VortexFrame      * frame,
+				 axlPointer         user_data)
+{
+	int iterator = 0;
+
+	if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_MSG) {
+		/* send replies and close */
+		printf ("Test 02-m: sending replies..\n");
+		while (iterator < 10000) {
+			/* send reply */
+			if (! vortex_channel_send_ans_rpy (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), vortex_frame_get_msgno (frame))) {
+				printf ("ERROR: failed to send ANS message..closing connection..\n");
+				vortex_connection_shutdown (connection);
+				return;
+			}
+
+			/* next iiterator */
+			iterator++;
+		} /* end while */
+
+		/* finalize send */
+		printf ("Test 02-m: terminate sending with NUL frame..\n");
+		if (! vortex_channel_finalize_ans_rpy (channel, vortex_frame_get_msgno (frame))) {
+			printf ("ERROR: failed to send NUL terminating frame..closing connection..\n");
+			vortex_connection_shutdown (connection);
+			return; 
+		} /* end if */
+
+		/* close channel */
+		printf ("Test 02-m: closing channel=%d..\n", vortex_channel_get_number (channel));
+		if (! vortex_channel_close (channel, NULL)) {
+			printf ("ERROR: Test 02-m: failed to close channel..\n");
+			return;
+		} /* end if */
+		printf ("Test 02-m: channel closed..\n");
+
+	} /* end if */
+
+
+	return;
+}
 				 
 
 int  start_channel_connection (int                channel_num, 
@@ -1196,6 +1246,14 @@ int main (int  argc, char ** argv)
 				  NULL, NULL,
 				  NULL, NULL);
 	vortex_listener_set_on_connection_accepted (ctx, on_accepted_ans_nul_reply_close, NULL);
+
+	/* register a profile */
+	vortex_profiles_register (ctx, REGRESSION_URI_CLOSE_AFTER_ANS_NUL_REPLIES,
+				  /* default start and close handlers */
+				  NULL, NULL,
+				  NULL, NULL,
+				  /* frame received */
+				  send_ans_replies_and_close, NULL);
 
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */

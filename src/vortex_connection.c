@@ -4495,6 +4495,23 @@ axlPointer         vortex_connection_get_data               (VortexConnection * 
 	return vortex_hash_lookup (connection->data, (axlPointer) key);
 }
 
+/**
+ * @internal Function that allows to get the internal reference used
+ * by a connection to hold all channels available.
+ *
+ * @param connection The connection that is required to return its
+ * channels hash structure.
+ *
+ * @return A reference to the hash table used to store channels or
+ * NULL if it fails.
+ */
+VortexHash        * vortex_connection_get_channels_hash      (VortexConnection * connection)
+{
+ 	v_return_val_if_fail (connection, NULL);
+ 
+ 	return connection->channels;
+}
+
 /** 
  * @brief Returns the channel pool identified by <i>pool_id</i>.
  *
