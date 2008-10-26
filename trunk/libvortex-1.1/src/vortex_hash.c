@@ -39,16 +39,20 @@
 #define LOG_DOMAIN "vortex-hash"
 
 struct _VortexHash {
-	axlHash        * table;
-	VortexMutex      mutex;
+	axlHash          * table;
+	VortexMutex        mutex;
+	int                ref_count;
 
 	/* configuration functions */
-	axlHashFunc    hash_func;
-	axlEqualFunc   key_equal_func;
+	axlHashFunc        hash_func;
+	axlEqualFunc       key_equal_func;
 
 	/* destroy functions */
-	axlDestroyFunc   key_destroy;
-	axlDestroyFunc   value_destroy;
+	axlDestroyFunc     key_destroy;
+	axlDestroyFunc     value_destroy;
+	
+	/* watchers */
+	VortexAsyncQueue * changed_queue;
 };
 
 /**
@@ -59,6 +63,32 @@ struct _VortexHash {
  * \addtogroup vortex_hash
  * @{
  */
+
+/*
+ * @internal function used to notify changes detected on the hash.
+ */
+void __vortex_hash_notify_change (VortexHash * hash_table)
+{
+	int waiters;
+
+	/* check hash table reference and changed queued */
+	if (hash_table == NULL || hash_table->changed_queue == NULL)
+		return;
+
+	/* get number of waiters */
+	waiters = vortex_async_queue_waiters (hash_table->changed_queue);
+	while (waiters > 0) {
+
+		/* push queue one data for each waiter */
+		vortex_async_queue_push (hash_table->changed_queue, INT_TO_PTR (1));
+
+		/* decrease waiters */
+		waiters--;
+
+	} /* end while */
+
+	return;
+}
 
 /**
  * @brief Creates a new VortexHash setting all functions.
@@ -87,6 +117,7 @@ VortexHash * vortex_hash_new_full (axlHashFunc    hash_func,
 
 	result                 = axl_new (VortexHash, 1);
 	result->table          = axl_hash_new (hash_func, key_equal_func);
+	result->ref_count      = 1;
 
 	/* configuration functions */
 	result->hash_func      = hash_func;
@@ -121,6 +152,37 @@ VortexHash * vortex_hash_new      (axlHashFunc    hash_func,
 }
 
 /**
+ * @brief Allows to increase in one unit the reference counting on the
+ * hash table received. A call to \ref vortex_hash_unref will be
+ * required to reduce the reference counting. Reaching 0 will cause
+ * \ref vortex_hash_destroy to be called automatically.
+ *
+ * @param hash_table Increase reference counting by one.
+ */
+void         vortex_hash_ref      (VortexHash   * hash_table)
+{
+	v_return_if_fail (hash_table);
+	vortex_mutex_lock (&hash_table->mutex);
+	hash_table->ref_count++;
+	vortex_mutex_unlock (&hash_table->mutex);
+	return;
+}
+
+/**
+ * @brief Decrease reference counting and, if reached 0 reference a
+ * call to \ref vortex_hash_destroy is done.
+ *
+ * @param hash_table
+ */
+void         vortex_hash_unref    (VortexHash   * hash_table)
+{
+	/* call to destroy implementation to unify behaviour:
+	 * vortex_hash_destroy already implements reference
+	 * counting  */
+	vortex_hash_destroy (hash_table);
+} 
+
+/**
  * @brief Inserts a pair key/value inside the given VortexHash
  *
  * 
@@ -144,6 +206,9 @@ void         vortex_hash_insert   (VortexHash *hash_table,
 			      value, hash_table->value_destroy);
 
 	vortex_mutex_unlock (&hash_table->mutex);
+
+	/* notify change */
+	__vortex_hash_notify_change (hash_table);
 
 	return;
 }
@@ -172,6 +237,9 @@ void         vortex_hash_replace  (VortexHash *hash_table,
 			      value, hash_table->value_destroy);
 
 	vortex_mutex_unlock (&hash_table->mutex);
+
+	/* notify change */
+	__vortex_hash_notify_change (hash_table);
 
 	return;
 }
@@ -206,6 +274,9 @@ void         vortex_hash_replace_full  (VortexHash     * hash_table,
 			      value, value_destroy);
 
 	vortex_mutex_unlock (&hash_table->mutex);
+
+	/* notify change */
+	__vortex_hash_notify_change (hash_table);
 
 	return;
 }
@@ -280,6 +351,7 @@ axlPointer   vortex_hash_lookup_and_clear   (VortexHash   *hash_table,
 {
 	
 	axlPointer data;
+	int        was_removed;
 
 	/* check hash table reference */
 	if (hash_table == NULL)
@@ -290,12 +362,72 @@ axlPointer   vortex_hash_lookup_and_clear   (VortexHash   *hash_table,
 	data = axl_hash_get (hash_table->table, key);
 
 	/* remove the data */
-	axl_hash_remove (hash_table->table, key);
+	was_removed = axl_hash_remove (hash_table->table, key);
 
 	/* unlock and return */
 	vortex_mutex_unlock (&hash_table->mutex);	
 
+	if (was_removed) {
+		/* notify change */
+		__vortex_hash_notify_change (hash_table);
+	}
+
 	return data;
+}
+
+/**
+ * @brief Allows the callers to get locked until a change is detected
+ * on the hash table (insert, update or remove operation) found or the
+ * wait period is reached (wait_microseconds).
+ *
+ * During the lock operation the hash table remains usable to other
+ * callers (including threads).
+ *
+ * @param hash_table The hash table to wait for changes.
+ *
+ * @param wait_microseconds The amount of time to wait. If 0 is used,
+ * it will wait without limit until next change is produced. 
+ *
+ * @return The function returns -2 in the case wrong parameters are
+ * received (NULL hash table reference or negative value for
+ * wait_microseconds). The function returns 0 in the case the
+ * wait_microseconds period is reached without any change. 1 is
+ * returned in the case a change is detected during the
+ * wait_microseconds. Once the function returns, the change has
+ * already taken place.
+ */
+int          vortex_hash_lock_until_changed (VortexHash   *hash_table,
+					     long int      wait_microseconds)
+{
+	int result;
+
+	v_return_val_if_fail (hash_table && wait_microseconds >= 0, -2);
+	
+	/* lock the hash */
+	vortex_mutex_lock (&hash_table->mutex);
+
+	/* update reference counting */
+	hash_table->ref_count++;
+
+	/* check to create the async queue in the case it is not
+	 * created */
+	if (hash_table->changed_queue == NULL)
+		hash_table->changed_queue = vortex_async_queue_new ();
+
+	/* lock the hash */
+	vortex_mutex_unlock (&hash_table->mutex);
+
+	/* wait until change is detected */
+	if (wait_microseconds > 0)
+		result = PTR_TO_INT (vortex_async_queue_timedpop (hash_table->changed_queue, wait_microseconds));
+	else 
+		result = PTR_TO_INT (vortex_async_queue_pop (hash_table->changed_queue));
+
+	/* reduce reference counting */
+	vortex_hash_unref (hash_table);
+
+	/* return result */
+	return result;
 }
 
 /**
@@ -312,16 +444,24 @@ axlPointer   vortex_hash_lookup_and_clear   (VortexHash   *hash_table,
 int          vortex_hash_remove   (VortexHash *hash_table,
 				   axlPointer key)
 {
+ 	int was_removed;
+
 	/* check hash table reference */
 	if (hash_table == NULL)
 		return false;
 
 	vortex_mutex_lock   (&hash_table->mutex);
 
+ 	was_removed = axl_hash_remove (hash_table->table, key);
+ 	
 	axl_hash_remove (hash_table->table, key);
 	
 	vortex_mutex_unlock (&hash_table->mutex);
 
+ 	if (was_removed) {
+ 		/* notify change */
+ 		__vortex_hash_notify_change (hash_table);
+ 	}
 	return true;
 }
 
@@ -339,12 +479,25 @@ void         vortex_hash_destroy  (VortexHash *hash_table)
 	if (hash_table == NULL)
 		return;
 
-	/* look the mutex */
+	/* lock the mutex */
 	vortex_mutex_lock (&hash_table->mutex);
+
+ 	/* reduce reference counting */
+ 	hash_table->ref_count--;
+ 	if (hash_table->ref_count != 0) {
+ 		/* unlock the mutex and returns: more callers have a
+ 		 * referece to this hash */
+ 		vortex_mutex_unlock (&hash_table->mutex);
+ 		return;
+ 	} /* end if */
 	
 	/* get a reference to the table and nullify it */
 	axl_hash_free (hash_table->table);
 	hash_table->table = NULL;
+
+ 	/* unref waiting queue */
+ 	if (hash_table->changed_queue)
+ 		vortex_async_queue_unref (hash_table->changed_queue);
 
 	/* unlock and free */
 	vortex_mutex_unlock (&hash_table->mutex);
@@ -372,13 +525,20 @@ void         vortex_hash_destroy  (VortexHash *hash_table)
 int          vortex_hash_delete   (VortexHash   *hash_table,
 				   axlPointer    key)
 {
+	int was_removed;
+
 	v_return_val_if_fail (hash_table, false);
 
 	vortex_mutex_lock    (&hash_table->mutex);
 
-	axl_hash_delete      (hash_table->table, key);
+	was_removed = axl_hash_delete (hash_table->table, key);
 	
 	vortex_mutex_unlock  (&hash_table->mutex);
+
+	if (was_removed) {
+		/* notify change */
+		__vortex_hash_notify_change (hash_table);
+	}
 
 	return true;
 }
@@ -491,16 +651,26 @@ int      vortex_hash_clear_allways_true (axlPointer key, axlPointer value, axlPo
  */
 void         vortex_hash_clear    (VortexHash *hash_table)
 {
+ 	int items_found;
+
 	if (hash_table == NULL)
 		return;
 
 	vortex_mutex_lock (&hash_table->mutex);
+
+ 	/* record number of items deleted to notify change in the case
+ 	 * something was stored */
+ 	items_found = axl_hash_items (hash_table->table);
 
 	axl_hash_free (hash_table->table);
 	hash_table->table = axl_hash_new (hash_table->hash_func, 
 					  hash_table->key_equal_func);
 
 	vortex_mutex_unlock (&hash_table->mutex);
+
+ 	/* notify change */
+ 	if (items_found > 0)
+ 		__vortex_hash_notify_change (hash_table);
 
 	return;
 }

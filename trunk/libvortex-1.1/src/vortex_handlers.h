@@ -1154,15 +1154,19 @@ typedef int  (*VortexChannelSelector) (VortexChannel * channel,
  * @brief Handler definition used to notify that a channel was added
  * or removed from a particular connection.
  *
- * In the case the channel is added, the function is just after it was
- * fully added to the connection. In the case the channel was removed,
- * the handler is called just before.
+ * In the case the channel is added, the function is called just after
+ * it was fully added to the connection. In the case the channel was
+ * removed, the handler is called just before.
  *
  * The handler is used the following two functions:
  * 
  * - \ref vortex_connection_set_channel_added_handler
  * - \ref vortex_connection_set_channel_removed_handler
- * 
+ *
+ * This function is handler definition is useful to get notifications
+ * at the server side for channels created or removed in the case a
+ * particular operation must be triggered on that moment.
+ *
  * @param channel The channel that is being removed or added to the
  * connection.
  *

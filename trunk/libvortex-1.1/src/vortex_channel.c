@@ -4462,10 +4462,11 @@ int      vortex_channel_block_until_replies_are_sent (VortexChannel * channel,
 	vortex_mutex_unlock (&channel->pending_mutex);
 	
 	vortex_log (VORTEX_LEVEL_DEBUG, 
-	       "we have sent the last reply we can now close the channel %d (RPY %d = MSG %d)", 
-	       channel->channel_num, 
-	       (channel->last_reply_sent - 1), 
-	       channel->last_message_received);
+		    "we have sent the last reply we can now close the channel %d (RPY %d = MSG %d), pending messages: %d", 
+		    channel->channel_num, 
+		    (channel->last_reply_sent - 1), 
+		    channel->last_message_received,
+		    axl_list_length (channel->pending_messages));
 
 	return result;
 }
@@ -4594,6 +4595,10 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
 			vortex_log (VORTEX_LEVEL_DEBUG, "unable to send close channel message");
 			result = false;
 			vortex_channel_free_wait_reply (wait_reply);
+
+			/* push a channel error */
+			vortex_connection_push_channel_error (connection, -1,
+							      "Unable to send BEEP close channel message, failed to close the channel.");
 			goto __vortex_channel_close_invoke_caller;
 		}
 
@@ -4637,6 +4642,11 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
 		 * values returned */
 		vortex_channel_validate_err (frame, &code, &msg);
 		result = false;
+
+		/* push a channel error */
+		vortex_connection_push_channel_error (connection, -2,
+						      "Unable to close the channel: remote BEEP peer do not agree to close it.");
+
 		break;
 	case VORTEX_FRAME_TYPE_RPY:
 		/* remote peer agree to close the channel */
@@ -4731,6 +4741,10 @@ int      __vortex_channel_close_full (VortexChannel * channel,
 	WaitReplyData          * wait_reply;
 	VortexCtx              * ctx   = vortex_channel_get_ctx (channel);
 	VortexChannelCloseData * data;
+	VortexHash             * channels;
+	VortexConnection       * connection;
+	int                      channel_num;
+	int                      result;
 	
 	v_return_val_if_fail (channel,                   false);
 	v_return_val_if_fail (channel->channel_num >= 0, false);
@@ -4750,13 +4764,61 @@ int      __vortex_channel_close_full (VortexChannel * channel,
 	vortex_mutex_lock (&channel->close_mutex);
 	if (channel->being_closed) {
 
+ 		/* record channel number and connection */
+ 		channel_num = channel->channel_num;
+ 		connection  = channel->connection;
+ 
+ 		/* update reference counting for notification */
+ 		vortex_channel_ref (channel);
+ 
+ 		vortex_log (VORTEX_LEVEL_WARNING, "Channel=%d in process of being closed before calling to this function.",
+ 			    channel_num);
+ 
+ 		/* get a reference to the channels structure */
+ 		channels = vortex_connection_get_channels_hash (channel->connection);
+ 		vortex_hash_ref (channels);
+ 		
 		/* seems the channel is being closed already */
 		vortex_mutex_unlock (&channel->close_mutex);
 
-		/* notify close */
-		NOTIFY_CLOSE(channel, false, "554", "Channel in process of being closed before calling to this function.");
-
-		vortex_log (VORTEX_LEVEL_WARNING, "Channel in process of being closed before calling to this function.");
+ 		if (channels == NULL) {
+ 			vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to perform caller locking until channel closed: connection channels reference is NULL");
+ 			
+ 			/* notify close */
+ 			NOTIFY_CLOSE(channel, false, "554", "Channel in process of being closed before calling to this function.");
+ 		} else {
+ 			/* now wait until some change is detected on
+ 			 * the hash to check if the channel is
+ 			 * removed. */
+ 			result = 1;
+ 			while (vortex_connection_is_ok (connection, false) &&
+ 			       vortex_connection_channel_exists (connection, channel_num)) {
+  
+ 				/* wait until next change is detected */
+ 				vortex_log (VORTEX_LEVEL_DEBUG, "waiting for channel=%d to be closed from connection=%d", 
+ 					    channel_num, vortex_connection_get_id (connection));
+ 				result = vortex_hash_lock_until_changed (channels, vortex_connection_get_timeout (ctx));
+ 
+ 				vortex_log (VORTEX_LEVEL_DEBUG, "waiting result is: %d, for channel=%d to be closed from connection=%d", 
+ 					    result, channel_num, vortex_connection_get_id (connection));
+ 			} /* end while */
+ 
+ 			/* notify according to the result */
+ 			switch (result) {
+ 			case 1:
+ 				NOTIFY_CLOSE(channel, true, "200", "Channel properly closed");
+ 				break;
+ 			default:
+ 			case 0:
+ 				NOTIFY_CLOSE(channel, true, "554", "Failed to close the channel during waiting period");
+ 				break;
+ 			} /* end switch */
+ 		} /* end if */
+ 
+ 		/* unref now notification has been done */
+ 		vortex_channel_unref (channel);
+ 		vortex_hash_unref    (channels);
+ 
 		return true;
 	}
 
