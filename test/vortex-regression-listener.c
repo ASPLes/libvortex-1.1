@@ -52,6 +52,9 @@
  * profile */
 #include <service_dispatch.h>
 
+/* include local support */
+#include <vortex-regression-common.h>
+
 #ifdef AXL_OS_UNIX
 #include <signal.h>
 #endif
@@ -249,17 +252,29 @@ void frame_received (VortexChannel    * channel,
 		     VortexFrame      * frame,
 		     axlPointer           user_data)
 {
+	int window_size;
+
 	/* check some commands */
-	if (axl_cmp (vortex_frame_get_payload (frame), 
-		     "GET serverName")) {
+	if (axl_cmp (vortex_frame_get_payload (frame), "GET serverName")) {
 		printf ("Received request to return serverName=%s..\n", vortex_connection_get_server_name (connection));
 		
-		/* reply the peer client with the same content */
+		/* reply the peer client with server name */
 		vortex_channel_send_rpy (channel,
 					 vortex_connection_get_server_name (connection),
 					 strlen (vortex_connection_get_server_name (connection)),
 					 vortex_frame_get_msgno (frame));
 		return;
+	} else if (axl_memcmp (vortex_frame_get_payload (frame), "window_size=", 12)) {
+		printf ("Received request to change window size to: %s..\n", 
+			(char *) vortex_frame_get_payload (frame) + 12);
+		window_size = atoi ((char *) vortex_frame_get_payload (frame) + 12);
+		/* changing window size */
+		vortex_channel_set_window_size (channel, window_size);
+
+		/* ok reply to the peer client   */
+		vortex_channel_send_rpy (channel, "ok", 2, vortex_frame_get_msgno (frame));
+		return;
+		
 	} /* end if */
 
 	/* DEFAULT REPLY, JUST ECHO */
@@ -290,9 +305,6 @@ void frame_received_replies (VortexChannel    * channel,
 	} /* end if */
 	return;
 }
-
-/* message size: 4096 */
-#define TEST_REGRESION_URI_4_MESSAGE "This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary ."
 
 /** 
  * @internal Frame received handler used to check wrong reply order

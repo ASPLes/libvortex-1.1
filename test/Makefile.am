@@ -120,12 +120,12 @@ vortex_client_connections_SOURCES   = vortex-client-connections.c
 vortex_client_connections_LDADD     = $(LIBS) ../src/libvortex-1.1.la ../tunnel/libvortex-tunnel-1.1.la 
 
 vortex_regression_client_SOURCES   = \
-	vortex-regression-client.c $(vortex_regression_client_xml_rpc_files)
+	vortex-regression-client.c vortex-regression-common.c \ $(vortex_regression_client_xml_rpc_files)
 
 vortex_regression_client_LDADD     = $(LIBS) ../src/libvortex-1.1.la  ../tunnel/libvortex-tunnel-1.1.la  $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS)
 
 vortex_regression_listener_SOURCES   = \
-	vortex-regression-listener.c $(vortex_regression_listener_xml_rpc_files) 
+	vortex-regression-listener.c vortex-regression-common.c \ $(vortex_regression_listener_xml_rpc_files) 
 vortex_regression_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la  ../tunnel/libvortex-tunnel-1.1.la $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS)
 
 vortex_server_without_cbs_SOURCES   = vortex-server-without-cbs.c

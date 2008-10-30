@@ -253,17 +253,23 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
 							   data->message_size, 
 							   vortex_channel_get_max_seq_no_remote_accepted (channel));
 	
-	vortex_log (VORTEX_LEVEL_DEBUG, "the channel is not stalled, continue with sequencing, about to send %d bytes as payload...",
-		    size_to_copy);
+	vortex_log (VORTEX_LEVEL_DEBUG, "the channel is not stalled, continue with sequencing, about to send (size_to_copy:%d) bytes as payload (buffer:%d)...",
+ 		    size_to_copy, ctx->sequencer_send_buffer_size);
 	
 	/* create the new package to be managed by the vortex writer */
 	packet->type         = data->type;
 	packet->msg_no       = data->msg_no;
  
  	/* check if we have to realloc buffer */
- 	if (size_to_copy + 100 > ctx->sequencer_send_buffer_size) {
- 		/* update buffer size */
- 		ctx->sequencer_send_buffer_size = (ctx->sequencer_send_buffer_size - 100) * 2 + 100;
+ 	if ((size_to_copy + 100) > ctx->sequencer_send_buffer_size) {
+ 		vortex_log (VORTEX_LEVEL_DEBUG, "Found vortex sequencer buffer size not enough for current send operation: (size to copy:%d) > (buffer_size:%d)",
+ 			    (size_to_copy + 100), ctx->sequencer_send_buffer_size);
+ 		while ((size_to_copy + 100) > ctx->sequencer_send_buffer_size) {
+ 			/* update buffer size */
+ 			ctx->sequencer_send_buffer_size = (ctx->sequencer_send_buffer_size - 100) * 2 + 100;
+ 		} /* end if */
+ 		vortex_log (VORTEX_LEVEL_DEBUG, "Updated sequencer buffer size for send operation to: (size to copy:%d) <= (buffer_size:%d)",
+ 			    (size_to_copy + 100),  ctx->sequencer_send_buffer_size);
  		/* free current buffer */
  		axl_free (ctx->sequencer_send_buffer);
  		/* allocate new buffer */

@@ -52,6 +52,9 @@
 /* include local headers produced by xml-rpc-gen */
 #include <test_xml_rpc.h>
 
+/* include local support */
+#include <vortex-regression-common.h>
+
 #ifdef AXL_OS_UNIX
 #include <signal.h>
 #endif
@@ -624,71 +627,6 @@ int  test_01c (void) {
 
 } /* end test_01c */
 
-/** 
- * @brief Reads the content of the file identified the string
- * provided, filling the size in the integer reference received.
- * 
- * @param file The file that is going to be read.
- *
- * @param size The size of the file to be returned.
- * 
- * @return A reference to the content of the file allocated. The
- * caller must unreference by returning axl_free.
- */
-char * vortex_regression_client_read_file (const char * file, int * size)
-{
-	char * result;
-	FILE * handle;
-	struct stat status;
-	long   requested;
-
-	/* check parameter received */
-	if (file == NULL)
-		return NULL;
-
-	/* open the file */
-#if defined(AXL_OS_WIN32)
-	handle = fopen (file, "rb");
-#else
-	handle = fopen (file, "r");
-#endif
-	if (handle == NULL)
-		return NULL;
-
-	/* get the file size */
-	memset (&status, 0, sizeof (struct stat));
-	if (stat (file, &status) != 0) {
-		/* failed to get file size */
-		fprintf (stderr, "Failed to get file size for %s..\n", file);
-		fclose (handle);
-		return NULL;
-	} /* end if */
-	
-	result    = axl_new (char, status.st_size + 1);
-	requested = fread (result, 1, status.st_size, handle);
-#if ! defined(AXL_OS_WIN32)
-	/* disabled because windows could return a different size
-	 * reported that the actual size !!!!! */
-	if (status.st_size != requested) {
-		/* failed to read content */
-		fprintf (stdout, "Unable to properly read the file, size expected to read %ld (but found %ld), wasn't fulfilled\n",
-			 status.st_size, requested);
-		axl_free (result);
-		fclose (handle);
-		return NULL;
-	} /* end if */
-#endif
-	
-	/* close the file and return the content */
-	fclose (handle);
-
-	/* fill the optional size */
-	if (size)
-		*size = status.st_size;
-
-	return result;
-}
-
 int  test_01d_01 (void)
 {
 	char             * mime_message;
@@ -698,7 +636,7 @@ int  test_01d_01 (void)
 	VortexMimeHeader * header;
 
 	printf ("Test 01-d: checking MIME support for wrong UNIX MIME (no CR-LF but LF)..\n");
-	mime_message = vortex_regression_client_read_file ("mime.example.1.txt", NULL);
+	mime_message = vortex_regression_common_read_file ("mime.example.1.txt", NULL);
 	if (mime_message == NULL) {
 		printf ("ERROR: failed to load mime message: %s", "mime.example.1.txt");
 		return false;
@@ -735,7 +673,7 @@ int  test_01d_01 (void)
 	}
 
 	/* check content */
-	mime_body = vortex_regression_client_read_file ("mime.example.body.1.txt", NULL);
+	mime_body = vortex_regression_common_read_file ("mime.example.body.1.txt", NULL);
 	if (mime_body == NULL) {
 		printf ("ERROR: failed to load mime message: %s", "mime.example.body.1.txt");
 		return false;
@@ -870,7 +808,7 @@ int  test_01d_02 (void)
 	VortexFrame * frame;
 
 	printf ("Test 01-d: checking MIME support (right CR-LF terminated)..\n");
-	mime_message = vortex_regression_client_read_file ("mime.example.2.txt", NULL);
+	mime_message = vortex_regression_common_read_file ("mime.example.2.txt", NULL);
 	if (mime_message == NULL) {
 		printf ("ERROR: failed to load mime message: %s", "mime.example.2.txt");
 		return false;
@@ -906,7 +844,7 @@ int  test_01d_02 (void)
 	}
 
 	/* check content */
-	mime_body = vortex_regression_client_read_file ("mime.example.body.2.txt", NULL);
+	mime_body = vortex_regression_common_read_file ("mime.example.body.2.txt", NULL);
 	if (mime_body == NULL) {
 		printf ("ERROR: failed to load mime message: %s", "mime.example.body.2.txt");
 		return false;
@@ -933,7 +871,7 @@ int  test_01d_03 (void)
 	VortexFrame * frame;
 
 	printf ("Test 01-d: checking MIME support (no headers)..\n");
-	mime_message = vortex_regression_client_read_file ("mime.example.3.txt", NULL);
+	mime_message = vortex_regression_common_read_file ("mime.example.3.txt", NULL);
 	if (mime_message == NULL) {
 		printf ("ERROR: failed to load mime message: %s", "mime.example.3.txt");
 		return false;
@@ -1277,7 +1215,7 @@ int  test_01d (void) {
 
 	/* open first test: mime.example.1.txt */
 	printf ("Test 01-d: opening MIME message..\n");
-	mime_message = vortex_regression_client_read_file ("mime.example.1.txt", NULL);
+	mime_message = vortex_regression_common_read_file ("mime.example.1.txt", NULL);
 	if (mime_message == NULL) {
 		printf ("ERROR: failed to load mime message: %s", "mime.example.1.txt");
 		return false;
@@ -1361,7 +1299,7 @@ int  test_01d (void) {
 	}
 
 	/* check MIME message body */
-	mime_body = vortex_regression_client_read_file ("mime.example.body.1.txt", NULL);
+	mime_body = vortex_regression_common_read_file ("mime.example.body.1.txt", NULL);
 	if (! axl_cmp (vortex_frame_get_payload (frame), mime_body)) {
 		printf ("ERROR: expected to find same MIME message as sent..\n");
 		return false;
@@ -3337,11 +3275,6 @@ int  test_02k (void) {
 	return true;
 }
 
-/* message size: 4096 */
-#define TEST_REGRESION_URI_4_MESSAGE "This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary ."
-
-
-
 int  test_02m (void) {
 
 	VortexConnection * connection;
@@ -3480,6 +3413,136 @@ int  test_02m (void) {
 	vortex_channel_unref (channel);
 
 	/* operation completed */
+	return true;
+}
+
+int test_02m1_frame_sizer (VortexChannel *channel, 
+			   int            next_seq_no, 
+			   int            message_size, 
+			   int            max_seq_no, 
+			   axlPointer     user_data) 
+{
+	/* use default implementation */
+	if ((next_seq_no + message_size) > max_seq_no)
+		return VORTEX_MIN (max_seq_no - next_seq_no + 1, 32768);
+	return VORTEX_MIN (message_size, 32768);
+}
+
+int  test_02m1 (void) {
+
+	VortexConnection * connection;
+	VortexChannel    * channel;
+	struct timeval     start, stop, result;
+	char             * content;
+	int                size;
+	VortexAsyncQueue * queue;
+	VortexFrame      * frame;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+	} /* end if */
+
+	/****** test 4096 ******/
+	printf ("Test 02-m1: check transfer with big frames\n");
+
+	/* CREATE A CHANNEL */
+	queue   = vortex_async_queue_new ();
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI, 
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Test 02-m1: failed to create channel to perform transfer\n");
+		return false;
+	}
+
+	/* ASK TO CHANGE WINDOW SIZE */
+	if (! vortex_channel_send_msg (channel, "window_size=65536", 17, NULL)) {
+		printf ("Test 02-m1: failed to ask for window size change..\n");
+		return false;
+	} /* end if */
+
+	/* get next reply */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL) {
+		printf ("Test 02-m1: expected to find frame reply..\n");
+		return false;
+	}
+	/* check reply */
+	if (! axl_cmp (vortex_frame_get_payload (frame), "ok")) {
+		printf ("Test 02-m1: expected a positive reply to change window size request..\n");
+		return false;
+	}
+
+	vortex_frame_unref (frame);
+
+	/* change sending step */
+	vortex_channel_set_next_frame_size_handler (channel, test_02m1_frame_sizer, NULL);
+
+	/* LOAD FILE CONTENT */
+	size    = 0;
+	content = vortex_regression_common_read_file ("vortex-regression-client.c", &size);
+	if (content == NULL) {
+		printf ("ERROR: failed to open file %s to perform test..\n", "vortex-regression-client.c");
+		return false;
+	} /* end if */
+
+	gettimeofday (&start, NULL);
+
+	/* SEND THE CONTENT */
+	if (! vortex_channel_send_msg (channel, content, size, NULL)) {
+		printf ("Test 02-m1: failed to send file..\n");
+		return false;
+	} /* end if */
+
+
+	gettimeofday (&stop, NULL);
+	vortex_timeval_substract (&stop, &start, &result);
+	printf ("Test 02-m1: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 65536, step 32768). Waiting reply..\n", 
+		size, result.tv_sec, result.tv_usec);
+
+	/* GET NEXT REPLY */
+	gettimeofday (&start, NULL);
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL) {
+		printf ("Test 02-m1: expected to find frame reply..\n");
+		return false;
+	}
+	gettimeofday (&stop, NULL);
+	vortex_timeval_substract (&stop, &start, &result);
+	printf ("Test 02-m1: ..transfer reply %d bytes done in %ld segs + %ld microsegs (window size 65536, step 32768). \n", 
+		vortex_frame_get_payload_size (frame), result.tv_sec, result.tv_usec);
+
+	if (! axl_cmp (content, vortex_frame_get_payload (frame))) {
+		printf ("Test 02-m1: expected to find different content..\n");
+		return false;
+	}
+
+	axl_free (content);
+	vortex_frame_unref (frame);
+
+	if (! vortex_connection_is_ok (connection, false)) {
+		printf ("Test 02-h: ERROR, connection status is not ok before test..\n");
+		return false;
+	}
+
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return false;
+	} /* end if */
+
+	/* terminate queue */
+	vortex_async_queue_unref (queue);
+	
+	/* return true */
 	return true;
 }
 
@@ -6077,9 +6140,9 @@ int main (int  argc, char ** argv)
 	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, \n");
 	printf ("**                       test_02, test_02a, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
-	printf ("**                       test_02l, test_02m, test_03, test_03a, test_04, test_04a, \n");
-	printf ("**                       test_04b, test_04c, test_05, test_05a, test_06, test_07, \n");
-	printf ("**                       test_08, test_09, test_10, test_11, test_12, test_13\n");
+	printf ("**                       test_02l, test_02m, test_02m1, test_03, test_03a, test_04, \n");
+	printf ("**                       test_04a, test_04b, test_04c, test_05, test_05a, test_06, \n");
+	printf ("**                       test_07, test_08,test_09, test_10, test_11, test_12, test_13\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -6217,6 +6280,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_02m"))
 			run_test (test_02m, "Test 02-m", "blocking close after ANS/NUL replies.", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_02m1"))
+			run_test (test_02m1, "Test 02-m1", "Transfer with big frame sizes.", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_03"))
 			run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
 
@@ -6325,7 +6391,9 @@ int main (int  argc, char ** argv)
 
 	run_test (test_02l, "Test 02-l", "detect last reply written when using ANS/NUL reply.", -1, -1);
 
- 	run_test (test_02m, "Test 02-m", "blocking close after ANS/NUL replies.", -1, -1);
+	run_test (test_02m, "Test 02-m", "blocking close after ANS/NUL replies.", -1, -1);
+
+	run_test (test_02m1, "Test 02-m1", "Transfer with big frame sizes.", -1, -1);
 	
  	run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
   

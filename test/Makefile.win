@@ -10,7 +10,8 @@ OBJ      = vortex-listener.o \
 	   vortex-regression-listener.o \
 	   vortex-file-transfer-client.o \
 	   vortex-file-transfer-server.o \
-	   vortex-client-connections.o 
+	   vortex-client-connections.o  \
+	   vortex-regression-common.o
 
 PROGRAMS = vortex-listener.exe \
            vortex-client.exe \
@@ -76,11 +77,11 @@ vortex-file-transfer-client.exe: vortex-file-transfer-client.o
 vortex-file-transfer-server.exe: vortex-file-transfer-server.o
 	$(CC) -mconsole $< -o $@ $(LIBS)
 
-client_depends = vortex-regression-client.o test_xml_rpc.o test_struct_values_xml_rpc.o test_struct_item_xml_rpc.o test_array_itemarray_xml_rpc.o test_struct_node_xml_rpc.o 
+client_depends = vortex-regression-client.o test_xml_rpc.o test_struct_values_xml_rpc.o test_struct_item_xml_rpc.o test_array_itemarray_xml_rpc.o test_struct_node_xml_rpc.o vortex-regression-common.o
 vortex-regression-client.exe: $(client_depends)
 	$(CC) -mconsole $(client_depends) -o $@ $(LIBS)
 
-listener_depends = vortex-regression-listener.o service_dispatch.o test_sum_int_int.o test_operate_int_int.o test_get_the_string.o test_get_the_bool_1.o test_get_the_bool_2.o test_get_double_sum_double_double.o test_struct_values_xml_rpc.o test_get_struct_values_values.o test_struct_item_xml_rpc.o test_array_itemarray_xml_rpc.o test_get_array.o test_get_list.o test_struct_node_xml_rpc.o test_sum2_int_int.o
+listener_depends = vortex-regression-listener.o service_dispatch.o test_sum_int_int.o test_operate_int_int.o test_get_the_string.o test_get_the_bool_1.o test_get_the_bool_2.o test_get_double_sum_double_double.o test_struct_values_xml_rpc.o test_get_struct_values_values.o test_struct_item_xml_rpc.o test_array_itemarray_xml_rpc.o test_get_array.o test_get_list.o test_struct_node_xml_rpc.o test_sum2_int_int.o vortex-regression-common.o
 vortex-regression-listener.exe: $(listener_depends)
 	$(CC) -mconsole $(listener_depends) -o $@ $(LIBS)
 
