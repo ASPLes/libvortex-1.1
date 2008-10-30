@@ -198,7 +198,9 @@ int      vortex_greetings_send (VortexConnection * connection)
 	/* build up supported registered profiles */
 	if (registered_profiles == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
-		       "unable to build and send greetings message: unable to found any profile registered");
+			    "unable to build and send greetings message: unable to find any profile registered");
+		__vortex_connection_set_not_connected (connection, 
+						       "unable to build and send greetings message: unable to find any profile registered", VortexError);
 		return false;
 	}
 
