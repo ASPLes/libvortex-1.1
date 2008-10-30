@@ -7824,6 +7824,20 @@ void                vortex_channel_cleanup                        (VortexCtx * c
 
 	return;
 }
-								   
+
+
+/**
+ * @internal Function used to nullify connection reference from
+ * channel structure to avoid accessing to the connection already
+ * closed and freed under high load memory and CPU presure (messages
+ * pending inside vortex sequencer).
+ */
+void               __vortex_channel_nullify_conn                  (VortexChannel  * channel)
+{
+       /* nullify if defined */
+       if (channel)
+               channel->connection = NULL;
+       return;
+}
 
 /* @} */

@@ -403,5 +403,7 @@ int                 vortex_channel_check_serialize                (VortexCtx    
 int                vortex_channel_check_serialize_pending         (VortexCtx      * ctx,
 								   VortexChannel  * channel, 
 								   VortexFrame   ** caller_frame);
+
+void               __vortex_channel_nullify_conn                  (VortexChannel  * channel);
 								   
 #endif

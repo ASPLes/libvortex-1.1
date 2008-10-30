@@ -1861,6 +1861,17 @@ int  __vortex_connection_foreach_check_and_notify (axlPointer key,
 	/* call to notify */
 	__vortex_connection_check_and_notify (conn, channel, is_added);
 
+	if (! is_added) { /* only if the channel is being removed from the connection */
+		
+		/* nullify channel reference to the connection to avoid
+		 * issues. This is done at this point because the connection
+		 * reference counting reached 0 so, those API consumers
+		 * updating reference counting to the connection will avoid
+		 * this. */
+		__vortex_channel_nullify_conn (channel);
+		
+	} /* end if */
+
 	/* always return false to make the process to follow to the
 	 * end */
 	return false;
