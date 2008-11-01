@@ -179,9 +179,9 @@ int __vortex_greetings_build_message (VortexConnection * connection, char * gree
  * 
  * @param connection The connection where the greeting will be sent.
  *
- * @return true if greetings message was sent or false if not
+ * @return axl_true if greetings message was sent or axl_false if not
  **/
-int      vortex_greetings_send (VortexConnection * connection)
+axl_bool      vortex_greetings_send (VortexConnection * connection)
 {
 	
 	axlList       * registered_profiles;
@@ -201,7 +201,7 @@ int      vortex_greetings_send (VortexConnection * connection)
 			    "unable to build and send greetings message: unable to find any profile registered");
 		__vortex_connection_set_not_connected (connection, 
 						       "unable to build and send greetings message: unable to find any profile registered", VortexError);
-		return false;
+		return axl_false;
 	}
 
 	/* Build the greetings message with localization features and filtered profiles*/
@@ -213,7 +213,7 @@ int      vortex_greetings_send (VortexConnection * connection)
 		__vortex_connection_set_not_connected (connection, 
 						       "failed to build greetings message, closing the connection",
 						       VortexError);
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* send the message */
@@ -223,10 +223,10 @@ int      vortex_greetings_send (VortexConnection * connection)
 				      0)) {
 		__vortex_connection_set_not_connected (connection, "unable to send listener greetings message", 
 						       VortexError);
-		return false;
+		return axl_false;
 	} /* end if */
 	
-	return true;
+	return axl_true;
 }
 
 /**
@@ -314,9 +314,9 @@ VortexFrame *  vortex_greetings_process (VortexConnection * connection)
  * 
  * @param frame the frame which contains the greetings reply.
  *
- * @return true if frame greeting reply is ok or false if not.
+ * @return axl_true if frame greeting reply is ok or axl_false if not.
  **/
-int            vortex_greetings_is_reply_ok    (VortexFrame      * frame, VortexConnection * connection)
+axl_bool            vortex_greetings_is_reply_ok    (VortexFrame      * frame, VortexConnection * connection)
 {
 	VortexChannel * channel;
 #if defined(ENABLE_VORTEX_LOG)
@@ -330,7 +330,7 @@ int            vortex_greetings_is_reply_ok    (VortexFrame      * frame, Vortex
 		__vortex_connection_set_not_connected (connection, "frame error, expected RPY frame type on greetings process",
 						       VortexProtocolError);
 		vortex_frame_unref (frame);
-		return false;
+		return axl_false;
 	}
 
 	/* check frame header spec */
@@ -342,7 +342,7 @@ int            vortex_greetings_is_reply_ok    (VortexFrame      * frame, Vortex
 		__vortex_connection_set_not_connected (connection, "frame error, expected greetings message on channel 0, message 0 or sequence number 0",
 						       VortexProtocolError);
 		vortex_frame_unref (frame);
-		return false;
+		return axl_false;
 	}
 	
 	/* check content-type reply */
@@ -354,7 +354,7 @@ int            vortex_greetings_is_reply_ok    (VortexFrame      * frame, Vortex
 						       "frame error, expected content type: application/beep+xml, not found",
 						       VortexProtocolError);
 		vortex_frame_unref (frame);
-		return false;
+		return axl_false;
 	}
 
 	/* update channel status */
@@ -365,7 +365,7 @@ int            vortex_greetings_is_reply_ok    (VortexFrame      * frame, Vortex
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "greetings frame header specification is ok");
 	
-	return true;	
+	return axl_true;	
 }
 
 /**
@@ -379,9 +379,9 @@ int            vortex_greetings_is_reply_ok    (VortexFrame      * frame, Vortex
  * This function is mainly used by vortex library for its internal
  * purposes, so it should not be useful for vortex library consumers.
  * 
- * @return true greetings message was sent or false if not.
+ * @return axl_true greetings message was sent or axl_false if not.
  **/
-int           vortex_greetings_client_send     (VortexConnection * connection)
+axl_bool           vortex_greetings_client_send     (VortexConnection * connection)
 {
 	/* tecnically, the greetings initial message can't be larger
 	 * than 4096 initial window. */
@@ -395,7 +395,7 @@ int           vortex_greetings_client_send     (VortexConnection * connection)
 	if (registered_profiles == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
 			    "unable to build and send greetings message: unable to found any profile registered");
-		return false;
+		return axl_false;
 	}
 	
 	/* Build the greetings message with localization features and filtered profiles*/
@@ -407,7 +407,7 @@ int           vortex_greetings_client_send     (VortexConnection * connection)
 		__vortex_connection_set_not_connected (connection, 
 						       "failed to build greetings message, closing the connection",
 						       VortexError);
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* send the message */
@@ -419,10 +419,10 @@ int           vortex_greetings_client_send     (VortexConnection * connection)
 		__vortex_connection_set_not_connected (connection, 
 						       "unable to send initial client greetings message",
 						       VortexError);
-		return false;
+		return axl_false;
 	} /* end if */
 
-	return true;
+	return axl_true;
 }
 
 /**
