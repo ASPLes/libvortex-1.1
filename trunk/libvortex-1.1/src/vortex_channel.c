@@ -154,7 +154,7 @@ struct _VortexChannel {
 	 * cannot be used anymore for any type of transmission. This
 	 * value is actually used by vortex_channel_send_msg,
 	 * __vortex_channel_common_rpy. */
-	int                     is_opened;
+	axl_bool                is_opened;
 
 	
 	/* being_closed
@@ -166,7 +166,7 @@ struct _VortexChannel {
 	 * once a channel is requested to be closed, it can still
 	 * receive more msg and must be replied. This value is actually
 	 * used by vortex_channel_send_msg. */
-	int                     being_closed;
+	axl_bool                being_closed;
 
 
 	/* window_size
@@ -185,7 +185,7 @@ struct _VortexChannel {
 	 * the current window fills up and a new SEQ frame is sent. */
 	int                     desired_window_size;
 	
-	int                     complete_flag;
+	axl_bool                complete_flag;
 	axlList               * previous_frame;
 
 	/* connection associated to the channel */
@@ -308,7 +308,7 @@ struct _VortexChannel {
 	 * channel that have been blocked on that function because it
 	 * didn't still receive all replies to message already
 	 * sent. */
-	int                    waiting_replies;
+	axl_bool              waiting_replies;
 
 	/* the reply_processed:
 	 *
@@ -319,11 +319,11 @@ struct _VortexChannel {
 	 * 
 	 * A channel can be closed until all replies to all message
 	 * are receive and they are delivered to application level. */
-	int                    reply_processed;
+	axl_bool               reply_processed;
 
 
 	/* the being_sending */
-	int                    being_sending;
+	axl_bool               being_sending;
 
 	/* the pending_mutex 
 	 *
@@ -350,7 +350,7 @@ struct _VortexChannel {
 	VortexMutex            serialize_msg_mutex;
 	VortexMutex            serialize_rpy_mutex;
 	VortexMutex            serialize_ans_mutex;
-	int                    serialize;
+	axl_bool               serialize;
 
 	/**
 	 * @internal Hashes used to store temporaly messages and
@@ -407,7 +407,7 @@ typedef struct _VortexChannelData {
 	axlPointer                close_user_data;
 	VortexOnFrameReceived     received;
 	axlPointer                received_user_data;
-	int                       threaded;
+	axl_bool                  threaded;
 }VortexChannelData;
 
 /**
@@ -613,7 +613,7 @@ void __vortex_channel_get_mime_headers (VortexChannel * channel, char  * buffer)
  * @internal
  * @brief Set channel status to be connected.
  *
- * Private function to set channel connected status to true. The
+ * Private function to set channel connected status to axl_true. The
  * channel connection status is used to know if a channel is actually
  * usable to send or receive data. This avoids using a channel that is
  * being created or closed but that process didn't finished yet.
@@ -625,7 +625,7 @@ void __vortex_channel_set_connected (VortexChannel * channel)
 	if (channel == NULL)
 		return;
 
-	channel->is_opened = true;
+	channel->is_opened = axl_true;
 
 	return;
 }
@@ -649,7 +649,7 @@ void __vortex_channel_start_reply_free (VortexStartReplyCache * cache)
 
 } /* end __vortex_channel_start_reply_free */
 
-int      __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _profile, VortexChannel * channel)
+axl_bool  __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _profile, VortexChannel * channel)
 {
 	VortexCtx   * ctx = vortex_channel_get_ctx (channel);
 
@@ -661,12 +661,12 @@ int      __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _pr
 	/* application variables */
 	const char            * profile;
 	const char            * profile_content = NULL;
-	int                     result;
+	axl_bool                result;
 	VortexStartReplyCache * cache = NULL;
 
 	/* if no context no validation */
 	if (ctx == NULL)
-		return false;
+		return axl_false;
 
 	/* get the cache */
 	vortex_mutex_lock (&ctx->channel_start_reply_cache_mutex);
@@ -677,7 +677,7 @@ int      __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _pr
 	if (cache != NULL) {
 
 		/* cache hit!, notify piggyback and return */
-		result          = true;
+		result          = axl_true;
 		profile_content = cache->profile_content;
 
 		/* free the frame */
@@ -703,7 +703,7 @@ int      __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _pr
 		/* free resources */
 		vortex_connection_remove_channel (channel->connection, channel);
 		vortex_frame_unref (frame);
-		return false;
+		return axl_false;
 	}
 
 	/* check frame type response */
@@ -727,7 +727,7 @@ int      __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _pr
 		/* free resources */
 		vortex_connection_remove_channel (channel->connection, channel);
 		vortex_support_free (2, frame, vortex_frame_unref, doc, axl_doc_free);
-		return false;
+		return axl_false;
 	}
 	
 	/* get the root element ( profile element ) */
@@ -740,16 +740,16 @@ int      __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _pr
 		/* free resources */
 		vortex_support_free (2, frame, vortex_frame_unref,
 				     doc, axl_doc_free);
-		return false;
+		return axl_false;
 	}
 	/* check profile requested */
 	profile = axl_node_get_attribute_value (node, "uri");
 	if (! axl_cmp (profile, _profile)) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
 		       "received a profile confirmation which is different from the requested=%s", profile);
-		result = false;
+		result = axl_false;
 	} else
-		result = true;
+		result = axl_true;
 	
 	/* check if profile received is what we were expecting */
 	if (result) {
@@ -821,7 +821,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 	WaitReplyData    * wait_reply = NULL;
 	char             * start_msg  = NULL;
 	int                msg_no;
-	int                check_profiles = false;
+	axl_bool           check_profiles = axl_false;
 
 	/* check if remote peer support actual profile */
 	if (! vortex_conf_get (ctx, VORTEX_ENFORCE_PROFILES_SUPPORTED, &check_profiles)) {
@@ -1040,7 +1040,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
  * If you signal to close channel through \ref vortex_channel_close,
  * this handler is NOT executed, but it is executed when the given
  * channel receive a remote channel close request. This handler should
- * return true if channel can be closed or false if not.
+ * return axl_true if channel can be closed or axl_false if not.
  * 
  * This can be convenient if there are more data to be sent and to be
  * able to notify remote peer this is actually happening. 
@@ -1048,7 +1048,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
  * This handler is optional. You can use NULL and the first level
  * handler for close event will be used. If the first level handler is
  * also not defined, a default handler will be used, which returns
- * always true. This means to agree to close the channel always.
+ * always axl_true. This means to agree to close the channel always.
  * 
  * You can also define user data to be passed into <i>close
  * handler</i> on its execution. This user data is
@@ -1083,7 +1083,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
  * By default, if \ref vortex_channel_new detects you didn't register
  * a profile, then the function will do it for you. On this automatic profile
  * registration, vortex library will assign the default close and
- * start handler which always replies true to close and start
+ * start handler which always replies axl_true to close and start
  * channels, but frame received handler will still not defined.
  * 
  * As a consequence you must ensure to register a <i>frame
@@ -1242,7 +1242,7 @@ VortexChannel * vortex_channel_new_full (VortexConnection      * connection,
 	VortexCtx         * ctx   = vortex_connection_get_ctx (connection);
 
 	v_return_val_if_fail (connection, NULL);
-	v_return_val_if_fail (vortex_connection_is_ok (connection, false), NULL);
+	v_return_val_if_fail (vortex_connection_is_ok (connection, axl_false), NULL);
 	v_return_val_if_fail (profile, NULL);
 
 	/* creates data to be passed in to __vortex_channel_new */
@@ -1460,7 +1460,7 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 		return NULL;
 	}
 
-	if (profile == NULL || ! vortex_connection_is_ok (connection, false)) {
+	if (profile == NULL || ! vortex_connection_is_ok (connection, axl_false)) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to create channel, received NULL profile or a non-connected BEEP session");
 		return NULL;
 	}
@@ -1475,9 +1475,9 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 	channel->last_reply_written             = -1;
 	channel->last_seq_no                    = 0;
 	channel->last_seq_no_expected           = 0;
-	channel->is_opened                      = false;
-	channel->being_closed                   = false;
-	channel->complete_flag                  = true;
+	channel->is_opened                      = axl_false;
+	channel->being_closed                   = axl_false;
+	channel->complete_flag                  = axl_true;
 	channel->previous_frame                 = axl_list_new (axl_list_always_return_1, (axlDestroyFunc) vortex_frame_unref);
 	channel->profile                        = axl_strdup (profile);
 	channel->connection                     = connection;
@@ -1505,9 +1505,9 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 	vortex_mutex_create (&channel->serialize_msg_mutex);
 	vortex_mutex_create (&channel->serialize_rpy_mutex);
 	vortex_mutex_create (&channel->serialize_ans_mutex);
-	channel->serialize                      = false;
-	channel->waiting_replies                = false;
-	channel->reply_processed                = true;
+	channel->serialize                      = axl_false;
+	channel->waiting_replies                = axl_false;
+	channel->reply_processed                = axl_true;
 	channel->data                           = vortex_hash_new_full (axl_hash_string, axl_hash_equal_string, NULL, NULL);
 	channel->stored_replies                 = axl_hash_new (axl_hash_int, axl_hash_equal_int);
 
@@ -1725,10 +1725,10 @@ void            vortex_channel_set_received_handler (VortexChannel * channel,
  * \endcode
  *
  * @param channel the channel to configure.
- * @param value true activate complete flag, false deactivates it.
+ * @param value axl_true activate complete flag, axl_false deactivates it.
  */
 void               vortex_channel_set_complete_flag            (VortexChannel * channel,
-								int      value)
+								axl_bool        value)
 {
 	/* check reference */
 	if (channel == NULL)
@@ -1751,13 +1751,13 @@ void               vortex_channel_set_complete_flag            (VortexChannel * 
  * @param channel the channel to operate on.
  * @param frame   New frame received to check if previous frame for this have been already received.
  * 
- * @return true if previous frame is defined or false if not
+ * @return axl_true if previous frame is defined or axl_false if not
  */
-int                vortex_channel_have_previous_frame          (VortexChannel * channel)
+axl_bool         vortex_channel_have_previous_frame          (VortexChannel * channel)
 {
 	/* check reference */
 	if (channel == NULL)
-		return false;
+		return axl_false;
 
 	/* return if the previous frame is defined */ 
 	return (axl_list_length (channel->previous_frame) > 0);
@@ -1776,7 +1776,7 @@ VortexFrame      * vortex_channel_get_previous_frame           (VortexChannel * 
 {
 	/* check reference */
 	if (channel == NULL)
-		return false;
+		return axl_false;
 
 	/* a reference to the previous frame */
 	return axl_list_get_last (channel->previous_frame);
@@ -1878,7 +1878,7 @@ VortexFrame      * vortex_channel_build_single_pending_frame   (VortexChannel * 
 		/* frame msgno */
 		vortex_frame_get_msgno (frame),
 		/* more flag */
-		false,
+		axl_false,
 		/* frame seqno (data from the first frame) */
 		vortex_frame_get_seqno (frame),
 		/* frame size */
@@ -1921,13 +1921,13 @@ VortexFrame      * vortex_channel_build_single_pending_frame   (VortexChannel * 
  *
  * @param channel the channel to operate on.
  * 
- * @return true if complete flag is defined or false if not.
+ * @return axl_true if complete flag is defined or axl_false if not.
  */
-int                vortex_channel_have_complete_flag           (VortexChannel * channel)
+axl_bool             vortex_channel_have_complete_flag           (VortexChannel * channel)
 {
 	/* check reference */
 	if (channel == NULL)
-		return false;
+		return axl_false;
 
 	return (channel->complete_flag); 
 }
@@ -2082,9 +2082,9 @@ void vortex_channel_update_status_received (VortexChannel * channel, int  frame_
  * @param msg_no message number reference used for this message sending attempt.
  * @param wait_reply optional wait reply to implement Wait Reply method.
  * 
- * @return true if channel was sent or false if not.
+ * @return axl_true if channel was sent or axl_false if not.
  */
-int         __vortex_channel_send_msg_common (VortexChannel   * channel,
+axl_bool    __vortex_channel_send_msg_common (VortexChannel   * channel,
 					      const void      * message,
 					      size_t            message_size,
 					      int             * msg_no,
@@ -2094,25 +2094,25 @@ int         __vortex_channel_send_msg_common (VortexChannel   * channel,
 	int                   mime_header_size;
 	VortexCtx           * ctx     = vortex_channel_get_ctx (channel);
 
-	v_return_val_if_fail (channel,                           false);
-	v_return_val_if_fail (message,                           false);
-	v_return_val_if_fail (channel->is_opened,                false);
+	v_return_val_if_fail (channel,                           axl_false);
+	v_return_val_if_fail (message,                           axl_false);
+	v_return_val_if_fail (channel->is_opened,                axl_false);
 
 	if (channel->channel_num != 0) {
-		v_return_val_if_fail (! channel->being_closed,   false);
+		v_return_val_if_fail (! channel->being_closed,   axl_false);
 	} /* end if */
 
 	/* check if the connection is ok */
-	if (! vortex_connection_is_ok (channel->connection, false)) {
+	if (! vortex_connection_is_ok (channel->connection, axl_false)) {
 		vortex_log (VORTEX_LEVEL_WARNING, "received a MSG request to be sent over a non connected session, dropming message");
-		return false;
+		return axl_false;
 	}
 
 	/* lock send mutex */
 	vortex_mutex_lock (&channel->send_mutex);
 
 	/* flag the channel to be awaiting to process message */
-	channel->being_sending = true;
+	channel->being_sending = axl_true;
 
 	/* get current mime header configuration */
 	mime_header_size       = __vortex_channel_get_mime_headers_size (ctx, channel);
@@ -2173,9 +2173,9 @@ int         __vortex_channel_send_msg_common (VortexChannel   * channel,
 	vortex_mutex_unlock (&channel->send_mutex);
 
 	/* flag the channel to be ready (no message being_sending) */
-	channel->being_sending = false;
+	channel->being_sending = axl_false;
 
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -2218,12 +2218,12 @@ int         __vortex_channel_send_msg_common (VortexChannel   * channel,
  * @param msg_no Optional reference. If defined returns the message
  * number used for this deliver (BEEP msgno). 
  * 
- * @return true if no error was reported after queueing the message to
- * be sent. Otherwise false is returned. Keep in mind the function do
+ * @return axl_true if no error was reported after queueing the message to
+ * be sent. Otherwise axl_false is returned. Keep in mind the function do
  * not send the message directly. This is because the channel could be
  * stalled at the time the message was sent or because the message is
  * too large that requires several frames to be sent. Having said
- * that, it is recommended to not consider a "true" value returned by
+ * that, it is recommended to not consider a "axl_true" value returned by
  * this function as a successful send.
  *
  * <h3>MIME considerations while using this function</h3>
@@ -2274,7 +2274,7 @@ int         __vortex_channel_send_msg_common (VortexChannel   * channel,
  *
  * See a detailed discusion about MIME activation at: \ref vortex_manual_using_mime
  */
-int             vortex_channel_send_msg   (VortexChannel    * channel,
+axl_bool        vortex_channel_send_msg   (VortexChannel    * channel,
 					   const void       * message,
 					   size_t             message_size,
 					   int              * msg_no)
@@ -2310,7 +2310,7 @@ int             vortex_channel_send_msg   (VortexChannel    * channel,
  * <i><b>NOTE:</b> See MIME considerations described at \ref
  * vortex_channel_send_msg which also applies to this function.</i>
  */
-int             vortex_channel_send_msgv       (VortexChannel * channel,
+axl_bool        vortex_channel_send_msgv       (VortexChannel * channel,
 						int           * msg_no,
 						const char    * format,
 						...)
@@ -2365,7 +2365,7 @@ int             vortex_channel_send_msgv       (VortexChannel * channel,
  * <i><b>NOTE:</b> See MIME considerations described at \ref
  * vortex_channel_send_msg which also applies to this function.</i>
  */
-int                vortex_channel_send_msg_and_wait               (VortexChannel    * channel,
+axl_bool           vortex_channel_send_msg_and_wait               (VortexChannel    * channel,
 								   const void       * message,
 								   size_t             message_size,
 								   int              * msg_no,
@@ -2392,14 +2392,14 @@ int                vortex_channel_send_msg_and_wait               (VortexChannel
  * <i><b>NOTE:</b> See MIME considerations described at \ref
  * vortex_channel_send_msg which also applies to this function.</i>
  */
-int                vortex_channel_send_msg_and_waitv              (VortexChannel   * channel,
+axl_bool           vortex_channel_send_msg_and_waitv              (VortexChannel   * channel,
 								   int             * msg_no,
 								   WaitReplyData   * wait_reply,
 								   const char      * format,
 								   ...)
 {
 	char       * msg;
-	int          result;
+	axl_bool     result;
 	va_list      args;
 
 	/* initialize the args value */
@@ -2445,9 +2445,9 @@ void __vortex_channel_free_sequencer_data (VortexSequencerData * data)
  * @param message_size the message reply size
  * @param msg_no_rpy the message number this function is going to reply.
  * 
- * @return true if reply was sent, false if not.
+ * @return axl_true if reply was sent, axl_false if not.
  */
-int       __vortex_channel_common_rpy (VortexChannel    * channel,
+axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
 				       VortexFrameType    type,
 				       const void       * message,
 				       size_t             message_size,
@@ -2457,17 +2457,17 @@ int       __vortex_channel_common_rpy (VortexChannel    * channel,
 	int                   mime_header_size;
 	VortexCtx           * ctx     = vortex_channel_get_ctx (channel);
 
-	v_return_val_if_fail (channel,            false);
+	v_return_val_if_fail (channel,            axl_false);
 
 	/* check message content only if the frame type is not NUL */
 	if (type != VORTEX_FRAME_TYPE_NUL) {
-		v_return_val_if_fail (message,    false);
+		v_return_val_if_fail (message,    axl_false);
 	} /* end if */
-	v_return_val_if_fail (channel->is_opened, false);
+	v_return_val_if_fail (channel->is_opened, axl_false);
 	
 	/* lock send mutex */
 	vortex_mutex_lock (&channel->send_mutex);
-	channel->being_sending = true;
+	channel->being_sending = axl_true;
 	
 	/* check if received a reply for a message that has being
 	 * already replied */
@@ -2475,20 +2475,20 @@ int       __vortex_channel_common_rpy (VortexChannel    * channel,
 	    (type == VORTEX_FRAME_TYPE_RPY || type == VORTEX_FRAME_TYPE_ERR)) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "received a reply message to be sent with msgno=%d, but that message was already replied. Next expected message waiting for reply is msgno=%d. You BEEP app is replying twice to the same message. Dropping this reply..",
 			    msg_no_rpy, vortex_channel_get_next_reply_no (channel));
-		channel->being_sending = false;	
+		channel->being_sending = axl_false;	
 		vortex_mutex_unlock (&channel->send_mutex);
-		return false;
+		return axl_false;
 
 	} /* end if */
 
 	/* check if the connection is ok */
-	if (! vortex_connection_is_ok (channel->connection, false)) {
+	if (! vortex_connection_is_ok (channel->connection, axl_false)) {
 		vortex_log (VORTEX_LEVEL_WARNING, "received a reply request to be sent over a non connected session, dropming message");
 
 		/* flag the channels non being sending */
-		channel->being_sending = false;	
+		channel->being_sending = axl_false;	
 		vortex_mutex_unlock (&channel->send_mutex);
-		return false;
+		return axl_false;
 	}
 
 	/* create data to be sent by the sequencer */
@@ -2523,14 +2523,14 @@ int       __vortex_channel_common_rpy (VortexChannel    * channel,
 	if (vortex_channel_get_next_reply_no (channel) != msg_no_rpy) {
 
 		/* check if the connection is ok */
-		if (! vortex_connection_is_ok (channel->connection, false)) {
+		if (! vortex_connection_is_ok (channel->connection, axl_false)) {
 			vortex_log (VORTEX_LEVEL_WARNING, 
 				    "while waiting for a previous reply to be sent, detected reply request to be sent over a non connected session, dropming message");
 			
 			/* flag the channels non being sending */
-			channel->being_sending = false;	
+			channel->being_sending = axl_false;	
 			vortex_mutex_unlock (&channel->send_mutex);
-			return false;
+			return axl_false;
 		}
 
 		vortex_log (VORTEX_LEVEL_WARNING, 
@@ -2548,7 +2548,7 @@ int       __vortex_channel_common_rpy (VortexChannel    * channel,
 
 		/* unlock */
 		vortex_mutex_unlock (&channel->send_mutex);
-		return true;
+		return axl_true;
 	}
 
 	/* do sending reply operation */
@@ -2609,9 +2609,9 @@ int       __vortex_channel_common_rpy (VortexChannel    * channel,
 
 	/* unlock send mutex */
 	vortex_mutex_unlock   (&channel->send_mutex);
-	channel->being_sending = false;	
+	channel->being_sending = axl_false;	
 
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -2624,13 +2624,13 @@ int       __vortex_channel_common_rpy (VortexChannel    * channel,
  * @param msg_no_rpy the message number to reply over this channel.
  * @param format a printf-like string format to build the message reply to be sent.
  * 
- * @return true if message was queued to be sent, otherwise false is
+ * @return axl_true if message was queued to be sent, otherwise axl_false is
  * returned.
  *
  * <i><b>NOTE:</b> See MIME considerations described at \ref
  * vortex_channel_send_msg which also applies to this function.</i>
  */
-int             vortex_channel_send_rpyv       (VortexChannel * channel,
+axl_bool        vortex_channel_send_rpyv       (VortexChannel * channel,
 						int             msg_no_rpy,
 						const   char  * format,
 						...)
@@ -2718,13 +2718,13 @@ int             vortex_channel_send_rpyv       (VortexChannel * channel,
  * @param message_size the message size
  * @param msg_no_rpy the message number this function is going to reply to.
  * 
- * @return true if message was queued to be sent, otherwise false is
+ * @return axl_true if message was queued to be sent, otherwise axl_false is
  * returned.
  *
  * <i><b>NOTE:</b> See MIME considerations described at \ref
  * vortex_channel_send_msg which also applies to this function.</i>
  */
-int             vortex_channel_send_rpy        (VortexChannel    * channel,  
+axl_bool        vortex_channel_send_rpy        (VortexChannel    * channel,  
 						const void       * message,
 						size_t             message_size,
 						int                msg_no_rpy)
@@ -2830,13 +2830,13 @@ int             vortex_channel_send_rpy        (VortexChannel    * channel,
  * @param message_size The message size replied.
  * @param msg_no_rpy   Message number to reply.
  * 
- * @return true if the given reply was sent, otherwise false is
+ * @return axl_true if the given reply was sent, otherwise axl_false is
  * returned.
  *
  * <i><b>NOTE:</b> See MIME considerations described at \ref
  * vortex_channel_send_msg which also applies to this function.</i>
  */
-int                vortex_channel_send_ans_rpy                    (VortexChannel    * channel,
+axl_bool           vortex_channel_send_ans_rpy                    (VortexChannel    * channel,
 								   const void       * message,
 								   size_t             message_size,
 								   int                msg_no_rpy)
@@ -2867,12 +2867,12 @@ int                vortex_channel_send_ans_rpy                    (VortexChannel
  * @param msg_no_rpy   Message number to reply.
  * @param format       StdArg (printf-like) message format.
  * 
- * @return true if the message was sent properly.
+ * @return axl_true if the message was sent properly.
  *
  * <i><b>NOTE:</b> See MIME considerations described at \ref
  * vortex_channel_send_msg which also applies to this function.</i>
  */
-int                vortex_channel_send_ans_rpyv                   (VortexChannel * channel,
+axl_bool           vortex_channel_send_ans_rpyv                   (VortexChannel * channel,
 								   int             msg_no_rpy,
 								   const char    * format,
 								   ...)
@@ -2910,9 +2910,9 @@ int                vortex_channel_send_ans_rpyv                   (VortexChannel
  * @param msg_no_rpy The message we where replying to and the one to
  * be notified that one-to-many reply have ended.
  * 
- * @return true if the message was sent properly.
+ * @return axl_true if the message was sent properly.
  */
-int                vortex_channel_finalize_ans_rpy                (VortexChannel * channel,
+axl_bool           vortex_channel_finalize_ans_rpy                (VortexChannel * channel,
 								   int             msg_no_rpy)
 {
 	return __vortex_channel_common_rpy (channel, VORTEX_FRAME_TYPE_NUL,
@@ -2944,12 +2944,12 @@ int                vortex_channel_finalize_ans_rpy                (VortexChannel
  * @param message_size the message size
  * @param msg_no_rpy the message number to reply
  * 
- * @return true if message was sent or false if fails
+ * @return axl_true if message was sent or axl_false if fails
  *
  * <i><b>NOTE:</b> See MIME considerations described at \ref
  * vortex_channel_send_msg which also applies to this function.</i>
  */
-int        vortex_channel_send_err        (VortexChannel    * channel,  
+axl_bool   vortex_channel_send_err        (VortexChannel    * channel,  
 					   const void       * message,
 					   size_t             message_size,
 					   int                msg_no_rpy)
@@ -2967,12 +2967,12 @@ int        vortex_channel_send_err        (VortexChannel    * channel,
  * @param msg_no_err the message number to reply to.
  * @param format a printf-like string format.
  * 
- * @return true if message was sent of false if fails
+ * @return axl_true if message was sent of axl_false if fails
  *
  * <i><b>NOTE:</b> See MIME considerations described at \ref
  * vortex_channel_send_msg which also applies to this function.</i>
  */
-int             vortex_channel_send_errv       (VortexChannel * channel,
+axl_bool        vortex_channel_send_errv       (VortexChannel * channel,
 						int             msg_no_err,
 						const   char  * format,
 						...)
@@ -3388,14 +3388,14 @@ VortexChannelFrameSize  vortex_channel_set_next_frame_size_handler (VortexChanne
  * @param frame The containing data to be accepted, with a particular
  * size and sequence number.
  *
- * @return The function returns true if the channel buffer have
- * changed, so a SEQ frame must be notified or false to not notify any
+ * @return The function returns axl_true if the channel buffer have
+ * changed, so a SEQ frame must be notified or axl_false to not notify any
  * change.
  */
-int      vortex_channel_update_incoming_buffer (VortexChannel * channel, 
-						VortexFrame   * frame,
-						int           * ackno,
-						int           * window)
+axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel, 
+						     VortexFrame   * frame,
+						     int           * ackno,
+						     int           * window)
 {
 	int         new_max_seq_no_accepted;
 	int         consumed_seqno;
@@ -3403,7 +3403,7 @@ int      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 	VortexCtx * ctx     = vortex_channel_get_ctx (channel);
 
 	if (channel == NULL || frame == NULL)
-		return false;
+		return axl_false;
 
 	/* check if SEQ frame generation is disabled for the
 	 * connection */
@@ -3411,7 +3411,7 @@ int      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 		vortex_log (VORTEX_LEVEL_DEBUG, 
 			    "avoiding generate SEQ frame for channel=%d due to administrative configuration on the connection (vortex_connection_seq_frame_updates)",
 			    channel->channel_num);
-		return false; 
+		return axl_false; 
 	} /* end if */
 
 	/* check if the channel is being close, is that is right, do
@@ -3426,7 +3426,7 @@ int      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 	if (channel->being_closed && channel->channel_num == 0) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "avoiding generate SEQ frame for a channel=%d that is being closed", 
 			    channel->channel_num);
-		return false;
+		return axl_false;
 	}
 
 	/* Next sentence allows to get the next sequence that should
@@ -3499,14 +3499,14 @@ int      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 		/* notify caller new ackno and window value */
 		(* ackno  ) = consumed_seqno;
 		(* window ) = window_size;
-		return true;
+		return axl_true;
 	}
 	vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: not updating current max seq values: new max seq no: %d < max seq no: %d",
 	       new_max_seq_no_accepted, channel->max_seq_no_accepted);
  not_update:
 	(* ackno  )  = -1;
 	(* window ) = -1;
-	return false;
+	return axl_false;
 }
 
 /** 
@@ -3535,20 +3535,20 @@ int  vortex_channel_get_max_seq_no_accepted (VortexChannel * channel)
  * @param channelA The first channel reference to check.
  * @param channelB The second channel reference to check.
  * 
- * @return  true if  both references  are  equal, false  if not.  Both
+ * @return  axl_true if  both references  are  equal, axl_false  if not.  Both
  * references must  be not NULL. In  the case some  reference is null,
- * the function will return false.
+ * the function will return axl_false.
  */
-int                vortex_channel_are_equal                    (VortexChannel * channelA,
-								VortexChannel * channelB)
+axl_bool                vortex_channel_are_equal                    (VortexChannel * channelA,
+								     VortexChannel * channelB)
 {
 	/* check references received before proceeding */
 	if (channelA == NULL || channelB == NULL)
-		return false;
+		return axl_false;
 
 	/* check connection holding channels */
 	if (vortex_connection_get_id (channelA->connection) != vortex_connection_get_id (channelB->connection))
-		return false;
+		return axl_false;
 
 	/* return if both channel numbers are equal */
 	return (channelA->channel_num == channelB->channel_num);
@@ -3625,14 +3625,14 @@ axlPointer         vortex_channel_next_pending_message          (VortexChannel *
  * 
  * @param channel The channel to check for its pending messages.
  *
- * @return true in the case pending queue is empty, otherwise false is
+ * @return axl_true in the case pending queue is empty, otherwise axl_false is
  * returned.
  */
-int              vortex_channel_is_empty_pending_message (VortexChannel * channel)
+axl_bool         vortex_channel_is_empty_pending_message (VortexChannel * channel)
 {
 	/* check reference */
 	if (channel == NULL)
-		return false;
+		return axl_false;
 
 	/* return if the pending messages are 0 */
 	return  (axl_list_length (channel->pending_messages) == 0);
@@ -3735,18 +3735,18 @@ int                vortex_channel_queue_length                    (VortexChannel
  * by providing the <b>channel_num</b> received:
  *
  * \code
- * int  my_start_channel (int                channel_num, 
- *                        VortexConnection * connection,
- *                        axlPointer         user_data)
+ * axl_bool  my_start_channel (int                channel_num, 
+ *                             VortexConnection * connection,
+ *                             axlPointer         user_data)
  * {
  *      // get channel reference 
  *      VortexChannel * channel = vortex_connection_get_channel (connection, channel_num);
  *
  *      // configure serialize behaviour 
- *      vortex_channel_set_serialize (channel, true);
+ *      vortex_channel_set_serialize (channel, axl_true);
  *
  *      // accept channel 
- *      return true;
+ *      return axl_true;
  * }
  * \endcode
  *
@@ -3754,10 +3754,10 @@ int                vortex_channel_queue_length                    (VortexChannel
  * @param channel The channel to make frame received handler to behave
  * in a serialize fashion.
  *
- * @param serialize true to enable serialize, false if not.
+ * @param serialize axl_true to enable serialize, axl_false if not.
  */
 void               vortex_channel_set_serialize                   (VortexChannel * channel,
-								   int             serialize)
+								   axl_bool        serialize)
 {
 	/* check reference */
 	if (channel == NULL)
@@ -3946,14 +3946,14 @@ axlPointer         vortex_channel_get_data                        (VortexChannel
  * 
  * @param channel The channel to increase its reference counting.
  * 
- * @return true if the channel reference counting was increased,
- * otherwise false is returned.
+ * @return axl_true if the channel reference counting was increased,
+ * otherwise axl_false is returned.
  */
-int                vortex_channel_ref                             (VortexChannel * channel)
+axl_bool            vortex_channel_ref                             (VortexChannel * channel)
 {
 	/* check channel received */
-	v_return_val_if_fail (channel,                false);
-	v_return_val_if_fail (channel->ref_count > 0, false);
+	v_return_val_if_fail (channel,                axl_false);
+	v_return_val_if_fail (channel->ref_count > 0, axl_false);
 	
 	/* lock ref/unref operations over this connection */
 	vortex_mutex_lock   (&channel->ref_mutex);
@@ -3964,7 +3964,7 @@ int                vortex_channel_ref                             (VortexChannel
 	vortex_mutex_unlock (&channel->ref_mutex);
 
 	/* reference increased */
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -4132,7 +4132,7 @@ typedef struct {
 	VortexOnClosedNotification   on_closed;
 	VortexOnClosedNotificationFull on_closed_full;
 	axlPointer                   user_data;
-	int                          threaded;
+	axl_bool                     threaded;
 } VortexChannelCloseData;
 
 
@@ -4143,10 +4143,10 @@ typedef struct {
  * @param code  The error code inside the frame payload.
  * @param msg   The message code inside the frame payload.
  *
- * @return true if the a error message as found, false if not.
+ * @return axl_true if the a error message as found, axl_false if not.
  */
-int      vortex_channel_validate_err (VortexFrame * frame, 
-				      char  ** code, char  **msg)
+axl_bool      vortex_channel_validate_err (VortexFrame * frame, 
+					   char  ** code, char  **msg)
 {
 	axlDtd    * channel_dtd;
 	axlDoc    * doc;
@@ -4163,7 +4163,7 @@ int      vortex_channel_validate_err (VortexFrame * frame,
 	/* get channel management DTD */
 	if ((channel_dtd = vortex_dtds_get_channel_dtd (ctx)) == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to load dtd file, cannot validate incoming message, returning error frame");
-		return false;
+		return axl_false;
 	}
 
 	/* parser xml document */
@@ -4173,7 +4173,7 @@ int      vortex_channel_validate_err (VortexFrame * frame,
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to parse err reply, we have a buggy remote peer: %s",
 		       axl_error_get (error));
 		axl_error_free (error);
-		return false;
+		return axl_false;
 	}
 
 	/* validate de document */
@@ -4187,7 +4187,7 @@ int      vortex_channel_validate_err (VortexFrame * frame,
 
 		/* free document read */
 		axl_doc_free (doc);
-		return false;
+		return axl_false;
 	}
 	
 	/* get a reference to document root (the error) */
@@ -4197,7 +4197,7 @@ int      vortex_channel_validate_err (VortexFrame * frame,
 		
 		/* free document load */
 		axl_doc_free (doc);
-		return false;
+		return axl_false;
 	}
 	
 	/* get error code returned */
@@ -4210,7 +4210,7 @@ int      vortex_channel_validate_err (VortexFrame * frame,
 
 	/* free not needed data */
 	axl_doc_free (doc);
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -4221,10 +4221,10 @@ int      vortex_channel_validate_err (VortexFrame * frame,
  * @param channel 
  * @param frame 
  *
- * @return true if the validation was ok, false if not.
+ * @return axl_true if the validation was ok, axl_false if not.
  */
-int  __vortex_channel_close_validate_rpy (VortexChannel * channel, 
-					  VortexFrame   * frame)
+axl_bool  __vortex_channel_close_validate_rpy (VortexChannel * channel, 
+					       VortexFrame   * frame)
 {
 	
 	axlDtd       * channel_dtd;
@@ -4238,13 +4238,13 @@ int  __vortex_channel_close_validate_rpy (VortexChannel * channel,
 	if (axl_cmp (vortex_frame_get_ok_message (), vortex_frame_get_payload (frame))) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "fast channel=%d close reply found, skiping xml and dtd validation", 
 			    channel->channel_num);
-		return true;
+		return axl_true;
 	}
 
 	/* get channel management DTD */
 	if ((channel_dtd = vortex_dtds_get_channel_dtd (ctx)) == NULL) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "unable to load dtd file, cannot validate incoming message, returning error frame");
-		return false;
+		return axl_false;
 	}
 
 	/* parser xml document */
@@ -4256,7 +4256,7 @@ int  __vortex_channel_close_validate_rpy (VortexChannel * channel,
 		
 		/* release memory used by the error object */
 		axl_error_free (error);
-		return false;
+		return axl_false;
 	}
 
 	/* validate the document */
@@ -4270,7 +4270,7 @@ int  __vortex_channel_close_validate_rpy (VortexChannel * channel,
 		
 		/* free document reported */
 		axl_doc_free (doc);
-		return false; 
+		return axl_false; 
 	}
 	
 	/* get a reference to document root (the error) */
@@ -4280,12 +4280,12 @@ int  __vortex_channel_close_validate_rpy (VortexChannel * channel,
 		axl_doc_free (doc);
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "not found ok element on rpy reply, we have a buggy remote peer");
-		return false;
+		return axl_false;
 	}
 	
 	/* free not needed data */
 	axl_doc_free (doc);
-	return true;
+	return axl_true;
 }
 
 /**
@@ -4300,19 +4300,19 @@ int  __vortex_channel_close_validate_rpy (VortexChannel * channel,
  * 
  * @param channel the channel to operate on.
  *
- * @return true if the waiting was ok in all cases or false if
+ * @return axl_true if the waiting was ok in all cases or axl_false if
  * something has failed because the connection is not ok.
  */
-int      __vortex_channel_block_until_replies_are_received (VortexChannel * channel)
+axl_bool      __vortex_channel_block_until_replies_are_received (VortexChannel * channel)
 {
 	VortexConnection * connection;
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx    = vortex_channel_get_ctx (channel);
 #endif
-	int                result = true;
+	int                result = axl_true;
 
 	/* flag the channel to be in close situation */
-	channel->being_closed = true;
+	channel->being_closed = axl_true;
 	vortex_mutex_lock (&channel->close_mutex);
 
 	connection = vortex_channel_get_connection (channel);
@@ -4335,7 +4335,7 @@ int      __vortex_channel_block_until_replies_are_received (VortexChannel * chan
 	while (! (channel->last_message_sent == (channel->last_reply_expected - 1))) {
 		
 		/* flag that we are waiting for replies */
-		channel->waiting_replies = true;
+		channel->waiting_replies = axl_true;
 		
 		/* drop a log */
 		vortex_log (VORTEX_LEVEL_WARNING, 
@@ -4343,12 +4343,12 @@ int      __vortex_channel_block_until_replies_are_received (VortexChannel * chan
 		       vortex_connection_get_id (channel->connection),
 		       channel->channel_num,
 		       channel->last_message_sent, channel->last_reply_expected - 1,
-		       vortex_connection_is_ok (connection, false) ? "block until all replies are received" :
+		       vortex_connection_is_ok (connection, axl_false) ? "block until all replies are received" :
 		       "leaving remaining replies because connection is broken..");
 		
 		/* check the connection status to perform a signaled
 		 * wait for replies not received */
-		if (vortex_connection_is_ok (connection, false)) {
+		if (vortex_connection_is_ok (connection, axl_false)) {
 
 			/* wait every half second (result receive the wait status returned) */
 			VORTEX_COND_TIMEDWAIT (result, 
@@ -4368,7 +4368,7 @@ int      __vortex_channel_block_until_replies_are_received (VortexChannel * chan
 
 			/* from a loop perspective, simulate that all
 			 * replies where received */
-			result = false;
+			result = axl_false;
 			break;
 		}
 	} /* end while */
@@ -4395,16 +4395,16 @@ int      __vortex_channel_block_until_replies_are_received (VortexChannel * chan
  * or -1 if the caller is requesting to lock using default timeout
  * provided by vortex_connection_get_timeout.
  *
- * @return true if all pending replies were sent (or no pending
- * replies were found). Otherwise false is returned due to connection
+ * @return axl_true if all pending replies were sent (or no pending
+ * replies were found). Otherwise axl_false is returned due to connection
  * problems (\ref vortex_connection_is_ok) or because timeout has been
  * reached.
  */
-int      vortex_channel_block_until_replies_are_sent (VortexChannel * channel, 
-						      long int        microseconds_to_wait)
+axl_bool      vortex_channel_block_until_replies_are_sent (VortexChannel * channel, 
+							   long int        microseconds_to_wait)
 {
 	VortexCtx     * ctx     = vortex_channel_get_ctx (channel);
-	int             result  = true;
+	int             result  = axl_true;
 
 	/* normalize the value received */
 	if (microseconds_to_wait < 0)
@@ -4422,7 +4422,7 @@ int      vortex_channel_block_until_replies_are_sent (VortexChannel * channel,
 				    vortex_connection_get_id (channel->connection),
 				    channel->channel_num,
 				    (channel->last_reply_written), channel->last_message_received);
-			result = false;
+			result = axl_false;
 			break;
 		} /* end if */
 
@@ -4435,7 +4435,7 @@ int      vortex_channel_block_until_replies_are_sent (VortexChannel * channel,
 		
 		/* check the connection status to perform a signaled
 		 * wait for replies not received */
-		if (vortex_connection_is_ok (channel->connection, false)) {
+		if (vortex_connection_is_ok (channel->connection, axl_false)) {
 
 			/* wait */
 			VORTEX_COND_TIMEDWAIT (result, 
@@ -4445,7 +4445,7 @@ int      vortex_channel_block_until_replies_are_sent (VortexChannel * channel,
 
 			/* remove the amount of time implemented */
 			microseconds_to_wait -= 500000;
-			result                = true;
+			result                = axl_true;
 		} else {
 			/* the connection is closed so, the replies
 			 * will never arrive. Because this is a
@@ -4457,7 +4457,7 @@ int      vortex_channel_block_until_replies_are_sent (VortexChannel * channel,
 
 			/* from a loop perspective, simulate that all
 			 * replies where received */
-			result = false;
+			result = axl_false;
 			break;
 		} /* end if */
 	} /* end while */
@@ -4490,9 +4490,9 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
 	VortexOnClosedNotificationFull   on_closed_full = NULL;
 	axlPointer                       user_data      = NULL;
 	
-	/* true channel is closed, false not. */
-	int                              result         = false;
-	int                              threaded;
+	/* axl_true if the channel is closed, axl_false not. */
+	axl_bool                         result         = axl_false;
+	axl_bool                         threaded;
 	char                           * code           = NULL;
 	char                           * msg            = NULL;
 	char                           * close_msg      = NULL;
@@ -4541,10 +4541,10 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
 	connection = channel->connection;
 	 
 	/* check for a connection already closed */
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_log (VORTEX_LEVEL_DEBUG, 
 			    "Detected a session not connected during channel close, stoping BEEP close negotiation and going ahead to resource deallocation...");
-		result = true;
+		result = axl_true;
 		goto __vortex_channel_close_invoke_caller;
 	}
 
@@ -4557,7 +4557,7 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
 	if (! __vortex_channel_block_until_replies_are_received (channel)) {
 		vortex_log (VORTEX_LEVEL_DEBUG,
 			    "an error was found while waiting for replies on a channel being closed, free vortex channel resources");
-		result = true;
+		result = axl_true;
 		goto __vortex_channel_close_invoke_caller;
 	}
 
@@ -4570,7 +4570,7 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
 		 * set this flag so vortex reader won't complain about
 		 * not properly connection close.  To close the
 		 * channel 0 means to close the beep session. */
-		vortex_connection_set_data (connection, "being_closed", INT_TO_PTR (true));
+		vortex_connection_set_data (connection, "being_closed", INT_TO_PTR (axl_true));
 	}
 
 	/* send the close channel message and get the wait reply */
@@ -4597,7 +4597,7 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
 			 * channels. */
 			vortex_connection_set_data (connection, "being_closed", NULL);
 			vortex_log (VORTEX_LEVEL_DEBUG, "unable to send close channel message");
-			result = false;
+			result = axl_false;
 			vortex_channel_free_wait_reply (wait_reply);
 
 			/* push a channel error */
@@ -4632,11 +4632,11 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
 	frame = vortex_channel_wait_reply (channel0, msg_no, wait_reply);
 
 	/* check frame returned and connection status */
-	if ((! vortex_connection_is_ok (connection, false)) && frame == NULL) {
+	if ((! vortex_connection_is_ok (connection, axl_false)) && frame == NULL) {
 		/* seems the connection was closed during the operation. */
 		vortex_channel_free_wait_reply (wait_reply);
-		result             = true;
-		channel->is_opened = false;
+		result             = axl_true;
+		channel->is_opened = axl_false;
 		goto __vortex_channel_close_invoke_caller;
 	}
 
@@ -4645,7 +4645,7 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
 		/* remote peer do not agree to close the channel, get
 		 * values returned */
 		vortex_channel_validate_err (frame, &code, &msg);
-		result = false;
+		result = axl_false;
 
 		/* push a channel error */
 		vortex_connection_push_channel_error (connection, -2,
@@ -4664,11 +4664,11 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
 		   "unexpected reply found for a close channel
 		   indication, remote peer have a buggy
 		   implementation"); */
-		result = true;
+		result = axl_true;
 		goto __vortex_channel_close_invoke_caller;
 	}
 
-	/* set channel to be closed. It result = true channel will be
+	/* set channel to be closed. It result = axl_true channel will be
 	 * marked as closed so vortex reader can check if a message
 	 * can be actually delivered */
 	channel->is_opened = !result;
@@ -4737,10 +4737,10 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
  * @internal Implementation that is used by \ref vortex_channel_close
  * and \ref vortex_channel_close_full.
  */
-int      __vortex_channel_close_full (VortexChannel * channel, 
-				      VortexOnClosedNotification on_closed, 
-				      VortexOnClosedNotificationFull on_closed_full, 
-				      axlPointer user_data)
+axl_bool      __vortex_channel_close_full (VortexChannel * channel, 
+					   VortexOnClosedNotification on_closed, 
+					   VortexOnClosedNotificationFull on_closed_full, 
+					   axlPointer user_data)
 {
 	WaitReplyData          * wait_reply;
 	VortexCtx              * ctx   = vortex_channel_get_ctx (channel);
@@ -4750,8 +4750,8 @@ int      __vortex_channel_close_full (VortexChannel * channel,
 	int                      channel_num;
 	int                      result;
 	
-	v_return_val_if_fail (channel,                   false);
-	v_return_val_if_fail (channel->channel_num >= 0, false);
+	v_return_val_if_fail (channel,                   axl_false);
+	v_return_val_if_fail (channel->channel_num >= 0, axl_false);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "vortex_channel_close of channel #%d",channel->channel_num);
 
@@ -4760,7 +4760,7 @@ int      __vortex_channel_close_full (VortexChannel * channel,
 	if (vortex_channel_get_data (channel, VORTEX_CHANNEL_CLOSE_HANDLER_CALLED)) {
 		vortex_log (VORTEX_LEVEL_WARNING, 
 			    "BEEP application is calling to close a channel that is notified to be closed. You are calling to close a channel from the close handler.");
-		return true;
+		return axl_true;
 	}
 
 	/* set this channel to be in closed channel process and check
@@ -4789,13 +4789,13 @@ int      __vortex_channel_close_full (VortexChannel * channel,
  			vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to perform caller locking until channel closed: connection channels reference is NULL");
  			
  			/* notify close */
- 			NOTIFY_CLOSE(channel, false, "554", "Channel in process of being closed before calling to this function.");
+ 			NOTIFY_CLOSE(channel, axl_false, "554", "Channel in process of being closed before calling to this function.");
  		} else {
  			/* now wait until some change is detected on
  			 * the hash to check if the channel is
  			 * removed. */
  			result = 1;
- 			while (vortex_connection_is_ok (connection, false) &&
+ 			while (vortex_connection_is_ok (connection, axl_false) &&
  			       vortex_connection_channel_exists (connection, channel_num)) {
   
  				/* wait until next change is detected */
@@ -4810,11 +4810,11 @@ int      __vortex_channel_close_full (VortexChannel * channel,
  			/* notify according to the result */
  			switch (result) {
  			case 1:
- 				NOTIFY_CLOSE(channel, true, "200", "Channel properly closed");
+ 				NOTIFY_CLOSE(channel, axl_true, "200", "Channel properly closed");
  				break;
  			default:
  			case 0:
- 				NOTIFY_CLOSE(channel, true, "554", "Failed to close the channel during waiting period");
+ 				NOTIFY_CLOSE(channel, axl_true, "554", "Failed to close the channel during waiting period");
  				break;
  			} /* end switch */
  		} /* end if */
@@ -4823,11 +4823,11 @@ int      __vortex_channel_close_full (VortexChannel * channel,
  		vortex_channel_unref (channel);
  		vortex_hash_unref    (channels);
  
-		return true;
+		return axl_true;
 	}
 
 	/* flag this thread to be the only one closing the channel */
-	channel->being_closed = true;
+	channel->being_closed = axl_true;
 	vortex_mutex_unlock (&channel->close_mutex);
 	
 	/* create and register the way reply here to ensure that we
@@ -4859,7 +4859,7 @@ int      __vortex_channel_close_full (VortexChannel * channel,
 		} /* end if */
 
 		vortex_thread_pool_new_task (ctx, (VortexThreadFunc) __vortex_channel_close, data);
-		return true;
+		return axl_true;
 	}
 
 	/* launch blocking mode */
@@ -4924,13 +4924,13 @@ int      __vortex_channel_close_full (VortexChannel * channel,
  * the <b>on_closed</b> handler provided. This value is ignored if
  * previous handler is not provided.
  * 
- * @return true if the channel was closed, otherwise false is
+ * @return axl_true if the channel was closed, otherwise axl_false is
  * returned. In threaded mode, activated by defining the
- * <i>on_closed</i> handler, the function always return true. Actual
+ * <i>on_closed</i> handler, the function always return axl_true. Actual
  * close process result is notified on <i>on_closed</i>
  */
-int      vortex_channel_close_full (VortexChannel * channel, 
-			       VortexOnClosedNotificationFull on_closed, axlPointer user_data)
+axl_bool      vortex_channel_close_full (VortexChannel * channel, 
+					 VortexOnClosedNotificationFull on_closed, axlPointer user_data)
 {
 	return __vortex_channel_close_full (channel, NULL, on_closed, user_data);
 }
@@ -4945,13 +4945,13 @@ int      vortex_channel_close_full (VortexChannel * channel,
  * @param channel the channel to free
  * @param on_closed a optional handler notification
  * 
- * @return true if the channel was closed or false if not. On
+ * @return axl_true if the channel was closed or axl_false if not. On
  * threaded mode, activated by defining the <i>on_closed</i> handler,
- * always return true. Actual close process result is notified on
+ * always return axl_true. Actual close process result is notified on
  * <i>on_closed</i>
  */
-int      vortex_channel_close (VortexChannel * channel, 
-			       VortexOnClosedNotification on_closed)
+axl_bool      vortex_channel_close (VortexChannel * channel, 
+				    VortexOnClosedNotification on_closed)
 {
 	return __vortex_channel_close_full (channel, on_closed, NULL, NULL);
 }
@@ -4992,14 +4992,14 @@ const char    * vortex_channel_get_profile (VortexChannel * channel)
  * @param channel The channel to check for running some particular profile.
  * @param profile The profile to be checked.
  * 
- * @return true if the channel is running the given profile, otherwise false is returned.
+ * @return axl_true if the channel is running the given profile, otherwise axl_false is returned.
  */
-int                vortex_channel_is_running_profile           (VortexChannel * channel,
+axl_bool           vortex_channel_is_running_profile           (VortexChannel * channel,
 								const char    * profile)
 {
 	/* check references received */
 	if (channel == NULL || profile == NULL)
-		return false;
+		return axl_false;
 
 	return (axl_cmp (profile, vortex_channel_get_profile (channel)));
 }
@@ -5027,14 +5027,14 @@ VortexConnection * vortex_channel_get_connection               (VortexChannel * 
  * 
  * @param channel the channel to check
  * 
- * @return If received handler have been defined returns true if
- * not returns false.
+ * @return If received handler have been defined returns axl_true if
+ * not returns axl_false.
  */
-int             vortex_channel_is_defined_received_handler (VortexChannel * channel)
+axl_bool         vortex_channel_is_defined_received_handler (VortexChannel * channel)
 {
 	/* check references received */
 	if (channel == NULL)
-		return false;
+		return axl_false;
 
 	return (channel->received != NULL);
 }
@@ -5056,7 +5056,7 @@ typedef struct _ReceivedInvokeData {
     vortex_mutex_lock (&mutex);                                                         \
                                                                                         \
     /* check store stauts */                                                            \
-    status = false;                                                                     \
+    status = axl_false;                                                                     \
     switch (vortex_frame_get_type (frame)) {                                            \
     case VORTEX_FRAME_TYPE_RPY:                                                         \
     case VORTEX_FRAME_TYPE_ERR:                                                         \
@@ -5082,7 +5082,7 @@ typedef struct _ReceivedInvokeData {
         break;                                                                          \
     default:                                                                            \
         /* default case, do not store anything */                                       \
-        status = false;                                                                 \
+        status = axl_false;                                                                 \
         index = -1;                                                                     \
     } /* end switch */                                                                  \
                                                                                         \
@@ -5098,7 +5098,7 @@ typedef struct _ReceivedInvokeData {
         vortex_log (VORTEX_LEVEL_WARNING, "store frame because previous one is expected"); \
                                                                                         \
         /* signal that the message was stored */                                        \
-        return true;                                                                    \
+        return axl_true;                                                                    \
     }                                                                                   \
     vortex_mutex_unlock (&mutex);                                                       \
 }while(0);
@@ -5116,7 +5116,7 @@ typedef struct _ReceivedInvokeData {
    }                                                                                                                 \
                                                                                                                      \
    /* remove according to the frame type */                                                                          \
-   status = false;                                                                                                   \
+   status = axl_false;                                                                                                   \
    if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {                                                     \
          status = axl_hash_remove (hash, INT_TO_PTR (-1));                                                           \
    } else {                                                                                                          \
@@ -5155,7 +5155,7 @@ typedef struct _ReceivedInvokeData {
        vortex_log (VORTEX_LEVEL_WARNING, "restored frame that can now be delivered");                    \
        /* deliver the frame as received */                                                                           \
        (*caller_frame) = frame;                                                                                      \
-       return true;                                                                                                  \
+       return axl_true;                                                                                              \
    } /* end if */                                                                                                    \
 }while(0);
 
@@ -5168,13 +5168,13 @@ typedef struct _ReceivedInvokeData {
  * 
  * @param channel The channel where the operation will be implemented.
  * 
- * @return true if the frame provided was deallocated and a new frame
+ * @return axl_true if the frame provided was deallocated and a new frame
  * was configured on the reference to continue with the delivery. If
- * false is returned the frame is left untouched.
+ * axl_false is returned the frame is left untouched.
  */
-int  vortex_channel_check_serialize_pending (VortexCtx      * ctx,
-					     VortexChannel  * channel, 
-					     VortexFrame   ** caller_frame)
+axl_bool  vortex_channel_check_serialize_pending (VortexCtx      * ctx,
+						  VortexChannel  * channel, 
+						  VortexFrame   ** caller_frame)
 {
 	int           is_ans_frame;
 	int           is_nul_frame;
@@ -5225,26 +5225,26 @@ int  vortex_channel_check_serialize_pending (VortexCtx      * ctx,
 	}
 
 	/* if reached this point, no frame to deliver */
-	return false;
+	return axl_false;
 }
 
 /** 
  * @internal Function that implements channel ordered delivery
- * (serialize) by checking its activation, and return true if the
+ * (serialize) by checking its activation, and return axl_true if the
  * frame was stored for later delivery.
  * 
  * @param channel The channel were the check will be implemented.
  * 
- * @return true if the function is signaling that the frame was stored
- * for later delivery, ortherwise false is returned and delivery
+ * @return axl_true if the function is signaling that the frame was stored
+ * for later delivery, ortherwise axl_false is returned and delivery
  * continue.
  */
-int  vortex_channel_check_serialize (VortexCtx        * ctx,
-				     VortexConnection * connection, 
-				     VortexChannel    * channel, 
-				     VortexFrame      * frame)
+axl_bool  vortex_channel_check_serialize (VortexCtx        * ctx,
+					  VortexConnection * connection, 
+					  VortexChannel    * channel, 
+					  VortexFrame      * frame)
 {
-	int                status;
+	axl_bool           status;
 	int                index;
 
 	if (channel->serialize) {
@@ -5271,8 +5271,8 @@ int  vortex_channel_check_serialize (VortexCtx        * ctx,
 		} /* end if */
 	} /* end if */
 
-	/* continue delivery (true -> stop delivery) */
-	return false;
+	/* continue delivery (axl_true -> stop delivery) */
+	return axl_false;
 }
 
 
@@ -5295,7 +5295,7 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 	VortexConnection * connection   = vortex_channel_get_connection (channel);
 	VortexFrame      * frame        = data->frame;
 	char             * raw_frame    = NULL;
-	int                is_connected;
+	axl_bool           is_connected;
 	VortexFrameType    type;
 
 	/* get a reference to channel number so we can check after
@@ -5340,7 +5340,7 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 	}
 
 	/* record actual connection state */
-	is_connected = vortex_connection_is_ok (connection, false);
+	is_connected = vortex_connection_is_ok (connection, axl_false);
 	if (! is_connected) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "invoking frame receive on a non-connected session");
 		goto free_resources;
@@ -5351,7 +5351,7 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 		/* free received data */
 		axl_free (data);
 
-		/* if the function returns true, we must return
+		/* if the function returns axl_true, we must return
 		 * because the message was stored for later
 		 * delivery */
 		return NULL;
@@ -5390,14 +5390,14 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 
 	/* check serialize to broadcast other waiting threads */
 	if (vortex_channel_check_serialize_pending (ctx, channel, &frame)) {
-		/* if previous function returns true, a new frame
+		/* if previous function returns axl_true, a new frame
 		 * reference we have to deliver */
 		goto deliver_frame;
 	}
 
 	/* before frame receive handler we have to check if client
 	 * have closed its connection */
-	is_connected = vortex_connection_is_ok (connection, false);
+	is_connected = vortex_connection_is_ok (connection, axl_false);
 	if (! is_connected ) {
 		/* the connection have been closed inside frame receive */
 		goto free_resources;
@@ -5460,9 +5460,9 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
  * @param channel  The channel where frame received invocation will happen
  * @param frame    The frame actually producing the invocation
  * 
- * @return true if frame was delivered or false if not.
+ * @return axl_true if frame was delivered or axl_false if not.
  */
-int           vortex_channel_invoke_received_handler (VortexConnection * connection, VortexChannel * channel, VortexFrame * frame)
+axl_bool      vortex_channel_invoke_received_handler (VortexConnection * connection, VortexChannel * channel, VortexFrame * frame)
 {
 	ReceivedInvokeData * data;
 	WaitReplyData      * wait_reply;
@@ -5470,7 +5470,7 @@ int           vortex_channel_invoke_received_handler (VortexConnection * connect
 	
 	/* check data to avoid self-encrintation ;-) */
 	if (channel == NULL || frame == NULL)
-		return false;
+		return axl_false;
 
 	/* query if we have a waiting queue */
 	switch (vortex_frame_get_type (frame)) {
@@ -5511,7 +5511,7 @@ int           vortex_channel_invoke_received_handler (VortexConnection * connect
 		/* unlock the channel */
 		vortex_mutex_unlock (&channel->receive_mutex);
 
-		return true;
+		return axl_true;
 	default:
 		/* do nothing */
 		break;
@@ -5524,7 +5524,7 @@ int           vortex_channel_invoke_received_handler (VortexConnection * connect
 	 * deleted */
 	if (channel->received == NULL) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "it seems you didn't define a second level received handler");
-		return false;
+		return axl_false;
 	}
 
 	/* prepare data to be passed in to thread */
@@ -5542,7 +5542,7 @@ int           vortex_channel_invoke_received_handler (VortexConnection * connect
 		/* deallocate resources */
 		vortex_frame_unref (frame);
 		axl_free (data);
-		return false;
+		return axl_false;
 	}
 
 	/* also update channel references */
@@ -5551,7 +5551,7 @@ int           vortex_channel_invoke_received_handler (VortexConnection * connect
 	/* create the thread to invoke frame received handler */
 	vortex_log (VORTEX_LEVEL_DEBUG, "about to invoke the frame received under a newly created handler");
 	vortex_thread_pool_new_task (ctx, (VortexThreadFunc)__vortex_channel_invoke_received_handler, data);
-	return true;
+	return axl_true;
 
 }
 
@@ -5560,13 +5560,13 @@ int           vortex_channel_invoke_received_handler (VortexConnection * connect
  * 
  * @param channel the channel to operate on
  * 
- * @return true if close handler is defined or false if not.
+ * @return axl_true if close handler is defined or axl_false if not.
  */
-int             vortex_channel_is_defined_close_handler (VortexChannel * channel)
+axl_bool       vortex_channel_is_defined_close_handler (VortexChannel * channel)
 {
 	/* check references received */
 	if (channel == NULL)
-		return false;
+		return axl_false;
 	
 	return (channel->close != NULL);
 }
@@ -5579,11 +5579,11 @@ int             vortex_channel_is_defined_close_handler (VortexChannel * channel
  * 
  * @return what have returned close handler invocation
  */
-int                 vortex_channel_invoke_close_handler     (VortexChannel  * channel)
+axl_bool            vortex_channel_invoke_close_handler     (VortexChannel  * channel)
 {
 	/* check references received */
 	if (channel == NULL || channel->close == NULL)
-		return false;
+		return axl_false;
 
 	return channel->close (channel->channel_num, channel->connection, 
 			       channel->close_user_data);
@@ -5596,9 +5596,9 @@ int                 vortex_channel_invoke_close_handler     (VortexChannel  * ch
  * @param channel0 the channel 0 itself
  * @param frame the frame received
  * 
- * @return true if validated was ok or false if it fails.
+ * @return axl_true if validated was ok or axl_false if it fails.
  */
-int      __vortex_channel_0_frame_received_validate (VortexChannel * channel0, VortexFrame * frame)
+axl_bool      __vortex_channel_0_frame_received_validate (VortexChannel * channel0, VortexFrame * frame)
 {
 	axlDtd      * channel_dtd;
 	axlDoc      * doc;
@@ -5617,7 +5617,7 @@ int      __vortex_channel_0_frame_received_validate (VortexChannel * channel0, V
 					 strlen (error_msg),
 					 vortex_frame_get_msgno (frame));
 		axl_free (error_msg);
-		return false;
+		return axl_false;
 	}
 
 	/* parser xml document */
@@ -5639,7 +5639,7 @@ int      __vortex_channel_0_frame_received_validate (VortexChannel * channel0, V
 		__vortex_connection_set_not_connected (vortex_channel_get_connection (channel0),
 						       "general syntax error: xml parse error",
 						       VortexProtocolError);
-		return false;		 
+		return axl_false;		 
 	}
 	
 	/* validate document */
@@ -5662,12 +5662,12 @@ int      __vortex_channel_0_frame_received_validate (VortexChannel * channel0, V
 
 		/* release the document read */
 		axl_doc_free (doc);
-		return false;		 
+		return axl_false;		 
 	}
 	
 	/* release the document read */
 	axl_doc_free (doc);
-	return true;
+	return axl_true;
 }
 
 enum {START_MSG, CLOSE_MSG, ERROR_MSG, OK_MSG};
@@ -5717,7 +5717,7 @@ int  __vortex_channel_0_frame_received_identify_type (VortexChannel * channel0, 
 
 		/* free the error reported */
 		axl_error_free (error);
-		return false;		 
+		return axl_false;		 
 	}
 
 	
@@ -5748,12 +5748,12 @@ int  __vortex_channel_0_frame_received_identify_type (VortexChannel * channel0, 
  * 
  * @return 
  */
-int      __vortex_channel_0_frame_received_get_start_param (VortexFrame    * frame,
-							    int            * channel_num,
-							    char          ** profile,
-							    char          ** profile_content,
-							    char          ** serverName,
-							    VortexEncoding * encoding)
+axl_bool      __vortex_channel_0_frame_received_get_start_param (VortexFrame    * frame,
+								 int            * channel_num,
+								 char          ** profile,
+								 char          ** profile_content,
+								 char          ** serverName,
+								 VortexEncoding * encoding)
 {
 	axlDoc        * doc;
 	axlNode       * start;
@@ -5768,7 +5768,7 @@ int      __vortex_channel_0_frame_received_get_start_param (VortexFrame    * fra
 	doc = axl_doc_parse (vortex_frame_get_payload (frame), 
 			     vortex_frame_get_payload_size (frame), NULL);
 	if (!doc) {
-		return false;
+		return axl_false;
 	}
 
 	/* Get the root element (start element): this is always the
@@ -5815,7 +5815,7 @@ int      __vortex_channel_0_frame_received_get_start_param (VortexFrame    * fra
 	
 	/* free the axl document */
 	axl_doc_free (doc);
-	return true;
+	return axl_true;
 
 }
 
@@ -5834,15 +5834,15 @@ int      __vortex_channel_0_frame_received_get_start_param (VortexFrame    * fra
  * @param profile_content The optional profile content.
  * @param encoding        The optional profile content encoding.
  * 
- * @return true if the channel is accepted to be created, or false if channel couldn't be created.
+ * @return axl_true if the channel is accepted to be created, or axl_false if channel couldn't be created.
  */
-int      __vortex_channel_0_frame_received_start_msg_support_invoke (char             * profile, 
-								     int                channel_num, 
-								     VortexConnection * connection,
-								     char             * serverName,
-								     char             * profile_content,
-								     char            ** profile_content_reply,
-								     VortexEncoding     encoding)
+axl_bool      __vortex_channel_0_frame_received_start_msg_support_invoke (char             * profile, 
+									  int                channel_num, 
+									  VortexConnection * connection,
+									  char             * serverName,
+									  char             * profile_content,
+									  char            ** profile_content_reply,
+									  VortexEncoding     encoding)
 {
 	int          result;
 
@@ -5863,17 +5863,17 @@ int      __vortex_channel_0_frame_received_start_msg_support_invoke (char       
  * @internal Implementation for the vortex_channel_notify_start that
  * do not use a hash value to know the msg_no value.
  */
-int  vortex_channel_notify_start_internal (const char       * serverName, 
-					   VortexConnection * conn,
-					   VortexChannel    * channel0,
-					   VortexChannel    * new_channel, 
-					   const char       * profile_content_reply,  
-					   int                msg_no,
-					   int                action)
+axl_bool  vortex_channel_notify_start_internal (const char       * serverName, 
+						VortexConnection * conn,
+						VortexChannel    * channel0,
+						VortexChannel    * new_channel, 
+						const char       * profile_content_reply,  
+						int                msg_no,
+						axl_bool           action)
 {
 	char        * start_rpy;
 	const char  * profile;
-	int           result = true;
+	axl_bool      result = axl_true;
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx   * ctx     = vortex_channel_get_ctx (channel0);
 #endif
@@ -5895,7 +5895,7 @@ int  vortex_channel_notify_start_internal (const char       * serverName,
 		/* send the error message */
 		if (! vortex_channel_send_err (channel0, start_rpy, strlen (start_rpy), msg_no)) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to send channel 0 reply (deferred notify start)");
-			result = false;
+			result = axl_false;
 		}  /* end if */
 			
 
@@ -5921,7 +5921,7 @@ int  vortex_channel_notify_start_internal (const char       * serverName,
 		    vortex_channel_get_number (new_channel), profile);
 
 	/* flag the channel to be connected */
-	new_channel->is_opened = true;
+	new_channel->is_opened = axl_true;
 
 	/* build start reply here using the optional content profile
 	 * reply */
@@ -5931,7 +5931,7 @@ int  vortex_channel_notify_start_internal (const char       * serverName,
 	if (!vortex_channel_send_rpy (channel0, 
 				      start_rpy, strlen (start_rpy), msg_no)) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "an error have happen while sending start channel reply, closing channel");
-		result = false;
+		result = axl_false;
 	} 
 
 
@@ -5954,12 +5954,12 @@ int  vortex_channel_notify_start_internal (const char       * serverName,
  * @param action This is the status value, according to this the
  * channel is accepted or not.
  *
- * @return true if the notification was done (no matter the value
+ * @return axl_true if the notification was done (no matter the value
  * provided for action).
  */
-int  vortex_channel_notify_start (VortexChannel    * new_channel,
-				  const char       * profile_content_reply,
-				  int                action)
+axl_bool  vortex_channel_notify_start (VortexChannel    * new_channel,
+				       const char       * profile_content_reply,
+				       axl_bool           action)
 {
 	VortexConnection * conn;
 	VortexChannel    * channel0;
@@ -5968,13 +5968,13 @@ int  vortex_channel_notify_start (VortexChannel    * new_channel,
 
 	/* check references received */
 	if (new_channel == NULL)
-		return false;
+		return axl_false;
 
 	/* get a reference to the connection */
 	conn       = vortex_channel_get_connection (new_channel);
 	
 	/* check connection status */
-	v_return_val_if_fail (vortex_connection_is_ok (conn, false), false);
+	v_return_val_if_fail (vortex_connection_is_ok (conn, axl_false), axl_false);
 
 	channel0   = vortex_connection_get_channel (conn, 0);
 	msg_no     = PTR_TO_INT (vortex_channel_get_data (new_channel, "_vo:ch:msg_no"));
@@ -6009,7 +6009,7 @@ void               vortex_channel_defer_start                    (VortexChannel 
 		return;
 
 	/* get the result just after calling to set */
-	vortex_channel_set_data (channel, "_vo:ch:defer", INT_TO_PTR (true));
+	vortex_channel_set_data (channel, "_vo:ch:defer", INT_TO_PTR (axl_true));
 	
 	return;
 }
@@ -6036,7 +6036,7 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 	VortexEncoding     encoding;       
 	VortexChannel    * new_channel           = NULL;
 	VortexConnection * connection            = channel0->connection;
-	int                status;
+	axl_bool           status;
 	VortexCtx        * ctx                   = vortex_channel_get_ctx (channel0);
 	
 	/* get and check channel num and profile */
@@ -6125,7 +6125,7 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 	 * deallocated. Flag the channel to be not connected.*/
 	new_channel = vortex_channel_empty_new (channel_num, profile, connection);
 	vortex_connection_add_channel (connection, new_channel);
-	new_channel->is_opened = false;
+	new_channel->is_opened = axl_false;
 	
 
 	/* ask if channel can be created, (before this function it is
@@ -6185,7 +6185,7 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 					      channel0, 
 					      new_channel, 
 					      profile_content_reply,  
-					      vortex_frame_get_msgno (frame), true);
+					      vortex_frame_get_msgno (frame), axl_true);
 
 	/* deallocate memory deallocated */
  free_channel_start_data:
@@ -6203,9 +6203,9 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
  * 
  * @return 
  */
-int      __vortex_channel_0_frame_received_get_close_param (VortexFrame * frame,
-							    int  * channel_num,
-							    char  ** code)
+axl_bool  __vortex_channel_0_frame_received_get_close_param (VortexFrame * frame,
+							     int  * channel_num,
+							     char  ** code)
 {
 	axlDoc      * doc;
 	axlNode     * close;
@@ -6215,7 +6215,7 @@ int      __vortex_channel_0_frame_received_get_close_param (VortexFrame * frame,
 	doc = axl_doc_parse (vortex_frame_get_payload (frame), 
 			     vortex_frame_get_payload_size (frame), NULL);
 	if (!doc) 
-		return false;
+		return axl_false;
 
 	/* Get the root element (close element) */
 	close           = axl_doc_get_root (doc);
@@ -6227,7 +6227,7 @@ int      __vortex_channel_0_frame_received_get_close_param (VortexFrame * frame,
 	/* release the document */
 	axl_doc_free (doc);
 
-	return true;
+	return axl_true;
 }
 
 
@@ -6252,7 +6252,7 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 	VortexChannel    * channel;
 	VortexConnection * connection      = vortex_channel_get_connection (channel0);
 	char             * error_msg       = NULL;
-	int                close_value     = false;
+	axl_bool           close_value     = axl_false;
 	WaitReplyData    * wait_reply;
 	VortexFrame      * ok_frame;
 	VortexCtx        * ctx             = vortex_channel_get_ctx (channel0);
@@ -6309,7 +6309,7 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 							VORTEX_FRAME_TYPE_RPY, 
 							0, 
 							wait_reply->msg_no_reply,
-							false,
+							axl_false,
 							0, 
 							strlen (vortex_frame_get_ok_message ()), 
 							0, 
@@ -6368,20 +6368,20 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 	}
 
 	/* if channel0 have no defined its close handler we assume
-	 * close = true */
+	 * close = axl_true */
 	if (channel->channel_num == 0) 
-		close_value = true;
+		close_value = axl_true;
 
 	vortex_log (VORTEX_LEVEL_WARNING, "no close handler defined for any level, assuming=%d", close_value);
  end:
 	/* now we have executed close handler for all levels and we
 	 * know what to do we need to follow the next indications:
 	 * 
-	 * 1) If close_value is false, simple reply an error message
+	 * 1) If close_value is axl_false, simple reply an error message
 	 * to close avoiding to get blocked until all replies have 
 	 * been received.
 	 * 
-	 * 2) If close_value is true, we have to wait to all replies
+	 * 2) If close_value is axl_true, we have to wait to all replies
 	 * to be received and tag the channel as being closed because
 	 * the application have accepted its closing. This is equal to
 	 * call vortex_channel_close. The channel gets into a state
@@ -6391,7 +6391,7 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 	 * ~~~~~~~~
 	 * flag the channel to be usable again */
 	channel->being_closed = close_value;
-	if (close_value == false) {
+	if (close_value == axl_false) {
 		/* unlock the mutex */
 		vortex_mutex_unlock (&channel->close_mutex);
 
@@ -6405,7 +6405,7 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 	vortex_mutex_unlock (&channel->close_mutex);
 
 	/* call to notify channel to be closed */
-	vortex_channel_notify_close (channel, vortex_frame_get_msgno (frame), true);
+	vortex_channel_notify_close (channel, vortex_frame_get_msgno (frame), axl_true);
 
 	return;
 }
@@ -6436,12 +6436,12 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
  * @param close The value to notify as answer to the request to close
  * the channel.
  */
-void vortex_channel_notify_close (VortexChannel * channel, int  msg_no, int      close)
+void vortex_channel_notify_close (VortexChannel * channel, int  msg_no, axl_bool close)
 {
 	VortexChannel    * channel0;
 	VortexConnection * connection;
 	char             * error_msg;
-	int                ok_on_wait      = false;
+	int                ok_on_wait      = axl_false;
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx     = vortex_channel_get_ctx (channel);
 #endif
@@ -6484,7 +6484,7 @@ void vortex_channel_notify_close (VortexChannel * channel, int  msg_no, int     
 		/* flag the connection to be at close processing. We
 		 * set this flag so vortex reader won't complain about
 		 * not properly connection close. */
-		vortex_connection_set_data (connection, "being_closed", INT_TO_PTR (true));
+		vortex_connection_set_data (connection, "being_closed", INT_TO_PTR (axl_true));
 
 		if (ok_on_wait) {
 			/* install a waiter into the channel 0 for the message
@@ -6651,16 +6651,16 @@ void vortex_channel_0_frame_received (VortexChannel    * channel0,
  * 
  * @param channel the channel to operate on.
  * 
- * @return true if a channel is opened or false if not.
+ * @return axl_true if a channel is opened or axl_false if not.
  */
-int             vortex_channel_is_opened       (VortexChannel * channel)
+axl_bool        vortex_channel_is_opened       (VortexChannel * channel)
 {
 	/* a null reference is considered as a closed channel */
 	if (channel == NULL)
-		return false;
+		return axl_false;
 
 	/* return current channel status */
-	return channel->is_opened && channel->connection && vortex_connection_is_ok (channel->connection, false);
+	return channel->is_opened && channel->connection && vortex_connection_is_ok (channel->connection, axl_false);
 }
 
 /** 
@@ -6677,12 +6677,12 @@ int             vortex_channel_is_opened       (VortexChannel * channel)
  * @param channel the channel to operate on
  * 
  * @return if channel is being closed. Keep in mind the function will
- * return false if a NULL reference is received. 
+ * return axl_false if a NULL reference is received. 
  */
-int             vortex_channel_is_being_closed (VortexChannel * channel)
+axl_bool        vortex_channel_is_being_closed (VortexChannel * channel)
 {
 	if (channel == NULL)
-		return false;
+		return axl_false;
 
 	return channel->being_closed;
 }
@@ -6893,7 +6893,7 @@ void     vortex_channel_free_wait_reply (WaitReplyData * wait_reply)
  * Due to RFC3080/RFC3081 design any message sent must be replied in
  * the same order the message was issued. This means that if you use
  * the same channel to send two messages the reply for the second one
- * will not be received until the previous one is. This is true even the
+ * will not be received until the previous one is. This is axl_true even the
  * second message have a task-impact lower than previous on the remote
  * peer.
  *
@@ -6907,7 +6907,7 @@ void     vortex_channel_free_wait_reply (WaitReplyData * wait_reply)
  * my message will only wait as long as the remote peer process my
  * message and reply it"</i>.
  *
- * In other words: <i>"The function returns true if the channel
+ * In other words: <i>"The function returns axl_true if the channel
  * received all replies for all message sent".</i>
  *
  * Keep in mind a channel is always ready to accept new message to be
@@ -6928,16 +6928,16 @@ void     vortex_channel_free_wait_reply (WaitReplyData * wait_reply)
  * 
  * @param channel the channel to check for its readyness state.
  * 
- * @return true if ready, otherwise false is returned.
+ * @return axl_true if ready, otherwise axl_false is returned.
  */
-int                vortex_channel_is_ready                       (VortexChannel * channel)
+axl_bool         vortex_channel_is_ready                       (VortexChannel * channel)
 {
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
 	if (channel == NULL)
-		return false;
+		return axl_false;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "checking channel to be ready (%d == %d) && reply_processed=%d",
 	       channel->last_message_sent, 
@@ -7095,7 +7095,7 @@ void __vortex_channel_get_reply_connection_broken (VortexConnection * conn, axlP
  *                               NULL, NULL);
  * 
  * // now wait and process all replies and messages received
- * while (true) {
+ * while (axl_true) {
  *     // get the next message, blocking at this call.
  *     frame = vortex_channel_get_reply (channel, queue);
  *
@@ -7145,7 +7145,7 @@ VortexFrame      * vortex_channel_get_reply                      (VortexChannel 
  		/* return to the caller if the connection is broken
  		 * (no more replies will be received) and no item is
  		 * queued */
-		if (! vortex_connection_is_ok (channel->connection, false) && (vortex_async_queue_items (queue) == 0)) {
+		if (! vortex_connection_is_ok (channel->connection, axl_false) && (vortex_async_queue_items (queue) == 0)) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to perform get reply operation because the connection is not operational");
 			return NULL;
 		} /* end if */
@@ -7211,18 +7211,18 @@ VortexFrame      * vortex_channel_get_piggyback                  (VortexChannel 
 /** 
  * @brief Allows to check if the given channel have piggyback waiting to be processed.
  * 
- * If the function returns true then \ref vortex_channel_get_piggyback
+ * If the function returns axl_true then \ref vortex_channel_get_piggyback
  * should be used to get current piggyback received.
  * 
  * @param channel The channel to query.
  * 
- * @return true if the channel has piggyback, otherwise false is returned.
+ * @return axl_true if the channel has piggyback, otherwise axl_false is returned.
  */
-int                vortex_channel_have_piggyback                 (VortexChannel   * channel)
+axl_bool         vortex_channel_have_piggyback                 (VortexChannel   * channel)
 {
 	/* get channel profile */
 	if (channel == NULL)
-		return false;
+		return axl_false;
 
 	return (vortex_channel_get_data (channel, "piggyback") != NULL);
 }
@@ -7255,7 +7255,7 @@ void               vortex_channel_set_piggyback                  (VortexChannel 
 					       VORTEX_FRAME_TYPE_RPY,
 					       0,     /* channel number */
 					       0,     /* the msgno */
-					       false, /* more flag */
+					       axl_false, /* more flag */
 					       0,     /* seqno number */
 					       strlen (profile_content),
 					       0,
@@ -7284,11 +7284,11 @@ void               vortex_channel_set_piggyback                  (VortexChannel 
  * 
  * @return 
  */
-int                vortex_channel_is_up_to_date (VortexChannel * channel)
+axl_bool          vortex_channel_is_up_to_date (VortexChannel * channel)
 {
 	/* get channel profile */
 	if (channel == NULL)
-		return false;
+		return axl_false;
 	
 	return (channel->last_message_sent == (channel->last_reply_expected - 1));
 }
@@ -7376,7 +7376,7 @@ VortexFrame   * vortex_channel_wait_reply              (VortexChannel * channel,
 	if (channel == NULL || wait_reply == NULL)
 		return NULL;
 
-	if (! vortex_connection_is_ok (channel->connection, false)) {
+	if (! vortex_connection_is_ok (channel->connection, axl_false)) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to perform wait reply operation because the connection is not operational");
 		return NULL;
 	} /* end if */
@@ -7393,7 +7393,7 @@ VortexFrame   * vortex_channel_wait_reply              (VortexChannel * channel,
 
 	/* because we have accept to deliver the frame to a waiting
 	 * thread, we understand this frame have being delivered */
-	channel->reply_processed = true;
+	channel->reply_processed = axl_true;
 
 	if (PTR_TO_INT (frame) == -3) {
 		vortex_log (
@@ -7526,7 +7526,7 @@ void           	   vortex_channel_signal_on_close_blocked        (VortexChannel 
 	vortex_mutex_lock   (&channel->close_mutex);
 
 	/* flag channel to be up to date on reply process */
-	channel->reply_processed = true;
+	channel->reply_processed = axl_true;
 
 	/* check if channel is being closed */
 	if (!channel->being_closed) {
@@ -7610,7 +7610,7 @@ void   vortex_channel_signal_reply_sent_on_close_blocked (VortexChannel * channe
  *
  * @param flag The status to flag.
  */
-void vortex_channel_flag_reply_processed (VortexChannel * channel, int   flag)
+void vortex_channel_flag_reply_processed (VortexChannel * channel, axl_bool   flag)
 {
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx    * ctx     = vortex_channel_get_ctx (channel);
@@ -7734,7 +7734,7 @@ void             vortex_channel_signal_rpy_sent                 (VortexChannel *
 		return;
 
 	/* push some data, to wakeup up the waiting thread */
-	QUEUE_PUSH (queue, INT_TO_PTR (true));
+	QUEUE_PUSH (queue, INT_TO_PTR (axl_true));
 
 	return;
 }
