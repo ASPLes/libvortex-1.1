@@ -69,18 +69,18 @@ int       vortex_profiles_register_extended_start (VortexCtx                    
 						   VortexOnStartChannelExtended   extended_start,
 						   axlPointer                     extended_start_user_data);
 
-int       vortex_profiles_invoke_start            (char  * uri, int  channel_num, VortexConnection * connection,
+axl_bool  vortex_profiles_invoke_start            (char  * uri, int  channel_num, VortexConnection * connection,
 						   char  * serverName, char  * profile_content, 
 						   char  ** profile_content_reply, VortexEncoding encoding);
 
-int       vortex_profiles_is_defined_start        (VortexCtx   * ctx,
+axl_bool  vortex_profiles_is_defined_start        (VortexCtx   * ctx,
 						   const char  * uri);
 
-int       vortex_profiles_invoke_close            (char  * uri,
+axl_bool  vortex_profiles_invoke_close            (char  * uri,
 						   int  channel_nu,
 						   VortexConnection * connection);
 
-int       vortex_profiles_is_defined_close        (VortexCtx   * ctx,
+axl_bool  vortex_profiles_is_defined_close        (VortexCtx   * ctx,
 						   const char  * uri);
 
 int       vortex_profiles_invoke_frame_received   (const char       * uri,
@@ -97,7 +97,7 @@ axlList * vortex_profiles_get_actual_list_ref     (VortexCtx        * ctx);
 
 int       vortex_profiles_registered              (VortexCtx        * ctx);
 
-int       vortex_profiles_is_registered           (VortexCtx        * ctx,
+axl_bool  vortex_profiles_is_registered           (VortexCtx        * ctx,
 						   const char       * uri);
 
 void      vortex_profiles_set_automatic_mime      (VortexCtx        * ctx,
