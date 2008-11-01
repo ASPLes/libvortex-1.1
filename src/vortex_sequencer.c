@@ -339,6 +339,18 @@ int vortex_sequencer_previous_pending_messages (VortexCtx            * ctx,
 		
 		/* get a reference to the next pending message */
 		(*data)      = vortex_channel_next_pending_message (channel);
+
+		if ((*data) == NULL) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "signaling to stop processing for channel=%d, next pending message returned NULL",
+				    vortex_channel_get_number (channel));
+
+			/* unref the connection, we
+			 * have previously increased
+			 * the reference */
+			vortex_connection_unref (conn, "(vortex sequencer)");
+
+			return false;
+		} /* end if */
 		
 		/* stop if the channel is stalled */
 		if ((*data)->first_seq_no >= vortex_channel_get_max_seq_no_remote_accepted (channel)) {
