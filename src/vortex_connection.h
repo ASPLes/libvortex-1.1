@@ -86,16 +86,16 @@ VortexConnection  * vortex_connection_new                    (VortexCtx         
 							      VortexConnectionNew    on_connected, 
 							      axlPointer             user_data);
 
-int                 vortex_connection_reconnect              (VortexConnection * connection,
+axl_bool            vortex_connection_reconnect              (VortexConnection * connection,
 							      VortexConnectionNew on_connected,
 							      axlPointer user_data);
 
-int                 vortex_connection_close                  (VortexConnection * connection);
+axl_bool            vortex_connection_close                  (VortexConnection * connection);
 
-int                 vortex_connection_close_all_channels     (VortexConnection * connection, 
-							      int      also_channel_0);
+axl_bool            vortex_connection_close_all_channels     (VortexConnection * connection, 
+							      axl_bool           also_channel_0);
 
-int                 vortex_connection_ref                    (VortexConnection * connection,
+axl_bool            vortex_connection_ref                    (VortexConnection * connection,
 							      const char       * who);
 
 void                vortex_connection_unref                  (VortexConnection * connection,
@@ -120,14 +120,14 @@ void                vortex_connection_connect_timeout        (VortexCtx        *
 long int            vortex_connection_get_timeout            (VortexCtx        * ctx);
 long int            vortex_connection_get_connect_timeout    (VortexCtx        * ctx);
 
-int                 vortex_connection_is_ok                  (VortexConnection * connection, 
-							      int      free_on_fail);
+axl_bool            vortex_connection_is_ok                  (VortexConnection * connection, 
+							      axl_bool           free_on_fail);
 
 char              * vortex_connection_get_message            (VortexConnection * connection);
 
 VortexStatus        vortex_connection_get_status             (VortexConnection * connection);
 
-int                 vortex_connection_pop_channel_error      (VortexConnection  * connection, 
+axl_bool            vortex_connection_pop_channel_error      (VortexConnection  * connection, 
 							      int               * code,
 							      char             ** msg);
 
@@ -143,17 +143,17 @@ int                 vortex_connection_set_profile_mask       (VortexConnection  
 							      VortexProfileMaskFunc   mask,
 							      axlPointer              user_data);
 
-int                 vortex_connection_is_profile_filtered    (VortexConnection      * connection,
+axl_bool            vortex_connection_is_profile_filtered    (VortexConnection      * connection,
 							      int                     channel_num,
 							      const char            * uri,
 							      const char            * profile_content,
 							      const char            * serverName,
 							      char                 ** error_msg);
 
-int                 vortex_connection_is_profile_supported   (VortexConnection * connection, 
+axl_bool            vortex_connection_is_profile_supported   (VortexConnection * connection, 
 							      const char       * uri);
 
-int                 vortex_connection_channel_exists         (VortexConnection * connection, 
+axl_bool            vortex_connection_channel_exists         (VortexConnection * connection, 
 							      int  channel_num);
 
 int                 vortex_connection_channels_count         (VortexConnection * connection);
@@ -180,7 +180,7 @@ int                 vortex_connection_get_channel_count      (VortexConnection  
 VORTEX_SOCKET       vortex_connection_get_socket             (VortexConnection * connection);
 
 void                vortex_connection_set_close_socket       (VortexConnection * connection,
-							      int      action);
+							      axl_bool           action);
 
 void                vortex_connection_add_channel            (VortexConnection * connection, 
 							      VortexChannel * channel);
@@ -199,15 +199,15 @@ const char        * vortex_connection_get_server_name        (VortexConnection *
 void                vortex_connection_set_server_name        (VortexConnection * connection,
 							      const       char * serverName);
 
-int                 vortex_connection_set_blocking_socket    (VortexConnection * connection);
+axl_bool            vortex_connection_set_blocking_socket    (VortexConnection * connection);
 
-int                 vortex_connection_set_nonblocking_socket (VortexConnection * connection);
+axl_bool            vortex_connection_set_nonblocking_socket (VortexConnection * connection);
 
-int                 vortex_connection_set_sock_tcp_nodelay   (VORTEX_SOCKET socket,
-							      int           enable);
+axl_bool            vortex_connection_set_sock_tcp_nodelay   (VORTEX_SOCKET socket,
+							      axl_bool      enable);
 
-int                 vortex_connection_set_sock_block         (VORTEX_SOCKET socket,
-							      int           enable);
+axl_bool            vortex_connection_set_sock_block         (VORTEX_SOCKET socket,
+							      axl_bool      enable);
 
 void                vortex_connection_set_data               (VortexConnection * connection,
 							      const char       * key,
@@ -270,7 +270,7 @@ void                    vortex_connection_set_on_close_full  (VortexConnection *
 							      VortexConnectionOnCloseFull on_close_handler,
 							      axlPointer data);
 
-int                 vortex_connection_remove_on_close_full    (VortexConnection              * connection, 
+axl_bool            vortex_connection_remove_on_close_full    (VortexConnection              * connection, 
 							       VortexConnectionOnCloseFull     on_close_handler,
 							       axlPointer                      data);
 
@@ -282,22 +282,22 @@ int                 vortex_connection_invoke_send            (VortexConnection *
 							      const char       * buffer,
 							      int                buffer_len);
 
-void                vortex_connection_sanity_socket_check        (VortexCtx * ctx, int      enable);
+void                vortex_connection_sanity_socket_check        (VortexCtx * ctx, axl_bool      enable);
 
-int                 vortex_connection_parse_greetings_and_enable (VortexConnection * connection, 
+axl_bool            vortex_connection_parse_greetings_and_enable (VortexConnection * connection, 
 								  VortexFrame      * frame);
 
 void                vortex_connection_set_preread_handler        (VortexConnection * connection, 
 								  VortexConnectionOnPreRead pre_accept_handler);
 
-int                 vortex_connection_is_defined_preread_handler (VortexConnection * connection);
+axl_bool            vortex_connection_is_defined_preread_handler (VortexConnection * connection);
 
 void                vortex_connection_invoke_preread_handler     (VortexConnection * connection);
 
 void                vortex_connection_set_tlsfication_status     (VortexConnection * connection,
-								  int                status);
+								  axl_bool           status);
 
-int                 vortex_connection_is_tlsficated              (VortexConnection * connection);
+axl_bool            vortex_connection_is_tlsficated              (VortexConnection * connection);
 
 void                vortex_connection_shutdown                   (VortexConnection * connection);
 
@@ -310,9 +310,9 @@ void                vortex_connection_set_channel_removed_handler  (VortexConnec
 								    axlPointer                        user_data);
 
 void                vortex_connection_block                        (VortexConnection * conn,
-								    int                enable);
+								    axl_bool           enable);
 
-int                 vortex_connection_is_blocked                   (VortexConnection  * conn);
+axl_bool            vortex_connection_is_blocked                   (VortexConnection  * conn);
 
 int                 vortex_connection_get_next_frame_size          (VortexConnection * connection,
 								    VortexChannel    * channel,
@@ -321,9 +321,9 @@ int                 vortex_connection_get_next_frame_size          (VortexConnec
 								    int                max_seq_no);
 
 void                vortex_connection_seq_frame_updates            (VortexConnection * connection,
-								    int                is_disabled);
+								    axl_bool           is_disabled);
 
-int                 vortex_connection_seq_frame_updates_status     (VortexConnection * connection);
+axl_bool            vortex_connection_seq_frame_updates_status     (VortexConnection * connection);
 
 VortexChannelFrameSize  vortex_connection_set_next_frame_size_handler (VortexConnection        * connection,
 								       VortexChannelFrameSize    next_frame_size,
@@ -360,7 +360,7 @@ void                vortex_connection_add_channel_pool       (VortexConnection  
 void                vortex_connection_remove_channel_pool    (VortexConnection  * connection,
 							      VortexChannelPool * pool);
 
-int                 __vortex_connection_parse_greetings      (VortexConnection * connection, 
+axl_bool            __vortex_connection_parse_greetings      (VortexConnection * connection, 
 							      VortexFrame * frame);
 
 int                 vortex_connection_get_mss                (VortexConnection * connection);
