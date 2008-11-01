@@ -72,10 +72,10 @@ int  __vortex_listener_get_port (const char  * port)
  *
  * @param send_greetings If the greetings message must be sent or not.
  */
-void vortex_listener_accept_connection    (VortexConnection * connection, int  send_greetings)
+void vortex_listener_accept_connection    (VortexConnection * connection, axl_bool  send_greetings)
 {
 	VortexCtx                  * ctx;
-	int                          result;
+	axl_bool                     result;
 	int                          iterator;
 	VortexListenerOnAcceptData * data;
 
@@ -90,7 +90,7 @@ void vortex_listener_accept_connection    (VortexConnection * connection, int  s
 	
 	/* call to the handler defined */
 	iterator = 0;
-	result   = true;
+	result   = axl_true;
 
 	/* init lock */
 	vortex_mutex_lock (&ctx->listener_mutex);
@@ -109,7 +109,7 @@ void vortex_listener_accept_connection    (VortexConnection * connection, int  s
 
 			/* found that at least one handler do not
 			 * accept the incoming connection, dropping */
-			result = false;
+			result = axl_false;
 			break;
 		}
 		
@@ -122,7 +122,7 @@ void vortex_listener_accept_connection    (VortexConnection * connection, int  s
 	vortex_mutex_unlock (&ctx->listener_mutex);
 
 	/* check result */
-	if (result == false) {
+	if (result == axl_false) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "the server application level have dropped the provided connection");
 		/* send the error reply message */
 		vortex_channel_send_err (vortex_connection_get_channel (connection, 0), 
@@ -151,7 +151,7 @@ void vortex_listener_accept_connection    (VortexConnection * connection, int  s
 	} /* end if */
 
 	/* flag the connection to be on initial step */
-	vortex_connection_set_data (connection, "initial_accept", INT_TO_PTR (true));
+	vortex_connection_set_data (connection, "initial_accept", INT_TO_PTR (axl_true));
 
 	/* call to notify connection created */
 	vortex_connection_actions_notify (&connection, CONNECTION_STAGE_POST_CREATED);
@@ -234,7 +234,7 @@ void __vortex_listener_initial_accept (VortexCtx        * ctx,
 	 * Perform an initial accept, flagging the connection to be
 	 * into the initial accept stage, and send the initial greetings.
 	 */
-	vortex_listener_accept_connection (connection, true);
+	vortex_listener_accept_connection (connection, axl_true);
 
 	return;
 }
@@ -404,7 +404,7 @@ typedef struct _VortexListenerData {
 	VortexListenerReady        on_ready;
 	VortexListenerReadyFull    on_ready_full;
 	axlPointer                 user_data;
-	int                        threaded;
+	axl_bool                   threaded;
 	VortexCtx                * ctx;
 }VortexListenerData;
 
@@ -417,14 +417,14 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	struct sockaddr_in   sin;
 	VORTEX_SOCKET        fd;
 #if defined(AXL_OS_WIN32)
-	BOOL                 unit      = true;
+	BOOL                 unit      = axl_true;
 	int                  sin_size  = sizeof (sin);
 #else    	
 	int                  unit      = 1;
 	socklen_t            sin_size  = sizeof (sin);
 #endif	
 	char               * host      = data->host;
-	int                  threaded  = data->threaded;
+	axl_bool             threaded  = data->threaded;
 	uint16_t             int_port  = (uint16_t) data->port;
 	axlPointer           user_data = data->user_data;
 	char               * message   = NULL;
@@ -531,7 +531,7 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 		/* notify the listener that an error was found
 		 * (because the server didn't suply a handler) */
 		vortex_mutex_lock (&ctx->listener_unlock);
-		QUEUE_PUSH (ctx->listener_wait_lock, INT_TO_PTR (true));
+		QUEUE_PUSH (ctx->listener_wait_lock, INT_TO_PTR (axl_true));
 		ctx->listener_wait_lock = NULL;
 		vortex_mutex_unlock (&ctx->listener_unlock);
 	} /* end if */
@@ -646,30 +646,30 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
  *        return;
  * }
  *
- * int      start_channel (int                channel_num, 
- *                        VortexConnection * connection, 
- *                        axlPointer         user_data)
+ * axl_bool  start_channel (int                channel_num, 
+ *                          VortexConnection * connection, 
+ *                          axlPointer         user_data)
  * {
  *        printf ("Received an start message=%d!!\n",
  *                 channel_num);
- *        // if the async notifier returns true, the channel
- *        // is implicitly created, if false is returned the
+ *        // if the async notifier returns axl_true, the channel
+ *        // is implicitly created, if axl_false is returned the
  *        // channel creation is denied and a reply error
  *        // is sent.
- *        return true;
+ *        return axl_true;
  * }
  *
- * int      close_channel (int                channel_num, 
- *                         VortexConnection * connection, 
- *                         axlPointer         user_data)
+ * axl_bool      close_channel (int                channel_num, 
+ *                              VortexConnection * connection, 
+ *                              axlPointer         user_data)
  * {
  *        printf ("Got a close message notification!!\n");
  *
- *        // if true is returned, the channel is
+ *        // if axl_true is returned, the channel is
  *        // accepted to be closed. Otherwise the channel
  *        // will not be closed and an error reply will be
  *        // sent to the remote peer.
- *        return true;
+ *        return axl_true;
  * }
  * int main (int argc, char ** argv) {
  *
@@ -677,7 +677,7 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
  *      ctx = vortex_ctx_new ();
  *
  *      // enable log to see whats going on 
- *      vortex_log_enable (ctx, true);
+ *      vortex_log_enable (ctx, axl_true);
  *
  *      // init vortex library (and check its result!)
  *      if (! vortex_init_ctx (ctx)) {
@@ -698,7 +698,7 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
  *      vortex_listener_wait (ctx);
  *  
  *      // end vortex internal subsystem (if no one have done it yet!)
- *      vortex_ctx_exit (ctx, true);
+ *      vortex_ctx_exit (ctx, axl_true);
  * 
  *      // that's all to start BEEPing!
  *      return 0;     
@@ -922,7 +922,7 @@ void vortex_listener_unlock (VortexCtx * ctx)
 
 		/* notify waiters */
 		if (vortex_async_queue_waiters (ctx->listener_wait_lock) > 0) {
-			QUEUE_PUSH (ctx->listener_wait_lock, INT_TO_PTR (true));
+			QUEUE_PUSH (ctx->listener_wait_lock, INT_TO_PTR (axl_true));
 		} else {
 			/* unref */
 			vortex_async_queue_unref (ctx->listener_wait_lock);
@@ -1066,10 +1066,10 @@ void          vortex_listener_set_on_connection_accepted (VortexCtx             
  *
  * @param ctx The context where the operation will be performed.
  *
- * @return true if the listener was started because the file was read
- * successfully otherwise false is returned.
+ * @return axl_true if the listener was started because the file was read
+ * successfully otherwise axl_false is returned.
  */
-int               vortex_listener_parse_conf_and_start (VortexCtx * ctx)
+axl_bool            vortex_listener_parse_conf_and_start (VortexCtx * ctx)
 {
 	/* listener xml configuration */
 	axlDoc   * doc;
@@ -1088,7 +1088,7 @@ int               vortex_listener_parse_conf_and_start (VortexCtx * ctx)
 
 	/* check reference received */
 	if (ctx == NULL)
-		return false;
+		return axl_false;
 
 	/* load the document */
 	full_path_file = vortex_support_find_data_file (ctx, "conf.xml");
@@ -1104,7 +1104,7 @@ int               vortex_listener_parse_conf_and_start (VortexCtx * ctx)
 		/* release the error reported */
 		axl_error_free (error);
 		
-		return false;
+		return axl_false;
 	}
 	
 
@@ -1164,7 +1164,7 @@ int               vortex_listener_parse_conf_and_start (VortexCtx * ctx)
 
 	axl_dtd_free (dtd);
 
-	return true;	
+	return axl_true;	
 }
 
 
@@ -1264,16 +1264,16 @@ void __vortex_listener_shutdown_foreach (VortexConnection * conn,
  * 
  * @param listener The listener to shutdown.
  *
- * @param also_created_conns true to shutdown all connections 
+ * @param also_created_conns axl_true to shutdown all connections 
  */
 void          vortex_listener_shutdown (VortexConnection * listener,
-					int                also_created_conns)
+					axl_bool           also_created_conns)
 {
 	VortexCtx        * ctx;
 	VortexAsyncQueue * notify = NULL;
 
 	/* check parameters */
-	if (! vortex_connection_is_ok (listener, false))
+	if (! vortex_connection_is_ok (listener, axl_false))
 		return;
 	
 	/* get ctx */
