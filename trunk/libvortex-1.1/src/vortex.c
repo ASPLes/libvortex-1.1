@@ -91,27 +91,27 @@ void __vortex_sigpipe_do_nothing (int _signal)
  * @param ctx The context that is required to return its current log
  * activation configuration.
  * 
- * @return true if console debug is enabled. Otherwise false.
+ * @return axl_true if console debug is enabled. Otherwise axl_false.
  */
-int      vortex_log_is_enabled (VortexCtx * ctx)
+axl_bool      vortex_log_is_enabled (VortexCtx * ctx)
 {
 #ifdef ENABLE_VORTEX_LOG	
 	/* no context, no log */
 	if (ctx == NULL)
-		return false;
+		return axl_false;
 
 	/* check if the debug function was already checked */
 	if (! ctx->debug_checked) {
 		/* not checked, get the value and flag as checked */
 		ctx->debug         = vortex_support_getenv_int ("VORTEX_DEBUG") > 0;
-		ctx->debug_checked = true;
+		ctx->debug_checked = axl_true;
 	} /* end if */
 
 	/* return current status */
 	return ctx->debug;
 
 #else
-	return false;
+	return axl_false;
 #endif
 }
 
@@ -121,28 +121,28 @@ int      vortex_log_is_enabled (VortexCtx * ctx)
  *
  * @param ctx The context where the operation will be performed.
  * 
- * @return true if console debug is enabled. Otherwise false.
+ * @return axl_true if console debug is enabled. Otherwise axl_false.
  */
-int      vortex_log2_is_enabled (VortexCtx * ctx)
+axl_bool      vortex_log2_is_enabled (VortexCtx * ctx)
 {
 #ifdef ENABLE_VORTEX_LOG	
 
 	/* no context, no log */
 	if (ctx == NULL)
-		return false;
+		return axl_false;
 
 	/* check if the debug function was already checked */
 	if (! ctx->debug2_checked) {
 		/* not checked, get the value and flag as checked */
 		ctx->debug2         = vortex_support_getenv_int ("VORTEX_DEBUG2") > 0;
-		ctx->debug2_checked = true;
+		ctx->debug2_checked = axl_true;
 	} /* end if */
 
 	/* return current status */
 	return ctx->debug2;
 
 #else
-	return false;
+	return axl_false;
 #endif
 }
 
@@ -151,9 +151,9 @@ int      vortex_log2_is_enabled (VortexCtx * ctx)
  * 
  * @param ctx The context where the operation will be performed.
  *
- * @param status true enable log, false disables it.
+ * @param status axl_true enable log, axl_false disables it.
  */
-void     vortex_log_enable       (VortexCtx * ctx, int      status)
+void     vortex_log_enable       (VortexCtx * ctx, axl_bool      status)
 {
 #ifdef ENABLE_VORTEX_LOG	
 	/* no context, no log */
@@ -165,7 +165,7 @@ void     vortex_log_enable       (VortexCtx * ctx, int      status)
 		vortex_support_setenv ("VORTEX_DEBUG", "1");
 
 		/* flag the new value */
-		ctx->debug = true;
+		ctx->debug = axl_true;
 		
 	} else
 		vortex_support_unsetenv ("VORTEX_DEBUG");
@@ -181,9 +181,9 @@ void     vortex_log_enable       (VortexCtx * ctx, int      status)
  * 
  * @param ctx The context where the operation will be performed.
  *
- * @param status true enable log, false disables it.
+ * @param status axl_true enable log, axl_false disables it.
  */
-void     vortex_log2_enable       (VortexCtx * ctx, int      status)
+void     vortex_log2_enable       (VortexCtx * ctx, axl_bool      status)
 {
 #ifdef ENABLE_VORTEX_LOG	
 	/* no context, no log */
@@ -195,7 +195,7 @@ void     vortex_log2_enable       (VortexCtx * ctx, int      status)
 		vortex_support_setenv ("VORTEX_DEBUG2", "1");
 		
 		/* flag the new value */
-		ctx->debug2 = true;
+		ctx->debug2 = axl_true;
 	} else
 		vortex_support_unsetenv ("VORTEX_DEBUG2");
 	return;
@@ -211,24 +211,24 @@ void     vortex_log2_enable       (VortexCtx * ctx, int      status)
  *
  * @param ctx The context where the operation will be performed.
  * 
- * @return true if enabled, false if not.
+ * @return axl_true if enabled, axl_false if not.
  */
-int      vortex_color_log_is_enabled (VortexCtx * ctx)
+axl_bool      vortex_color_log_is_enabled (VortexCtx * ctx)
 {
 #ifdef ENABLE_VORTEX_LOG	
 	/* no context, no log */
 	if (ctx == NULL)
-		return false;
+		return axl_false;
 	if (! ctx->debug_color_checked) {
-		ctx->debug_color_checked = true;
+		ctx->debug_color_checked = axl_true;
 		ctx->debug_color         = vortex_support_getenv_int ("VORTEX_DEBUG_COLOR") > 0;
 	} /* end if */
 
 	/* return current result */
 	return ctx->debug_color;
 #else
-	/* always return false */
-	return false;
+	/* always return axl_false */
+	return axl_false;
 #endif
 	
 }
@@ -247,9 +247,9 @@ int      vortex_color_log_is_enabled (VortexCtx * ctx)
  * 
  * @param ctx The context where the operation will be performed.
  *
- * @param status true enable color log, false disables it.
+ * @param status axl_true enable color log, axl_false disables it.
  */
-void     vortex_color_log_enable (VortexCtx * ctx, int      status)
+void     vortex_color_log_enable (VortexCtx * ctx, axl_bool      status)
 {
 
 #ifdef ENABLE_VORTEX_LOG
@@ -262,7 +262,7 @@ void     vortex_color_log_enable (VortexCtx * ctx, int      status)
 		vortex_support_setenv ("VORTEX_DEBUG_COLOR", "1");
 
 		/* flag the new value */
-		ctx->debug_color = true;
+		ctx->debug_color = axl_true;
 	} else
 		vortex_support_unsetenv ("VORTEX_DEBUG_COLOR");
 	return;
@@ -284,12 +284,12 @@ void     vortex_color_log_enable (VortexCtx * ctx, int      status)
  *
  * @param value The variable reference required to fill the result.
  * 
- * @return The function returns true if the configuration item is
+ * @return The function returns axl_true if the configuration item is
  * returned. 
  */
-int       vortex_conf_get             (VortexCtx      * ctx,
-				       VortexConfItem   item, 
-				       int            * value)
+axl_bool       vortex_conf_get             (VortexCtx      * ctx,
+					    VortexConfItem   item, 
+					    int            * value)
 {
 #if defined(AXL_OS_WIN32)
 
@@ -298,12 +298,12 @@ int       vortex_conf_get             (VortexCtx      * ctx,
 	struct rlimit _limit;
 #endif	
 	/* do common check */
-	v_return_val_if_fail (ctx,   false);
-	v_return_val_if_fail (value, false);
+	v_return_val_if_fail (ctx,   axl_false);
+	v_return_val_if_fail (value, axl_false);
 
 	/* no context, no configuration */
 	if (ctx == NULL)
-		return false;
+		return axl_false;
 
 	/* clear value received */
 	*value = 0;
@@ -320,53 +320,53 @@ int       vortex_conf_get             (VortexCtx      * ctx,
 #if defined (AXL_OS_WIN32)
 		/* return the soft sock limit */
 		*value = ctx->__vortex_conf_soft_sock_limit;
-		return true;
+		return axl_true;
 #elif defined (AXL_OS_UNIX)
 		/* get the limit */
 		if (getrlimit (RLIMIT_NOFILE, &_limit) != 0) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to get current soft limit: %s", vortex_errno_get_last_error ());
-			return false;
+			return axl_false;
 		} /* end if */
 
 		/* return current limit */
 		*value = _limit.rlim_cur;
-		return true;
+		return axl_true;
 #endif		
 	case VORTEX_HARD_SOCK_LIMIT:
 #if defined (AXL_OS_WIN32)
 		/* return the hard sockt limit */
 		*value = ctx->__vortex_conf_hard_sock_limit;
-		return true;
+		return axl_true;
 #elif defined (AXL_OS_UNIX)
 		/* get the limit */
 		if (getrlimit (RLIMIT_NOFILE, &_limit) != 0) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to get current soft limit: %s", vortex_errno_get_last_error ());
-			return false;
+			return axl_false;
 		} /* end if */
 
 		/* return current limit */
 		*value = _limit.rlim_max;
-		return true;
+		return axl_true;
 #endif		
 	case VORTEX_LISTENER_BACKLOG:
 		/* return current backlog value */
 		*value = ctx->backlog;
-		return true;
+		return axl_true;
 	case VORTEX_ENFORCE_PROFILES_SUPPORTED:
 		/* return current enforce profiles supported values */
 		*value = ctx->enforce_profiles_supported;
-		return true;
+		return axl_true;
 	case VORTEX_AUTOMATIC_MIME_HANDLING:
 		/* configure automatic MIME handling */
 		*value = ctx->automatic_mime;
-		return true;
+		return axl_true;
 	default:
-		/* configuration found, return false */
+		/* configuration found, return axl_false */
 		vortex_log (VORTEX_LEVEL_CRITICAL, "found a requested for a non existent configuration item");
-		return false;
+		return axl_false;
 	} /* end if */
 
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -382,13 +382,13 @@ int       vortex_conf_get             (VortexCtx      * ctx,
  *
  * @param str_value The string value to be configured if applies.
  * 
- * @return true if the configuration was done properly, otherwise
- * false is returned.
+ * @return axl_true if the configuration was done properly, otherwise
+ * axl_false is returned.
  */
-int       vortex_conf_set             (VortexCtx      * ctx,
-				       VortexConfItem   item, 
-				       int              value, 
-				       const char     * str_value)
+axl_bool       vortex_conf_set             (VortexCtx      * ctx,
+					    VortexConfItem   item, 
+					    int              value, 
+					    const char     * str_value)
 {
 #if defined(AXL_OS_WIN32)
 
@@ -397,8 +397,8 @@ int       vortex_conf_set             (VortexCtx      * ctx,
 	struct rlimit _limit;
 #endif	
 	/* do common check */
-	v_return_val_if_fail (ctx,   false);
-	v_return_val_if_fail (value, false);
+	v_return_val_if_fail (ctx,   axl_false);
+	v_return_val_if_fail (value, axl_false);
 
 #if defined (AXL_OS_WIN32)
 #elif defined(AXL_OS_UNIX)
@@ -412,16 +412,16 @@ int       vortex_conf_set             (VortexCtx      * ctx,
 #if defined (AXL_OS_WIN32)
 		/* check soft limit received */
 		if (value > ctx->__vortex_conf_hard_sock_limit)
-			return false;
+			return axl_false;
 
 		/* configure new soft limit */
 		ctx->__vortex_conf_soft_sock_limit = value;
-		return true;
+		return axl_true;
 #elif defined (AXL_OS_UNIX)
 		/* get the limit */
 		if (getrlimit (RLIMIT_NOFILE, &_limit) != 0) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to get current soft limit: %s", vortex_errno_get_last_error ());
-			return false;
+			return axl_false;
 		} /* end if */
 
 		/* configure new value */
@@ -430,21 +430,21 @@ int       vortex_conf_set             (VortexCtx      * ctx,
 		/* set new limit */
 		if (setrlimit (RLIMIT_NOFILE, &_limit) != 0) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to set current soft limit: %s", vortex_errno_get_last_error ());
-			return false;
+			return axl_false;
 		} /* end if */
 
-		return true;
+		return axl_true;
 #endif		
 	case VORTEX_HARD_SOCK_LIMIT:
 #if defined (AXL_OS_WIN32)
 		/* current it is not possible to configure hard sock
 		 * limit */
-		return false;
+		return axl_false;
 #elif defined (AXL_OS_UNIX)
 		/* get the limit */
 		if (getrlimit (RLIMIT_NOFILE, &_limit) != 0) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to get current soft limit: %s", vortex_errno_get_last_error ());
-			return false;
+			return axl_false;
 		} /* end if */
 
 		/* configure new value */
@@ -459,31 +459,31 @@ int       vortex_conf_set             (VortexCtx      * ctx,
 		/* set new limit */
 		if (setrlimit (RLIMIT_NOFILE, &_limit) != 0) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to set current hard limit: %s", vortex_errno_get_last_error ());
-			return false;
+			return axl_false;
 		} /* end if */
 		
-		return true;
+		return axl_true;
 #endif		
 	case VORTEX_LISTENER_BACKLOG:
 		/* return current backlog value */
 		ctx->backlog = value;
-		return true;
+		return axl_true;
 
 	case VORTEX_ENFORCE_PROFILES_SUPPORTED:
 		/* return current enforce profiles supported values */
 		ctx->enforce_profiles_supported = value;
-		return true;
+		return axl_true;
 	case VORTEX_AUTOMATIC_MIME_HANDLING:
 		/* configure automatic MIME handling */
 		ctx->automatic_mime    = value;
-		return true;
+		return axl_true;
 	default:
-		/* configuration found, return false */
+		/* configuration found, return axl_false */
 		vortex_log (VORTEX_LEVEL_CRITICAL, "found a requested for a non existent configuration item");
-		return false;
+		return axl_false;
 	} /* end if */
 
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -507,20 +507,20 @@ int       vortex_conf_set             (VortexCtx      * ctx,
  * 
  * @param ctx The context that is going to be configured.
  * 
- * @param status true to acquire the mutex before logging, otherwise
+ * @param status axl_true to acquire the mutex before logging, otherwise
  * log without locking the context mutex.
  *
  * You can use \ref vortex_log_is_enabled_acquire_mutex to check the
  * mutex status.
  */
 void     vortex_log_acquire_mutex    (VortexCtx * ctx, 
-				      int         status)
+				      axl_bool    status)
 {
 	/* get current context */
 	v_return_if_fail (ctx);
 
 	/* configure status */
-	ctx->use_log_mutex = true;
+	ctx->use_log_mutex = axl_true;
 }
 
 /** 
@@ -531,10 +531,10 @@ void     vortex_log_acquire_mutex    (VortexCtx * ctx,
  * 
  * @return Current status configured.
  */
-int      vortex_log_is_enabled_acquire_mutex (VortexCtx * ctx)
+axl_bool      vortex_log_is_enabled_acquire_mutex (VortexCtx * ctx)
 {
 	/* get current context */
-	v_return_val_if_fail (ctx, false);
+	v_return_val_if_fail (ctx, axl_false);
 	
 	/* configure status */
 	return ctx->use_log_mutex;
@@ -603,7 +603,7 @@ void _vortex_log_common (VortexCtx        * ctx,
 	return;
 #else
 	/* log with mutex */
-	int  use_log_mutex = false;
+	int  use_log_mutex = axl_false;
 
 	if (ctx == NULL) {
 #if defined (__GNUC__)
@@ -810,15 +810,15 @@ void _vortex_log2 (VortexCtx        * ctx,
  * @param ctx An already created context where the library
  * initialization will take place.
  * 
- * @return true if the context was initialized, otherwise false is
+ * @return axl_true if the context was initialized, otherwise axl_false is
  * returned.
  */
-int    vortex_init_ctx (VortexCtx * ctx)
+axl_bool    vortex_init_ctx (VortexCtx * ctx)
 {
 	int          thread_num;
 	int          soft_limit;
 
-	v_return_val_if_fail (ctx, false);
+	v_return_val_if_fail (ctx, axl_false);
 
 	/**** vortex_io.c: init io module */
 	vortex_io_init (ctx);
@@ -856,7 +856,7 @@ int    vortex_init_ctx (VortexCtx * ctx)
 	/* init winsock API */
 	vortex_log (VORTEX_LEVEL_DEBUG, "init winsocket for windows");
 	if (! vortex_win32_init (ctx))
-		return false;
+		return axl_false;
 #endif
 
 	/* init axl library */
@@ -878,7 +878,7 @@ int    vortex_init_ctx (VortexCtx * ctx)
 	/* init dtds */
 	if (!vortex_dtds_init (ctx)) {
 		fprintf (stderr, "VORTEX_ERROR: unable to load dtd files (this means some DTD (or all) file wasn't possible to be loaded.\n");
-		return false;
+		return axl_false;
 	}
 
 	/* before starting, check if we are using select(2) system
@@ -910,7 +910,7 @@ int    vortex_init_ctx (VortexCtx * ctx)
 	/* init reader subsystem */
 	vortex_log (VORTEX_LEVEL_DEBUG, "starting vortex reader..");
 	if (! vortex_reader_run (ctx))
-		return false;
+		return axl_false;
 	
 	/* init writer subsystem */
 	/* vortex_log (VORTEX_LEVEL_DEBUG, "starting vortex writer..");
@@ -919,7 +919,7 @@ int    vortex_init_ctx (VortexCtx * ctx)
 	/* init sequencer subsystem */
 	vortex_log (VORTEX_LEVEL_DEBUG, "starting vortex sequencer..");
 	if (! vortex_sequencer_run (ctx))
-		return false;
+		return axl_false;
 	
 	/* init thread pool (for query receiving) */
 	thread_num = vortex_thread_pool_get_num ();
@@ -928,7 +928,7 @@ int    vortex_init_ctx (VortexCtx * ctx)
 	vortex_thread_pool_init (ctx, thread_num);
 
 	/* register the vortex exit function */
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -964,7 +964,7 @@ int    vortex_init_ctx (VortexCtx * ctx)
  * @param free_ctx Allows to signal the function if the context
  * provided must be deallocated (by calling to \ref vortex_ctx_free).
  */
-void vortex_exit_ctx (VortexCtx * ctx, int  free_ctx)
+void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
 {
 
 	/* check if the library is already started */
@@ -979,7 +979,7 @@ void vortex_exit_ctx (VortexCtx * ctx, int  free_ctx)
 		return;
 	}
 	/* flag other waiting functions to do nothing */
-	ctx->vortex_exit = true;
+	ctx->vortex_exit = axl_true;
 	
 	/* unlock */
 	vortex_mutex_unlock  (&ctx->exit_mutex);
@@ -1987,7 +1987,7 @@ void vortex_exit_ctx (VortexCtx * ctx, int  free_ctx)
  *      }
  *
  *      // finally, terminate vortex context execution running
- *      vortex_exit_ctx (ctx, true);
+ *      vortex_exit_ctx (ctx, axl_true);
  * \endcode
  * 
  *
@@ -2046,7 +2046,7 @@ void vortex_exit_ctx (VortexCtx * ctx, int  free_ctx)
  *       vortex_listener_wait (ctx);
  *
  *       // finalize vortex running
- *       vortex_exit_ctx (ctx, false);
+ *       vortex_exit_ctx (ctx, axl_false);
  *
  *        return 0;
  *   }
@@ -2082,20 +2082,20 @@ void vortex_exit_ctx (VortexCtx * ctx, int  free_ctx)
  * The \ref VortexOnStartChannel "start handler" is executed to notify
  * that a new petition to create a new channel over some session have
  * arrived. But this handler is also executed to know if Vortex
- * Listener agree to create the channel. If start handler returns true
+ * Listener agree to create the channel. If start handler returns axl_true
  * the channel will be created, otherwise not.
  * 
  * If you don't define a start handler a default one will be used
- * which always returns true. This means: all channel creation
+ * which always returns axl_true. This means: all channel creation
  * petition will be accepted.
  * 
  * The \ref VortexOnCloseChannel "close handler" works the same as
  * start handler but this time to notify if a channel can be
- * closed. Again, if close handler returns true, the channel will be
+ * closed. Again, if close handler returns axl_true, the channel will be
  * closed, otherwise not.
  *
  * If you don't provide a close handler, a default one will be used,
- * which always returns true, that is, all channel close petition will be
+ * which always returns axl_true, that is, all channel close petition will be
  * accepted.
  * 
  * The \ref VortexOnFrameReceived "frame received handler" is executed
@@ -2139,7 +2139,7 @@ void vortex_exit_ctx (VortexCtx * ctx, int  free_ctx)
  *                                         NULL, NULL);
  * 
  *     // check if everything is ok
- *     if (!vortex_connection_is_ok (connection, false)) {
+ *     if (!vortex_connection_is_ok (connection, axl_false)) {
  *            printf ("Connection have failed: %s\n", 
  * 		    vortex_connection_get_message (connection));
  *            vortex_connection_close (connection);
@@ -2149,7 +2149,7 @@ void vortex_exit_ctx (VortexCtx * ctx, int  free_ctx)
  *     
  *
  *     // and finally call to terminate vortex
- *     vortex_exit_ctx (ctx, true);
+ *     vortex_exit_ctx (ctx, axl_true);
  *   }
  *   
  * \endcode
@@ -2582,11 +2582,11 @@ void vortex_exit_ctx (VortexCtx * ctx, int  free_ctx)
  * Here is an example for the \ref VortexOnStartChannelExtended
  * "OnStartChannelExtended" handler:
  * \code
- *  int      extended_start_channel (char              * profile,
- *                                   int                 channel_num,
- *                                   VortexConnection  * connection,
- *                                   char              * serverName,
- *                                   char              * profile_content,
+ *  axl_bool      extended_start_channel (char              * profile,
+ *                                        int                 channel_num,
+ *                                        VortexConnection  * connection,
+ *                                        char              * serverName,
+ *                                        char              * profile_content,
  *                                   char             ** profile_content_reply,
  *                                   VortexEncoding      encoding,
  *                                   axlPointer          user_data)
@@ -2599,7 +2599,7 @@ void vortex_exit_ctx (VortexCtx * ctx, int  free_ctx)
  *
  *      }
  *      // accept the channel to be created.
- *      return true;
+ *      return axl_true;
  * }
  * \endcode
  * 
@@ -3088,7 +3088,7 @@ void vortex_exit_ctx (VortexCtx * ctx, int  free_ctx)
  *      // get the next channel available (this function could be
  *      // called by several threads at the same time
  *
- *      result = vortex_channel_pool_get_next_ready (pool, true);
+ *      result = vortex_channel_pool_get_next_ready (pool, axl_true);
  * 
  *      // now, Vortex API is ensuring us we are the only one owner for the channel
  *      // result, let's change the frame receive handler
@@ -3306,15 +3306,15 @@ void vortex_exit_ctx (VortexCtx * ctx, int  free_ctx)
  *  <li>A \ref VortexTlsAcceptQuery handler should be defined to
  *  control how are accepted incoming TLS requests. Here is an example:
  * \code
- * // return true if we agree to accept the TLS negotiation
- * int      check_and_accept_tls_request (VortexConnection * connection, 
- *                                        char             * serverName)
+ * // return axl_true if we agree to accept the TLS negotiation
+ * axl_bool      check_and_accept_tls_request (VortexConnection * connection, 
+ *                                             char             * serverName)
  * {
  *     // perform some especial operations against the serverName
- *     // value or the received connection, return false to deny the 
- *     // TLS request, or true to allow it.
+ *     // value or the received connection, return axl_false to deny the 
+ *     // TLS request, or axl_true to allow it.
  *     
- *     return true;  
+ *     return axl_true;  
  * }
  * \endcode
  *  </li>
@@ -3800,10 +3800,10 @@ void vortex_exit_ctx (VortexCtx * ctx, int  free_ctx)
  * }
  * [...]
  * // validation handler for SASL PLAIN profile
- * int      sasl_plain_validation  (VortexConnection * connection,
- *                                  const char       * auth_id,
- *                                  const char       * authorization_id,
- *                                  const char       * password)
+ * axl_bool      sasl_plain_validation  (VortexConnection * connection,
+ *                                       const char       * auth_id,
+ *                                       const char       * authorization_id,
+ *                                       const char       * password)
  * {
  *
  *      // At this point your server application should connect
@@ -3818,10 +3818,10 @@ void vortex_exit_ctx (VortexCtx * ctx, int  free_ctx)
  *	    axl_cmp (password, "secret")) {
  *              // notify Vortex that the given SASL request
  *              // have been accepted by the application level.
- *		return true;
+ *		return axl_true;
  *	}
  *	// deny SASL request to authenticate remote peer
- *	return false;
+ *	return axl_false;
  * }
  * \endcode
  *
@@ -4563,7 +4563,7 @@ void vortex_exit_ctx (VortexCtx * ctx, int  free_ctx)
  *
  * For the case of boolean values, you can use the same function for
  * the int type. boolean values, inside XML-RPC, are modeled using 0
- * and 1 states to represent true and false.
+ * and 1 states to represent axl_true and axl_false.
  * </li>
  *
  * </ul>
@@ -4667,7 +4667,7 @@ void vortex_exit_ctx (VortexCtx * ctx, int  free_ctx)
  *      vortex_listener_wait (ctx);
  *	
  *      // end vortex function 
- *      vortex_exit_ctx (ctx, true);
+ *      vortex_exit_ctx (ctx, axl_true);
  *
  *      return 0;
  * }
@@ -4684,20 +4684,20 @@ void vortex_exit_ctx (VortexCtx * ctx, int  free_ctx)
  * Here is an example of a validation resource function that only
  * accept some resources names:
  * \code
- * int      validate_resource (VortexConnection * connection, 
- *                             int                channel_number,
- *                             char             * serverName,
- *                             char             * resource_path)
+ * axl_bool      validate_resource (VortexConnection * connection, 
+ *                                  int                channel_number,
+ *                                  char             * serverName,
+ *                                  char             * resource_path)
  * {
  *      // check that resource received
  *      if (axl_cmp (resource_path, "/aritmetic-services/1.0"))
- *              return true;
+ *              return axl_true;
  *      if (axl_cmp (resource_path, "/aritmetic-services/1.1"))
- *              return true;
+ *              return axl_true;
  *    
- *      // resource not recognized, just return false to signal
+ *      // resource not recognized, just return axl_false to signal
  *      // vortex engine that the channel must not be accepted.
- *      return false;
+ *      return axl_false;
  * }
  * \endcode
  *
@@ -5362,7 +5362,7 @@ void vortex_exit_ctx (VortexCtx * ctx, int  free_ctx)
  * 
  * // create the connection using tunnel settings
  * connection = vortex_tunnel_new (settings, NULL, NULL);
- * if (! vortex_connection_is_ok (connection, false)) {
+ * if (! vortex_connection_is_ok (connection, axl_false)) {
  *       // manage tunnel creation error 
  * }
  * 
