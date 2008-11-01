@@ -74,10 +74,10 @@ void     vortex_support_cleanup                    (VortexCtx * ctx);
 
 int      vortex_support_getenv_int                 (const char * env_name);
 
-int      vortex_support_setenv                     (const char * env_name, 
+axl_bool vortex_support_setenv                     (const char * env_name, 
 						    const char * env_value);
 
-int      vortex_support_unsetenv                   (const char * env_name);
+axl_bool vortex_support_unsetenv                   (const char * env_name);
 
 /** 
  * @brief Available tests to be performed while using \ref
@@ -102,7 +102,7 @@ typedef enum {
 	FILE_IS_REGULAR = 1 << 3,
 } VortexFileTest;
 
-int      vortex_support_file_test                  (const char * path,   
+axl_bool vortex_support_file_test                  (const char * path,   
 						    VortexFileTest test);
 
 char   * vortex_support_build_filename             (const char  * name, ...);

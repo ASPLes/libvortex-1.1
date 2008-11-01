@@ -540,15 +540,15 @@ int      vortex_support_getenv_int                 (const char * env_name)
  * @param env_value The environment value to configure. The value
  * provide must be not NULL. To unset an environment variable use \ref vortex_support_unsetenv
  *
- * @return true if the operation was successfully completed, otherwise
- * false is returned.
+ * @return axl_true if the operation was successfully completed, otherwise
+ * axl_false is returned.
  */
-int     vortex_support_setenv                     (const char * env_name, 
-						   const char * env_value)
+axl_bool     vortex_support_setenv                     (const char * env_name, 
+							const char * env_value)
 {
 	/* check values received */
 	if (env_name == NULL || env_value == NULL)
-		return false;
+		return axl_false;
 	
 #if defined (AXL_OS_WIN32)
 	/* use windows implementation */
@@ -564,14 +564,14 @@ int     vortex_support_setenv                     (const char * env_name,
  *
  * @param env_name The environment variable to unset its value.
  *
- * @return true if the operation was successfully completed, otherwise
- * false is returned.
+ * @return axl_true if the operation was successfully completed, otherwise
+ * axl_false is returned.
  */
-int      vortex_support_unsetenv                   (const char * env_name)
+axl_bool      vortex_support_unsetenv                   (const char * env_name)
 {
 	/* check values received */
 	if (env_name == NULL)
-		return false;
+		return axl_false;
 
 #if defined (AXL_OS_WIN32)
 	/* use windows implementation */
@@ -580,8 +580,8 @@ int      vortex_support_unsetenv                   (const char * env_name)
 	/* use the unix implementation */
 	unsetenv (env_name);
 	
-	/* always true */
-	return true;
+	/* always axl_true */
+	return axl_true;
 #endif
 }
 
@@ -644,9 +644,9 @@ char   * vortex_support_build_filename      (const char * name, ...)
  */
 double   vortex_support_strtod                     (const char * param, char ** string_aux)
 {
-	double   double_value;
-	int      second_try = false;
-	char   * alt_string = NULL;
+	double     double_value;
+	axl_bool   second_try = axl_false;
+	char     * alt_string = NULL;
 
 	/* provide a local reference */
 	if (string_aux == NULL)
@@ -666,10 +666,10 @@ double   vortex_support_strtod                     (const char * param, char ** 
 		 * double value */
 		if ((*string_aux) [0] == '.') {
 			(*string_aux) [0] = ',';
-			second_try     = true;
+			second_try     = axl_true;
 		} else if ((*string_aux) [0] == ',') {
 			(*string_aux) [0] = '.';
-			second_try     = true;
+			second_try     = axl_true;
 		}
 
 		/* check if we can try again */
@@ -762,61 +762,61 @@ char   * vortex_support_inet_ntoa                  (VortexCtx           * ctx,
  * @param test The set of test to be performed. Separate each test
  * with "|" to perform several test at the same time.
  * 
- * @return true if all test returns true. Otherwise false is returned.
+ * @return axl_true if all test returns axl_true. Otherwise axl_false is returned.
  */
-int    vortex_support_file_test (const char * path, VortexFileTest test)
+axl_bool    vortex_support_file_test (const char * path, VortexFileTest test)
 {
-	int  result = false;
+	axl_bool    result = axl_false;
 	struct stat file_info;
 
 	/* perform common checks */
-	axl_return_val_if_fail (path, false);
+	axl_return_val_if_fail (path, axl_false);
 
 	/* call to get status */
 	result = (stat (path, &file_info) == 0);
 	if (! result) {
 		/* check that it is requesting for not file exists */
 		if (errno == ENOENT && (test & FILE_EXISTS) == FILE_EXISTS)
-			return false;
-		return false;
+			return axl_false;
+		return axl_false;
 	} /* end if */
 
 	/* check for file exists */
 	if ((test & FILE_EXISTS) == FILE_EXISTS) {
 		/* check result */
-		if (result == false)
-			return false;
+		if (result == axl_false)
+			return axl_false;
 		
 		/* reached this point the file exists */
-		result = true;
+		result = axl_true;
 	}
 
 	/* check if the file is a link */
 	if ((test & FILE_IS_LINK) == FILE_IS_LINK) {
 		if (! S_ISLNK (file_info.st_mode))
-			return false;
+			return axl_false;
 
 		/* reached this point the file is link */
-		result = true;
+		result = axl_true;
 	}
 
 	/* check if the file is a regular */
 	if ((test & FILE_IS_REGULAR) == FILE_IS_REGULAR) {
 		if (! S_ISREG (file_info.st_mode))
-			return false;
+			return axl_false;
 
 		/* reached this point the file is link */
-		result = true;
+		result = axl_true;
 	}
 
 	/* check if the file is a directory */
 	if ((test & FILE_IS_DIR) == FILE_IS_DIR) {
 		if (! S_ISDIR (file_info.st_mode)) {
-			return false;
+			return axl_false;
 		}
 
 		/* reached this point the file is link */
-		result = true;
+		result = axl_true;
 	}
 
 	/* return current result */
