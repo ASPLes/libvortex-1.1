@@ -95,11 +95,11 @@ void __vortex_profiles_destroy_profile_item (axlPointer data)
  * @brief Default start handler, that is, accept to create a channel
  * always.
  */
-int      __vortex_profiles_default_start (int                channel_num,
-					  VortexConnection * connection,
-					  axlPointer         user_data)
+axl_bool      __vortex_profiles_default_start (int                channel_num,
+					       VortexConnection * connection,
+					       axlPointer         user_data)
 {
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -108,11 +108,11 @@ int      __vortex_profiles_default_start (int                channel_num,
  * @brief Default close handler, that is, accept to close the channel
  * always.
  */
-int      __vortex_profiles_default_close (int                channel_num,
-					  VortexConnection * connection,
-					  axlPointer         user_data)
+axl_bool      __vortex_profiles_default_close (int                channel_num,
+					       VortexConnection * connection,
+					       axlPointer         user_data)
 {
-	return true;
+	return axl_true;
 }
 
 
@@ -158,7 +158,7 @@ int      __vortex_profiles_default_close (int                channel_num,
  * If you don't provide handlers for \ref VortexOnStartChannel "start"
  * and \ref VortexOnCloseChannel "close", a default handler will be used.
  * 
- * These default handlers always return true, so, on channel creation
+ * These default handlers always return axl_true, so, on channel creation
  * it will accept always and on channel closing it will accept
  * always.
  *
@@ -213,8 +213,8 @@ int      __vortex_profiles_default_close (int                channel_num,
  * @param received            A handler to control incoming frames
  * @param received_user_data  User defined data to be passed in to received handler
  *
- * @return The function return true if the profile was properly
- * registered. Otherwise false is returned.
+ * @return The function return axl_true if the profile was properly
+ * registered. Otherwise axl_false is returned.
  */
 int  vortex_profiles_register (VortexCtx             * ctx,
 			       const char            * uri,
@@ -229,7 +229,7 @@ int  vortex_profiles_register (VortexCtx             * ctx,
 	VortexProfile * profile;
 
 	if (ctx == NULL)
-		return false;
+		return axl_false;
 
 	/* find out if we already have registered this profile */
 	profile = vortex_hash_lookup (ctx->registered_profiles, (axlPointer) uri);
@@ -253,7 +253,7 @@ int  vortex_profiles_register (VortexCtx             * ctx,
 		/* register in the list */
 		axl_list_append (ctx->profiles_list, profile->profile_name);
 
-		return true;
+		return axl_true;
 	}
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "profile %s is already registered, updating its settings",
@@ -267,7 +267,7 @@ int  vortex_profiles_register (VortexCtx             * ctx,
 	profile->received           = received;
 	profile->received_user_data = received_user_data;
 
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -280,7 +280,7 @@ int  vortex_profiles_register (VortexCtx             * ctx,
  * @param ctx The context where the operation will be performed.
  * @param uri The profile uri to unregister.
  *
- * @return true if the profile was unregistered, otherwise false is
+ * @return axl_true if the profile was unregistered, otherwise axl_false is
  * returned.
  */
 int      vortex_profiles_unregister              (VortexCtx             * ctx,
@@ -290,12 +290,12 @@ int      vortex_profiles_unregister              (VortexCtx             * ctx,
 	VortexProfile * profile;
 
 	if (ctx == NULL)
-		return false;
+		return axl_false;
 
 	/* find out if we already have registered this profile */
 	profile = vortex_hash_lookup (ctx->registered_profiles, (axlPointer) uri);
 	if (profile == NULL)
-		return false;
+		return axl_false;
 
 	/* remove by pointer */
 	axl_list_remove_ptr (ctx->profiles_list, profile->profile_name);
@@ -303,7 +303,7 @@ int      vortex_profiles_unregister              (VortexCtx             * ctx,
 	/* unregister the profile */
 	vortex_hash_remove (ctx->registered_profiles, (axlPointer) uri);
 
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -333,8 +333,8 @@ int      vortex_profiles_unregister              (VortexCtx             * ctx,
  * value. You can use NULL values for parameter. In the case the value
  * is not, previous value is conserved.
  *
- * @return true if the basic MIME configuration was done, otherwise
- * false is returned.
+ * @return axl_true if the basic MIME configuration was done, otherwise
+ * axl_false is returned.
  */
 int      vortex_profiles_set_mime_type           (VortexCtx             * ctx,
 						  const char            * uri,
@@ -345,14 +345,14 @@ int      vortex_profiles_set_mime_type           (VortexCtx             * ctx,
 	VortexProfile * profile;
 
 	if (ctx == NULL)
-		return false;
+		return axl_false;
 
 	/* find out if we already have registered this profile */
 	profile = vortex_hash_lookup (ctx->registered_profiles, (axlPointer) uri);
 	if (profile == NULL) {
 		vortex_log (VORTEX_LEVEL_WARNING, "Attempting to configure mime and content type configuration over a profile not registered (%s)",
 		       uri);
-		return false;
+		return axl_false;
 	}
 
 	/* save current mime type if it is defined */
@@ -370,7 +370,7 @@ int      vortex_profiles_set_mime_type           (VortexCtx             * ctx,
 	}
 	
 	/* just return */
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -463,8 +463,8 @@ const char  * vortex_profiles_get_transfer_encoding (VortexCtx   * ctx,
  * @param extended_start           The handler to be invoked when an start message is received
  * @param extended_start_user_data User defined data to be passed in to the handler.
  *
- * @return true if the extended start handler was configured,
- * otherwise false is returned.
+ * @return axl_true if the extended start handler was configured,
+ * otherwise axl_false is returned.
  */
 int      vortex_profiles_register_extended_start (VortexCtx                    * ctx,
 						  const char                   * uri,
@@ -476,7 +476,7 @@ int      vortex_profiles_register_extended_start (VortexCtx                    *
 
 	/* check reference */
 	if (ctx == NULL)
-		return false;
+		return axl_false;
 
 	/* find out if we already have registered this profile */
 	profile     = vortex_hash_lookup (ctx->registered_profiles, (axlPointer) uri);
@@ -504,7 +504,7 @@ int      vortex_profiles_register_extended_start (VortexCtx                    *
 	profile->start_extended           = extended_start;
 	profile->start_extended_user_data = extended_start_user_data;
 
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -527,29 +527,29 @@ int      vortex_profiles_register_extended_start (VortexCtx                    *
  * @param profile_content_reply Optional profile content to be set on the start channel reply.
  * @param encoding              The profile content encoding.
  * 
- * @return true if the channel was allowed to be created or false if it fails.
+ * @return axl_true if the channel was allowed to be created or axl_false if it fails.
  */
-int      vortex_profiles_invoke_start (char             * uri, 
-				       int                channel_num, 
-				       VortexConnection * connection,
-				       char             * serverName, 
-				       char             * profile_content, 
-				       char            ** profile_content_reply, 
-				       VortexEncoding     encoding)
+axl_bool      vortex_profiles_invoke_start (char             * uri, 
+					    int                channel_num, 
+					    VortexConnection * connection,
+					    char             * serverName, 
+					    char             * profile_content, 
+					    char            ** profile_content_reply, 
+					    VortexEncoding     encoding)
 {
 	VortexProfile * profile;
 	VortexCtx     * ctx = vortex_connection_get_ctx (connection);
 
-	v_return_val_if_fail (connection,                      false);
-	v_return_val_if_fail (channel_num >= 0,                false);
-	v_return_val_if_fail (uri,                             false);
-	v_return_val_if_fail (ctx && ctx->registered_profiles, false);
+	v_return_val_if_fail (connection,                      axl_false);
+	v_return_val_if_fail (channel_num >= 0,                axl_false);
+	v_return_val_if_fail (uri,                             axl_false);
+	v_return_val_if_fail (ctx && ctx->registered_profiles, axl_false);
 
 	/* look up for the profile definition */
 	profile = vortex_hash_lookup (ctx->registered_profiles, uri);
 	if (profile == NULL) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "requiring to invoke start handler on a not registered profile");
-		return false;
+		return axl_false;
 	}
 
 	/* check for a start extended */
@@ -579,21 +579,21 @@ int      vortex_profiles_invoke_start (char             * uri,
  * @param ctx The context where the operation will be performed.
  * @param uri The uri to check.
  * 
- * @return true if close handler is defined or false if not
+ * @return axl_true if close handler is defined or axl_false if not
  */
-int      vortex_profiles_is_defined_start (VortexCtx   * ctx,
-					   const char  * uri)
+axl_bool      vortex_profiles_is_defined_start (VortexCtx   * ctx,
+						const char  * uri)
 {
 	VortexProfile * profile;
 
 	/* check references received */
 	if (ctx == NULL || uri == NULL)
-		return false;
+		return axl_false;
 
 	profile = vortex_hash_lookup (ctx->registered_profiles, (axlPointer) uri);
 	if (profile == NULL) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "looking up for a start handler on a non-registered profile");
-		return false;
+		return axl_false;
 	}
 
 	return ((profile->start != NULL) || (profile->start_extended != NULL));
@@ -607,23 +607,23 @@ int      vortex_profiles_is_defined_start (VortexCtx   * ctx,
  * library. 
  * 
  */
-int      vortex_profiles_invoke_close (char             * uri, 
-				       int                channel_num,
-				       VortexConnection * connection)
+axl_bool      vortex_profiles_invoke_close (char             * uri, 
+					    int                channel_num,
+					    VortexConnection * connection)
 {
 	VortexProfile * profile;
 	VortexCtx     * ctx = vortex_connection_get_ctx (connection);
 
-	v_return_val_if_fail (connection,                      false);
-	v_return_val_if_fail (channel_num >= 0,                false);
-	v_return_val_if_fail (uri,                             false);
-	v_return_val_if_fail (ctx && ctx->registered_profiles, false);
+	v_return_val_if_fail (connection,                      axl_false);
+	v_return_val_if_fail (channel_num >= 0,                axl_false);
+	v_return_val_if_fail (uri,                             axl_false);
+	v_return_val_if_fail (ctx && ctx->registered_profiles, axl_false);
 
 	profile = vortex_hash_lookup (ctx->registered_profiles, uri);
 
 	if (profile == NULL) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "requiring to invoke close handler on a not registered profile");
-		return false;
+		return axl_false;
 	}
 
 	return profile->close (channel_num, connection, profile->close_user_data);
@@ -638,20 +638,20 @@ int      vortex_profiles_invoke_close (char             * uri,
  * @param ctx The context where the operation will be performed.
  * @param uri the uri profile to check.
  * 
- * @return true if close handler is defined or false if not
+ * @return axl_true if close handler is defined or axl_false if not
  */
-int      vortex_profiles_is_defined_close (VortexCtx * ctx,
-					   const char  * uri)
+axl_bool      vortex_profiles_is_defined_close (VortexCtx * ctx,
+						const char  * uri)
 {
 	VortexProfile * profile;
 
-	v_return_val_if_fail (uri,                             false);
-	v_return_val_if_fail (ctx && ctx->registered_profiles, false);
+	v_return_val_if_fail (uri,                             axl_false);
+	v_return_val_if_fail (ctx && ctx->registered_profiles, axl_false);
 
 	profile = vortex_hash_lookup (ctx->registered_profiles, (axlPointer) uri);
 	if (profile == NULL) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "looking up for a close handler on a non-registered profile");
-		return false;
+		return axl_false;
 	}
 
 	return (profile->close != NULL);
@@ -671,7 +671,7 @@ axlPointer __vortex_profiles_invoke_frame_received (axlPointer __data)
 	VortexConnection          * connection   = data->connection;
 	VortexFrame               * frame        = data->frame;
 	VortexChannel             * channel      = NULL;
-	int                         is_connected = false;
+	axl_bool                    is_connected = axl_false;
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx                 * ctx          = vortex_connection_get_ctx (connection);
 #endif
@@ -686,7 +686,7 @@ axlPointer __vortex_profiles_invoke_frame_received (axlPointer __data)
 	axl_free (data);
 
 	/* record actual connection state */
-	is_connected = vortex_connection_is_ok (connection, false);
+	is_connected = vortex_connection_is_ok (connection, axl_false);
 
 	if (! is_connected) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "invoking frame receive on a non-connected session");
@@ -707,7 +707,7 @@ axlPointer __vortex_profiles_invoke_frame_received (axlPointer __data)
 
 	/* check to enforce serialize */
 	if (vortex_channel_check_serialize (CONN_CTX(connection), connection, channel, frame)) {
-		/* if the function returns true, we must return
+		/* if the function returns axl_true, we must return
 		 * because the message was stored for later
 		 * delivery */
 		return NULL;
@@ -720,14 +720,14 @@ axlPointer __vortex_profiles_invoke_frame_received (axlPointer __data)
 
 	/* check serialize to broadcast other waiting threads */
 	if (vortex_channel_check_serialize_pending (CONN_CTX(connection), channel, &frame)) {
-		/* if previous function returns true, a new frame
+		/* if previous function returns axl_true, a new frame
 		 * reference we have to deliver */
 		goto deliver_frame;
 	}
 
 	/* before frame receive handler we have to check if client
 	 * have closed its connection */
-	is_connected = vortex_connection_is_ok (connection, false);
+	is_connected = vortex_connection_is_ok (connection, axl_false);
 
 	if (! is_connected ) {
 		/* the connection have been closed inside frame
@@ -773,29 +773,29 @@ axlPointer __vortex_profiles_invoke_frame_received (axlPointer __data)
  * @param connection 
  * @param frame 
  * 
- * @return true if frame was delivered to a handler or false if
+ * @return axl_true if frame was delivered to a handler or axl_false if
  * frame was not delivered.
  */
-int      vortex_profiles_invoke_frame_received (const char       * uri,
-						int                channel_num,
-						VortexConnection * connection,
-						VortexFrame      * frame)
+axl_bool      vortex_profiles_invoke_frame_received (const char       * uri,
+						     int                channel_num,
+						     VortexConnection * connection,
+						     VortexFrame      * frame)
 {
 	VortexProfile             * profile;
 	VortexProfileReceivedData * data;
 	VortexCtx                 * ctx = vortex_connection_get_ctx (connection);
 
-	v_return_val_if_fail (uri,                             false);
-	v_return_val_if_fail (channel_num >= 0,                false);
-	v_return_val_if_fail (connection,                      false); 
-	v_return_val_if_fail (frame,                           false);
-	v_return_val_if_fail (ctx && ctx->registered_profiles, false);
+	v_return_val_if_fail (uri,                             axl_false);
+	v_return_val_if_fail (channel_num >= 0,                axl_false);
+	v_return_val_if_fail (connection,                      axl_false); 
+	v_return_val_if_fail (frame,                           axl_false);
+	v_return_val_if_fail (ctx && ctx->registered_profiles, axl_false);
 
 	profile = vortex_hash_lookup (ctx->registered_profiles, (axlPointer) uri);
 
 	if ((profile == NULL) || (profile->received == NULL)) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "invoking frame received handler on a profile which haven't been defined");
-		return false;
+		return axl_false;
 	}
 
 	/*
@@ -826,7 +826,7 @@ int      vortex_profiles_invoke_frame_received (const char       * uri,
 		/* deallocate resources */
 		vortex_frame_unref (frame);
 		axl_free (data);
-		return false;
+		return axl_false;
 	}
 
 	/* update channel reference */
@@ -835,7 +835,7 @@ int      vortex_profiles_invoke_frame_received (const char       * uri,
 	/* call to deliver the frame */
 	vortex_thread_pool_new_task (ctx, __vortex_profiles_invoke_frame_received, data);
 	
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -847,21 +847,21 @@ int      vortex_profiles_invoke_frame_received (const char       * uri,
  * @param ctx The context where the operation will be performed.
  * @param uri The uri to check.
  * 
- * @return true if received handler is defined or false if not
+ * @return axl_true if received handler is defined or axl_false if not
  */
-int      vortex_profiles_is_defined_received (VortexCtx   * ctx,
-					      const char  * uri)
+axl_bool      vortex_profiles_is_defined_received (VortexCtx   * ctx,
+						   const char  * uri)
 {
 	VortexProfile * profile;
 
 	/* check references received */
 	if (ctx == NULL || uri == NULL)
-		return false;
+		return axl_false;
 
 	profile = vortex_hash_lookup (ctx->registered_profiles, (axlPointer) uri);
 	if (profile == NULL) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "looking up for a received handler on a non-registered profile");
-		return false;
+		return axl_false;
 	}
 
 	return (profile->close != NULL);
@@ -869,14 +869,14 @@ int      vortex_profiles_is_defined_received (VortexCtx   * ctx,
 
 
 
-int  __get_actual_list (axlPointer     key,
-			axlPointer     value,
-			axlPointer     user_data)
+axl_bool  __get_actual_list (axlPointer     key,
+			     axlPointer     value,
+			     axlPointer     user_data)
 {
 	/* add the element */
 	axl_list_append ((axlList *) user_data, axl_strdup ((char *) key));
 
-	return false;
+	return axl_false;
 }
 
 /** 
@@ -896,7 +896,7 @@ axlList * vortex_profiles_get_actual_list (VortexCtx * ctx)
 	/* get current context */
 	axlList   * result = NULL;
 
-	v_return_val_if_fail (ctx && ctx->registered_profiles, false);
+	v_return_val_if_fail (ctx && ctx->registered_profiles, axl_false);
 
 	/* create the list */
 	result = axl_list_new (axl_list_always_return_1, axl_free);
@@ -949,14 +949,14 @@ int     vortex_profiles_registered (VortexCtx * ctx)
  * @param ctx The context where the operation will be performed.
  * @param uri The unique URI identifier used to lookup.
  * 
- * @return true if the profile is registered or false if not. 
+ * @return axl_true if the profile is registered or axl_false if not. 
  */
-int      vortex_profiles_is_registered (VortexCtx  * ctx, 
-					const char  * uri)
+axl_bool      vortex_profiles_is_registered (VortexCtx  * ctx, 
+					     const char  * uri)
 {
 	/* check references */
 	if (ctx == NULL || uri == NULL)
-		return false;
+		return axl_false;
 
 	return (vortex_hash_lookup (ctx->registered_profiles, (axlPointer) uri) != NULL);
 }
