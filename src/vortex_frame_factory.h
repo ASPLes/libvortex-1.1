@@ -48,7 +48,7 @@
 char  *        vortex_frame_build_up_from_params (VortexFrameType   type,
 						  int               channel,
 						  int               msgno,
-						  int               more,
+						  axl_bool          more,
 						  unsigned int      seqno,
 						  int               size,
 						  int               ansno,
@@ -57,7 +57,7 @@ char  *        vortex_frame_build_up_from_params (VortexFrameType   type,
 char  *        vortex_frame_build_up_from_params_s (VortexFrameType   type,
 						    int               channel,
 						    int               msgno,
-						    int               more,
+						    axl_bool          more,
 						    unsigned int      seqno,
 						    int               size,
 						    int               ansno,
@@ -69,7 +69,7 @@ char  *        vortex_frame_build_up_from_params_s (VortexFrameType   type,
 char  * vortex_frame_build_up_from_params_s_buffer (VortexFrameType   type,
  						    int               channel,
  						    int               msgno,
- 						    int               more,
+ 						    axl_bool          more,
  						    unsigned int      seqno,
  						    int               size,
  						    int               ansno,
@@ -96,7 +96,7 @@ VortexFrame * vortex_frame_create               (VortexCtx       * ctx,
 						 VortexFrameType   type,
 						 int               channel,
 						 int               msgno,
-						 int               more,
+						 axl_bool          more,
 						 unsigned int      seqno,
 						 int               size,
 						 int               ansno,
@@ -106,7 +106,7 @@ VortexFrame * vortex_frame_create_full          (VortexCtx       * ctx,
 						 VortexFrameType   type,
 						 int               channel,
 						 int               msgno,
-						 int               more,
+						 axl_bool          more,
 						 unsigned int      seqno,
 						 int               size,
 						 int               ansno,
@@ -118,7 +118,7 @@ VortexFrame * vortex_frame_create_full_ref      (VortexCtx       * ctx,
 						 VortexFrameType   type,
 						 int               channel,
 						 int               msgno,
-						 int               more,
+						 axl_bool          more,
 						 unsigned int      seqno,
 						 int               size,
 						 int               ansno,
@@ -132,14 +132,14 @@ char  *       vortex_frame_get_raw_frame         (VortexFrame * frame);
 
 VortexFrame * vortex_frame_get_next              (VortexConnection * connection);
 
-int           vortex_frame_send_raw              (VortexConnection * connection, 
-						  const char  * a_frame, 
-						  int           frame_size);
+axl_bool      vortex_frame_send_raw              (VortexConnection * connection, 
+						  const char       * a_frame, 
+						  int                frame_size);
 
 int           vortex_frame_receive_raw           (VortexConnection * connection, 
 						  char  * buffer, int  maxlen);
 
-int           vortex_frame_ref                   (VortexFrame * frame);
+axl_bool      vortex_frame_ref                   (VortexFrame * frame);
 
 void          vortex_frame_unref                 (VortexFrame * frame);
 
@@ -153,10 +153,10 @@ VortexFrame * vortex_frame_join                  (VortexFrame * a,
 VortexFrame * vortex_frame_join_extending       (VortexFrame * a, 
 						 VortexFrame * b);
 
-int           vortex_frame_are_joinable          (VortexFrame * a, 
+axl_bool      vortex_frame_are_joinable          (VortexFrame * a, 
 						  VortexFrame * b);
 
-int           vortex_frame_are_equal             (VortexFrame * a, 
+axl_bool      vortex_frame_are_equal             (VortexFrame * a, 
 						  VortexFrame * b);
 
 int           vortex_frame_get_id                (VortexFrame * frame);
@@ -178,7 +178,7 @@ void          vortex_frame_set_channel_ref       (VortexFrame * frame,
 
 int           vortex_frame_get_msgno             (VortexFrame * frame);
 
-int           vortex_frame_get_more_flag         (VortexFrame * frame);
+axl_bool      vortex_frame_get_more_flag         (VortexFrame * frame);
 
 int           vortex_frame_get_seqno             (VortexFrame * frame);
 
@@ -200,7 +200,7 @@ char        * vortex_frame_get_error_message     (const char  * code,
 						  const char  * error_content,
 						  const char  * xml_lang);
 
-int           vortex_frame_is_error_message      (VortexFrame * frame,
+axl_bool      vortex_frame_is_error_message      (VortexFrame * frame,
 						  char  ** code,
 						  char  ** message);
 
@@ -219,9 +219,9 @@ char        * vortex_frame_get_close_message     (int           number,
 						  const char  * xml_lang,
 						  const char  * close_content);
 
-int           vortex_frame_is_mime_message       (VortexFrame * frame);
+axl_bool      vortex_frame_is_mime_message       (VortexFrame * frame);
 
-int           vortex_frame_mime_process          (VortexFrame * frame);
+axl_bool      vortex_frame_mime_process          (VortexFrame * frame);
 
 void          vortex_frame_set_mime_header       (VortexFrame * frame,
 						  const char  * mime_header,
@@ -258,7 +258,7 @@ VortexMimeHeader * vortex_frame_mime_header_next       (VortexMimeHeader * heade
 
 int                vortex_frame_mime_header_count      (VortexMimeHeader * header);
 
-int                vortex_frame_mime_status_is_available  (VortexFrame * frame);
+axl_bool           vortex_frame_mime_status_is_available  (VortexFrame * frame);
 
 /* @} */
 
