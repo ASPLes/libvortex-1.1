@@ -3602,6 +3602,10 @@ axlPointer         vortex_channel_next_pending_message          (VortexChannel *
 	/* check the reference received */
 	if (channel == NULL)
 		return NULL;
+ 
+ 	/* do not return pending messages if channel is not opened */
+ 	if (! vortex_channel_is_opened (channel)) 
+ 		return NULL;
 	
 	vortex_log (VORTEX_LEVEL_DEBUG, "returning the first pending message: current length=%d for channel=%d",
 		    axl_list_length (channel->pending_messages), channel->channel_num);
@@ -6656,7 +6660,7 @@ int             vortex_channel_is_opened       (VortexChannel * channel)
 		return false;
 
 	/* return current channel status */
-	return channel->is_opened && vortex_connection_is_ok (channel->connection, false);
+	return channel->is_opened && channel->connection && vortex_connection_is_ok (channel->connection, false);
 }
 
 /** 
@@ -7112,9 +7116,13 @@ void __vortex_channel_get_reply_connection_broken (VortexConnection * conn, axlP
  * \endcode
  *
  * @param channel The channel where is expected to receive a frame
- * using the frame received handler or the initial piggyback.  @param
- * queue The queue where the frame is expected to be received. The
- * queue received, no matter the result will be deallocated.
+ * using the frame received handler or the initial piggyback.  In the
+ * case this parameter is NULL, the function won't return the
+ * piggyback that may be received.
+ * 
+ * @param queue The queue where the frame is expected to be
+ * received. The queue received, no matter the result will be
+ * deallocated.
  * 
  * @return The frame received or NULL if the timeout is expired. 
  */
@@ -7125,23 +7133,31 @@ VortexFrame      * vortex_channel_get_reply                      (VortexChannel 
 	VortexCtx   * ctx     = vortex_channel_get_ctx (channel);
 
 	/* check for piggyback reply */
-	frame = vortex_channel_get_piggyback (channel);
-	if (frame) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "getting piggyback from remote peer at get_reply");
-		return frame;
-	}
+	if (channel != NULL) {
+		frame = vortex_channel_get_piggyback (channel);
+		if (frame) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "getting piggyback from remote peer at get_reply");
+			return frame;
+		}
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "getting next frame from remote peer at get_reply");
+		vortex_log (VORTEX_LEVEL_DEBUG, "getting next frame from remote peer at get_reply");
 
-	if (! vortex_connection_is_ok (channel->connection, false)) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to perform get reply operation because the connection is not operational");
-		return NULL;
+ 		/* return to the caller if the connection is broken
+ 		 * (no more replies will be received) and no item is
+ 		 * queued */
+		if (! vortex_connection_is_ok (channel->connection, false) && (vortex_async_queue_items (queue) == 0)) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to perform get reply operation because the connection is not operational");
+			return NULL;
+		} /* end if */
 	} /* end if */
 
 	/* install a set on close to avoid getting hanged during a
 	 * connection close */
 	vortex_async_queue_ref (queue);
-	vortex_connection_set_on_close_full (channel->connection, __vortex_channel_get_reply_connection_broken, queue);
+
+ 	/* only install connection close detection if channel if defined */
+ 	if (channel != NULL)
+		vortex_connection_set_on_close_full (channel->connection, __vortex_channel_get_reply_connection_broken, queue);
 
 	/* get reply from queue */
 	frame = vortex_async_queue_timedpop (queue, vortex_connection_get_timeout (ctx));
@@ -7156,8 +7172,10 @@ VortexFrame      * vortex_channel_get_reply                      (VortexChannel 
 		vortex_log (VORTEX_LEVEL_CRITICAL, "timeout was expired while waiting at get-reply");
 	} /* end if */
 
-	/* uninstall connection broken detector */
-	vortex_connection_remove_on_close_full (channel->connection, __vortex_channel_get_reply_connection_broken, queue);
+	/* uninstall connection broken detector: only uninstall if
+	 * channel if defined */
+	if (channel != NULL)
+		vortex_connection_remove_on_close_full (channel->connection, __vortex_channel_get_reply_connection_broken, queue);
 	vortex_async_queue_unref (queue);
 	
 	/* return whatever is returned */
@@ -7825,19 +7843,76 @@ void                vortex_channel_cleanup                        (VortexCtx * c
 	return;
 }
 
+/**
+ * @internal Function to cleanup pending messages to be sent on the
+ * channel. These pending message were queued by the vortex sequencer
+ * because the channel was found to be stalled.
+ */
+void              __vortex_channel_release_pending_messages (VortexChannel * channel)
+{
+	VortexSequencerData * next_data;
+	VortexCtx           * ctx;
+	
+	/* do nothing if the channel reference is NULL */
+	if (channel == NULL)
+		return;
+	
+	/* update reference counting during operation: due to reference from connection */
+	if (! vortex_channel_ref (channel)) 
+		return;
+
+	/* get context */
+	ctx = vortex_channel_get_ctx (channel);
+	vortex_log (VORTEX_LEVEL_DEBUG, "releasing pending message on channel=%d, ref count=%d, pending=%d",
+		    channel->channel_num, channel->ref_count, axl_list_length (channel->pending_messages));
+	
+	while ((channel != NULL) && (axl_list_get_last (channel->pending_messages) != NULL)) {
+		
+		/* get next pending message */
+		next_data = axl_list_get_last (channel->pending_messages);
+		axl_list_unlink_last (channel->pending_messages);
+		
+		/* un ref channel and free */
+		vortex_log (VORTEX_LEVEL_WARNING, "Detected pending message discard, finishing reference %p (channel=%d, ref count=%d, pending=%d)", 
+			    next_data, vortex_channel_get_number (channel), 
+			    vortex_channel_ref_count (channel),
+			    axl_list_length (channel->pending_messages));
+		
+		if (vortex_channel_ref_count (channel) == 1) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "Found channel reference counting reaching 0 during a release operation that should have, at least 2");
+		} /* end if */
+		
+		vortex_channel_unref (channel);
+		
+		/* free message and node itself */
+		axl_free (next_data->message);
+		axl_free (next_data);
+		
+	} /* end while */
+	
+	/* finish reference */
+	if (vortex_channel_ref_count (channel) > 1)
+		vortex_channel_unref (channel);
+	return;
+}
 
 /**
  * @internal Function used to nullify connection reference from
  * channel structure to avoid accessing to the connection already
  * closed and freed under high load memory and CPU presure (messages
- * pending inside vortex sequencer).
+ * pending inside vortex sequencer). It also checks for pending
+ * messages inside the channel.
  */
 void               __vortex_channel_nullify_conn                  (VortexChannel  * channel)
 {
-       /* nullify if defined */
-       if (channel)
-               channel->connection = NULL;
-       return;
+	/* nullify if defined */
+	if (channel) {
+		channel->connection = NULL;
+
+		/* release pending */
+		__vortex_channel_release_pending_messages (channel);
+	}
+	return;
 }
 
 /* @} */

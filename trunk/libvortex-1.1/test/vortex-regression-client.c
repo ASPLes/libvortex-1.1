@@ -3546,6 +3546,81 @@ int  test_02m1 (void) {
 	return true;
 }
 
+int  test_02m2 (void) {
+
+	VortexConnection * connection;
+	VortexChannel    * channel;
+	VortexAsyncQueue * queue;
+	int                iterator;
+	VortexFrame      * frame;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, false)) {
+		vortex_connection_close (connection);
+		return false;
+	} /* end if */
+
+	printf ("Test 02-m2: checking pending content during connection close\n");
+
+	/* CREATE A CHANNEL */
+	queue   = vortex_async_queue_new ();
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI, 
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Test 02-m1: failed to create channel to perform transfer\n");
+		return false;
+	}
+
+	/* perform 1000 sendings */
+	iterator = 0;
+	while (iterator < 3000) {
+
+		/* SEND THE CONTENT */
+		if (! vortex_channel_send_msg (channel, TEST_REGRESION_URI_4_MESSAGE, 4096, NULL)) {
+			printf ("Test 02-m2: failed to send content..\n");
+			return false;
+		} /* end if */
+
+		iterator++;
+
+	} /* end while */
+
+	printf ("Test 02-m2: channel ref count=%d..\n", vortex_channel_ref_count (channel));
+
+	/* shutdown the connection */
+	vortex_connection_shutdown (connection);
+
+	/* get replies received */
+	while (vortex_async_queue_items (queue) > 0) {
+		/* get frame reference */
+		frame = vortex_channel_get_reply (channel, queue);
+		
+		/* dealloc frame */
+		vortex_frame_unref (frame);
+	} /* end while */
+
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return false;
+	} /* end if */
+
+	/* terminate queue */
+	vortex_async_queue_unref (queue);
+
+
+	/* return true */
+	return true;
+}
+
+
 /** 
  * @brief Checks BEEP support to send large messages that goes beyond
  * default window size advertised.
@@ -6140,9 +6215,10 @@ int main (int  argc, char ** argv)
 	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, \n");
 	printf ("**                       test_02, test_02a, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
-	printf ("**                       test_02l, test_02m, test_02m1, test_03, test_03a, test_04, \n");
-	printf ("**                       test_04a, test_04b, test_04c, test_05, test_05a, test_06, \n");
-	printf ("**                       test_07, test_08,test_09, test_10, test_11, test_12, test_13\n");
+ 	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_03, test_03a, \n");
+ 	printf ("**                       test_04, test_04a, test_04b, test_04c, test_05, test_05a, \n");
+ 	printf ("**                       test_06, test_07, test_08, test_09, test_10, test_11, test_12, \n");
+ 	printf ("**                       test_13\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -6283,6 +6359,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_02m1"))
 			run_test (test_02m1, "Test 02-m1", "Transfer with big frame sizes.", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_02m2"))
+			run_test (test_02m2, "Test 02-m2", "Dealloc pending queued replies on connection shutdown.", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_03"))
 			run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
 
@@ -6394,7 +6473,9 @@ int main (int  argc, char ** argv)
 	run_test (test_02m, "Test 02-m", "blocking close after ANS/NUL replies.", -1, -1);
 
 	run_test (test_02m1, "Test 02-m1", "Transfer with big frame sizes.", -1, -1);
-	
+
+  	run_test (test_02m2, "Test 02-m2", "Dealloc pending queued replies on connection shutdown.", -1, -1);
+
  	run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
   
  	run_test (test_03a, "Test 03-a", "vortex channel pool support", -1, -1);
