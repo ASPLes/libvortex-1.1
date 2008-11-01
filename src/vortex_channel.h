@@ -77,11 +77,11 @@ VortexChannel     * vortex_channel_new_fullv                   (VortexConnection
 								const char            * profile_content_format, 
 								...);
 
-int                vortex_channel_close_full                   (VortexChannel * channel, 
+axl_bool           vortex_channel_close_full                   (VortexChannel * channel, 
 								VortexOnClosedNotificationFull on_closed, 
 								axlPointer user_data);
 
-int                vortex_channel_close                        (VortexChannel * channel,
+axl_bool           vortex_channel_close                        (VortexChannel * channel,
 								VortexOnClosedNotification on_closed);
 
 VortexChannel    * vortex_channel_empty_new                    (int                channel_num,
@@ -107,9 +107,9 @@ void               vortex_channel_set_received_handler         (VortexChannel * 
 								axlPointer user_data);
 
 void               vortex_channel_set_complete_flag            (VortexChannel * channel,
-								int      value);
+								axl_bool        value);
 
-int                vortex_channel_have_previous_frame          (VortexChannel * channel);
+axl_bool           vortex_channel_have_previous_frame          (VortexChannel * channel);
 
 VortexFrame      * vortex_channel_get_previous_frame           (VortexChannel * channel);
 
@@ -118,7 +118,7 @@ void               vortex_channel_store_previous_frame         (VortexChannel * 
 
 VortexFrame      * vortex_channel_build_single_pending_frame   (VortexChannel * channel);
 
-int                vortex_channel_have_complete_flag           (VortexChannel * channel);
+axl_bool           vortex_channel_have_complete_flag           (VortexChannel * channel);
 
 void               vortex_channel_update_status                (VortexChannel * channel, 
 								int             frame_size,
@@ -176,10 +176,10 @@ void               vortex_channel_update_remote_incoming_buffer (VortexChannel *
 
 int                vortex_channel_get_max_seq_no_accepted      (VortexChannel * channel);
 
-int                vortex_channel_are_equal                    (VortexChannel * channelA,
+axl_bool           vortex_channel_are_equal                    (VortexChannel * channelA,
 								VortexChannel * channelB);
 
-int                vortex_channel_update_incoming_buffer       (VortexChannel * channel, 
+axl_bool           vortex_channel_update_incoming_buffer       (VortexChannel * channel, 
 								VortexFrame   * frame,
 								int           * ackno,
 								int           * window);
@@ -187,7 +187,7 @@ int                vortex_channel_update_incoming_buffer       (VortexChannel * 
 void               vortex_channel_queue_pending_message        (VortexChannel * channel,
 								axlPointer      message);
 
-int                vortex_channel_is_empty_pending_message     (VortexChannel * channel);
+axl_bool           vortex_channel_is_empty_pending_message     (VortexChannel * channel);
 
 axlPointer         vortex_channel_next_pending_message         (VortexChannel * channel);
 
@@ -196,22 +196,22 @@ void               vortex_channel_remove_pending_message       (VortexChannel * 
 
 const char       * vortex_channel_get_profile                  (VortexChannel * channel);
 
-int                vortex_channel_is_running_profile           (VortexChannel * channel,
+axl_bool           vortex_channel_is_running_profile           (VortexChannel * channel,
 								const char    * profile);
 
 VortexConnection * vortex_channel_get_connection               (VortexChannel * channel);
 
-int                vortex_channel_queue_frame                     (VortexChannel * channel, 
+axl_bool           vortex_channel_queue_frame                     (VortexChannel * channel, 
 								   VortexWriterData * data);
 
-int                vortex_channel_queue_is_empty                  (VortexChannel * channel);
+axl_bool           vortex_channel_queue_is_empty                  (VortexChannel * channel);
 
 VortexWriterData * vortex_channel_queue_next_msg                  (VortexChannel * channel);
 
 int                vortex_channel_queue_length                    (VortexChannel * channel);
 
 void               vortex_channel_set_serialize                   (VortexChannel * channel,
-								   int             serialize);
+								   axl_bool        serialize);
 
 void               vortex_channel_set_data                        (VortexChannel * channel,
 								   axlPointer key,
@@ -229,84 +229,84 @@ void               vortex_channel_delete_data                     (VortexChannel
 axlPointer         vortex_channel_get_data                        (VortexChannel * channel,
 								   axlPointer key);
 
-int                vortex_channel_ref                             (VortexChannel * channel);
+axl_bool           vortex_channel_ref                             (VortexChannel * channel);
 
 void               vortex_channel_unref                           (VortexChannel * channel);
 
 int                vortex_channel_ref_count                       (VortexChannel * channel);
 
 
-int                vortex_channel_send_msg                        (VortexChannel    * channel,
+axl_bool           vortex_channel_send_msg                        (VortexChannel    * channel,
 								   const void       * message,
 								   size_t             message_size,
 								   int              * msg_no);
 
-int                vortex_channel_send_msgv                       (VortexChannel * channel,
+axl_bool           vortex_channel_send_msgv                       (VortexChannel * channel,
 								   int           * msg_no,
 								   const char    * format,
 								   ...);
 
-int                vortex_channel_send_msg_and_wait               (VortexChannel     * channel,
+axl_bool           vortex_channel_send_msg_and_wait               (VortexChannel     * channel,
 								   const void        * message,
 								   size_t              message_size,
 								   int               * msg_no,
 								   WaitReplyData     * wait_reply);
 
-int                vortex_channel_send_msg_and_waitv              (VortexChannel   * channel,
+axl_bool           vortex_channel_send_msg_and_waitv              (VortexChannel   * channel,
 								   int             * msg_no,
 								   WaitReplyData   * wait_reply,
 								   const char      * format,
 								   ...);
 
-int                vortex_channel_send_rpy                        (VortexChannel    * channel,  
+axl_bool           vortex_channel_send_rpy                        (VortexChannel    * channel,  
 								   const void       * message,
 								   size_t             message_size,
 								   int                msg_no_rpy);
 
-int                vortex_channel_send_rpyv                       (VortexChannel * channel,
+axl_bool           vortex_channel_send_rpyv                       (VortexChannel * channel,
 								   int             msg_no_rpy,
 								   const   char  * format,
 								   ...);
 
-int                vortex_channel_send_ans_rpy                    (VortexChannel    * channel,
+axl_bool           vortex_channel_send_ans_rpy                    (VortexChannel    * channel,
 								   const void       * message,
 								   size_t             message_size,
 								   int                msg_no_rpy);
 
-int                vortex_channel_send_ans_rpyv                   (VortexChannel * channel,
+axl_bool           vortex_channel_send_ans_rpyv                   (VortexChannel * channel,
 								   int             msg_no_rpy,
 								   const char    * format,
 								   ...);
 
-int                vortex_channel_finalize_ans_rpy                (VortexChannel * channel,
+axl_bool           vortex_channel_finalize_ans_rpy                (VortexChannel * channel,
 								   int             msg_no_rpy);
 
-int                vortex_channel_send_err                       (VortexChannel    * channel,  
+axl_bool           vortex_channel_send_err                       (VortexChannel    * channel,  
 								  const void       * message,
 								  size_t             message_size,
 								  int                msg_no_err);
 
-int                vortex_channel_send_errv                      (VortexChannel * channel,
+axl_bool           vortex_channel_send_errv                      (VortexChannel * channel,
 								  int             msg_no_err,
 								  const   char  * format, 
 								  ...); 
 						
-int                vortex_channel_is_opened                      (VortexChannel * channel);
+axl_bool           vortex_channel_is_opened                      (VortexChannel * channel);
 
-int                vortex_channel_is_being_closed                (VortexChannel * channel);
+axl_bool           vortex_channel_is_being_closed                (VortexChannel * channel);
 
 
 void               vortex_channel_free                           (VortexChannel * channel);
 
-int                vortex_channel_is_defined_received_handler    (VortexChannel * channel);      
+axl_bool           vortex_channel_is_defined_received_handler    (VortexChannel * channel);      
 
-int                vortex_channel_invoke_received_handler        (VortexConnection * connection,
+axl_bool           vortex_channel_invoke_received_handler        (VortexConnection * connection,
 								  VortexChannel    * channel, 
 								  VortexFrame      * frame);
 
-int                vortex_channel_is_defined_close_handler       (VortexChannel * channel);
+axl_bool           vortex_channel_is_defined_close_handler       (VortexChannel * channel);
 
-int                vortex_channel_invoke_close_handler           (VortexChannel  * channel);
+axl_bool           vortex_channel_invoke_close_handler           (VortexChannel  * channel);
 
 VortexFrame      * vortex_channel_wait_reply                     (VortexChannel * channel, 
 								  int  msg_no,
@@ -318,7 +318,7 @@ void               vortex_channel_wait_reply_ref                 (WaitReplyData 
 
 void               vortex_channel_free_wait_reply                (WaitReplyData * wait_reply);
 
-int                vortex_channel_is_ready                       (VortexChannel * channel);
+axl_bool           vortex_channel_is_ready                       (VortexChannel * channel);
 
 void               vortex_channel_queue_reply                    (VortexChannel    * channel,
 								  VortexConnection * connection,
@@ -330,27 +330,27 @@ VortexFrame      * vortex_channel_get_reply                      (VortexChannel 
 
 VortexFrame      * vortex_channel_get_piggyback                  (VortexChannel    * channel);
 
-int                vortex_channel_have_piggyback                 (VortexChannel    * channel);
+axl_bool           vortex_channel_have_piggyback                 (VortexChannel    * channel);
 
 void               vortex_channel_set_piggyback                  (VortexChannel    * channel,
 								  const char       * profile_content);
 
 void               vortex_channel_defer_start                    (VortexChannel    * channel);
 
-int                vortex_channel_notify_start                   (VortexChannel    * new_channel,
+axl_bool           vortex_channel_notify_start                   (VortexChannel    * new_channel,
 								  const char       * profile_content_reply,
-								  int                action);
+								  axl_bool           action);
 
 void               vortex_channel_notify_close                   (VortexChannel    * channel,
 								  int                msg_no,
-								  int                action);
+								  axl_bool           action);
 
 /* message validation */
-int                vortex_channel_validate_err                   (VortexFrame * frame, 			  
+axl_bool           vortex_channel_validate_err                   (VortexFrame * frame, 			  
 								  char  ** code, char  **msg);
 
 /* internal vortex function */
-int                vortex_channel_is_up_to_date                  (VortexChannel * channel);
+axl_bool           vortex_channel_is_up_to_date                  (VortexChannel * channel);
 
 void               vortex_channel_lock_to_update_received        (VortexChannel * channel);
 
@@ -368,7 +368,7 @@ void               vortex_channel_0_frame_received               (VortexChannel 
 void           	   vortex_channel_signal_on_close_blocked        (VortexChannel    * channel);
 
 void               vortex_channel_flag_reply_processed           (VortexChannel * channel, 
-								  int      flag);
+								  axl_bool        flag);
 
 void               vortex_channel_install_waiter                 (VortexChannel * channel,
 								  int             rpy);
@@ -392,18 +392,18 @@ void                vortex_channel_init                           (VortexCtx * c
 
 void                vortex_channel_cleanup                        (VortexCtx * ctx);
 
-int                 vortex_channel_block_until_replies_are_sent   (VortexChannel * channel, 
+axl_bool            vortex_channel_block_until_replies_are_sent   (VortexChannel * channel, 
 								   long int        microseconds_to_wait);
 
-int                 vortex_channel_check_serialize                (VortexCtx        * ctx,
+axl_bool            vortex_channel_check_serialize                (VortexCtx        * ctx,
 								   VortexConnection * connection, 
 								   VortexChannel    * channel, 
 								   VortexFrame      * frame);
 
-int                vortex_channel_check_serialize_pending         (VortexCtx      * ctx,
-								   VortexChannel  * channel, 
-								   VortexFrame   ** caller_frame);
+axl_bool            vortex_channel_check_serialize_pending         (VortexCtx      * ctx,
+								    VortexChannel  * channel, 
+								    VortexFrame   ** caller_frame);
 
-void               __vortex_channel_nullify_conn                  (VortexChannel  * channel);
+void               __vortex_channel_nullify_conn                   (VortexChannel  * channel);
 								   
 #endif
