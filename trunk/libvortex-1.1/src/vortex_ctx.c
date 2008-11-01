@@ -92,7 +92,7 @@ VortexCtx * vortex_ctx_new ()
 	vortex_mutex_create (&result->log_mutex);
 
 	/**** vortex_thread_pool.c: init ****/
-	result->thread_pool_exclusive = true;
+	result->thread_pool_exclusive = axl_true;
 
 	/* return context created */
 	return result;
