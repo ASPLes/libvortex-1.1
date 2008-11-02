@@ -121,7 +121,7 @@ void __vortex_thread_pool_terminate_thread (axlPointer _thread)
 	VortexThread * thread = (VortexThread *) _thread;
 
 	/* dealloc the node allocated */
-	vortex_thread_destroy (thread, true);
+	vortex_thread_destroy (thread, axl_true);
 	return;
 }
 
@@ -179,7 +179,7 @@ void vortex_thread_pool_init     (VortexCtx * ctx,
 					    /* finish thread configuration */
 					    VORTEX_THREAD_CONF_END)) {
 			/* free the reference */
-			vortex_thread_destroy (thread, true);
+			vortex_thread_destroy (thread, axl_true);
 			
 			/* call to stop the thread pool */
 			vortex_thread_pool_exit (ctx);
@@ -217,7 +217,7 @@ void vortex_thread_pool_exit (VortexCtx * ctx)
 	vortex_log (VORTEX_LEVEL_DEBUG, "stopping thread pool..");
 
 	/* flag the queue to be stoping */
-	ctx->thread_pool_being_stoped = true;
+	ctx->thread_pool_being_stoped = axl_true;
 
 	/* push beacons to notify eacy thread created to stop */
 	iterator = 0;
@@ -253,7 +253,7 @@ void vortex_thread_pool_being_closed        (VortexCtx * ctx)
 		return;
 
 	/* flag the queue to be stoping */
-	ctx->thread_pool_being_stoped = true;
+	ctx->thread_pool_being_stoped = axl_true;
 	
 	return;
 }
@@ -412,11 +412,11 @@ int  vortex_thread_pool_get_num             (void)
  * @param ctx The context where the operation will be performed.
  * 
  * @param value The new behaviour to configure. By default, internal
- * value is already configured to true. Set false to make the thread
+ * value is already configured to axl_true. Set false to make the thread
  * pool to behave in a non-exclusive form.
  */
 void vortex_thread_pool_set_exclusive_pool  (VortexCtx * ctx,
-					     int         value)
+					     axl_bool    value)
 {
 	/* set the new value */
 	ctx->thread_pool_exclusive = value;
