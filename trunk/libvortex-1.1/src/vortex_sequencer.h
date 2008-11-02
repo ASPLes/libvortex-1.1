@@ -43,11 +43,11 @@
 void     vortex_sequencer_queue_data              (VortexCtx           * ctx,
 						   VortexSequencerData * data);
 
-int      vortex_sequencer_run                     (VortexCtx * ctx);
+axl_bool vortex_sequencer_run                     (VortexCtx * ctx);
 
 void     vortex_sequencer_stop                    (VortexCtx * ctx);
 
-int      vortex_sequencer_direct_send             (VortexConnection * connection,
+axl_bool vortex_sequencer_direct_send             (VortexConnection * connection,
 						   VortexChannel    * channel,
 						   VortexWriterData * packet);
 
