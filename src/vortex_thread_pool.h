@@ -61,7 +61,7 @@ void vortex_thread_pool_set_num             (int  number);
 int  vortex_thread_pool_get_num             (void);
 
 void vortex_thread_pool_set_exclusive_pool  (VortexCtx        * ctx,
-					     int                value);
+					     axl_bool           value);
 
 END_C_DECLS
 
