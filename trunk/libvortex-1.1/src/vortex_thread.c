@@ -100,21 +100,21 @@ static unsigned __stdcall vortex_thread_proxy (axlPointer _data)
  * @param user_data User defined data to be passed to the function to
  * be executed by the newly created thread.
  * 
- * @return The function returns true if the thread was created
+ * @return The function returns axl_true if the thread was created
  * properly and the variable thread_def is defined with the particular
  * thread reference created.
  *
  * @see vortex_thread_destroy
  */
-int  vortex_thread_create (VortexThread      * thread_def,
-			   VortexThreadFunc    func, 
-			   axlPointer          user_data,
-			   ...)
+axl_bool  vortex_thread_create (VortexThread      * thread_def,
+				VortexThreadFunc    func, 
+				axlPointer          user_data,
+				...)
 {
 	va_list           args;
 	VortexThreadConf  conf;
-	/* default configuration for joinable state, true */
-	int               joinable = true;
+	/* default configuration for joinable state, axl_true */
+	axl_bool          joinable = axl_true;
 #if defined(AXL_OS_UNIX)
 	pthread_attr_t    attr;
 #elif defined(AXL_OS_WIN32)
@@ -123,14 +123,14 @@ int  vortex_thread_create (VortexThread      * thread_def,
 #endif
 
 	/* do some basic checks */
-	v_return_val_if_fail (thread_def, false);
-	v_return_val_if_fail (func, false);
+	v_return_val_if_fail (thread_def, axl_false);
+	v_return_val_if_fail (func, axl_false);
 	
 	/* open arguments to get the thread configuration */
 	va_start (args, user_data);
 	do {
 		/* get next configuration */
-		conf = va_arg (args, int);
+		conf = va_arg (args, axl_bool);
 		if (conf == 0) {
 			/* finished argument processing */
 			break;
@@ -139,10 +139,10 @@ int  vortex_thread_create (VortexThread      * thread_def,
 		switch (conf) {
 		case VORTEX_THREAD_CONF_JOINABLE:
 			/* thread joinable state configuration, get the parameter */
-			joinable = va_arg (args, int );
+			joinable = va_arg (args, axl_bool);
 			break;
 		default:
-			return false;
+			return axl_false;
 		} /* end if */
 		
 	} while (1);
@@ -177,21 +177,21 @@ int  vortex_thread_create (VortexThread      * thread_def,
 		axl_free (data);
 		
 		/* report */
-		return false;
+		return axl_false;
 	} /* end if */
 
 #elif defined(AXL_OS_UNIX)
 	/* unix implementation */
 	/* init pthread attributes variable */
 	if (pthread_attr_init (&attr) != 0) {
-		return false;
+		return axl_false;
 	} /* end if */
 	
 	/* configure joinable state */
 	if (pthread_attr_setdetachstate (&attr, joinable ? PTHREAD_CREATE_JOINABLE : PTHREAD_CREATE_DETACHED) != 0) {
 		/* vortex_log (VORTEX_LEVEL_CRITICAL, "failed to configure detached state for the thread (pthread_attr_setdetachstate system call failed)"); */
 		pthread_attr_destroy(&attr);
-		return false;
+		return axl_false;
 	} /* end if */
 	
 	/* create the thread man! */
@@ -201,12 +201,12 @@ int  vortex_thread_create (VortexThread      * thread_def,
 			    func, user_data) != 0) {
 		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to create the new thread (pthread_create system call failed)");*/
 		pthread_attr_destroy(&attr);
-		return false;
+		return axl_false;
 	} /* end if */
 	
 	pthread_attr_destroy(&attr);
 #endif
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -218,10 +218,10 @@ int  vortex_thread_create (VortexThread      * thread_def,
  * @param free_data Boolean that set whether the thread pointer should
  * be released ot not.
  * 
- * @return true if the destroy operation was ok, otherwise false is
+ * @return axl_true if the destroy operation was ok, otherwise axl_false is
  * returned.
  */
-int  vortex_thread_destroy (VortexThread * thread_def, int  free_data)
+axl_bool  vortex_thread_destroy (VortexThread * thread_def, axl_bool  free_data)
 {
 #if defined(AXL_OS_WIN32)
 
@@ -296,12 +296,12 @@ int  vortex_thread_destroy (VortexThread * thread_def, int  free_data)
  * 
  * @param mutex_def A reference to the mutex to be initialized.
  * 
- * @return true if the function created the mutex, otherwise false is
+ * @return axl_true if the function created the mutex, otherwise axl_false is
  * returned.
  */
-int  vortex_mutex_create  (VortexMutex       * mutex_def)
+axl_bool  vortex_mutex_create  (VortexMutex       * mutex_def)
 {
-	v_return_val_if_fail (mutex_def, false);
+	v_return_val_if_fail (mutex_def, axl_false);
 
 #if defined(AXL_OS_WIN32)
 	/* create the mutex, without a name */
@@ -310,11 +310,11 @@ int  vortex_mutex_create  (VortexMutex       * mutex_def)
 	/* init the mutex using default values */
 	if (pthread_mutex_init (mutex_def, NULL) != 0) {
 		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to create mutex (system call pthread_mutex_init have failed)"); */
-		return false;
+		return axl_false;
 	} /* end if */
 #endif
 	/* mutex created */
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -324,12 +324,12 @@ int  vortex_mutex_create  (VortexMutex       * mutex_def)
  * @param mutex_def A reference to the mutex that must be deallocated
  * its resources, and report the system to close it.
  * 
- * @return true if the destroy operation was ok, otherwise false is
+ * @return axl_true if the destroy operation was ok, otherwise axl_false is
  * returned.
  */
-int  vortex_mutex_destroy (VortexMutex       * mutex_def)
+axl_bool  vortex_mutex_destroy (VortexMutex       * mutex_def)
 {
-	v_return_val_if_fail (mutex_def, false);
+	v_return_val_if_fail (mutex_def, axl_false);
 
 #if defined(AXL_OS_WIN32)
 	/* close the mutex */
@@ -338,11 +338,11 @@ int  vortex_mutex_destroy (VortexMutex       * mutex_def)
 	/* close the mutex */
 	if (pthread_mutex_destroy (mutex_def) != 0) {
 		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to destroy the mutex (system call pthread_mutex_destroy have failed)"); */
-		return false;
+		return axl_false;
 	} /* end if */
 #endif
 	/* mutex closed */
-	return true;
+	return axl_true;
 	
 } /* end vortex_mutex_destroy */
 
@@ -407,12 +407,12 @@ void vortex_mutex_unlock  (VortexMutex       * mutex_def)
  * 
  * @param cond The conditional variable to initialize.
  * 
- * @return true if the conditional variable was initialized, otherwise
- * false is returned.
+ * @return axl_true if the conditional variable was initialized, otherwise
+ * axl_false is returned.
  */
-int  vortex_cond_create    (VortexCond        * cond)
+axl_bool  vortex_cond_create    (VortexCond        * cond)
 {
-	v_return_val_if_fail (cond, false);
+	v_return_val_if_fail (cond, axl_false);
 
 #if defined(AXL_OS_WIN32)
 	
@@ -446,11 +446,11 @@ int  vortex_cond_create    (VortexCond        * cond)
 	/* init the conditional variable */
 	if (pthread_cond_init (cond, NULL) != 0) {
 		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to init conditional variable (system call pthread_cond_init have failed)"); */
-		return false;
+		return axl_false;
 	} /* end if */
 #endif
 	/* cond created */
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -556,11 +556,11 @@ void vortex_cond_broadcast (VortexCond        * cond)
  * @internal Implementation to support vortex_cond_wait and
  * vortex_cond_timedwait under windows.
  */
-int  __vortex_cond_common_wait_win32 (VortexCond * cond, VortexMutex * mutex, 
-				      int milliseconds, int  wait_infinite)
+axl_bool  __vortex_cond_common_wait_win32 (VortexCond * cond, VortexMutex * mutex, 
+					   int milliseconds, axl_bool  wait_infinite)
 {
-	int   last_waiter;
-	DWORD result;
+	axl_bool   last_waiter;
+	DWORD      result;
 
 	/* Avoid race conditions. */
 	EnterCriticalSection (&cond->waiters_count_lock_);
@@ -608,7 +608,7 @@ int  __vortex_cond_common_wait_win32 (VortexCond * cond, VortexMutex * mutex,
 		WaitForSingleObject (*mutex, INFINITE);
 	} /* end if */
 
-	return true;
+	return axl_true;
 }
 #endif
 
@@ -627,27 +627,27 @@ int  __vortex_cond_common_wait_win32 (VortexCond * cond, VortexMutex * mutex,
  *
  * @param mutex The mutex that was to associate the condition.
  *
- * @return true if no error was found, otherwise false is returned.
+ * @return axl_true if no error was found, otherwise axl_false is returned.
  */
-int  vortex_cond_wait      (VortexCond        * cond, 
-			    VortexMutex       * mutex)
+axl_bool  vortex_cond_wait      (VortexCond        * cond, 
+				 VortexMutex       * mutex)
 {
-	v_return_val_if_fail (cond, false);
-	v_return_val_if_fail (mutex, false);
+	v_return_val_if_fail (cond, axl_false);
+	v_return_val_if_fail (mutex, axl_false);
 
 #if defined(AXL_OS_WIN32)
 	/* use common implementation */
-	return __vortex_cond_common_wait_win32 (cond, mutex, 0, true);
+	return __vortex_cond_common_wait_win32 (cond, mutex, 0, axl_true);
 
 #elif defined(AXL_OS_UNIX)
 	/* wait for the condition */
 	if (pthread_cond_wait (cond, mutex) != 0) {
 		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to wait on conditional variable (system call pthread_cond_wait have failed)"); */
-		return false;
+		return axl_false;
 	} /* end if */
 #endif
 	/* wait ended */
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -659,11 +659,11 @@ int  vortex_cond_wait      (VortexCond        * cond,
  * @param mutex Mutex associated.
  * @param microseconds Amount of time to wait.
  *
- * @return true if no error was found, otherwise false is returned.
+ * @return axl_true if no error was found, otherwise axl_false is returned.
  */
-int  vortex_cond_timedwait (VortexCond        * cond, 
-			    VortexMutex       * mutex,
-			    long int            microseconds)
+axl_bool  vortex_cond_timedwait (VortexCond        * cond, 
+				 VortexMutex       * mutex,
+				 long int            microseconds)
 {
 #if defined(AXL_OS_UNIX)
 	/* variables for the unix case */
@@ -671,13 +671,13 @@ int  vortex_cond_timedwait (VortexCond        * cond,
 	struct timespec      timeout;
 	struct timeval       now;
 #endif
-	v_return_val_if_fail (cond, false);
-	v_return_val_if_fail (mutex, false);
+	v_return_val_if_fail (cond, axl_false);
+	v_return_val_if_fail (mutex, axl_false);
 	
 
 #if defined(AXL_OS_WIN32)
 	/* get the future stamp when the request must expire */
-	__vortex_cond_common_wait_win32 (cond, mutex, microseconds / 1000, false);
+	__vortex_cond_common_wait_win32 (cond, mutex, microseconds / 1000, axl_false);
 	
 #elif defined(AXL_OS_UNIX) 
 
@@ -706,21 +706,21 @@ int  vortex_cond_timedwait (VortexCond        * cond,
 		if (rc == ETIMEDOUT) {
 			/* vortex_log (VORTEX_LEVEL_WARNING, 
 			   "timeout reached for conditional variable (system call pthread_cond_wait finished)"); */
-			return true;
+			return axl_true;
 		} /* end if */
 		if (rc == VORTEX_EINTR) {
 			/* vortex_log (VORTEX_LEVEL_WARNING, 
 			   "timeout reached due to a signal received, restarting"); */
-			return false;
+			return axl_false;
 		}
 
 		/* vortex_log (VORTEX_LEVEL_CRITICAL, 
 		   "unable to wait timed on conditional variable (system call pthread_cond_wait have failed): code=%d", rc); */
-		return false;
+		return axl_false;
 	} /* end if */
 #endif
 	/* wait ended */
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -953,7 +953,7 @@ axlPointer         vortex_async_queue_timedpop  (VortexAsyncQueue * queue,
 						 long int           microseconds)
 {
 	axlPointer _result;
-	int        r;
+	axl_bool   r;
 
 #if defined(AXL_OS_WIN32)
 	struct timeval stamp;
