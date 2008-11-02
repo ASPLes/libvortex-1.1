@@ -87,15 +87,15 @@ VortexQueue * vortex_queue_new           (void)
  *
  * @param queue The queue to check.
  * 
- * @return true if the \ref VortexQueue is empty, false if not.
+ * @return axl_true if the \ref VortexQueue is empty, axl_false if not.
  **/
-int           vortex_queue_is_empty      (VortexQueue * queue)
+axl_bool           vortex_queue_is_empty      (VortexQueue * queue)
 {
-	int      result;
+	axl_bool      result;
 
 	/* check parameter */
 	if (queue == NULL)
-		return false;
+		return axl_false;
 
 	vortex_mutex_lock (&queue->mutex);
 
@@ -139,14 +139,14 @@ unsigned int   vortex_queue_get_length    (VortexQueue * queue)
  * @param queue the queue to use.
  * @param data user defined data to queue.
  * 
- * @return true if the data was queue, false if not
+ * @return axl_true if the data was queue, axl_false if not
  **/
-int           vortex_queue_push          (VortexQueue * queue, axlPointer data)
+axl_bool           vortex_queue_push          (VortexQueue * queue, axlPointer data)
 {
 
 	/* check parameter */
 	if (queue == NULL || data == NULL)
-		return false;
+		return axl_false;
 
 	vortex_mutex_lock   (&queue->mutex);
 
@@ -157,7 +157,7 @@ int           vortex_queue_push          (VortexQueue * queue, axlPointer data)
 	
 	vortex_mutex_unlock (&queue->mutex);
 
-	return true;
+	return axl_true;
 }
 
 /**
@@ -169,13 +169,13 @@ int           vortex_queue_push          (VortexQueue * queue, axlPointer data)
  * @param queue the queue to use.
  * @param data user defined data to queue.
  * 
- * @return true if the data was queue, false if not
+ * @return axl_true if the data was queue, axl_false if not
  **/
-int           vortex_queue_head_push    (VortexQueue * queue, axlPointer data)
+axl_bool           vortex_queue_head_push    (VortexQueue * queue, axlPointer data)
 {
 	/* check parameter */
 	if (queue == NULL || data == NULL)
-		return false;
+		return axl_false;
 
 	vortex_mutex_lock   (&queue->mutex);
 	
@@ -185,7 +185,7 @@ int           vortex_queue_head_push    (VortexQueue * queue, axlPointer data)
 
 	vortex_mutex_unlock (&queue->mutex);
 
-	return true;
+	return axl_true;
 }
 
 /**

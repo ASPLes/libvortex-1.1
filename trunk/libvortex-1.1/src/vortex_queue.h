@@ -42,13 +42,13 @@
 
 VortexQueue * vortex_queue_new           (void);
 
-int           vortex_queue_is_empty      (VortexQueue * queue);
+axl_bool      vortex_queue_is_empty      (VortexQueue * queue);
 
 unsigned int  vortex_queue_get_length    (VortexQueue * queue);
 
-int           vortex_queue_push          (VortexQueue * queue, axlPointer data);
+axl_bool      vortex_queue_push          (VortexQueue * queue, axlPointer data);
 
-int           vortex_queue_head_push     (VortexQueue * queue, axlPointer data);
+axl_bool      vortex_queue_head_push     (VortexQueue * queue, axlPointer data);
 
 axlPointer    vortex_queue_pop           (VortexQueue * queue);
 
