@@ -53,9 +53,9 @@
  * @param dtd_pointer  The DTD pointer to update
  * @param file_to_load The file to load
  * 
- * @return true if the DTD file was read, parsed and pointer updated. false if not.
+ * @return axl_true if the DTD file was read, parsed and pointer updated. axl_false if not.
  */
-int      vortex_dtds_load_dtd (VortexCtx * ctx, axlDtd ** dtd_pointer, char * dtd_to_load)
+axl_bool      vortex_dtds_load_dtd (VortexCtx * ctx, axlDtd ** dtd_pointer, char * dtd_to_load)
 {
 	axlError  * error;
 
@@ -69,9 +69,9 @@ int      vortex_dtds_load_dtd (VortexCtx * ctx, axlDtd ** dtd_pointer, char * dt
 		
 		/* release error reported */
 		axl_error_free (error);
-		return false;
+		return axl_false;
 	}
-	return true;
+	return axl_true;
 }
 
 
@@ -80,19 +80,19 @@ int      vortex_dtds_load_dtd (VortexCtx * ctx, axlDtd ** dtd_pointer, char * dt
  * @brief Vortex Library internal function to load DTD files
  * 
  * 
- * @return true if all DTD files where loaded.
+ * @return axl_true if all DTD files where loaded.
  */
-int      vortex_dtds_init (VortexCtx * ctx) 
+axl_bool      vortex_dtds_init (VortexCtx * ctx) 
 {
-	v_return_val_if_fail (ctx, false);
+	v_return_val_if_fail (ctx, axl_false);
 
 	/* load BEEP channel management DTD definition */
         if (!vortex_dtds_load_dtd (ctx, &ctx->channel_dtd, CHANNEL_DTD)) {
                 fprintf (stderr, "VORTEX_ERROR: unable to load channel.dtd file.\n");
-		return false;
+		return axl_false;
         }
 	
-	return true;
+	return axl_true;
 }
 
 /** 
