@@ -78,17 +78,17 @@ typedef struct _VortexReaderData {
  * @param frame The frame to check
  * @param connection The connection where the frame was received.
  * 
- * @return true if all checks have been passed. Otherwise false is returned.
+ * @return axl_true if all checks have been passed. Otherwise axl_false is returned.
  */
-int      __vortex_reader_process_socket_check_nul_frame (VortexCtx        * ctx,
-							 VortexFrame      * frame, 
-							 VortexConnection * connection)
+axl_bool      __vortex_reader_process_socket_check_nul_frame (VortexCtx        * ctx,
+							      VortexFrame      * frame, 
+							      VortexConnection * connection)
 {
 	/* call to update frame MIME status for NUL frame size we
 	 * check the MIME body content to be 0 */
 	if (! vortex_frame_mime_process (frame)) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to update MIME status for the NUL frame (protocol error)");
-		return false;
+		return axl_false;
 	} /* end if */
 	
 	switch (vortex_frame_get_type (frame)) {
@@ -100,7 +100,7 @@ int      __vortex_reader_process_socket_check_nul_frame (VortexCtx        * ctx,
 			__vortex_connection_set_not_connected (connection, 
 							       "Received \"NUL\" frame with  non-zero payload",
 							       VortexProtocolError);
-			return false;
+			return axl_false;
 		}
 
 		/* check more flag at NUL frame reply. */
@@ -109,14 +109,14 @@ int      __vortex_reader_process_socket_check_nul_frame (VortexCtx        * ctx,
 			__vortex_connection_set_not_connected (connection, 
 							       "Received \"NUL\" frame with the continuator indicator: *",
 							       VortexProtocolError);
-			return false;
+			return axl_false;
 		}
 		
 		break;
 	default:
-		return true;
+		return axl_true;
 	}
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -132,10 +132,10 @@ int      __vortex_reader_process_socket_check_nul_frame (VortexCtx        * ctx,
  * @param frame The frame that contains application data that is
  * meaningful to perform a right SEQ frame counting.
  */
-int      __vortex_reader_update_incoming_buffer_and_notify (VortexCtx         * ctx,
-							    VortexConnection  * connection,
-							    VortexChannel     * channel,
-							    VortexFrame       * frame)
+axl_bool      __vortex_reader_update_incoming_buffer_and_notify (VortexCtx         * ctx,
+								 VortexConnection  * connection,
+								 VortexChannel     * channel,
+								 VortexFrame       * frame)
 {
 
 
@@ -172,7 +172,7 @@ int      __vortex_reader_update_incoming_buffer_and_notify (VortexCtx         * 
 											   50,
 											   &(writer.the_size));
 			/* writer.the_size    = strlen (writer.the_frame); */
-			writer.is_complete = true;
+			writer.is_complete = axl_true;
 			vortex_log (VORTEX_LEVEL_DEBUG, "notifying remote side that current buffer status is %s",
 				    writer.the_frame);
 			/* Queue the vortex writer message to be sent with
@@ -185,7 +185,7 @@ int      __vortex_reader_update_incoming_buffer_and_notify (VortexCtx         * 
 				/* deallocate memory on error, because no one
 				 * will do it. */
 				vortex_frame_unref (frame);
-				return false;
+				return axl_false;
 			}
 			
 		} /* end if */
@@ -195,7 +195,7 @@ int      __vortex_reader_update_incoming_buffer_and_notify (VortexCtx         * 
 		break;
 	}
 	
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -212,12 +212,12 @@ int      __vortex_reader_update_incoming_buffer_and_notify (VortexCtx         * 
  * @param channel The channel where the message was received.
  * @param frame   The frame received that has to be checked.
  * 
- * @return true if the reader check is passed. Otherwise false is
+ * @return axl_true if the reader check is passed. Otherwise axl_false is
  * returned.
  */
-int      vortex_channel_check_incoming_msgno (VortexCtx     * ctx,
-					      VortexChannel * channel, 
-					      VortexFrame   * frame)
+axl_bool      vortex_channel_check_incoming_msgno (VortexCtx     * ctx,
+						   VortexChannel * channel, 
+						   VortexFrame   * frame)
 {
 	/* get a reference to the connection that holds the channel */
 	VortexConnection * connection = vortex_channel_get_connection (channel);
@@ -241,7 +241,7 @@ int      vortex_channel_check_incoming_msgno (VortexCtx     * ctx,
 			vortex_channel_update_status_received (channel, 0, UPDATE_MSG_NO);
 			vortex_channel_update_status          (channel, 0, 0, UPDATE_RPY_NO);
 			
-			return true;
+			return axl_true;
 		}
 		vortex_log (VORTEX_LEVEL_WARNING, "if you want to make vortex reader to accept message with msgno starting from 1, you can use vortex_reader_allow_msgno_starting_from_1");
 		
@@ -270,7 +270,7 @@ int      vortex_channel_check_incoming_msgno (VortexCtx     * ctx,
  				 * that the message msgno=0 have been received. */
  				vortex_channel_update_status_received (channel, 0, DECREASE_MSG_NO);
  				vortex_channel_update_status          (channel, 0, 0, DECREASE_RPY_NO);
- 				return true;
+ 				return axl_true;
  			}
  			vortex_log (VORTEX_LEVEL_WARNING, "if you want to make vortex reader to accept these messages, you can use vortex_reader_allow_channel0_starting_from_0");
  		}
@@ -287,10 +287,10 @@ int      vortex_channel_check_incoming_msgno (VortexCtx     * ctx,
 		
 		/* free the frame */
 		vortex_frame_unref (frame);
-		return false;
+		return axl_false;
 	}
 	/* check passed */
-	return true;
+	return axl_true;
 }
 
 /**
@@ -334,7 +334,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	VortexFrame      * previous;
 	VortexFrameType    type;
 	VortexChannel    * channel;
-	int                more;
+	axl_bool           more;
 	char             * raw_frame;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "something to read");
@@ -348,7 +348,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	}
 
 	/* before doing anything, check if the connection is broken */
-	if (! vortex_connection_is_ok (connection, false))
+	if (! vortex_connection_is_ok (connection, axl_false))
 		return;
 
 	/* read all frames received from remote site */
@@ -552,7 +552,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		 * And we have to do this flagging before updating
 		 * channel status because close process will compare
 		 * messages sent to message replies receive. */
-		vortex_channel_flag_reply_processed (channel, false);
+		vortex_channel_flag_reply_processed (channel, axl_false);
 		
 
 		/* is a ERR or RPY type: update rpy no and seqno */
@@ -566,7 +566,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		/* And we have to do this flagging before updating
 		 * channel status because close process will compare
 		 * messages sent to message replies receive. */
-		vortex_channel_flag_reply_processed (channel, false);
+		vortex_channel_flag_reply_processed (channel, axl_false);
 
 		/* is a ERR or RPY type: update rpy no and seqno */
 		vortex_channel_update_status_received (channel, 
@@ -575,7 +575,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		break;
 	case VORTEX_FRAME_TYPE_ANS:
 		/* look above description */
-		vortex_channel_flag_reply_processed (channel, false);
+		vortex_channel_flag_reply_processed (channel, axl_false);
 
 		/* is not a MSG frame type: update seqno */
 		vortex_channel_update_status_received (channel, 
@@ -691,7 +691,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		 * dead-lock can happen if we receive a close message at this
 		 * point. We have to be able to close a channel having defined
 		 * a frame receive handler for any level or not. */
-		vortex_channel_flag_reply_processed (channel, true);
+		vortex_channel_flag_reply_processed (channel, axl_true);
 		break;
 	default:
 		/* do nothing */
@@ -713,10 +713,10 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
  * 
  * @param data The internal vortex reader data to be managed.
  * 
- * @return true if the item to be managed was clearly read or false if
+ * @return axl_true if the item to be managed was clearly read or axl_false if
  * an error on registering the item was produced.
  */
-int      vortex_reader_register_watch (VortexReaderData * data, axlList * con_list, axlList * srv_list)
+axl_bool   vortex_reader_register_watch (VortexReaderData * data, axlList * con_list, axlList * srv_list)
 {
 	VortexConnection * connection;
 	VortexCtx        * ctx;
@@ -729,11 +729,11 @@ int      vortex_reader_register_watch (VortexReaderData * data, axlList * con_li
 	switch (data->type) {
 	case CONNECTION:
 		/* check the connection */
-		if (!vortex_connection_is_ok (connection, false)) {
+		if (!vortex_connection_is_ok (connection, axl_false)) {
 			/* check if we can free this connection */
 			vortex_connection_unref (connection, "vortex reader (process)");
 			vortex_log (VORTEX_LEVEL_DEBUG, "received a non-valid connection, ignoring it");
-			return false;
+			return axl_false;
 		}
 			
 		/* now we have a first connection, we can start to wait */
@@ -758,7 +758,7 @@ int      vortex_reader_register_watch (VortexReaderData * data, axlList * con_li
 	} /* end switch */
 	
 	axl_free (data);
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -818,7 +818,7 @@ void vortex_reader_foreach_impl (VortexCtx        * ctx,
 	while (axl_list_cursor_has_item (cursor)) {
 
 		/* notify, if the connection is ok */
-		if (vortex_connection_is_ok (axl_list_cursor_get (cursor), false)) {
+		if (vortex_connection_is_ok (axl_list_cursor_get (cursor), axl_false)) {
 			data->func (axl_list_cursor_get (cursor), data->user_data);
 		} /* end if */
 
@@ -833,7 +833,7 @@ void vortex_reader_foreach_impl (VortexCtx        * ctx,
 	cursor = axl_list_cursor_new (srv_list);
 	while (axl_list_cursor_has_item (cursor)) {
 		/* notify, if the connection is ok */
-		if (vortex_connection_is_ok (axl_list_cursor_get (cursor), false)) {
+		if (vortex_connection_is_ok (axl_list_cursor_get (cursor), axl_false)) {
 			data->func (axl_list_cursor_get (cursor), data->user_data);
 		} /* end if */
 
@@ -859,17 +859,17 @@ void vortex_reader_foreach_impl (VortexCtx        * ctx,
  * case the loop keeps on going.
  * 
  * The function also checks for terminating vortex reader loop by
- * looking for TERMINATE value into the data->type. In such case false
+ * looking for TERMINATE value into the data->type. In such case axl_false
  * is returned meaning that no further loop should be done by the
  * vortex reader.
  *
- * @return true to keep vortex reader working, false if vortex reader
+ * @return axl_true to keep vortex reader working, axl_false if vortex reader
  * should stop.
  */
-int      vortex_reader_read_queue (VortexCtx  * ctx,
-				   axlList    * con_list, 
-				   axlList    * srv_list, 
-				   axlPointer * on_reading)
+axl_bool      vortex_reader_read_queue (VortexCtx  * ctx,
+					axlList    * con_list, 
+					axlList    * srv_list, 
+					axlPointer * on_reading)
 {
 	/* get current context */
 	VortexReaderData * data;
@@ -912,17 +912,17 @@ int      vortex_reader_read_queue (VortexCtx  * ctx,
  * @param on_reading A reference to the I/O waiting object, in the
  * case the I/O waiting mechanism is changed.
  * 
- * @return true to flag the process to continue working to to stop.
+ * @return axl_true to flag the process to continue working to to stop.
  */
-int      vortex_reader_read_pending (VortexCtx  * ctx,
-				     axlList    * con_list, 
-				     axlList    * srv_list, 
-				     axlPointer * on_reading)
+axl_bool      vortex_reader_read_pending (VortexCtx  * ctx,
+					  axlList    * con_list, 
+					  axlList    * srv_list, 
+					  axlPointer * on_reading)
 {
 	/* get current context */
 	VortexReaderData * data;
 	int                length;
-	int                should_continue = true;
+	axl_bool           should_continue = axl_true;
 
 	length = vortex_async_queue_length (ctx->reader_queue);
 	while (length > 0) {
@@ -974,7 +974,7 @@ VORTEX_SOCKET __vortex_reader_build_set_to_watch_aux (axlPointer      on_reading
 		/* get current connection */
 		connection = axl_list_cursor_get (cursor);
 		ctx        = vortex_connection_get_ctx (connection);
-		if (!vortex_connection_is_ok (connection, false)) {
+		if (!vortex_connection_is_ok (connection, axl_false)) {
 
 			/* connection isn't ok, unref it */
 			vortex_connection_unref (connection, "vortex reader (process)");
@@ -1010,7 +1010,7 @@ VORTEX_SOCKET __vortex_reader_build_set_to_watch_aux (axlPointer      on_reading
 				    "unable to add the connection to the vortex reader watching set. This could mean you did reach the I/O waiting mechanism limit.");
 
 			/* set it as not connected */
-			if (vortex_connection_is_ok (connection, false))
+			if (vortex_connection_is_ok (connection, axl_false))
 				__vortex_connection_set_not_connected (connection, "vortex reader (process)", VortexError);
 			vortex_connection_unref (connection, "vortex reader (process)");
 
@@ -1068,7 +1068,7 @@ void __vortex_reader_check_connection_list (VortexCtx     * ctx,
 		/* check if we have to keep on listening on this
 		 * connection */
 		connection = axl_list_cursor_get (con_cursor);
-		if (!vortex_connection_is_ok (connection, false)) {
+		if (!vortex_connection_is_ok (connection, axl_false)) {
 			/* connection isn't ok, unref it */
 			vortex_connection_unref (connection, "vortex reader (process)");
 
@@ -1117,7 +1117,7 @@ int  __vortex_reader_check_listener_list (VortexCtx     * ctx,
 		/* get the connection */
 		connection = axl_list_cursor_get (srv_cursor);
 
-		if (!vortex_connection_is_ok (connection, false)) {
+		if (!vortex_connection_is_ok (connection, axl_false)) {
 			/* connection isn't ok, unref it */
 			vortex_connection_unref (connection, "vortex reader (process), listener closed");
 
@@ -1264,7 +1264,7 @@ axlPointer __vortex_reader_run (VortexCtx * ctx)
 		return NULL;
 	}
 
-	while (true) {
+	while (axl_true) {
 		/* reset descriptor set */
 		vortex_io_waiting_invoke_clear_fd_group (ctx, on_reading);
 
@@ -1351,7 +1351,7 @@ void vortex_reader_watch_connection (VortexCtx        * ctx,
 	/* get current context */
 	VortexReaderData * data;
 
-	v_return_if_fail (vortex_connection_is_ok (connection, false));
+	v_return_if_fail (vortex_connection_is_ok (connection, axl_false));
 	v_return_if_fail (ctx->reader_queue);
 
 	if (!vortex_connection_set_nonblocking_socket (connection)) {
@@ -1406,16 +1406,16 @@ void vortex_reader_watch_listener   (VortexCtx        * ctx,
  * connection that have changed to read its connect and send it
  * appropriate channel reader.
  * 
- * @return The function returns true if the vortex reader was started
- * properly, otherwise false is returned.
+ * @return The function returns axl_true if the vortex reader was started
+ * properly, otherwise axl_false is returned.
  **/
-int  vortex_reader_run (VortexCtx * ctx) 
+axl_bool  vortex_reader_run (VortexCtx * ctx) 
 {
-	v_return_val_if_fail (ctx, false);
+	v_return_val_if_fail (ctx, axl_false);
 
 	ctx->reader_queue                       = vortex_async_queue_new ();
 	ctx->reader_stopped                     = vortex_async_queue_new ();
-	ctx->reader_accept_msgno_startig_from_1 = true;
+	ctx->reader_accept_msgno_startig_from_1 = axl_true;
 
 	/* create the vortex reader main thread */
 	if (! vortex_thread_create (&ctx->reader_thread, 
@@ -1423,10 +1423,10 @@ int  vortex_reader_run (VortexCtx * ctx)
 				    ctx,
 				    VORTEX_THREAD_CONF_END)) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to start vortex reader loop");
-		return false;
+		return axl_false;
 	} /* end if */
 	
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -1455,7 +1455,7 @@ void vortex_reader_stop (VortexCtx * ctx)
 	vortex_async_queue_unref (ctx->reader_stopped);
 	
 	/* terminate thread */
-	vortex_thread_destroy (&ctx->reader_thread, false);
+	vortex_thread_destroy (&ctx->reader_thread, axl_false);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "vortex reader process stopped");
 
@@ -1466,17 +1466,17 @@ void vortex_reader_stop (VortexCtx * ctx)
  * @internal Allows to check notify vortex reader to stop its
  * processing and to change its I/O processing model. 
  * 
- * @return The function returns true to notfy that the reader was
- * notified and false if not. In the later case it means that the
+ * @return The function returns axl_true to notfy that the reader was
+ * notified and axl_false if not. In the later case it means that the
  * reader is not running.
  */
-int  vortex_reader_notify_change_io_api               (VortexCtx * ctx)
+axl_bool  vortex_reader_notify_change_io_api               (VortexCtx * ctx)
 {
 	VortexReaderData * data;
 
 	/* check if the vortex reader is running */
 	if (ctx == NULL || ctx->reader_queue == NULL)
-		return false;
+		return axl_false;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "stopping vortex reader due to a request for a I/O notify change...");
 
@@ -1494,7 +1494,7 @@ int  vortex_reader_notify_change_io_api               (VortexCtx * ctx)
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "done, now vortex reader will wait until the new API is installed..");
 
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -1551,16 +1551,16 @@ void vortex_reader_notify_change_done_io_api   (VortexCtx * ctx)
  * pursued, no one wins when blame occurs).
  *
  * By default, the library is configured to accept first messages
- * starting from msgno=1. You can also be strict and set a false value
+ * starting from msgno=1. You can also be strict and set a axl_false value
  * to this function.
  * 
  * @param ctx The context where the operation will be performed.
  *
- * @param value true to allow messages received on a channel to start
+ * @param value axl_true to allow messages received on a channel to start
  * with 1 rather than 0.
  */
 void vortex_reader_allow_msgno_starting_from_1 (VortexCtx * ctx, 
-						int         value)
+						axl_bool    value)
 {
 	/* do not configure anything if a null value is received */
 	if (ctx == NULL)
@@ -1582,10 +1582,11 @@ void vortex_reader_allow_msgno_starting_from_1 (VortexCtx * ctx,
  *
  * @param ctx The context where this configuration will be applied.
  *
- * @param value true to activate supporting buggy peers implementing
+ * @param value axl_true to activate supporting buggy peers implementing
  * this behaviour. 
  */
-void vortex_reader_allow_channel0_starting_from_0 (VortexCtx * ctx, int      value)
+void vortex_reader_allow_channel0_starting_from_0 (VortexCtx * ctx, 
+						   axl_bool    value)
 {
 	ctx->reader_accept_reuse_msgno0_for_channel0 = value;
 	return;
