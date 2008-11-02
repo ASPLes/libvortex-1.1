@@ -351,7 +351,7 @@ axlPointer   vortex_hash_lookup_and_clear   (VortexHash   *hash_table,
 {
 	
 	axlPointer data;
-	int        was_removed;
+	axl_bool   was_removed;
 
 	/* check hash table reference */
 	if (hash_table == NULL)
@@ -439,16 +439,16 @@ int          vortex_hash_lock_until_changed (VortexHash   *hash_table,
  * @param hash_table the hash table
  * @param key the key value to lookup and destroy
  *
- * @return true if found and removed and false if not removed
+ * @return axl_true if found and removed and axl_false if not removed
  **/
-int          vortex_hash_remove   (VortexHash *hash_table,
+axl_bool     vortex_hash_remove   (VortexHash *hash_table,
 				   axlPointer key)
 {
- 	int was_removed;
+	axl_bool   was_removed;
 
 	/* check hash table reference */
 	if (hash_table == NULL)
-		return false;
+		return axl_false;
 
 	vortex_mutex_lock   (&hash_table->mutex);
 
@@ -462,7 +462,7 @@ int          vortex_hash_remove   (VortexHash *hash_table,
  		/* notify change */
  		__vortex_hash_notify_change (hash_table);
  	}
-	return true;
+	return axl_true;
 }
 
 /**
@@ -519,15 +519,15 @@ void         vortex_hash_destroy  (VortexHash *hash_table)
  *
  * @param key The key for the data to be removed.
  * 
- * @return true if the item was removed (current implementation always
- * return true).
+ * @return axl_true if the item was removed (current implementation always
+ * return axl_true).
  */
-int          vortex_hash_delete   (VortexHash   *hash_table,
-				   axlPointer    key)
+axl_bool          vortex_hash_delete   (VortexHash   *hash_table,
+					axlPointer    key)
 {
-	int was_removed;
+	axl_bool   was_removed;
 
-	v_return_val_if_fail (hash_table, false);
+	v_return_val_if_fail (hash_table, axl_false);
 
 	vortex_mutex_lock    (&hash_table->mutex);
 
@@ -540,7 +540,7 @@ int          vortex_hash_delete   (VortexHash   *hash_table,
 		__vortex_hash_notify_change (hash_table);
 	}
 
-	return true;
+	return axl_true;
 }
 
 /**
@@ -636,11 +636,11 @@ void         vortex_hash_foreach3  (VortexHash         * hash_table,
  * @internal
  * @brief Support function for \ref vortex_hash_clear function.
  * 
- * It just returns true.
+ * It just returns axl_true.
  */
-int      vortex_hash_clear_allways_true (axlPointer key, axlPointer value, axlPointer user_data) 
+axl_bool      vortex_hash_clear_allways_true (axlPointer key, axlPointer value, axlPointer user_data) 
 {
-	return true;
+	return axl_true;
 }
 
 

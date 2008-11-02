@@ -78,12 +78,12 @@ axlPointer   vortex_hash_lookup_and_clear   (VortexHash   *hash_table,
 int          vortex_hash_lock_until_changed (VortexHash   *hash_table,
 					     long int      wait_microseconds);
 
-int          vortex_hash_remove   (VortexHash   *hash_table,
+axl_bool     vortex_hash_remove   (VortexHash   *hash_table,
 				   axlPointer    key);
 
 void         vortex_hash_destroy  (VortexHash *hash_table);
 
-int          vortex_hash_delete   (VortexHash   *hash_table,
+axl_bool     vortex_hash_delete   (VortexHash   *hash_table,
 				   axlPointer    key);
 
 void         vortex_hash_foreach  (VortexHash         * hash_table,
