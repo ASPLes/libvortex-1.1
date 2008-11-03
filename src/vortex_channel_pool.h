@@ -84,10 +84,10 @@ void                vortex_channel_pool_deattach          (VortexChannelPool * p
 							   VortexChannel     * channel);
 
 VortexChannel     * vortex_channel_pool_get_next_ready    (VortexChannelPool * pool,
-							   int      auto_inc);
+							   axl_bool            auto_inc);
 
 VortexChannel     * vortex_channel_pool_get_next_ready_full (VortexChannelPool * pool,
-							     int                 auto_inc,
+							     axl_bool            auto_inc,
 							     axlPointer          user_data);
 
 void                vortex_channel_pool_release_channel   (VortexChannelPool * pool,
