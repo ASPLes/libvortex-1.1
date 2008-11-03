@@ -114,20 +114,20 @@ typedef struct _VortexTlsCtx {
  *
  * @param ctx The context where the operation will be performed.
  *
- * @return true if the TLS profile was initialized. Otherwise false
+ * @return axl_true if the TLS profile was initialized. Otherwise axl_false
  * is returned.
  */
-int      vortex_tls_init (VortexCtx * ctx)
+axl_bool      vortex_tls_init (VortexCtx * ctx)
 {
 	VortexTlsCtx * tls_ctx;
 
 	/* check context received */
-	v_return_val_if_fail (ctx, false);
+	v_return_val_if_fail (ctx, axl_false);
 
 	/* check if the tls ctx was created */
 	tls_ctx = vortex_ctx_get_data (ctx, TLS_CTX);
 	if (tls_ctx != NULL) 
-		return true;
+		return axl_true;
 
 	/* create the tls context */
 	tls_ctx = axl_new (VortexTlsCtx, 1);
@@ -144,7 +144,7 @@ int      vortex_tls_init (VortexCtx * ctx)
 	/* init ssl ciphers and engines */
 	SSL_library_init ();
 
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -579,8 +579,8 @@ void __vortex_tls_start_negotiation_close_and_notify (VortexTlsActivation   proc
  * 
  * @param connection The connection where the TLS handshake will be performed.
  * 
- * @return true if the handshake was successfully performed. Otherwise
- * false is returned.
+ * @return axl_true if the handshake was successfully performed. Otherwise
+ * axl_false is returned.
  */
 int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 {
@@ -600,7 +600,7 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 	/* check if the tls ctx was created */
 	tls_ctx = vortex_ctx_get_data (ctx, TLS_CTX);
 	if (tls_ctx == NULL) 
-		return false;
+		return axl_false;
 
 	/* check if the connection have a ctx connection creation or
 	 * the default ctx creation is configured */
@@ -625,7 +625,7 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 	/* create and register the TLS method */
 	if (ctx == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "error while creating TLS context");
-		return false;
+		return axl_false;
 	}
 
 	/* create the tls transport */
@@ -633,7 +633,7 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 	ssl = SSL_new (ssl_ctx);       
 	if (ssl == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "error while creating TLS transport");
-		return false;
+		return axl_false;
 	}
 
 	/* set the file descriptor */
@@ -672,14 +672,14 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 			 * possible to recover previous BEEP state */
 			__vortex_connection_set_not_connected (connection, "tls handshake failed",
 							       VortexProtocolError);
-			return false;
+			return axl_false;
 		default:
 			vortex_log (VORTEX_LEVEL_CRITICAL, "there was an error with the TLS negotiation, ssl error (code:%d) : %s",
 				    ssl_error, ERR_error_string (ssl_error, NULL));
 			/* now the TLS process have failed, we have to
 			 * restore how is read and written the data */
 			vortex_connection_set_default_io_handler (connection);
-			return false;
+			return axl_false;
 		}
 	}
 	vortex_log (VORTEX_LEVEL_DEBUG, "seems SSL connect call have finished in a proper manner");
@@ -689,7 +689,7 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 	if (server_cert == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "server side didn't set a certificate for this session, this is a bad news");
 		vortex_support_free (2, ssl, SSL_free, ctx, SSL_CTX_free);
-		return false;
+		return axl_false;
 	}
 	X509_free (server_cert);
 
@@ -708,13 +708,13 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 			/* found that the connection didn't pass post checks */
 			__vortex_connection_set_not_connected (connection, "post checks failed",
 							       VortexProtocolError);
-			return false;
+			return axl_false;
 		} /* end if */
 	} /* end if */
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "TLS transport negotiation finished");
 	
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -741,7 +741,7 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 	VortexFrame           * reply           = NULL;
 	VortexAsyncQueue      * queue;
 	VORTEX_SOCKET           socket;
-	int                     status          = false;
+	axl_bool                status          = axl_false;
 
 	/* free no longer needed data  */
 	axl_free (data);
@@ -750,7 +750,7 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 	 * producing "noise" in the middle of the TLS handshake */
 	vortex_log (VORTEX_LEVEL_DEBUG, "TLS STATE[0]: disable SEQ frame generation on connection=%d",
 		    vortex_connection_get_id (connection));
-	vortex_connection_seq_frame_updates (connection, true);
+	vortex_connection_seq_frame_updates (connection, axl_true);
 
 	/* Send TLS <ready> message. This will signal the remote peer
 	* we need to negotiate a TLS secure layer, once the remote
@@ -886,7 +886,7 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 
 	/* prevent vortex library to close the underlying socket once
 	 * the connection is closed. */
-	vortex_connection_set_close_socket (connection, false);
+	vortex_connection_set_close_socket (connection, axl_false);
 	
 	/* get the socket where the underlying transport negotiation
 	 * is taking place. */
@@ -938,7 +938,7 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 	/* reenable seq frame generation */
 	vortex_log (VORTEX_LEVEL_DEBUG, "TLS STATE[7.1]: enable SEQ frame generation on connection=%d",
 		    vortex_connection_get_id (connection));
-	vortex_connection_seq_frame_updates (connection, false);
+	vortex_connection_seq_frame_updates (connection, axl_false);
 
 
 	/* 5. Issue again initial greetings, greetings just like we
@@ -982,7 +982,7 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 	/* flag this connection to be already TLS-ficated if the
 	 * status is ok */
 	if (status) {
-		vortex_connection_set_tlsfication_status (connection, true);
+		vortex_connection_set_tlsfication_status (connection, axl_true);
 	}
 
 	/* 8. finally, report current TLS negotiation status to the
@@ -1049,7 +1049,7 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
  *                    status_message);
  *           // ok, TLS process have failed but, do we have a connection
  *           // still working?. This is checked using
- *           if (vortex_connection_is_ok (connection, false)) {
+ *           if (vortex_connection_is_ok (connection, axl_false)) {
  *              // well we don't have TLS activated but the connection
  *              // still works
  *              my_server_connection = connection;
@@ -1095,7 +1095,7 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
  *
  * A call to \ref vortex_tls_init is required to start the TLS context
  * inside the provided \ref VortexCtx. Next calls won't perform any
- * operation than returning true (signaling the library is
+ * operation than returning axl_true (signaling the library is
  * initialized).
  *
  * If you need to know more about how to activate TLS support on
@@ -1146,7 +1146,7 @@ void vortex_tls_start_negotiation (VortexConnection     * connection,
 
 	/* check environment conditions */
 	v_return_if_fail (connection);
-	v_return_if_fail (vortex_connection_is_ok (connection, false));
+	v_return_if_fail (vortex_connection_is_ok (connection, axl_false));
 	v_return_if_fail (process_status);
 
 
@@ -1224,7 +1224,7 @@ void vortex_tls_initial_accept (VortexConnection * connection)
 	VortexCtx            * ctx       = vortex_connection_get_ctx (connection);
 	SSL                  * ssl       = vortex_connection_get_data (connection, "ssl-data:ssl");
 	SSL_CTX              * ssl_ctx   = vortex_connection_get_data (connection, "ssl-data:ctx");
-	int                    status    = false;
+	axl_bool               status    = axl_false;
 	VortexTlsPostCheck     post_check;
 	axlPointer             post_check_data;
 	VortexTlsCtx         * tls_ctx;
@@ -1261,7 +1261,7 @@ void vortex_tls_initial_accept (VortexConnection * connection)
 		}
 	}else {
 		/* TLS-fication done */
-		status = true;
+		status = axl_true;
 	}
 	vortex_log (VORTEX_LEVEL_DEBUG, "TLS-fication status was: %s", status ? "OK" : "*** FAIL ***");
 
@@ -1293,7 +1293,7 @@ void vortex_tls_initial_accept (VortexConnection * connection)
 		} /* end if */
 		
 		/* flag this connection to be already TLS-ficated */
-		vortex_connection_set_tlsfication_status (connection, true);
+		vortex_connection_set_tlsfication_status (connection, axl_true);
 
 		/* install here a filtering mask to avoid reusing tls
 		 * profile again inside the greetings */
@@ -1370,7 +1370,7 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 		 * given connection including the socket. */
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
 		       "unable to create SSL context object, unable to start TLS profile");
-		vortex_connection_set_close_socket (connection, true);
+		vortex_connection_set_close_socket (connection, axl_true);
 		vortex_connection_shutdown (connection);
 		return;
 	} /* end if */
@@ -1386,7 +1386,7 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 		if (SSL_CTX_use_certificate_file (ssl_ctx, certificate_file, SSL_FILETYPE_PEM) <= 0) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
 				    "there was an error while setting certificate file into the SSl context, unable to start TLS profile");
-			vortex_connection_set_close_socket (connection, true);
+			vortex_connection_set_close_socket (connection, axl_true);
 			vortex_connection_shutdown (connection);
 			return;
 		}
@@ -1396,7 +1396,7 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 		if (SSL_CTX_use_PrivateKey_file (ssl_ctx, private_file, SSL_FILETYPE_PEM) <= 0) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
 				    "there was an error while setting private file into the SSl context, unable to start TLS profile");
-			vortex_connection_set_close_socket (connection, true);
+			vortex_connection_set_close_socket (connection, axl_true);
 			vortex_connection_shutdown (connection);
 			return;
 		}
@@ -1405,7 +1405,7 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 		if (!SSL_CTX_check_private_key(ssl_ctx)) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
 				    "seems that certificate file and private key doesn't match!, unable to start TLS profile");
-			vortex_connection_set_close_socket (connection, true);
+			vortex_connection_set_close_socket (connection, axl_true);
 			vortex_connection_shutdown (connection);
 			return;
 		} /* end if */
@@ -1417,7 +1417,7 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 	ssl = SSL_new (ssl_ctx);       
 	if (ssl == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "error while creating TLS transport");
-		vortex_connection_set_close_socket (connection, true);
+		vortex_connection_set_close_socket (connection, axl_true);
 		vortex_connection_shutdown (connection);
 		return;
 	}
@@ -1456,7 +1456,7 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 	 * We'll do it at the pre read handler
 	 * (vortex_tls_initial_accept) once the TLS layer is properly
 	 * working. */
-	vortex_listener_accept_connection (new_connection, false);
+	vortex_listener_accept_connection (new_connection, axl_false);
 
 	return;
 }
@@ -1495,19 +1495,19 @@ int      vortex_tls_process_start_msg (char              * profile,
 	/* check if the tls ctx was created */
 	tls_ctx = vortex_ctx_get_data (ctx, TLS_CTX);
 	if (tls_ctx == NULL) 
-		return false;
+		return axl_false;
 
 	/* flag this connection to be already TLS-ficated */
 	if (vortex_connection_is_tlsficated (connection)) {
 		vortex_log (VORTEX_LEVEL_WARNING, "received a TLS channel request on an already TLS-ficated connection.");
-		return false;
+		return axl_false;
 	}
 
 	/* check profile content */
 	vortex_log (VORTEX_LEVEL_DEBUG, "received TLS negotiation request");
 	if (profile_content == NULL || !axl_cmp (profile_content, "<ready />")) {
 		vortex_log (VORTEX_LEVEL_WARNING, "received a TLS channel request having a missing or wrong profile content");
-		return false;
+		return axl_false;
 	}
 	
 	/* notify user app level that a TLS profile request have being
@@ -1516,9 +1516,9 @@ int      vortex_tls_process_start_msg (char              * profile,
 	if (! tls_ctx->tls_accept_handler (connection, serverName)) {
 		(* profile_content_reply)  = vortex_frame_get_error_message ("421", "application level have reject to negotiate TLS transport layer", NULL);
 		
-		/* we have to reply true because the expected reply is
+		/* we have to reply axl_true because the expected reply is
 		 * a positive one with a proceed or error content. */
-		return true;
+		return axl_true;
 	}
 
 	if (tls_ctx->tls_default_ctx_creation == NULL && 
@@ -1533,9 +1533,9 @@ int      vortex_tls_process_start_msg (char              * profile,
 				vortex_frame_get_error_message ("421", 
 								"application level didn't provide a valid location for a certificate file, unable to negotiate TLS transport", 
 								NULL);
-			/* we have to reply true because the expected reply is
+			/* we have to reply axl_true because the expected reply is
 			 * a positive one with a proceed or error content. */
-			return true;
+			return axl_true;
 		}
 		
 		vortex_log (VORTEX_LEVEL_DEBUG, "getting private key file");
@@ -1546,9 +1546,9 @@ int      vortex_tls_process_start_msg (char              * profile,
 			(* profile_content_reply)  = vortex_frame_get_error_message ("421", 
 										     "application level didn't provide a valid location for a private key file, unable to negotiate TLS transport", 
 										     NULL);
-			/* we have to reply true because the expected reply is
+			/* we have to reply axl_true because the expected reply is
 			 * a positive one with a proceed or error content. */
-			return true;
+			return axl_true;
 		}
 
 		/* store certificate and private key files */
@@ -1567,27 +1567,27 @@ int      vortex_tls_process_start_msg (char              * profile,
 	 * 
 	 * we prepare the socket connection to not be closed even if
 	 * the channel 0 is closed on the given connection. */
-	vortex_connection_set_close_socket (connection, false);
+	vortex_connection_set_close_socket (connection, axl_false);
 
 
 	/* now prepare the connection to accept the incoming
 	 * negotiation by using the pre read handler */
 	vortex_connection_set_preread_handler (connection, vortex_tls_prepare_listener);
 
-	return true;
+	return axl_true;
 }
 
 
 /** 
  * @internal
  * This default hander definition is used when no accept handler was
- * defined. It always returns true, which means to always accept the
+ * defined. It always returns axl_true, which means to always accept the
  * TLS request.
  */
-int      vortex_tls_default_accept     (VortexConnection * connection,
-				        char             * serverName)
+axl_bool      vortex_tls_default_accept     (VortexConnection * connection,
+					     char             * serverName)
 {
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -1845,7 +1845,7 @@ VortexConnection * vortex_tls_start_negotiation_sync     (VortexConnection  * co
  *
  * @return Returns it the current server instance could accept incoming TLS connections.
  */
-int         vortex_tls_accept_negotiation (VortexCtx                       * ctx,
+axl_bool    vortex_tls_accept_negotiation (VortexCtx                       * ctx,
 					   VortexTlsAcceptQuery              accept_handler, 
 					   VortexTlsCertificateFileLocator   certificate_handler,
 					   VortexTlsPrivateKeyFileLocator    private_key_handler) 
@@ -1855,13 +1855,13 @@ int         vortex_tls_accept_negotiation (VortexCtx                       * ctx
 	/* check and init TLS */
 	if (! vortex_tls_init (ctx)) {
 		vortex_log (VORTEX_LEVEL_WARNING, "unable to initialize TLS library, unable to accept incoming requests");
-		return false;
+		return axl_false;
 	}
 
 	/* check if the tls ctx was created */
 	tls_ctx = vortex_ctx_get_data (ctx, TLS_CTX);
 	if (tls_ctx == NULL) 
-		return false;
+		return axl_false;
 
 	/* set default handlers */
 	tls_ctx->tls_accept_handler      = (accept_handler      != NULL) ? accept_handler      : vortex_tls_default_accept;
@@ -1891,7 +1891,7 @@ int         vortex_tls_accept_negotiation (VortexCtx                       * ctx
 		    tls_ctx->tls_private_key_handler);
 
 	/* well, we are prepare to tls-ficate! */
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -2123,7 +2123,7 @@ int vortex_tls_auto_tlsfixate_conection (VortexCtx               * ctx,
 		connection = vortex_tls_start_negotiation_sync (connection,
 								tls_ctx->connection_auto_tls_server_name,
 								NULL, NULL);
-		if (!vortex_connection_is_ok (connection, false)) {
+		if (!vortex_connection_is_ok (connection, axl_false)) {
 			return -1;
 		}
 		
@@ -2186,15 +2186,15 @@ int vortex_tls_auto_tlsfixate_conection (VortexCtx               * ctx,
  * TLS profile negotiation fails, the connection is closed, returning that the TLS
  * profile have failed. 
  * 
- * Using a true value allows to still keep on working even if the TLS
+ * Using a axl_true value allows to still keep on working even if the TLS
  * profile negotiation have failed.
  *
  * By default, Vortex Library have auto TLS feature disabled.
  * 
  * @param ctx The context where the operation will be performed.
  * 
- * @param enabled true to activate the automatic TLS profile
- * negotiation for every connection created, false to disable it.
+ * @param enabled axl_true to activate the automatic TLS profile
+ * negotiation for every connection created, axl_false to disable it.
  *
  * @param allow_tls_failures Configure how to handle errors produced
  * while activating automatic TLS negotiation.
@@ -2206,7 +2206,7 @@ int vortex_tls_auto_tlsfixate_conection (VortexCtx               * ctx,
  * <i><b>NOTE:</b> If current Vortex Library doesn't have built-in
  * support for TLS profile, automatic TLS profile negotiation will
  * always fail. This means that setting <b>allow_tls_failures </b> to
- * false will cause Vortex Library client peer to always fail to
+ * axl_false will cause Vortex Library client peer to always fail to
  * create new connections.</i>
  *
  * <i><b>NOTE2: About could fail during the TLS handshake</b> <br> A
