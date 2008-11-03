@@ -525,7 +525,7 @@ int                vortex_sasl_init                      (VortexCtx            *
 
 void               vortex_sasl_cleanup                   (VortexCtx            * ctx);
 
-int                vortex_sasl_set_propertie             (VortexConnection     * connection,
+axl_bool           vortex_sasl_set_propertie             (VortexConnection     * connection,
 							  VortexSaslProperties   prop,
 							  char                 * value,
 							  axlDestroyFunc         value_destroy);
@@ -533,7 +533,7 @@ int                vortex_sasl_set_propertie             (VortexConnection     *
 char             * vortex_sasl_get_propertie             (VortexConnection     * connection,
 							  VortexSaslProperties   prop);
 
-int                vortex_sasl_is_authenticated          (VortexConnection     * connection);
+axl_bool           vortex_sasl_is_authenticated          (VortexConnection     * connection);
 
 char             * vortex_sasl_auth_method_used          (VortexConnection     * connection);
 
@@ -564,9 +564,9 @@ void               vortex_sasl_set_digest_md5_validation      (VortexCtx * ctx, 
 void               vortex_sasl_set_digest_md5_validation_full (VortexCtx * ctx, VortexSaslAuthDigestMd5Full auth_handler);
 
 
-int                vortex_sasl_accept_negotiation             (VortexCtx  * ctx, 
+axl_bool           vortex_sasl_accept_negotiation             (VortexCtx  * ctx, 
 							       const char * mech);
-int                vortex_sasl_accept_negotiation_full        (VortexCtx  * ctx,
+axl_bool           vortex_sasl_accept_negotiation_full        (VortexCtx  * ctx,
 							       const char * mech, 
 							       axlPointer user_data);
 
