@@ -67,31 +67,6 @@ struct _VortexTunnelSettings{
 };
 
 /** 
- * @brief Allows to check if the current library built have support
- * for TUNNEL profile, the general application proxy support for BEEP.
- * 
- * TUNNEL profile support is activated at the compilation time. Check
- * vortex library compilation instruction to get more details about
- * this.
- *
- * Before using any element from the TUNNEL API you must call to this
- * function to ensure your application can use its functions.
- * 
- * @return true if the current vortex library used provides TUNNEL
- * profile support. Otherwise false is returned.
- */
-int                    vortex_tunnel_is_enabled       (void)
-{
-#if ! defined(ENABLE_TUNNEL_SUPPORT)
-	/* beep general application proxy not supported */
-	return false;
-#else
-	/* support for tunnel profile compiled, always return true */
-	return true;
-#endif
-}
-
-/** 
  * @brief Allows to create a new tunnel setting, a proxy configuration
  * for any BEEP session to be created (\ref VortexConnection).
  *
@@ -106,10 +81,6 @@ int                    vortex_tunnel_is_enabled       (void)
  */
 VortexTunnelSettings * vortex_tunnel_settings_new (VortexCtx * ctx)
 {
-#if ! defined(ENABLE_TUNNEL_SUPPORT)
-	vortex_log (VORTEX_LEVEL_CRITICAL, "requesting to create a new tunnel setting with a library compiled without TUNNEL support");
-	return NULL;
-#else
 	VortexTunnelSettings * settings;
 	axlNode              * node;
 
@@ -118,7 +89,7 @@ VortexTunnelSettings * vortex_tunnel_settings_new (VortexCtx * ctx)
 
 	/* create the root document */
 	settings      = axl_new (VortexTunnelSettings, 1);
-	settings->doc = axl_doc_create (NULL, NULL, true);
+	settings->doc = axl_doc_create (NULL, NULL, axl_true);
 
 	/* configure context */
 	settings->ctx = ctx;
@@ -129,7 +100,6 @@ VortexTunnelSettings * vortex_tunnel_settings_new (VortexCtx * ctx)
 
 	/* return settings created */
 	return settings;
-#endif
 }
 
 /** 
@@ -148,10 +118,6 @@ VortexTunnelSettings * vortex_tunnel_settings_new_from_xml (VortexCtx * ctx,
 							    char      * content, 
 							    int         size)
 {
-#if ! defined(ENABLE_TUNNEL_SUPPORT)
-	vortex_log (VORTEX_LEVEL_CRITICAL, "requesting to create a new tunnel setting with a library compiled without TUNNEL support");
-	return NULL;
-#else
 	VortexTunnelSettings * settings;
 	axlError             * error;
 
@@ -176,7 +142,6 @@ VortexTunnelSettings * vortex_tunnel_settings_new_from_xml (VortexCtx * ctx,
 
 	/* return settings created */
 	return settings;
-#endif
 }
 
 /** 
@@ -243,17 +208,6 @@ VortexTunnelSettings * vortex_tunnel_settings_new_from_xml (VortexCtx * ctx,
 void vortex_tunnel_settings_add_hop (VortexTunnelSettings * settings,
 				     ...)
 {
-#if ! defined(ENABLE_TUNNEL_SUPPORT)
-	VortexCtx * ctx;
-
-	v_return_if_fail (settings);
-
-	/* configure context */
-	ctx = settings->ctx;
-
-	vortex_log (VORTEX_LEVEL_CRITICAL, "configuring new settings on a library that doesn't have TUNNEL support");
-	return;
-#else
 	va_list            args;
 	VortexTunnelItem   item;
 	axlNode          * node;
@@ -382,7 +336,6 @@ void vortex_tunnel_settings_add_hop (VortexTunnelSettings * settings,
 	axl_free (node);
 	
 	return;
-#endif
 }
 
 /** 
@@ -405,13 +358,8 @@ VortexConnection     * vortex_tunnel_new              (VortexTunnelSettings * se
 						       VortexConnectionNew    on_connected,
 						       axlPointer             user_data)
 {
-#if defined(ENABLE_TUNNEL_SUPPORT)
-	/* call to common implementation */
-	return __vortex_tunnel_new_common (settings, true, on_connected, user_data);
-#else
 	/* not implemented */
 	return NULL;
-#endif
 }
 
 /** 
@@ -435,22 +383,10 @@ VortexConnection     * vortex_tunnel_new              (VortexTunnelSettings * se
  * @return A reference to the connection created or NULL if it fails.
  */
 VortexConnection     * __vortex_tunnel_new_common     (VortexTunnelSettings * settings,
-						       int                    do_tunning_reset,
+						       axl_bool               do_tunning_reset,
 						       VortexConnectionNew    on_connected,
 						       axlPointer             user_data)
 {
-#if ! defined(ENABLE_TUNNEL_SUPPORT)
-	VortexCtx * ctx;
-
-	/* check parameters */
-	v_return_val_if_fail (settings, NULL);
-	
-	/* get the context */
-	ctx = settings->ctx;
-
-	vortex_log (VORTEX_LEVEL_CRITICAL, "trying to create a connection without TUNNEL support");
-	return NULL;
-#else
 	VortexConnection * connection;
 	VortexConnection * connection_aux;
 	VortexCtx        * ctx;
@@ -536,7 +472,7 @@ VortexConnection     * __vortex_tunnel_new_common     (VortexTunnelSettings * se
 
 	/* create the connection */
 	connection = vortex_connection_new (ctx, host, port, NULL, NULL);
-	if (! vortex_connection_is_ok (connection, true)) {
+	if (! vortex_connection_is_ok (connection, axl_true)) {
 		/* free piggyback */
 		axl_free (content);
 
@@ -546,7 +482,7 @@ VortexConnection     * __vortex_tunnel_new_common     (VortexTunnelSettings * se
 
  	vortex_log (VORTEX_LEVEL_DEBUG, "connection created with host=%s port=%s, disabling SEQ frames, creating TUNNEL ",
   		    host, port);
- 	vortex_connection_seq_frame_updates (connection, true);
+ 	vortex_connection_seq_frame_updates (connection, axl_true);
 	
 	/* create a new channel and a queue to receive all replies */
 	queue   = vortex_async_queue_new ();
@@ -643,7 +579,7 @@ VortexConnection     * __vortex_tunnel_new_common     (VortexTunnelSettings * se
 
 	/* prevent vortex library to close the underlying socket once
 	 * the connection is closed. */
-	vortex_connection_set_close_socket (connection, false);
+	vortex_connection_set_close_socket (connection, axl_false);
 
 	/* get the socket where the underlying transport negotiation
 	 * is taking place. */
@@ -661,7 +597,7 @@ VortexConnection     * __vortex_tunnel_new_common     (VortexTunnelSettings * se
 	connection = vortex_connection_new_empty_from_connection (ctx, socket, connection_aux, VortexRoleInitiator);
 
  	/* check connection */
- 	if (! vortex_connection_is_ok (connection, false)) {
+ 	if (! vortex_connection_is_ok (connection, axl_false)) {
  		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to create initial connection to prepare TUNNEL");
  		return NULL;
  	}
@@ -676,7 +612,7 @@ VortexConnection     * __vortex_tunnel_new_common     (VortexTunnelSettings * se
  	/* reenable tunning reset */
  	vortex_log (VORTEX_LEVEL_DEBUG, "reenabling SEQ frames for the TUNNEL connection=%d created",
  		    vortex_connection_get_id (connection));
- 	vortex_connection_seq_frame_updates (connection, false);
+ 	vortex_connection_seq_frame_updates (connection, axl_false);
 
 	/* the the connection to be blocking during the TUNNEL
 	 * negotiation, once called
@@ -724,7 +660,6 @@ VortexConnection     * __vortex_tunnel_new_common     (VortexTunnelSettings * se
 
 	/* return the connection */
 	return connection;
-#endif
 }
 
 /** 
@@ -735,9 +670,6 @@ VortexConnection     * __vortex_tunnel_new_common     (VortexTunnelSettings * se
  */
 void vortex_tunnel_settings_free (VortexTunnelSettings * settings)
 {
-#if ! defined(ENABLE_TUNNEL_SUPPORT)
-	return;
-#else
 	/* if null value received, just return */
 	if (settings == NULL)
 		return;
@@ -747,10 +679,8 @@ void vortex_tunnel_settings_free (VortexTunnelSettings * settings)
 	axl_free (settings);
 
 	return;
-#endif
 }
 
-#if defined(ENABLE_TUNNEL_SUPPORT)
 /** 
  * @internal Second step to prepare the listener connection to finally
  * accept the TUNNEL profile end point request.
@@ -794,7 +724,7 @@ void __vortex_tunnel_prepare_listener (VortexConnection * connection)
 	 * greetings. This function flag the connection to be on the
 	 * initial stage and register the connection into the vortex
 	 * reader. */
-	vortex_listener_accept_connection (new_connection, true);
+	vortex_listener_accept_connection (new_connection, axl_true);
 
 	/* It is not required to perform any additional task here,
 	 * once the client greetings are received, the second accept
@@ -859,14 +789,14 @@ void __vortex_tunnel_pass_octets (VortexConnection * connection)
  * @internal Implementation for the start tunnel request on the
  * connection provided.
  */
-int  __vortex_tunnel_start_request (char             * profile, 
-				    int                channel_num, 
-				    VortexConnection * connection, 
-				    char             * serverName, 
-				    char             * profile_content, 
-				    char            ** profile_content_reply, 
-				    VortexEncoding     encoding, 
-				    axlPointer         user_data)
+axl_bool  __vortex_tunnel_start_request (char             * profile, 
+					 int                channel_num, 
+					 VortexConnection * connection, 
+					 char             * serverName, 
+					 char             * profile_content, 
+					 char            ** profile_content_reply, 
+					 VortexEncoding     encoding, 
+					 axlPointer         user_data)
 {
 
 	axlDoc                 * doc = NULL;
@@ -875,18 +805,18 @@ int  __vortex_tunnel_start_request (char             * profile,
 	VortexConnection       * new_connection;
 	VortexTunnelSettings   * settings = NULL;
 	char                   * buffer;
-	int                      result;
+	axl_bool                 result;
 	VortexCtx              * ctx;
 	
 	/* references to handlers */
 	VortexOnAcceptedConnection         tunnel_accept;
 	VortexTunnelLocationResolver       tunnel_location_resolver;
 
-	v_return_val_if_fail (connection, false);
+	v_return_val_if_fail (connection, axl_false);
 
 	/* get context */
 	ctx = vortex_connection_get_ctx (connection);
-	v_return_val_if_fail (ctx, false);
+	v_return_val_if_fail (ctx, axl_false);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "received request to tunnel..\n");
 
@@ -894,7 +824,7 @@ int  __vortex_tunnel_start_request (char             * profile,
 	 * content received, applies to <tunnel /> */
 	if (axl_cmp (profile_content, "<tunnel />")) {
 		/* found endpoint configuration */
-		result = true;
+		result = axl_true;
 		goto end_point_request;
 	} /* end if */
 
@@ -907,7 +837,7 @@ int  __vortex_tunnel_start_request (char             * profile,
 		/* free the error */
 		axl_error_free (error);
 
-		return false;
+		return axl_false;
 	} /* end if */
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "document parsed, resolv tunnel");
@@ -941,7 +871,7 @@ int  __vortex_tunnel_start_request (char             * profile,
 				(*profile_content_reply) = vortex_frame_get_error_message ("537", 
 											   "Application level have denied to accept a TUNNEL request",
 											   NULL);
-				return false;
+				return axl_false;
 			} /* end if */
 		} /* end if */
 
@@ -952,7 +882,7 @@ int  __vortex_tunnel_start_request (char             * profile,
 		 * 
 		 * 1) we prepare the socket connection to not be closed even
 		 * if the channel 0 is closed on the given connection. */
-		vortex_connection_set_close_socket (connection, false);
+		vortex_connection_set_close_socket (connection, axl_false);
 
 		/* 2) use the pre read handler to finish the TUNNEL
 		 * configuration, issuing againt the greetings and
@@ -1002,7 +932,7 @@ int  __vortex_tunnel_start_request (char             * profile,
 			(*profile_content_reply) = vortex_frame_get_error_message ("500", 
 										   "General syntax error, poorly-formed XML",
 										   NULL);
-			return false;
+			return axl_false;
 		} /* end if */
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "connecting to the next TUNNEL HOP: \n%s", 
@@ -1012,13 +942,13 @@ int  __vortex_tunnel_start_request (char             * profile,
 		 * we have to ask to the next hop to open a tunnel
 		 * request, so, we have to create a new separated
 		 * connection */
-		new_connection = __vortex_tunnel_new_common (settings, false, NULL, NULL);
+		new_connection = __vortex_tunnel_new_common (settings, axl_false, NULL, NULL);
 
 		/* free settings no matter the result */
 		vortex_tunnel_settings_free (settings);
 
 		/* check the connection */
-		if (! vortex_connection_is_ok (new_connection, false)) {
+		if (! vortex_connection_is_ok (new_connection, axl_false)) {
 
 			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to contact next hop in TUNNEL configuration");
 
@@ -1026,7 +956,7 @@ int  __vortex_tunnel_start_request (char             * profile,
 			(*profile_content_reply) = vortex_frame_get_error_message ("450", 
 										   "Request action not taken, failed to connect to the next hop.",
 										   NULL);
-			return false;
+			return axl_false;
 		} /* end if */
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "reached next TUNNEL hop, and accepted tunnel, installing preread handlers");
@@ -1060,10 +990,8 @@ int  __vortex_tunnel_start_request (char             * profile,
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "accepted TUNNEL, replying <ok />");
 	
-	return true;
+	return axl_true;
 }
-
-#endif
 
 /** 
  * @brief Activates the required support to accept incoming TUNNEL
@@ -1087,17 +1015,13 @@ int  __vortex_tunnel_start_request (char             * profile,
  * @param accept_tunnel_data User space pointer to data that will be
  * passed to the previous handler.
  * 
- * @return true if the profile have been activated, or false if
+ * @return axl_true if the profile have been activated, or axl_false if
  * something have failed.
  */
-int                    vortex_tunnel_accept_negotiation (VortexCtx                  * ctx,
+axl_bool               vortex_tunnel_accept_negotiation (VortexCtx                  * ctx,
 							 VortexOnAcceptedConnection   accept_tunnel,
 							 axlPointer                   accept_tunnel_data)
 {
-#if ! defined(ENABLE_TUNNEL_SUPPORT)
-	return false;
-#else
-
 	/* configure handlers */
 	vortex_ctx_set_data (ctx, VORTEX_TUNNEL_ACCEPT, accept_tunnel);
 	vortex_ctx_set_data (ctx, VORTEX_TUNNEL_ACCEPT_DATA, accept_tunnel_data);
@@ -1126,8 +1050,7 @@ int                    vortex_tunnel_accept_negotiation (VortexCtx              
 	vortex_log (VORTEX_LEVEL_DEBUG, "activated TUNNEL profile");
 	
 	/* all required values installed */
-	return true;
-#endif
+	return axl_true;
 }
 
 /** 
@@ -1159,15 +1082,13 @@ void                   vortex_tunnel_set_resolver       (VortexCtx              
 							 VortexTunnelLocationResolver   resolver,
 							 axlPointer                     resolver_data)
 {
-#if defined(ENABLE_TUNNEL_SUPPORT)
 	v_return_if_fail (ctx);
 
 	/* configure handlers */
 	vortex_ctx_set_data (ctx, VORTEX_TUNNEL_RESOLVER, resolver);
 	vortex_ctx_set_data (ctx, VORTEX_TUNNEL_RESOLVER_DATA, resolver_data);
-#else
 	return;
-#endif
+
 }
 
 /**
