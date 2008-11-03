@@ -291,7 +291,7 @@ VortexChannelPool * vortex_xml_rpc_create_channel_pool     (VortexConnection    
 							    axlPointer                    user_data);
 
 VortexChannel     * vortex_xml_rpc_channel_pool_get_next   (VortexConnection * connection, 
-							    int                auto_inc, 
+							    axl_bool           auto_inc, 
 							    int                pool_id);
 
 
@@ -317,7 +317,7 @@ int                 vortex_xml_rpc_accept_negotiation      (VortexCtx           
 							    VortexXmlRpcServiceDispatch    service_dispatch,
 							    axlPointer                     dispatch_user_data);
 
-int                 vortex_xml_rpc_listener_parse_conf_and_start_listeners (VortexCtx * ctx);
+axl_bool            vortex_xml_rpc_listener_parse_conf_and_start_listeners (VortexCtx * ctx);
 
 /** 
  * @internal
@@ -385,9 +385,9 @@ axlPointer vortex_xml_rpc_unmarshall_array_sync (XmlRpcMethodResponse    * respo
 						 int                     * fault_code,
 						 char                   ** fault_string);
 
-int  vortex_xml_rpc_init    (VortexCtx * ctx);
+axl_bool  vortex_xml_rpc_init    (VortexCtx * ctx);
 
-void vortex_xml_rpc_cleanup (VortexCtx * ctx);
+void      vortex_xml_rpc_cleanup (VortexCtx * ctx);
 
 #endif
 

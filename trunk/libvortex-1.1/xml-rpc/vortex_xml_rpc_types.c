@@ -81,7 +81,7 @@ struct _XmlRpcMethodCall {
 	 * all invocators are released, however, for serveral, and
 	 * continuous invocations, this could be configured.
 	 */
-	int                   release_after_invoke;
+ 	axl_bool              release_after_invoke;
 
 	/** 
 	 * @internal
@@ -289,7 +289,7 @@ XmlRpcMethodCall * vortex_xml_rpc_method_call_new (const char  * methodName,
 
 	result                       = axl_new (XmlRpcMethodCall, 1);
 	result->methodName           = axl_strdup (methodName);
-	result->release_after_invoke = true;
+	result->release_after_invoke = axl_true;
 
 	/* set the number of parameters this method name will support
 	 * in the case the value is higher than 0 */
@@ -492,7 +492,7 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_new_double      (double         
  * @return A reference to the \ref XmlRpcMethodValue holding a bool
  * value.
  */
-XmlRpcMethodValue * vortex_xml_rpc_method_value_new_bool        (int                 value)
+XmlRpcMethodValue * vortex_xml_rpc_method_value_new_bool        (axl_bool                 value)
 {
 	/* create and return the xml method value */
 	return vortex_xml_rpc_method_value_new (XML_RPC_BOOLEAN_VALUE, INT_TO_PTR (value ? 1 : 0));
@@ -821,16 +821,16 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string2 (const char  * 
  * @param method_call The \ref XmlRpcMethodCall object where the value will be added.
  * @param value       The \ref XmlRpcMethodValue to be added.
  * 
- * @return true if the operation was completed, otherwise false is
+ * @return axl_true if the operation was completed, otherwise axl_false is
  * returned. 
  */
 int                 vortex_xml_rpc_method_call_add_value    (XmlRpcMethodCall  * method_call,
 							     XmlRpcMethodValue * value)
 {
 	/* perform a sanity check */
-	v_return_val_if_fail (method_call, false);
-	v_return_val_if_fail (value, false);
-	v_return_val_if_fail (method_call->count != method_call->added_count, false);
+	v_return_val_if_fail (method_call, axl_false);
+	v_return_val_if_fail (value, axl_false);
+	v_return_val_if_fail (method_call->count != method_call->added_count, axl_false);
 	
 	/* add the object */
 	method_call->params[method_call->added_count] = value;
@@ -838,7 +838,7 @@ int                 vortex_xml_rpc_method_call_add_value    (XmlRpcMethodCall  *
 	/* increase added count */
 	method_call->added_count++;
 	
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -870,8 +870,8 @@ int                 vortex_xml_rpc_method_call_add_value    (XmlRpcMethodCall  *
  * @param position    The position where operate
  * @param value       The value to be set.
  *
- * @return true if the operation was completed, otherwise false is
- * returned. The function can return false if the some parameter
+ * @return axl_true if the operation was completed, otherwise axl_false is
+ * returned. The function can return axl_false if the some parameter
  * received is NULL or the position configured is not compatible with
  * the method call configuration.
  */
@@ -882,9 +882,9 @@ int                 vortex_xml_rpc_method_call_set_value    (XmlRpcMethodCall  *
 	XmlRpcMethodValue * __previous;
 
 	/* perform some environment condition checks */
-	v_return_val_if_fail (method_call, false);
-	v_return_val_if_fail (value, false);
-	v_return_val_if_fail (0 <= position && position < method_call->count, false);
+	v_return_val_if_fail (method_call, axl_false);
+	v_return_val_if_fail (value, axl_false);
+	v_return_val_if_fail (0 <= position && position < method_call->count, axl_false);
 	
 	/* get previous value to perform a deallocation operation */
 	__previous = method_call->params[position];
@@ -899,7 +899,7 @@ int                 vortex_xml_rpc_method_call_set_value    (XmlRpcMethodCall  *
 	/* peter: hey jack, this function you have writtn' looks
 	 *        pretty simple, you are a great programmer! */
 	/* jack: i won't let you play with my PSP! */
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -916,7 +916,7 @@ int                 vortex_xml_rpc_method_call_set_value    (XmlRpcMethodCall  *
  * @param type        The type value for the method value object to be created.
  * @param value       The value associated to the method value object to be created.
  *
- * @return true if the operation was completed, otherwise false is
+ * @return axl_true if the operation was completed, otherwise axl_false is
  * returned.
  */
 int                 vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  * method_call,
@@ -925,12 +925,12 @@ int                 vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  *
 {
 	XmlRpcMethodValue * _value;
 
-	v_return_val_if_fail (method_call, false);
+	v_return_val_if_fail (method_call, axl_false);
 	
 	/* create the value to be added and check if it was succesful */
 	_value = vortex_xml_rpc_method_value_new (type, value);
 	if (_value == NULL)
-		return false;
+		return axl_false;
 
 	/* add the value created into the method call object */
 	return vortex_xml_rpc_method_call_add_value (method_call, _value);
@@ -949,7 +949,7 @@ int                 vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  *
  * @param type        The type value for the method value object to be created.
  * @param string_value  The value associated to the method value object to be created, in a string form.
  *
- * @return true if the operation was completed, otherwise false is
+ * @return axl_true if the operation was completed, otherwise axl_false is
  * returned.
  */
 int                 vortex_xml_rpc_method_call_create_value_from_string (XmlRpcMethodCall * method_call,
@@ -958,13 +958,13 @@ int                 vortex_xml_rpc_method_call_create_value_from_string (XmlRpcM
 {
 	XmlRpcMethodValue * _value;
 
-	v_return_val_if_fail (method_call, false);
-	v_return_val_if_fail (string_value, false);
+	v_return_val_if_fail (method_call, axl_false);
+	v_return_val_if_fail (string_value, axl_false);
 	
 	/* create the value to be added and check if it was succesful */
 	_value = vortex_xml_rpc_method_value_new_from_string (type, string_value);
 	if (_value == NULL)
-		return false;
+		return axl_false;
 
 	/* add the value created into the method call object */
 	return vortex_xml_rpc_method_call_add_value (method_call, _value);
@@ -1543,11 +1543,11 @@ void                vortex_xml_rpc_method_call_free         (XmlRpcMethodCall  *
  *
  * @param method_call The \ref XmlRpcMethodCall object to configure.
  *
- * @param release true to release the object after perform the
- * invocation, false to not deallocate it.
+ * @param release axl_true to release the object after perform the
+ * invocation, axl_false to not deallocate it.
  */
 void                vortex_xml_rpc_method_call_release_after_invoke (XmlRpcMethodCall * method_call, 
-								     int      release)
+								     axl_bool           release)
 {
 	v_return_if_fail (method_call);
 
@@ -1563,12 +1563,12 @@ void                vortex_xml_rpc_method_call_release_after_invoke (XmlRpcMetho
  * 
  * @param method_call The method call to check for its configuration.
  * 
- * @return true if the given method call object should be deallocated
- * after the invoke is performed. Otherwise false is returned.
+ * @return axl_true if the given method call object should be deallocated
+ * after the invoke is performed. Otherwise axl_false is returned.
  */
-int                 vortex_xml_rpc_method_call_must_release (XmlRpcMethodCall * method_call)
+axl_bool                 vortex_xml_rpc_method_call_must_release (XmlRpcMethodCall * method_call)
 {
-	v_return_val_if_fail (method_call, false);
+	v_return_val_if_fail (method_call, axl_false);
 
 	return method_call->release_after_invoke;
 }
@@ -1608,9 +1608,9 @@ int                 vortex_xml_rpc_method_call_must_release (XmlRpcMethodCall * 
  * method parameter number check, -1 must be used.
  *
  * 
- * @return true if method match, otherwise false is returned.
+ * @return axl_true if method match, otherwise axl_false is returned.
  */
-int                 vortex_xml_rpc_method_call_is           (XmlRpcMethodCall * method_call, 
+axl_bool            vortex_xml_rpc_method_call_is           (XmlRpcMethodCall * method_call, 
 							     const char       * method_name,
 							     int                param_num,
 							     ...)
@@ -1620,18 +1620,18 @@ int                 vortex_xml_rpc_method_call_is           (XmlRpcMethodCall * 
 	int                 iterator = 0;
 	XmlRpcMethodValue * value;
 
-	v_return_val_if_fail (method_call, false);
+	v_return_val_if_fail (method_call, axl_false);
 	
 	/* check method name */
 	if (method_name != NULL) {
 		if (!axl_cmp (method_call->methodName, method_name))
-			return false;
+			return axl_false;
 	}
 
 	/* check method parameter number */
 	if (param_num != -1) {
 		if (param_num != method_call->count)
-			return false;
+			return axl_false;
 	}
 
 	/* open std arg list */
@@ -1647,14 +1647,14 @@ int                 vortex_xml_rpc_method_call_is           (XmlRpcMethodCall * 
 			 * check for an argument that thet the
 			 * function doesn't have. */
 			va_end (args);
-			return false;
+			return axl_false;
 		}
 		
 		/* check type */
 		if (method_value_get_type (value) != type) {
 			/* method value type doesn't match */
 			va_end (args);
-			return false;
+			return axl_false;
 		}
 		
 		/* update iterator to check */
@@ -1664,7 +1664,7 @@ int                 vortex_xml_rpc_method_call_is           (XmlRpcMethodCall * 
 	/* close the standard arg */
 	va_end (args);
 
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -1775,7 +1775,7 @@ XmlRpcParamType     vortex_xml_rpc_method_value_get_type    (XmlRpcMethodValue *
  * This function not only is used to get param values for the type
  * \ref XML_RPC_INT_VALUE. Because the XML-RPC definition says that a
  * boolean value is represented with the integer values 0 and 1,
- * corresponding to false and true, this function is also used to get
+ * corresponding to axl_false and axl_true, this function is also used to get
  * the value for a \ref XML_RPC_BOOLEAN_VALUE.
  *
  * @param value The method value to get its value as an integer.
@@ -2300,14 +2300,14 @@ XmlRpcStruct         * vortex_xml_rpc_struct_new                       (int  cou
  * @param _struct The XmlRpcStruct to update by one its reference
  * counting.
  */
-int                     vortex_xml_rpc_struct_ref                       (XmlRpcStruct * _struct)
+axl_bool                     vortex_xml_rpc_struct_ref                       (XmlRpcStruct * _struct)
 {
-	v_return_val_if_fail (_struct, false);
+	v_return_val_if_fail (_struct, axl_false);
 	
 	/* update reference counting */
 	_struct->refcount++;
 
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -2334,11 +2334,11 @@ int                    vortex_xml_rpc_struct_get_member_count          (XmlRpcSt
  * @param _struct The struct reference to check.
  * @param member_count The number of members to check.
  * 
- * @return true if the provided names are equal on its values and its
- * order for the ones found on the provided struct. Otherwise, false
+ * @return axl_true if the provided names are equal on its values and its
+ * order for the ones found on the provided struct. Otherwise, axl_false
  * if it fails.
  */
-int                    vortex_xml_rpc_struct_check_member_names        (XmlRpcStruct * _struct,
+axl_bool               vortex_xml_rpc_struct_check_member_names        (XmlRpcStruct * _struct,
 									int            member_count,
 									...)
 {
@@ -2346,8 +2346,8 @@ int                    vortex_xml_rpc_struct_check_member_names        (XmlRpcSt
 	int     iterator = 0;
 	va_list args;
 
-	v_return_val_if_fail (_struct, false);
-	v_return_val_if_fail (_struct->count == member_count, false);
+	v_return_val_if_fail (_struct, axl_false);
+	v_return_val_if_fail (_struct->count == member_count, axl_false);
 
 	/* open std arg list */
 	va_start (args, member_count);
@@ -2364,7 +2364,7 @@ int                    vortex_xml_rpc_struct_check_member_names        (XmlRpcSt
 			va_end (args);
 
 			/* seems that the provided member is not equal */
-			return false;
+			return axl_false;
 		}
 		
 		/* next member */
@@ -2374,7 +2374,7 @@ int                    vortex_xml_rpc_struct_check_member_names        (XmlRpcSt
 	/* close the standard arg */
 	va_end (args);
 
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -2384,20 +2384,20 @@ int                    vortex_xml_rpc_struct_check_member_names        (XmlRpcSt
  * @param _struct The struct to check its members.
  * @param member_count The member count to check.
  * 
- * @return true if all types received matched with members
- * stored. Otherwise false is returned.
+ * @return axl_true if all types received matched with members
+ * stored. Otherwise axl_false is returned.
  */
-int                    vortex_xml_rpc_struct_check_member_types        (XmlRpcStruct * _struct,
-									int            member_count,
-									...)
+axl_bool                    vortex_xml_rpc_struct_check_member_types        (XmlRpcStruct * _struct,
+									     int            member_count,
+									     ...)
 {
 	char      * member_type;
 	int         iterator = 0;
-	int         error = false;
+	int         error = axl_false;
 	va_list     args;
 
-	v_return_val_if_fail (_struct, false);
-	v_return_val_if_fail (_struct->count == member_count, false);
+	v_return_val_if_fail (_struct, axl_false);
+	v_return_val_if_fail (_struct->count == member_count, axl_false);
 
 	/* open std arg list */
 	va_start (args, member_count);
@@ -2410,33 +2410,33 @@ int                    vortex_xml_rpc_struct_check_member_types        (XmlRpcSt
 
 		/* check the member type */
 		if (axl_cmp (member_type, "int") && _struct->members[iterator]->value->type != XML_RPC_INT_VALUE)
-			error = true;
+			error = axl_true;
 
 		if (axl_cmp (member_type, "boolean") && _struct->members[iterator]->value->type != XML_RPC_BOOLEAN_VALUE) {
-			error = true;
+			error = axl_true;
 		}
 
 		if (axl_cmp (member_type, "string") && _struct->members[iterator]->value->type != XML_RPC_STRING_VALUE)
-			error = true;
+			error = axl_true;
 
 		if (axl_cmp (member_type, "double") && _struct->members[iterator]->value->type != XML_RPC_DOUBLE_VALUE)
-			error = true;
+			error = axl_true;
 
 		if (axl_cmp (member_type, "base64") && _struct->members[iterator]->value->type != XML_RPC_BASE64_VALUE)
-			error = true;
+			error = axl_true;
 
 		if (axl_cmp (member_type, "date") && _struct->members[iterator]->value->type != XML_RPC_DATE_VALUE)
-			error = true;
+			error = axl_true;
 
 		if (axl_cmp (member_type, "struct")                                 && 
 		    _struct->members[iterator]->value->type != XML_RPC_STRUCT_VALUE &&
 		    _struct->members[iterator]->value->type != XML_RPC_NONE_VALUE )
-			error = true;
+			error = axl_true;
 
 		if (axl_cmp (member_type, "array")                                  && 
 		    _struct->members[iterator]->value->type != XML_RPC_ARRAY_VALUE  && 
 		    _struct->members[iterator]->value->type != XML_RPC_NONE_VALUE )
-			error = true;
+			error = axl_true;
 
 		/* check for error found and return */
 		if (error) {
@@ -2444,7 +2444,7 @@ int                    vortex_xml_rpc_struct_check_member_types        (XmlRpcSt
 			va_end (args);
 
 			/* seems that the provided member is not equal */
-			return false;
+			return axl_false;
 		}
 
 		/* next member */
@@ -2454,7 +2454,7 @@ int                    vortex_xml_rpc_struct_check_member_types        (XmlRpcSt
 	/* close the standard arg */
 	va_end (args);
 
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -2942,17 +2942,17 @@ XmlRpcArray          * vortex_xml_rpc_array_new                        (int  cou
  * @param array The XmlRpcArray to update by one its reference
  * counting.
  *
- * @return true if the function was able to update the reference,
- * otherwise false is returned.
+ * @return axl_true if the function was able to update the reference,
+ * otherwise axl_false is returned.
  */
-int                     vortex_xml_rpc_array_ref                       (XmlRpcArray * array)
+axl_bool                     vortex_xml_rpc_array_ref                       (XmlRpcArray * array)
 {
-	v_return_val_if_fail (array, false);
+	v_return_val_if_fail (array, axl_false);
 	
 	/* update reference counting */
 	array->refcount++;
 
-	return true;
+	return axl_true;
 }
 
 
