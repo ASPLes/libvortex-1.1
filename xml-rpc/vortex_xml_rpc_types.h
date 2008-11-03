@@ -594,11 +594,11 @@ char              * vortex_xml_rpc_method_call_marshall     (XmlRpcMethodCall  *
 void                vortex_xml_rpc_method_call_free         (XmlRpcMethodCall  * method_call);
 
 void                vortex_xml_rpc_method_call_release_after_invoke (XmlRpcMethodCall * method_call, 
-								     int      release);
+								     axl_bool           release);
 
-int                 vortex_xml_rpc_method_call_must_release (XmlRpcMethodCall * method_call);
+axl_bool            vortex_xml_rpc_method_call_must_release (XmlRpcMethodCall * method_call);
 
-int                 vortex_xml_rpc_method_call_is           (XmlRpcMethodCall * method_call, 
+axl_bool            vortex_xml_rpc_method_call_is           (XmlRpcMethodCall * method_call, 
 							     const char       * method_name,
 							     int                param_num,
 							     ...);
@@ -670,7 +670,7 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_new_int         (int            
 
 XmlRpcMethodValue * vortex_xml_rpc_method_value_new_double      (double              value);
 
-XmlRpcMethodValue * vortex_xml_rpc_method_value_new_bool        (int                 value);
+XmlRpcMethodValue * vortex_xml_rpc_method_value_new_bool        (axl_bool            value);
 
 XmlRpcMethodValue * vortex_xml_rpc_method_value_copy            (XmlRpcMethodValue * value);
 
@@ -824,15 +824,15 @@ char                 * vortex_xml_rpc_method_response_get_fault_string (XmlRpcMe
  */
 XmlRpcStruct         * vortex_xml_rpc_struct_new                       (int  count);
 
-int                    vortex_xml_rpc_struct_ref                       (XmlRpcStruct * _struct);
+axl_bool               vortex_xml_rpc_struct_ref                       (XmlRpcStruct * _struct);
 
 int                    vortex_xml_rpc_struct_get_member_count          (XmlRpcStruct * _struct);
 
-int                    vortex_xml_rpc_struct_check_member_names        (XmlRpcStruct * _struct,
+axl_bool               vortex_xml_rpc_struct_check_member_names        (XmlRpcStruct * _struct,
 									int            member_count,
 									...);
 
-int                    vortex_xml_rpc_struct_check_member_types        (XmlRpcStruct * _struct,
+axl_bool               vortex_xml_rpc_struct_check_member_types        (XmlRpcStruct * _struct,
 									int            member_count,
 									...);
 
@@ -876,7 +876,7 @@ void                   vortex_xml_rpc_struct_member_free               (XmlRpcSt
  */
 XmlRpcArray          * vortex_xml_rpc_array_new                        (int  count);
 
-int                    vortex_xml_rpc_array_ref                        (XmlRpcArray * _struct);
+axl_bool               vortex_xml_rpc_array_ref                        (XmlRpcArray * _struct);
 
 void                   vortex_xml_rpc_array_free                       (XmlRpcArray * array);
 
@@ -1033,7 +1033,7 @@ typedef void (*XmlRpcProcessArray) (XmlRpcArray * array, XmlRpcResponseStatus st
  * @return A newly allocated reference representing the native type or
  * NULL if it fails.
  */
-typedef axlPointer (*XmlRpcArrayUnMarshaller) (XmlRpcArray * array, int  dealloc);
+typedef axlPointer (*XmlRpcArrayUnMarshaller) (XmlRpcArray * array, axl_bool  dealloc);
 
 /** 
  * @brief Unmarshaller function that receives a XmlRpcStruct reference
@@ -1047,7 +1047,7 @@ typedef axlPointer (*XmlRpcArrayUnMarshaller) (XmlRpcArray * array, int  dealloc
  * @return A newly allocated reference representing the native type or
  * NULL if it fails.
  */
-typedef axlPointer (*XmlRpcStructUnMarshaller) (XmlRpcStruct * _struct, int  dealloc);
+typedef axlPointer (*XmlRpcStructUnMarshaller) (XmlRpcStruct * _struct, axl_bool  dealloc);
 
 
 
