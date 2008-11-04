@@ -141,8 +141,8 @@ typedef void (*VortexConnectionNew) (VortexConnection * connection, axlPointer u
  * to be created. The handler receives a reference to the connection
  * where the channel is being requested. 
  * 
- * If peer agree to create the channel true must be
- * returned. Otherwise, false must be used.
+ * If peer agree to create the channel axl_true must be
+ * returned. Otherwise, axl_false must be used.
  * 
  * You can get the reference to the \ref VortexChannel object in
  * trasint to be created, by using \ref vortex_connection_get_channel,
@@ -153,11 +153,11 @@ typedef void (*VortexConnectionNew) (VortexConnection * connection, axlPointer u
  * @param connection the connection where the channel is going to be created.
  * @param user_data user defined data passed in to this async notifier.
  * 
- * @return true if the new channel can be created or false if not.
+ * @return axl_true if the new channel can be created or axl_false if not.
  */
-typedef  int      (*VortexOnStartChannel)      (int  channel_num,
-						VortexConnection * connection,
-						axlPointer user_data);
+typedef  axl_bool      (*VortexOnStartChannel)      (int  channel_num,
+						     VortexConnection * connection,
+						     axlPointer user_data);
 
 
 /** 
@@ -218,16 +218,16 @@ typedef  int      (*VortexOnStartChannel)      (int  channel_num,
  * @param user_data User defined data to be passed in to the handler
  * when it is executed.
  * 
- * @return true if the new channel can be created or false if not. 
+ * @return axl_true if the new channel can be created or axl_false if not. 
  */
-typedef int      (*VortexOnStartChannelExtended) (char              * profile,
-						  int                 channel_num,
-						  VortexConnection  * connection,
-						  char              * serverName,
-						  char              * profile_content,
-						  char             ** profile_content_reply,
-						  VortexEncoding      encoding,
-						  axlPointer          user_data);
+typedef axl_bool      (*VortexOnStartChannelExtended) (char              * profile,
+						       int                 channel_num,
+						       VortexConnection  * connection,
+						       char              * serverName,
+						       char              * profile_content,
+						       char             ** profile_content_reply,
+						       VortexEncoding      encoding,
+						       axlPointer          user_data);
 /** 
  * @brief Async notification for incoming close channel request.
  * 
@@ -240,8 +240,8 @@ typedef int      (*VortexOnStartChannelExtended) (char              * profile,
  * notification. Close notification is received when remote peer wants
  * to close some channel.
  * 
- * The handler must return true if the channel can be close, otherwise
- * false must be returned.
+ * The handler must return axl_true if the channel can be close, otherwise
+ * axl_false must be returned.
  *
  * If you need to not perform an answer at this function, allowing to
  * deffer the decision, you can use \ref
@@ -255,12 +255,12 @@ typedef int      (*VortexOnStartChannelExtended) (char              * profile,
  *
  * @param user_data User defined data passed in to this Async notifier.
  * 
- * @return true if channel can be closed. To reject the close request
- * return false.
+ * @return axl_true if channel can be closed. To reject the close request
+ * return axl_false.
  */
-typedef  int      (*VortexOnCloseChannel)      (int  channel_num,
-						VortexConnection * connection,
-						axlPointer user_data);
+typedef  axl_bool      (*VortexOnCloseChannel)      (int  channel_num,
+						     VortexConnection * connection,
+						     axlPointer user_data);
 
 /** 
  * @brief Async notification for incoming close channel requests that
@@ -430,7 +430,7 @@ typedef VortexChannel * (* VortexChannelPoolCreate) (VortexConnection     * conn
  * blocked by calling that function.
  *
  * Data received is the channel num this notification applies to, the
- * channel closing status and if was_closed is false (the channel was
+ * channel closing status and if was_closed is axl_false (the channel was
  * not closed) code hold error code returned and msg the message
  * returned by remote peer. 
  *
@@ -444,7 +444,7 @@ typedef VortexChannel * (* VortexChannelPoolCreate) (VortexConnection     * conn
  */
 typedef void     (*VortexOnClosedNotificationFull) (VortexConnection * connection,
 						    int                channel_num,
-						    int                was_closed,
+						    axl_bool           was_closed,
 						    const char       * code,
 						    const char       * msg,
 						    axlPointer         user_data);
@@ -465,7 +465,7 @@ typedef void     (*VortexOnClosedNotificationFull) (VortexConnection * connectio
  * blocked by calling that function.
  *
  * Data received is the channel num this notification applies to, the
- * channel closing status and if was_closed is false (the channel was
+ * channel closing status and if was_closed is axl_false (the channel was
  * not closed) code hold error code returned and msg the message
  * returned by remote peer. 
  *
@@ -478,7 +478,7 @@ typedef void     (*VortexOnClosedNotificationFull) (VortexConnection * connectio
  * which received this handler.
  */
 typedef void     (*VortexOnClosedNotification) (int             channel_num,
-						int             was_closed,
+						axl_bool        was_closed,
 						const char     * code,
 						const char     * msg);
 
@@ -562,13 +562,13 @@ typedef void     (*VortexConnectionOnCloseFull)  (VortexConnection * connection,
  * incoming connections).
  *
  * This handler is executed once the connection is accepted and
- * registered in the vortex engine. If the function return false, the
+ * registered in the vortex engine. If the function return axl_false, the
  * connection will be dropped, without reporting any error to the
  * remote peer.
  *
  * This function could be used as a initial configuration for every
  * connection. So, if it is only required to make a connection
- * initialization, the handler provided must always return true to
+ * initialization, the handler provided must always return axl_true to
  * avoid dropping the connection.
  *
  * This handler is also used by the TUNNEL profile implementation to
@@ -584,10 +584,10 @@ typedef void     (*VortexConnectionOnCloseFull)  (VortexConnection * connection,
  *
  * @param data The connection data to be passed in to the handler. 
  * 
- * @return true if the connection is finally accepted. false to drop
+ * @return axl_true if the connection is finally accepted. axl_false to drop
  * the connection, rejecting the incoming connection.
  */
-typedef int      (*VortexOnAcceptedConnection)   (VortexConnection * connection, axlPointer data);
+typedef axl_bool      (*VortexOnAcceptedConnection)   (VortexConnection * connection, axlPointer data);
 
 /** 
  * @brief Async notifications for TLS activation.
@@ -642,11 +642,11 @@ typedef void     (*VortexTlsActivation)          (VortexConnection * connection,
  * @param connection The connection where the TLS request was received.
  * @param serverName Optional serverName value requesting, if defined, to act as the server defined by this value.
  * 
- * @return true if the TLS request should be accepted. false to deny
+ * @return axl_true if the TLS request should be accepted. axl_false to deny
  * the session TLS-fication.
  */
-typedef int      (*VortexTlsAcceptQuery) (VortexConnection * connection,
-					  char             * serverName);
+typedef axl_bool      (*VortexTlsAcceptQuery) (VortexConnection * connection,
+					       char             * serverName);
 
 /** 
  * @brief Handler definition for those function allowing to locate the
@@ -812,8 +812,8 @@ typedef axlPointer (* VortexTlsCtxCreation) (VortexConnection * connection,
  *  - \ref vortex_tls_set_post_check
  *  - \ref vortex_tls_set_default_post_check
  *
- * The function must return true to signal that checkings are passed,
- * otherwise false must be returned. In such case, the connection will
+ * The function must return axl_true to signal that checkings are passed,
+ * otherwise axl_false must be returned. In such case, the connection will
  * be dropped.
  * 
  * @param connection The connection that was TLS-fixated and
@@ -827,13 +827,13 @@ typedef axlPointer (* VortexTlsCtxCreation) (VortexConnection * connection,
  * 
  * @param ctx The SSL_CTX object created for the process.
  * 
- * @return true to accept the connection, otherwise, false must be
+ * @return axl_true to accept the connection, otherwise, axl_false must be
  * returned.
  */
-typedef int  (*VortexTlsPostCheck) (VortexConnection * connection, 
-				    axlPointer         user_data, 
-				    axlPointer         ssl, 
-				    axlPointer         ctx);
+typedef axl_bool  (*VortexTlsPostCheck) (VortexConnection * connection, 
+					 axlPointer         user_data, 
+					 axlPointer         ssl, 
+					 axlPointer         ctx);
 						  
 
 /** 
@@ -920,12 +920,12 @@ typedef int      (* VortexIoWaitOnFdGroup)       (axlPointer             fd_grou
  * @param fd_group The socket descriptor group to be used as
  * destination for the socket.
  * 
- * @return returns true if the socket descriptor was added, otherwise,
- * false is returned.
+ * @return returns axl_true if the socket descriptor was added, otherwise,
+ * axl_false is returned.
  */
-typedef int      (* VortexIoAddToFdGroup)        (int                    fds,
-						  VortexConnection     * connection,
-						  axlPointer             fd_group);
+typedef axl_bool      (* VortexIoAddToFdGroup)        (int                    fds,
+						       VortexConnection     * connection,
+						       axlPointer             fd_group);
 
 /** 
  * @brief IO handler definition to perform the "is set" the fd set
@@ -938,21 +938,21 @@ typedef int      (* VortexIoAddToFdGroup)        (int                    fds,
  *
  * @param user_data User defined pointer provided to the function.
  *
- * @return true if the socket descriptor is active in the given fd
+ * @return axl_true if the socket descriptor is active in the given fd
  * group.
  *
  */
-typedef int      (* VortexIoIsSetFdGroup)        (int                    fds,
-						  axlPointer             fd_group,
-						  axlPointer             user_data);
+typedef axl_bool      (* VortexIoIsSetFdGroup)        (int                    fds,
+						       axlPointer             fd_group,
+						       axlPointer             user_data);
 
 /** 
  * @brief Handler definition to allow implementing the have dispatch
  * function at the vortex io module.
  *
- * An I/O wait implementation must return true to notify vortex engine
+ * An I/O wait implementation must return axl_true to notify vortex engine
  * it support automatic dispatch (which is a far better mechanism,
- * supporting better large set of descriptors), or false, to notify
+ * supporting better large set of descriptors), or axl_false, to notify
  * that the \ref vortex_io_waiting_set_is_set_fd_group mechanism must
  * be used.
  *
@@ -961,10 +961,10 @@ typedef int      (* VortexIoIsSetFdGroup)        (int                    fds,
  * 
  * @param fd_group A reference to the object created by the I/O waiting mechanism.
  * p
- * @return Returns true if the I/O waiting mechanism support automatic
- * dispatch, otherwise false is returned.
+ * @return Returns axl_true if the I/O waiting mechanism support automatic
+ * dispatch, otherwise axl_false is returned.
  */
-typedef int      (* VortexIoHaveDispatch)         (axlPointer             fd_group);
+typedef axl_bool      (* VortexIoHaveDispatch)         (axlPointer             fd_group);
 
 /** 
  * @brief User space handler to implement automatic dispatch for I/O
@@ -1000,7 +1000,7 @@ typedef void     (* VortexIoDispatchFunc)         (int                    fds,
  *  - \ref vortex_io_waiting_invoke_dispatch (internally)
  *
  * If this handler is implemented, the \ref VortexIoHaveDispatch must
- * also be implemented, making it to always return true. If this two
+ * also be implemented, making it to always return axl_true. If this two
  * handler are implemented, its is not required to implement the "is
  * set?" functionality provided by \ref VortexIoIsSetFdGroup (\ref
  * vortex_io_waiting_set_is_set_fd_group).
@@ -1029,8 +1029,8 @@ typedef void     (* VortexIoDispatch)             (axlPointer             fd_gro
  *  - \ref vortex_connection_set_profile_mask
  *
  * The handler (a mask) is executed for each profile to be
- * filtered. The function based on the data received must return true
- * (to filter a profile) or false (to not filter it).
+ * filtered. The function based on the data received must return axl_true
+ * (to filter a profile) or axl_false (to not filter it).
  *
  * The function receives the connection where the filtering is taking
  * place, the profile uri and a user defined pointer configured at the
@@ -1075,24 +1075,24 @@ typedef void     (* VortexIoDispatch)             (axlPointer             fd_gro
  * // which may not be defined
  * if (channel_num > 0 && error_msg) {
  *      (* error_msg) = axl_strdup ("Profile not accepted due to policy configuration");
- *      // return true to filter the uri
- *      return true;
+ *      // return axl_true to filter the uri
+ *      return axl_true;
  * }
  * \endcode
  * 
- * NOTE: You must not define error_msg and return false. 
+ * NOTE: You must not define error_msg and return axl_false. 
  *
  * @param user_data User defined pointer passed to the function.
  * 
- * @return true to filter the uri, false if not.
+ * @return axl_true to filter the uri, axl_false if not.
  */
-typedef int      (* VortexProfileMaskFunc)       (VortexConnection      * connection,
-						  int                     channel_num,
-						  const char            * uri,
-						  const char            * profile_content,
-						  const char            * serverName,
-						  char                 ** error_msg,
-						  axlPointer              user_data);
+typedef axl_bool      (* VortexProfileMaskFunc)       (VortexConnection      * connection,
+						       int                     channel_num,
+						       const char            * uri,
+						       const char            * profile_content,
+						       const char            * serverName,
+						       char                 ** error_msg,
+						       axlPointer              user_data);
 
 /**
  * @brief Handler definition for the set of functions that allow the
@@ -1144,11 +1144,11 @@ typedef int (*VortexChannelFrameSize) (VortexChannel * channel,
  * @param user_data User defined data which is provided to the \ref
  * vortex_connection_get_channel_by_func.
  *
- * @return true to select the channel, otherwise false must be
+ * @return axl_true to select the channel, otherwise axl_false must be
  * returned.
  */
-typedef int  (*VortexChannelSelector) (VortexChannel * channel, 
-				       axlPointer      user_data);
+typedef axl_bool  (*VortexChannelSelector) (VortexChannel * channel, 
+					    axlPointer      user_data);
 
 /** 
  * @brief Handler definition used to notify that a channel was added
