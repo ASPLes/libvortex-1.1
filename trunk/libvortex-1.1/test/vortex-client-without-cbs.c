@@ -109,7 +109,7 @@ int main (int argc, char ** argv) {
 
 	/* create a connection in a blocking manner */
 	connection = vortex_connection_new (ctx, "localhost", "4400", NULL, NULL);
-	if (! vortex_connection_is_ok (connection, false)) {
+	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Unable to create the connection..\n");
 		goto finish;
 	}
@@ -136,7 +136,7 @@ int main (int argc, char ** argv) {
 	vortex_channel_set_close_notify_handler (channel, close_request_received, close_queue);
 				      
 	/* Hey Sam, a really simple event loop K-) */
-	while (true) {
+	while (axl_true) {
 
 		/* send a frame */
 		if (iterator < 10) {
@@ -205,7 +205,7 @@ int main (int argc, char ** argv) {
 	vortex_connection_close (connection);
 
 	/* then the vortex engine */
-	vortex_exit_ctx (ctx, true);
+	vortex_exit_ctx (ctx, axl_true);
 
 	return 0;
 }
@@ -366,7 +366,7 @@ void handle_close_request (int close_pipe[2], VortexAsyncQueue * close_queue)
 	 * example of course) */
 	vortex_channel_notify_close (channel, 
 				     /* close the channel */
-				     true, 
+				     axl_true, 
 				     /* msg no, the parameter received 
 					in the close notify */
 				     msg_no);

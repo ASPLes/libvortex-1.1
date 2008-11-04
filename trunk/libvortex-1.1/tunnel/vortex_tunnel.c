@@ -358,8 +358,8 @@ VortexConnection     * vortex_tunnel_new              (VortexTunnelSettings * se
 						       VortexConnectionNew    on_connected,
 						       axlPointer             user_data)
 {
-	/* not implemented */
-	return NULL;
+	/* call to common implementation */
+	return __vortex_tunnel_new_common (settings, axl_true, on_connected, user_data);
 }
 
 /** 

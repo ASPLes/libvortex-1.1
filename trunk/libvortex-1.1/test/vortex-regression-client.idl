@@ -21,12 +21,12 @@ xml-rpc interface test {
 	/*** TEST 03 ***/
 	bool get_the_bool_1 () {
 		/* return false */
-		return false;
+		return axl_false;
 	}
 
 	bool get_the_bool_2 () {
 		/* return true */
-		return true;
+		return axl_true;
 	}
 
 	/*** TEST 04 ***/

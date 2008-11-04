@@ -76,7 +76,7 @@ void frame_received (VortexChannel    * channel,
 			break;
 		}
 
-	} while (true);
+	} while (axl_true);
 	
 	/* send the last reply. */
 	if (!vortex_channel_finalize_ans_rpy (channel, vortex_frame_get_msgno (frame))) {
@@ -140,24 +140,24 @@ void frame_received_with_msg (VortexChannel    * channel,
 	return;
 }
 
-int      start_channel (int                channel_num, 
-			VortexConnection * connection, 
-			axlPointer           user_data)
+axl_bool      start_channel (int                channel_num, 
+			     VortexConnection * connection, 
+			     axlPointer           user_data)
 {
 	/* implement profile requirement for allowing starting a new
 	 * channel to return false denies channel creation to return
 	 * true allows create the channel */
-	return true;
+	return axl_true;
 }
 
-int      close_channel (int                channel_num, 
-			VortexConnection * connection, 
-			axlPointer         user_data)
+axl_bool      close_channel (int                channel_num, 
+			     VortexConnection * connection, 
+			     axlPointer         user_data)
 {
 	/* implement profile requirement for allowing to closeing a
 	 * the channel to return false denies channel closing to
 	 * return true allows to close the channel */
-	return true;
+	return axl_true;
 }
 
 int  main (int  argc, char ** argv) 
@@ -192,7 +192,7 @@ int  main (int  argc, char ** argv)
 	vortex_listener_wait (ctx);
 	
 	/* end vortex function */
-	vortex_exit_ctx (ctx, true);
+	vortex_exit_ctx (ctx, axl_true);
 
 	return 0;
 }

@@ -129,7 +129,7 @@ int main (int argc, char ** argv)
 		/* creates a new connection against localhost:44000 */
 		printf ("(iterator=%d) connecting to localhost:44000...", iterator);
 		connections[iterator] =connection_new ();
-		if (!vortex_connection_is_ok (connections[iterator], false)) {
+		if (!vortex_connection_is_ok (connections[iterator], axl_false)) {
 			printf ("..failed to create a connection on iteration=%d: %s..\n", iterator, vortex_connection_get_message (connections[iterator]));
 			break;
 			/* break; */
@@ -172,7 +172,7 @@ int main (int argc, char ** argv)
 	vortex_tunnel_settings_free (tunnel_settings);
 
 	/* end vortex function */
-	vortex_exit_ctx (ctx, true);
+	vortex_exit_ctx (ctx, axl_true);
 
 #if defined(AXL_OS_UNIX)
 	/* substract */

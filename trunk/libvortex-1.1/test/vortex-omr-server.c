@@ -63,8 +63,8 @@ int      start_channel (int                channel_num,
 {
 	/* implement profile requirement for allowing starting a new
 	 * channel to return false denies channel creation to return
-	 * true allows create the channel */
-	return true;
+	 * axl_true allows create the channel */
+	return axl_true;
 }
 
 int      close_channel (int                channel_num, 
@@ -73,8 +73,8 @@ int      close_channel (int                channel_num,
 {
 	/* implement profile requirement for allowing to closeing a
 	 * the channel to return false denies channel closing to
-	 * return true allows to close the channel */
-	return true;
+	 * return axl_true allows to close the channel */
+	return axl_true;
 }
 
 int  main (int  argc, char ** argv) 
@@ -106,7 +106,7 @@ int  main (int  argc, char ** argv)
 	vortex_listener_wait (ctx);
 	
 	/* end vortex function */
-	vortex_exit_ctx (ctx, true);
+	vortex_exit_ctx (ctx, axl_true);
 
 	return 0;
 }

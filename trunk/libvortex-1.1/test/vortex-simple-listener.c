@@ -32,9 +32,9 @@ int      start_channel (int                channel_num,
 	/* implement profile requirement for allowing starting a new
 	 * channel */
 
-	/* to return false denies channel creation to return true
+	/* to return axl_false denies channel creation to return axl_true
 	 * allows create the channel */
-	return true;
+	return axl_true;
 }
 
 int      close_channel (int                channel_num, 
@@ -42,9 +42,9 @@ int      close_channel (int                channel_num,
 			axlPointer           user_data)
 {
 	/* implement profile requirement for allowing to closeing a
-	 * the channel to return FALSE denies channel closing to
-	 * return true allows to close the channel */
-	return true;
+	 * the channel to return axl_false denies channel closing to
+	 * return axl_true allows to close the channel */
+	return axl_true;
 }
 
 int      on_accepted (VortexConnection * connection, axlPointer data)
@@ -53,8 +53,8 @@ int      on_accepted (VortexConnection * connection, axlPointer data)
 		 vortex_connection_get_host (connection),
 		 vortex_connection_get_port (connection));
 
-	/* return true to accept the connection to be created */
-	return true;
+	/* return axl_true to accept the connection to be created */
+	return axl_true;
 }
 
 int  main (int  argc, char ** argv) 
@@ -87,7 +87,7 @@ int  main (int  argc, char ** argv)
 	vortex_listener_wait (ctx);
 	
 	/* end vortex function */
-	vortex_exit_ctx (ctx, true);
+	vortex_exit_ctx (ctx, axl_true);
 
 	return 0;
 }

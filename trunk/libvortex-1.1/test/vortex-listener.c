@@ -32,7 +32,7 @@ void on_ready (char  * host, int  port, VortexStatus status, char  * message, ax
 		printf ("error at: %s\n", message);
 
 		/* exit from vortex  */
-		vortex_exit_ctx (ctx, false);
+		vortex_exit_ctx (ctx, axl_false);
 
 	}else {
 		printf ("ready on: %s:%d, message: %s\n", host, port, message);
@@ -70,11 +70,11 @@ int      start_channel (int  channel_num, VortexConnection * connection, axlPoin
 
 	if (channel_num == 4) {
 		printf ("channel 4 can not be created\n");
-		return false;
+		return axl_false;
 	}
 
 	printf ("create the channel..\n");
-	return true;
+	return axl_true;
 }
 
 int  main (int  argc, char ** argv) 

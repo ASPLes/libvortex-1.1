@@ -60,7 +60,7 @@
 #endif
 
 /* disable time checks */
-int     disable_time_checks = false;
+axl_bool disable_time_checks = axl_false;
 
 /* listener location */
 char   * listener_host = NULL;
@@ -206,7 +206,7 @@ void subs (struct timeval stop, struct timeval start, struct timeval * _result)
  * @internal Allows to know if the connection must be created directly or
  * through the tunnel.
  */
-int                    tunnel_tested   = false;
+axl_bool               tunnel_tested   = axl_false;
 VortexTunnelSettings * tunnel_settings = NULL;
 
 /* listener context */
@@ -227,9 +227,9 @@ VortexConnection * connection_new (void)
 /** 
  * @brief Checks current implementation for async queues.
  *
- * @return true if checks runs ok, otherwise false is returned.
+ * @return axl_true if checks runs ok, otherwise axl_false is returned.
  */
-int  test_00 (void) 
+axl_bool  test_00 (void) 
 {
 	VortexAsyncQueue * queue;
 
@@ -247,30 +247,30 @@ int  test_00 (void)
 
 	if (vortex_async_queue_length (queue) != 3) {
 		fprintf (stderr, "found different queue length, expected 3");
-		return false;
+		return axl_false;
 	}
 
 	/* check data poping */
 	if (PTR_TO_INT (vortex_async_queue_pop (queue)) != 1) {
 		fprintf (stderr, "expected to find value=1");
-		return false;
+		return axl_false;
 	}
 
 	/* check data poping */
 	if (PTR_TO_INT (vortex_async_queue_pop (queue)) != 2) {
 		fprintf (stderr, "expected to find value=1");
-		return false;
+		return axl_false;
 	}
 
 	/* check data poping */
 	if (PTR_TO_INT (vortex_async_queue_pop (queue)) != 3) {
 		fprintf (stderr, "expected to find value=1");
-		return false;
+		return axl_false;
 	}
 
 	if (vortex_async_queue_length (queue) != 0) {
 		fprintf (stderr, "found different queue length, expected 0");
-		return false;
+		return axl_false;
 	}
 
 	/* free the queue */
@@ -289,19 +289,20 @@ int  test_00 (void)
 	vortex_async_queue_unref (queue);
 	vortex_async_queue_unref (queue);
 
-	return true;
+	return axl_true;
 }
 
-int  test_01 (void) {
+axl_bool  test_01 (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		printf ("Test 01: failed to create connection..");
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 
 	/* create the queue */
@@ -318,7 +319,7 @@ int  test_01 (void) {
 				      NULL, NULL);
 	if (channel == NULL) {
 		printf ("Unable to create the channel..");
-		return false;
+		return axl_false;
 	}
 
 	/* ok, close the channel */
@@ -330,11 +331,11 @@ int  test_01 (void) {
 	/* free queue */
 	vortex_async_queue_unref (queue);
 
-	/* return true */
-	return true;
+	/* return axl_true */
+	return axl_true;
 }
 
-int  test_01a (void) {
+axl_bool  test_01a (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
@@ -345,9 +346,9 @@ int  test_01a (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 
 	/* create the queue */
@@ -364,7 +365,7 @@ int  test_01a (void) {
 				      NULL, NULL);
 	if (channel == NULL) {
 		printf ("Unable to create the channel..");
-		return false;
+		return axl_false;
 	}
 
 	/* large zero binary frames */
@@ -379,7 +380,7 @@ int  test_01a (void) {
 					       64 * 1024,
 					       NULL)) {
 			printf ("Failed to send binary zeroed content..\n");
-			return false;
+			return axl_false;
 		} /* end if */
 
 		/* update iterator */
@@ -397,7 +398,7 @@ int  test_01a (void) {
 		
 		if (frame == NULL) {
 			printf ("Expected to find binary zeroed frame.. but null reference was found..\n");
-			return false;
+			return axl_false;
 		} /* end if */
 		
 
@@ -405,7 +406,7 @@ int  test_01a (void) {
 		if (vortex_frame_get_payload_size (frame) != 1024 * 64) {
 			printf ("Expected to find a frame of size %d, but found %d..\n",
 				1024 * 64, vortex_frame_get_payload_size (frame));
-			return false;
+			return axl_false;
 		} /* end if */
 
 		/* get the content and check all of its positions */
@@ -439,8 +440,8 @@ int  test_01a (void) {
 	/* free queue */
 	vortex_async_queue_unref (queue);
 
-	/* return true */
-	return true;
+	/* return axl_true */
+	return axl_true;
 }
 
 void test_01b_created (int             channel_num, 
@@ -477,16 +478,16 @@ void test_01b_created (int             channel_num,
 	return;
 }
 
-int  test_01b (void) {
+axl_bool  test_01b (void) {
 	VortexConnection  * connection;
 	VortexAsyncQueue  * queue;
 	int                 iterator;
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 
 	/* create the queue */
@@ -512,7 +513,7 @@ int  test_01b (void) {
 		/* unref the queue */
 		if (PTR_TO_INT (vortex_async_queue_pop (queue)) != 3) {
 			printf ("Failed to close the channel..\n");
-			return false;
+			return axl_false;
 		} /* end if */
 
 		iterator++;
@@ -523,11 +524,11 @@ int  test_01b (void) {
 
 	vortex_async_queue_unref (queue);
 
-	return true;
+	return axl_true;
 
 } /* end test_01b */
 
-int  test_01c (void) {
+axl_bool  test_01c (void) {
 	VortexConnection  * connection;
 	VortexAsyncQueue  * queue;
 	VortexChannel     * channel;
@@ -536,9 +537,9 @@ int  test_01c (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 
 	/* create the queue */
@@ -559,13 +560,13 @@ int  test_01c (void) {
 		
 		if (channel == NULL) {
 			printf ("Unable to create channel for fast send..\n");
-			return false;
+			return axl_false;
 		} /* end if */
 
 		/* check connection here */
-		if (! vortex_connection_is_ok (connection, false)) {
+		if (! vortex_connection_is_ok (connection, axl_false)) {
 			printf ("Test 01-c: (1) Failed to check connection, it should be running..\n");
-			return false;
+			return axl_false;
 		} /* end if */
 
 		/* receive both messages */
@@ -578,7 +579,7 @@ int  test_01c (void) {
 		/* send reply */
 		if (! vortex_channel_send_rpy (channel, "", 0, vortex_frame_get_msgno (frame))) {
 			printf ("Test 01-c: (1.1.1) Expected to be able to reply to message received..\n");
-			return false;
+			return axl_false;
 		} /* end if */
 
 		vortex_frame_unref (frame);
@@ -592,7 +593,7 @@ int  test_01c (void) {
 
 		if (! vortex_channel_send_rpy (channel, "", 0, vortex_frame_get_msgno (frame))) {
 			printf ("Test 01-c: (1.1.1) Expected to be able to reply to message received..\n");
-			return false;
+			return axl_false;
 		} /* end if */
 
 		vortex_frame_unref (frame);
@@ -600,22 +601,22 @@ int  test_01c (void) {
 		/* close channel */
 		if (! vortex_channel_close (channel, NULL)) {
 			printf ("Unable to close the channel..\n");
-			return false;
+			return axl_false;
 		}
 
 		/* check connection here */
-		if (! vortex_connection_is_ok (connection, false)) {
+		if (! vortex_connection_is_ok (connection, axl_false)) {
 			printf ("Test 01-c: (2) Failed to check connection, it should be running..\n");
-			return false;
+			return axl_false;
 		} /* end if */
 		
 		iterator++;
 	} /* end while */
 
 	/* check connection here */
-	if (! vortex_connection_is_ok (connection, false)) {
+	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 01-c: (3) Failed to check connection, it should be running..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* close the connection */
@@ -623,11 +624,11 @@ int  test_01c (void) {
 
 	vortex_async_queue_unref (queue);
 	
-	return true;
+	return axl_true;
 
 } /* end test_01c */
 
-int  test_01d_01 (void)
+axl_bool  test_01d_01 (void)
 {
 	char             * mime_message;
 	int                mime_message_size;
@@ -639,29 +640,29 @@ int  test_01d_01 (void)
 	mime_message = vortex_regression_common_read_file ("mime.example.1.txt", NULL);
 	if (mime_message == NULL) {
 		printf ("ERROR: failed to load mime message: %s", "mime.example.1.txt");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* create an artificial frame */
 	mime_message_size = strlen (mime_message);
 	frame             = vortex_frame_create (ctx, VORTEX_FRAME_TYPE_MSG,
-						 0, 0, false, 0, mime_message_size, 0, mime_message);
+						 0, 0, axl_false, 0, mime_message_size, 0, mime_message);
 	if (frame == NULL) {
 		printf ("ERROR: expected to create a frame but NULL reference was found..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* activate mime support on the frame */
 	if (! vortex_frame_mime_process (frame)) {
 		printf ("ERROR: expected to find proper MIME process, but a failure was found..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* check mime header */
 	if (vortex_frame_get_mime_header_size (frame) != 1418) {
 		printf ("ERROR: expected to find MIME Headers %d but found %d..\n",
 			vortex_frame_get_mime_header_size (frame), 1418);
-		return false;
+		return axl_false;
 	}
 
 	/* check mime body */
@@ -669,34 +670,34 @@ int  test_01d_01 (void)
 		printf ("ERROR: expected to find MIME BODY %d but found %d (%s): '%s..\n",
 			vortex_frame_get_payload_size (frame), 4943, "mime.example.1.txt", 
 			(char*) vortex_frame_get_payload (frame));
-		return false;
+		return axl_false;
 	}
 
 	/* check content */
 	mime_body = vortex_regression_common_read_file ("mime.example.body.1.txt", NULL);
 	if (mime_body == NULL) {
 		printf ("ERROR: failed to load mime message: %s", "mime.example.body.1.txt");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* check content */
 	if (! axl_cmp (mime_body, vortex_frame_get_payload (frame))) {
 		printf ("ERROR: expected to find same mime body (%s) content (size %d != %d)..\n", "mime.example.body.1.txt",
 			(int) strlen (mime_body), (int) strlen (vortex_frame_get_payload (frame)));
-		return false;
+		return axl_false;
 	}
 
 	/* check headers */
 	if (! axl_cmp ("8bit", vortex_frame_get_transfer_encoding (frame))) {
 		printf ("ERROR: expected Content-Transfer-Encoding with 8bit, but found %s",
 			vortex_frame_get_transfer_encoding (frame));
-		return false;
+		return axl_false;
 	}
 
 	if (! axl_cmp ("text/plain; charset=\"ISO-8859-1\"", vortex_frame_get_content_type (frame))) {
 		printf ("ERROR: expected Content-Type with %s, but found %s",
 			"text/plain; charset=\"ISO-8859-1\"", vortex_frame_get_content_type (frame));
-		return false;
+		return axl_false;
 	}
 
 	/* check all headers */
@@ -705,27 +706,27 @@ int  test_01d_01 (void)
 	if (! axl_cmp ("<cyrus@dolphin>", vortex_frame_mime_header_content (header))) {
 		printf ("ERROR: expected to find %s, but found %s..\n",
 			"<cyrus@dolphin>", vortex_frame_mime_header_content (header));
-		return false;
+		return axl_false;
 	}
 	
 	/* check header count */
 	if (vortex_frame_mime_header_count (header) != 2) {
 		printf ("ERROR: expected to find HEADER count equal to 1, but found %d..\n",
 			vortex_frame_mime_header_count (header));
-		return false;
+		return axl_false;
 	}
 
 	/* get next */
 	header = vortex_frame_mime_header_next (header);
 	if (header == NULL) {
 		printf ("ERROR: expected to find second Return-Path value but it wasn't found..\n");
-		return false;
+		return axl_false;
 	}
 
 	if (! axl_cmp ("<bounce-zdnetuk-1909492@newsletters.zdnetuk.cneteu.net>", vortex_frame_mime_header_content (header))) {
 		printf ("ERROR: expected to find %s, but found %s..\n",
 			"<bounce-zdnetuk-1909492@newsletters.zdnetuk.cneteu.net>", vortex_frame_mime_header_content (header));
-		return false;
+		return axl_false;
 	}
 
 	printf ("Test 01-d: checking Received..\n");
@@ -735,54 +736,54 @@ int  test_01d_01 (void)
 		printf ("ERROR: expected Received header to have value %s but found %s..\n",
 			"from dolphin ([unix socket]) by dolphin (Cyrus\n	v2.1.18-IPv6-Debian-2.1.18-5.1) with LMTP; Thu, 15 May 2008 15:23:27 +0200", 
 			vortex_frame_mime_header_content (header));
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* check header count */
 	if (vortex_frame_mime_header_count (header) != 3) {
 		printf ("ERROR: expected to find HEADER count equal to 1, but found %d..\n",
 			vortex_frame_mime_header_count (header));
-		return false;
+		return axl_false;
 	}
 
 	/* get next */
 	header = vortex_frame_mime_header_next (header);
 	if (header == NULL) {
 		printf ("ERROR: expected to find second Return-Path value but it wasn't found..\n");
-		return false;
+		return axl_false;
 	}
 
 	if (! axl_cmp ("from mail by dolphin.aspl.es with spam-scanned (ASPL Mail Server\n	XP#1) id 1JwdOA-00050S-00 for <acinom@aspl.es>; Thu, 15 May 2008 15:20:58\n	+0200", vortex_frame_mime_header_content (header))) {
 		printf ("ERROR: expected Received header to have value %s but found %s..\n",
 			"from mail by dolphin.aspl.es with spam-scanned (ASPL Mail Server\n	XP#1) id 1JwdOA-00050S-00 for <acinom@aspl.es>; Thu, 15 May 2008 15:20:58\n	+0200", vortex_frame_mime_header_content (header));
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* get next */
 	header = vortex_frame_mime_header_next (header);
 	if (header == NULL) {
 		printf ("ERROR: expected to find second Return-Path value but it wasn't found..\n");
-		return false;
+		return axl_false;
 	}
 
 	if (! axl_cmp ("from newsletters.cneteu.net ([62.108.136.190]\n	helo=newsletters.zdnetuk.cneteu.net) by dolphin.aspl.es with smtp (ASPL\n	Mail Server XP#1) id 1Jwd76-00047G-00 for <francis@aspl.es>; Thu, 15 May\n	2008 15:03:16 +0200", vortex_frame_mime_header_content (header))) {
 		printf ("ERROR: expected Received header to have value %s but found %s..\n",
 			"from newsletters.cneteu.net ([62.108.136.190]\n	helo=newsletters.zdnetuk.cneteu.net) by dolphin.aspl.es with smtp (ASPL\n	Mail Server XP#1) id 1Jwd76-00047G-00 for <francis@aspl.es>; Thu, 15 May\n	2008 15:03:16 +0200", vortex_frame_mime_header_content (header));
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* get next */
 	header = vortex_frame_mime_header_next (header);
 	if (header != NULL) {
 		printf ("ERROR: expected to NOT find any Received value but it was found..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check mime version */
 	if (! axl_cmp (VORTEX_FRAME_GET_MIME_HEADER (frame, "MIME-version"), "1.0")) {
 		printf ("ERROR: Expected to find MIME header version 1.0 but found %s\n",
 			VORTEX_FRAME_GET_MIME_HEADER (frame, "MIME-version"));
-		return false;
+		return axl_false;
 	}
 
 	/* check mime version */
@@ -790,17 +791,17 @@ int  test_01d_01 (void)
 		printf ("ERROR: Expected to find List-Unsusbcribe '%s' != '%s'\n",
 			"<mailto:leave-zdnetuk-1909492M@newsletters.zdnetuk.cneteu.net>",
 			VORTEX_FRAME_GET_MIME_HEADER (frame, "List-Unsubscribe"));
-		return false;
+		return axl_false;
 	}
 
 	vortex_frame_unref (frame);
 	axl_free (mime_message);
 	axl_free (mime_body);
 
-	return true;
+	return axl_true;
 }
 
-int  test_01d_02 (void)
+axl_bool  test_01d_02 (void)
 {
 	char        * mime_message;
 	int           mime_message_size;
@@ -811,59 +812,59 @@ int  test_01d_02 (void)
 	mime_message = vortex_regression_common_read_file ("mime.example.2.txt", NULL);
 	if (mime_message == NULL) {
 		printf ("ERROR: failed to load mime message: %s", "mime.example.2.txt");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* create an artificial frame */
 	mime_message_size = strlen (mime_message);
 	frame             = vortex_frame_create (ctx, VORTEX_FRAME_TYPE_MSG,
-						 0, 0, false, 0, mime_message_size, 0, mime_message);
+						 0, 0, axl_false, 0, mime_message_size, 0, mime_message);
 	if (frame == NULL) {
 		printf ("ERROR: expected to create a frame but NULL reference was found..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* activate mime support on the frame */
 	if (! vortex_frame_mime_process (frame)) {
 		printf ("ERROR: expected to find proper MIME process, but a failure was found..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* check mime header */
 	if (vortex_frame_get_mime_header_size (frame) != 1123) {
 		printf ("ERROR: expected to find MIME Headers %d but found %d..\n",
 			vortex_frame_get_mime_header_size (frame), 1123);
-		return false;
+		return axl_false;
 	}
 
 	/* check mime body */
 	if (vortex_frame_get_payload_size (frame) != 4) {
 		printf ("ERROR: expected to find MIME BODY %d but found %d..\n",
 			vortex_frame_get_payload_size (frame), 4);
-		return false;
+		return axl_false;
 	}
 
 	/* check content */
 	mime_body = vortex_regression_common_read_file ("mime.example.body.2.txt", NULL);
 	if (mime_body == NULL) {
 		printf ("ERROR: failed to load mime message: %s", "mime.example.body.2.txt");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* check content */
 	if (! axl_cmp (mime_body, vortex_frame_get_payload (frame))) {
 		printf ("ERROR: expected to find same mime body content..\n");
-		return false;
+		return axl_false;
 	}
 
 	vortex_frame_unref (frame);
 	axl_free (mime_message);
 	axl_free (mime_body);
 
-	return true;
+	return axl_true;
 }
 
-int  test_01d_03 (void)
+axl_bool  test_01d_03 (void)
 {
 	char        * mime_message;
 	char        * mime_body;
@@ -874,52 +875,52 @@ int  test_01d_03 (void)
 	mime_message = vortex_regression_common_read_file ("mime.example.3.txt", NULL);
 	if (mime_message == NULL) {
 		printf ("ERROR: failed to load mime message: %s", "mime.example.3.txt");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* create an artificial frame */
 	mime_message_size = strlen (mime_message);
 	frame             = vortex_frame_create (ctx, VORTEX_FRAME_TYPE_MSG,
-						 0, 0, false, 0, mime_message_size, 0, mime_message);
+						 0, 0, axl_false, 0, mime_message_size, 0, mime_message);
 	if (frame == NULL) {
 		printf ("ERROR: expected to create a frame but NULL reference was found..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* activate mime support on the frame */
 	if (! vortex_frame_mime_process (frame)) {
 		printf ("ERROR: expected to find proper MIME process, but a failure was found..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* check mime header */
 	if (vortex_frame_get_mime_header_size (frame) != 2) {
 		printf ("ERROR: expected to find MIME Headers %d but found %d..\n",
 			vortex_frame_get_mime_header_size (frame), 2);
-		return false;
+		return axl_false;
 	}
 
 	/* check mime body */
 	if (vortex_frame_get_payload_size (frame) != 2) {
 		printf ("ERROR: expected to find MIME BODY %d but found %d..\n",
 			vortex_frame_get_payload_size (frame), 2);
-		return false;
+		return axl_false;
 	}
 
 	/* check content */
 	mime_body = (char*) vortex_frame_get_payload (frame);
 	if (mime_body[0] != '\x0D' || mime_body[1] != '\x0A') {
 		printf ("ERROR: expected to find same mime body content..\n");
-		return false;
+		return axl_false;
 	}
 
 	vortex_frame_unref (frame);
 	axl_free (mime_message);
 
-	return true;
+	return axl_true;
 }
 
-int  test_01d_04 (void)
+axl_bool  test_01d_04 (void)
 {
 	char        * mime_message;
 	int           mime_message_size;
@@ -929,7 +930,7 @@ int  test_01d_04 (void)
 	mime_message = axl_new (char, 2);
 	if (mime_message == NULL) {
 		printf ("ERROR: failed to allocate mime message memory..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* configure the message */
@@ -939,39 +940,39 @@ int  test_01d_04 (void)
 	/* create an artificial frame */
 	mime_message_size = 2;
 	frame             = vortex_frame_create (ctx, VORTEX_FRAME_TYPE_MSG,
-						 0, 0, false, 0, mime_message_size, 0, mime_message);
+						 0, 0, axl_false, 0, mime_message_size, 0, mime_message);
 	if (frame == NULL) {
 		printf ("ERROR: expected to create a frame but NULL reference was found..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* activate mime support on the frame */
 	if (! vortex_frame_mime_process (frame)) {
 		printf ("ERROR: expected to find proper MIME process, but a failure was found..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* check mime header */
 	if (vortex_frame_get_mime_header_size (frame) != 2) {
 		printf ("ERROR: expected to find MIME Headers %d but found %d..\n",
 			vortex_frame_get_mime_header_size (frame), 2);
-		return false;
+		return axl_false;
 	}
 
 	/* check mime body */
 	if (vortex_frame_get_payload_size (frame) != 0) {
 		printf ("ERROR: expected to find MIME BODY %d but found %d..\n",
 			vortex_frame_get_payload_size (frame), 0);
-		return false;
+		return axl_false;
 	}
 
 	vortex_frame_unref (frame);
 	axl_free (mime_message);
 
-	return true;
+	return axl_true;
 }
 
-int  test_01d_05 (void)
+axl_bool  test_01d_05 (void)
 {
 	char        * mime_message;
 	int           mime_message_size;
@@ -981,7 +982,7 @@ int  test_01d_05 (void)
 	mime_message = axl_new (char, 1);
 	if (mime_message == NULL) {
 		printf ("ERROR: failed to allocate mime message memory..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* configure the message */
@@ -990,39 +991,39 @@ int  test_01d_05 (void)
 	/* create an artificial frame */
 	mime_message_size = 1;
 	frame             = vortex_frame_create (ctx, VORTEX_FRAME_TYPE_MSG,
-						 0, 0, false, 0, mime_message_size, 0, mime_message);
+						 0, 0, axl_false, 0, mime_message_size, 0, mime_message);
 	if (frame == NULL) {
 		printf ("ERROR: expected to create a frame but NULL reference was found..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* activate mime support on the frame */
 	if (! vortex_frame_mime_process (frame)) {
 		printf ("ERROR: expected to find proper MIME process, but a failure was found..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* check mime header */
 	if (vortex_frame_get_mime_header_size (frame) != 1) {
 		printf ("ERROR: expected to find MIME Headers %d but found %d..\n",
 			vortex_frame_get_mime_header_size (frame), 2);
-		return false;
+		return axl_false;
 	}
 
 	/* check mime body */
 	if (vortex_frame_get_payload_size (frame) != 0) {
 		printf ("ERROR: expected to find MIME BODY %d but found %d..\n",
 			vortex_frame_get_payload_size (frame), 0);
-		return false;
+		return axl_false;
 	}
 
 	vortex_frame_unref (frame);
 	axl_free (mime_message);
 
-	return true;
+	return axl_true;
 }
 
-int  test_01d_06 (void)
+axl_bool  test_01d_06 (void)
 {
 	char        * mime_message;
 	int           mime_message_size;
@@ -1032,7 +1033,7 @@ int  test_01d_06 (void)
 	mime_message = axl_new (char, 375);
 	if (mime_message == NULL) {
 		printf ("ERROR: failed to allocate mime message memory..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* configure the message */
@@ -1042,53 +1043,53 @@ int  test_01d_06 (void)
 	/* create an artificial frame */
 	mime_message_size = 375;
 	frame             = vortex_frame_create (ctx, VORTEX_FRAME_TYPE_MSG,
-						 0, 0, false, 0, mime_message_size, 0, mime_message);
+						 0, 0, axl_false, 0, mime_message_size, 0, mime_message);
 	if (frame == NULL) {
 		printf ("ERROR: expected to create a frame but NULL reference was found..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* activate mime support on the frame */
 	if (! vortex_frame_mime_process (frame)) {
 		printf ("ERROR: expected to find proper MIME process, but a failure was found..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* check mime header */
 	if (vortex_frame_get_mime_header_size (frame) != 2) {
 		printf ("ERROR: expected to find MIME Headers %d but found %d..\n",
 			vortex_frame_get_mime_header_size (frame), 2);
-		return false;
+		return axl_false;
 	}
 
 	/* check mime body */
 	if (vortex_frame_get_payload_size (frame) != 373) {
 		printf ("ERROR: expected to find MIME BODY %d but found %d..\n",
 			vortex_frame_get_payload_size (frame), 373);
-		return false;
+		return axl_false;
 	}
 
 	/* check default headers: Content-Type */
 	if (! axl_cmp (vortex_frame_get_content_type (frame), "application/octet-stream")) {
 		printf ("ERROR: (1) expected to find MIME header \"Content-Type\" equal to: %s, but found %s\n",
 			"application/octet-stream", vortex_frame_get_content_type (frame));
-		return false;
+		return axl_false;
 	}
 
 	/* check defaul header: Content-Transfer-Encoding */
 	if (! axl_cmp (vortex_frame_get_transfer_encoding (frame), "binary")) {
 		printf ("ERROR: (2) expected to find MIME header \"Content-Transfer-Encoding\" equal to: %s, but found %s\n",
 			"binary", vortex_frame_get_transfer_encoding (frame));
-		return false;
+		return axl_false;
 	}
 
 	vortex_frame_unref (frame);
 	axl_free (mime_message);
 
-	return true;
+	return axl_true;
 }
 
-int  test_01d_07 (void)
+axl_bool  test_01d_07 (void)
 {
 	char        * mime_message;
 	int           mime_message_size;
@@ -1098,7 +1099,7 @@ int  test_01d_07 (void)
 	mime_message = axl_new (char, 2);
 	if (mime_message == NULL) {
 		printf ("ERROR: failed to allocate mime message memory..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* configure the message */
@@ -1108,53 +1109,53 @@ int  test_01d_07 (void)
 	/* create an artificial frame */
 	mime_message_size = 2;
 	frame             = vortex_frame_create (ctx, VORTEX_FRAME_TYPE_MSG,
-						 0, 0, false, 0, mime_message_size, 0, mime_message);
+						 0, 0, axl_false, 0, mime_message_size, 0, mime_message);
 	if (frame == NULL) {
 		printf ("ERROR: expected to create a frame but NULL reference was found..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* activate mime support on the frame */
 	if (! vortex_frame_mime_process (frame)) {
 		printf ("ERROR: expected to find proper MIME process, but a failure was found..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* check mime header */
 	if (vortex_frame_get_mime_header_size (frame) != 2) {
 		printf ("ERROR: expected to find MIME Headers %d but found %d..\n",
 			vortex_frame_get_mime_header_size (frame), 2);
-		return false;
+		return axl_false;
 	}
 
 	/* check mime body */
 	if (vortex_frame_get_payload_size (frame) != 0) {
 		printf ("ERROR: expected to find MIME BODY %d but found %d..\n",
 			vortex_frame_get_payload_size (frame), 0);
-		return false;
+		return axl_false;
 	}
 
 	/* check default headers: Content-Type */
 	if (! axl_cmp (vortex_frame_get_content_type (frame), "application/octet-stream")) {
 		printf ("ERROR: (1) expected to find MIME header \"Content-Type\" equal to: %s, but found %s\n",
 			"application/octet-stream", vortex_frame_get_content_type (frame));
-		return false;
+		return axl_false;
 	}
 
 	/* check defaul header: Content-Transfer-Encoding */
 	if (! axl_cmp (vortex_frame_get_transfer_encoding (frame), "binary")) {
 		printf ("ERROR: (2) expected to find MIME header \"Content-Transfer-Encoding\" equal to: %s, but found %s\n",
 			"binary", vortex_frame_get_transfer_encoding (frame));
-		return false;
+		return axl_false;
 	}
 
 	vortex_frame_unref (frame);
 	axl_free (mime_message);
 
-	return true;
+	return axl_true;
 }
 
-int  test_01d (void) {
+axl_bool  test_01d (void) {
 	VortexConnection  * connection;
 	VortexAsyncQueue  * queue;
 	VortexChannel     * channel;
@@ -1165,31 +1166,31 @@ int  test_01d (void) {
 
 	/* check mime support first */
 	if (! test_01d_01 ())
-		return false;
+		return axl_false;
 
 	if (! test_01d_02 ())
-		return false;
+		return axl_false;
 
 	if (! test_01d_03 ())
-		return false;
+		return axl_false;
 
 	if (! test_01d_04 ())
-		return false; 
+		return axl_false; 
 
 	if (! test_01d_05 ())
-		return false;
+		return axl_false;
 
 	if (! test_01d_06 ())
-		return false;
+		return axl_false;
 
 	if (! test_01d_07 ())
-		return false;
+		return axl_false;
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 
 	/* create the queue */
@@ -1207,7 +1208,7 @@ int  test_01d (void) {
 
 	if (channel == NULL) {
 		printf ("Unable to create channel to test MIME support..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	printf ("Test 01-d: disabling automatic MIME handling for outgoing messages..\n");
@@ -1218,13 +1219,13 @@ int  test_01d (void) {
 	mime_message = vortex_regression_common_read_file ("mime.example.1.txt", NULL);
 	if (mime_message == NULL) {
 		printf ("ERROR: failed to load mime message: %s", "mime.example.1.txt");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* send mime message */
 	if (! vortex_channel_send_msg (channel, mime_message, strlen (mime_message), NULL)) {
 		printf ("Unable to send MIME message over channel=%d\n", vortex_channel_get_number (channel));
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* get mime reply and check headers */
@@ -1232,7 +1233,7 @@ int  test_01d (void) {
 	frame = vortex_channel_get_reply (channel, queue);
 	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
 		printf ("Expected to find rpy reply after requesting to change remote step..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* check MIME headers */
@@ -1240,7 +1241,7 @@ int  test_01d (void) {
 	if (! axl_cmp (vortex_frame_get_content_type (frame), "text/plain; charset=\"ISO-8859-1\"")) {
 		printf ("Expected to find Content-Type: %s but found %s..\n", 
 			"text/plain; charset=\"ISO-8859-1\"", vortex_frame_get_content_type (frame));
-		return false;
+		return axl_false;
 	}
 
 	/* check MIME header: Return-path */
@@ -1250,7 +1251,7 @@ int  test_01d (void) {
 		printf ("Expected to find Return-path: %s but found %s..\n", 
 			"<cyrus@dolphin>",
 			VORTEX_FRAME_GET_MIME_HEADER (frame, "Return-path"));
-		return false;
+		return axl_false;
 	} 
 
 	/* check MIME header: Received */
@@ -1262,7 +1263,7 @@ int  test_01d (void) {
 			"from dolphin ([unix socket]) by dolphin (Cyrus\n\
 	v2.1.18-IPv6-Debian-2.1.18-5.1) with LMTP; Thu, 15 May 2008 15:23:27 +0200",
 			VORTEX_FRAME_GET_MIME_HEADER (frame, "received"));
-		return false;
+		return axl_false;
 	} 
 
 	/* check MIME header: Message-Id */
@@ -1272,7 +1273,7 @@ int  test_01d (void) {
 		printf ("Expected to find Return-path: %s but found %s..\n", 
 			"<LYRIS-1909492-337994-2008.05.15-13.59.43--francis#aspl.es@newsletters.zdnetuk.cneteu.net>",
 			VORTEX_FRAME_GET_MIME_HEADER (frame, "message-id"));
-		return false;
+		return axl_false;
 	} 
 
 	printf ("Test 01-d: MIME message received %d size, with body %d..\n",
@@ -1282,27 +1283,27 @@ int  test_01d (void) {
 	if (vortex_frame_get_content_size (frame) != 6361) {  
 		printf ("ERROR: expected to find full content size of %d but found %d..\n",
 			6361, vortex_frame_get_content_size (frame));
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* check payload (MIME message body) size */
 	if (vortex_frame_get_payload_size (frame) != 4943) {  
 		printf ("ERROR: expected to find MIME message body size of %d but found %d..\n",
 			4943, vortex_frame_get_payload_size (frame));
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* check mime message content */
 	if (! axl_cmp (vortex_frame_get_content (frame), mime_message)) {
 		printf ("ERROR: expected to find same MIME message as sent..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check MIME message body */
 	mime_body = vortex_regression_common_read_file ("mime.example.body.1.txt", NULL);
 	if (! axl_cmp (vortex_frame_get_payload (frame), mime_body)) {
 		printf ("ERROR: expected to find same MIME message as sent..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check extended MIME support (several mime headers defined) */
@@ -1310,7 +1311,7 @@ int  test_01d (void) {
 	if (vortex_frame_mime_header_count (mime_header) != 3) {
 		printf ("ERROR: expected to find %d times the MIME header %s but found %d times..\n",
 			3, "Received", vortex_frame_mime_header_count (mime_header));
-		return false;
+		return axl_false;
 	}
 	
 	/* check first ocurrence of "Received" */
@@ -1321,7 +1322,7 @@ int  test_01d (void) {
 			"from dolphin ([unix socket]) by dolphin (Cyrus\n\
 	v2.1.18-IPv6-Debian-2.1.18-5.1) with LMTP; Thu, 15 May 2008 15:23:27 +0200",
 			vortex_frame_mime_header_content (mime_header));
-		return false;
+		return axl_false;
 	}
 
 	/* next MIME header */
@@ -1336,7 +1337,7 @@ int  test_01d (void) {
 	XP#1) id 1JwdOA-00050S-00 for <acinom@aspl.es>; Thu, 15 May 2008 15:20:58\n\
 	+0200",
 			vortex_frame_mime_header_content (mime_header));
-		return false;
+		return axl_false;
 	}
 
 	/* next MIME header */
@@ -1353,14 +1354,14 @@ int  test_01d (void) {
 	Mail Server XP#1) id 1Jwd76-00047G-00 for <francis@aspl.es>; Thu, 15 May\n\
 	2008 15:03:16 +0200",
 			vortex_frame_mime_header_content (mime_header));
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* get next should return NULL */
 	mime_header = vortex_frame_mime_header_next (mime_header);
 	if (mime_header != NULL) {
 		printf ("ERROR: expected to find NULL reference after call to vortex_frame_mime_header_next..\n");
-		return false;
+		return axl_false;
 	}
 	printf ("Test 01-d: multiple MIME header instances ok..\n");
 
@@ -1370,7 +1371,7 @@ int  test_01d (void) {
 	/* now send non-MIME content */
 	if (! vortex_channel_send_msg (channel, "this is a non-MIME message", 26, NULL)) {
 		printf ("Unable to send MIME message over channel=%d\n", vortex_channel_get_number (channel));
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* get mime reply and check headers */
@@ -1378,7 +1379,7 @@ int  test_01d (void) {
 	frame = vortex_channel_get_reply (channel, queue);
 	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
 		printf ("Expected to find rpy reply after requesting to change remote step..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 	
 	printf ("Test 01-d: message received: %s..\n", 
@@ -1387,37 +1388,37 @@ int  test_01d (void) {
 	/* check content */
 	if (vortex_frame_get_payload_size (frame) != vortex_frame_get_content_size (frame)) {
 		printf ("Test 01-d: expected same payload and content size for non-MIME message received..\n");
-		return false;
+		return axl_false;
 	}
 
 	if (vortex_frame_get_payload_size (frame) != 26) {
 		printf ("Test 01-d: expected to find %d as frame size but found %d..\n",
 			vortex_frame_get_payload_size (frame), 26);
-		return false;
+		return axl_false;
 	}
 
 	if (! axl_cmp (vortex_frame_get_content (frame), 
 		       vortex_frame_get_payload (frame))) {
 		printf ("Test 01-d: expected to find the same content on a non-MIME message received..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check content type */
 	if (vortex_frame_get_content_type (frame) != NULL) {
 		printf ("Test 01-d: expected to find NULL content type for a non-MIME message received..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check content transfer encoding */
 	if (vortex_frame_get_content_type (frame) != NULL) {
 		printf ("Test 01-d: expected to find NULL content transfer encoding for a non-MIME message received..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check mime headers size */
 	if (vortex_frame_get_mime_header_size (frame) != 0) {
 		printf ("Test 01-d: expected to find empty MIME headers (size) non-MIME message received..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* unref frame */
@@ -1434,7 +1435,7 @@ int  test_01d (void) {
 	printf ("Test 01-d: sending content with empty MIME headers...\n");
 	if (! vortex_channel_send_msg (channel, "this is a non-MIME message", 26, NULL)) {
 		printf ("Unable to send MIME message over channel=%d\n", vortex_channel_get_number (channel));
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* get mime reply and check headers */
@@ -1442,33 +1443,33 @@ int  test_01d (void) {
 	frame = vortex_channel_get_reply (channel, queue);
 	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
 		printf ("Expected to find rpy reply after requesting to change remote step..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* check MIME header size */
 	if (vortex_frame_get_content_size (frame) != 28) {
 		printf ("Test 01-d: expected to find frame content size %d but found %d..\n",
 			28, vortex_frame_get_content_size (frame));
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* check mime headers size */
 	if (vortex_frame_get_mime_header_size (frame) != 2) {
 		printf ("Test 01-d: expected to find frame content size %d but found %d..\n",
 			2, vortex_frame_get_mime_header_size (frame));
-		return false;
+		return axl_false;
 	}
 	
 	/* check content transfer encoding */
 	if (vortex_frame_get_content_type (frame) == NULL) {
 		printf ("Test 01-d: expected to NOT find NULL content type for a non-MIME message received..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check content transfer encoding */
 	if (vortex_frame_get_transfer_encoding (frame) == NULL) {
 		printf ("Test 01-d: expected to NOT find NULL content transfer encoding for a non-MIME message received..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check content type */
@@ -1477,7 +1478,7 @@ int  test_01d (void) {
 		printf ("Test 01-d: expected to find content type %s but found %s..\n",
 			vortex_frame_get_content_type (frame),
 			"application/octet-stream");
-		return false;
+		return axl_false;
 	}
 
 	/* check content type */
@@ -1486,7 +1487,7 @@ int  test_01d (void) {
 		printf ("Test 01-d: expected to find content transfer encoding %s but found %s..\n",
 			vortex_frame_get_content_type (frame),
 			"binary");
-		return false;
+		return axl_false;
 	}
 
 	/* unref frame */
@@ -1494,9 +1495,9 @@ int  test_01d (void) {
 	
 	
 	/* check connection here */
-	if (! vortex_connection_is_ok (connection, false)) {
+	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 01-d: (1) Failed to check connection, it should be running..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* free mime */
@@ -1508,7 +1509,7 @@ int  test_01d (void) {
 
 	vortex_async_queue_unref (queue);
 	
-	return true;
+	return axl_true;
 
 } /* end test_01c */
 
@@ -1534,7 +1535,7 @@ void test_02_channel_created (int channel_num, VortexChannel * channel, axlPoint
 	return;
 }
 
-int  test_02_common (VortexConnection * connection)
+axl_bool  test_02_common (VortexConnection * connection)
 {
 
 	VortexChannel    * channel[TEST_02_MAX_CHANNELS];
@@ -1564,14 +1565,14 @@ int  test_02_common (VortexConnection * connection)
 		/* check channel returned */
 		if (channel[iterator] == NULL) {
 			printf ("Unable to create the channel, failed to create channel=%d..", iterator);
-			return false;
+			return axl_false;
 		}
 
 		/* update reference counting */
 		vortex_channel_ref (channel[iterator]);
 
 		/* enable serialize */
-		vortex_channel_set_serialize (channel[iterator], true);
+		vortex_channel_set_serialize (channel[iterator], axl_true);
 
 		/* update the iterator */
 		iterator++;
@@ -1588,7 +1589,7 @@ int  test_02_common (VortexConnection * connection)
 		/* send message */
 		if (! vortex_channel_send_msg (channel[iterator], message, strlen (message), NULL)) {
 			printf ("Unable to send message over channel=%d\n", vortex_channel_get_number (channel[iterator]));
-			return false;
+			return axl_false;
 		}
 
 		/* free message */
@@ -1618,7 +1619,7 @@ int  test_02_common (VortexConnection * connection)
 	if (vortex_async_queue_length (queue) != 0) {
 		/* expected to find an empty queue */
 		printf ("Expected to find an empty queue\n");
-		return false;
+		return axl_false;
 	}
 
 	/* now send data */
@@ -1631,7 +1632,7 @@ int  test_02_common (VortexConnection * connection)
 		/* send message */
 		if (! vortex_channel_send_msg (channel[0], message, strlen (message), NULL)) {
 			printf ("Unable to send message over channel=%d\n", vortex_channel_get_number (channel[0]));
-			return false;
+			return axl_false;
 		}
 
 		/* free message */
@@ -1655,7 +1656,7 @@ int  test_02_common (VortexConnection * connection)
 		if (! axl_cmp (message, vortex_frame_get_payload (frame))) {
 			printf ("Message received (on the same channel) which isn't the expected one: %s != %s (iterator=%d)\n", 
 				message, (char*) vortex_frame_get_payload (frame), iterator);
-			return false;
+			return axl_false;
 		}
 
 		/* get frame and the expected message */
@@ -1671,7 +1672,7 @@ int  test_02_common (VortexConnection * connection)
 	if (vortex_async_queue_length (queue) != 0) {
 		/* expected to find an empty queue */
 		printf ("Expected to find an empty queue\n");
-		return false;
+		return axl_false;
 	}
 
 	/* close all channels */
@@ -1681,7 +1682,7 @@ int  test_02_common (VortexConnection * connection)
 		/* close the channel */
 		if (! vortex_channel_close (channel[iterator], NULL)) {
 			printf ("failed to close channel=%d\n", vortex_channel_get_number (channel[iterator]));
-			return false;
+			return axl_false;
 		}
 
 		/* unref the channel */
@@ -1704,7 +1705,7 @@ int  test_02_common (VortexConnection * connection)
 	if (channel[0] != NULL) {
 		printf ("Expected to find an error while trying to create a channel under the profile: %s\n",
 			REGRESSION_URI_DENY);
-		return false;
+		return axl_false;
 	}
 
 	/* now check channel creation in threaded mode */
@@ -1723,19 +1724,19 @@ int  test_02_common (VortexConnection * connection)
 	if (PTR_TO_INT (channel[0]) != 1) {
 		printf ("Expected to find an error while trying to create a channel under the profile: %s\n",
 			REGRESSION_URI_DENY);
-		return false;
+		return axl_false;
 	}
 	
 	/* check error code here */
 	if (! vortex_connection_pop_channel_error (connection, &code, &msg)) {
 		printf ("Expected to find error message after channel creation failure..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check profile not supported error code */
 	if (code != 554) {
 		printf ("Expected to find error code reported as profile not supported.\n");
-		return false;
+		return axl_false;
 	}
 
 	axl_free (msg);
@@ -1756,19 +1757,19 @@ int  test_02_common (VortexConnection * connection)
 	if (PTR_TO_INT (channel[0]) != 1) {
 		printf ("Expected to find an error while trying to create a channel under the profile: %s\n",
 			REGRESSION_URI_DENY);
-		return false;
+		return axl_false;
 	}
 	
 	/* check error code here */
 	if (! vortex_connection_pop_channel_error (connection, &code, &msg)) {
 		printf ("Expected to find error message after channel creation failure..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check profile not supported error code */
 	if (code != 421) {
 		printf ("Expected to find error code reported as profile supported by denied to create a channel.\n");
-		return false;
+		return axl_false;
 	} 
 
 	axl_free (msg);
@@ -1776,7 +1777,7 @@ int  test_02_common (VortexConnection * connection)
 	/* free queue */
 	vortex_async_queue_unref (queue);
 
-	return true;
+	return axl_true;
 }
 
 /* message size variable used by test_03 and test_02f */
@@ -1796,7 +1797,7 @@ void test_03_reply (VortexChannel    * channel,
 	return;
 }
 
-int  test_03_common (VortexConnection * connection) {
+axl_bool  test_03_common (VortexConnection * connection) {
 
 	VortexChannel    * channel;
 	VortexFrame      * frame;
@@ -1818,7 +1819,7 @@ int  test_03_common (VortexConnection * connection) {
 				      NULL, NULL);
 	if (channel == NULL) {
 		printf ("Unable to create the channel..");
-		return false;
+		return axl_false;
 	}
 
 	/* build the message */
@@ -1833,7 +1834,7 @@ int  test_03_common (VortexConnection * connection) {
 		if (! vortex_channel_send_msg (channel, message, TEST_03_MSGSIZE, NULL)) {
 			printf ("Test 03: Unable to send large message");
 			axl_free (message);
-			return false;
+			return axl_false;
 		}
 
 		/* update the iterator */
@@ -1854,26 +1855,26 @@ int  test_03_common (VortexConnection * connection) {
 			/* free frame */
 			vortex_frame_free (frame);
 			
-			return false;
+			return axl_false;
 		}
 
 		/* check result */
 		if (memcmp (message, vortex_frame_get_payload (frame), TEST_03_MSGSIZE)) {
 			printf ("Test 03: Messages aren't equal\n");
-			return false;
+			return axl_false;
 		}
 
 		/* check the reference of the channel associated */
 		if (vortex_frame_get_channel_ref (frame) == NULL) {
 			printf ("Test 03: Frame received doesn't have a valid channel reference configured\n");
-			return false;
+			return axl_false;
 		} /* end if */
 
 		/* check channel reference */
 		if (! vortex_channel_are_equal (vortex_frame_get_channel_ref (frame),
 						channel)) {
 			printf ("Test 03: Frame received doesn't have the spected channel reference configured\n");
-			return false;
+			return axl_false;
 		} /* end if */
 		
 		/* free frame received */
@@ -1892,8 +1893,8 @@ int  test_03_common (VortexConnection * connection) {
 	/* free queue */
 	vortex_async_queue_unref (queue);
 
-	/* return true */
-	return true;
+	/* return axl_true */
+	return axl_true;
 }
 
 char * test_04_ab_gen_md5 (const char * file)
@@ -1947,7 +1948,7 @@ char * test_04_ab_gen_md5 (const char * file)
 /** 
  * Common implementation for test_04_ab test
  */
-int  test_04_ab_common (VortexConnection * connection, int window_size, const char * prefix, int * amount_transferred, int times, int  change_mss) {
+axl_bool  test_04_ab_common (VortexConnection * connection, int window_size, const char * prefix, int * amount_transferred, int times, axl_bool  change_mss) {
 
 	VortexChannel    * channel;
 	VortexAsyncQueue * queue;
@@ -1958,7 +1959,7 @@ int  test_04_ab_common (VortexConnection * connection, int window_size, const ch
 	FILE             * file;
 	int                bytes_written;
 	int                iterator = 0;
-	int                disable_log = (times == 4);
+	axl_bool           disable_log = (times == 4);
 
 	if (amount_transferred)
 		(*amount_transferred) = 0;
@@ -1977,11 +1978,11 @@ int  test_04_ab_common (VortexConnection * connection, int window_size, const ch
 				      NULL, NULL);
 	if (channel == NULL) {
 		printf ("Unable to create the channel..");
-		return false;
+		return axl_false;
 	}
 
 	/* configure serialize */
-	vortex_channel_set_serialize (channel, true);
+	vortex_channel_set_serialize (channel, axl_true);
 
 	/* check and change default window size */
 	if (window_size != -1) 
@@ -1992,16 +1993,16 @@ int  test_04_ab_common (VortexConnection * connection, int window_size, const ch
 		 * current mss */
 		if (! vortex_channel_send_msg (channel, "change-mss", 10, NULL)) {
 			printf ("failed to request mss change..\n");
-			return false;
+			return axl_false;
 		}
 		frame = vortex_channel_get_reply (channel, queue);
 		if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
 			printf ("Expected to find rpy reply after requesting to change remote step..\n");
-			return false;
+			return axl_false;
 		} /* end if */
 		if (! axl_cmp (vortex_frame_get_payload (frame), "change-mss")) {
 			printf ("Expected to find 'change-mss' message in frame payload, but it wasn't found..\n");
-			return false;
+			return axl_false;
 		}
 		vortex_frame_unref (frame);
 		printf ("%sTest 04-ab: changed remote segmentation, limiting it to MSS\n", prefix ? prefix : "");
@@ -2019,7 +2020,7 @@ int  test_04_ab_common (VortexConnection * connection, int window_size, const ch
 		printf ("%sTest 04-ab:   request files: %s (md5: %s)\n", prefix ? prefix : "", file_name, md5);
 	if (! vortex_channel_send_msg (channel, file_name, strlen (file_name), NULL)) {
 		printf ("Failed to send message request to retrieve file: %s..\n", file_name);
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* open the file */
@@ -2032,13 +2033,13 @@ int  test_04_ab_common (VortexConnection * connection, int window_size, const ch
 	/* check result */
 	if (file == NULL) {
 		printf ("Unable to create the file (%s) to hold content: %s\n", "vortex-regression-client-test-04-ab.txt", strerror (errno));
-		return false;
+		return axl_false;
 	}
 
 	/* wait for all replies */
 	if (! disable_log)
 		printf ("%sTest 04-ab:   waiting replies having file: %s\n", prefix ? prefix : "", file_name);
-	while (true) {
+	while (axl_true) {
 		/* get the next message, blocking at this call. */
 		frame = vortex_channel_get_reply (channel, queue);
 		if (frame == NULL) {
@@ -2060,7 +2061,7 @@ int  test_04_ab_common (VortexConnection * connection, int window_size, const ch
 		if (bytes_written != vortex_frame_get_payload_size (frame)) {
 			printf ("ERROR: error while writing to the file: %d != %d\n", 
 				bytes_written, vortex_frame_get_payload_size (frame));
-			return false;
+			return axl_false;
 		} /* end if */
 
 		/* update amount transferred */
@@ -2081,7 +2082,7 @@ int  test_04_ab_common (VortexConnection * connection, int window_size, const ch
 			md5, md5Aux);
 		axl_free (md5);
 		axl_free (md5Aux);
-		return false;
+		return axl_false;
 	}
 	
 	if (! disable_log)
@@ -2118,37 +2119,37 @@ int  test_04_ab_common (VortexConnection * connection, int window_size, const ch
 
 	/* ok, close the channel */
 	if (! vortex_channel_close (channel, NULL))
-		return false;
+		return axl_false;
 
 	/* close connection */
-	return true;
+	return axl_true;
 }
 
 
-int  test_02 (void) {
+axl_bool  test_02 (void) {
 
 	VortexConnection * connection;
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 		
 	} /* end if */
 
 	/* call common implementation */
 	if (! test_02_common (connection))
-		return false;
+		return axl_false;
 	
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection)) {
 		printf ("failed to close the BEEP session\n");
-		return false;
+		return axl_false;
 	} /* end if */
 	
-	/* return true */
-	return true;
+	/* return axl_true */
+	return axl_true;
 }
 
 VortexAsyncQueue * test_02a_queue;
@@ -2193,18 +2194,18 @@ void test_02a_handler3_full (VortexConnection * connection, axlPointer data)
  * @brief Check current connection close notification
  * 
  * 
- * @return true if ok, otherwise false is returned.
+ * @return axl_true if ok, otherwise axl_false is returned.
  */
-int  test_02a (void) {
+axl_bool  test_02a (void) {
 
 	VortexConnection * connection;
 	int                count;
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 		
 	} /* end if */
 
@@ -2234,7 +2235,7 @@ int  test_02a (void) {
 	if (vortex_async_queue_length (test_02a_queue) != 0) {
 		fprintf (stderr, "expected to find 0 items on the queue, but found (%d), on close handler is not working\n",
 			 count);
-		return false;
+		return axl_false;
 	}
 
 	/* unref the queue */
@@ -2242,9 +2243,9 @@ int  test_02a (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 		
 	} /* end if */
 
@@ -2273,17 +2274,17 @@ int  test_02a (void) {
 	if (vortex_async_queue_length (test_02a_queue) != 0) {
 		fprintf (stderr, "expected to find 0 items on the queue, but found (%d), on close full handler is not working\n",
 			 count);
-		return false;
+		return axl_false;
 	}
 
 	/* unref the queue */
 	vortex_async_queue_unref (test_02a_queue);
 	
 
-	return true;
+	return axl_true;
 }
 
-int  test_02b (void) {
+axl_bool  test_02b (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
@@ -2292,9 +2293,9 @@ int  test_02b (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 
 	/* create the queue */
@@ -2311,13 +2312,13 @@ int  test_02b (void) {
 				      NULL, NULL);
 	if (channel == NULL) {
 		printf ("Unable to create the channel..");
-		return false;
+		return axl_false;
 	}
 
 	/* send a message the */
 	if (! vortex_channel_send_msg (channel, "a", 1, NULL)) {
 		printf ("failed to send a small message\n");
-		return false;
+		return axl_false;
 	}
 
 	/* ok, close the channel */
@@ -2337,11 +2338,11 @@ int  test_02b (void) {
 	/* dealloc the queue */
 	vortex_async_queue_unref (queue);
 
-	/* return true */
-	return true;
+	/* return axl_true */
+	return axl_true;
 }
 
-int  test_02c (void) {
+axl_bool  test_02c (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
@@ -2350,9 +2351,9 @@ int  test_02c (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 
 	/* create the queue */
@@ -2369,7 +2370,7 @@ int  test_02c (void) {
 				      NULL, NULL);
 	if (channel == NULL) {
 		printf ("Unable to create the channel..");
-		return false;
+		return axl_false;
 	}
 
 	/* send a message the */
@@ -2378,7 +2379,7 @@ int  test_02c (void) {
 	
 		if (! vortex_channel_send_msg (channel, "a", 1, NULL)) {
 			printf ("failed to send a small message\n");
-			return false;
+			return axl_false;
 		}
 
 		iterator++;
@@ -2401,11 +2402,11 @@ int  test_02c (void) {
 	/* dealloc the queue */
 	vortex_async_queue_unref (queue);
 
-	/* return true */
-	return true;
+	/* return axl_true */
+	return axl_true;
 }
 
-int  test_02d (void) {
+axl_bool  test_02d (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
@@ -2414,9 +2415,9 @@ int  test_02d (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 
 	/* create the queue */
@@ -2433,14 +2434,14 @@ int  test_02d (void) {
 				      NULL, NULL);
 	if (channel == NULL) {
 		printf ("Unable to create the channel..");
-		return false;
+		return axl_false;
 	}
 
 	/* send a message the */
 	printf ("Test 02-d: Sending message..\n");
 	if (! vortex_channel_send_msg (channel, "a", 1, NULL)) {
 		printf ("failed to send a small message\n");
-		return false;
+		return axl_false;
 	}
 
 	/* pop and free */
@@ -2448,12 +2449,12 @@ int  test_02d (void) {
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame == NULL) {
 		printf ("Found null frame when expecting for content..\n");
-		return false;
+		return axl_false;
 	}
 	if (vortex_frame_get_payload_size (frame) != 32767) {
 		printf ("Expected to find payload content size %d but found %d\n",
 			32767, vortex_frame_get_payload_size (frame));
-		return false;
+		return axl_false;
 	}
 	vortex_frame_unref (frame);
 
@@ -2463,7 +2464,7 @@ int  test_02d (void) {
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection)) {
 		printf ("Failed to close connection: %s\n", vortex_connection_get_message (connection));
-		return false;
+		return axl_false;
 	}
 
 
@@ -2472,9 +2473,9 @@ int  test_02d (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 
 	/* create a channel */
@@ -2488,21 +2489,21 @@ int  test_02d (void) {
 				      NULL, NULL);
 	if (channel == NULL) {
 		printf ("Unable to create the channel..");
-		return false;
+		return axl_false;
 	}
 
 	/* send a message the */
 	printf ("Test 02-d: Sending message..\n");
 	if (! vortex_channel_send_msg (channel, "send-message", 12, NULL)) {
 		printf ("failed to send a small message\n");
-		return false;
+		return axl_false;
 	}
 
 	/* block until reply is received */
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame == NULL) {
 		printf ("Found null frame when expecting for content..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check reply for our first message and send rply for next
@@ -2510,7 +2511,7 @@ int  test_02d (void) {
 	printf ("Test 02-d: received message reply, checking its type...\n");
 	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
 		printf ("Expected to find RPY type but found: %d..\n", vortex_frame_get_type (frame));
-		return false;
+		return axl_false;
 	}
 	vortex_frame_unref (frame);
 
@@ -2519,7 +2520,7 @@ int  test_02d (void) {
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame == NULL) {
 		printf ("Found null frame when expecting for content..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check reply for our first message and send rply for next
@@ -2527,14 +2528,14 @@ int  test_02d (void) {
 	printf ("Test 02-d: Received message...checking..\n");
 	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_MSG) {
 		printf ("Expected to find RPY type but found: %d..\n", vortex_frame_get_type (frame));
-		return false;
+		return axl_false;
 	}
 
 	/* now reply with a huge message */
 	message = axl_new (char, 65536);
 	if (! vortex_channel_send_rpy (channel, message, 65536, vortex_frame_get_msgno (frame))) {
 		printf ("Expected to be able to send reply..\n");
-		return false;
+		return axl_false;
 	}
 	axl_free (message);
 	vortex_frame_unref (frame);
@@ -2543,17 +2544,17 @@ int  test_02d (void) {
 	printf ("Test 02-d: now close connection..\n");
 	if (! vortex_connection_close (connection)) {
 		printf ("Failed to close connection: %s\n", vortex_connection_get_message (connection));
-		return false;
+		return axl_false;
 	}
 
 	/* dealloc the queue */
 	vortex_async_queue_unref (queue);
 
-	/* return true */
-	return true;
+	/* return axl_true */
+	return axl_true;
 }
 
-int  test_02e (void) {
+axl_bool  test_02e (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -2566,9 +2567,9 @@ int  test_02e (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 		
 	} /* end if */
 
@@ -2587,7 +2588,7 @@ int  test_02e (void) {
 	/* check channel returned */
 	if (channel == NULL) {
 		printf ("Unable to create the channel, failed to create channel..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* now send data */
@@ -2603,27 +2604,27 @@ int  test_02e (void) {
 		/* send message */
 		if (! vortex_channel_send_msg_and_wait (channel, message, strlen (message), &msg_no, wait_reply)) {
 			printf ("Unable to send message over channel=%d\n", vortex_channel_get_number (channel));
-			return false;
+			return axl_false;
 		}
 
 		/* get message */
 		frame = vortex_channel_wait_reply (channel, msg_no, wait_reply);
 		if (frame == NULL) {
 			printf ("there was an error while receiving the reply or a timeout have occur\n");
-			return false;
+			return axl_false;
 		}
 
 		/* check reference counting for frame returned */
 		if (vortex_frame_ref_count (frame) != 1) {
 			printf ("Expected to find ref counting equal to == 1, but found %d..\n",
 				vortex_frame_ref_count (frame));
-			return false;
+			return axl_false;
 		}
 
 		/* check data */
 		if (! axl_cmp (vortex_frame_get_payload (frame), message)) {
 			printf ("Found different content at message..\n");
-			return false;
+			return axl_false;
 		}
 
 		/* unref frame */
@@ -2642,15 +2643,15 @@ int  test_02e (void) {
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection)) {
 		printf ("failed to close the BEEP session\n");
-		return false;
+		return axl_false;
 	} /* end if */
 	
 
-	/* return true */
-	return true;
+	/* return axl_true */
+	return axl_true;
 }
 
-int  test_02f_send_data (VortexChannel * channel, const char * message, VortexAsyncQueue * queue, 
+axl_bool  test_02f_send_data (VortexChannel * channel, const char * message, VortexAsyncQueue * queue, 
 			 long max_tv_sec, long max_tv_usec)
 {
 	int               iterator;
@@ -2668,7 +2669,7 @@ int  test_02f_send_data (VortexChannel * channel, const char * message, VortexAs
 		/* send the hug message */
 		if (! vortex_channel_send_msg (channel, message, TEST_03_MSGSIZE, NULL)) {
 			printf ("Test 03: Unable to send large message");
-			return false;
+			return axl_false;
 		}
 
 		/* wait for the message */
@@ -2681,26 +2682,26 @@ int  test_02f_send_data (VortexChannel * channel, const char * message, VortexAs
 			/* free frame */
 			vortex_frame_free (frame);
 			
-			return false;
+			return axl_false;
 		}
 
 		/* check result */
 		if (memcmp (message, vortex_frame_get_payload (frame), TEST_03_MSGSIZE)) {
 			printf ("Test 03: Messages aren't equal\n");
-			return false;
+			return axl_false;
 		}
 
 		/* check the reference of the channel associated */
 		if (vortex_frame_get_channel_ref (frame) == NULL) {
 			printf ("Test 03: Frame received doesn't have a valid channel reference configured\n");
-			return false;
+			return axl_false;
 		} /* end if */
 
 		/* check channel reference */
 		if (! vortex_channel_are_equal (vortex_frame_get_channel_ref (frame),
 						channel)) {
 			printf ("Test 03: Frame received doesn't have the spected channel reference configured\n");
-			return false;
+			return axl_false;
 		} /* end if */
 		
 		/* free frame received */
@@ -2724,20 +2725,20 @@ int  test_02f_send_data (VortexChannel * channel, const char * message, VortexAs
 /*	if (! disable_time_checks) {
 		if (result.tv_sec >= max_tv_sec && result.tv_usec > max_tv_usec) {
 			printf ("Test 02-f:    ERROR: transfer limit delay reached..test failed\n");
-			return false;
+			return axl_false;
 		} 
 		}  */
 
-	return true;
+	return axl_true;
 }
 	
 
 /** 
  * @brief Check vortex under packet delay conditions.
  * 
- * @return true if tests are passed.
+ * @return axl_true if tests are passed.
  */
-int  test_02f (void) {
+axl_bool  test_02f (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -2748,9 +2749,9 @@ int  test_02f (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 		
 	} /* end if */
 
@@ -2772,7 +2773,7 @@ int  test_02f (void) {
 	/* check channel returned */
 	if (channel == NULL) {
 		printf ("Unable to create the channel, failed to create channel..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* build the message to be used */
@@ -2783,7 +2784,7 @@ int  test_02f (void) {
 	/* check no delay escenario */
 	printf ("Test 02-f: checking no delay scenario..\n");
 	if (! test_02f_send_data (channel, message, queue, 1, 270000))
-		return false;
+		return axl_false;
 
 	/* free queue and message */
 	vortex_async_queue_unref (queue);
@@ -2794,12 +2795,12 @@ int  test_02f (void) {
 	printf ("Test 02-f: restoring default handler to close connection..\n");
 	if (! vortex_connection_close (connection)) {
 		printf ("failed to close the BEEP session\n");
-		return false;
+		return axl_false;
 	} /* end if */
 	
 
-	/* return true */
-	return true;
+	/* return axl_true */
+	return axl_true;
 }
 
 int test_02g_frame_size_64 (VortexChannel *channel, int next_seq_no, int message_size, int max_seq_no, axlPointer user_data) 
@@ -2824,15 +2825,15 @@ double test_02g_rate (int bytes, struct timeval result)
 	return kbytes / seconds;
 }
 
-int  test_02g (void) {
+axl_bool  test_02g (void) {
 
 	VortexConnection * connection;
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 		
 	} /* end if */
 
@@ -2842,7 +2843,7 @@ int  test_02g (void) {
 
 	/* call common implementation */
 	if (! test_02_common (connection))
-		return false;
+		return axl_false;
 
 	/* configure 2048 frame size */
 	printf ("Test 02-g: testing 2048 frame size (faster, but more content sent)..\n");
@@ -2850,16 +2851,16 @@ int  test_02g (void) {
 
 	/* call common implementation */
 	if (! test_02_common (connection))
-		return false;
+		return axl_false;
 
 	/* call to common implementation */
 	if (! test_03_common (connection)) 
-		return false;
+		return axl_false;
 	
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection)) {
 		printf ("failed to close the BEEP session\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* now configure global frame segmentation function */
@@ -2869,9 +2870,9 @@ int  test_02g (void) {
 	
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 		
 	} /* end if */
 
@@ -2879,24 +2880,24 @@ int  test_02g (void) {
 
 	/* call common implementation */
 	if (! test_02_common (connection))
-		return false;
+		return axl_false;
 
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection)) {
 		printf ("failed to close the BEEP session\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* now configure global frame segmentation function */
 	vortex_connection_set_default_next_frame_size_handler (ctx, NULL, NULL);
 
-	/* return true */
-	return true;
+	/* return axl_true */
+	return axl_true;
 }
 
 #define TEST_02I_MESSAGES (100)
 
-int  test_02i (void) {
+axl_bool  test_02i (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -2906,9 +2907,9 @@ int  test_02i (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 		
 	} /* end if */
 
@@ -2925,7 +2926,7 @@ int  test_02i (void) {
 
 	if (channel == NULL) {
 		printf ("ERROR: unable to create channel to check enforced server side ordered delivery..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* send one thousand messages */
@@ -2934,12 +2935,12 @@ int  test_02i (void) {
 		/* send the message */
 		if (! vortex_channel_send_msg (channel, "this is a test", 14, NULL)) {
 			printf ("ERROR: failed to send message to check ordered delivery (iterator=%d)..\n", iterator);
-			return false;
+			return axl_false;
 		} /* end if */
 
-		if (! vortex_connection_is_ok (connection, false)) {
+		if (! vortex_connection_is_ok (connection, axl_false)) {
 			printf ("ERROR: expected to find connection status = ok, but failure was found during ordered delivery checking..\n");
-			return false;
+			return axl_false;
 		} /* end if */
 
 		/* next iterator */
@@ -2958,9 +2959,9 @@ int  test_02i (void) {
 			vortex_frame_unref (frame);
 		}
 
-		if (! vortex_connection_is_ok (connection, false)) {
+		if (! vortex_connection_is_ok (connection, axl_false)) {
 			printf ("ERROR (2): expected to find connection status = ok, but failure was found during ordered delivery checking..\n");
-			return false;
+			return axl_false;
 		} /* end if */
 
 	} /* end if */
@@ -2968,12 +2969,12 @@ int  test_02i (void) {
 	/* check messages replies received */
 	if (iterator != TEST_02I_MESSAGES) {
 		printf ("ERROR (3): failed to check number of items that should be expected (%d != 1000)\n", iterator);
-		return false;
+		return axl_false;
 	}
 
-	if (! vortex_connection_is_ok (connection, false)) {
+	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("ERROR (4): expected to find connection status = ok, but failure was found during ordered delivery checking..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* unref the queue */
@@ -2982,15 +2983,15 @@ int  test_02i (void) {
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection)) {
 		printf ("failed to close the BEEP session\n");
-		return false;
+		return axl_false;
 	} /* end if */
 	
-	/* return true */
-	return true;
+	/* return axl_true */
+	return axl_true;
 }
 
 
-int  test_02j (void) {
+axl_bool  test_02j (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -3001,9 +3002,9 @@ int  test_02j (void) {
 	printf ("Test 02-j: checking connection broken during close operation..\n");
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 		
 	} /* end if */
 
@@ -3019,7 +3020,7 @@ int  test_02j (void) {
 
 	if (channel == NULL) {
 		printf ("ERROR: unable to create channel to check enforced server side ordered delivery..\n");
-		return false;
+		return axl_false;
 	}
 
 
@@ -3029,16 +3030,16 @@ int  test_02j (void) {
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection)) {
 		printf ("failed to close the BEEP session\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/****** CONNECTION BROKEN DURING CLOSE OPERATION WITH DELAY ******/
 	printf ("Test 02-j: checking connection broken during close operation with delay..\n");
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 		
 	} /* end if */
 
@@ -3054,7 +3055,7 @@ int  test_02j (void) {
 
 	if (channel == NULL) {
 		printf ("ERROR: unable to create channel to check enforced server side ordered delivery..\n");
-		return false;
+		return axl_false;
 	}
 
 
@@ -3064,16 +3065,16 @@ int  test_02j (void) {
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection)) {
 		printf ("failed to close the BEEP session\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/****** CONNECTION BROKEN DURING START OPERATION ******/
 	printf ("Test 02-j: checking connection broken during start operation..\n");
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 		
 	} /* end if */
 
@@ -3089,22 +3090,22 @@ int  test_02j (void) {
 
 	if (channel != NULL) {
 		printf ("ERROR: expected NULL channel reference..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection)) {
 		printf ("failed to close the BEEP session\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/****** CONNECTION BROKEN DURING FRAME RECEPTION OPERATION ******/
 	printf ("Test 02-j: checking connection broken during frame reception operation..\n");
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 		
 	} /* end if */
 
@@ -3120,13 +3121,13 @@ int  test_02j (void) {
 				      NULL, NULL);
 	if (channel == NULL) {
 		printf ("ERROR: expected NULL channel reference..\n");
-		return false;
+		return axl_false;
 	}
 	
 	/* send a message */
 	if (! vortex_channel_send_msg (channel, "this is a test", 14, NULL)) {
 		printf ("ERROR: expected to be able to send a message ..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* get the reply (it should not come and it should not block
@@ -3135,7 +3136,7 @@ int  test_02j (void) {
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame != NULL) {
 		printf ("ERROR: expected to receive a NULL reply but received content..\n");
-		return false;
+		return axl_false;
 	}
 	printf ("ok\n");
 
@@ -3145,14 +3146,14 @@ int  test_02j (void) {
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection)) {
 		printf ("failed to close the BEEP session\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* operation completed */
-	return true;
+	return axl_true;
 }
 
-int  test_02k (void) {
+axl_bool  test_02k (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -3162,9 +3163,9 @@ int  test_02k (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 		
 	} /* end if */
 
@@ -3181,11 +3182,11 @@ int  test_02k (void) {
 
 	if (channel == NULL) {
 		printf ("ERROR: unable to create channel to check mixed replies types (RPY + ANS..NUL..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* set serialize */
-	vortex_channel_set_serialize (channel, true);
+	vortex_channel_set_serialize (channel, axl_true);
 
 	/* send frame */
 	iterator = 0;
@@ -3200,9 +3201,9 @@ int  test_02k (void) {
 		}
 		
 		/* check connection status */
-		if (! vortex_connection_is_ok (connection, false)) {
+		if (! vortex_connection_is_ok (connection, axl_false)) {
 			printf ("ERROR: found connection broken while running mixed replies test\n");
-			return false;
+			return axl_false;
 		} /* end if */
 
 		/* check reply content */
@@ -3210,13 +3211,13 @@ int  test_02k (void) {
 		case VORTEX_FRAME_TYPE_RPY:
 			if (! axl_cmp (vortex_frame_get_payload (frame), "a reply")) {
 				printf ("ERROR: failed to check content expected inside frame (RPY type)..\n");
-				return false;
+				return axl_false;
 			}
 			break;
 		case VORTEX_FRAME_TYPE_ANS:
 			if (! axl_cmp (vortex_frame_get_payload (frame), "a reply 1")) {
 				printf ("ERROR: failed to check content expected inside frame (ANS type)..\n");
-				return false;
+				return axl_false;
 			}
 
 			/* release frame */
@@ -3226,7 +3227,7 @@ int  test_02k (void) {
 			frame = vortex_channel_get_reply (channel, queue);
 			if (! axl_cmp (vortex_frame_get_payload (frame), "a reply 2")) {
 				printf ("ERROR: failed to check content expected inside frame (ANS type, second reply)..\n");
-				return false;
+				return axl_false;
 			} /* end if */
 
 			/* release frame received */
@@ -3236,7 +3237,7 @@ int  test_02k (void) {
 			frame = vortex_channel_get_reply (channel, queue);
 			if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_NUL) {
 				printf ("ERROR: failed to check content expected inside frame (NUL type)..\n");
-				return false;
+				return axl_false;
 			}
 
 			break;
@@ -3249,9 +3250,9 @@ int  test_02k (void) {
 		vortex_frame_unref (frame);
 
 		/* check connection status */
-		if (! vortex_connection_is_ok (connection, false)) {
+		if (! vortex_connection_is_ok (connection, axl_false)) {
 			printf ("ERROR: found connection broken while running mixed replies test (second check)\n");
-			return false;
+			return axl_false;
 		} /* end if */
 
 		/* next step */
@@ -3265,17 +3266,17 @@ int  test_02k (void) {
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection)) {
 		printf ("failed to close the BEEP session\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* terminate queue */
 	vortex_async_queue_unref (queue);
 
 	/* operation completed */
-	return true;
+	return axl_true;
 }
 
-int  test_02m (void) {
+axl_bool  test_02m (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -3288,9 +3289,9 @@ int  test_02m (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 		
 	} /* end if */
 
@@ -3307,7 +3308,7 @@ int  test_02m (void) {
 
 	if (channel == NULL) {
 		printf ("ERROR: unable to create channel to check connection close after ANS..NUL reply\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* get a reference to the channel to avoid close conditions
@@ -3317,7 +3318,7 @@ int  test_02m (void) {
 	/* send a message to start retrieval */
 	if (! vortex_channel_send_msg (channel, "get-content", 11, NULL)) {
 		printf ("ERROR: failed to send first message to get list of ans-nul replies\n");
-		return false;
+		return axl_false;
 	}
 
 	/* get all replies */
@@ -3327,19 +3328,19 @@ int  test_02m (void) {
 		frame = vortex_channel_get_reply (channel, queue);
 		if (frame == NULL) {
 			printf ("ERROR: expected reply from remote side while running mixed replies tests..\n");
-			return false;
+			return axl_false;
 		}
 
 		/* check reply type */
 		if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_ANS) {
 			printf ("ERROR: expected to receive a ANS frame (iterator=%d)..\n", iterator);
-			return false;
+			return axl_false;
 		}
 
 		/* check content received */
 		if (! axl_cmp (vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE)) {
 			printf ("ERROR: expected to find different content than received..\n");
-			return false;
+			return axl_false;
 		}
 
 		/* update count */
@@ -3351,13 +3352,13 @@ int  test_02m (void) {
 		/* check channel */
 		if (! vortex_channel_is_opened (channel)) {
 			printf ("ERROR: expected to find channel opened..\n");
-			return false;
+			return axl_false;
 		}
 
 		/* check connection */
-		if (! vortex_connection_is_ok (connection, false)) {
+		if (! vortex_connection_is_ok (connection, axl_false)) {
 			printf ("ERROR: expected to find connection opened..\n");
-			return false;
+			return axl_false;
 		} 
 	
 		/* update iterator */
@@ -3370,13 +3371,13 @@ int  test_02m (void) {
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame == NULL) {
 		printf ("ERROR: expected reply from remote side while running mixed replies tests..\n");
-		return false;
+		return axl_false;
 	}
 	
 	/* check reply type */
 	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_NUL) {
 		printf ("ERROR: expected to receive a MSG frame..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* unref nul reply */
@@ -3397,13 +3398,13 @@ int  test_02m (void) {
 			axl_free (msg);
 		} /* end while */
 
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection)) {
 		printf ("failed to close the BEEP session\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* terminate queue */
@@ -3413,7 +3414,7 @@ int  test_02m (void) {
 	vortex_channel_unref (channel);
 
 	/* operation completed */
-	return true;
+	return axl_true;
 }
 
 int test_02m1_frame_sizer (VortexChannel *channel, 
@@ -3428,7 +3429,7 @@ int test_02m1_frame_sizer (VortexChannel *channel,
 	return VORTEX_MIN (message_size, 32768);
 }
 
-int  test_02m1 (void) {
+axl_bool  test_02m1 (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -3440,9 +3441,9 @@ int  test_02m1 (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/****** test 4096 ******/
@@ -3460,25 +3461,25 @@ int  test_02m1 (void) {
 				      NULL, NULL);
 	if (channel == NULL) {
 		printf ("Test 02-m1: failed to create channel to perform transfer\n");
-		return false;
+		return axl_false;
 	}
 
 	/* ASK TO CHANGE WINDOW SIZE */
 	if (! vortex_channel_send_msg (channel, "window_size=65536", 17, NULL)) {
 		printf ("Test 02-m1: failed to ask for window size change..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* get next reply */
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame == NULL) {
 		printf ("Test 02-m1: expected to find frame reply..\n");
-		return false;
+		return axl_false;
 	}
 	/* check reply */
 	if (! axl_cmp (vortex_frame_get_payload (frame), "ok")) {
 		printf ("Test 02-m1: expected a positive reply to change window size request..\n");
-		return false;
+		return axl_false;
 	}
 
 	vortex_frame_unref (frame);
@@ -3491,7 +3492,7 @@ int  test_02m1 (void) {
 	content = vortex_regression_common_read_file ("vortex-regression-client.c", &size);
 	if (content == NULL) {
 		printf ("ERROR: failed to open file %s to perform test..\n", "vortex-regression-client.c");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	gettimeofday (&start, NULL);
@@ -3499,7 +3500,7 @@ int  test_02m1 (void) {
 	/* SEND THE CONTENT */
 	if (! vortex_channel_send_msg (channel, content, size, NULL)) {
 		printf ("Test 02-m1: failed to send file..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 
@@ -3513,7 +3514,7 @@ int  test_02m1 (void) {
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame == NULL) {
 		printf ("Test 02-m1: expected to find frame reply..\n");
-		return false;
+		return axl_false;
 	}
 	gettimeofday (&stop, NULL);
 	vortex_timeval_substract (&stop, &start, &result);
@@ -3522,31 +3523,31 @@ int  test_02m1 (void) {
 
 	if (! axl_cmp (content, vortex_frame_get_payload (frame))) {
 		printf ("Test 02-m1: expected to find different content..\n");
-		return false;
+		return axl_false;
 	}
 
 	axl_free (content);
 	vortex_frame_unref (frame);
 
-	if (! vortex_connection_is_ok (connection, false)) {
+	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 02-h: ERROR, connection status is not ok before test..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection)) {
 		printf ("failed to close the BEEP session\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* terminate queue */
 	vortex_async_queue_unref (queue);
 	
-	/* return true */
-	return true;
+	/* return axl_true */
+	return axl_true;
 }
 
-int  test_02m2 (void) {
+axl_bool  test_02m2 (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -3556,9 +3557,9 @@ int  test_02m2 (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	} /* end if */
 
 	printf ("Test 02-m2: checking pending content during connection close\n");
@@ -3575,7 +3576,7 @@ int  test_02m2 (void) {
 				      NULL, NULL);
 	if (channel == NULL) {
 		printf ("Test 02-m1: failed to create channel to perform transfer\n");
-		return false;
+		return axl_false;
 	}
 
 	/* perform 1000 sendings */
@@ -3585,7 +3586,7 @@ int  test_02m2 (void) {
 		/* SEND THE CONTENT */
 		if (! vortex_channel_send_msg (channel, TEST_REGRESION_URI_4_MESSAGE, 4096, NULL)) {
 			printf ("Test 02-m2: failed to send content..\n");
-			return false;
+			return axl_false;
 		} /* end if */
 
 		iterator++;
@@ -3609,15 +3610,15 @@ int  test_02m2 (void) {
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection)) {
 		printf ("failed to close the BEEP session\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* terminate queue */
 	vortex_async_queue_unref (queue);
 
 
-	/* return true */
-	return true;
+	/* return axl_true */
+	return axl_true;
 }
 
 
@@ -3626,30 +3627,30 @@ int  test_02m2 (void) {
  * default window size advertised.
  * 
  * 
- * @return true if the test is ok, otherwise false is returned.
+ * @return axl_true if the test is ok, otherwise axl_false is returned.
  */
-int  test_03 (void) {
+axl_bool  test_03 (void) {
 	VortexConnection * connection;
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 
 	/* call to common implementation */
 	if (! test_03_common (connection)) 
-		return false;
+		return axl_false;
 
 	/* ok, close the connection */
 	vortex_connection_close (connection);
 
-	/* return true */
-	return true;
+	/* return axl_true */
+	return axl_true;
 }
 
-int  test_02h (void) {
+axl_bool  test_02h (void) {
 
 	VortexConnection * connection;
 	struct timeval     start, stop, result;
@@ -3657,23 +3658,23 @@ int  test_02h (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/****** test 4096 ******/
 	printf ("Test 02-h: check to perform a transfer updated the default window size to 4096, step 4096\n");
 	gettimeofday (&start, NULL);
 	/* call to base implementation */
-	if (! test_04_ab_common (connection, -1, "Test 02-h::", &amount, 4, false))
-		return false;
+	if (! test_04_ab_common (connection, -1, "Test 02-h::", &amount, 4, axl_false))
+		return axl_false;
 	gettimeofday (&stop, NULL);
 	vortex_timeval_substract (&stop, &start, &result);
 	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 4096, step 4096.\n", amount, result.tv_sec, result.tv_usec);
-	if (! vortex_connection_is_ok (connection, false)) {
+	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 02-h: ERROR, connection status is not ok before test..\n");
-		return false;
+		return axl_false;
 	}
 	printf ("Test 02-h:    download rate at %.2f KBytes/segs..\n", test_02g_rate (amount, result));
 
@@ -3681,14 +3682,14 @@ int  test_02h (void) {
 	printf ("Test 02-h: check to perform a transfer updated the default window size to 8192, step 4096\n");
 	gettimeofday (&start, NULL);
 	/* call to base implementation */
-	if (! test_04_ab_common (connection, 8192, "Test 02-h::", &amount, 4, false))
-		return false;
+	if (! test_04_ab_common (connection, 8192, "Test 02-h::", &amount, 4, axl_false))
+		return axl_false;
 	gettimeofday (&stop, NULL);
 	vortex_timeval_substract (&stop, &start, &result);
 	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 8192, step 4096.\n", amount, result.tv_sec, result.tv_usec);
-	if (! vortex_connection_is_ok (connection, false)) {
+	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 02-h: ERROR, connection status is not ok before test..\n");
-		return false;
+		return axl_false;
 	}
 	printf ("Test 02-h:    download rate at %.2f KBytes/segs..\n", test_02g_rate (amount, result));
 	
@@ -3696,14 +3697,14 @@ int  test_02h (void) {
 	printf ("Test 02-h: check to perform a transfer updated the default window size to 16384, step 4096\n");
 	gettimeofday (&start, NULL);
 	/* call to base implementation */
-	if (! test_04_ab_common (connection, 16384, "Test 02-h::", &amount, 4, false))
-		return false;
+	if (! test_04_ab_common (connection, 16384, "Test 02-h::", &amount, 4, axl_false))
+		return axl_false;
 	gettimeofday (&stop, NULL);
 	vortex_timeval_substract (&stop, &start, &result);
 	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 16384, step 4096.\n", amount, result.tv_sec, result.tv_usec);
-	if (! vortex_connection_is_ok (connection, false)) {
+	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 02-h: ERROR, connection status is not ok before test..\n");
-		return false;
+		return axl_false;
 	}
 	printf ("Test 02-h:    download rate at %.2f KBytes/segs..\n", test_02g_rate (amount, result));
 
@@ -3711,14 +3712,14 @@ int  test_02h (void) {
 	printf ("Test 02-h: check to perform a transfer updated the default window size to 32768, step 4096\n");
 	gettimeofday (&start, NULL);
 	/* call to base implementation */
-	if (! test_04_ab_common (connection, 32768, "Test 02-h::", &amount, 4, false))
-		return false;
+	if (! test_04_ab_common (connection, 32768, "Test 02-h::", &amount, 4, axl_false))
+		return axl_false;
 	gettimeofday (&stop, NULL);
 	vortex_timeval_substract (&stop, &start, &result);
 	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 32768, step 4096.\n", amount, result.tv_sec, result.tv_usec);
-	if (! vortex_connection_is_ok (connection, false)) {
+	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 02-h: ERROR, connection status is not ok before test..\n");
-		return false;
+		return axl_false;
 	}
 	printf ("Test 02-h:    download rate at %.2f KBytes/segs..\n", test_02g_rate (amount, result));
 
@@ -3726,14 +3727,14 @@ int  test_02h (void) {
 	printf ("Test 02-h: check to perform a transfer updated the default window size to 65536, step 4096\n");
 	gettimeofday (&start, NULL);
 	/* call to base implementation */
-	if (! test_04_ab_common (connection, 65536, "Test 02-h::", &amount, 4, false))
-		return false;
+	if (! test_04_ab_common (connection, 65536, "Test 02-h::", &amount, 4, axl_false))
+		return axl_false;
 	gettimeofday (&stop, NULL);
 	vortex_timeval_substract (&stop, &start, &result);
 	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 65536, step 4096.\n", amount, result.tv_sec, result.tv_usec);
-	if (! vortex_connection_is_ok (connection, false)) {
+	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 02-h: ERROR, connection status is not ok before test..\n");
-		return false;
+		return axl_false;
 	}
 	printf ("Test 02-h:    download rate at %.2f KBytes/segs..\n", test_02g_rate (amount, result));
 
@@ -3749,14 +3750,14 @@ int  test_02h (void) {
 			vortex_connection_get_mss (connection) - 60, vortex_connection_get_mss (connection));
 		gettimeofday (&start, NULL);
 		/* call to base implementation */
-		if (! test_04_ab_common (connection, 32768, "Test 02-h::", &amount, 4, true))
-			return false;
+		if (! test_04_ab_common (connection, 32768, "Test 02-h::", &amount, 4, axl_true))
+			return axl_false;
 		gettimeofday (&stop, NULL);
 		vortex_timeval_substract (&stop, &start, &result);
 		printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 32768, step 4096.\n", amount, result.tv_sec, result.tv_usec);
-		if (! vortex_connection_is_ok (connection, false)) {
+		if (! vortex_connection_is_ok (connection, axl_false)) {
 			printf ("Test 02-h: ERROR, connection status is not ok before test..\n");
-			return false;
+			return axl_false;
 		}
 		printf ("Test 02-h:    download rate at %.2f KBytes/segs..\n", test_02g_rate (amount, result));
 	}
@@ -3764,14 +3765,14 @@ int  test_02h (void) {
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection)) {
 		printf ("failed to close the BEEP session\n");
-		return false;
+		return axl_false;
 	} /* end if */
 	
-	/* return true */
-	return true;
+	/* return axl_true */
+	return axl_true;
 }
 
-int  test_03a (void) {
+axl_bool  test_03a (void) {
 	
 	VortexConnection   * connection;
 	VortexChannelPool  * pool;
@@ -3781,9 +3782,9 @@ int  test_03a (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 
 	/* create the channel pool */
@@ -3816,9 +3817,9 @@ int  test_03a (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 
 	/* create the channel pool */
@@ -3837,41 +3838,41 @@ int  test_03a (void) {
 	/* check channel number */
 	if (vortex_channel_pool_get_num (pool) != 4) {
 		fprintf (stderr, "number of channels expected 4 != %d doesn't match\n", vortex_channel_pool_get_num (pool));
-		return false;
+		return axl_false;
 	}
 
 	/* use every channel */
 	channels = axl_list_new (axl_list_always_return_1, NULL);
 
 	/* get next channel */
-	channel = vortex_channel_pool_get_next_ready (pool, false);
+	channel = vortex_channel_pool_get_next_ready (pool, axl_false);
 	if (channel == NULL) 
-		return false;
+		return axl_false;
 	axl_list_add (channels, channel);
 
 	/* get next channel */
-	channel = vortex_channel_pool_get_next_ready (pool, false);
+	channel = vortex_channel_pool_get_next_ready (pool, axl_false);
 	if (channel == NULL) 
-		return false;
+		return axl_false;
 	axl_list_add (channels, channel);
 
 	/* get next channel */
-	channel = vortex_channel_pool_get_next_ready (pool, false);
+	channel = vortex_channel_pool_get_next_ready (pool, axl_false);
 	if (channel == NULL) 
-		return false;
+		return axl_false;
 	axl_list_add (channels, channel);
 
 
 	/* get next channel */
-	channel = vortex_channel_pool_get_next_ready (pool, false);
+	channel = vortex_channel_pool_get_next_ready (pool, axl_false);
 	if (channel == NULL) 
-		return false;
+		return axl_false;
 	axl_list_add (channels, channel);
 
 	/* get next channel */
-	channel = vortex_channel_pool_get_next_ready (pool, false);
+	channel = vortex_channel_pool_get_next_ready (pool, axl_false);
 	if (channel != NULL) 
-		return false;
+		return axl_false;
 
 	/* free the list */
 	axl_list_free (channels);
@@ -3879,14 +3880,14 @@ int  test_03a (void) {
 	/* ok, close the connection */
 	vortex_connection_close (connection);
 
-	/* return true */
-	return true;
+	/* return axl_true */
+	return axl_true;
 }
 
 /* constant for test_04 */
 #define MAX_NUM_CON 1000
 
-int  test_04 (void)
+axl_bool  test_04 (void)
 {
 	int                 iterator = 0;
 	VortexConnection  * connections[MAX_NUM_CON];
@@ -3903,10 +3904,10 @@ int  test_04 (void)
 	while (iterator < MAX_NUM_CON) { 
 		/* creates a new connection against localhost:44000 */
 		connections[iterator] = connection_new ();
-		if (!vortex_connection_is_ok (connections[iterator], false)) {
+		if (!vortex_connection_is_ok (connections[iterator], axl_false)) {
 			printf ("Test 04: Unable to connect remote server, error was: %s",
 				vortex_connection_get_message (connections[iterator]));
-			return false;
+			return axl_false;
 		}
 
 		/* update iterator */
@@ -3921,14 +3922,14 @@ int  test_04 (void)
 		if (connections[iterator] != NULL) 
 			vortex_connection_close (connections[iterator]);
 		else
-			return false;
+			return axl_false;
 
 		/* update iterator */
 		iterator++;
 	}
 
-	/* return true */
-	return true;
+	/* return axl_true */
+	return axl_true;
 }
 
 #define TEST_05_MSGSIZE (65536 * 8)
@@ -3936,9 +3937,9 @@ int  test_04 (void)
 /** 
  * @brief Checking TLS profile support.
  * 
- * @return true if ok, otherwise, false is returned.
+ * @return axl_true if ok, otherwise, axl_false is returned.
  */
-int  test_05 (void)
+axl_bool  test_05 (void)
 {
 	/* TLS status notification */
 	VortexStatus       status;
@@ -3955,7 +3956,7 @@ int  test_05 (void)
 	/* initialize and check if current vortex library supports TLS */
 	if (! vortex_tls_init (ctx)) {
 		printf ("--- WARNING: Unable to activate TLS, current vortex library has not TLS support activated. \n");
-		return true;
+		return axl_true;
 	}
 
 	/* create a new connection */
@@ -3967,13 +3968,13 @@ int  test_05 (void)
 							&status_message);
 	if (vortex_connection_get_data (connection, "being_closed")) {
 		printf ("Found TLS connection flagges a being_closed\n");
-		return false;
+		return axl_false;
 	}
 
 	if (status != VortexOk) {
 		printf ("Test 05: Failed to activate TLS support: %s\n", status_message);
-		/* return false */
-		return false;
+		/* return axl_false */
+		return axl_false;
 	}
 
 	/* create the queue */
@@ -3990,7 +3991,7 @@ int  test_05 (void)
 				      NULL, NULL);
 	if (channel == NULL) {
 		printf ("Unable to create the channel..");
-		return false;
+		return axl_false;
 	}
 
 	/* build the message */
@@ -4005,7 +4006,7 @@ int  test_05 (void)
 		if (! vortex_channel_send_msg (channel, message, TEST_05_MSGSIZE, NULL)) {
 			printf ("Test 05: Unable to send large message");
 			axl_free (message);
-			return false;
+			return axl_false;
 		}
 
 		/* update the iterator */
@@ -4027,13 +4028,13 @@ int  test_05 (void)
 			/* free frame */
 			vortex_frame_free (frame);
 			
-			return false;
+			return axl_false;
 		}
 
 		/* check result */
 		if (memcmp (message, vortex_frame_get_payload (frame), TEST_05_MSGSIZE)) {
 			printf ("Test 05: Messages aren't equal\n");
-			return false;
+			return axl_false;
 		}
 		
 		/* free frame received */
@@ -4048,20 +4049,20 @@ int  test_05 (void)
 
 	/* ok, close the channel */
 	if (! vortex_channel_close (channel, NULL))
-		return false;
+		return axl_false;
 
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection))
-		return false;
+		return axl_false;
 
 	/* free the queue */
 	vortex_async_queue_unref (queue);
 
 	/* close connection */
-	return true;
+	return axl_true;
 }
 
-int  test_02l (void) {
+axl_bool  test_02l (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -4071,9 +4072,9 @@ int  test_02l (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 		
 	} /* end if */
 
@@ -4090,7 +4091,7 @@ int  test_02l (void) {
 
 	if (channel == NULL) {
 		printf ("ERROR: unable to create channel to check connection close after ANS..NUL reply\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 
@@ -4098,19 +4099,19 @@ int  test_02l (void) {
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame == NULL) {
 		printf ("ERROR: expected reply from remote side while running mixed replies tests..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check reply type */
 	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_MSG) {
 		printf ("ERROR: expected to receive a MSG frame..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check content received */
 	if (! axl_cmp (vortex_frame_get_payload (frame), "message 1")) {
 		printf ("ERROR: expected to find different content than received..\n");
-		return false;
+		return axl_false;
 	}
 	
 	/* get msgno number */
@@ -4122,40 +4123,40 @@ int  test_02l (void) {
 	/* now reply with two ANS frames with NUL frame */
 	if (! vortex_channel_send_ans_rpy (channel, "this is a reply 1", 17, msg_no)) {
 		printf ("ERROR: failed to send first ANS reply ..\n");
-		return false;
+		return axl_false;
 	}
 	
 	/* second reply */
 	if (! vortex_channel_send_ans_rpy (channel, "this is a reply 2", 17, msg_no)) {
 		printf ("ERROR: failed to send second ANS reply ..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* finalize reply */
 	if (!vortex_channel_finalize_ans_rpy (channel, msg_no)) {
 		printf ("ERROR: failed to finalize ANS .. NUL reply series..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 	    
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection)) {
 		printf ("failed to close the BEEP session\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* terminate queue */
 	vortex_async_queue_unref (queue);
 
 	/* operation completed */
-	return true;
+	return axl_true;
 }
 
 /** 
  * @brief Checking TLS profile support.
  * 
- * @return true if ok, otherwise, false is returned.
+ * @return axl_true if ok, otherwise, axl_false is returned.
  */
-int  test_05_a (void)
+axl_bool  test_05_a (void)
 {
 	/* TLS status notification */
 	VortexStatus       status;
@@ -4170,7 +4171,7 @@ int  test_05_a (void)
 	/* initialize and check if current vortex library supports TLS */
 	if (! vortex_tls_init (ctx)) {
 		printf ("--- WARNING: Unable to activate TLS, current vortex library has not TLS support activated. \n");
-		return true;
+		return axl_true;
 	}
 
 	/* create a new connection */
@@ -4187,7 +4188,7 @@ int  test_05_a (void)
 				      NULL, NULL);
 	if (channel == NULL) {
 		printf ("Unable to create the channel..");
-		return false;
+		return axl_false;
 	}
 
 	/* enable TLS negotiation but get the connection id first */
@@ -4198,24 +4199,24 @@ int  test_05_a (void)
 
 	if (connection == NULL) {
 		printf ("Test 05-a: expected an error but not NULL reference..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	if (vortex_connection_get_id (connection) != connection_id) {
 		printf ("Test 05-a: expected an error but not a connection change..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	if (status == VortexOk) {
 		printf ("Test 05-a: Failed to activate TLS support: %s\n", status_message);
-		/* return false */
-		return false;
+		/* return axl_false */
+		return axl_false;
 	}
 
 	/* check that the connection is ok */
-	if (! vortex_connection_is_ok (connection, false)) {
+	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 05-a: expected an error but not a connection closed..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* now, do the same text to force a TLS error at the remote
@@ -4227,19 +4228,19 @@ int  test_05_a (void)
 
 	if (connection == NULL) {
 		printf ("Test 05-a: expected an error but not NULL reference..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	if (status == VortexOk) {
 		printf ("Test 05-a: Failed to activate TLS support: %s\n", status_message);
-		/* return false */
-		return false;
+		/* return axl_false */
+		return axl_false;
 	}
 
 	/* check that the connection is ok */
-	if (vortex_connection_is_ok (connection, false)) {
+	if (vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 05-a: expected an error but  a connection properly running..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	vortex_connection_close (connection);
@@ -4258,23 +4259,23 @@ int  test_05_a (void)
 				      NULL, NULL);
 	if (channel == NULL) {
 		printf ("Unable to create the channel..");
-		return false;
+		return axl_false;
 	}
 
 	/* enable autotls */
-	vortex_tls_set_auto_tls (ctx, true, false, NULL);
+	vortex_tls_set_auto_tls (ctx, axl_true, axl_false, NULL);
 
 	/* now check autotls */
 	connection2 = connection_new ();
 
 	if (connection2 == NULL) {
 		printf ("Test 05-a: expected a failure using auto-tls but not a null reference..\n");
-		return false;
+		return axl_false;
 	}
 
-	if (vortex_connection_is_ok (connection2, false)) {
+	if (vortex_connection_is_ok (connection2, axl_false)) {
 		printf ("Test 05-a: expected a failure using auto-tls but a proper connection status was found...\n");
-		return false;
+		return axl_false;
 	}
 
 	/* close the connection */
@@ -4286,52 +4287,52 @@ int  test_05_a (void)
 
 	if (connection2 == NULL) {
 		printf ("Test 05-a: expected a proper connection using auto-tls but not a null reference (1)..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check connection status */
-	if (! vortex_connection_is_ok (connection2, false)) {
+	if (! vortex_connection_is_ok (connection2, axl_false)) {
 		printf ("Test 05-a: expected a proper connection using auto-tls but a failure was found (2)...\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check tls fixate status */
 	if (! vortex_connection_is_tlsficated (connection2)) {
 		printf ("Test 05-a: expected proper TLS fixate status..\n");
-		return false;
+		return axl_false;
 	}
 	
 	/* close the connection */
 	vortex_connection_close (connection2);
 	
 	/* restore auto-tls */
-	vortex_tls_set_auto_tls (ctx, false, false, NULL);
+	vortex_tls_set_auto_tls (ctx, axl_false, axl_false, NULL);
 
 	/* now create a connection with auto tls activated */
 	connection2 = connection_new ();
 
 	if (connection2 == NULL) {
 		printf ("Test 05-a: expected a proper connection using auto-tls but not a null reference(3)..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check connection status */
-	if (! vortex_connection_is_ok (connection2, false)) {
+	if (! vortex_connection_is_ok (connection2, axl_false)) {
 		printf ("Test 05-a: expected a proper connection using auto-tls but a failure was found(4)...\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check tls fixate status */
 	if (vortex_connection_is_tlsficated (connection2)) {
 		printf ("Test 05-a: expected to find disable automatic TLS negotiation, but it found enabled..\n");
-		return false;
+		return axl_false;
 	}
 	
 	/* close the connection */
 	vortex_connection_close (connection2);
 
 
-	return true;
+	return axl_true;
 }
 
 /* message size: 4096 */
@@ -4378,7 +4379,7 @@ void test_04_a_frame_received (VortexChannel    * channel,
 	return;
 }
 
-int  test_04_a_common (int block_size, int num_blocks, int num_times) {
+axl_bool  test_04_a_common (int block_size, int num_blocks, int num_times) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -4396,9 +4397,9 @@ int  test_04_a_common (int block_size, int num_blocks, int num_times) {
 #endif
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 
 	/* create the queue */
@@ -4415,7 +4416,7 @@ int  test_04_a_common (int block_size, int num_blocks, int num_times) {
 				      NULL, NULL);
 	if (channel == NULL) {
 		printf ("Unable to create the channel..");
-		return false;
+		return axl_false;
 	}
 
 	times           = 0;
@@ -4430,7 +4431,7 @@ int  test_04_a_common (int block_size, int num_blocks, int num_times) {
 		message = axl_strdup_printf ("return large message,%d,%d", block_size, num_blocks);
 		if (! vortex_channel_send_msg (channel, message, strlen (message), NULL)) {
 			printf ("Failed to send message requesting for large file..\n");
-			return false;
+			return axl_false;
 		} /* end if */
 		axl_free (message);
 		
@@ -4438,7 +4439,7 @@ int  test_04_a_common (int block_size, int num_blocks, int num_times) {
 		iterator    = 0;
 		total_bytes = 0;
 		printf ("Test 04-a:     waiting replies\n");
-		while (true) {
+		while (axl_true) {
 			/* get the next message, blocking at this call. */
 			frame = vortex_channel_get_reply (channel, queue);
 			
@@ -4459,14 +4460,14 @@ int  test_04_a_common (int block_size, int num_blocks, int num_times) {
 				if ((blocks_received - 1) != num_blocks) {
 					printf ("ERROR: Expected to find %d blocks but received %d..\n",
 						num_blocks, (blocks_received - 1));
-					return false;
+					return axl_false;
 				}
 
 				/* check size */
 				if (vortex_frame_get_payload_size (frame) != 0) {
 					printf ("Expected to find NUL terminator message, with empty content, but found: %d frame size\n",
 						vortex_frame_get_payload_size (frame));
-					return false;
+					return axl_false;
 				} /* end if */
 				
 				/* deallocate the frame received */
@@ -4483,7 +4484,7 @@ int  test_04_a_common (int block_size, int num_blocks, int num_times) {
 					 block_size)) {
 				printf ("Expected to find different message(%d) at test: %s != '%s'..\n",
 					iterator, (char *) vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE);
-				return false;
+				return axl_false;
 			} /* end if */
 			
 			
@@ -4491,7 +4492,7 @@ int  test_04_a_common (int block_size, int num_blocks, int num_times) {
 			if (vortex_frame_get_payload_size (frame) != block_size) {
 				printf ("Expected to find different message(%d) size %d at test, but found: %d..\n",
 					iterator, block_size, vortex_frame_get_payload_size (frame));
-				return false;
+				return axl_false;
 			}
 			
 			/* deallocate the frame received */
@@ -4533,7 +4534,7 @@ int  test_04_a_common (int block_size, int num_blocks, int num_times) {
 		message = axl_strdup_printf ("return large message,%d,%d", block_size, num_blocks);
 		if (! vortex_channel_send_msg (channel, message, strlen (message), NULL)) {
 			printf ("Failed to send message requesting for large file..\n");
-			return false;
+			return axl_false;
 		} /* end if */
 		axl_free (message);
 		
@@ -4572,14 +4573,14 @@ int  test_04_a_common (int block_size, int num_blocks, int num_times) {
 
 	/* ok, close the channel */
 	if (! vortex_channel_close (channel, NULL))
-		return false;
+		return axl_false;
 
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection))
-		return false;
+		return axl_false;
 
 	/* close connection */
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -4587,61 +4588,61 @@ int  test_04_a_common (int block_size, int num_blocks, int num_times) {
  * that goes beyond default window size advertised.
  * 
  * 
- * @return true if the test is ok, otherwise false is returned.
+ * @return axl_true if the test is ok, otherwise axl_false is returned.
  */
-int  test_04_a (void) {
+axl_bool  test_04_a (void) {
 	/* call to run default test: block=4096, block-num=4096 */
 	if (! test_04_a_common (4096, 4096, 1))
-		return false;
+		return axl_false;
 
 	/* call to run test: block=4094, block-num=4096 */
 	if (! test_04_a_common (4094, 4096, 1))
-		return false;
+		return axl_false;
 
 	/* call to run test: block=4094, block-num=8192 */
 	if (! test_04_a_common (4094, 8192, 1))
-		return false;
+		return axl_false;
 
 
 	/* all tests ok */
-	return true;
+	return axl_true;
 }
 
 /** 
  * @brief Checks BEEP support for ANS/NUL while sending different
  * files in the same channel.
  *
- * @return true if the test is ok, otherwise false is returned.
+ * @return axl_true if the test is ok, otherwise axl_false is returned.
  */
-int  test_04_ab (void) {
+axl_bool  test_04_ab (void) {
 
 	VortexConnection * connection;
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 
 	/* call to base implementation */
-	if (! test_04_ab_common (connection, -1, NULL, NULL, 1, false))
-		return false;
+	if (! test_04_ab_common (connection, -1, NULL, NULL, 1, axl_false))
+		return axl_false;
 
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection))
-		return false;
+		return axl_false;
 
 	/* close connection */
-	return true;
+	return axl_true;
 }
 
 /** 
  * @brief Checks client adviced profiles.
  *
- * @return true if the test is ok, otherwise false is returned.
+ * @return axl_true if the test is ok, otherwise axl_false is returned.
  */
-int  test_04_c (void) {
+axl_bool  test_04_c (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -4675,9 +4676,9 @@ int  test_04_c (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 
 	/* create a channel */
@@ -4692,16 +4693,16 @@ int  test_04_c (void) {
 
 	if (channel == NULL) {
 		printf ("Unable to create the channel, failed to advice client profiles..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* ok, close the channel */
 	if (! vortex_channel_close (channel, NULL))
-		return false;
+		return axl_false;
 
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection))
-		return false;
+		return axl_false;
 
 	/* register two profiles for this session */
 	vortex_profiles_unregister (ctx, "urn:vortex:regression-test:uri:1");
@@ -4710,9 +4711,9 @@ int  test_04_c (void) {
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 
 	/* create a channel */
@@ -4727,28 +4728,28 @@ int  test_04_c (void) {
 				
 	if (channel == NULL) {
 		printf ("Unable to create the channel, failed to advice client profiles..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* ok, close the channel */
 	if (! vortex_channel_close (channel, NULL))
-		return false;
+		return axl_false;
 
 	/* ok, close the connection */
 	if (! vortex_connection_close (connection))
-		return false;
+		return axl_false;
 
 	/* close connection */
-	return true;
+	return axl_true;
 }
 
 
 /** 
  * @brief Checking SASL profile support.
  * 
- * @return true if ok, otherwise, false is returned.
+ * @return axl_true if ok, otherwise, axl_false is returned.
  */
-int  test_06 (void)
+axl_bool  test_06 (void)
 {
 #if defined(ENABLE_SASL_SUPPORT)
 	VortexStatus       status;
@@ -4758,7 +4759,7 @@ int  test_06 (void)
 	/* check and initialize  SASL support */
 	if (! vortex_sasl_init (ctx)) {
 		printf ("--- WARNING: Unable to begin SASL negotiation. Current Vortex Library doesn't support SASL");
-		return true;
+		return axl_true;
 	}
 
 	/**** CHECK SASL ANONYMOUS MECHANISM ****/
@@ -4767,8 +4768,8 @@ int  test_06 (void)
 	connection = connection_new ();
 
 	/* check connection created */
-	if (! vortex_connection_is_ok (connection, false)) {
-		return false;
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		return axl_false;
 	}
 
 	printf ("Test 06: SASL ANONYMOUS profile support ");
@@ -4781,7 +4782,7 @@ int  test_06 (void)
 
 	if (status != VortexError) {
 		printf ("Expected failed anonymous SASL login..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* begin SASL ANONYMOUS negotiation */ 
@@ -4792,7 +4793,7 @@ int  test_06 (void)
 
 	if (status != VortexOk) {
 		printf ("Failed to authenticate expected anonymous to work..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 
@@ -4807,8 +4808,8 @@ int  test_06 (void)
 	connection = connection_new ();
 
 	/* check connection created */
-	if (! vortex_connection_is_ok (connection, false)) {
-		return false;
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		return axl_false;
 	}
 
 	printf ("Test 06: SASL EXTERNAL profile support ");
@@ -4822,14 +4823,14 @@ int  test_06 (void)
 
 	if (status != VortexError) {
 		printf ("Expected to find an authentication failed for the EXTERNAL mechanism..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* check SASL channels opened at this point */
 	if (vortex_connection_channels_count (connection) != 1) {
 		printf ("Expected to find only one channel but found: %d..\n", 
 			vortex_connection_channels_count (connection));
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* set external properties */
@@ -4841,7 +4842,7 @@ int  test_06 (void)
 
 	if (status != VortexOk) {
 		printf ("Failed to authenticate expected anonymous to work..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* close the connection */
@@ -4857,8 +4858,8 @@ int  test_06 (void)
 	connection = connection_new ();
 
 	/* check connection created */
-	if (! vortex_connection_is_ok (connection, false)) {
-		return false;
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		return axl_false;
 	}
 
 	/* set plain properties */
@@ -4874,14 +4875,14 @@ int  test_06 (void)
 
 	if (status != VortexError) {
 		printf ("Expected to find a PLAIN mechanism failure but it wasn't found.\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* check SASL channels opened at this point */
 	if (vortex_connection_channels_count (connection) != 1) {
 		printf ("Expected to find only one channel but found: %d..\n", 
 			vortex_connection_channels_count (connection));
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* set plain properties */
@@ -4897,7 +4898,7 @@ int  test_06 (void)
 
 	if (status != VortexOk) {
 		printf ("Expected to find a success PLAIN mechanism but it wasn't found.\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* close the connection */
@@ -4913,8 +4914,8 @@ int  test_06 (void)
 	connection = connection_new ();
 
 	/* check connection created */
-	if (! vortex_connection_is_ok (connection, false)) {
-		return false;
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		return axl_false;
 	}
 
 	/* set cram-md5 properties */
@@ -4930,14 +4931,14 @@ int  test_06 (void)
 
 	if (status != VortexError) {
 		printf ("Expected to find a CRAM-MD5 mechanism failure but it wasn't found.\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* check SASL channels opened at this point */
 	if (vortex_connection_channels_count (connection) != 1) {
 		printf ("Expected to find only one channel but found: %d..\n", 
 			vortex_connection_channels_count (connection));
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* set cram-md5 properties */
@@ -4953,7 +4954,7 @@ int  test_06 (void)
 
 	if (status != VortexOk) {
 		printf ("Expected to find a success CRAM-MD5 mechanism but it wasn't found.\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* close the connection */
@@ -4969,8 +4970,8 @@ int  test_06 (void)
 	connection = connection_new ();
 
 	/* check connection created */
-	if (! vortex_connection_is_ok (connection, false)) {
-		return false;
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		return axl_false;
 	}
 
 	/* set DIGEST-MD5 properties */
@@ -4985,13 +4986,13 @@ int  test_06 (void)
 
 	if (status != VortexError) {
 		printf ("Expected to find a DIGEST-MD5 mechanism failure but it wasn't found.\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	if (vortex_connection_channels_count (connection) != 1) {
 		printf ("Expected to find only one channel but found: %d..\n", 
 			vortex_connection_channels_count (connection));
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* set DIGEST-MD5 properties */
@@ -5011,7 +5012,7 @@ int  test_06 (void)
 
 	if (status != VortexOk) {
 		printf ("Expected to find a success DIGEST-MD5 mechanism but it wasn't found.\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* close the connection */
@@ -5022,7 +5023,7 @@ int  test_06 (void)
 #else
 	printf ("--- WARNING: unable to run SASL tests, no sasl library was built\n");
 #endif	
-	return true;
+	return axl_true;
 	
 }
 
@@ -5030,9 +5031,9 @@ int  test_06 (void)
  * @brief Test XML-RPC support.
  * 
  * 
- * @return true if all test pass, otherwise false is returned.
+ * @return axl_true if all test pass, otherwise axl_false is returned.
  */
-int  test_07 (void) {
+axl_bool  test_07 (void) {
 	
 #if defined(ENABLE_XML_RPC_SUPPORT)
 	VortexConnection * connection;
@@ -5041,7 +5042,7 @@ int  test_07 (void) {
 	/* test 02 */
 	char             * result;
 	/* test 03 */
-	int                bresult;
+	axl_bool           bresult;
 	/* test 04 */
 	double             dresult;
 	/* test 05 */
@@ -5058,7 +5059,7 @@ int  test_07 (void) {
 	/* init xml-rpc module */
 	if (! vortex_xml_rpc_init (ctx)) {
 		printf ("--- WARNING: unable to start XML-RPC profile, failed to init XML-RPC library\n");
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* create a new connection */
@@ -5071,7 +5072,7 @@ int  test_07 (void) {
 	printf ("Test 07: xml-rpc test 01..ok\n");
 	if (7 != test_sum_int_int_s (3, 4, channel, NULL, NULL, NULL)) {
 		fprintf (stderr, "ERROR: An error was found while invoking..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* perform the invocation */
@@ -5080,7 +5081,7 @@ int  test_07 (void) {
 
 		if (-3 != test_sum_int_int_s (10, -13, channel, NULL, NULL, NULL)) {
 			fprintf (stderr, "ERROR: An error was found while invoking..\n");
-			return false;
+			return axl_false;
 		}
 		iterator++;
 	}
@@ -5091,13 +5092,13 @@ int  test_07 (void) {
 	result = test_get_the_string_s (channel, NULL, NULL, NULL);
 	if (result == NULL) {
 		fprintf (stderr, "An error was found while retreiving the result, a NULL value was received when an string was expected\n");
-		return false;
+		return axl_false;
 	}
 	
 	if (! axl_cmp (result, "This is a test")) {
 		fprintf (stderr, "An different string value was received than expected '%s' != '%s'..",
 			 "This is a test", result);
-		return false;
+		return axl_false;
 	}
 
 	/* free the result */
@@ -5107,15 +5108,15 @@ int  test_07 (void) {
 	/*** TEST 03 ***/
 	/* get the string from the function */
 	bresult = test_get_the_bool_1_s (channel, NULL, NULL, NULL);
-	if (bresult != false) {
-		fprintf (stderr, "Expected to receive a false bool value..\n");
-		return false;
+	if (bresult != axl_false) {
+		fprintf (stderr, "Expected to receive a axl_false bool value..\n");
+		return axl_false;
 	}
 
 	bresult = test_get_the_bool_2_s (channel, NULL, NULL, NULL);
-	if (bresult != true) {
-		fprintf (stderr, "Expected to receive a true bool value..\n");
-		return false;
+	if (bresult != axl_true) {
+		fprintf (stderr, "Expected to receive a axl_true bool value..\n");
+		return axl_false;
 	}
 	printf ("Test 07: xml-rpc test 03..ok\n");
 
@@ -5124,38 +5125,38 @@ int  test_07 (void) {
 	dresult = test_get_double_sum_double_double_s (7.2, 8.3, channel, NULL, NULL, NULL);
 	if (dresult != 15.5) {
 		fprintf (stderr, "Expected to receive double value 15.5 but received: %g..\n", dresult);
-		return false;
+		return axl_false;
 	}
 	printf ("Test 07: xml-rpc test 04..ok\n");
 
 	/*** TEST 05 ***/
 	/* get the string from the function */
-	a      = test_values_new (3, 10.2, false);
-	b      = test_values_new (7, 7.12, true);
+	a      = test_values_new (3, 10.2, axl_false);
+	b      = test_values_new (7, 7.12, axl_true);
 	
 	/* perform invocation */
 	struct_result = test_get_struct_values_values_s (a, b, channel, NULL, NULL, NULL);
 
 	if (struct_result == NULL) {
 		fprintf (stderr, "Expected to receive a non NULL result from the service invocation\n");
-		return false;
+		return axl_false;
 	}
 
 	if (struct_result->count != 10) {
 		fprintf (stderr, "Expected to receive a value not found (count=10 != count=%d\n",
 			    struct_result->count);
-		return false;
+		return axl_false;
 	}
 
 	if (struct_result->fraction != 17.32) {
 		fprintf (stderr, "Expected to receive a value not found (fraction=17.32 != fraction=%g\n",
 			    struct_result->fraction);
-		return false;
+		return axl_false;
 	}
 
 	if (! struct_result->status) {
-		fprintf (stderr, "Expected to receive a true value for status\n");
-		return false;
+		fprintf (stderr, "Expected to receive a axl_true value for status\n");
+		return axl_false;
 	}
 
 	/* release memory allocated */
@@ -5170,7 +5171,7 @@ int  test_07 (void) {
 	
 	if (array == NULL) {
 		fprintf (stderr, "Expected to receive a non NULL result from the service invocation\n");
-		return false;
+		return axl_false;
 	}
 
 	/* for each item */
@@ -5182,21 +5183,21 @@ int  test_07 (void) {
 		/* check null reference */
 		if (item == NULL) {
 			fprintf (stderr, "Expected to find a struct reference inside..\n");
-			return false;
+			return axl_false;
 		}
 
 		/* check the int value inside the struct */
 		if (item->position != iterator) {
 			fprintf (stderr, "Expected to find an integer value: (%d) != (%d)\n",
 				    item->position, iterator);
-			return false;
+			return axl_false;
 		}
 
 		/* check the string inside */
 		if (! axl_cmp (item->string_position, "test content")) {
 			fprintf (stderr, "Expected to find a string value: (%s) != (%s)\n",
 				 item->string_position, "test content");
-			return false;
+			return axl_false;
 		}
 	}
 	
@@ -5245,7 +5246,7 @@ int  test_07 (void) {
 	printf ("--- WARNING: unable to run XML-RPC tests, no xml-rpc library was built\n");
 #endif
 
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -5253,10 +5254,10 @@ int  test_07 (void) {
  * into the connection once the first successfull channel is created.
  * 
  * 
- * @return true if serverName is properly configured, otherwise false
+ * @return axl_true if serverName is properly configured, otherwise axl_false
  * is returned.
  */
-int  test_08 (void)
+axl_bool  test_08 (void)
 {
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -5287,13 +5288,13 @@ int  test_08 (void)
 	/* check channel created */
 	if (channel == NULL) {
 		printf ("Unable to create channel...\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check server name configuration */
 	if (! axl_cmp ("dolphin.aspl.es", vortex_connection_get_server_name (connection))) {
 		printf ("Failed to get the proper serverName value for the connection..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* ask for the server name that have the remote side */
@@ -5306,12 +5307,12 @@ int  test_08 (void)
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame == NULL) {
 		printf ("Failed to get the reply from the server..\n");
-		return false;
+		return axl_false;
 	}
 	if (! axl_cmp (vortex_frame_get_payload (frame), "dolphin.aspl.es")) {
 		printf ("Received a different server name configured that expected: %s..\n",
 			(char*) vortex_frame_get_payload (frame));
-		return false;
+		return axl_false;
 	}
 
 	/* free frame */
@@ -5335,13 +5336,13 @@ int  test_08 (void)
 	/* check channel created */
 	if (channel == NULL) {
 		printf ("Unable to create channel...\n");
-		return false;
+		return axl_false;
 	}
 
 	/* check server name configuration */
 	if (! axl_cmp ("dolphin.aspl.es", vortex_connection_get_server_name (connection))) {
 		printf ("Failed to get the proper serverName value for the connection..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* ask for the server name that have the remote side */
@@ -5354,12 +5355,12 @@ int  test_08 (void)
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame == NULL) {
 		printf ("Failed to get the reply from the server..\n");
-		return false;
+		return axl_false;
 	}
 	if (! axl_cmp (vortex_frame_get_payload (frame), "dolphin.aspl.es")) {
 		printf ("Received a different server name configured that expected: %s..\n",
 			(char*) vortex_frame_get_payload (frame));
-		return false;
+		return axl_false;
 	}
 
 	/* free frame */
@@ -5370,7 +5371,7 @@ int  test_08 (void)
 
 	/* close the connection */
 	vortex_connection_close (connection);
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -5378,9 +5379,9 @@ int  test_08 (void)
  * to accept the close operation.
  * 
  * 
- * @return false if it fails, otherwise true is returned.
+ * @return axl_false if it fails, otherwise axl_true is returned.
  */
-int  test_10 (void)
+axl_bool  test_10 (void)
 {
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -5401,7 +5402,7 @@ int  test_10 (void)
 	/* close the channel */
 	if (! vortex_channel_close (channel, NULL)) {
 		printf ("Test 10: failed to close the regression channel when a possitive reply was expected\n");
-		return false;
+		return axl_false;
 	}
 
 	/* create a channel */
@@ -5417,12 +5418,12 @@ int  test_10 (void)
 	/* close the channel */
 	if (! vortex_channel_close (channel, NULL)) {
 		printf ("Test 10: failed to close the regression channel when a possitive reply was expected\n");
-		return false;
+		return axl_false;
 	}
 
 	/* close the connection */
 	vortex_connection_close (connection);
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -5430,9 +5431,9 @@ int  test_10 (void)
  * next to be replied without being blocked.
  * 
  * 
- * @return false if it fails, otherwise true is returned.
+ * @return axl_false if it fails, otherwise axl_true is returned.
  */
-int  test_11 (void)
+axl_bool  test_11 (void)
 {
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -5469,7 +5470,7 @@ int  test_11 (void)
 		frame = vortex_channel_get_reply (channel, queue);
 		if (frame == NULL || vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
 			printf ("Test 11: failed, expected to find reply defined or to be RPY..\n");
-			return false;
+			return axl_false;
 		} /* end if */
 		vortex_frame_unref (frame);
 		
@@ -5480,9 +5481,9 @@ int  test_11 (void)
 		frame2    = NULL;
 		frame3    = NULL;
 
-		if (! vortex_connection_is_ok (connection, false)) {
+		if (! vortex_connection_is_ok (connection, axl_false)) {
 			printf ("Test 11: failed, detected connection close before getting first frame..\n");
-			return false;
+			return axl_false;
 		}
 
 		/* get the first frame */
@@ -5490,12 +5491,12 @@ int  test_11 (void)
 		/* printf ("."); */
 		if (frame == NULL || vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_MSG) {
 			printf ("Test 11: failed, expected to find defined frame and using type MSG\n");
-			return false;
+			return axl_false;
 		} /* end if */
 
-		if (! vortex_connection_is_ok (connection, false)) {
+		if (! vortex_connection_is_ok (connection, axl_false)) {
 			printf ("Test 11: failed, detected connection close before getting second frame..\n");
-			return false;
+			return axl_false;
 		}
 		
 		/* get the first frame2 */
@@ -5503,12 +5504,12 @@ int  test_11 (void)
 		/* printf ("."); */
 		if (frame2 == NULL || vortex_frame_get_type (frame2) != VORTEX_FRAME_TYPE_MSG) {
 			printf ("Test 11: failed, expected to find defined frame and using type MSG\n");
-			return false;
+			return axl_false;
 		} /* end if */
 
-		if (! vortex_connection_is_ok (connection, false)) {
+		if (! vortex_connection_is_ok (connection, axl_false)) {
 			printf ("Test 11: failed, detected connection close before getting third frame..\n");
-			return false;
+			return axl_false;
 		}
 		
 		/* get the first frame2 */
@@ -5517,7 +5518,7 @@ int  test_11 (void)
 		/* printf ("."); */
 		if (frame3 == NULL || vortex_frame_get_type (frame3) != VORTEX_FRAME_TYPE_MSG) {
 			printf ("Test 11: failed, expected to find defined frame and using type MSG\n");
-			return false;
+			return axl_false;
 		} /* end if */
 		
 		/* now reply in our of order */
@@ -5546,9 +5547,9 @@ int  test_11 (void)
 			
 		} /* end if */
 
-		if (! vortex_connection_is_ok (connection, false)) {
+		if (! vortex_connection_is_ok (connection, axl_false)) {
 			printf ("Test 11: failed, detected connection close after sending data..\n");
-			return false;
+			return axl_false;
 		}
 		
 		/* delete all frames */
@@ -5564,7 +5565,7 @@ int  test_11 (void)
 	/* close the channel */
 	if (! vortex_channel_close (channel, NULL)) {
 		printf ("Test 11: failed to close the regression channel when a possitive reply was expected\n");
-		return false;
+		return axl_false;
 	}
 
 	/* close the connection */
@@ -5573,16 +5574,16 @@ int  test_11 (void)
 	/* unref the queue */
 	vortex_async_queue_unref (queue);
 
-	return true;
+	return axl_true;
 }
 
 /** 
  * @brief Checks connection creating timeout.
  * 
  * 
- * @return true if test pass, otherwise false is returned.
+ * @return axl_true if test pass, otherwise axl_false is returned.
  */
-int  test_12 (void) {
+axl_bool  test_12 (void) {
 	VortexConnection  * connection;
 	VortexConnection  * control;
 	VortexChannel     * c_channel;
@@ -5599,7 +5600,7 @@ int  test_12 (void) {
 	if (vortex_connection_get_connect_timeout (ctx) != 0) {
 		printf ("Test 12 (1): failed, expected to receive an empty timeout configuration: but received %ld..\n",
 			vortex_connection_get_connect_timeout (ctx));
-		return false;
+		return axl_false;
 	}
 
 	/* configure a new timeout (10 seconds, 10000000 microseconds) */
@@ -5609,7 +5610,7 @@ int  test_12 (void) {
 	if (vortex_connection_get_connect_timeout (ctx) != 10000000) {
 		printf ("Test 12 (2): failed, expected to receive 10000000 timeout configuration: but received %ld..\n",
 			vortex_connection_get_connect_timeout (ctx));
-		return false;
+		return axl_false;
 	}
 
 	/* creates a new connection against localhost:44000 */
@@ -5618,17 +5619,17 @@ int  test_12 (void) {
 	fflush (stdout);
 	stamp      = time (NULL);
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 12 (3): failed to connect to: %s:%s...reason: %s\n",
 			listener_host, LISTENER_PORT, vortex_connection_get_message (connection));
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 
 	/* check stamp before continue */
 	if ((time (NULL) - stamp) > 1) {
 		printf ("Test 12 (3.1): failed, expected less connection time while testing..\n");
-		return false;
+		return axl_false;
 	}
 
 	/* connected */
@@ -5647,16 +5648,16 @@ int  test_12 (void) {
 	if (vortex_connection_get_connect_timeout (ctx) != 0) {
 		printf ("Test 12 (4): failed, expected to receive 0 timeout configuration, after clearing: but received %ld..\n",
 			vortex_connection_get_connect_timeout (ctx));
-		return false;
+		return axl_false;
 	}
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 12 (5): failed to connect to: %s:%s...reason: %s\n",
 			listener_host, LISTENER_PORT, vortex_connection_get_message (connection));
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 	
 	/* ok, close the connection */
@@ -5674,7 +5675,7 @@ int  test_12 (void) {
 	if (vortex_connection_get_connect_timeout (ctx) != 5000000) {
 		printf ("Test 12 (6): failed, expected to receive 10000000 timeout configuration, after configuring: but received %ld..\n",
 			vortex_connection_get_connect_timeout (ctx));
-		return false;
+		return axl_false;
 	}
 	printf (".");
 	fflush (stdout);
@@ -5682,11 +5683,11 @@ int  test_12 (void) {
 	/* try to connect to an unreachable host */
 	connection = vortex_connection_new (ctx, listener_host, "44012", NULL, NULL);
 	stamp      = time (NULL);
-	if (vortex_connection_is_ok (connection, false)) {
+	if (vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 12 (7): failed, expected to NOT to connect to: %s:%s...reason: %s\n",
 			listener_host, LISTENER_PORT, vortex_connection_get_message (connection));
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 	printf (".");
 	fflush (stdout);
@@ -5696,7 +5697,7 @@ int  test_12 (void) {
 	if (stamp != time (NULL) && (stamp + 1) != time (NULL)) {
 		printf ("Test 12 (7.1): failed, expected no especial timeout for an unreachable connect operation..\n");
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* ok, close the connection */
@@ -5711,10 +5712,10 @@ int  test_12 (void) {
 	/* create a control connection and an special channel to start
 	 * a listener */
 	control = connection_new ();
-	if (! vortex_connection_is_ok (control, false)) {
+	if (! vortex_connection_is_ok (control, axl_false)) {
 		printf ("Test 12 (7.2): failed to create control connection, unable to start remote fake listener..\n");
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	} /* end if */
 	
 	/* CREATE CONTROL CHANNEL: now create the fake listener */
@@ -5729,21 +5730,21 @@ int  test_12 (void) {
 	if (c_channel == NULL) {
 		printf ("Test 12 (7.3): failed to create remote listener creation channel, unable to start remote fake listener..\n");
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	} /* end if */
 
 	/* CREATE FAKE LISTENER: call to create a remote listener
 	 * (blocked) running on the 44012 port */
 	if (! vortex_channel_send_msg (c_channel, "create-listener", 15, NULL)) {
 		printf ("Test 12 (7.4): failed to send message to create remote fake listener...\n");
-		return false;
+		return axl_false;
 	}
 
 	/* get reply */
 	frame = vortex_channel_get_reply (c_channel, queue);
 	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
 		printf ("Test 12 (7.5): failed to start remote fake listener, received negative reply..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 	vortex_frame_unref (frame);
 	printf ("remote fake listener created");
@@ -5754,11 +5755,11 @@ int  test_12 (void) {
 	fflush (stdout);
 	stamp      = time (NULL);
 	connection = vortex_connection_new (ctx, listener_host, "44012", NULL, NULL);
-	if (vortex_connection_is_ok (connection, false)) {
+	if (vortex_connection_is_ok (connection, axl_false)) {
 		printf ("\nTest 12 (9): failed to connect to: %s:%s...reason: %s\n",
 			listener_host, "44012", vortex_connection_get_message (connection));
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	}
 
 	/* ok, close the connection */
@@ -5768,7 +5769,7 @@ int  test_12 (void) {
 	if ((stamp + 3) > time (NULL)) {
 		printf ("Test 12 (9.1): supposed to perform a connection failed, with a timeout about of 3 seconds but only consumed: %ld seconds..\n",
 			(time (NULL)) - stamp);
-		return false;
+		return axl_false;
 	}
 
 	/* now unlock the listener */
@@ -5778,14 +5779,14 @@ int  test_12 (void) {
 	 * listener (blocked) running on the 44012 port */
 	if (! vortex_channel_send_msg (c_channel, "unlock-listener", 15, NULL)) {
 		printf ("Test 12 (7.4): failed to send message to create remote fake listener...\n");
-		return false;
+		return axl_false;
 	}
 
 	/* get reply */
 	frame = vortex_channel_get_reply (c_channel, queue);
 	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
 		printf ("Test 12 (7.5): failed to start remote fake listener, received negative reply..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 	vortex_frame_unref (frame);
 	printf ("ok..");
@@ -5794,11 +5795,11 @@ int  test_12 (void) {
 	printf ("..now connecting");
 	fflush (stdout);
 	connection = vortex_connection_new (ctx, listener_host, "44012", NULL, NULL);
-	if (! vortex_connection_is_ok (connection, false)) {
+	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 12 (10): failed to connect to: %s:%s...reason: %s\n",
 			listener_host, LISTENER_PORT, vortex_connection_get_message (connection));
 		vortex_connection_close (connection);
-		return false;
+		return axl_false;
 	} 
 
 	/* create a channel */
@@ -5821,7 +5822,7 @@ int  test_12 (void) {
 				      NULL, NULL);
 	if (channel == NULL) {
 		printf ("Test 12 (10.1): Unable to create the channel..");
-		return false;
+		return axl_false;
 	}
 
 	/* ok, close the channel */
@@ -5838,14 +5839,14 @@ int  test_12 (void) {
 	/* CLOSE REMOTE SERVER: call to close remote fake listener */
 	if (! vortex_channel_send_msg (c_channel, "close-listener", 14, NULL)) {
 		printf ("Test 12 (7.4): failed to send message to create remote fake listener...\n");
-		return false;
+		return axl_false;
 	}
 
 	/* get reply */
 	frame = vortex_channel_get_reply (c_channel, queue);
 	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
 		printf ("Test 12 (7.5): failed to start remote fake listener, received negative reply..\n");
-		return false;
+		return axl_false;
 	} /* end if */
 	vortex_frame_unref (frame);
 	printf ("remote fake listener created");
@@ -5857,9 +5858,9 @@ int  test_12 (void) {
 	/* free queue */
 	vortex_async_queue_unref (queue);
 	
-	/* return true */
+	/* return axl_true */
 	printf ("\n");
-	return true;
+	return axl_true;
 }
 
 
@@ -5906,9 +5907,9 @@ int  test_12 (void) {
  * close notification handler (or uses the default action) accepting
  * to close the channel, then it is removed and the reference is lost.
  * 
- * @return true if goes ok.
+ * @return axl_true if goes ok.
  */
-int  test_09 (void) 
+axl_bool  test_09 (void) 
 {
 	VortexConnection * conn;
 	VortexChannel    * channel;
@@ -5941,7 +5942,7 @@ int  test_09 (void)
 		/* close the channel */
 		if (! vortex_channel_close (channel, NULL)) {
 			printf ("Failed to close the channel..\n");
-			return false;
+			return axl_false;
 		}
 
 		/* unref the channel */
@@ -5951,7 +5952,7 @@ int  test_09 (void)
 		if (vortex_connection_channels_count (conn) != 1) {
 			printf ("failed, expected to find one (1 != %d) channel running in the connection..\n",
 				vortex_connection_channels_count (conn));
-			return false;
+			return axl_false;
 		}
 
 		iterator++;
@@ -5985,7 +5986,7 @@ int  test_09 (void)
 		/* close the channel */
 		if (! vortex_channel_close (channel, NULL)) {
 			printf ("Failed to close the channel..\n");
-			return false;
+			return axl_false;
 		}
 
 		/* unref the channel */
@@ -5995,7 +5996,7 @@ int  test_09 (void)
 		if (vortex_connection_channels_count (conn) != 1) {
 			printf ("failed, expected to find one (1 != %d) channel running in the connection..\n",
 				vortex_connection_channels_count (conn));
-			return false;
+			return axl_false;
 		}
 
 		iterator++;
@@ -6006,7 +6007,7 @@ int  test_09 (void)
 	/* close the connection */
 	vortex_connection_close (conn);
 
-	return true;
+	return axl_true;
 	
 }
 
@@ -6030,9 +6031,9 @@ void __block_test (int value)
 /** 
  * @brief Allows to check tunnel implementation.
  * 
- * @return true if all test pass, otherwise false is returned.
+ * @return axl_true if all test pass, otherwise axl_false is returned.
  */
-int  test_13 (void)
+axl_bool  test_13 (void)
 {
 	printf ("Test 13: ** \n");
 	printf ("Test 13: ** INFO: Running test, under the TUNNEL profile (BEEP proxy support)!\n");
@@ -6040,7 +6041,7 @@ int  test_13 (void)
 
 	/* create tunnel settings */
 	tunnel_settings = vortex_tunnel_settings_new (ctx);
-	tunnel_tested   = true;
+	tunnel_tested   = axl_true;
 	
 	/* add first hop */
 	vortex_tunnel_settings_add_hop (tunnel_settings,
@@ -6059,7 +6060,7 @@ int  test_13 (void)
 		printf ("Test 01: basic BEEP support [   OK   ]\n");
 	else {
 		printf ("Test 01: basic BEEP support [ FAILED ]\n");
-		return false;
+		return axl_false;
 	}
 
 	printf ("Test 13::");
@@ -6067,7 +6068,7 @@ int  test_13 (void)
 		printf ("Test 01-a: transfer zeroed binary frames [   OK   ]\n");
 	else {
 		printf ("Test 01-a: transfer zeroed binary frames [ FAILED ]\n");
-		return false;
+		return axl_false;
 	}
 
 	printf ("Test 13::");
@@ -6075,7 +6076,7 @@ int  test_13 (void)
 		printf ("Test 02: basic BEEP channel support [   OK   ]\n");
 	else {
 		printf ("Test 02: basic BEEP channel support [ FAILED ]\n");
-		return false;
+		return axl_false;
 	}
 
 	printf ("Test 13::");
@@ -6083,7 +6084,7 @@ int  test_13 (void)
 		printf ("Test 02-a: connection close notification [   OK   ]\n");
 	else {
 		printf ("Test 02-a: connection close notification [ FAILED ]\n");
-		return false;
+		return axl_false;
 	}
 
 	printf ("Test 13::");
@@ -6091,7 +6092,7 @@ int  test_13 (void)
 		printf ("Test 02-b: small message followed by close  [   OK   ]\n");
 	else {
 		printf ("Test 02-b: small message followed by close [ FAILED ]\n");
-		return false;
+		return axl_false;
 	}
 
 	printf ("Test 13::");
@@ -6099,7 +6100,7 @@ int  test_13 (void)
 		printf ("Test 02-c: huge amount of small message followed by close  [   OK   ]\n");
 	else {
 		printf ("Test 02-c: huge amount of small message followed by close [ FAILED ]\n");
-		return false;
+		return axl_false;
 	}
 
 	printf ("Test 13::");
@@ -6107,7 +6108,7 @@ int  test_13 (void)
 		printf ("Test 03: basic BEEP channel support (large messages) [   OK   ]\n");
 	else {
 		printf ("Test 03: basic BEEP channel support (large messages) [ FAILED ]\n");
-		return false;
+		return axl_false;
 	}
 
 	printf ("Test 13::");
@@ -6115,7 +6116,7 @@ int  test_13 (void)
 		printf ("Test 04-a: Check ANS/NUL support, sending large content [   OK   ]\n");
 	} else {
 		printf ("Test 04-a: Check ANS/NUL support, sending large content [ FAILED ]\n");
-		return false;
+		return axl_false;
 	}
 
 	printf ("Test 13::");
@@ -6123,15 +6124,15 @@ int  test_13 (void)
 		printf ("Test 04-ab: Check ANS/NUL support, sending different files [   OK   ]\n");
 	} else {
 		printf ("Test 04-ab: Check ANS/NUL support, sending different files [ FAILED ]\n");
-		return false;
+		return axl_false;
 	}
 
 	/* free tunnel settings */
 	vortex_tunnel_settings_free (tunnel_settings);
 	tunnel_settings = NULL;
-	tunnel_tested   = false;
+	tunnel_tested   = axl_false;
 
-	return true;
+	return axl_true;
 }
 
 typedef int  (*VortexRegressionTest) ();
@@ -6182,11 +6183,11 @@ int main (int  argc, char ** argv)
 
 #if defined (AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/* if poll(2) mechanism is available, check it */
-	int  poll_tested = true;
+	axl_bool  poll_tested = axl_true;
 #endif
 #if defined (AXL_OS_UNIX) && defined (VORTEX_HAVE_EPOLL)
 	/* if epoll(2) mechanism is available, check it */
-	int  epoll_tested = true;
+	axl_bool  epoll_tested = axl_true;
 #endif
 
 	printf ("** Vortex Library: A BEEP core implementation.\n");
@@ -6235,7 +6236,7 @@ int main (int  argc, char ** argv)
 
 	/* check for disable-time-checks */
 	if (argc > 1 && axl_cmp (argv[1], "--disable-time-checks")) {
-		disable_time_checks = true;
+		disable_time_checks = axl_true;
 		iterator            = 1;
 		argc--;
 		printf ("INFO: disabling timing checks\n");
@@ -6517,11 +6518,11 @@ int main (int  argc, char ** argv)
 		/* configure poll mode */
 		if (! vortex_io_waiting_use (ctx, VORTEX_IO_WAIT_POLL)) {
 			printf ("error: unable to configure poll I/O mechanishm");
-			return false;
+			return axl_false;
 		} /* end if */
 
 		/* check the same run test with poll interface activated */
-		poll_tested = true;
+		poll_tested = axl_true;
 		goto init_test;
 	} /* end if */
 #endif
@@ -6535,11 +6536,11 @@ int main (int  argc, char ** argv)
 		/* configure epoll mode */
 		if (! vortex_io_waiting_use (ctx, VORTEX_IO_WAIT_EPOLL)) {
 			printf ("error: unable to configure epoll I/O mechanishm");
-			return false;
+			return axl_false;
 		} /* end if */
 
 		/* check the same run test with epoll interface activated */
-		epoll_tested = true;
+		epoll_tested = axl_true;
 		goto init_test;
 	} /* end if */
 #endif
@@ -6551,7 +6552,7 @@ int main (int  argc, char ** argv)
 	printf ("**\n");
 
 	/* exit from vortex library */
-	vortex_exit_ctx (ctx, true);
+	vortex_exit_ctx (ctx, axl_true);
 	return 0 ;	      
 }
 
