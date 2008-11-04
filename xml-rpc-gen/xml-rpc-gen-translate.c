@@ -29,8 +29,8 @@ axlHash * resources = NULL;
 
 void xml_rpc_gen_translate_consume_comments (axlStream * stream, axlError ** error)
 {
-	int  found_item;
-	int  size;
+	axl_bool  found_item;
+	int       size;
 	
 	/* know, try to read comments a process instructions.  Do this
 	 * until both fails. Do this until one of them find
@@ -38,7 +38,7 @@ void xml_rpc_gen_translate_consume_comments (axlStream * stream, axlError ** err
 	do {
 		/* flag the loop to end, and only end if both,
 		 * comments matching and PI matching fails. */
-		found_item = false;
+		found_item = axl_false;
 		
 		/* get rid from spaces */
 		AXL_CONSUME_SPACES (stream);
@@ -46,28 +46,28 @@ void xml_rpc_gen_translate_consume_comments (axlStream * stream, axlError ** err
 		/* check for comments */
 		if (axl_stream_inspect (stream, "/*", 2) > 0) {
 			
-			if (! axl_stream_get_until_ref (stream, NULL, NULL, true, &size, 1, "*/")) {
+			if (! axl_stream_get_until_ref (stream, NULL, NULL, axl_true, &size, 1, "*/")) {
 				axl_error_new (-1, "detected an opened comment but not found the comment ending",
 					       stream, error);
 				return;
 			} 
 			
 			/* flag that we have found a comment */
-			found_item = true;
+			found_item = axl_true;
 		}
 
 		/* get rid from spaces */
 		AXL_CONSUME_SPACES(stream);
 
 		if (axl_stream_inspect (stream, "//", 2) > 0) {
-			if (! axl_stream_get_until_ref (stream, NULL, NULL, true, &size, 1, "\n")) {
+			if (! axl_stream_get_until_ref (stream, NULL, NULL, axl_true, &size, 1, "\n")) {
 				axl_error_new (-1, "detected an opened comment but not found the comment ending",
 					       stream, error);
 				return;
 			}
 
 			/* flag that we have found a comment */
-			found_item = true;
+			found_item = axl_true;
 		}
 	
 		/* get rid from spaces */
@@ -79,7 +79,7 @@ void xml_rpc_gen_translate_consume_comments (axlStream * stream, axlError ** err
 	return;
 }
 
-axlNode * __xml_rpc_gen_translate_struct (axlDoc * doc, int  * result, axlStream * stream, axlError ** error) 
+axlNode * __xml_rpc_gen_translate_struct (axlDoc * doc, axl_bool  * result, axlStream * stream, axlError ** error) 
 {
 	char    * name;
 	char    * type;
@@ -96,9 +96,9 @@ axlNode * __xml_rpc_gen_translate_struct (axlDoc * doc, int  * result, axlStream
 
 	/* seems we have an struct definition, get the struct
 	 * name */
-	name = axl_stream_get_until (stream, NULL, &chunk_matched, true, 1, " ");
+	name = axl_stream_get_until (stream, NULL, &chunk_matched, axl_true, 1, " ");
 	if (name == NULL) {
-		(* result) = false;
+		(* result) = axl_false;
 		axl_error_new (-2, "Expected to find the struct name but it wasn't found", 
 			       stream, error);
 		axl_stream_free (stream);
@@ -122,7 +122,7 @@ axlNode * __xml_rpc_gen_translate_struct (axlDoc * doc, int  * result, axlStream
 	
 	/* now get the services types, first, the open parent */
 	if (! (axl_stream_inspect (stream, "{", 1) > 0)) {
-		(* result) = false;
+		(* result) = axl_false;
 		axl_error_new (-2, "Expected to find an open bracket {, while reading a struct definition", 
 			       stream, error);
 		axl_stream_free (stream);
@@ -135,14 +135,14 @@ axlNode * __xml_rpc_gen_translate_struct (axlDoc * doc, int  * result, axlStream
 		XML_RPC_GEN_CONSUME_SPACES(stream, error);
 		
 		/* get the member type */
-		type = axl_stream_get_until (stream, NULL, &chunk_matched, true, 1, " ");
+		type = axl_stream_get_until (stream, NULL, &chunk_matched, axl_true, 1, " ");
 		axl_stream_nullify (stream, LAST_CHUNK);
 		
 		/* consume spaces */
 		XML_RPC_GEN_CONSUME_SPACES(stream, error);
 		
 		/* get the member name */
-		name = axl_stream_get_until (stream, NULL, &chunk_matched, true, 2, " ", ";");
+		name = axl_stream_get_until (stream, NULL, &chunk_matched, axl_true, 2, " ", ";");
 		axl_stream_nullify (stream, LAST_CHUNK);
 		
 		/* consume spaces */
@@ -153,7 +153,7 @@ axlNode * __xml_rpc_gen_translate_struct (axlDoc * doc, int  * result, axlStream
 			 * space between the name and the
 			 * semicolon */
 			if (! (axl_stream_inspect (stream, ";", 1) > 0)) {
-				(* result) = false;
+				(* result) = axl_false;
 				axl_error_new (-2, "Expected to find a semi-colon (;), while reading a member name definition.", 
 					       stream, error);
 				axl_stream_free (stream);
@@ -183,7 +183,7 @@ axlNode * __xml_rpc_gen_translate_struct (axlDoc * doc, int  * result, axlStream
 	XML_RPC_GEN_CONSUME_SPACES(stream, error);
 	
 	/* struct properly parsed */
-	(* result) = true;
+	(* result) = axl_true;
 	return _struct;
 }
 
@@ -191,7 +191,7 @@ axlNode * __xml_rpc_gen_translate_struct (axlDoc * doc, int  * result, axlStream
  * @internal Parse IDL definition file and translate it into an
  * in-memory XDL definition.
  */
-axlNode * __xml_rpc_gen_translate_array (axlDoc * doc, int  * result, axlStream * stream, axlError ** error)
+axlNode * __xml_rpc_gen_translate_array (axlDoc * doc, axl_bool  * result, axlStream * stream, axlError ** error)
 {
 	axlNode * array;
 	axlNode * root;
@@ -206,10 +206,10 @@ axlNode * __xml_rpc_gen_translate_array (axlDoc * doc, int  * result, axlStream 
 	XML_RPC_GEN_CONSUME_SPACES (stream, error);
 
 	/* get the array name */
-	array_name = axl_stream_get_until (stream, NULL, &chunk_matched, true, 1, " ");
+	array_name = axl_stream_get_until (stream, NULL, &chunk_matched, axl_true, 1, " ");
 	axl_stream_nullify (stream, LAST_CHUNK);
 	if (array_name == NULL) {
-		(* result) = false;
+		(* result) = axl_false;
 		axl_error_new (-2, "Expected to find the array name declaration but it wasn't found", 
 			       stream, error);
 		axl_stream_free (stream);
@@ -221,7 +221,7 @@ axlNode * __xml_rpc_gen_translate_array (axlDoc * doc, int  * result, axlStream 
 
 	/* get of keyword */
 	if (! (axl_stream_inspect (stream, "of", 2) > 0)) {
-		(* result) = false;
+		(* result) = axl_false;
 		axl_error_new (-2, "Expected to find array \"of\" keyword, but it wasn't found. It separates the array declaration from the type holded inside it.", 
 			       stream, error);
 		axl_stream_free (stream);
@@ -232,10 +232,10 @@ axlNode * __xml_rpc_gen_translate_array (axlDoc * doc, int  * result, axlStream 
 	XML_RPC_GEN_CONSUME_SPACES (stream, error);
 	
 	/* now get the node type inside the array */
-	node_type = axl_stream_get_until (stream, NULL, &chunk_matched, true, 2, " ", ";");
+	node_type = axl_stream_get_until (stream, NULL, &chunk_matched, axl_true, 2, " ", ";");
 	axl_stream_nullify (stream, LAST_CHUNK);
 	if (node_type == NULL) {
-		(* result) = false;
+		(* result) = axl_false;
 		axl_error_new (-2, "Expected to find the array node type declaration (the type inside the array) but it wasn't found", 
 			       stream, error);
 		axl_stream_free (stream);
@@ -246,7 +246,7 @@ axlNode * __xml_rpc_gen_translate_array (axlDoc * doc, int  * result, axlStream 
 	if (chunk_matched == 0) {
 		/* chunk matched was white space (in any form) */
 		if (! (axl_stream_inspect (stream, ";", 1) > 0)) {
-			(* result) = false;
+			(* result) = axl_false;
 			axl_error_new (-2, "Expected to find a semicolon at the end of an array type declaration.", 
 				       stream, error);
 			axl_stream_free (stream);
@@ -275,16 +275,16 @@ axlNode * __xml_rpc_gen_translate_array (axlDoc * doc, int  * result, axlStream 
 	axl_node_set_child (array, node);
 	
 	/* return the array */
-	(* result) = true;
+	(* result) = axl_true;
 	return array;
 }
 
-int  __xml_rpc_gen_translate_service_check_method_name_decl (axlNode   * service, 
-							     char      * service_name,
-							     axlHash   * attributes,
-							     axlStream * stream, 
-							     int       * result,
-							     axlError ** error)
+axl_bool  __xml_rpc_gen_translate_service_check_method_name_decl (axlNode   * service, 
+								  char      * service_name,
+								  axlHash   * attributes,
+								  axlStream * stream, 
+								  axl_bool  * result,
+								  axlError ** error)
 {
 	char    * name;
 	axlNode * node;
@@ -295,11 +295,11 @@ int  __xml_rpc_gen_translate_service_check_method_name_decl (axlNode   * service
 		/* method name is defined check its value */
 		name = axl_hash_get (attributes, "method_name");
 		if (name == NULL) {
-			(* result) = false;
+			(* result) = axl_false;
 			axl_error_new (-2, "[method_name] attribute was defined for the service but not its value, this is not allowed.", 
 				       stream, error);
 			axl_stream_free (stream);
-			return false;
+			return axl_false;
 		}
 		
 		/* set method name child */
@@ -311,7 +311,7 @@ int  __xml_rpc_gen_translate_service_check_method_name_decl (axlNode   * service
 				name, service_name);
 	}
 	
-	return true;
+	return axl_true;
 }
 
 
@@ -322,7 +322,7 @@ char * xml_rpc_gen_translate_copy_and_escape (const char * content,
 	int    iterator  = 0;
 	int    iterator2 = 0;
 	char * result;
-	axl_return_val_if_fail (content, false);
+	axl_return_val_if_fail (content, axl_false);
 
 	/* allocate the memory to be returned */
 	result = axl_new (char, content_size + additional_size + 1);
@@ -350,13 +350,13 @@ char * xml_rpc_gen_translate_copy_and_escape (const char * content,
 	return result;
 }
 
-int       xml_rpc_gen_translate_invalid_chars        (const char * content,
-						      int          content_size,
-						      int        * added_size)
+axl_bool       xml_rpc_gen_translate_invalid_chars        (const char * content,
+							   int          content_size,
+							   int        * added_size)
 {
 	int      iterator = 0;
-	int      result   = false;
-	axl_return_val_if_fail (content, false);
+	int      result   = axl_false;
+	axl_return_val_if_fail (content, axl_false);
 
 	/* reset additional size value */
 	if (added_size != NULL)
@@ -373,7 +373,7 @@ int       xml_rpc_gen_translate_invalid_chars        (const char * content,
 		/* check for &apos; */
 		if (content [iterator] == '%') {
 			__axl_log (LOG_DOMAIN, AXL_LEVEL_DEBUG, "found invalid sequence='%%'");
-			result = true;
+			result = axl_true;
 			if (added_size != NULL)
 				(*added_size) += 1;
 		}
@@ -397,11 +397,11 @@ char * __get_all_user_content (axlStream * stream)
 	int          additional_size;
 	int          parents_opened = 0;
 
-	while (true) {
+	while (axl_true) {
 
 		/* get the user code for the service */
 		user_code = axl_stream_get_until (stream, NULL, &chunk_matched, 
-						  true, 3, "};", "}", "{");
+						  axl_true, 3, "};", "}", "{");
 		axl_stream_nullify (stream, LAST_CHUNK);
 		
 		/* check here for user declarations using the
@@ -501,7 +501,7 @@ char * __get_all_user_content_from_file (char * fileName)
  */
 axlNode * __xml_rpc_gen_translate_service (char      * return_type, 
 					   axlDoc    * doc, 
-					   int       * result, 
+					   axl_bool  * result, 
 					   axlStream * stream, 
 					   axlHash   * attributes, 
 					   axlError ** error)
@@ -530,7 +530,7 @@ axlNode * __xml_rpc_gen_translate_service (char      * return_type,
 	XML_RPC_GEN_CONSUME_SPACES(stream, error);
 
 	/* now get the service name */
-	service_name = axl_stream_get_until (stream, NULL, NULL, true, 1, " ");
+	service_name = axl_stream_get_until (stream, NULL, NULL, axl_true, 1, " ");
 	axl_stream_nullify (stream, LAST_CHUNK);
 
 	/* create the service node */
@@ -561,7 +561,7 @@ axlNode * __xml_rpc_gen_translate_service (char      * return_type,
 
 	/* now get the services types, first, the open parent */
 	if (! (axl_stream_inspect (stream, "(", 1) > 0)) {
-		(* result) = false;
+		(* result) = axl_false;
 		axl_error_new (-2, "Expected to find an open parent (, while reading service definition", 
 			      stream, error);
 		axl_stream_free (stream);
@@ -573,7 +573,7 @@ axlNode * __xml_rpc_gen_translate_service (char      * return_type,
 	axl_node_set_child (service, params);
 
 	/* get service parameter definition */
-	while (true) {
+	while (axl_true) {
 		/* consume spaces */
 		XML_RPC_GEN_CONSUME_SPACES(stream, error);
 
@@ -583,14 +583,14 @@ axlNode * __xml_rpc_gen_translate_service (char      * return_type,
 			break;
 
 		/* get the parameter type */
-		type = axl_stream_get_until (stream, NULL, NULL, true, 1, " ");
+		type = axl_stream_get_until (stream, NULL, NULL, axl_true, 1, " ");
 		axl_stream_nullify (stream, LAST_CHUNK);
 		
 		/* consume spaces */
 		XML_RPC_GEN_CONSUME_SPACES(stream, error);
 
 		/* get the parameter name */
-		name = axl_stream_get_until (stream, NULL, &chunk_matched, true, 3, " ", ",", ")");
+		name = axl_stream_get_until (stream, NULL, &chunk_matched, axl_true, 3, " ", ",", ")");
 		axl_stream_nullify (stream, LAST_CHUNK);
 
 		/* create the param node */
@@ -638,8 +638,8 @@ axlNode * __xml_rpc_gen_translate_service (char      * return_type,
 		if (! __xml_rpc_gen_translate_service_check_method_name_decl (service, service_name, attributes, stream, result, error))
 			return NULL;
 
-		/* if ok, fill the value with true */
-		(* result) = true;
+		/* if ok, fill the value with axl_true */
+		(* result) = axl_true;
 		return service;
 	}
 
@@ -689,7 +689,7 @@ axlNode * __xml_rpc_gen_translate_service (char      * return_type,
 		code           = axl_node_create ("options");
 		axl_node_set_child (service, code);
 
-		while (true) {
+		while (axl_true) {
 
 			/* check for additional attributes */
 			XML_RPC_GEN_CONSUME_SPACES (stream, error);
@@ -736,7 +736,7 @@ axlNode * __xml_rpc_gen_translate_service (char      * return_type,
 						   (axl_stream_inspect (stream, "'", 1) > 0)) {
 
 						/* get the file */
-						fileName = axl_stream_get_until (stream, NULL, &chunk_matched, true, 2, "\"", "'");
+						fileName = axl_stream_get_until (stream, NULL, &chunk_matched, axl_true, 2, "\"", "'");
 						ok_msg ("  found include on body file: %s", fileName);
 						axl_node_set_attribute (content, "from", fileName);
 						axl_stream_nullify (stream, LAST_CHUNK);
@@ -787,7 +787,7 @@ axlNode * __xml_rpc_gen_translate_service (char      * return_type,
 						   (axl_stream_inspect (stream, "'", 1) > 0)) {
 
 						/* get the file */
-						fileName = axl_stream_get_until (stream, NULL, &chunk_matched, true, 2, "\"", "'");
+						fileName = axl_stream_get_until (stream, NULL, &chunk_matched, axl_true, 2, "\"", "'");
 						ok_msg ("  found include on body file: %s", fileName);
 						axl_stream_nullify (stream, LAST_CHUNK);
 
@@ -819,7 +819,7 @@ axlNode * __xml_rpc_gen_translate_service (char      * return_type,
 		} /* end while */
 	} /* end if */
 	
-	(* result) = true;
+	(* result) = axl_true;
 	return service;
 	
 } /* end service translation */
@@ -829,8 +829,8 @@ axlNode * __xml_rpc_gen_translate_service (char      * return_type,
  * which allows to enforce resource declaration for services found
  * inside the IDL file.
  */
-int  __xml_rpc_gen_parse_allowed_resources_decl (axlStream  * stream, 
-						 axlError  ** error)
+axl_bool  __xml_rpc_gen_parse_allowed_resources_decl (axlStream  * stream, 
+						      axlError  ** error)
 {
 	char * attr_value = NULL;
 	int    chunk_matched;
@@ -841,11 +841,11 @@ int  __xml_rpc_gen_parse_allowed_resources_decl (axlStream  * stream,
 	/* check and consume "resources" */
 	if (! (axl_stream_inspect (stream, "resources", 9) > 0)) {
 		axl_error_new (-1, "Expected to find 'resources' declaration after 'allowed', but it wasn't found", stream, error);
-		return false;
+		return axl_false;
 	}
 	
 	/* now parse strings */
-	while (true) {
+	while (axl_true) {
 		
 		/* consume spaces */
 		XML_RPC_GEN_CONSUME_SPACES (stream, error);
@@ -857,10 +857,10 @@ int  __xml_rpc_gen_parse_allowed_resources_decl (axlStream  * stream,
 		/* get the type of value either "..." or '...' */
 		if (axl_stream_inspect (stream, "\"", 1) > 0) {
 			/* we got the "..." declaration */
-			attr_value = axl_stream_get_until (stream, NULL, &chunk_matched, true, 1, "\"");
+			attr_value = axl_stream_get_until (stream, NULL, &chunk_matched, axl_true, 1, "\"");
 		}else if (axl_stream_inspect (stream, "\"", 1) > 0) {
 			/* we got the '...' declaration */
-			attr_value = axl_stream_get_until (stream, NULL, &chunk_matched, true, 1, "'");
+			attr_value = axl_stream_get_until (stream, NULL, &chunk_matched, axl_true, 1, "'");
 		}
 		
 		/* nullify the stream reference to the result */
@@ -870,7 +870,7 @@ int  __xml_rpc_gen_parse_allowed_resources_decl (axlStream  * stream,
 		if (attr_value == NULL) {
 			axl_error_new (-2, "Expected to find the resource declaration but it wasn't found", 
 				       stream, error);
-			return false;
+			return axl_false;
 		}
 		
 		/* register the value: attribute declaration with
@@ -901,11 +901,13 @@ int  __xml_rpc_gen_parse_allowed_resources_decl (axlStream  * stream,
 	} /* end while */
 
 	/* finish */
-	return true;
+	return axl_true;
 }
 	
-axlNode * xml_rpc_gen_translate_parse_interface_item (axlDoc * doc, axlStream * stream, 
-						      int  * result, axlError ** error)
+axlNode * xml_rpc_gen_translate_parse_interface_item (axlDoc     * doc, 
+						      axlStream  * stream, 
+						      axl_bool   * result, 
+						      axlError  ** error)
 {
 	/* [attribute declaration] */
 	char      * attr_decl  = NULL;
@@ -930,9 +932,9 @@ axlNode * xml_rpc_gen_translate_parse_interface_item (axlDoc * doc, axlStream * 
 
 		/* for all attribute declaration found inside the
 		 * [...]; do */
-		while (true) {
+		while (axl_true) {
 			/* get attribute declaration */
-			attr_decl = axl_stream_get_until (stream, NULL, &chunk_matched, true, 5, " ", "=", ",", "];", "]");
+			attr_decl = axl_stream_get_until (stream, NULL, &chunk_matched, axl_true, 5, " ", "=", ",", "];", "]");
 			axl_stream_nullify (stream, LAST_CHUNK);
 		
 			/* check chunk matched */
@@ -972,10 +974,10 @@ axlNode * xml_rpc_gen_translate_parse_interface_item (axlDoc * doc, axlStream * 
 				 * '...' */
 				if (axl_stream_inspect (stream, "\"", 1) > 0) {
 					/* we got the "..." declaration */
-					attr_value = axl_stream_get_until (stream, NULL, &chunk_matched, true, 1, "\"");
+					attr_value = axl_stream_get_until (stream, NULL, &chunk_matched, axl_true, 1, "\"");
 				}else if (axl_stream_inspect (stream, "\"", 1) > 0) {
 					/* we got the '...' declaration */
-					attr_value = axl_stream_get_until (stream, NULL, &chunk_matched, true, 1, "'");
+					attr_value = axl_stream_get_until (stream, NULL, &chunk_matched, axl_true, 1, "'");
 				}
 
 				/* nullify the stream reference to the
@@ -985,7 +987,7 @@ axlNode * xml_rpc_gen_translate_parse_interface_item (axlDoc * doc, axlStream * 
 				/* if attr value is NULL we got a
 				 * error */
 				if (attr_value == NULL) {
-					(* result ) = false;
+					(* result ) = axl_false;
 					axl_error_new (-2, "Expected to find the attribute value declaration but it wasn't found", 
 						       stream, error);
 					return NULL;
@@ -1019,7 +1021,7 @@ axlNode * xml_rpc_gen_translate_parse_interface_item (axlDoc * doc, axlStream * 
 				else if (axl_stream_inspect (stream, ",", 1) > 0)
 					chunk_matched = 2;
 				else if (axl_stream_inspect (stream, "=", 1) > 0) {
-					(* result ) = false;
+					(* result ) = axl_false;
 					axl_error_new (-2, "Found and unexpected '=' simbol at attribute declaration", 
 						       stream, error);
 					return NULL;
@@ -1048,11 +1050,11 @@ axlNode * xml_rpc_gen_translate_parse_interface_item (axlDoc * doc, axlStream * 
 	}
 
 	/* get the service return type */
-	return_type = axl_stream_get_until (stream, NULL, &chunk_matched, true, 2, " ", "}");
+	return_type = axl_stream_get_until (stream, NULL, &chunk_matched, axl_true, 2, " ", "}");
 
 	/* check that there is no more services defined */
 	if (chunk_matched == 1) {
-		(* result) = true;
+		(* result) = axl_true;
 		return NULL;
 	}
 
@@ -1074,7 +1076,7 @@ axlNode * xml_rpc_gen_translate_parse_interface_item (axlDoc * doc, axlStream * 
 	if (axl_cmp (return_type, "allowed")) {
 		/* found allowed resources declaration */
 		if (! __xml_rpc_gen_parse_allowed_resources_decl (stream, error)) {
-			(* result) = false;
+			(* result) = axl_false;
 			return NULL;
 		}
 
@@ -1091,32 +1093,32 @@ axlNode * xml_rpc_gen_translate_parse_interface_item (axlDoc * doc, axlStream * 
 	return res;
 }
 
-int  xml_rpc_gen_translate_parse_services (axlDoc     * doc, 
-					   axlStream  * stream, 
-					   axlError  ** error)
+axl_bool  xml_rpc_gen_translate_parse_services (axlDoc     * doc, 
+						axlStream  * stream, 
+						axlError  ** error)
 {
-	axlNode * service;
-	axlNode * root;
-	int       result;
+	axlNode   * service;
+	axlNode   * root;
+	axl_bool    result;
 
 	/* get the root node */
 	root = axl_doc_get_root (doc);
 
 	/* parse the service */
-	while (true) {
+	while (axl_true) {
 		/* parse one service */
 		service = xml_rpc_gen_translate_parse_interface_item (doc, stream, &result, error);
 
 		/* check parse result */
 		if (! result) 
-			return false;
+			return axl_false;
 
 		/* check if there are no more services to parse */
 		if (service == NULL) 
 			break;
 	}
 
-	return true;
+	return axl_true;
 }
 
 axlDoc * xml_rpc_gen_translate_idl_to_xdl (const char  * selected, axlError ** error)
@@ -1164,7 +1166,7 @@ axlDoc * xml_rpc_gen_translate_idl_to_xdl (const char  * selected, axlError ** e
 	XML_RPC_GEN_CONSUME_SPACES(stream, error);
 
 	/* now get the name of the interface */
-	string_aux = axl_stream_get_until (stream, NULL, NULL, true, 1, " ");
+	string_aux = axl_stream_get_until (stream, NULL, NULL, axl_true, 1, " ");
 	axl_stream_nullify (stream, LAST_CHUNK);
 	if (string_aux == NULL) {
 		axl_error_new (-2, "Expected to find the interface name", stream, error);
@@ -1175,7 +1177,7 @@ axlDoc * xml_rpc_gen_translate_idl_to_xdl (const char  * selected, axlError ** e
 	xml_rpc_report ("detected xml-rpc definition: '%s'..", string_aux);
 	
 	/* create the document */
-	doc  = axl_doc_create ("1.0", NULL, true);
+	doc  = axl_doc_create ("1.0", NULL, axl_true);
 	node = axl_node_create ("xml-rpc-interface");
 	axl_doc_set_root (doc, node);
 	

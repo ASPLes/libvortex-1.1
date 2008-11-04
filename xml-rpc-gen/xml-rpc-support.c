@@ -94,7 +94,7 @@ char  * xml_rpc_support_create_dir      (char  * format, ...)
 #elif defined(AXL_OS_WIN32)
 			if (_mkdir (actual_dir_name) < 0) {
 #endif
-				xml_rpc_support_error ("unable to create '%s' directory\n", true, actual_dir_name);
+				xml_rpc_support_error ("unable to create '%s' directory\n", axl_true, actual_dir_name);
 				return NULL;
 			}
 		}
@@ -136,7 +136,7 @@ void    xml_rpc_support_open_file       (char  * format, ...)
 
 	opened_file = fopen (opened_file_name, "w");
 	if (!opened_file) {
-		xml_rpc_support_error ("unable to create %s file\n", true, opened_file_name);
+		xml_rpc_support_error ("unable to create %s file\n", axl_true, opened_file_name);
 		return;
 	} /* end if */
 	
@@ -156,7 +156,7 @@ void    xml_rpc_support_open_file       (char  * format, ...)
  * @param must_exit A variable that controls if the function must
  * perform a call to the exit or not.
  */
-void    xml_rpc_support_error           (char  * message, int      must_exit, ...)
+void    xml_rpc_support_error           (char  * message, axl_bool      must_exit, ...)
 {
 	char     * result;
 	va_list    args;
@@ -197,14 +197,14 @@ void   xml_rpc_support_move_file (char  * from, char  * to)
 	 * posible to rename a file with a file on the destination. */
 	if (vortex_support_file_test (to, FILE_IS_REGULAR) && (unlink (to) != 0)) {
 		xml_rpc_support_error ("unable to remove destination file: %s to be overwrited by: %s at rename operation",
-				       false, to, from);
+				       axl_false, to, from);
 		return;
 	}
 #endif
 
 	/* now move the file */
 	if (rename (from, to) != 0) {
-		xml_rpc_support_error ("unable to move file: %s to %s", false, from, to);
+		xml_rpc_support_error ("unable to move file: %s to %s", axl_false, from, to);
 	}
 	return;
 }
@@ -215,9 +215,9 @@ void   xml_rpc_support_move_file (char  * from, char  * to)
  * @param file1 First file to check.
  * @param file2 Second file to check.
  * 
- * @return true if both files are equal (false if not).
+ * @return axl_true if both files are equal (false if not).
  */
-int  xml_rpc_support_are_equal (char * file1 , char * file2)
+axl_bool  xml_rpc_support_are_equal (char * file1 , char * file2)
 {
 	int fd1;
 	int fd2;
@@ -227,23 +227,23 @@ int  xml_rpc_support_are_equal (char * file1 , char * file2)
 	int  read2;
 
 	/* check that both files exists to ensure that the function
-	 * returns true for files that exists. */
+	 * returns axl_true for files that exists. */
 	if (! vortex_support_file_test (file1, FILE_EXISTS))
-		return false;
+		return axl_false;
 
 	if (! vortex_support_file_test (file2, FILE_EXISTS))
-		return false;
+		return axl_false;
 
 	/* open both files */
 	fd1 = open (file1, O_RDONLY);
 	if (fd1 < 0) {
-		return false;
+		return axl_false;
 	}
 
 	fd2 = open (file2, O_RDONLY);
 	if (fd2 < 0) {
 		close (fd1);
-		return false;
+		return axl_false;
 	}
 	
 	read1 = read (fd1, buffer1, 1);
@@ -350,7 +350,7 @@ char * next_line (FILE * file)
  *
  * Close the current opened file.
  */
-void    xml_rpc_support_close_file      ()
+void    xml_rpc_support_close_file      (void)
 {
 	char    * path  = original_user_file_to_merge;
 	char    * reply = NULL;
@@ -418,7 +418,7 @@ void    xml_rpc_support_close_file      ()
  *
  * Push current indent increasing the tab size.
  */
-void    xml_rpc_support_push_indent     ()
+void    xml_rpc_support_push_indent     (void)
 {
 	xml_rpc_support_num_tabs++;
 }
@@ -428,7 +428,7 @@ void    xml_rpc_support_push_indent     ()
  * 
  * Pop current indent decreasing the tab size.
  */
-void    xml_rpc_support_pop_indent      ()
+void    xml_rpc_support_pop_indent      (void)
 {
 	xml_rpc_support_num_tabs--;
 }
@@ -650,7 +650,7 @@ void    xml_rpc_support_make_executable (char  * format, ...)
 
 	/* make a chmod operation */
 	if (chmod (result, 0770) < 0) {
-		xml_rpc_support_error ("error: unable to make executable the file: '%s'\n", false, result);
+		xml_rpc_support_error ("error: unable to make executable the file: '%s'\n", axl_false, result);
 	} /* end if */
 	
 	/* release the memory hold */
@@ -662,7 +662,7 @@ void    xml_rpc_support_make_executable (char  * format, ...)
 }
 
 /* init the list if it weren't */
-void __xml_rpc_support_search_path_init ()
+void __xml_rpc_support_search_path_init (void)
 {
 	if (__xml_rpc_support_search_path == NULL) {
 		/* create the list */
@@ -812,7 +812,7 @@ char  * __xml_rpc_support_common_name (char  * name, int      to_upper)
 char   * xml_rpc_support_to_lower            (char  * name)
 {
 	/* makes a to lower operation */
-	return __xml_rpc_support_common_name (name, false);
+	return __xml_rpc_support_common_name (name, axl_false);
 }
 
 /** 
@@ -827,7 +827,7 @@ char   * xml_rpc_support_to_lower            (char  * name)
 char   * xml_rpc_support_to_upper            (char  * name)
 {
 	/* makes a to upper operation */
-	return __xml_rpc_support_common_name (name, true);
+	return __xml_rpc_support_common_name (name, axl_true);
 }
 
 /** 
@@ -837,13 +837,13 @@ char   * xml_rpc_support_to_upper            (char  * name)
  * @param format The path to be checked.
  * @param test The test to be performed. 
  * 
- * @return true if all test returns true. Otherwise false is returned.
+ * @return axl_true if all test returns axl_true. Otherwise axl_false is returned.
  */
-int  xml_rpc_file_test_v (const char * format, VortexFileTest test, ...)
+axl_bool  xml_rpc_file_test_v (const char * format, VortexFileTest test, ...)
 {
-	va_list   args;
-	char    * path;
-	int       result;
+	va_list        args;
+	char         * path;
+	axl_bool       result;
 
 	/* open arguments */
 	va_start (args, test);

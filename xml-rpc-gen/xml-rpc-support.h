@@ -23,69 +23,69 @@
 #define __XML_RPC_SUPPORT_H__
 
 /* directory handling */
-char  * xml_rpc_support_create_dir      (char  * format, 
-					 ...);
+char    * xml_rpc_support_create_dir      (char  * format, 
+					   ...);
 
 /* file handling */
-void    xml_rpc_support_open_file       (char  * format, 
-					 ...);
+void      xml_rpc_support_open_file       (char  * format, 
+					   ...);
 
-void    xml_rpc_support_close_file      ();
+void      xml_rpc_support_close_file      (void);
 
-int     xml_rpc_support_are_equal       (char * file1 , 
-					 char * file2);
+axl_bool  xml_rpc_support_are_equal       (char * file1 , 
+					   char * file2);
 
-void    xml_rpc_support_error           (char  * message, 
-					 int     must_exit, 
-					 ...);
+void      xml_rpc_support_error           (char      * message, 
+					   axl_bool    must_exit, 
+					   ...);
 
-void    xml_rpc_support_move_file       (char  * from, 
-					 char  * to);
+void      xml_rpc_support_move_file       (char  * from, 
+					   char  * to);
 
 /* indent handling */
-void    xml_rpc_support_push_indent     ();
+void      xml_rpc_support_push_indent     (void);
 
 #define push_indent xml_rpc_support_push_indent
 
-void    xml_rpc_support_pop_indent      ();
+void      xml_rpc_support_pop_indent      (void);
 
 #define pop_indent xml_rpc_support_pop_indent
 
 /* writing content into files handling */
 #define write xml_rpc_support_write
 
-void    xml_rpc_support_write           (const char  * format, ...);
+void      xml_rpc_support_write           (const char  * format, ...);
 
 #define xml_rpc_support_mwrite xml_rpc_support_multiple_write
 
-void    xml_rpc_support_multiple_write  (const char  * first_line, ...);
+void      xml_rpc_support_multiple_write  (const char  * first_line, ...);
 
 #define xml_rpc_support_write_sl  xml_rpc_support_sl_write
 
-void    xml_rpc_support_sl_write        (const char  * format, ...);
+void      xml_rpc_support_sl_write        (const char  * format, ...);
 
 #define ok_msg xml_rpc_report
-void    xml_rpc_report       (const char  * format, ...);
+void      xml_rpc_report       (const char  * format, ...);
 
 #define error_msg xml_rpc_report_error
-void    xml_rpc_report_error (const char  * format, ...);
+void      xml_rpc_report_error (const char  * format, ...);
 
 #define ask_msg xml_rpc_report_ask
-void    xml_rpc_report_ask (const char  * format, ...);
+void      xml_rpc_report_ask (const char  * format, ...);
 
-void    xml_rpc_support_make_executable (char  * format, ...);
+void      xml_rpc_support_make_executable (char  * format, ...);
 
 /* file location functions */
-void     xml_rpc_support_add_search_path     (char  * path);
+void      xml_rpc_support_add_search_path     (char  * path);
 
-void     xml_rpc_support_add_search_path_ref (char  * path);
+void      xml_rpc_support_add_search_path_ref (char  * path);
 
-char   * xml_rpc_support_find_data_file      (char  * name);
+char    * xml_rpc_support_find_data_file      (char  * name);
 
 /* name handling */
-char   * xml_rpc_support_to_lower            (char  * name);
+char    * xml_rpc_support_to_lower            (char  * name);
 
-char   * xml_rpc_support_to_upper            (char  * name);
+char    * xml_rpc_support_to_upper            (char  * name);
 
 /** 
  * @brief Simple alias definition to \ref xml_rpc_file_test.
@@ -97,7 +97,7 @@ char   * xml_rpc_support_to_upper            (char  * name);
  */
 #define file_test_v xml_rpc_file_test_v
 
-int  xml_rpc_file_test_v (const char * format, VortexFileTest test, ...);
+axl_bool xml_rpc_file_test_v (const char * format, VortexFileTest test, ...);
 
 char   * xml_rpc_support_get_function_type_prefix (axlNode * params);
 

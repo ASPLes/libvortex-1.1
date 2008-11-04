@@ -31,7 +31,7 @@ char   * xml_rpc_support_get_function_type_prefix   (axlNode * params);
 void     xml_rpc_support_write_function_parameters  (axlDoc * doc, 
 						     axlNode * params);
 
-int      xml_rpc_c_stub_create                      (axlDoc  * doc, 
+axl_bool xml_rpc_c_stub_create                      (axlDoc  * doc, 
 						     char    * out_dir, 
 						     char    * comp_name);
 
@@ -39,10 +39,10 @@ void     xml_rpc_c_stub_write_native_type           (axlDoc  * doc,
 						     char    * type,
 						     int       same_line);
 
-int      xml_rpc_c_stub_type_is_array               (axlDoc  * doc, 
+axl_bool xml_rpc_c_stub_type_is_array               (axlDoc  * doc, 
 						     char    * type);
 
-int      xml_rpc_c_stub_type_is_struct              (axlDoc  * doc, 
+axl_bool xml_rpc_c_stub_type_is_struct              (axlDoc  * doc, 
 						     char    * type);
 
 void     xml_rpc_c_stub_write_type_header           (char  * result, 

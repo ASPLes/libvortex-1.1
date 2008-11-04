@@ -32,7 +32,7 @@
 void xml_rpc_autoconf_autogen_sh_create (axlDoc   * doc, 
 					 char     * out_dir, 
 					 char     * comp_name,
-					 int        is_server)
+					 axl_bool   is_server)
 {
 
 
@@ -119,10 +119,10 @@ void xml_rpc_autoconf_autogen_sh_create (axlDoc   * doc,
  * @param is_server Writes a configure.ac file for a server or for a
  * stub implementation.
  */
-void xml_rpc_autoconf_configure_ac_create (axlDoc * doc, 
-					   char   * out_dir, 
-					   char   * comp_name,
-					   int      is_server)
+void xml_rpc_autoconf_configure_ac_create (axlDoc    * doc, 
+					   char      * out_dir, 
+					   char      * comp_name,
+					   axl_bool    is_server)
 {
 
 	char  * comp_name_upper;
@@ -255,10 +255,10 @@ void xml_rpc_autoconf_write_struct_and_arrays (axlDoc * doc, char  * comp_name)
  *
  * @param comp_name The component name.
  */
-void xml_rpc_autoconf_makefile_am_create (axlDoc   * doc, 
-					  char     * new_out_dir, 
-					  char     * comp_name,
-					  int        is_server)
+void xml_rpc_autoconf_makefile_am_create (axlDoc    * doc, 
+					  char      * new_out_dir, 
+					  char      * comp_name,
+					  axl_bool    is_server)
 {
 	/* xml document */
 	axlNode * service;
@@ -454,13 +454,13 @@ void xml_rpc_autoconf_c_stub_create (axlDoc * doc,
 		new_out_dir = axl_strdup_printf ("%s/client-%s", out_dir, comp_name);
 	
 	/* create the autogen.sh file */
-	xml_rpc_autoconf_autogen_sh_create (doc, new_out_dir, comp_name, false);
+	xml_rpc_autoconf_autogen_sh_create (doc, new_out_dir, comp_name, axl_false);
 
 	/* write the configure.ac file */
-	xml_rpc_autoconf_configure_ac_create (doc, new_out_dir, comp_name, false);
+	xml_rpc_autoconf_configure_ac_create (doc, new_out_dir, comp_name, axl_false);
 
 	/* write the Makefile.am file */
-	xml_rpc_autoconf_makefile_am_create (doc, new_out_dir, comp_name, false);
+	xml_rpc_autoconf_makefile_am_create (doc, new_out_dir, comp_name, axl_false);
 
 	/* write the pkg-config file */
 	xml_rpc_autoconf_pkg_config_create (doc, new_out_dir, comp_name);
@@ -502,13 +502,13 @@ void xml_rpc_autoconf_c_server_create (axlDoc * doc,
 	new_comp_name = axl_strdup_printf ("Server %s implementation", comp_name);
 	
 	/* create the autogen.sh file */
-	xml_rpc_autoconf_autogen_sh_create (doc, new_out_dir, new_comp_name, true);
+	xml_rpc_autoconf_autogen_sh_create (doc, new_out_dir, new_comp_name, axl_true);
 
 	/* write the configure.ac file */
-	xml_rpc_autoconf_configure_ac_create (doc, new_out_dir, comp_name, true);
+	xml_rpc_autoconf_configure_ac_create (doc, new_out_dir, comp_name, axl_true);
 
 	/* write the Makefile.am file */
-	xml_rpc_autoconf_makefile_am_create (doc, new_out_dir, comp_name, true);
+	xml_rpc_autoconf_makefile_am_create (doc, new_out_dir, comp_name, axl_true);
 
 	/* free the component name */
 	axl_free (new_out_dir);

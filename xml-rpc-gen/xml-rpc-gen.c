@@ -86,7 +86,7 @@ void show_version ()
  * @brief Compiles the provided file.
  * 
  */
-int      xml_rpc_gen_compile_selected (const char  * selected)
+axl_bool      xml_rpc_gen_compile_selected (const char  * selected)
 {
 	axlError * error;
 	axlDoc   * doc = NULL;
@@ -111,7 +111,7 @@ int      xml_rpc_gen_compile_selected (const char  * selected)
 				    selected, axl_error_get (error));
 			axl_error_free (error);
 			/* stop from parsing */
-			return false;
+			return axl_false;
 		}
 	    
 		/* try to load the document as an IDL definition using
@@ -152,7 +152,7 @@ int      xml_rpc_gen_compile_selected (const char  * selected)
 			/* free the document */
 			axl_doc_free (doc);
 			
-			return true;
+			return axl_true;
 		}
 
 		/* seems that the document provided is either not XDL
@@ -164,7 +164,7 @@ int      xml_rpc_gen_compile_selected (const char  * selected)
 			axl_error_free (error);
 			
 			/* return that the document wasn't compiled */
-			return false;
+			return axl_false;
 		}
 	}else {
 		xml_rpc_report ("detected XDL format definition..");
@@ -180,7 +180,7 @@ int      xml_rpc_gen_compile_selected (const char  * selected)
 		axl_error_free (error);
 
 		/* return that the document wasn't compiled */
-		return false;
+		return axl_false;
 	}
 
 	xml_rpc_report ("document is valid: %s..", selected);
@@ -228,7 +228,7 @@ int      xml_rpc_gen_compile_selected (const char  * selected)
 	
 	xml_rpc_report ("compilation ok");
 	
-	return true;
+	return axl_true;
 }
 
 /** 
