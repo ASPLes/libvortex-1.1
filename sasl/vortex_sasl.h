@@ -311,10 +311,10 @@ typedef void     (*VortexSaslAuthNotify)          (VortexConnection * connection
  * @param connection The connection where the request was received.
  * @param authorization_id The authorization id to authenticate.
  * 
- * @return true to authenticate and allow request received or false to deny it.
+ * @return axl_true to authenticate and allow request received or axl_false to deny it.
  */
-typedef int          (*VortexSaslAuthExternal)        (VortexConnection * connection,
-						       const char       * authorization_id);
+typedef axl_bool          (*VortexSaslAuthExternal)        (VortexConnection * connection,
+							    const char       * authorization_id);
 
 /** 
  * @brief Asynchronous notification to enable user space to accept or
@@ -327,11 +327,11 @@ typedef int          (*VortexSaslAuthExternal)        (VortexConnection * connec
  * @param authorization_id The authorization id to authenticate.
  * @param user_data The user defined pointer to be passed to future SASL callbacks
  * 
- * @return true to authenticate and allow request received or false to deny it.
+ * @return axl_true to authenticate and allow request received or axl_false to deny it.
  */
-typedef int          (*VortexSaslAuthExternalFull)        (VortexConnection * connection,
-						       const char       * authorization_id,
-							   axlPointer         user_data);
+typedef axl_bool          (*VortexSaslAuthExternalFull)        (VortexConnection * connection,
+								const char       * authorization_id,
+								axlPointer         user_data);
 
 /** 
  * @brief Asynchronous notification to enable user space to accept or
@@ -345,10 +345,10 @@ typedef int          (*VortexSaslAuthExternalFull)        (VortexConnection * co
  * @param anonymous_token The anonymous token provided by the remote
  * client side. You must not modify or deallocate this value.
  * 
- * @return true to validate the incoming anonymous auth request. false to deny it.
+ * @return axl_true to validate the incoming anonymous auth request. axl_false to deny it.
  */
-typedef int          (*VortexSaslAuthAnonymous)       (VortexConnection * connection,
-						       const char       * anonymous_token);
+typedef axl_bool          (*VortexSaslAuthAnonymous)       (VortexConnection * connection,
+							    const char       * anonymous_token);
 
 							   /** 
  * @brief Asynchronous notification to enable user space to accept or
@@ -364,11 +364,11 @@ typedef int          (*VortexSaslAuthAnonymous)       (VortexConnection * connec
  * 
  * @param user_data The user defined pointer to be passed to future SASL callbacks
  *
- * @return true to validate the incoming anonymous auth request. false to deny it.
+ * @return axl_true to validate the incoming anonymous auth request. axl_false to deny it.
  */
-typedef int          (*VortexSaslAuthAnonymousFull)       (VortexConnection * connection,
-						       const char       * anonymous_token,
-							   axlPointer         user_data);
+typedef axl_bool          (*VortexSaslAuthAnonymousFull)       (VortexConnection * connection,
+								const char       * anonymous_token,
+								axlPointer         user_data);
 
 /** 
  * @brief Asynchronous notification to enable user space code to
@@ -383,12 +383,12 @@ typedef int          (*VortexSaslAuthAnonymousFull)       (VortexConnection * co
  * @param authorization_id User identifier which is acting on behalf of.
  * @param password Current user password
  * 
- * @return true to accept incoming SASL request or false to deny it.
+ * @return axl_true to accept incoming SASL request or axl_false to deny it.
  */
-typedef int          (*VortexSaslAuthPlain)           (VortexConnection * connection,
-						       const char       * auth_id,
-						       const char       * authorization_id,
-						       const char       * password);
+typedef axl_bool          (*VortexSaslAuthPlain)           (VortexConnection * connection,
+							    const char       * auth_id,
+							    const char       * authorization_id,
+							    const char       * password);
 
 /** 
  * @brief Asynchronous notification to enable user space code to
@@ -404,13 +404,13 @@ typedef int          (*VortexSaslAuthPlain)           (VortexConnection * connec
  * @param password Current user password
  * @param user_data The user defined pointer to be passed to future SASL callbacks.
  * 
- * @return true to accept incoming SASL request or false to deny it.
+ * @return axl_true to accept incoming SASL request or axl_false to deny it.
  */
-typedef int          (*VortexSaslAuthPlainFull)           (VortexConnection * connection,
-							   const char       * auth_id,
-							   const char       * authorization_id,
-							   const char       * password,
-							   axlPointer         user_data);
+typedef axl_bool          (*VortexSaslAuthPlainFull)           (VortexConnection * connection,
+								const char       * auth_id,
+								const char       * authorization_id,
+								const char       * password,
+								axlPointer         user_data);
 
 /** 
  * @brief Asynchronous notification to enable user space code to

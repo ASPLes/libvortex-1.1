@@ -412,8 +412,8 @@ int  vortex_thread_pool_get_num             (void)
  * @param ctx The context where the operation will be performed.
  * 
  * @param value The new behaviour to configure. By default, internal
- * value is already configured to axl_true. Set false to make the thread
- * pool to behave in a non-exclusive form.
+ * value is already configured to axl_true. Set axl_false to make the
+ * thread pool to behave in a non-exclusive form.
  */
 void vortex_thread_pool_set_exclusive_pool  (VortexCtx * ctx,
 					     axl_bool    value)

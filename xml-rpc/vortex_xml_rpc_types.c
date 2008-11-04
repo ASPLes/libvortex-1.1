@@ -875,7 +875,7 @@ int                 vortex_xml_rpc_method_call_add_value    (XmlRpcMethodCall  *
  * received is NULL or the position configured is not compatible with
  * the method call configuration.
  */
-int                 vortex_xml_rpc_method_call_set_value    (XmlRpcMethodCall  * method_call,
+axl_bool            vortex_xml_rpc_method_call_set_value    (XmlRpcMethodCall  * method_call,
 							     int                 position,
 							     XmlRpcMethodValue * value)
 {
@@ -919,7 +919,7 @@ int                 vortex_xml_rpc_method_call_set_value    (XmlRpcMethodCall  *
  * @return axl_true if the operation was completed, otherwise axl_false is
  * returned.
  */
-int                 vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  * method_call,
+axl_bool            vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  * method_call,
 							     XmlRpcParamType     type,
 							     axlPointer            value)
 {
@@ -952,9 +952,9 @@ int                 vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  *
  * @return axl_true if the operation was completed, otherwise axl_false is
  * returned.
  */
-int                 vortex_xml_rpc_method_call_create_value_from_string (XmlRpcMethodCall * method_call,
-									 XmlRpcParamType    type,
-									 const char       * string_value)
+axl_bool                 vortex_xml_rpc_method_call_create_value_from_string (XmlRpcMethodCall * method_call,
+									      XmlRpcParamType    type,
+									      const char       * string_value)
 {
 	XmlRpcMethodValue * _value;
 
