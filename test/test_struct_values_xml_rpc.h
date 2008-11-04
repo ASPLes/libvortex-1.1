@@ -22,18 +22,18 @@
 struct __Values {
 	int count;
 	double fraction;
-	int  status;
+	axl_bool  status;
 };
 
 /* support for c++ declarations */
 BEGIN_C_DECLS
 
 /* (un)marshaller support functions  */
-XmlRpcStruct * test_values_marshall (Values * ref, int  dealloc);
-Values * test_values_unmarshall (XmlRpcStruct * ref, int  dealloc);
+XmlRpcStruct * test_values_marshall (Values * ref, axl_bool  dealloc);
+Values * test_values_unmarshall (XmlRpcStruct * ref, axl_bool  dealloc);
 
 /* memory (de)allocation functions */
-Values * test_values_new (int count, double fraction, int  status);
+Values * test_values_new (int count, double fraction, axl_bool  status);
 
 Values * test_values_copy (Values * ref);
 

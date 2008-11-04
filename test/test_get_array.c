@@ -63,7 +63,7 @@ XmlRpcMethodResponse * __get_array_0 (XmlRpcMethodCall * method_call, VortexChan
 	}
 
 	/* Translate structure returned by the service */
-	_result = test_itemarray_marshall (result, true);
+	_result = test_itemarray_marshall (result, axl_true);
 
 	/* return reply generated */
 	return CREATE_OK_REPLY (XML_RPC_ARRAY_VALUE, _result);

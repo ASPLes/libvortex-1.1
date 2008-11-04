@@ -29,7 +29,7 @@ XmlRpcMethodResponse * __get_the_bool_1_0 (XmlRpcMethodCall * method_call, Vorte
 	/* error support variables */
 	char * fault_error = NULL;
 	int    fault_code  = -1;
-	int    result = false;
+	int    result = axl_false;
 
 	/* call to the user implementation */
 	result = get_the_bool_1_0 ( &fault_error, &fault_code, channel);

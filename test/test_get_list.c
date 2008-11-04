@@ -74,7 +74,7 @@ XmlRpcMethodResponse * __get_list_0 (XmlRpcMethodCall * method_call, VortexChann
 	}
 
 	/* Translate structure returned by the service */
-	_result = test_node_marshall (result, true);
+	_result = test_node_marshall (result, axl_true);
 
 	/* return reply generated */
 	return CREATE_OK_REPLY (XML_RPC_STRUCT_VALUE, _result);

@@ -28,8 +28,8 @@ struct __Item {
 BEGIN_C_DECLS
 
 /* (un)marshaller support functions  */
-XmlRpcStruct * test_item_marshall (Item * ref, int  dealloc);
-Item * test_item_unmarshall (XmlRpcStruct * ref, int  dealloc);
+XmlRpcStruct * test_item_marshall (Item * ref, axl_bool  dealloc);
+Item * test_item_unmarshall (XmlRpcStruct * ref, axl_bool  dealloc);
 
 /* memory (de)allocation functions */
 Item * test_item_new (int position, const char * string_position);

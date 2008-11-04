@@ -40,16 +40,16 @@ XmlRpcMethodResponse * __get_struct_2_values_values (XmlRpcMethodCall * method_c
 
 	XmlRpcStruct * _result;
 	/* temporal variable declaration */
-	int      unmarshall_failure = false;
+	axl_bool  unmarshall_failure = axl_false;
 
 	/* marshall the struct parameter into a native type */
-	Values * a = test_values_unmarshall (method_call_get_param_value_as_struct (method_call, 0), false);
+	Values * a = test_values_unmarshall (method_call_get_param_value_as_struct (method_call, 0), axl_false);
 	/* marshall the struct parameter into a native type */
-	Values * b = test_values_unmarshall (method_call_get_param_value_as_struct (method_call, 1), false);
+	Values * b = test_values_unmarshall (method_call_get_param_value_as_struct (method_call, 1), axl_false);
 	if (a == NULL)
-		unmarshall_failure = true;
+		unmarshall_failure = axl_true;
 	if (b == NULL)
-		unmarshall_failure = true;
+		unmarshall_failure = axl_true;
 	
 	/* call to the user implementation */
 	if (! unmarshall_failure)
@@ -75,7 +75,7 @@ XmlRpcMethodResponse * __get_struct_2_values_values (XmlRpcMethodCall * method_c
 	}
 
 	/* Translate structure returned by the service */
-	_result = test_values_marshall (result, true);
+	_result = test_values_marshall (result, axl_true);
 
 	/* return reply generated */
 	return CREATE_OK_REPLY (XML_RPC_STRUCT_VALUE, _result);

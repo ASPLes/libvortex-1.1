@@ -21,8 +21,8 @@
 BEGIN_C_DECLS
 
 /* (un)marshaller support functions  */
-XmlRpcArray    * test_itemarray_marshall   (ItemArray * ref, int  dealloc);
-ItemArray * test_itemarray_unmarshall (XmlRpcArray * ref, int  dealloc);
+XmlRpcArray    * test_itemarray_marshall   (ItemArray * ref, axl_bool  dealloc);
+ItemArray * test_itemarray_unmarshall (XmlRpcArray * ref, axl_bool  dealloc);
 
 /* memory (de)allocation functions */
 ItemArray * test_itemarray_new  (int count);
