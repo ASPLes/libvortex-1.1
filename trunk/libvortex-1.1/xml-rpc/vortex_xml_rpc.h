@@ -148,13 +148,13 @@ typedef void (* VortexXmlRpcBootNotify)               (VortexChannel    * booted
  * @param resource_path  The resource path requested.
  * @param user_data      User space data.
  * 
- * @return true to accept resource requested. false if not.
+ * @return axl_true to accept resource requested. axl_false if not.
  */
-typedef int      (*VortexXmlRpcValidateResource) (VortexConnection * connection, 
-						  int                channel_number,
-						  const char       * serverName,
-						  const char       * resource_path,
-						  axlPointer         user_data);
+typedef axl_bool      (*VortexXmlRpcValidateResource) (VortexConnection * connection, 
+						       int                channel_number,
+						       const char       * serverName,
+						       const char       * resource_path,
+						       axlPointer         user_data);
 
 
 /** 
@@ -295,12 +295,12 @@ VortexChannel     * vortex_xml_rpc_channel_pool_get_next   (VortexConnection * c
 							    int                pool_id);
 
 
-int                  vortex_xml_rpc_invoke               (VortexChannel           * channel,
-							  XmlRpcMethodCall        * method_call,
-							  XmlRpcInvokeNotify        reply_notify,
-							  axlPointer                user_data);
+axl_bool               vortex_xml_rpc_invoke               (VortexChannel           * channel,
+							    XmlRpcMethodCall        * method_call,
+							    XmlRpcInvokeNotify        reply_notify,
+							    axlPointer                user_data);
 
-int                    vortex_xml_rpc_notify_reply         (XmlRpcMethodCall        * method_call, 
+axl_bool               vortex_xml_rpc_notify_reply         (XmlRpcMethodCall        * method_call, 
 							    XmlRpcMethodResponse    * method_response);
 
 XmlRpcMethodResponse * vortex_xml_rpc_invoke_sync          (VortexChannel           * channel,
@@ -311,7 +311,7 @@ VortexXmlRpcState   vortex_xml_rpc_channel_status          (VortexChannel * chan
 
 const char        * vortex_xml_rpc_channel_get_resource    (VortexChannel * channel);
 
-int                 vortex_xml_rpc_accept_negotiation      (VortexCtx                    * ctx,
+axl_bool            vortex_xml_rpc_accept_negotiation      (VortexCtx                    * ctx,
 							    VortexXmlRpcValidateResource   validate_resource,
 							    axlPointer                     validate_user_data,
 							    VortexXmlRpcServiceDispatch    service_dispatch,

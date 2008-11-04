@@ -1397,10 +1397,10 @@ axlPointer __vortex_xml_rpc_invoke (VortexXmlRpcInvokeData * data)
  * @return axl_true if the invocation was performed (only the RPC call),
  * otherwise axl_false is returned.
  */
-int                 vortex_xml_rpc_invoke                  (VortexChannel           * channel,
-							    XmlRpcMethodCall        * method_call,
-							    XmlRpcInvokeNotify        reply_notify,
-							    axlPointer                user_data)
+axl_bool                 vortex_xml_rpc_invoke                  (VortexChannel           * channel,
+								 XmlRpcMethodCall        * method_call,
+								 XmlRpcInvokeNotify        reply_notify,
+								 axlPointer                user_data)
 {
 	VortexXmlRpcInvokeData * data;
 	VortexCtx              * ctx;
@@ -2015,8 +2015,8 @@ const char  * vortex_xml_rpc_channel_get_resource (VortexChannel * channel)
  * if the parameters provided are NULL or rpc support is not
  * enabled. Otherwise, axl_true is returned.
  */
-int  vortex_xml_rpc_notify_reply (XmlRpcMethodCall     * method_call, 
-				  XmlRpcMethodResponse * method_response)
+axl_bool  vortex_xml_rpc_notify_reply (XmlRpcMethodCall     * method_call, 
+				       XmlRpcMethodResponse * method_response)
 {
 	VortexChannel * channel      = NULL;
 	int             msg_no       = -1;
@@ -2231,7 +2231,7 @@ axl_bool  __vortex_xml_rpc_default_validate (VortexConnection * connection,
  * @return axl_true if activation is complete, otherwise axl_false is
  * returned. 
  */
-int                 vortex_xml_rpc_accept_negotiation      (VortexCtx                    * ctx,
+axl_bool            vortex_xml_rpc_accept_negotiation      (VortexCtx                    * ctx,
 							    VortexXmlRpcValidateResource   validate_resource,
 							    axlPointer                     validate_user_data,
 							    VortexXmlRpcServiceDispatch    service_dispatch,

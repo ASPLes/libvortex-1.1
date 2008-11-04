@@ -52,10 +52,10 @@ int  vortex_win32_init (VortexCtx * ctx)
 	error = WSAStartup( wVersionRequested, &wsaData ); 
 	if (error != NO_ERROR) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to init winsock api, exiting..");
-		return false;
+		return axl_false;
 	}
 	vortex_log (VORTEX_LEVEL_DEBUG, "winsock initialization ok");
-	return true;
+	return axl_true;
 }
 
 BOOL APIENTRY DllMain (HINSTANCE hInst,

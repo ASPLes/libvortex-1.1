@@ -547,18 +547,18 @@ typedef struct _XmlRpcArray           XmlRpcArray;
 XmlRpcMethodCall  * vortex_xml_rpc_method_call_new          (const char        * methodName,
 							     int                 parameters);
 
-int                 vortex_xml_rpc_method_call_add_value    (XmlRpcMethodCall  * method_call,
+axl_bool            vortex_xml_rpc_method_call_add_value    (XmlRpcMethodCall  * method_call,
 							     XmlRpcMethodValue * value);
 
-int                 vortex_xml_rpc_method_call_set_value    (XmlRpcMethodCall  * method_call,
+axl_bool            vortex_xml_rpc_method_call_set_value    (XmlRpcMethodCall  * method_call,
 							     int                 position,
 							     XmlRpcMethodValue * value);
 
-int                 vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  * method_call,
+axl_bool            vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  * method_call,
 							     XmlRpcParamType     type,
 							     axlPointer            value);
 
-int                 vortex_xml_rpc_method_call_create_value_from_string (XmlRpcMethodCall * method_call,
+axl_bool            vortex_xml_rpc_method_call_create_value_from_string (XmlRpcMethodCall * method_call,
 									 XmlRpcParamType    type,
 									 const char       * string_value);
 
@@ -934,7 +934,7 @@ return error; } while(0);
  * as a result an integer value.
  *
  * The same handler is used for boolean values that are represented
- * with 0 for false values, and 1 for true ones.
+ * with 0 (axl_false) for false values, and 1 (axl_true) for true ones.
  *
  * @param result The result received from the service invocation.
  *
