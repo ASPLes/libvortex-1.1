@@ -16,7 +16,7 @@ struct __ItemArray {
 	int count;
 };
 
-XmlRpcArray    * test_itemarray_marshall   (ItemArray * ref, int  dealloc)
+XmlRpcArray    * test_itemarray_marshall   (ItemArray * ref, axl_bool  dealloc)
 {
 	/* array and method value */
 	XmlRpcArray * _result;
@@ -40,7 +40,7 @@ XmlRpcArray    * test_itemarray_marshall   (ItemArray * ref, int  dealloc)
 		_value = ref->array[iterator];
 
 		/* translate the value */
-		_struct = test_item_marshall (_value, false);
+		_struct = test_item_marshall (_value, axl_false);
 		_array_value = method_value_new (XML_RPC_STRUCT_VALUE, _struct);
 
 		/* add the value to the array */
@@ -58,7 +58,7 @@ XmlRpcArray    * test_itemarray_marshall   (ItemArray * ref, int  dealloc)
 	return _result;
 }
 
-ItemArray * test_itemarray_unmarshall (XmlRpcArray * ref, int  dealloc)
+ItemArray * test_itemarray_unmarshall (XmlRpcArray * ref, axl_bool  dealloc)
 {
 	ItemArray * _result;
 	Item * _value;
@@ -78,7 +78,7 @@ ItemArray * test_itemarray_unmarshall (XmlRpcArray * ref, int  dealloc)
 
 		/* translate the value */
 		_rpc_value = method_value_get_as_struct (_array_value);
-		_value     = test_item_unmarshall (_rpc_value, false);
+		_value     = test_item_unmarshall (_rpc_value, axl_false);
 		
 		/* set the value */
 		_result->array[iterator] = _value;

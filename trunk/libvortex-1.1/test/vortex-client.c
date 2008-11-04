@@ -44,7 +44,7 @@ VortexConnection * connection;
 /** 
  * @brief Next auto tls value to be used
  */
-int                auto_tls_profile = true;
+axl_bool           auto_tls_profile = axl_true;
 
 
 void vortex_client_show_help () {
@@ -164,7 +164,7 @@ unsigned int get_number_long (char  * ans, long limit) {
 	return num;
 }
 
-void vortex_client_write_frame (VortexConnection * connection, int      fragment)
+void vortex_client_write_frame (VortexConnection * connection, axl_bool      fragment)
 {
 	char             * response          = NULL;
 	VortexFrameType    type              = VORTEX_FRAME_TYPE_UNKNOWN;
@@ -176,7 +176,7 @@ void vortex_client_write_frame (VortexConnection * connection, int      fragment
 	char             * payload           = NULL;
 	char             * str               = NULL;
 	char             * the_whole_payload = NULL;
-	int                continuator;
+	axl_bool           continuator;
 	char             * the_frame;
 	int                iterator;
 	int                length;
@@ -209,9 +209,9 @@ void vortex_client_write_frame (VortexConnection * connection, int      fragment
 		return;
 
 	if (axl_memcmp (response, "1", 1))
-		continuator = false;
+		continuator = axl_false;
 	else
-		continuator = true;
+		continuator = axl_true;
 	axl_free (response);
 
 	sequence_num = get_number_long ("What is the sequence number to be used?\n", MAX_SEQ_NO);
@@ -323,13 +323,13 @@ void vortex_client_get_channel_status (VortexConnection * connection)
 	return;
 }
 
-int       check_connected (char  * error, VortexConnection * connection) {
+axl_bool       check_connected (char  * error, VortexConnection * connection) {
 	
-	if ((connection == NULL) || (!vortex_connection_is_ok (connection, false))) {
+	if ((connection == NULL) || (!vortex_connection_is_ok (connection, axl_false))) {
 		printf ("%s, connect first\n", error);
-		return false;
+		return axl_false;
 	}
-	return true;
+	return axl_true;
 
 }
 
@@ -387,7 +387,7 @@ void vortex_client_write_start_msg (VortexConnection * connection)
 	the_frame   = vortex_frame_build_up_from_params (VORTEX_FRAME_TYPE_MSG,
 							 0,
 							 vortex_channel_get_next_msg_no (channel0),
-							 false,
+							 axl_false,
 							 vortex_channel_get_next_seq_no (channel0),
 							 strlen (the_msg),
 							 0,
@@ -424,9 +424,9 @@ void vortex_client_write_start_msg (VortexConnection * connection)
 	return;
 }
 
-int      vortex_client_on_close_received (int                channel_num, 
-					  VortexConnection * connection, 
-					  axlPointer           user_data) {
+axl_bool      vortex_client_on_close_received (int                channel_num, 
+					       VortexConnection * connection, 
+					       axlPointer         user_data) {
 
 	printf ("\n*** Close notification received: ***\n");
 	printf ("*** A close notification for the channel: %d over the connection %d) from %s:%s\n",
@@ -434,7 +434,7 @@ int      vortex_client_on_close_received (int                channel_num,
 		 vortex_connection_get_host (connection),
 		 vortex_connection_get_port (connection));
 	
-	return true;
+	return axl_true;
 }
 
 void vortex_client_on_frame_received     (VortexChannel    * channel, 
@@ -571,8 +571,8 @@ void vortex_client_send_message (VortexConnection * connection)
 	WaitReplyData   * wait_reply   = NULL;
 	char            * msg_to_send;
 	char            * wait;
-	int               do_a_wait;
-	int               result;
+	axl_bool          do_a_wait;
+	axl_bool          result;
 	int               msg_no;
 
 	printf ("This procedure will send a message using the vortex API.\n");
@@ -633,7 +633,7 @@ void vortex_client_send_message (VortexConnection * connection)
 	return;
 }
 
-int  __vortex_client_connection_status (axlPointer key, axlPointer value, axlPointer user_data)
+axl_bool  __vortex_client_connection_status (axlPointer key, axlPointer value, axlPointer user_data)
 {
 	VortexChannel * channel = value;
 
@@ -641,7 +641,7 @@ int  __vortex_client_connection_status (axlPointer key, axlPointer value, axlPoi
 		 vortex_channel_get_number (channel), 
 		 vortex_channel_get_profile (channel));
 
-	return false;
+	return axl_false;
 }
 
 void vortex_client_connection_status (VortexConnection * connection)
@@ -882,11 +882,11 @@ void vortex_client_begin_xml_rpc_invocation (VortexConnection * connection)
  * @brief Support function to __vortex_connection_has_uri_from that
  * finally extract uri information into the provided values.
  */
-int      __vortex_connection_has_uri_from_aux (char  * uri, char  ** host, char  ** port, int      * activate_tls)
+axl_bool      __vortex_connection_has_uri_from_aux (char  * uri, char  ** host, char  ** port, axl_bool      * activate_tls)
 {
 	char     ** pieces     = NULL;
 	char     ** host_part  = NULL;
-	int         result     = false;
+	int         result     = axl_false;
 
 	/* first check if we have an uri from using :// */
 	pieces = axl_stream_split (uri, 1, "://");
@@ -905,7 +905,7 @@ int      __vortex_connection_has_uri_from_aux (char  * uri, char  ** host, char 
 		/* free and flag that the values where read */
                 if (host_part != NULL)
 		        axl_stream_freev (host_part);
-		result = true;
+		result = axl_true;
 	}else {
 		/* we have a :// specification, use profile
 		 * information to figure out which is the port to
@@ -954,17 +954,17 @@ int      __vortex_connection_has_uri_from_aux (char  * uri, char  ** host, char 
  * required to be negociated at connection time.
  *
  * 
- * @return true if the URI is activated or false if the data must be
+ * @return axl_true if the URI is activated or axl_false if the data must be
  * required.
  */
-int      __vortex_connection_has_uri_from (char  * line, 
-					   char  ** host, 
-					   char  ** port, 
-					   int      * activate_tls)
+axl_bool      __vortex_connection_has_uri_from (char       * line, 
+						char      ** host, 
+						char      ** port, 
+						axl_bool   * activate_tls)
 {
 	char  ** line_pieces = NULL;
 	int      iterator    = 0;
-	int      result      = false;
+	axl_bool result      = axl_false;
 
         /* set default values for the host and the port */
         (* host ) = NULL;
@@ -1001,7 +1001,7 @@ int main (int argc, char *argv[])
 {
         char             * host         = NULL;
         char             * port         = NULL;
-        int                activate_tls = false;
+        axl_bool           activate_tls = axl_false;
         axlList          * profiles     = NULL;
 	int                iterator;
 	char             * line         = NULL;
@@ -1021,14 +1021,14 @@ int main (int argc, char *argv[])
 
 	vortex_show_initial_greetings ();
 
-	while (true) {
+	while (axl_true) {
 
 		/* unref previous command */
 		if (line != NULL)
 			axl_free (line);
 		line = NULL;
 		
-		if ((vortex_connection_is_ok (connection, false)))
+		if ((vortex_connection_is_ok (connection, axl_false)))
 			line = readline ("[===] vortex-client > ");
 		else
 			line = readline ("[=|=] vortex-client > ");
@@ -1099,7 +1099,7 @@ int main (int argc, char *argv[])
 
 		if (axl_memcmp ("auto tls", line, 8)) {
 			/* enable auto tls profile negotiation not allowing TLS failures */
-			vortex_tls_set_auto_tls (ctx, auto_tls_profile, false, NULL);
+			vortex_tls_set_auto_tls (ctx, auto_tls_profile, axl_false, NULL);
 			printf ("Auto TLS profile negotiation is: %s\n", auto_tls_profile ? "ON" : "OFF");
 			auto_tls_profile = !auto_tls_profile;
 			continue;
@@ -1137,7 +1137,7 @@ int main (int argc, char *argv[])
 		    axl_memcmp ("connect", line, 7)) {
 
 			/* close previous  */
-			if (vortex_connection_is_ok (connection, false))
+			if (vortex_connection_is_ok (connection, axl_false))
 				vortex_connection_close (connection);
 			
 			/* check if the user has specified a host:port
@@ -1165,7 +1165,7 @@ int main (int argc, char *argv[])
 			connection = vortex_connection_new (ctx, host, port, NULL, NULL);
 
 			/* check if connection is ok */
-			if (!vortex_connection_is_ok (connection, false)) {
+			if (!vortex_connection_is_ok (connection, axl_false)) {
 				
 				/* check for printing a message */
 				if ((host != NULL) && (port != NULL)) {
@@ -1197,7 +1197,7 @@ int main (int argc, char *argv[])
 		}
 
 		if (axl_memcmp ("quit", line, 4)) {
-			if (vortex_connection_is_ok (connection, false)) {
+			if (vortex_connection_is_ok (connection, axl_false)) {
 				if (!vortex_connection_close (connection)) {
 					printf ("there was an error while closing the connection..");
 				}
@@ -1210,7 +1210,7 @@ int main (int argc, char *argv[])
 			clear_history ();	
 
 			/* finish vortex client */
-			vortex_exit_ctx (ctx, false);
+			vortex_exit_ctx (ctx, axl_false);
 
 			/* free context */
 			vortex_ctx_free (ctx);
@@ -1235,7 +1235,7 @@ int main (int argc, char *argv[])
 			if (!check_connected ("can't write and send a frame", connection))
 				continue;
 
-			vortex_client_write_frame (connection, false);
+			vortex_client_write_frame (connection, axl_false);
 			continue;
 		}
 
@@ -1283,7 +1283,7 @@ int main (int argc, char *argv[])
 			if (!check_connected ("can't send a message", connection))
 				continue;
 			
-			vortex_client_write_frame (connection, true);
+			vortex_client_write_frame (connection, axl_true);
 			continue;
 		}
 #if defined(ENABLE_XML_RPC_SUPPORT)
@@ -1304,7 +1304,7 @@ int main (int argc, char *argv[])
 	}
 
 	/* finaly free connection */
-	if (vortex_connection_is_ok (connection, false))
+	if (vortex_connection_is_ok (connection, axl_false))
 		vortex_connection_close (connection);
 	
 	return (0);

@@ -171,7 +171,7 @@ XmlRpcMethodCall * __common_get_the_bool_1 ()
 }
 
 /* service: get_the_bool_1 */
-int test_get_the_bool_1_s (VortexChannel * channel, XmlRpcResponseStatus * status, int * fault_code, char ** fault_string)
+axl_bool test_get_the_bool_1_s (VortexChannel * channel, XmlRpcResponseStatus * status, int * fault_code, char ** fault_string)
 {
 	XmlRpcMethodCall     * _invocator_;
 	XmlRpcMethodResponse * _response_;
@@ -184,7 +184,7 @@ int test_get_the_bool_1_s (VortexChannel * channel, XmlRpcResponseStatus * statu
 	_response_ = vortex_xml_rpc_invoke_sync (channel, _invocator_);
 
 	/* unmarshall sync result */
-	return vortex_xml_rpc_unmarshall_int_sync  (_response_, status, channel, fault_code, fault_string) == true;
+	return vortex_xml_rpc_unmarshall_int_sync  (_response_, status, channel, fault_code, fault_string) == axl_true;
 }
 
 void test_get_the_bool_1 (VortexChannel * channel, XmlRpcProcessInt process)
@@ -218,7 +218,7 @@ XmlRpcMethodCall * __common_get_the_bool_2 ()
 }
 
 /* service: get_the_bool_2 */
-int test_get_the_bool_2_s (VortexChannel * channel, XmlRpcResponseStatus * status, int * fault_code, char ** fault_string)
+axl_bool test_get_the_bool_2_s (VortexChannel * channel, XmlRpcResponseStatus * status, int * fault_code, char ** fault_string)
 {
 	XmlRpcMethodCall     * _invocator_;
 	XmlRpcMethodResponse * _response_;
@@ -231,7 +231,7 @@ int test_get_the_bool_2_s (VortexChannel * channel, XmlRpcResponseStatus * statu
 	_response_ = vortex_xml_rpc_invoke_sync (channel, _invocator_);
 
 	/* unmarshall sync result */
-	return vortex_xml_rpc_unmarshall_int_sync  (_response_, status, channel, fault_code, fault_string) == true;
+	return vortex_xml_rpc_unmarshall_int_sync  (_response_, status, channel, fault_code, fault_string) == axl_true;
 }
 
 void test_get_the_bool_2 (VortexChannel * channel, XmlRpcProcessInt process)
@@ -311,9 +311,9 @@ XmlRpcMethodCall * __common_get_struct_values_values (Values * a, Values * b)
 	/* create the method call invocator */
 	_invocator_ = method_call_new ("get_struct", 2);
 
-	method_call_create_value (_invocator_, XML_RPC_STRUCT_VALUE, test_values_marshall (a, false));
+	method_call_create_value (_invocator_, XML_RPC_STRUCT_VALUE, test_values_marshall (a, axl_false));
 
-	method_call_create_value (_invocator_, XML_RPC_STRUCT_VALUE, test_values_marshall (b, false));
+	method_call_create_value (_invocator_, XML_RPC_STRUCT_VALUE, test_values_marshall (b, axl_false));
 
 	/* return invocator created */
 	return _invocator_;

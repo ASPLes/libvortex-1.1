@@ -11,7 +11,7 @@
 #include <test_types.h>
 
 /* (un)marshaller support functions  */
-XmlRpcStruct * test_node_marshall (Node * ref, int  dealloc)
+XmlRpcStruct * test_node_marshall (Node * ref, axl_bool  dealloc)
 {
 	XmlRpcStruct       * _result;
 	XmlRpcStructMember * _member;
@@ -27,7 +27,7 @@ XmlRpcStruct * test_node_marshall (Node * ref, int  dealloc)
 	vortex_xml_rpc_struct_add_member (_result, _member);
 
 	/* next member */
-	_member = vortex_xml_rpc_struct_member_new ("next", method_value_new (XML_RPC_STRUCT_VALUE, test_node_marshall (ref->next, false)));
+	_member = vortex_xml_rpc_struct_member_new ("next", method_value_new (XML_RPC_STRUCT_VALUE, test_node_marshall (ref->next, axl_false)));
 	vortex_xml_rpc_struct_add_member (_result, _member);
 
 	/* dealloc data source */
@@ -38,7 +38,7 @@ XmlRpcStruct * test_node_marshall (Node * ref, int  dealloc)
 	return _result;
 }
 
-Node * test_node_unmarshall (XmlRpcStruct * ref, int  dealloc)
+Node * test_node_unmarshall (XmlRpcStruct * ref, axl_bool  dealloc)
 {
 	Node * _result;
 
@@ -55,7 +55,7 @@ Node * test_node_unmarshall (XmlRpcStruct * ref, int  dealloc)
 
 	_result = test_node_new (
 		vortex_xml_rpc_struct_get_member_value_as_int (ref, "position"),
-		test_node_unmarshall (vortex_xml_rpc_struct_get_member_value_as_struct (ref, "next"), false));
+		test_node_unmarshall (vortex_xml_rpc_struct_get_member_value_as_struct (ref, "next"), axl_false));
 
 	/* dealloc data source */
 	if (dealloc)
