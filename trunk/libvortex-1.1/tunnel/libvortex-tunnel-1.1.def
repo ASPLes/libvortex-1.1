@@ -1,6 +1,5 @@
 EXPORTS
 vortex_tunnel_accept_negotiation
-vortex_tunnel_is_enabled
 vortex_tunnel_new
 vortex_tunnel_set_resolver
 vortex_tunnel_settings_add_hop
