@@ -385,7 +385,7 @@ typedef enum {
 	 * to be follow while creating channels, selecting some
 	 * profiles under some conditions.
 	 *
-	 * By default, the value configured is false, that is, allows
+	 * By default, the value configured is axl_false, that is, allows
 	 * to create channels under profiles even not adviced.
 	 */
 	VORTEX_ENFORCE_PROFILES_SUPPORTED = 4,

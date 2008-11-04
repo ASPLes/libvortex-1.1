@@ -435,9 +435,9 @@ axl_bool  vortex_cond_create    (VortexCond        * cond)
 		/* no security */
 		NULL,  
 		/* auto-reset */
-		false, 
+		axl_false, 
 		/* non-signaled initially */
-		false, 
+		axl_false, 
 		/* unnamed */
 		NULL); 
 

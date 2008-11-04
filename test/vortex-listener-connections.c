@@ -88,8 +88,8 @@ void __sigsegv_handler (int value)
 int main (int argc, char ** argv) 
 {
 
-	vortex_log_enable (true);
-	vortex_color_log_enable (true);
+	vortex_log_enable (axl_true);
+	vortex_color_log_enable (axl_true);
 
 	signal (SIGSEGV, __sigsegv_handler);
 	signal (SIGABRT, __sigsegv_handler);

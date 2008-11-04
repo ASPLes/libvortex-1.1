@@ -65,7 +65,7 @@ BOOL APIENTRY DllMain (HINSTANCE hInst,
  
     /* always returns true because vortex init is done through
      * vortex_init */
-    return true;
+    return axl_true;
 }
 
 int      __vortex_win32_blocking_socket_set (VORTEX_SOCKET socket,

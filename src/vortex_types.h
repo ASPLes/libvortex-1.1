@@ -912,12 +912,12 @@ typedef enum  {
 	 * is joinable.
 	 *
 	 * If configured this value, you must provide as the following
-	 * value either true of false.
+	 * value either axl_true or axl_false.
 	 *
 	 * \code
 	 * VortexThread thread;
 	 * if (! vortex_thread_create (&thread, some_start_function, NULL, 
-	 *                             VORTEX_THREAD_CONF_JOINABLE, false,
+	 *                             VORTEX_THREAD_CONF_JOINABLE, axl_false,
 	 *                             VORTEX_THREAD_CONF_END)) {
 	 *    // failed to create the thread
 	 * }
