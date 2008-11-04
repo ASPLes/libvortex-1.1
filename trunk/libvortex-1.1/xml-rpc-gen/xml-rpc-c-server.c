@@ -122,7 +122,7 @@ void __xml_rpc_c_server_service_dispach (axlNode * service)
 	char    * service_type;
 
 	/* check if the service was already handled */
-	if (axl_node_annotate_get_int (service, "service-handled", false))
+	if (axl_node_annotate_get_int (service, "service-handled", axl_false))
 		return;
 
 	/* get the service name */
@@ -207,7 +207,7 @@ void __xml_rpc_c_server_service_dispach (axlNode * service)
  */
 void xml_rpc_write_c_server_default_service_dispath (axlDoc   * doc, 
 						     char     * comp_name,
-						     int        also_body)
+						     axl_bool   also_body)
 {
 	/* service location */
 	axlNode * service;
@@ -427,7 +427,7 @@ void xml_rpc_c_server_create_services_dispatch_file (axlDoc * doc,
 	xml_rpc_support_write ("#ifndef __SERVICE_DISPATCH_H__\n");
 	xml_rpc_support_write ("#define __SERVICE_DISPATCH_H__\n\n");
 
-	xml_rpc_write_c_server_default_service_dispath (doc, comp_name, false);
+	xml_rpc_write_c_server_default_service_dispath (doc, comp_name, axl_false);
 
 	xml_rpc_support_write ("#endif\n");
 
@@ -442,7 +442,7 @@ void xml_rpc_c_server_create_services_dispatch_file (axlDoc * doc,
 	xml_rpc_write_c_server_include_services (doc, comp_name);
 	
 	/* now write the default service dispath */
-	xml_rpc_write_c_server_default_service_dispath (doc, comp_name, true);
+	xml_rpc_write_c_server_default_service_dispath (doc, comp_name, axl_true);
 
 	xml_rpc_support_close_file ();
 
@@ -501,7 +501,7 @@ void xml_rpc_c_server_write_service_header (char    * service_name,
 					    char    * return_type, 
 					    char    * type_prefix,
 					    axlNode * aux,
-					    int       is_header)
+					    axl_bool  is_header)
 {
 	axlDoc * doc = axl_node_get_doc (aux);
 
@@ -550,7 +550,7 @@ void xml_rpc_c_server_write_service_header (char    * service_name,
  * 
  * @param params The root node that contains the parameters.
  */
-int      xml_rpc_c_server_write_temporal_parameter_getting (char  * comp_name, axlNode * params)
+axl_bool      xml_rpc_c_server_write_temporal_parameter_getting (char  * comp_name, axlNode * params)
 {
 	axlNode * aux;
 	axlNode * aux2;
@@ -563,7 +563,7 @@ int      xml_rpc_c_server_write_temporal_parameter_getting (char  * comp_name, a
 	char    * name;
 
 	int       iterator;
-	int       first_time = true;
+	axl_bool  first_time = axl_true;
 
 	/* now write the service parameter spec */
 	iterator = 0;
@@ -593,8 +593,8 @@ int      xml_rpc_c_server_write_temporal_parameter_getting (char  * comp_name, a
 			    xml_rpc_c_stub_type_is_array (doc, type)) {
 				if (first_time) {
 					xml_rpc_support_write ("/* temporal variable declaration */\n");
-					xml_rpc_support_write ("int      unmarshall_failure = false;\n\n");
-					first_time = false;
+					xml_rpc_support_write ("axl_bool  unmarshall_failure = axl_false;\n\n");
+					first_time = axl_false;
 				}
 			}
 
@@ -608,12 +608,12 @@ int      xml_rpc_c_server_write_temporal_parameter_getting (char  * comp_name, a
 				/* check which is the marshall type */
 				if (xml_rpc_c_stub_type_is_struct (doc, type)) {
 					xml_rpc_support_write ("/* marshall the struct parameter into a native type */\n");
-					xml_rpc_support_write ("%s * %s = %s_%s_unmarshall (method_call_get_param_value_as_struct (method_call, %d), false);\n", 
+					xml_rpc_support_write ("%s * %s = %s_%s_unmarshall (method_call_get_param_value_as_struct (method_call, %d), axl_false);\n", 
 							       type, name, comp_name_lower, type_lower, iterator);
 				} else {
 					/* it is an array */
 					xml_rpc_support_write ("/* marshall the array parameter into a native type */\n");
-					xml_rpc_support_write ("%s * %s = %s_%s_unmarshall (method_call_get_param_value_as_array (method_call, %d), false);\n", 
+					xml_rpc_support_write ("%s * %s = %s_%s_unmarshall (method_call_get_param_value_as_array (method_call, %d), axl_false);\n", 
 							       type, name, comp_name_lower, type_lower, iterator);
 				} /* end if */
 				
@@ -647,7 +647,7 @@ int      xml_rpc_c_server_write_temporal_parameter_getting (char  * comp_name, a
 			if (xml_rpc_c_stub_type_is_struct (doc, type) ||
 			    xml_rpc_c_stub_type_is_array (doc, type)) {
 				xml_rpc_support_write ("if (%s == NULL)\n", name);
-				xml_rpc_support_write ("\tunmarshall_failure = true;\n");
+				xml_rpc_support_write ("\tunmarshall_failure = axl_true;\n");
 			}
 			
 			/* update the iterator count */
@@ -676,8 +676,8 @@ int      xml_rpc_c_server_write_temporal_parameter_getting (char  * comp_name, a
  * 
  * @param params The root node that contains the parameters.
  */
-int  xml_rpc_c_server_write_temporal_parameter_releasing (char  * comp_name, 
-							  axlNode * params)
+axl_bool  xml_rpc_c_server_write_temporal_parameter_releasing (char  * comp_name, 
+							       axlNode * params)
 {
 	axlNode * aux;
 	axlNode * aux2;
@@ -690,8 +690,8 @@ int  xml_rpc_c_server_write_temporal_parameter_releasing (char  * comp_name,
 	char    * name;
 
 	int       iterator;
-	int       first_time = true;
-	int       found      = false;
+	axl_bool  first_time = axl_true;
+	axl_bool  found      = axl_false;
 
 
 	/* now write the service parameter spec */
@@ -722,7 +722,7 @@ int  xml_rpc_c_server_write_temporal_parameter_releasing (char  * comp_name,
 			    xml_rpc_c_stub_type_is_array (doc, type)) {
 				if (first_time) {
 					xml_rpc_support_write ("/* temporal variable deallocation */\n");
-					first_time = false;
+					first_time = axl_false;
 				}
 			}
 
@@ -731,7 +731,7 @@ int  xml_rpc_c_server_write_temporal_parameter_releasing (char  * comp_name,
 			if (xml_rpc_c_stub_type_is_struct (doc, type) ||
 			    xml_rpc_c_stub_type_is_array (doc, type)) {
 				/* flag that an struct or array was found */
-				found = true;
+				found = axl_true;
 
 				/* get lower type name */
 				type_lower  = xml_rpc_support_to_lower (type);
@@ -918,7 +918,7 @@ void xml_rpc_c_server_create_write_service (axlNode * service,
 
 	/* write the service header definition */
 	xml_rpc_c_server_write_service_header (service_name, param_count, return_type, type_prefix,
-					       aux, true);
+					       aux, axl_true);
 	xml_rpc_support_write ("\n\n");
 
 	/* write the service unmarshaller definition */
@@ -959,7 +959,7 @@ void xml_rpc_c_server_create_write_service (axlNode * service,
 
 	/* write the user service, in the mean time, empty */
 	xml_rpc_c_server_write_service_header (service_name, param_count, return_type, type_prefix,
-					       aux, false);
+					       aux, axl_false);
 	xml_rpc_support_write ("\n{\n");
 	
 	/* push the indent to write the empty body */
@@ -1046,7 +1046,7 @@ void xml_rpc_c_server_create_write_service (axlNode * service,
 	else if (axl_cmp (return_type, "double"))
 		xml_rpc_support_sl_write ("   result = 0;\n\n");
 	else if (axl_cmp (return_type, "bool"))
-		xml_rpc_support_sl_write ("   result = false;\n\n");
+		xml_rpc_support_sl_write ("   result = axl_false;\n\n");
 	else
 		xml_rpc_support_sl_write ("   result;\n\n");
 
@@ -1119,7 +1119,7 @@ void xml_rpc_c_server_create_write_service (axlNode * service,
 	if (xml_rpc_c_stub_type_is_array (doc, return_type) ||
 	    xml_rpc_c_stub_type_is_struct (doc, return_type)) {
 		xml_rpc_support_write ("/* Translate structure returned by the service */\n");
-		xml_rpc_support_write ("_result = %s_%s_marshall (result, true);\n\n",
+		xml_rpc_support_write ("_result = %s_%s_marshall (result, axl_true);\n\n",
 				       comp_name_lower, return_type_lower);
 	}
 
