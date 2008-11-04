@@ -138,7 +138,7 @@ int  main (int  argc, char ** argv)
 
 	/* do not call vortex_exit here if you define an on ready
 	 * function which actually ends the execution */
-	vortex_exit_ctx (ctx, true);
+	vortex_exit_ctx (ctx, axl_true);
 
 	return 0;
 }

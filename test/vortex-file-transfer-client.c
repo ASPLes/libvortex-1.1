@@ -124,7 +124,7 @@ int  main (int  argc, char ** argv)
 	/* creates a new connection against localhost:44017 */
 	printf ("connecting to %s:44017...\n", SERVER_HOST);
 	connection = vortex_connection_new (ctx, SERVER_HOST, "44017", NULL, NULL);
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Unable to connect remote server, error was: %s\n",
 			 vortex_connection_get_message (connection));
 		goto end;
@@ -165,7 +165,7 @@ int  main (int  argc, char ** argv)
 	}
 
 	/* serialize channel */
-	vortex_channel_set_serialize (channel, true);
+	vortex_channel_set_serialize (channel, axl_true);
 	
 	/* open the file */
 #if defined(AXL_OS_UNIX)
@@ -199,7 +199,7 @@ int  main (int  argc, char ** argv)
 
  end:				      
 	vortex_connection_close (connection);
-	vortex_exit_ctx (ctx, true);
+	vortex_exit_ctx (ctx, axl_true);
 	return 0 ;	      
 }
 

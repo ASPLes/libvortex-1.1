@@ -71,7 +71,7 @@ int main (int argc, char ** argv) {
 
 
 	/* and handle all frames received */
-	while (true) {
+	while (axl_true) {
 
 		/* get the next message, blocking at this call. 
 		 *
@@ -120,7 +120,7 @@ int main (int argc, char ** argv) {
 	
 	
 	/* end vortex internal subsystem (if no one have done it yet!) */
-	vortex_exit_ctx (ctx, true);
+	vortex_exit_ctx (ctx, axl_true);
  
 	/* that's all to start BEEPing! */
 	return 0;     

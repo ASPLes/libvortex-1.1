@@ -39,7 +39,7 @@ int      validate_resource (VortexConnection * connection,
 	printf ("Received request to validate resource: '%s' (virtual host: serverName='%s')\n", 
 		 resource_path,
 		 serverName != NULL ? serverName : "no serverName value received");
-	return true;
+	return axl_true;
 }
 
 /** 
@@ -173,7 +173,7 @@ int  main (int  argc, char ** argv)
 	vortex_listener_wait (ctx);
 	
 	/* end vortex function */
-	vortex_exit_ctx (ctx, true);
+	vortex_exit_ctx (ctx, axl_true);
 
 	return 0;
 }

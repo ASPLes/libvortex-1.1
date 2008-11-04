@@ -96,11 +96,11 @@ int      sasl_external_validation (VortexConnection * connection,
 {
 	if (axl_cmp ("acinom", auth_id)) {
 		printf ("Received external validation for: %s, replying OK\n", auth_id);
-		return true;
+		return axl_true;
 	}
 	
 	printf ("Received external validation for: %s, replying FAILED\n", auth_id);
-	return false;
+	return axl_false;
 }
 
 int      sasl_external_validation_full (VortexConnection * connection,
@@ -114,7 +114,7 @@ int      sasl_external_validation_full (VortexConnection * connection,
 
 	printf ("Received external validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.",
 		 auth_id);
-	return false;
+	return axl_false;
 }
 
 /** 
@@ -130,11 +130,11 @@ int      sasl_anonymous_validation (VortexConnection * connection,
 {
 	if (axl_cmp ("test@aspl.es", anonymous_token)) {
 		printf ("Received anonymous validation for: test@aspl.es, replying OK\n");
-		return true;
+		return axl_true;
 	}
 	
 	printf ("Received anonymous validation for: %s, replying FAILED\n", anonymous_token);
-	return false;
+	return axl_false;
 }
 
 int      sasl_anonymous_validation_full (VortexConnection * connection,
@@ -148,7 +148,7 @@ int      sasl_anonymous_validation_full (VortexConnection * connection,
 	
 	printf ("Received anonymous validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.",
 		anonymous_token);
-	return false;
+	return axl_false;
 }
 
 
@@ -160,7 +160,7 @@ int      sasl_anonymous_validation_full (VortexConnection * connection,
  * @param auth_proxy_id The proxy user id 
  * @param password      The user id password
  * 
- * @return true accept and validate, false to deny request.
+ * @return axl_true accept and validate, axl_false to deny request.
  */
 int      sasl_plain_validation  (VortexConnection * connection,
 				 const char       * auth_id,
@@ -173,10 +173,10 @@ int      sasl_plain_validation  (VortexConnection * connection,
 	/* perform validation */
 	if (axl_cmp (auth_id, "bob") && 
 	    axl_cmp (password, "secret")) {
-		return true;
+		return axl_true;
 	}
 	/* deny SASL request to authenticate remote peer */
-	return false;
+	return axl_false;
 }
 
 int      sasl_plain_validation_full  (VortexConnection * connection,
@@ -192,7 +192,7 @@ int      sasl_plain_validation_full  (VortexConnection * connection,
 	}
 
 	printf ("Received PLAIN validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.", auth_id);
-	return false;
+	return axl_false;
 }
 
 char  * sasl_cram_md5_validation (VortexConnection * connection,
@@ -215,7 +215,7 @@ char  * sasl_cram_md5_validation_full (VortexConnection * connection,
 	}
 
 	printf ("Received cram md5 validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.", auth_id);
-	return false;
+	return axl_false;
 }
 
 char  * sasl_digest_md5_validation (VortexConnection * connection,
@@ -240,7 +240,7 @@ char  * sasl_digest_md5_validation_full (VortexConnection * connection,
 	}
 
 	printf ("Received digest md5 validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.", auth_id);
-	return false;
+	return axl_false;
 }
 
 
@@ -388,7 +388,7 @@ int  main (int  argc, char  ** argv)
 
 	/* do not call vortex_exit here if you define an on ready
 	 * function which actually ends the execution */
-	vortex_exit_ctx (ctx, true);
+	vortex_exit_ctx (ctx, axl_true);
 
 	return 0;
 }

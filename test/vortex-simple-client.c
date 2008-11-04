@@ -24,7 +24,7 @@ int  main (int  argc, char ** argv)
 	/* creates a new connection against localhost:44000 */
 	printf ("connecting to localhost:44000...\n");
 	connection = vortex_connection_new (ctx, "localhost", "44000", NULL, NULL);
-	if (!vortex_connection_is_ok (connection, false)) {
+	if (!vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Unable to connect remote server, error was: %s\n",
 			 vortex_connection_get_message (connection));
 		goto end;
@@ -77,7 +77,7 @@ int  main (int  argc, char ** argv)
 	vortex_connection_close (connection);
 
 	/* terminate execution context */
-	vortex_exit_ctx (ctx, false);
+	vortex_exit_ctx (ctx, axl_false);
 
 	/* free ctx */
 	vortex_ctx_free (ctx);

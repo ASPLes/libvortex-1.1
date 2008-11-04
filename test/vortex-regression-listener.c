@@ -190,14 +190,14 @@ void frame_received_fake_listeners  (VortexChannel    * channel,
 
 		/* create the listener */
 		listener = vortex_listener_new (ctx, "0.0.0.0", "44012", NULL, NULL);
-		if (! vortex_connection_is_ok (listener, false)) {
+		if (! vortex_connection_is_ok (listener, axl_false)) {
 			printf ("Test 12 (8): failed to start fake listener..\n");
 			vortex_channel_send_err (channel, "failed to create listener", 25, vortex_frame_get_msgno (frame));
 			return;
 		} /* end if */
 
 		printf ("CALLING: to block listener created..\n");
-		vortex_connection_block (listener, true);
+		vortex_connection_block (listener, axl_true);
 
 		/* associate listener to the channel */
 		vortex_channel_set_data (channel, 
@@ -217,7 +217,7 @@ void frame_received_fake_listeners  (VortexChannel    * channel,
 		} /* end if */
 
 		printf ("CALLING: to unblock listener created..\n");
-		vortex_connection_block (listener, false);
+		vortex_connection_block (listener, axl_false);
 
 		/* reply the peer client with the same content */
 		vortex_channel_send_rpy (channel, "listener unblocked", 18, vortex_frame_get_msgno (frame));
@@ -234,7 +234,7 @@ void frame_received_fake_listeners  (VortexChannel    * channel,
 		} /* end if */
 
 		printf ("CALLING: to close listener created..\n");
-		vortex_listener_shutdown (listener, true);
+		vortex_listener_shutdown (listener, axl_true);
 
 		/* reply the peer client with the same content */
 		vortex_channel_send_rpy (channel, "listener closed", 15, vortex_frame_get_msgno (frame));
@@ -446,7 +446,7 @@ void frame_received_ans_transfer_selected_file (VortexChannel    * channel,
 				
 			} /* end if */
 			
-		} while (true);
+		} while (axl_true);
 
 		/* close file */
 		fclose (file);
@@ -466,60 +466,60 @@ void frame_received_ans_transfer_selected_file (VortexChannel    * channel,
 	return;
 }
 
-int      start_channel (int                channel_num, 
-			VortexConnection * connection, 
-			axlPointer           user_data)
+axl_bool      start_channel (int                channel_num, 
+			     VortexConnection * connection, 
+			     axlPointer           user_data)
 {
 	/* implement profile requirement for allowing starting a new
-	 * channel to return false denies channel creation to return
-	 * true allows create the channel */
-	return true;
+	 * channel to return axl_false denies channel creation to return
+	 * axl_true allows create the channel */
+	return axl_true;
 }
 
-int      close_channel (int                channel_num, 
-			VortexConnection * connection, 
-			axlPointer           user_data)
+axl_bool      close_channel (int                channel_num, 
+			     VortexConnection * connection, 
+			     axlPointer           user_data)
 {
 	/* implement profile requirement for allowing to closeing a
-	 * the channel to return false denies channel closing to
-	 * return true allows to close the channel */
-	return true;
+	 * the channel to return axl_false denies channel closing to
+	 * return axl_true allows to close the channel */
+	return axl_true;
 }
 
-int      on_accepted (VortexConnection * connection, axlPointer data)
+axl_bool      on_accepted (VortexConnection * connection, axlPointer data)
 {
 	printf ("New connection accepted from: %s:%s\n", 
-		 vortex_connection_get_host (connection),
-		 vortex_connection_get_port (connection));
+		vortex_connection_get_host (connection),
+		vortex_connection_get_port (connection));
 
-	/* return true to accept the connection to be created */
-	return true;
+	/* return axl_true to accept the connection to be created */
+	return axl_true;
 }
 
-int      sasl_anonymous_validation (VortexConnection * connection,
-				    const char       * anonymous_token)
+axl_bool      sasl_anonymous_validation (VortexConnection * connection,
+					 const char       * anonymous_token)
 {
 	if (axl_cmp ("test@aspl.es", anonymous_token)) {
 		printf ("Received anonymous validation for: test@aspl.es, replying OK\n");
-		return true;
+		return axl_true;
 	}
-	return false;
+	return axl_false;
 }
 
-int      sasl_external_validation (VortexConnection * connection,
-				   const char       * auth_id)
+axl_bool      sasl_external_validation (VortexConnection * connection,
+					const char       * auth_id)
 {
 	if (axl_cmp ("acinom", auth_id)) {
-		return true;
+		return axl_true;
 	}
 	
 	printf ("Received external validation for: %s, replying FAILED\n", auth_id);
-	return false;
+	return axl_false;
 }
 
-int      sasl_external_validation_full (VortexConnection * connection,
-					const char       * auth_id,
-					axlPointer           user_data)
+axl_bool      sasl_external_validation_full (VortexConnection * connection,
+					     const char       * auth_id,
+					     axlPointer         user_data)
 {
 	
 	if (axl_cmp ("external!", (char*)user_data )) {
@@ -528,37 +528,37 @@ int      sasl_external_validation_full (VortexConnection * connection,
 
 	printf ("Received external validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.",
 		 auth_id);
-	return false;
+	return axl_false;
 }
 
 
 
 /* sasl validation handlers */
-int      sasl_plain_validation  (VortexConnection * connection,
-				 const char       * auth_id,
-				 const char       * auth_proxy_id,
-				 const char       * password)
+axl_bool      sasl_plain_validation  (VortexConnection * connection,
+				      const char       * auth_id,
+				      const char       * auth_proxy_id,
+				      const char       * password)
 {
 	/* perform validation */
 	if (axl_cmp (auth_id, "bob") && 
 	    axl_cmp (password, "secret")) {
-		return true;
+		return axl_true;
 	}
 	/* deny SASL request to authenticate remote peer */
-	return false;
+	return axl_false;
 }
 
-int      sasl_plain_validation_full  (VortexConnection * connection,
-				 const char       * auth_id,
-				 const char       * auth_proxy_id,
-				 const char       * password,
-				 axlPointer user_data)
+axl_bool      sasl_plain_validation_full  (VortexConnection * connection,
+					   const char       * auth_id,
+					   const char       * auth_proxy_id,
+					   const char       * password,
+					   axlPointer user_data)
 {
 	if (axl_cmp ("plain!", (char*)user_data )) {
 		return sasl_plain_validation (connection, auth_id, auth_proxy_id, password);
 	}
 	printf ("Received PLAIN validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.", auth_id);
-	return false;
+	return axl_false;
 }
 
 char  * sasl_cram_md5_validation (VortexConnection * connection,
@@ -577,7 +577,7 @@ char  * sasl_cram_md5_validation_full (VortexConnection * connection,
 		return sasl_cram_md5_validation (connection, auth_id);
 	}
 	printf ("Received cram md5 validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.", auth_id);
-	return false;
+	return axl_false;
 }
 
 char  * sasl_digest_md5_validation (VortexConnection * connection,
@@ -600,7 +600,7 @@ char  * sasl_digest_md5_validation_full (VortexConnection * connection,
 	}
 
 	printf ("Received digest md5 validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.", auth_id);
-	return false;
+	return axl_false;
 }
 
 
@@ -622,7 +622,7 @@ void __block_test (int value)
 #endif
 
 VortexMutex doing_exit_mutex;
-int         __doing_exit = false;
+axl_bool    __doing_exit = axl_false;
 
 /* listener context */
 VortexCtx * ctx = NULL;
@@ -637,7 +637,7 @@ void __terminate_vortex_listener (int value)
 		return;
 	}
 	printf ("Terminating vortex regression listener..\n");
-	__doing_exit = true;
+	__doing_exit = axl_true;
 	vortex_mutex_unlock (&doing_exit_mutex);
 
 	/* unlocking listener */
@@ -666,7 +666,7 @@ void close_in_transit_received (VortexChannel    * channel,
 	return;
 }
 
-int  check_profiles_adviced (int channel_num, VortexConnection *connection, axlPointer user_data)
+axl_bool  check_profiles_adviced (int channel_num, VortexConnection *connection, axlPointer user_data)
 {
 	axlList    * profiles = vortex_connection_get_remote_profiles (connection);
 	int          iterator;
@@ -688,7 +688,7 @@ int  check_profiles_adviced (int channel_num, VortexConnection *connection, axlP
 		printf ("ERROR: Expected to find 3 profiles registered, but found: %d..\n",
 			axl_list_length (profiles));
 		axl_list_free (profiles);
-		return false;
+		return axl_false;
 	}
 
 	/* check profiles */
@@ -697,7 +697,7 @@ int  check_profiles_adviced (int channel_num, VortexConnection *connection, axlP
 		printf ("ERROR: Expected to find support profile: %s, but it wasn't found..\n", 
 			"urn:vortex:regression-test:uri:1");
 		axl_list_free (profiles);
-		return false;
+		return axl_false;
 	}
 
 	/* check profiles */
@@ -706,7 +706,7 @@ int  check_profiles_adviced (int channel_num, VortexConnection *connection, axlP
 		printf ("ERROR: Expected to find support profile: %s, but it wasn't found..\n", 
 			"urn:vortex:regression-test:uri:2");
 		axl_list_free (profiles);
-		return false;
+		return axl_false;
 	}
 
 	/* check profiles */
@@ -715,23 +715,23 @@ int  check_profiles_adviced (int channel_num, VortexConnection *connection, axlP
 		printf ("ERROR: Expected to find support profile: %s, but it wasn't found..\n",
 			"urn:vortex:regression-test:uri:3");
 		axl_list_free (profiles);
-		return false;
+		return axl_false;
 	}
 	
 	/* ok */
 	axl_list_free (profiles);
-	return true;
+	return axl_true;
 
 }
 
-int  check_profiles_adviced_bis (int channel_num, VortexConnection *connection, axlPointer user_data)
+axl_bool  check_profiles_adviced_bis (int channel_num, VortexConnection *connection, axlPointer user_data)
 {
 	/* check profiles */
 	if (vortex_connection_is_profile_supported (connection, 
 						    "urn:vortex:regression-test:uri:1")) {
 		printf ("ERROR: Expected to find support profile: %s, but it wasn't found..\n", 
 			"urn:vortex:regression-test:uri:1");
-		return false;
+		return axl_false;
 	}
 
 	/* check profiles */
@@ -739,7 +739,7 @@ int  check_profiles_adviced_bis (int channel_num, VortexConnection *connection, 
 						    "urn:vortex:regression-test:uri:2")) {
 		printf ("ERROR: Expected to find support profile: %s, but it wasn't found..\n", 
 			"urn:vortex:regression-test:uri:2");
-		return false;
+		return axl_false;
 	}
 
 	/* check profiles */
@@ -747,24 +747,24 @@ int  check_profiles_adviced_bis (int channel_num, VortexConnection *connection, 
 						    "urn:vortex:regression-test:uri:3")) {
 		printf ("ERROR: Expected to find support profile: %s, but it wasn't found..\n",
 			"urn:vortex:regression-test:uri:3");
-		return false;
+		return axl_false;
 	}
 	
-	/* return true if the profile list is 0 */
-	return true;
+	/* return axl_true if the profile list is 0 */
+	return axl_true;
 
 }
 
 /* a flag that allows to configure if the TLS request is accepted */
-int  enable_block_tls_queries = false;
+axl_bool  enable_block_tls_queries = axl_false;
 
-int  start_channel_block_tls (int channel_num, VortexConnection * connection, axlPointer user_data)
+axl_bool  start_channel_block_tls (int channel_num, VortexConnection * connection, axlPointer user_data)
 {
 	printf ("Received request to block TLS query..\n");
 
 	/* block next tls query */
-	enable_block_tls_queries = true;
-	return true;
+	enable_block_tls_queries = axl_true;
+	return axl_true;
 }
 
 axlPointer block_ctx_creation (VortexConnection * connection, axlPointer user_data)
@@ -774,23 +774,23 @@ axlPointer block_ctx_creation (VortexConnection * connection, axlPointer user_da
 	return NULL;
 }
 
-int  regression_tls_handle_query (VortexConnection * connection, char * serverName)
+axl_bool  regression_tls_handle_query (VortexConnection * connection, char * serverName)
 {
 
 	printf ("Receiving request to start tls auth, with status=%d..\n", enable_block_tls_queries);
 	if (enable_block_tls_queries) {
 		/* return to not accept TLS query but revert state for
 		 * the next query */
-		enable_block_tls_queries = false;
+		enable_block_tls_queries = axl_false;
 
 		/* but also configure next blocking function (to
 		 * simulate a failure at the TLS protocol) */
 		vortex_tls_set_ctx_creation (connection, block_ctx_creation, NULL);
 
-		return false;
+		return axl_false;
 	} /* end if */
 
-	return true;
+	return axl_true;
 }
 
 void added_channel_fast_send (VortexChannel * channel, axlPointer user_data)
@@ -809,12 +809,12 @@ void added_channel_fast_send (VortexChannel * channel, axlPointer user_data)
 	}
 }
 
-int  on_accepted_fast_send (VortexConnection * connection, axlPointer data)
+axl_bool  on_accepted_fast_send (VortexConnection * connection, axlPointer data)
 {
 	/* configure the added channel handler */
 	vortex_connection_set_channel_added_handler (connection, added_channel_fast_send, NULL);
 
-	return true;
+	return axl_true;
 }
 
 void added_channel_ans_nul_reply_close (VortexChannel * channel, axlPointer user_data)
@@ -835,19 +835,19 @@ void added_channel_ans_nul_reply_close (VortexChannel * channel, axlPointer user
 }
 
 
-int  on_accepted_ans_nul_reply_close (VortexConnection * connection, axlPointer data)
+axl_bool  on_accepted_ans_nul_reply_close (VortexConnection * connection, axlPointer data)
 {
 	/* configure the added channel handler */
 	vortex_connection_set_channel_added_handler (connection, added_channel_ans_nul_reply_close, NULL);
 
-	return true;
+	return axl_true;
 }
 
 
-int  deny_supported (int channel_num, VortexConnection *connection, axlPointer user_data) 
+axl_bool  deny_supported (int channel_num, VortexConnection *connection, axlPointer user_data) 
 {
 	/* do not accept channel; never */
-	return false;
+	return axl_false;
 }
 
 /** 
@@ -932,22 +932,22 @@ void frame_received_mime_support (VortexChannel    * channel,
 	return;
 }
 
-int ordered_delivery_message_no;
+axl_bool ordered_delivery_message_no;
 
-int  start_ordered_delivery (int                channel_num, 
-			     VortexConnection * connection,
-			     axlPointer         user_data)
+axl_bool  start_ordered_delivery (int                channel_num, 
+				  VortexConnection * connection,
+				  axlPointer         user_data)
 {
 	VortexChannel * channel;
 
 	/* configure channel serialize */
 	channel = vortex_connection_get_channel (connection, channel_num);
-	vortex_channel_set_serialize (channel, true);
+	vortex_channel_set_serialize (channel, axl_true);
 
 	/* reseting message no */
 	ordered_delivery_message_no = 0;
 
-	return true;
+	return axl_true;
 }
 
 void frame_received_ordered_delivery (VortexChannel    * channel,
@@ -995,12 +995,12 @@ void frame_channel_connection (VortexChannel    * channel,
 	} /* end if */
 }
 
-int  frame_received_mix_replies_state = false;
+axl_bool  frame_received_mix_replies_state = axl_false;
 
-void frame_received_mix_replies (VortexChannel    * channel,
-				 VortexConnection * connection,
-				 VortexFrame      * frame,
-				 axlPointer         user_data)
+void      frame_received_mix_replies (VortexChannel    * channel,
+				     VortexConnection * connection,
+				     VortexFrame      * frame,
+				     axlPointer         user_data)
 {
 	if (frame_received_mix_replies_state) {
 		/* reply with RPY */
@@ -1065,9 +1065,9 @@ void send_ans_replies_and_close (VortexChannel    * channel,
 }
 				 
 
-int  start_channel_connection (int                channel_num, 
-			       VortexConnection * connection,
-			       axlPointer         user_data)
+axl_bool  start_channel_connection (int                channel_num, 
+				    VortexConnection * connection,
+				    axlPointer         user_data)
 {
 
 	/* check the signal to close the connection */
@@ -1081,14 +1081,14 @@ int  start_channel_connection (int                channel_num,
 	} /* end if */
 
 
-	return true;
+	return axl_true;
 }
 
 /** 
  * @internal Handler that closes the connection when received the
  * close channel request.
  */
-int  close_channel_connection (int channel_num, VortexConnection * conn, axlPointer user_data)
+axl_bool  close_channel_connection (int channel_num, VortexConnection * conn, axlPointer user_data)
 {
 	VortexAsyncQueue * queue;
 
@@ -1107,7 +1107,7 @@ int  close_channel_connection (int channel_num, VortexConnection * conn, axlPoin
 
 	/* disconnect */
 	vortex_connection_shutdown (conn);
-	return true;
+	return axl_true;
 }
 
 int main (int  argc, char ** argv) 
@@ -1134,8 +1134,8 @@ int main (int  argc, char ** argv)
 	} /* end if */
 
 	if (argc > 1 && 0 == strcmp (argv[1], "-v")) {
-		vortex_log_enable (ctx, true);
-		vortex_log2_enable (ctx, true);
+		vortex_log_enable (ctx, axl_true);
+		vortex_log2_enable (ctx, axl_true);
 	}
 
 	/* register a profile */
@@ -1371,7 +1371,7 @@ int main (int  argc, char ** argv)
 	printf ("terminating the listener ..\n");
 
 	/* terminate process */
-	vortex_exit_ctx (ctx, true);
+	vortex_exit_ctx (ctx, axl_true);
 
 	return 0;
 }

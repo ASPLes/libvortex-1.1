@@ -19,7 +19,7 @@ int get_the_bool_2_0 (char ** fault_error, int * fault_code, VortexChannel * cha
 {
 	
 		/* return true */
-		return true;
+		return axl_true;
 	
 }
 
