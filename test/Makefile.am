@@ -93,7 +93,7 @@ noinst_PROGRAMS = \
 	vortex-close-listeners vortex-file-transfer-server vortex-file-transfer-client
 
 INCLUDES = -I../src -I../tunnel -I../xml-rpc -I../sasl -I../tls $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
-	-I$(READLINE_PATH)/include -Wall -g -ansi \
+	-I$(READLINE_PATH)/include -Wall -g -ansi -D__axl_disable_broken_bool_def__   \
         -DVERSION=\""$(VORTEX_VERSION)"\" -I../src $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_VORTEX_LOG) $(INCLUDE_TUNNEL_SUPPORT)  $(INCLUDE_XML_RPC_SUPPORT) $(INCLUDE_SASL_SUPPORT)
 
 LIBS            = $(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)

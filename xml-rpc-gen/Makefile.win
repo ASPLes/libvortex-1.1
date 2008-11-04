@@ -11,7 +11,7 @@ LIBS     = -Wall -g \
 
 INCS =  -I"." -I"../../libaxl/src" -I$(DEPEND_DIR)/include -I"../../libexarg/src" -I"../src/"
 
-CFLAGS   = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" -DINSTALL_DIR=\".\" -Wall -g
+CFLAGS   = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" -DINSTALL_DIR=\".\" -Wall -g -D__axl_disable_broken_bool_def__  
 
 .PHONY: all all-before all-after clean clean-custom
 

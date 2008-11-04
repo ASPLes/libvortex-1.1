@@ -38,7 +38,7 @@ LIBS     = -Wall -g \
 INCS =  -I"." -I"../src" -I"../tunnel" -I"../tls" -I"../sasl" -I"../xml-rpc" \
         -I"../../libaxl/src" -I$(DEPEND_DIR)/include
 
-CFLAGS   = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" -Wall -g
+CFLAGS   = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" -Wall -g -D__axl_disable_broken_bool_def__  
 
 .PHONY: all all-before all-after clean clean-custom
 
