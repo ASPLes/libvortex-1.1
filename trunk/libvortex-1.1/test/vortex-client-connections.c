@@ -76,8 +76,8 @@ int main (int argc, char ** argv)
 	struct timeval      stop;
 #endif
 
-/*	vortex_log_enable (true);
-	vortex_color_log_enable (true);  */
+/*	vortex_log_enable (axl_true);
+	vortex_color_log_enable (axl_true);  */
 
 	/* create the context */
 	ctx = vortex_ctx_new ();

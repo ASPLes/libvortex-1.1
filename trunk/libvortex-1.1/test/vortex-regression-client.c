@@ -3384,8 +3384,8 @@ axl_bool  test_02m (void) {
 	vortex_frame_unref (frame);
 	
 	/* try to close the channel */
-	/* vortex_log_enable (true);
-	   vortex_color_log_enable (true); */
+	/* vortex_log_enable (axl_true);
+	   vortex_color_log_enable (axl_true); */
 	if (! vortex_channel_close (channel, NULL)) {
 		printf ("ERROR: failed to close channel: ..\n");
 

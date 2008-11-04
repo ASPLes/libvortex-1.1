@@ -3856,7 +3856,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * Now the SASL PLAIN profile is fully activated and waiting for
  * requests. Validating the rest of SASL profiles works the same
- * way. Some of them requires to return <b>true</b> or <b>false</b> to
+ * way. Some of them requires to return <b>axl_true</b> or <b>axl_false</b> to
  * <b>allow</b> or to <b>deny</b> received request, and other profiles
  * requires to return the password for a given user or NULL to deny
  * it.
@@ -4874,7 +4874,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * accurate to say by the XML-RPC definition) which are:
  * 
  *  -  <b>int</b>: Integer definition, four-byte signed integer (-21)
- *  -  <b>boolean</b>: Boolean definition (bound to 1/true, 0/false)
+ *  -  <b>boolean</b>: Boolean definition (bound to 1/axl_true, 0/axl_false)
  *  -  <b>double</b>: double-precision signed floating point number -412.21
  *  -  <b>string</b>: An string definition "XML-RPC over BEEP!!"
  *  -  <b>data</b>: date/time (currently not supported)

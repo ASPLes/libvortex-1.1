@@ -68,7 +68,7 @@ typedef enum {
 	 */
 	XML_RPC_INT_VALUE     = 2,
 	/** 
-	 * @brief Represents a boolean value, 0 (false), 1 (true). 
+	 * @brief Represents a boolean value, 0 (axl_false), 1 (axl_true). 
 	 */
 	XML_RPC_BOOLEAN_VALUE = 3,
 	/** 
