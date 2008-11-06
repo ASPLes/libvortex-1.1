@@ -1797,8 +1797,9 @@ void __vortex_connection_check_and_notify (VortexConnection * connection,
 	int                         iterator;
 	VortexChannelStatusUpdate * statusUpdate;
 	axlList                   * list;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx                 * ctx = CONN_CTX (connection);
-
+#endif
 	if (connection == NULL)
 		return;
 
@@ -3978,7 +3979,9 @@ int                 vortex_connection_get_next_frame_size          (VortexConnec
 void                vortex_connection_seq_frame_updates            (VortexConnection * connection,
 								    axl_bool           is_disabled)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx = CONN_CTX (connection);
+#endif
 	v_return_if_fail (connection);
 	v_return_if_fail (vortex_connection_is_ok (connection, axl_false));
 
