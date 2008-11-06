@@ -6,19 +6,18 @@ DLL        = $(vortex_xml_rpc_1_1_dll).dll
 IMPORT_DLL = $(DLL).a
 STATIC_LIB = $(vortex_xml_rpc_1_1_dll).a
 
-#LIBS = -Wall -g -L"$(BASE_DIR)/lib" \
+#LIBS = -Wall $(enable_gcc_debug) -L"$(BASE_DIR)/lib" \
 #	-L"$(BASE_DIR)/bin" \
 #	--add-stdcall-alias \
 #	-lws2_32 \
 #	-lintl  -liconv  -lm 
-LIBS = -Wall -g -L"../src" -L"../../libaxl/src/" -laxl -lws2_32 -lvortex-1.1 $(search_lib_path) 
+LIBS = -Wall $(enable_gcc_debug) -L"../src" -L"../../libaxl/src/" -laxl -lws2_32 -lvortex-1.1 $(search_lib_path) 
 
 # build vortex with log support
-ENABLE_LOG = -DENABLE_VORTEX_LOG
-INCS = -Wall -g -I"." -I"../../libaxl/src" -I"../src" $(ENABLE_LOG) -DENABLE_XML_RPC_SUPPORT
+INCS = -Wall $(enable_gcc_debug) -I"." -I"../../libaxl/src" -I"../src" $(enable_vortex_log) -DENABLE_XML_RPC_SUPPORT
 
 CFLAGS = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" \
-	-DPACKAGE_DTD_DIR=\""$(datadir)"\" -DPACKAGE_TOP_DIR=\""$(top_srcdir)"\" -Wall -g 
+	-DPACKAGE_DTD_DIR=\""$(datadir)"\" -DPACKAGE_TOP_DIR=\""$(top_srcdir)"\" -Wall $(enable_gcc_debug) 
 RM = rm -f
 
 .PHONY: all clean
@@ -39,6 +38,7 @@ $(DLL): $(OBJ)
 	$(CC) -m$(MODE) -shared -Wl,--out-implib,$(IMPORT_DLL) --export-all-symbols \
 		  $(OBJ) -o $(DLL)        $(LIBS)
 	lib.exe /def:libvortex-xml-rpc-1.1.def
+	strip --strip-unneeded $(DLL)
 
 %.o: %.c
 	$(CC) -c $< -o $@ $(CFLAGS)
