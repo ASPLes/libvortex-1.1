@@ -7799,9 +7799,8 @@ VortexCtx         * vortex_channel_get_ctx                        (VortexChannel
 	VortexCtx * ctx = NULL;
 
 	if (channel == NULL) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "returning null context because null channel received");
 		return NULL;
-	}
+	} /* end if */
 	
 	/* call to get the context associated to the cnonection */
 	ctx = channel->ctx;
