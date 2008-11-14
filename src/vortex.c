@@ -5329,8 +5329,6 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * You must compile Vortex Library with TUNNEL support. Please refer
  * to the installation manual: \ref install
  *
- * You can also use at runtime \ref vortex_tunnel_is_enabled to check
- * if the TUNNEL profile was included in your Vortex Library.
  *
  * \section setting_a_tunnel Creating a connection to the remote endpoint: setting a TUNNEL.
  *
