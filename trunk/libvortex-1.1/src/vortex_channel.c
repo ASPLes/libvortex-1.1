@@ -1208,9 +1208,12 @@ VortexChannel * vortex_channel_new (VortexConnection      * connection,
  * @param profile              The profile under the channel will be created.
  * @param encoding             Profile content encoding used.
  *
- * @param profile_content      The profile content data to be sent at the
- * channel creation. This data is also referred as piggyback. The
- * function will perform a copy of the content profile passed in.
+ * @param profile_content The profile content data to be sent on
+ * channel creation request. This data is also referred as
+ * piggyback. The function will perform a copy of the content profile
+ * passed in. The content passed must not include the CDATA
+ * declaration. This is already added by the function.
+ * "your-content".
  *
  * @param profile_content_size How huge is the content profile data.
  * @param close                Handler to manage channel closing.
@@ -1224,6 +1227,7 @@ VortexChannel * vortex_channel_new (VortexConnection      * connection,
  * non-threaded model.  Under threaded model returned value will
  * always be NULL and newly channel created will be notified on
  * \ref VortexOnChannelCreated "on_channel_created".
+ *
  */
 VortexChannel * vortex_channel_new_full (VortexConnection      * connection,
 					 int                     channel_num, 
@@ -1306,7 +1310,11 @@ VortexChannel * vortex_channel_new_full (VortexConnection      * connection,
  * @param received_user_data     User space data to be passed in to the frame received handler.
  * @param on_channel_created     Async notification callback to be executed once the channel is created or not.
  * @param user_data              User space data to be passed in to <b>on_channel_created</b>
- * @param profile_content_format The profile content using a printf-like format: "<blob>%s</blob>"
+ *
+ * @param profile_content_format The profile content using a
+ * printf-like format: "<blob>%s</blob>". The content passed must not
+ * include the CDATA declaration. This is already added by the
+ * function.  "your-content".
  * 
  * @return                       A new channel created or NULL if the channel wasn't possible to be created.
  */
@@ -4414,7 +4422,7 @@ axl_bool      vortex_channel_block_until_replies_are_sent (VortexChannel * chann
 	vortex_mutex_lock (&channel->pending_mutex);
 
 	while (channel->last_message_received != (channel->last_reply_written)) {
-		
+
 		/* check timeout here */
 		if (microseconds_to_wait < 0) {
 			vortex_log (VORTEX_LEVEL_WARNING, 
@@ -6991,7 +6999,7 @@ void               vortex_channel_queue_reply                    (VortexChannel 
 }
 
 /** 
- * @brief Handler used by vortex_channel_get_reply function to detect
+ * @internal Handler used by vortex_channel_get_reply function to detect
  * broken connections during wait reply operation. In the function is
  * called, the connection is considered to be broken and a -4 value is
  * pushed into the queue received as optional parameter. This is used
@@ -7209,7 +7217,8 @@ VortexFrame      * vortex_channel_get_piggyback                  (VortexChannel 
 }
 
 /** 
- * @brief Allows to check if the given channel have piggyback waiting to be processed.
+ * @brief Allows to check if the given channel have piggyback waiting
+ * to be processed.
  * 
  * If the function returns axl_true then \ref vortex_channel_get_piggyback
  * should be used to get current piggyback received.
@@ -7311,7 +7320,7 @@ WaitReplyData * vortex_channel_create_wait_reply ()
 }
 
 /** 
- * @brief Handler used by vortex_channel_wait_reply function to detect
+ * @internal Handler used by vortex_channel_wait_reply function to detect
  * broken connections during wait reply operation. In the function is
  * called, the connection is considered to be broken and a -3 value is
  * pushed into the queue received as optional parameter. This is used

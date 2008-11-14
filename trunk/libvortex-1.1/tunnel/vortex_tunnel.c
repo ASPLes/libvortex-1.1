@@ -75,9 +75,8 @@ struct _VortexTunnelSettings{
  * proxy your connection.
  * 
  * @return A newly created proxy setting, that must be deallocated
- * with \ref vortex_tunnel_settings_free. The function can return NULL
- * if the library was compiled without TUNNEL profile support. Check
- * \ref vortex_tunnel_is_enabled.
+ * with \ref vortex_tunnel_settings_free. The function only returns
+ * NULL in the case the context parameter provided is NULL.
  */
 VortexTunnelSettings * vortex_tunnel_settings_new (VortexCtx * ctx)
 {

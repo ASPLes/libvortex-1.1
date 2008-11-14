@@ -90,7 +90,7 @@ axl_bool            vortex_connection_reconnect              (VortexConnection *
 							      VortexConnectionNew on_connected,
 							      axlPointer user_data);
 
-axl_bool            vortex_connection_close                  (VortexConnection * connection);
+axl_bool            vortex_connection_close                  (VortexConnection  * connection);
 
 axl_bool            vortex_connection_close_all_channels     (VortexConnection * connection, 
 							      axl_bool           also_channel_0);
