@@ -1570,13 +1570,15 @@ void            vortex_channel_set_close_handler (VortexChannel * channel,
 }
 
 /** 
- * @brief Allows to configure the (already) closed handler.
+ * @brief Allows to configure the closed handler: a notification that the channel is about to be removed from the connection.
  *
- * This handler will be used by the vortex engine to provided a
- * notification that the channel (the particular one) is about to be
- * unrefered and disconnected from its connection. This is useful to
- * get notifications about a channel that was not closed properly (so
- * the close handler can't be called: \ref vortex_channel_set_close_handler).
+ * This handler will be used by the vortex engine to provide a
+ * notification that the channel is about to be unrefered and
+ * disconnected from its connection. 
+ * 
+ * This is useful to get notifications about a channel that was not
+ * closed properly (so the close handler can't be called: \ref
+ * vortex_channel_set_close_handler).
  * 
  * @param channel The channel to configure.
  *
@@ -1590,6 +1592,25 @@ void            vortex_channel_set_close_handler (VortexChannel * channel,
  * called at connection termination. This means that channels that
  * aren't available at this phase (because they was closed properly)
  * aren't notified.</i>
+ *
+ * <b>What are the differences between vortex_channel_set_close_handler and vortex_channel_set_closed_handler?</b>
+ *
+ * This handler (\ref vortex_channel_set_closed_handler) is a
+ * notification that the channel reference is about to be removed from
+ * the connection, while \ref vortex_channel_set_close_handler is a
+ * notification that the remote side is requesting to close the
+ * channel. That is, the \ref vortex_channel_set_close_handler allows
+ * to control if the channel will be closed (it is still running when
+ * the notification is received), while \ref
+ * vortex_channel_set_closed_handler do not provide any control: just
+ * notification.
+ *
+ * Another difference is that the channel reference received on this
+ * handler (\ref vortex_channel_set_closed_handler) represents a
+ * closed channel. In the case of \ref
+ * vortex_channel_set_close_handler, the channel is available and
+ * running (unless connection broken event) when the notification is
+ * received. The same state applies to the connection holding the channel.
  */
 void               vortex_channel_set_closed_handler           (VortexChannel          * channel,
 								VortexOnClosedChannel    closed,

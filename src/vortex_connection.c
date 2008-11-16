@@ -1129,8 +1129,8 @@ axl_bool                 vortex_connection_set_sock_tcp_nodelay   (VORTEX_SOCKET
  * 
  * @param socket The socket to be configured.
  *
- * @param enable Enable the I/O block, otherwise non blocking I/O will
- * be activated if axl_false is provided.
+ * @param enable axl_true to enable blocking I/O, otherwise use
+ * axl_false to enable non blocking I/O.
  * 
  * @return axl_true if the operation was properly done, otherwise axl_false is
  * returned.
