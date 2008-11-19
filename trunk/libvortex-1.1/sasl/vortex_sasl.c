@@ -356,7 +356,7 @@ char             * vortex_sasl_get_propertie             (VortexConnection     *
 	/* check the propertie being set */
 	if ((prop <= 0) || (prop >= VORTEX_SASL_PROP_NUM)) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "Getting SASL propertie which is not a registered value.");
-		return axl_false;
+		return NULL;
 	}
 	
 	/* store the property */
