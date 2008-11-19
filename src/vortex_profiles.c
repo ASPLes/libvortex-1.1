@@ -896,7 +896,7 @@ axlList * vortex_profiles_get_actual_list (VortexCtx * ctx)
 	/* get current context */
 	axlList   * result = NULL;
 
-	v_return_val_if_fail (ctx && ctx->registered_profiles, axl_false);
+	v_return_val_if_fail (ctx && ctx->registered_profiles, NULL);
 
 	/* create the list */
 	result = axl_list_new (axl_list_always_return_1, axl_free);

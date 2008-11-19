@@ -1805,7 +1805,7 @@ VortexFrame      * vortex_channel_get_previous_frame           (VortexChannel * 
 {
 	/* check reference */
 	if (channel == NULL)
-		return axl_false;
+		return NULL;
 
 	/* a reference to the previous frame */
 	return axl_list_get_last (channel->previous_frame);
