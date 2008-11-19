@@ -3056,7 +3056,7 @@ axl_bool                vortex_connection_channel_exists       (VortexConnection
 	if (channel_num == 0) 
 		return axl_true;
 	
-	result = (vortex_hash_lookup (INT_TO_PTR (connection->channels), 
+	result = (vortex_hash_lookup (connection->channels, 
 				      INT_TO_PTR (channel_num)) != NULL);
 	return result;
 }
@@ -3225,7 +3225,7 @@ VortexChannel    * vortex_connection_get_channel          (VortexConnection * co
 
 	/* channel 0 always exists, and cannot be closed. It's closed
 	 * when connection (or session) is closed */
-	channel = vortex_hash_lookup (INT_TO_PTR (connection->channels), INT_TO_PTR(channel_num));
+	channel = vortex_hash_lookup (connection->channels, INT_TO_PTR(channel_num));
 	
 	if (channel == NULL) 
 		vortex_log (VORTEX_LEVEL_DEBUG, "failed to get channel=%d", channel_num);
