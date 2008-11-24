@@ -17,7 +17,6 @@
  */
 
 #include <vortex.h>
-#include <glib.h>
 #include <signal.h>
 
 #define COYOTE_PROFILE "http://fact.aspl.es/profiles/coyote_profile"
@@ -25,12 +24,13 @@
 
 void on_ready (char  * host, int port, VortexStatus status, char  * message, axlPointer user_data)
 {
-	
+	VortexCtx * ctx = user_data;
+
 	if (status == VortexError) {
 		printf ("error at: %s\n", message);
 
-		// exit from vortex
-		vortex_exit ();
+		/* terminate listener */
+		vortex_listener_unlock (ctx);
 
 	}else {
 		printf ("ready on: %s:%d, message: %s\n", host, port, message);
@@ -46,33 +46,33 @@ void frame_received (VortexChannel    * channel,
 {
 	printf ("VORTEX_LISTENER: STARTED (pid: %d)\n", getpid ());
 	printf ("A frame received on channl: %d\n",     vortex_channel_get_number (channel));
-	printf ("Data received: '%s'\n",                vortex_frame_get_payload (frame));
+	printf ("Data received: '%s'\n",                (char*) vortex_frame_get_payload (frame));
 
-	// reply
+	/* reply */
 	vortex_channel_send_rpy (channel,
 				 "I have received you message, thanks..",
 				 37,
 				 vortex_frame_get_msgno (frame));
 	printf ("VORTEX_LISTENER: CLOSE CHANNEL (pid: %d)\n", getpid ());
 
-	// close the channel
+	/* close the channel */
 	vortex_channel_close (channel, NULL);
 	
 	printf ("VORTEX_LISTENER: FINSHED (pid: %d)\n",       getpid ());
 	return;
 }
 
-bool     start_channel (int channel_num, VortexConnection * connection, axlPointer user_data)
+axl_bool     start_channel (int channel_num, VortexConnection * connection, axlPointer user_data)
 {
 	printf ("A new channel to be created..");
 
 	if (channel_num == 4) {
 		printf ("channel 4 can not be created\n");
-		return FALSE;
+		return axl_false;
 	}
 
 	printf ("create the channel..\n");
-	return TRUE;
+	return axl_true;
 }
 
 void __sigsegv_handler (int value) 
@@ -87,29 +87,36 @@ void __sigsegv_handler (int value)
 
 int main (int argc, char ** argv) 
 {
+	VortexCtx * ctx;
 
-	vortex_log_enable (axl_true);
-	vortex_color_log_enable (axl_true);
+	/* create a context */
+	ctx = vortex_ctx_new ();
+
+	vortex_log_enable (ctx, axl_true);
+	vortex_color_log_enable (ctx, axl_true);
 
 	signal (SIGSEGV, __sigsegv_handler);
 	signal (SIGABRT, __sigsegv_handler);
 
 	/* init vortex library */
-	vortex_init ();
+	if (! vortex_init_ctx (ctx)) {
+		printf ("Failed to start vortex library..\n");
+		return -1;
+	}
 
 	/* register a profile */
-	vortex_profiles_register (COYOTE_PROFILE, 
+	vortex_profiles_register (ctx, COYOTE_PROFILE, 
 				  start_channel, NULL, NULL, NULL,
 				  frame_received, NULL);
 
 	/* create a vortex server */
-	vortex_listener_new ("0.0.0.0", "44000", on_ready, NULL);
+	vortex_listener_new (ctx, "0.0.0.0", "44000", on_ready, ctx);
 
 	/* wait for listeners (until vortex_exit is called)  */
-	vortex_listener_wait ();
+	vortex_listener_wait (ctx);
 
-	/* do not call vortex_exit here if you define an on ready
-	 * function which actually ends the execution */
+	/* terminate library execution */
+	vortex_exit_ctx (ctx, axl_true);
 
 	return 0;
 }
