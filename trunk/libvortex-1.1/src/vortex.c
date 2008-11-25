@@ -990,11 +990,11 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
 	/* stop vortex writer */
 	/* vortex_writer_stop (); */
 
-	/* stop vortex sequencer */
-	vortex_sequencer_stop (ctx);
-
 	/* stop vortex reader process */
 	vortex_reader_stop (ctx);
+
+	/* stop vortex sequencer */
+	vortex_sequencer_stop (ctx);
 
 	/* stop vortex profiles process */
 	vortex_profiles_cleanup (ctx);
