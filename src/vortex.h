@@ -455,7 +455,6 @@ void     _vortex_log2                (VortexCtx        * ctx,
  * while compiling with -ansi. Really uggly hack, please report
  * any idea to solve this issue. */
 int  setenv  (const char *name, const char *value, int overwrite);
-void unsetenv(const char *name);
 #endif
 
 END_C_DECLS
