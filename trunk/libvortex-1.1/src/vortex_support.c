@@ -578,8 +578,8 @@ axl_bool      vortex_support_unsetenv                   (const char * env_name)
 	return SetEnvironmentVariable (env_name, NULL);
 #elif defined(AXL_OS_UNIX)
 	/* use the unix implementation */
-	unsetenv (env_name);
-	
+	setenv (env_name, NULL, 1);
+		
 	/* always axl_true */
 	return axl_true;
 #endif
