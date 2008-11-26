@@ -27,13 +27,12 @@
  *          
  *      Postal address:
  *         Advanced Software Production Line, S.L.
- *         C/ Antonio Suarez Nº 10, 
- *         Edificio Alius A, Despacho 102
- *         Alcalá de Henares 28802 (Madrid)
+ *         C/ Dr. Michavila Nº 14
+ *         Coslada 28820 Madrid
  *         Spain
  *
  *      Email address:
- *         info@aspl.es - http://www.aspl.es/vortex
+ *         info@aspl.es - http://fact.aspl.es
  *
  */
 #ifndef __EXARG_H__
@@ -138,6 +137,8 @@ void         exarg_add_exclusion    (const char * arg_name,
 
 void         exarg_set_obligatory   (char * arg_name);
 
+void         exarg_accept_free_args (int accept);
+
 void         exarg_define           (char * arg_name,
 				   char * value);
 
@@ -149,7 +150,7 @@ char       * exarg_get_string       (char * arg_name);
 
 char       * exarg_get_string_alloc (char * arg_name);
 
-int          exarg_get_int          (char     * arg_name);
+int          exarg_get_int          (char * arg_name);
 
 ExArgument * exarg_get_params       ();
 

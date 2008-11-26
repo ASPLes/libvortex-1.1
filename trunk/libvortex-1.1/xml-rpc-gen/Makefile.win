@@ -9,7 +9,7 @@ LIBS     = -Wall -g \
 	-L../../libaxl/src -L$(DEPEND_DIR)/bin -laxl  \
 	-L../src/ -lvortex-1.1
 
-INCS =  -I"." -I"../../libaxl/src" -I$(DEPEND_DIR)/include -I"../../libexarg/src" -I"../src/"
+INCS =  -I"." -I"../../libaxl/src" -I$(DEPEND_DIR)/include -I"../../libexarg/src" -I"../src/" -DOS_WIN32
 
 CFLAGS   = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" -DINSTALL_DIR=\".\" -Wall -g -D__axl_disable_broken_bool_def__  
 

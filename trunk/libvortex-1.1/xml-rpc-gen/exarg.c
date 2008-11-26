@@ -28,16 +28,21 @@
  *          
  *      Postal address:
  *         Advanced Software Production Line, S.L.
- *         C/ Antonio Suarez Nº 10, 
- *         Edificio Alius A, Despacho 102
- *         Alcalá de Henares 28802 (Madrid)
+ *         C/ Dr. Michavila Nº 14
+ *         Coslada 28820 Madrid
  *         Spain
  *
  *      Email address:
- *         info@aspl.es - http://www.aspl.es/vortex
+ *         info@aspl.es - http://fact.aspl.es
  *
  */
 #include <exarg.h>
+
+#if defined(__GNUC__)
+#  ifndef _GNU_SOURCE
+#  define _GNU_SOURCE
+#  endif
+#endif
 
 /* local includes */
 #include <stdio.h>
@@ -65,6 +70,8 @@ char            * __exarg_usage_header      = NULL;
 char            * __exarg_help_header       = NULL;
 char            * __exarg_post_usage_header = NULL;
 char            * __exarg_post_help_header  = NULL;
+int               __exarg_disable_free_args = 0;
+
 typedef enum { 
 	/** 
 	 * @internal Parse mode not defined.
@@ -449,6 +456,53 @@ char     ** exarg_split           (const char * chunk, int separator_num, ...)
 int vsnprintf(char *str, size_t size, const char *format, va_list ap);
 
 /** 
+ * @internal Allows to calculate the amount of memory required to
+ * store the string that will representing the construction provided
+ * by the printf-like format received and its arguments.
+ * 
+ * @param format The printf-like format to be printed.
+ *
+ * @param args The set of arguments that the printf applies to.
+ *
+ * <i><b>NOTE:</b> not all printf specification is supported. Generally, the
+ * following is supported: %s, %d, %f, %g, %ld, %lg and all
+ * combinations that provides precision, number of items inside the
+ * integer part, etc: %6.2f, %+2d, etc. An especial case not supported
+ * is %lld, %llu and %llg.</i>
+ *
+ * @return Return the number of bytes that must be allocated to hold
+ * the string (including the string terminator \0). If the format is
+ * not correct or it is not properly formated according to the value
+ * found at the argument set, the function will return -1.
+ */
+int exarg_vprintf_len (const char * format, va_list args)
+{
+	/** IMPLEMENTATION NOTE: in the case this code is update,
+	 * update axl_stream_vprintf_len **/
+
+# if defined (OS_WIN32) && ! defined (__GNUC__)
+#   if HAVE_VSCPRINTF
+	if (format == NULL)
+		return 0;
+	return _vscprintf (format, args) + 1;
+#   else
+	char buffer[8192];
+	if (format == NULL)
+		return 0;
+	return _vsnprintf (buffer, 8191, format, args) + 1;
+#   endif
+#else
+	/* gnu gcc case */
+	if (format == NULL)
+		return 0;
+	return vsnprintf (NULL, 0, format, args) + 1;
+
+#endif
+}
+
+
+
+/** 
  * @internal Allows to produce an string representing the message hold by
  * chunk with the parameters provided.
  * 
@@ -459,24 +513,41 @@ int vsnprintf(char *str, size_t size, const char *format, va_list ap);
  */
 char  * exarg_strdup_printfv    (char * chunk, va_list args)
 {
+	/** IMPLEMENTATION NOTE: place update axl_stream_printf_buffer
+	 * code in the case this code is updated **/
 
+#ifndef HAVE_VASPRINTF
+	int       size;
+#endif
 	char    * result   = NULL;
 	int       new_size = -1;
-	int       size     = 0;
 
-	/* return a NULL reference */
 	if (chunk == NULL)
 		return NULL;
 
-	/* get current buffer size to copy */
-	size     = vsnprintf (NULL, 0, chunk, args);
+#ifdef HAVE_VASPRINTF
+	/* do the operation using the GNU extension */
+	new_size = vasprintf (&result, chunk, args);
+#else
+	/* get the amount of memory to be allocated */
+	size = exarg_vprintf_len (chunk, args);
+
+	/* check result */
+	if (size == -1) {
+		__axl_log (LOG_DOMAIN, AXL_LEVEL_CRITICAL, "unable to calculate the amount of memory for the strdup_printf operation");
+		return NULL;
+	} /* end if */
 
 	/* allocate memory */
-	result   = exarg_new (char, size + 2);
-
+	result   = axl_new (char, size + 2);
+	
 	/* copy current size */
+#if defined(OS_WIN32) && ! defined (__GNUC__)
+	new_size = _vsnprintf_s (result, size + 1, size, chunk, args);
+#else
 	new_size = vsnprintf (result, size + 1, chunk, args);
-
+#endif
+#endif
 	/* return the result */
 	return result;
 }
@@ -1104,7 +1175,14 @@ void       exarg_parse         (int         argc,
 	
 	/* iterate over all arguments */
 	while (iterator < argc) {
+
 		if (!exarg_is_argument (argv[iterator])) {
+			/* check free argument configuration */
+			if (__exarg_disable_free_args) {
+				exarg_msg ("error: provided a free argument='%s', not listed in the accept command line option", argv[iterator]);
+
+			} /* end if */
+
 			/* save and increase iterator */
 			__exarg_add_argument (argv[iterator]);
 			iterator++;
@@ -1692,6 +1770,33 @@ void       exarg_set_obligatory   (char * arg_name)
 	return;
 }
 
+
+/** 
+ * @brief Allows to configure exarg library to accept or not free
+ * arguments. 
+ * 
+ * Free arguments are optional parameters provided to the application,
+ * such files, which aren't associated to a particular option.
+ *
+ * If your command line application do not uses free arguments, you
+ * can use this function to enable exarg library to show an error
+ * message to the user:
+ *
+ * \code
+ * // disable free arguments
+ * exarg_accept_free_args (0);
+ * \endcode
+ * 
+ * @param accept 1 to accept free arguments. It is the default value,
+ * so it is not required to enable it. 0 to disable free arguments.
+ */
+void         exarg_accept_free_args (int accept)
+{
+	/* configure free arguments */
+	__exarg_disable_free_args = (accept == 0);
+
+	return;
+}
 
 /** 
  * @brief Allows to simulate user defined command line options alread
