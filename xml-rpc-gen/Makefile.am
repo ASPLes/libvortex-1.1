@@ -11,7 +11,7 @@ c_files   = reg-test03.c reg-test01a.c reg-test01.c reg-test02.c \
 
 EXTRA_DIST = $(dtd_DATA) $(idl_files) $(xdl_files) $(c_files)
 
-INCLUDES = -g -Wall -ansi -I. -I$(top_srcdir)/libvortex-1.1/src $(AXL_CFLAGS) $(EXARG_CFLAGS) $(PTHREAD_CFLAGS) -DVERSION=\""$(VORTEX_VERSION)"\" -DINSTALL_DIR=\"$(datadir)/libvortex-1.1\" -I../src -D__axl_disable_broken_bool_def__  
+INCLUDES = -g -Wall -ansi -I. -I$(top_srcdir)/libvortex-1.1/src $(AXL_CFLAGS) $(PTHREAD_CFLAGS) -DVERSION=\""$(VORTEX_VERSION)"\" -DINSTALL_DIR=\"$(datadir)/libvortex-1.1\" -I../src -D__axl_disable_broken_bool_def__  $(EXARG_FLAGS)
 
 LIBS     = $(AXL_LIBS) $(EXARG_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
 
