@@ -1771,6 +1771,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  *  - \ref vortex_manual_piggyback_support
  *  - \ref vortex_manual_using_mime
+ *  - \ref vortex_manual_transfering_files
  *
  *  <b>Section 5: </b>Securing and authenticating your BEEP sessions: TLS and SASL profiles
  * 
@@ -3242,6 +3243,100 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * As an example, inside the IO module (<b>vortex_io.c</b>) can be
  * found current implementation for all I/O mechanism supported by the library.
+ *
+ * \section vortex_manual_transfering_files 4.3 General considerations about transfering files
+ *
+ * There are several methods that can be used to transfer a file. They
+ * differ in the way they consume memory and how difficult they are to
+ * properly implement them. These methods are:
+ *
+ * - <b>FIRST METHOD:</b> Sending the file in one single MSG frame.
+ * - <b>SECOND METHOD:</b> Sending the file in a set of MSG frames that are composed by the remote side.
+ * - <b>THIRD METHOD:</b> Sending the file in a set of ANS frames that are composed by the remote side.
+ *
+ * The first method (sending one big single MSG) it's the most
+ * simple. It is not required to split the file and assamble it in the
+ * remote side. 
+ * 
+ * However, this method consumes a lot of memory because in general
+ * terms you must load all the file into memory, them pass it to the
+ * Vortex API, which also does its own copy, now you have twice memory
+ * loaded and them the memory is retained until the message is
+ * completely sent in smallers MSG frames. 
+ *
+ * In the same direction, people using this method usually do not
+ * configure \ref vortex_channel_set_complete_flag which causes all
+ * frames conforming the big message to be hold into memory at the
+ * remote side until the last frame is received. In this case, once
+ * the last message is received, Vortex will allocate enough memory to
+ * consolidate all frames into one single content. Again, more memory
+ * consumed.
+ *
+ * So, <b>FIRST METHOD</b> is easy, but <b>really poor in performance terms</b>.
+ *
+ * <i><b>NOTE:</b> the fact that vortex has the hability to split your
+ * messages into the allowed remote channel window size is at the same
+ * time a valuable feature and a source of problems. This automatic
+ * splitting makes more easy to do not care about content size
+ * sent. So, as a general rule, try to control the size of the content
+ * sent.</i>
+ * 
+ *
+ * <b>SECOND METHOD</b> involves the developer in the process of preparing
+ * the content to be sent, and to take advantage of local store. In
+ * this method, the sender open the file and reads chunks of
+ * 2k/4k/8k/12k/16k, and send them by using MSG frames.
+ * 
+ * This makes memory consumption to be lower than previous case
+ * because the entire file isn't loaded and, as the transfer progress,
+ * the remote side can consolidate all chunks received directly into a
+ * file rather holding it into memory. 
+ *
+ * This method also requires that \ref VortexOnFrameReceived "frame received" 
+ * activation to be serialized because you have to place all
+ * pieces received in other. This is archived by using \ref
+ * vortex_channel_set_serialize.
+ *
+ * This method is more difficult but results are better. The same
+ * happens to the following method.
+ *
+ * <b>THIRD METHOD</b> involves doing pretty much the same like SECOND
+ * METHOD, but using ANS/NUL (one-to-many) exchange style.
+ *
+ * Because BEEP requires all issued MSG to be replied, in the second
+ * method each MSG sent requires the receiving side to reply with a
+ * RPY (usually empty). This is not required with ANS/NUL exchange
+ * style.
+ *
+ * In this case, we ask the receiving side to issue a MSG request
+ * (asking for download the file). Then, the sending side opens the
+ * file to be transferred and send its pieces by using ANS messages.
+ *
+ * The receiving side consolidates into file all pieces received
+ * without requiring to reply to each ANS message received. 
+ *
+ * <b>THIRD METHOD</b> is the best in terms of memory consuption and
+ * network efficiency.
+ *
+ * We have also to consider other key factors for an effective and
+ * fast transfer. In general they are two: window size and frame fragmentation.
+ *
+ * The first concept (<b>window size</b>) is part of the BEEP way to
+ * do channel flow control (see
+ * http://www.beepcore.org/seq_frames.html). The initial window size
+ * for all channels is 4k. This value must be elevated to something
+ * bigger that fits your environment. This is controlled via \ref
+ * vortex_channel_set_window_size.
+ *
+ * The second concept (<b>frame fragmentation</b>) talks about how
+ * your messages are splitted in the case they don't fit into the
+ * remote window size. Take a look on the following handler: \ref
+ * VortexChannelFrameSize
+ *
+ * Now take a look into the following examples included in the test directory:
+ *
+ * - vortex-file-transfer-client.c
+ * - vortex-file-transfer-server.c
  *
  * \section vortex_manual_securing_your_session 5.1 Securing a Vortex Connection (or How to use the TLS profile)
  * 
