@@ -77,8 +77,7 @@ struct _VortexChannel {
 	 * reply fully sent (prepared and written into the wire). See
 	 * last_reply_written.
 	 */
-	int                     last_reply_sent;
-	int                     last_reply_expected;
+	int                     last_reply_received;
 
 	/** 
 	 * @internal Counter which tracks the last reply written to
@@ -105,6 +104,15 @@ struct _VortexChannel {
 
 	int                     last_ansno_sent;
 	int                     last_ansno_expected;
+
+	axlList               * incoming_msg;
+	axlListCursor         * incoming_msg_cursor;
+	VortexMutex             incoming_msg_mutex;
+	int                     incoming_msg_frame_fragment;
+
+	axlList               * outstanding_msg;
+	axlListCursor         * outstanding_msg_cursor;
+	VortexMutex             outstanding_msg_mutex;
 
 	/** 
 	 * Channel reference counting support. See \ref
@@ -1389,51 +1397,20 @@ int             vortex_channel_get_next_msg_no (VortexChannel * channel)
 	return channel->last_message_sent + 1;
 }
 
-/** 
- * @brief Returns actual message number expected to be received on this channel.
+/**
+ * @brief Allows to get latest message number received on the provided
+ * channel.
  *
+ * @param channel The channel reference that is required to return its
+ * associated last received message.
  *
- * This function must be not confused with
- * \ref vortex_channel_get_next_msg_no. 
- * 
- * Explanation: Once a channel is created, both peer connected by a
- * session where the channel is created, are expecting messages from
- * each other and will send messages to each other. 
- * 
- * On this context, message that peer A sends to peer B are controlled
- * by vortex_get_next_expected_msg_no on B peer side. This means, B is
- * expecting message 12 to arrive and this '12' will be returned by
- * previous function. 
- * 
- * Once a message is properly received and processed, this previous
- * number will updated to 13.  Now, when A sends to peer B a message,
- * A needs to now what message number to use on its next message. That
- * why vortex_channel_get_next_msg_no stands for. 
- * 
- * This function returns actual message number to use or actual
- * message number is waiting other peer to receive.
- *
- * This explanation applies to all frame indication found on this
- * module. As a short path to remember how this function works think
- * as follow: 
- * 
- * <i>"If actual peer is going to send a message I will use
- * vortex_channel_get_next_* functions to build up it. If I need to
- * validate that incoming message is right I will use
- * vortex_channel_get_next_expected_* functions."</i>
- *
- * 
- * @param channel the channel to operate on.
- * 
- * @return expected message number to receive or -1 if fails
+ * @return The message number received or -1 if it fails.
  */
-int             vortex_channel_get_next_expected_msg_no (VortexChannel * channel)
+int             vortex_channel_get_last_msg_no_received (VortexChannel * channel)
 {
-	/* check channel reference */
-	if (channel == NULL)
-		return -1;
-
-	return channel->last_message_received + 1;
+  	v_return_val_if_fail (channel, -1);
+	
+	return channel->last_message_received;
 }
 
 
@@ -1478,9 +1455,11 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 	channel->channel_num                    = channel_num;
 	channel->last_message_sent              = -1;
 	channel->last_message_received          = -1;
-	channel->last_reply_sent                = 0;
-	channel->last_reply_expected            = 0;
-	channel->last_reply_written             = -1;
+	channel->last_reply_received            = -1;
+	/* init value that signal vortex update process 
+	   to skip the first reply written (greetings RPY) 
+	   so it doesn't count the MSG that should be received */
+	channel->last_reply_written             = (channel_num == 0) ? -2 : -1 ; 
 	channel->last_seq_no                    = 0;
 	channel->last_seq_no_expected           = 0;
 	channel->is_opened                      = axl_false;
@@ -1499,6 +1478,18 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 	channel->max_seq_no_accepted            = 4095;
 	channel->max_seq_no_remote_accepted     = 4095;
 	channel->pending_messages               = axl_list_new (axl_list_always_return_1, NULL);
+
+	/* incoming messages check support */
+	channel->incoming_msg                   = axl_list_new (axl_list_always_return_1, NULL);
+	channel->incoming_msg_cursor            = axl_list_cursor_new (channel->incoming_msg);
+	channel->incoming_msg_frame_fragment    = -1;
+	vortex_mutex_create (&channel->incoming_msg_mutex);
+
+	/* outgoing message check support */
+	channel->outstanding_msg                = axl_list_new (axl_list_always_return_1, NULL);
+	channel->outstanding_msg_cursor         = axl_list_cursor_new (channel->incoming_msg);
+	vortex_mutex_create (&channel->outstanding_msg_mutex);
+
 	channel->waiting_msgno                  = vortex_queue_new ();
 	channel->queue_msgs                     = vortex_queue_new ();
 	channel->queue_seqs                     = vortex_queue_new ();
@@ -1534,7 +1525,6 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 		channel->transfer_encoding     = "binary";
 
 		/* some message number exceptions */
-		channel->last_message_received = 0;
 		channel->last_message_sent     = 0;
 	}else {
 		channel->mime_type         = vortex_profiles_get_mime_type (ctx, profile);
@@ -2004,17 +1994,8 @@ void vortex_channel_update_status (VortexChannel * channel, int  frame_size, int
 
 	/* update msgno */
 	if ((update & UPDATE_MSG_NO) == UPDATE_MSG_NO) {
-		channel->last_message_sent +=  1;
-	}
-
-	/* update rpy no */
-	if ((update & UPDATE_RPY_NO) == UPDATE_RPY_NO) {
-		channel->last_reply_sent   += 1;
-	}
-
-	/* decrease rpy no */
-	if ((update & DECREASE_RPY_NO) == DECREASE_RPY_NO) {
-		channel->last_reply_sent   -= 1;
+		/* update to the last msg no used */
+		channel->last_message_sent = msg_no;
 	}
 
 	/* update seqno */
@@ -2029,12 +2010,21 @@ void vortex_channel_update_status (VortexChannel * channel, int  frame_size, int
 
 	/* update last reply written */
 	if ((update & UPDATE_RPY_NO_WRITTEN) == UPDATE_RPY_NO_WRITTEN) {
-		channel->last_reply_written += 1;
+ 		if (channel->last_reply_written == -2 && channel->channel_num == 0) {
+ 			/* init value that signal vortex update process 
+ 			   to skip the first reply written (greetings RPY) 
+ 			   so it doesn't count the MSG that should be received */
+ 			channel->last_reply_written = -1;
+ 		} else {		
+ 			/* update to the last msg_no written */
+ 			channel->last_reply_written = msg_no;
+ 		}
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, 
-	       "updating channel sending status to: msgno=%d, rpyno=%d, seqno=%d, ansno=%d..",
-	       channel->last_message_sent, channel->last_reply_sent, channel->last_seq_no, channel->last_ansno_sent);
+ 		    "updating channel %d sending status to: msgno=%d, rpyno-sent=%d, rpyno-written=%d seqno=%d, ansno=%d..",
+ 		    channel->channel_num, channel->last_message_sent, channel->last_message_sent, 
+ 		    channel->last_reply_written, channel->last_seq_no, channel->last_ansno_sent);
 
 	return;
 }
@@ -2053,8 +2043,10 @@ void vortex_channel_update_status (VortexChannel * channel, int  frame_size, int
  * @param frame_size the frame size of the frame received
  * @param update what parts of the channel status to update.
  */
-void vortex_channel_update_status_received (VortexChannel * channel, int  frame_size,
-					    WhatUpdate update)
+void vortex_channel_update_status_received (VortexChannel * channel, 
+					    int             frame_size,
+					    int             msg_no,
+					    WhatUpdate      update)
 {
 
 #if defined(ENABLE_VORTEX_LOG)
@@ -2067,7 +2059,7 @@ void vortex_channel_update_status_received (VortexChannel * channel, int  frame_
 	
 	/* update expected msgno */
 	if ((update & UPDATE_MSG_NO) == UPDATE_MSG_NO) {
-		channel->last_message_received += 1;
+		channel->last_message_received = msg_no;
 	}
 
 	/* update expected msgno */
@@ -2077,7 +2069,7 @@ void vortex_channel_update_status_received (VortexChannel * channel, int  frame_
 
 	/* update expected rpy no */
 	if ((update & UPDATE_RPY_NO) == UPDATE_RPY_NO) {
-		channel->last_reply_expected   += 1;
+		channel->last_reply_received = msg_no;
 	}
 
 	/* update expected seqno */
@@ -2091,11 +2083,11 @@ void vortex_channel_update_status_received (VortexChannel * channel, int  frame_
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, 
-	       "updating channel receiving status to: msgno=%d, rpyno=%d, seqno=%d, ansno=%d..",
-	       channel->last_message_received, 
-	       channel->last_reply_expected, 
-	       channel->last_seq_no_expected, 
-	       channel->last_ansno_expected);
+		    "updating channel receiving status to: msgno=%d, rpyno=%d, seqno=%d, ansno=%d..",
+		    channel->last_message_received, 
+ 		    channel->last_reply_received, 
+ 		    channel->last_seq_no_expected, 
+ 		    channel->last_ansno_expected);
 
 	return;
 }
@@ -2108,16 +2100,18 @@ void vortex_channel_update_status_received (VortexChannel * channel, int  frame_
  * @param channel the channel where the message will be sent.
  * @param message the message to be sent.
  * @param message_size the message size.
+ * @param proposed_msg_no The message number to be used for the next send operation. If not defined (-1) vortex will allocate automatically a new one.
  * @param msg_no message number reference used for this message sending attempt.
  * @param wait_reply optional wait reply to implement Wait Reply method.
  * 
  * @return axl_true if channel was sent or axl_false if not.
  */
-axl_bool    __vortex_channel_send_msg_common (VortexChannel   * channel,
-					      const void      * message,
-					      size_t            message_size,
-					      int             * msg_no,
-					      WaitReplyData   * wait_reply)
+axl_bool    vortex_channel_send_msg_common (VortexChannel   * channel,
+					    const void      * message,
+					    size_t            message_size,
+					    int               proposed_msg_no, 
+					    int             * msg_no,
+					    WaitReplyData   * wait_reply)
 {
 	VortexSequencerData * data;
 	int                   mime_header_size;
@@ -2151,15 +2145,18 @@ axl_bool    __vortex_channel_send_msg_common (VortexChannel   * channel,
 	data->channel          = channel;
 	data->type             = VORTEX_FRAME_TYPE_MSG;
 	data->channel_num      = vortex_channel_get_number (channel);
-	data->msg_no           = vortex_channel_get_next_msg_no (channel);
+ 	if (proposed_msg_no >= 0)
+ 		data->msg_no   = proposed_msg_no;
+ 	else
+ 		data->msg_no   = vortex_channel_get_next_msg_no (channel);
 	data->first_seq_no     = vortex_channel_get_next_seq_no (channel);
 	
 	/* update message size */
 	data->message_size     = message_size + mime_header_size;
 		
 	vortex_log (VORTEX_LEVEL_DEBUG, 
-		    "new message to sent, type=%d channel=%d msgno=%d size (%d) = msg size (%d) + mime size (%d)",
-		    data->type, data->channel_num, data->msg_no,
+ 		    "new message to sent, type=%d channel=%d msgno=%d (proposed: %d) size (%d) = msg size (%d) + mime size (%d)",
+		    data->type, data->channel_num, data->msg_no, proposed_msg_no,
 		    data->message_size, message_size, mime_header_size);
 
 	/* copy mime headers according to channel configuration, that
@@ -2175,13 +2172,13 @@ axl_bool    __vortex_channel_send_msg_common (VortexChannel   * channel,
 
 	/* return back message no used  */
 	if (msg_no != NULL) 
-		(* msg_no) = vortex_channel_get_next_msg_no (channel);
+		(* msg_no) = data->msg_no;
 
 	/* is there a wait reply? */
 	if (wait_reply != NULL) {
 		
 		/* install queue  */
-		wait_reply->msg_no_reply = vortex_channel_get_next_msg_no (channel);
+		wait_reply->msg_no_reply = data->msg_no;
 		
 		/* enqueue reply data on this */
 		vortex_mutex_lock   (&channel->receive_mutex);
@@ -2194,7 +2191,17 @@ axl_bool    __vortex_channel_send_msg_common (VortexChannel   * channel,
 	}
 
 	/* update channel status */
-	vortex_channel_update_status (channel, data->message_size, 0, UPDATE_SEQ_NO | UPDATE_MSG_NO);
+ 	vortex_channel_update_status (channel, data->message_size, data->msg_no, UPDATE_SEQ_NO | UPDATE_MSG_NO);
+  
+ 	/* update pending messages to be replied */
+ 	vortex_mutex_lock (&channel->outstanding_msg_mutex);
+ 	axl_list_append (channel->outstanding_msg, INT_TO_PTR (data->msg_no));
+ 
+ 	vortex_log (VORTEX_LEVEL_DEBUG, "channel=%d append pending msg no to be replied: %d (length: %d), first: %d",
+ 		    channel->channel_num, data->msg_no, axl_list_length (channel->outstanding_msg), 
+ 		    PTR_TO_INT (axl_list_get_first (channel->outstanding_msg)));
+ 
+ 	vortex_mutex_unlock (&channel->outstanding_msg_mutex);
 
 	vortex_sequencer_queue_data (ctx, data);
 
@@ -2308,7 +2315,7 @@ axl_bool        vortex_channel_send_msg   (VortexChannel    * channel,
 					   size_t             message_size,
 					   int              * msg_no)
 {
-	return __vortex_channel_send_msg_common (channel, message, message_size, msg_no, NULL);
+	return vortex_channel_send_msg_common (channel, message, message_size, -1, msg_no, NULL);
 }
 
 /** 
@@ -2400,7 +2407,7 @@ axl_bool           vortex_channel_send_msg_and_wait               (VortexChannel
 								   int              * msg_no,
 								   WaitReplyData    * wait_reply)
 {
-	return __vortex_channel_send_msg_common (channel, message, message_size, msg_no, wait_reply);
+	return vortex_channel_send_msg_common (channel, message, message_size, -1, msg_no, wait_reply);
 }
 
 /** 
@@ -2498,18 +2505,6 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
 	vortex_mutex_lock (&channel->send_mutex);
 	channel->being_sending = axl_true;
 	
-	/* check if received a reply for a message that has being
-	 * already replied */
-	if (msg_no_rpy < vortex_channel_get_next_reply_no (channel) && 
-	    (type == VORTEX_FRAME_TYPE_RPY || type == VORTEX_FRAME_TYPE_ERR)) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "received a reply message to be sent with msgno=%d, but that message was already replied. Next expected message waiting for reply is msgno=%d. You BEEP app is replying twice to the same message. Dropping this reply..",
-			    msg_no_rpy, vortex_channel_get_next_reply_no (channel));
-		channel->being_sending = axl_false;	
-		vortex_mutex_unlock (&channel->send_mutex);
-		return axl_false;
-
-	} /* end if */
-
 	/* check if the connection is ok */
 	if (! vortex_connection_is_ok (channel->connection, axl_false)) {
 		vortex_log (VORTEX_LEVEL_WARNING, "received a reply request to be sent over a non connected session, dropming message");
@@ -2590,10 +2585,13 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
 		/* because tne NUL reply ends a series of ANS reply,
 		 * we update the seqno and the next expected reply
 		 * number. */
-		vortex_channel_update_status (channel, data->message_size, 0, UPDATE_SEQ_NO | UPDATE_RPY_NO);
+		vortex_channel_update_status (channel, data->message_size, 0, UPDATE_SEQ_NO);
 
 		/* reset last ansno message sent. */
 		channel->last_ansno_sent = 0;
+
+		/* remove first pending message from incoming messages */
+		vortex_channel_remove_first_pending_msg_no (channel, msg_no_rpy);
 		
 		break;
 	case VORTEX_FRAME_TYPE_ANS:
@@ -2603,7 +2601,10 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
 	case VORTEX_FRAME_TYPE_RPY:
 	case VORTEX_FRAME_TYPE_ERR:
 		/* update channel status. */
-		vortex_channel_update_status (channel, data->message_size, 0, UPDATE_SEQ_NO | UPDATE_RPY_NO);
+		vortex_channel_update_status (channel, data->message_size, 0, UPDATE_SEQ_NO);
+
+		/* remove first pending message from incoming messages */
+		vortex_channel_remove_first_pending_msg_no (channel, msg_no_rpy);
 		break;
 	default:
 		/* nothing to do */
@@ -4082,29 +4083,130 @@ int                vortex_channel_ref_count                       (VortexChannel
  */
 int             vortex_channel_get_next_reply_no          (VortexChannel * channel)
 {
-	/* check reference */
-	if (channel == NULL)
-		return -1;
-	
-	return channel->last_reply_sent;
+ 	int result;
+  	v_return_val_if_fail (channel, -1);
+  	
+ 	/* lock mutex */
+ 	vortex_mutex_lock (&channel->incoming_msg_mutex);
+ 
+ 	/* get first pending message to be replied */
+ 	result = PTR_TO_INT (axl_list_get_first (channel->incoming_msg));
+ 
+ 	/* unlock mutex */
+ 	vortex_mutex_unlock (&channel->incoming_msg_mutex);
+ 	
+ 	return result;
 }
 
 /**
- * @brief Returns actual reply number expected to be received from
- * remote peer.
- * 
- * @param channel the channel to query
- * 
- * @return the reply number expected or -1 if fails
+ * @brief Returns the next channel MSG no that is expected to be
+ * received on this channel.
+ *
+ * @param channel The channel that is being checked.
+ *
+ * @return The next expected message to be replied.
  */
 int             vortex_channel_get_next_expected_reply_no (VortexChannel * channel)
 {
-	/* check reference */
-	if (channel == NULL)
-		return -1;
-
-	return channel->last_reply_expected;
+ 	int result;
+  	v_return_val_if_fail (channel, -1);
+ 	
+ 	/* lock mutex */
+ 	vortex_mutex_lock (&channel->outstanding_msg_mutex);
+  
+ 	/* get first pending message to be replied */
+ 	result = PTR_TO_INT (axl_list_get_first (channel->outstanding_msg));
+ 
+ 	/* unlock mutex */
+ 	vortex_mutex_unlock (&channel->outstanding_msg_mutex);
+ 	
+ 	return result;
 }
+
+/**
+ * @internal Function that allows to remove first pending reply and to 
+ */
+axl_bool vortex_channel_remove_first_pending_msg_no (VortexChannel * channel, int msg_no_rpy)
+{
+	axl_bool    result;
+#if defined(ENABLE_VORTEX_LOG)
+	VortexCtx * ctx;
+#endif
+	v_return_val_if_fail (channel, -1);
+
+#if defined(ENABLE_VORTEX_LOG)
+	/* get context */
+	ctx = vortex_channel_get_ctx (channel);
+#endif
+	
+	/* lock mutex */
+	vortex_mutex_lock (&channel->incoming_msg_mutex);
+
+	/* get first pending message to be replied */
+	result = PTR_TO_INT (axl_list_get_first (channel->incoming_msg)) == msg_no_rpy;
+
+	if (result) 
+		axl_list_remove_first (channel->incoming_msg);
+	else {
+		/* drop a log */
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
+			    "Found a request to remove next pending reply (msg no: %d) but found a different value as pending: %d",
+			    PTR_TO_INT (axl_list_get_first (channel->incoming_msg)), msg_no_rpy); 
+		/* close the connection */
+		__vortex_connection_set_not_connected (
+			channel->connection, 
+			"Found a request to remove next pending reply but found a different value as pending", VortexProtocolError);
+	} /* end if */
+
+	/* unlock mutex */
+	vortex_mutex_unlock (&channel->incoming_msg_mutex);
+	
+	return result;
+}
+
+/**
+ * @internal Function that allows to remove first pending message
+ * waiting for reply.
+ */
+axl_bool vortex_channel_remove_first_outstanding_msg_no (VortexChannel * channel, int msg_no_rpy)
+{
+	axl_bool    result;
+#if defined(ENABLE_VORTEX_LOG)
+	VortexCtx * ctx;
+#endif
+	v_return_val_if_fail (channel, -1);
+
+#if defined(ENABLE_VORTEX_LOG)
+	ctx = vortex_channel_get_ctx (channel);
+#endif
+	
+	/* lock mutex */
+	vortex_mutex_lock (&channel->outstanding_msg_mutex);
+
+	/* get first pending message to be replied */
+	result = PTR_TO_INT (axl_list_get_first (channel->outstanding_msg)) == msg_no_rpy;
+
+	if (result) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "channel=%d, removing first pending message to receive reply: %d",
+			    channel->channel_num, msg_no_rpy);
+		axl_list_remove_first (channel->outstanding_msg);
+	} else {
+		/* drop a log */
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
+			    "Found a request to remove next pending message to be replied (msg no: %d) but found a different value as pending: %d",
+			    PTR_TO_INT (axl_list_get_first (channel->outstanding_msg)), msg_no_rpy); 
+		/* close the connection */
+		__vortex_connection_set_not_connected (
+			channel->connection, 
+			"Found a request to remove next pending message to be replied but found a different value as pending", VortexProtocolError);
+	} /* end if */
+
+	/* unlock mutex */
+	vortex_mutex_unlock (&channel->outstanding_msg_mutex);
+	
+	return result;
+}
+ 
 
 /** 
  * @brief Returns actual seq no expected to be received on this channel. 
@@ -4361,19 +4463,19 @@ axl_bool      __vortex_channel_block_until_replies_are_received (VortexChannel *
 	 * channel from inside the frame received handler that is
 	 * managing the last message.
 	 */
-	while (! (channel->last_message_sent == (channel->last_reply_expected - 1))) {
+	while (! (channel->last_message_sent == channel->last_reply_received)) {
 		
 		/* flag that we are waiting for replies */
 		channel->waiting_replies = axl_true;
 		
 		/* drop a log */
 		vortex_log (VORTEX_LEVEL_WARNING, 
-		       "we still didn't received all replies for connection=%d channel=%d (MSG %d != RPY %d), %s",
-		       vortex_connection_get_id (channel->connection),
-		       channel->channel_num,
-		       channel->last_message_sent, channel->last_reply_expected - 1,
-		       vortex_connection_is_ok (connection, axl_false) ? "block until all replies are received" :
-		       "leaving remaining replies because connection is broken..");
+ 			    "we still didn't received all replies for connection=%d channel=%d (MSG %d != RPY %d), %s",
+ 			    vortex_connection_get_id (channel->connection),
+ 			    channel->channel_num,
+ 			    channel->last_message_sent, channel->last_reply_received,
+ 			    vortex_connection_is_ok (connection, axl_false) ? "block until all replies are received" :
+ 			    "leaving remaining replies because connection is broken..");
 		
 		/* check the connection status to perform a signaled
 		 * wait for replies not received */
@@ -4404,8 +4506,8 @@ axl_bool      __vortex_channel_block_until_replies_are_received (VortexChannel *
 	
 	vortex_mutex_unlock (&channel->close_mutex);
 	vortex_log (VORTEX_LEVEL_DEBUG, 
-	       "we have received (or it should!) the last reply we can now close the channel %d (MSG %d = RPY %d)", 
-	       channel->channel_num, channel->last_message_sent, channel->last_reply_expected - 1);
+		    "we have received (or it should!) the last reply we can now close the channel %d (MSG %d = RPY %d)", 
+		    channel->channel_num, channel->last_message_sent, channel->last_reply_received);
 
 	/* return wait status */
 	return result;
@@ -4497,7 +4599,7 @@ axl_bool      vortex_channel_block_until_replies_are_sent (VortexChannel * chann
 	vortex_log (VORTEX_LEVEL_DEBUG, 
 		    "we have sent the last reply we can now close the channel %d (RPY %d = MSG %d), pending messages: %d", 
 		    channel->channel_num, 
-		    (channel->last_reply_sent - 1), 
+		    channel->last_reply_written,
 		    channel->last_message_received,
 		    axl_list_length (channel->pending_messages));
 
@@ -5084,19 +5186,19 @@ typedef struct _ReceivedInvokeData {
     /* lock the section with the mutex provided */                                      \
     vortex_mutex_lock (&mutex);                                                         \
                                                                                         \
-    /* check store stauts */                                                            \
-    status = axl_false;                                                                     \
+    /* check store status */                                                            \
+    status = axl_false;                                                                 \
     switch (vortex_frame_get_type (frame)) {                                            \
     case VORTEX_FRAME_TYPE_RPY:                                                         \
     case VORTEX_FRAME_TYPE_ERR:                                                         \
     case VORTEX_FRAME_TYPE_MSG:                                                         \
 	/* status */                                                                    \
 	status = last_msgno_delivered != vortex_frame_get_msgno (frame);                \
-        index = vortex_frame_get_msgno (frame);                                         \
+        index  = vortex_frame_get_msgno (frame);                                        \
         break;                                                                          \
     case VORTEX_FRAME_TYPE_ANS:                                                         \
         status = last_msgno_delivered != vortex_frame_get_ansno (frame);                \
-        index = vortex_frame_get_ansno (frame);                                         \
+        index  = vortex_frame_get_ansno (frame);                                        \
         break;                                                                          \
     case VORTEX_FRAME_TYPE_NUL:                                                         \
         /* always store */                                                              \
@@ -5111,7 +5213,7 @@ typedef struct _ReceivedInvokeData {
         break;                                                                          \
     default:                                                                            \
         /* default case, do not store anything */                                       \
-        status = axl_false;                                                                 \
+        status = axl_false;                                                             \
         index = -1;                                                                     \
     } /* end switch */                                                                  \
                                                                                         \
@@ -5124,10 +5226,12 @@ typedef struct _ReceivedInvokeData {
         vortex_mutex_unlock (&mutex);                                                   \
         vortex_channel_unref (channel);                                                 \
         vortex_connection_unref (connection, "second level handler (frame received)");  \
-        vortex_log (VORTEX_LEVEL_WARNING, "store frame because previous one is expected"); \
+        vortex_log (VORTEX_LEVEL_WARNING,                                               \
+                   "store frame because previous one is expected (last delivered: %d != received: %d, ansno: %d)",  \
+		    last_msgno_delivered, vortex_frame_get_msgno (frame), vortex_frame_get_ansno (frame));          \
                                                                                         \
         /* signal that the message was stored */                                        \
-        return axl_true;                                                                    \
+        return axl_true;                                                                \
     }                                                                                   \
     vortex_mutex_unlock (&mutex);                                                       \
 }while(0);
@@ -5145,7 +5249,7 @@ typedef struct _ReceivedInvokeData {
    }                                                                                                                 \
                                                                                                                      \
    /* remove according to the frame type */                                                                          \
-   status = axl_false;                                                                                                   \
+   status = axl_false;                                                                                               \
    if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {                                                     \
          status = axl_hash_remove (hash, INT_TO_PTR (-1));                                                           \
    } else {                                                                                                          \
@@ -6833,7 +6937,15 @@ void vortex_channel_free (VortexChannel * channel)
 	channel->previous_frame = NULL;
 
 	/* free pending messages */
-	axl_list_free (channel->pending_messages);
+ 	axl_list_free        (channel->pending_messages);
+  
+ 	axl_list_free        (channel->incoming_msg);
+ 	axl_list_cursor_free (channel->incoming_msg_cursor);
+ 	vortex_mutex_destroy (&channel->incoming_msg_mutex);
+ 
+ 	axl_list_free        (channel->outstanding_msg);
+ 	axl_list_cursor_free (channel->outstanding_msg_cursor);
+ 	vortex_mutex_destroy (&channel->outstanding_msg_mutex);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing channel node");
 
@@ -6969,11 +7081,11 @@ axl_bool         vortex_channel_is_ready                       (VortexChannel * 
 		return axl_false;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "checking channel to be ready (%d == %d) && reply_processed=%d",
-	       channel->last_message_sent, 
-	       (channel->last_reply_expected - 1), 
-	       channel->reply_processed);
+ 		    channel->last_message_sent, 
+ 		    (channel->last_reply_received), 
+ 		    channel->reply_processed);
 	
-	return ((channel->last_message_sent == (channel->last_reply_expected - 1)) && channel->reply_processed);
+ 	return ((channel->last_message_sent == channel->last_reply_received) && channel->reply_processed);
 }
 
 /** 
@@ -7320,7 +7432,7 @@ axl_bool          vortex_channel_is_up_to_date (VortexChannel * channel)
 	if (channel == NULL)
 		return axl_false;
 	
-	return (channel->last_message_sent == (channel->last_reply_expected - 1));
+	return (channel->last_message_sent == channel->last_reply_received);
 }
 
 /** 
@@ -7923,6 +8035,144 @@ void              __vortex_channel_release_pending_messages (VortexChannel * cha
 	if (vortex_channel_ref_count (channel) > 1)
 		vortex_channel_unref (channel);
 	return;
+}
+
+/**
+ * @internal Function to check if a msg_no is found in the list of
+ * incoming msg pending to be replied.
+ */
+axl_bool vortex_channel_check_msg_no_find_item (VortexChannel * channel, int msg_no)
+{
+	if (axl_list_length (channel->incoming_msg) == 0) {
+		/* add directly */
+		return axl_false;
+	} /* end if */
+
+	/* reset cursor */
+	axl_list_cursor_first (channel->incoming_msg_cursor);
+	while (axl_list_cursor_has_item (channel->incoming_msg_cursor)) {
+		/* check if the message was already received but not replied */
+		if (msg_no == PTR_TO_INT (axl_list_cursor_get (channel->incoming_msg_cursor))) {
+			/* item found */
+			return axl_true;
+		} /* end if */
+
+		/* next item */
+		axl_list_cursor_next (channel->incoming_msg_cursor);
+	} /* end while */
+
+	return axl_false;
+}
+
+/**
+ * @internal Function that checks if the provided msg_no do not
+ * represent a message received on this channel, until this point. The
+ * function also adds the msg_no to the list of incoming messages
+ * waiting to be replied. 
+ *
+ * In the case a protocol error is found, the function shutdown the
+ * connection.
+ *
+ * @param channel Where the check will be implemented.
+ *
+ * @param frame The frame received containing message number and
+ * continuator flag to check.
+ */
+axl_bool            vortex_channel_check_msg_no             (VortexChannel  * channel, 
+							     VortexFrame    * frame)
+{
+	/* get current more status */
+	axl_bool more       = vortex_frame_get_more_flag (frame);
+	int      msg_no     = vortex_frame_get_msgno (frame);
+#if defined(ENABLE_VORTEX_LOG)
+	VortexCtx * ctx;
+
+	/* get context */
+	ctx = vortex_channel_get_ctx (channel);
+#endif
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "checking channel=%d msg_no=%d more=%d", 
+		    channel->channel_num, msg_no, more);
+
+	/* check channel reference */
+	if (channel == NULL)
+		return axl_false;
+
+	/* lock */
+	vortex_mutex_lock (&channel->incoming_msg_mutex);
+
+	/* check for previous uncomplete frames received that must
+	 * match with received msg_no */
+	if ((channel->incoming_msg_frame_fragment != -1) && 
+	    (channel->incoming_msg_frame_fragment != msg_no)) {
+		/* un-lock */
+		vortex_mutex_unlock (&channel->incoming_msg_mutex);
+		
+		vortex_log (VORTEX_LEVEL_CRITICAL, "expected to find msg no: %d for next frame fragment, but found %d",
+			    channel->incoming_msg_frame_fragment, msg_no);
+		return axl_false;
+	} /* end if */
+	
+	/*  more (*) case */
+	if (more) {
+		/* check if this is the first frame fragment received */
+		if (channel->incoming_msg_frame_fragment == -1) {
+			/* check if the item was found */
+			if (vortex_channel_check_msg_no_find_item (channel, msg_no)) {
+				/* un-lock */
+				vortex_mutex_unlock (&channel->incoming_msg_mutex);
+
+				vortex_log (VORTEX_LEVEL_CRITICAL, 
+					    "received the first incomplete frame fragment with msg-no: %d, but this is already in use (still not replied)",
+					    msg_no);
+				return axl_false;
+			} /* end if */
+
+			/* first frame fragment of a serie */
+			channel->incoming_msg_frame_fragment = msg_no;
+
+			/* first time, add the msg_no to the list of
+			 * pending messages */
+			axl_list_append (channel->incoming_msg, INT_TO_PTR (msg_no));
+		} /* end if */
+
+		/* un-lock */
+		vortex_mutex_unlock (&channel->incoming_msg_mutex);
+
+		/* if reached this point, the frame fragment was
+		 * already listed and matches
+		 * channel->incoming_msg_frame_fragment. No need to
+		 * readd the msg no used */
+		return axl_true;
+	} else {
+		if (channel->incoming_msg_frame_fragment != -1) {
+			/* reset state */
+			channel->incoming_msg_frame_fragment = -1;
+
+			/* un-lock */
+			vortex_mutex_unlock (&channel->incoming_msg_mutex);
+			return axl_true;
+		} else { 
+			
+			/* check if the item was found */
+			if (vortex_channel_check_msg_no_find_item (channel, msg_no)) {
+				/* un-lock */
+				vortex_mutex_unlock (&channel->incoming_msg_mutex);
+				
+				vortex_log (VORTEX_LEVEL_CRITICAL, "received a msg no %d which is already in used and still not replied ",
+					    msg_no);
+				return axl_false;
+			} /* end if */
+		} /* end if */
+	} /* end if */
+
+	/* add the item since no msg number was found */
+	axl_list_append (channel->incoming_msg, INT_TO_PTR (msg_no));
+
+	/* un-lock */
+	vortex_mutex_unlock (&channel->incoming_msg_mutex);
+
+	return axl_true;
 }
 
 /**

@@ -125,12 +125,14 @@ void               vortex_channel_update_status                (VortexChannel * 
 								int             msg_no,
 								WhatUpdate update);
 
-void               vortex_channel_update_status_received       (VortexChannel * channel, int  frame_size,
-								WhatUpdate update);
+void               vortex_channel_update_status_received       (VortexChannel * channel, 
+								int             frame_size,
+								int             msg_no,
+								WhatUpdate      update);
 
 int                vortex_channel_get_next_msg_no              (VortexChannel * channel);
 
-int                vortex_channel_get_next_expected_msg_no     (VortexChannel * channel);
+int                vortex_channel_get_last_msg_no_received     (VortexChannel * channel);
 
 int                vortex_channel_get_number                   (VortexChannel * channel);
 
@@ -257,6 +259,13 @@ axl_bool           vortex_channel_send_msg_and_waitv              (VortexChannel
 								   WaitReplyData   * wait_reply,
 								   const char      * format,
 								   ...);
+
+axl_bool           vortex_channel_send_msg_common                 (VortexChannel   * channel,
+								   const void      * message,
+								   size_t            message_size,
+								   int               proposed_msg_no, 
+								   int             * msg_no,
+								   WaitReplyData   * wait_reply);
 
 axl_bool           vortex_channel_send_rpy                        (VortexChannel    * channel,  
 								   const void       * message,
@@ -403,6 +412,15 @@ axl_bool            vortex_channel_check_serialize                (VortexCtx    
 axl_bool            vortex_channel_check_serialize_pending         (VortexCtx      * ctx,
 								    VortexChannel  * channel, 
 								    VortexFrame   ** caller_frame);
+
+axl_bool            vortex_channel_check_msg_no                    (VortexChannel  * channel, 
+ 								    VortexFrame    * frame);
+
+axl_bool            vortex_channel_remove_first_pending_msg_no     (VortexChannel * channel, 
+ 								    int             msg_no_rpy);
+
+axl_bool            vortex_channel_remove_first_outstanding_msg_no (VortexChannel * channel, 
+ 								    int             msg_no_rpy);
 
 void               __vortex_channel_nullify_conn                   (VortexChannel  * channel);
 								   
