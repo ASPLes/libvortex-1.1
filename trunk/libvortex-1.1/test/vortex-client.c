@@ -310,13 +310,12 @@ void vortex_client_get_channel_status (VortexConnection * connection)
 		printf ("     Last msqno sent:          %d\n",  vortex_channel_get_next_msg_no (channel) - 1);
 	
 	printf ("     Next msqno to use:        %d\n",  vortex_channel_get_next_msg_no (channel));
-	if (vortex_channel_get_next_expected_msg_no (channel) == 0) 
+	if (vortex_channel_get_last_msg_no_received (channel) == -1) 
 		printf ("     Last msgno received:      no message received yet\n");
 	else
-		printf ("     Last msgno received:      %d\n",  vortex_channel_get_next_expected_msg_no (channel) - 1);
+		printf ("     Last msgno received:      %d\n",  vortex_channel_get_last_msg_no_received (channel));
 	printf ("     Next reply to sent:       %d\n",  vortex_channel_get_next_reply_no (channel));
 	printf ("     Next reply exp. to recv:  %d\n",  vortex_channel_get_next_expected_reply_no (channel));
-	printf ("     Next exp. msgno to recv:  %d\n",  vortex_channel_get_next_expected_msg_no (channel));
 	printf ("     Next seqno to sent:       %u\n",  vortex_channel_get_next_seq_no (channel));
 	printf ("     Next seqno to receive:    %u\n",  vortex_channel_get_next_expected_seq_no (channel));
 	

@@ -174,6 +174,11 @@
  */
 #define REGRESSION_URI_CLOSE_AFTER_ANS_NUL_REPLIES "http://iana.org/beep/transient/vortex-regression/close-after-ans-nul-replies"
 
+/**
+ * Profile that does nothing.
+ */
+#define REGRESSION_URI_NOTHING "http://iana.org/beep/transient/vortex-regression/nothing"
+
 void frame_received_fake_listeners  (VortexChannel    * channel,
 				     VortexConnection * connection,
 				     VortexFrame      * frame,
@@ -295,13 +300,18 @@ void frame_received_replies (VortexChannel    * channel,
 			     VortexFrame      * frame,
 			     axlPointer         user_data)
 {
-	
+	VortexAsyncQueue * queue;
 	/* ack message received */
 	if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_MSG) {
+
 		vortex_channel_send_rpy (channel, "", 0, vortex_frame_get_msgno (frame));
+		queue = vortex_async_queue_new ();
+		vortex_async_queue_timedpop (queue, 10000);
+		vortex_async_queue_unref (queue);
 		vortex_channel_send_msg (channel, "MSG###1###", 10, NULL);
 		vortex_channel_send_msg (channel, "MSG###2###", 10, NULL);
 		vortex_channel_send_msg (channel, "MSG###3###", 10, NULL);
+
 	} /* end if */
 	return;
 }
@@ -1266,6 +1276,14 @@ int main (int  argc, char ** argv)
 				  NULL, NULL,
 				  /* frame received */
 				  send_ans_replies_and_close, NULL);
+
+	/* register nothing profile */
+	vortex_profiles_register (ctx, REGRESSION_URI_NOTHING,
+				  /* default start and cloes handlers */
+				  NULL, NULL,
+				  NULL, NULL,
+				  /* default frame */
+				  NULL, NULL);
 
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */

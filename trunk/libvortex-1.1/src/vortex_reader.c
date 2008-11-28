@@ -215,82 +215,30 @@ axl_bool      __vortex_reader_update_incoming_buffer_and_notify (VortexCtx      
  * @return axl_true if the reader check is passed. Otherwise axl_false is
  * returned.
  */
-axl_bool      vortex_channel_check_incoming_msgno (VortexCtx     * ctx,
-						   VortexChannel * channel, 
-						   VortexFrame   * frame)
+axl_bool      vortex_reader_check_incoming_msgno (VortexCtx        * ctx,
+						  VortexConnection * conn,
+						  VortexChannel    * channel, 
+						  VortexFrame      * frame)
 {
-	/* get a reference to the connection that holds the channel */
-	VortexConnection * connection = vortex_channel_get_connection (channel);
+  	vortex_log (VORTEX_LEVEL_DEBUG, "about to checking expected message to be received on this channel");
 
-	/* compatibility test, out of the BEEP standard to interop
-	 * with BEEP implementations that uses as a starting message
-	 * the value 1. */
-	vortex_log (VORTEX_LEVEL_DEBUG, "about to checking expected message to be received on this channel");
-	if (vortex_channel_get_next_expected_msg_no (channel) == 0 &&
-	    vortex_frame_get_msgno (frame) == 1) {
-		vortex_log (VORTEX_LEVEL_WARNING, 
-		       "received an starting message for the channel value that begins with 1 rather than 0");
-
-		if (ctx->reader_accept_msgno_startig_from_1) {
-			/* because the remote peer is missing the very first
-			 * message, we have to report this to the channel
-			 * values so, next message are in sequence. */
-			
-			/* next sentence makes the vortex library to assume
-			 * that the message msgno=0 have been received. */
-			vortex_channel_update_status_received (channel, 0, UPDATE_MSG_NO);
-			vortex_channel_update_status          (channel, 0, 0, UPDATE_RPY_NO);
-			
-			return axl_true;
-		}
-		vortex_log (VORTEX_LEVEL_WARNING, "if you want to make vortex reader to accept message with msgno starting from 1, you can use vortex_reader_allow_msgno_starting_from_1");
+  
+ 	/* check if the message is not already available in the
+ 	 * list */
+ 	if (! vortex_channel_check_msg_no (channel, frame)) {
+ 		/* close the connection */
+ 		__vortex_connection_set_not_connected (conn, "Found message number already received but still not replied", VortexProtocolError);
+  
+ 		/* drop a log */
+ 		vortex_log (VORTEX_LEVEL_CRITICAL, 
+ 			    "Found incoming message number %d that represents a previous message received but still not replied, protocol violation",
+ 			    vortex_frame_get_msgno (frame));
 		
-	}
-
-	/* perform the check */
-	if (vortex_channel_get_next_expected_msg_no (channel) != vortex_frame_get_msgno (frame)) {
-
+  		return axl_false;
+ 	} /* end if */
  
- 		/* compatibility test, out of the BEEP standard to
- 		 * interop with BEEP implementations that re-uses as a
- 		 * starting message the value 0 for channel 0. That
- 		 * is, they send MSG 0 over channel 0, but that
- 		 * message is actually used in reply form at the
- 		 * greettings phase. */
- 		if (vortex_channel_get_number (channel) == 0 && 
- 		    vortex_channel_get_next_expected_msg_no (channel) == 1 &&
- 		    vortex_frame_get_msgno (frame) == 0) {
- 			vortex_log (VORTEX_LEVEL_WARNING,
- 				    "received first message over channel 0, connection id=%d with msgno=0 but it was expected msgno=1. This is a BEEP protocol bug since msgno=0 is used at greetings phase. ");
- 			if (ctx->reader_accept_reuse_msgno0_for_channel0) {
- 				/* accept this buggy message. Reconfigure message 
- 				   numbers expected to make it work. */
- 				
- 				/* next sentence makes the vortex library to assume
- 				 * that the message msgno=0 have been received. */
- 				vortex_channel_update_status_received (channel, 0, DECREASE_MSG_NO);
- 				vortex_channel_update_status          (channel, 0, 0, DECREASE_RPY_NO);
- 				return axl_true;
- 			}
- 			vortex_log (VORTEX_LEVEL_WARNING, "if you want to make vortex reader to accept these messages, you can use vortex_reader_allow_channel0_starting_from_0");
- 		}
- 
-
-		__vortex_connection_set_not_connected (connection, "expected message number for channel wasn't found",
-						       VortexProtocolError);
-		
-		/* log a critical log */
-		vortex_log (VORTEX_LEVEL_CRITICAL, "expected message number %d for channel %d wasn't found, but received %d",
-		       vortex_channel_get_next_expected_msg_no (channel), 
-		       vortex_channel_get_number (channel),
-		       vortex_frame_get_msgno (frame));
-		
-		/* free the frame */
-		vortex_frame_unref (frame);
-		return axl_false;
-	}
-	/* check passed */
-	return axl_true;
+  	/* check passed */
+  	return axl_true;
 }
 
 /**
@@ -406,7 +354,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	switch (type) {
 	case VORTEX_FRAME_TYPE_MSG:
 		/* MSG frame type: check if msgno is correct */
-		if (!vortex_channel_check_incoming_msgno (ctx, channel, frame))
+		if (!vortex_reader_check_incoming_msgno (ctx, connection, channel, frame))
 			return;
 		break;
 	case VORTEX_FRAME_TYPE_RPY:
@@ -536,6 +484,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		/* is a MSG frame type: update msgno and seqno */
 		vortex_channel_update_status_received (channel, 
 						       vortex_frame_get_content_size (frame), 
+						       vortex_frame_get_msgno (frame),
 						       vortex_frame_get_more_flag (frame) ?
 						       UPDATE_SEQ_NO :
 						       UPDATE_SEQ_NO | UPDATE_MSG_NO);
@@ -558,9 +507,15 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		/* is a ERR or RPY type: update rpy no and seqno */
 		vortex_channel_update_status_received (channel, 
 						       vortex_frame_get_content_size (frame), 
+						       vortex_frame_get_msgno (frame),
 						       vortex_frame_get_more_flag (frame) ? 
 						       UPDATE_SEQ_NO : 
 						       UPDATE_SEQ_NO | UPDATE_RPY_NO);
+
+		/* remove the message replied from outstanding list */
+		if (! vortex_frame_get_more_flag (frame))
+			vortex_channel_remove_first_outstanding_msg_no (channel, vortex_frame_get_msgno (frame));
+
 		break;
 	case VORTEX_FRAME_TYPE_NUL:
 		/* And we have to do this flagging before updating
@@ -570,7 +525,12 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 
 		/* is a ERR or RPY type: update rpy no and seqno */
 		vortex_channel_update_status_received (channel, 
-						       vortex_frame_get_content_size (frame), UPDATE_RPY_NO | UPDATE_SEQ_NO);
+						       vortex_frame_get_content_size (frame), 
+						       vortex_frame_get_msgno (frame),
+						       UPDATE_RPY_NO | UPDATE_SEQ_NO);
+
+		/* remove the message replied from outstanding list */
+		vortex_channel_remove_first_outstanding_msg_no (channel, vortex_frame_get_msgno (frame));
 		
 		break;
 	case VORTEX_FRAME_TYPE_ANS:
@@ -580,6 +540,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		/* is not a MSG frame type: update seqno */
 		vortex_channel_update_status_received (channel, 
 						       vortex_frame_get_content_size (frame), 
+						       0,
 						       UPDATE_SEQ_NO);
 		break;
 	case VORTEX_FRAME_TYPE_UNKNOWN:
@@ -1415,7 +1376,7 @@ axl_bool  vortex_reader_run (VortexCtx * ctx)
 
 	ctx->reader_queue                       = vortex_async_queue_new ();
 	ctx->reader_stopped                     = vortex_async_queue_new ();
-	ctx->reader_accept_msgno_startig_from_1 = axl_true;
+
 
 	/* create the vortex reader main thread */
 	if (! vortex_thread_create (&ctx->reader_thread, 
@@ -1516,79 +1477,6 @@ void vortex_reader_notify_change_done_io_api   (VortexCtx * ctx)
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "notification done..");
 
-	return;
-}
-
-/** 
- * @brief Makes the vortex reader to allow accepting the first message
- * over a channel with msgno=1.
- *
- * BEEP RFC3080 defines that every message sent over a channel have a
- * msgno value ranging from 0 up to 2^(31) - 1. This means that the
- * very first message sent over a channel should have a value 0 and
- * steps into the next value by one unit.
- *
- * However, to the previous rule there are one exception: the channel
- * 0. This administrative channel, that allows BEEP to control and
- * manage channels, do not ever send the message 0. This is because it
- * is implicit to the connection. 
- *
- * Once a BEEP peer is connected, the initial greeting is exchanged,
- * without waiting to a first message (with msgno=0) required to do
- * so. But this initial greeting is carried on a RPY message with
- * msgno=0. This creates a great confusion because every RPY message
- * should reply to a MSG message sent. 
- *
- * Thus, the first message exchanged under the channel 0 have a value
- * msgno=1 because the first message MSG with msgno=0 is never sent,
- * then an RPY with msgno=0 is sent (the initial greeting), and the
- * the next message to be exchanged is the msgno=1.
- *
- * Well, previous description is taken by some BEEP implementation to
- * be the normal situation for every channel. This is clearly
- * wrong. However, it is preferred to interop with other libraries
- * rather blame them (to interop is a lovely thing that should be
- * pursued, no one wins when blame occurs).
- *
- * By default, the library is configured to accept first messages
- * starting from msgno=1. You can also be strict and set a axl_false value
- * to this function.
- * 
- * @param ctx The context where the operation will be performed.
- *
- * @param value axl_true to allow messages received on a channel to start
- * with 1 rather than 0.
- */
-void vortex_reader_allow_msgno_starting_from_1 (VortexCtx * ctx, 
-						axl_bool    value)
-{
-	/* do not configure anything if a null value is received */
-	if (ctx == NULL)
-		return;
-
-	ctx->reader_accept_msgno_startig_from_1 = value;
-	return;
-}
-
-/**
- * @brief Allows to configure vortex reader to detect buggy BEEP peers
- * that reuse the msgno 0 over the channel 0, to send the first
- * message.
- *
- * This allows to interop with BEEP implementations that re-uses as
- * starting message the value 0 for channel 0. That is, they send MSG
- * 0 over channel 0, but that message number is actually used in reply
- * form at the greettings phase.
- *
- * @param ctx The context where this configuration will be applied.
- *
- * @param value axl_true to activate supporting buggy peers implementing
- * this behaviour. 
- */
-void vortex_reader_allow_channel0_starting_from_0 (VortexCtx * ctx, 
-						   axl_bool    value)
-{
-	ctx->reader_accept_reuse_msgno0_for_channel0 = value;
 	return;
 }
 

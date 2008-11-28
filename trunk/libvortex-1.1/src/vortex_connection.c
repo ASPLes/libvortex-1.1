@@ -4221,7 +4221,7 @@ void           __vortex_connection_set_not_connected (VortexConnection * connect
 	vortex_mutex_lock (&connection->op_mutex);
 
 	if (connection->is_connected) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "flagging the connection as non-connected");
+		vortex_log (VORTEX_LEVEL_DEBUG, "flagging the connection as non-connected: %s", message ? message : "");
 		connection->is_connected = axl_false;
 
 		/* renew the message */

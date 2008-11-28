@@ -202,6 +202,11 @@ void subs (struct timeval stop, struct timeval start, struct timeval * _result)
  */
 #define REGRESSION_URI_CLOSE_AFTER_ANS_NUL_REPLIES "http://iana.org/beep/transient/vortex-regression/close-after-ans-nul-replies"
 
+/**
+ * Profile that does nothing.
+ */
+#define REGRESSION_URI_NOTHING "http://iana.org/beep/transient/vortex-regression/nothing"
+
 /** 
  * @internal Allows to know if the connection must be created directly or
  * through the tunnel.
@@ -3621,6 +3626,217 @@ axl_bool  test_02m2 (void) {
 	return axl_true;
 }
 
+axl_bool  test_02n (void) {
+	VortexConnection  * connection;
+	VortexChannel     * channel;
+	VortexAsyncQueue  * queue;
+	VortexFrame       * frame;
+	int                 msg_no = 0;
+	int                 iterator;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+
+	/* create the queue */
+	queue   = vortex_async_queue_new ();
+
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return axl_false;
+	}
+
+	/* now perform tree sends operations */
+	if (! vortex_channel_send_msg_common (channel, "this is a test", 14, 5, &msg_no, NULL)) {
+		printf ("Failed to send message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* check msg no returned */
+	if (msg_no != 5) {
+		printf ("Expected to recevied another value for msg_no: %d != 5\n",
+			msg_no);
+		return axl_false;
+	}
+
+	/* now perform tree sends operations */
+	if (! vortex_channel_send_msg_common (channel, "this is a test", 14, 659, &msg_no, NULL)) {
+		printf ("Failed to send message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* check msg no returned */
+	if (msg_no != 659) {
+		printf ("Expected to recevied another value for msg_no: %d != 659\n",
+			msg_no);
+		return axl_false;
+	}
+
+	/* now perform tree sends operations */
+	if (! vortex_channel_send_msg_common (channel, "this is a test", 14, 3, &msg_no, NULL)) {
+		printf ("Failed to send message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* check msg no returned */
+	if (msg_no != 3) {
+		printf ("Expected to recevied another value for msg_no: %d != 3\n",
+			msg_no);
+		return axl_false;
+	}
+
+	/* wait for frames received */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL) {
+		printf ("Expected to receive reply to frame msgno 5..\n");
+		return axl_false;
+	} /* end if */
+	if (vortex_frame_get_msgno (frame) != 5) {
+		printf ("Expected to receive reply to frame msgno 5 but received: %d..\n",
+			vortex_frame_get_msgno (frame));
+		return axl_false;
+	} /* end if */
+	vortex_frame_unref (frame);
+
+	/* wait for frames received */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL) {
+		printf ("Expected to receive reply to frame msgno 659..\n");
+		return axl_false;
+	} /* end if */
+	if (vortex_frame_get_msgno (frame) != 659) {
+		printf ("Expected to receive reply to frame msgno 659 but received: %d..\n",
+			vortex_frame_get_msgno (frame));
+		return axl_false;
+	} /* end if */
+	vortex_frame_unref (frame);
+
+	/* wait for frames received */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL) {
+		printf ("Expected to receive reply to frame msgno 3..\n");
+		return axl_false;
+	} /* end if */
+	if (vortex_frame_get_msgno (frame) != 3) {
+		printf ("Expected to receive reply to frame msgno 3 but received: %d..\n",
+			vortex_frame_get_msgno (frame));
+		return axl_false;
+	} /* end if */
+	vortex_frame_unref (frame);
+
+	/* also check with large message with complete flag
+	 * disabled */
+	iterator = 0;
+
+	while (iterator < 10) {
+		/* send content with message number 0 */
+		if (! vortex_channel_send_msg_common (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), 0, &msg_no, NULL)) {
+			printf ("Failed to send message..\n");
+			return axl_false;
+		} /* end if */
+
+		if (msg_no != 0) {
+			printf ("Requested to perform send operation with 0 but found %d..\n", msg_no);
+			return axl_false;
+		}
+
+		/* wait for frames received */
+		frame = vortex_channel_get_reply (channel, queue);
+		if (frame == NULL) {
+			printf ("Expected to receive reply to frame msgno 3..\n");
+			return axl_false;
+		} /* end if */
+		if (vortex_frame_get_msgno (frame) != 0) {
+			printf ("Expected to receive reply to frame msgno 0 but received: %d..\n",
+				vortex_frame_get_msgno (frame));
+			return axl_false;
+		} /* end if */
+
+		/* check content */
+		if (! axl_cmp (vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE)) {
+			printf ("Expected to find test content but found something different..\n");
+			return axl_false;
+		} /* end if */
+
+		vortex_frame_unref (frame);
+
+		/* next iterator */
+		iterator++;
+
+	} /* end while */
+
+	/* ok, close the channel */
+	vortex_channel_close (channel, NULL);
+
+	/* ok, close the connection */
+	vortex_connection_close (connection);
+
+	/* free queue */
+	vortex_async_queue_unref (queue);
+
+	/* now open a channel and check connection broken if reused a
+	 * msg no that wasn't replied */
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_NOTHING,
+				      /* no close handler */
+				      NULL, NULL,
+				      /* no frame received */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Failed to create nothing channel..\n");
+		return axl_false;
+	} /* end if */
+
+	/* perform two send operations to force connection broken */
+	if (! vortex_channel_send_msg_common (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), 0, &msg_no, NULL)) {
+		printf ("Failed to send message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* perform two send operations to force connection broken */
+	if (! vortex_channel_send_msg_common (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), 0, &msg_no, NULL)) {
+		printf ("Failed to send message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* wait a bit */
+	queue = vortex_async_queue_new ();
+	vortex_async_queue_timedpop (queue, 10000);
+	vortex_async_queue_unref (queue);
+
+	/* check connection */
+	if (vortex_connection_is_ok (connection, axl_false)) {
+		printf ("Expected to find a failure in the connection after reunsing MSG numbers not replied..\n");
+		return axl_false;
+	} /* end if */
+
+	vortex_connection_close (connection);
+
+	/* return axl_true */
+	return axl_true;
+}
 
 /** 
  * @brief Checks BEEP support to send large messages that goes beyond
@@ -5458,6 +5674,14 @@ axl_bool  test_11 (void)
 				      /* no async channel creation */
 				      NULL, NULL);
 
+	if (channel == NULL) {
+		printf ("Failed to create channel..\n");
+		return axl_false;
+	}
+
+	/* set serialize */
+	vortex_channel_set_serialize (channel, axl_true);
+
 	/* send a message to activate the test, then the listener will
 	 * ack it and send three messages that will be replied in
 	 * wrong other. */
@@ -5468,12 +5692,17 @@ axl_bool  test_11 (void)
 		
 		/* get the reply and unref */
 		frame = vortex_channel_get_reply (channel, queue);
-		if (frame == NULL || vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
-			printf ("Test 11: failed, expected to find reply defined or to be RPY..\n");
+		if (frame == NULL) {
+			printf ("Test 11: failed, expected to find reply but NULL received..\n");
+			return axl_false;
+		}
+		if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
+			printf ("Test 11: failed, expected to find RPY reply defined but received: %d, content: (length: %d) '%s'..\n",
+				vortex_frame_get_type (frame), vortex_frame_get_payload_size (frame), (char*) vortex_frame_get_payload (frame));
 			return axl_false;
 		} /* end if */
 		vortex_frame_unref (frame);
-		
+
 		/* Test 11: test in progress... */
 		
 		/* ask for all replies */
@@ -6216,10 +6445,10 @@ int main (int  argc, char ** argv)
 	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, \n");
 	printf ("**                       test_02, test_02a, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
- 	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_03, test_03a, \n");
- 	printf ("**                       test_04, test_04a, test_04b, test_04c, test_05, test_05a, \n");
- 	printf ("**                       test_06, test_07, test_08, test_09, test_10, test_11, test_12, \n");
- 	printf ("**                       test_13\n");
+ 	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_03, \n");
+ 	printf ("**                       test_03a, test_04, test_04a, test_04b, test_04c, test_05, \n");
+ 	printf ("**                       test_05a, test_06, test_07, test_08, test_09, test_10, test_11, \n");
+ 	printf ("**                       test_12, test_13\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -6363,6 +6592,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_02m2"))
 			run_test (test_02m2, "Test 02-m2", "Dealloc pending queued replies on connection shutdown.", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_02n"))
+			run_test (test_02n, "Test 02-n", "Checking MSG number reusing", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_03"))
 			run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
 
@@ -6476,6 +6708,8 @@ int main (int  argc, char ** argv)
 	run_test (test_02m1, "Test 02-m1", "Transfer with big frame sizes.", -1, -1);
 
   	run_test (test_02m2, "Test 02-m2", "Dealloc pending queued replies on connection shutdown.", -1, -1);
+
+ 	run_test (test_02n, "Test 02-n", "Checking MSG number reusing", -1, -1);
 
  	run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
   

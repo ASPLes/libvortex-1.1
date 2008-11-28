@@ -361,6 +361,7 @@ axl_bool            vortex_greetings_is_reply_ok    (VortexFrame      * frame, V
 	channel = vortex_connection_get_channel (connection, 0);
 	vortex_channel_update_status_received (channel, 
 					       vortex_frame_get_content_size (frame),
+					       0,
 					       UPDATE_SEQ_NO | UPDATE_RPY_NO);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "greetings frame header specification is ok");
