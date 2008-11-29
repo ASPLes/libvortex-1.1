@@ -3626,6 +3626,105 @@ axl_bool  test_02m2 (void) {
 	return axl_true;
 }
 
+axl_bool test_02n_check_sequence (VortexChannel * channel, VortexAsyncQueue * queue, 
+				  int first, int second, int third, int fourth)
+{
+	int           msg_no   = -1;
+	int           msg_no_used;
+	int           iterator = 0;
+	VortexFrame * frame;
+
+	/* do sends operations */
+	while (iterator < 4) {
+		/* select next message number to use */
+		msg_no = -1;
+		switch (iterator) {
+		case 0:
+			if (first >= 0)
+				msg_no = first;
+			break;
+		case 1:
+			if (second >= 0)
+				msg_no = second;
+			break;
+		case 2:
+			if (third >= 0)
+				msg_no = third;
+			break;
+		case 3:
+			if (fourth >= 0)
+				msg_no = fourth;
+			break;
+		}
+
+		/* no next send operation */
+		if (msg_no == -1)
+			break;
+
+		/* perform send operation */
+		if (! vortex_channel_send_msg_common (channel, "this is a test", 14, msg_no, &msg_no_used, NULL)) {
+			printf ("Failed to send message..\n");
+			return axl_false;
+		} /* end if */
+	
+		if (msg_no_used != msg_no) {
+			printf ("Requested to perform send operation with %d but found %d..\n", msg_no, msg_no_used);
+			return axl_false;
+		}
+		printf ("Test 02-n: sent message with msgno %d..\n", msg_no);
+
+		/* next iterator */
+		iterator++;
+	} /* end if */
+	
+	/* receive replies */
+	iterator = 0;
+	while (iterator < 4) {
+		/* select next message number to use */
+		msg_no = -1;
+		switch (iterator) {
+		case 0:
+			if (first >= 0)
+				msg_no = first;
+			break;
+		case 1:
+			if (second >= 0)
+				msg_no = second;
+			break;
+		case 2:
+			if (third >= 0)
+				msg_no = third;
+			break;
+		case 3:
+			if (fourth >= 0)
+				msg_no = fourth;
+			break;
+		}
+
+		/* no next receive operation */
+		if (msg_no == -1)
+			break;
+
+		frame = vortex_channel_get_reply (channel, queue);
+		if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
+			printf ("Expected to receive RPY type to message no 0..\n");
+			return axl_false;
+		}
+		if (vortex_frame_get_msgno (frame) != msg_no) {
+			printf ("Expected to receive RPY message with msgno equal to %d, but received: %d..\n",
+				msg_no, vortex_frame_get_msgno (frame));
+			return axl_false;
+		}
+		vortex_frame_unref (frame);
+		printf ("Test 02-n: received message with msgno %d..\n", msg_no);
+
+		/* next iterator */
+		iterator++;
+	} /* end if */
+	
+	return axl_true;
+}
+
 axl_bool  test_02n (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
@@ -3776,6 +3875,27 @@ axl_bool  test_02n (void) {
 		iterator++;
 
 	} /* end while */
+
+	/**** now test message numbers sequence 0,1 ****/
+	printf ("Test 02-n: check msg no sequence 0,1,2...\n");
+	if (! test_02n_check_sequence (channel, queue, 0, 1, 2, -1))
+		return axl_false;
+
+	printf ("Test 02-n: check msg no sequence 1,2,3...\n");
+	if (! test_02n_check_sequence (channel, queue, 1, 2, 3, -1))
+		return axl_false;
+	
+	printf ("Test 02-n: check msg no sequence 2147483646, 2147483647, 0, 1...\n");
+	if (! test_02n_check_sequence (channel, queue, 2147483646, 2147483647, 0, 1))
+		return axl_false;
+
+	printf ("Test 02-n: check msg no sequence 7,5,3,1...\n");
+	if (! test_02n_check_sequence (channel, queue, 7,5,3,1))
+		return axl_false;
+
+	printf ("Test 02-n: check msg no sequence 1, 0, 2147483647, 2147483646...\n");
+	if (! test_02n_check_sequence (channel, queue, 1, 0, 2147483647, 2147483646))
+		return axl_false;
 
 	/* ok, close the channel */
 	vortex_channel_close (channel, NULL);
