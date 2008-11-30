@@ -1394,6 +1394,10 @@ int             vortex_channel_get_next_msg_no (VortexChannel * channel)
 	if (channel == NULL)
 		return -1;
 
+	/* reset proposed next message number if reached limit */
+	if (channel->last_message_sent == MAX_MSG_NO)
+		channel->last_message_sent = -1;
+
 	return channel->last_message_sent + 1;
 }
 
