@@ -534,12 +534,12 @@ char  * exarg_strdup_printfv    (char * chunk, va_list args)
 
 	/* check result */
 	if (size == -1) {
-		__axl_log (LOG_DOMAIN, AXL_LEVEL_CRITICAL, "unable to calculate the amount of memory for the strdup_printf operation");
+		printf ("error: unable to calculate the amount of memory for the strdup_printf operation");
 		return NULL;
 	} /* end if */
 
 	/* allocate memory */
-	result   = axl_new (char, size + 2);
+	result   = exarg_new (char, size + 2);
 	
 	/* copy current size */
 #if defined(OS_WIN32) && ! defined (__GNUC__)
