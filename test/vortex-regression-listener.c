@@ -179,6 +179,11 @@
  */
 #define REGRESSION_URI_NOTHING "http://iana.org/beep/transient/vortex-regression/nothing"
 
+/**
+ * Profile that allows to check seqno limits.
+ */
+#define REGRESSION_URI_SEQNO_EXCEEDED "http://iana.org/beep/transient/vortex-regression/seqno-exceeded"
+
 void frame_received_fake_listeners  (VortexChannel    * channel,
 				     VortexConnection * connection,
 				     VortexFrame      * frame,
@@ -1073,7 +1078,50 @@ void send_ans_replies_and_close (VortexChannel    * channel,
 
 	return;
 }
-				 
+
+void frame_seqno_exceeded (VortexChannel    * channel,
+			   VortexConnection * connection,
+			   VortexFrame      * frame,
+			   axlPointer           user_data)
+{
+
+	if (axl_cmp (vortex_frame_get_payload (frame), "first message")) {
+		/* assume we have received until now 2GB - 4096 bytes = 2147479552 */
+		printf ("Test 02-o: simulating content received until now: 2147479552..\n");
+		/* we remove 15 from the amount of data "received"
+		 * because the following function also takes into
+		 * account data received until now (which is 13 bytes
+		 * "first message" + 2 bytes due to MIME headers. So,
+		 * to fully simulate we have received 2147479552 bytes
+		 * we have to reduce the value passed to the function
+		 * in 15 units. */
+		vortex_channel_update_status_received (channel, (unsigned int) 2147479552 - 15, 0, UPDATE_SEQ_NO);
+		vortex_channel_send_rpy (channel, "first message", 13, vortex_frame_get_msgno (frame));
+		return;
+	} else if (axl_cmp (vortex_frame_get_payload (frame), "second message")) {
+		/* assume we have received until now 4GB - 4096 bytes = 4294963200 */
+		printf ("Test 02-o: simulating content received until now: 4294963200..\n");
+		/* we have received until now: 2147479552 + 4096 + 4096 = 2147487744 
+		 * So, to simulate we have received 4294963200 we need to provide the following value: 
+		 * 4294963200 - 2147487744 - (20= = 2147475456 
+		 * (20) value comes from: 14 + 2 ("second message" +
+		 * mime headers) and 2 mime headers added to previous
+		 * messages (2 +2) */
+		vortex_channel_update_status_received (channel, (unsigned int) 2147475436, 0, UPDATE_SEQ_NO);
+		vortex_channel_send_rpy (channel, "second message", 14, vortex_frame_get_msgno (frame));
+		vortex_channel_set_max_seq_no_accepted (channel, MAX_SEQ_NO);
+		return;
+	} /* end if */
+
+	/* normal message, reply same content as received */
+	printf ("Test 02-o: replying same content as received..\n");
+	vortex_channel_send_rpy (channel, 
+				 /* payload received */
+				 vortex_frame_get_payload (frame), vortex_frame_get_payload_size (frame), 
+				 vortex_frame_get_msgno (frame));
+	return;
+}
+
 
 axl_bool  start_channel_connection (int                channel_num, 
 				    VortexConnection * connection,
@@ -1284,6 +1332,14 @@ int main (int  argc, char ** argv)
 				  NULL, NULL,
 				  /* default frame */
 				  NULL, NULL);
+
+	/* register nothing profile */
+	vortex_profiles_register (ctx, REGRESSION_URI_SEQNO_EXCEEDED,
+				  /* default start and cloes handlers */
+				  NULL, NULL,
+				  NULL, NULL,
+				  /* default frame */
+				  frame_seqno_exceeded, NULL);
 
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */

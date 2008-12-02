@@ -93,13 +93,14 @@ struct _VortexChannel {
 	int                     last_reply_delivered;
 	int                     last_msg_delivered;
 	int                     last_ans_delivered;
-	int                     last_ans_seqno_delivered;
+	unsigned int            last_ans_seqno_delivered;
 
-	int                     last_seq_no;
-	int                     last_seq_no_expected;
+	unsigned int            last_seq_no;
+	unsigned int            last_seq_no_expected;
 
-	int                     max_seq_no_accepted;
-	int                     max_seq_no_remote_accepted;
+	unsigned int            max_seq_no_accepted;
+	unsigned int            max_seq_no_remote_accepted;
+	axl_bool                seq_no_exceeded_after_update;
 	axlList               * pending_messages;
 
 	int                     last_ansno_sent;
@@ -1985,7 +1986,7 @@ int             vortex_channel_get_number (VortexChannel * channel)
  * @param frame_size The frame size of the frame sent.
  * @param update     What values to update
  */
-void vortex_channel_update_status (VortexChannel * channel, int  frame_size, int msg_no, WhatUpdate update)
+void vortex_channel_update_status (VortexChannel * channel, unsigned int  frame_size, int msg_no, WhatUpdate update)
 {
 	/* get a reference */
 #if defined(ENABLE_VORTEX_LOG)
@@ -2026,7 +2027,7 @@ void vortex_channel_update_status (VortexChannel * channel, int  frame_size, int
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, 
- 		    "updating channel %d sending status to: msgno=%d, rpyno-sent=%d, rpyno-written=%d seqno=%d, ansno=%d..",
+		    "updating channel %d sending status to: msgno=%d, rpyno-sent=%d, rpyno-written=%d seqno=%u, ansno=%d..",
  		    channel->channel_num, channel->last_message_sent, channel->last_message_sent, 
  		    channel->last_reply_written, channel->last_seq_no, channel->last_ansno_sent);
 
@@ -2048,7 +2049,7 @@ void vortex_channel_update_status (VortexChannel * channel, int  frame_size, int
  * @param update what parts of the channel status to update.
  */
 void vortex_channel_update_status_received (VortexChannel * channel, 
-					    int             frame_size,
+					    unsigned int    frame_size,
 					    int             msg_no,
 					    WhatUpdate      update)
 {
@@ -2087,7 +2088,7 @@ void vortex_channel_update_status_received (VortexChannel * channel,
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, 
-		    "updating channel receiving status to: msgno=%d, rpyno=%d, seqno=%d, ansno=%d..",
+ 		    "updating channel receiving status to: msgno=%d, rpyno=%d, seqno=%u, ansno=%d..",
 		    channel->last_message_received, 
  		    channel->last_reply_received, 
  		    channel->last_seq_no_expected, 
@@ -3055,6 +3056,20 @@ unsigned int      vortex_channel_get_next_seq_no (VortexChannel * channel)
 	return channel->last_seq_no;
 }
 
+/**
+ * @internal Function that allows to configure next seq no value to be
+ * used for the next send operation. This function must be not be
+ * used.
+ * @param channel The channel to configure.
+ * @param next_seq_no The seq no value to use on the next send operation.
+ */
+void              vortex_channel_set_next_seq_no (VortexChannel * channel, 
+						  unsigned int    next_seq_no)
+{
+	channel->last_seq_no = next_seq_no;
+	return;
+}
+
 /** 
  * @brief Returns actual channel window size.
  *
@@ -3219,19 +3234,33 @@ int       vortex_channel_get_automatic_mime      (VortexChannel * channel)
  * the current buffer size to be accepted.
  */
 void vortex_channel_update_remote_incoming_buffer (VortexChannel * channel, 
-						   VortexFrame   * frame)
+ 						   unsigned        ackno,
+ 						   unsigned        window)
 {
-	int          new_size;
+	unsigned int   new_size;
 #if defined(ENABLE_VORTEX_LOG)
-	VortexCtx  * ctx     = vortex_channel_get_ctx (channel);
+	VortexCtx    * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
 	/* check reference */
-	if (channel == NULL || frame == NULL)
+	if (channel == NULL)
 		return;
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "Received SEQ frame update operation: channel=%d ackno=%d window=%d",
-	       vortex_frame_get_channel (frame), vortex_frame_get_seqno (frame), vortex_frame_get_content_size (frame));
+ 	vortex_log (VORTEX_LEVEL_DEBUG, "Received SEQ frame update operation: channel=%d ackno=%u window=%u",
+ 		    vortex_channel_get_number (channel), ackno, window);
+  
+ 	/* do some checks */
+ 	if ( (ackno + window -1) <= channel->max_seq_no_remote_accepted) {
+ 		vortex_log (VORTEX_LEVEL_CRITICAL, 
+ 			    "Received a SEQ frame specifying a new seq no maximum value (%u = %u + %u) that is smaller than the max seq no stored (%u), protocol violation",
+ 			    (ackno + window -1), ackno, window,
+ 			    channel->max_seq_no_remote_accepted);
+ 		__vortex_connection_set_not_connected (
+			vortex_channel_get_connection (channel), 
+			"Received a SEQ frame specifying a new seq no maximum value that is smaller than the max seq no stored, protocol violation",
+			VortexProtocolError);
+ 		return;
+ 	}
 
 	/* The following two function gets the ackno value and the
 	 * window value from the SEQ frame received:
@@ -3255,26 +3284,34 @@ void vortex_channel_update_remote_incoming_buffer (VortexChannel * channel,
 	 * So, the maximum seqno value to be accepted for the remote
 	 * side is the sum of the ackno value plus the window size
 	 * minus one octet. */
-	new_size = vortex_frame_get_seqno (frame) + vortex_frame_get_content_size (frame) -1;
-
-	if (new_size <= channel->max_seq_no_remote_accepted) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, 
-		       "Received a SEQ frame specifying a new seq no maximum value (%d = %d + %d) that is smaller than the max seq no stored (%d), protocol violation",
-		       new_size, vortex_frame_get_seqno (frame), 
-		       vortex_frame_get_content_size (frame),
-		       channel->max_seq_no_remote_accepted);
-		__vortex_connection_set_not_connected (vortex_channel_get_connection (channel), 
-						       "Received a SEQ frame specifying a new seq no maximum value that is smaller than the max seq no stored, protocol violation",
-						       VortexProtocolError);
-		return;
-	}
-
-	vortex_log (VORTEX_LEVEL_DEBUG, "received SEQ frame, updated maximum seq no allowed from %d to %d",
-	       channel->max_seq_no_remote_accepted, new_size);
-	channel->max_seq_no_remote_accepted = new_size % (MAX_SEQ_NO);
+ 	new_size = (ackno + window -1) % (MAX_SEQ_NO);
+  
+ 	vortex_log (VORTEX_LEVEL_DEBUG, "received SEQ frame, updated maximum seq no allowed from %u to %u",
+  		    channel->max_seq_no_remote_accepted, new_size);
+ 	/* update size allowed */
+ 	channel->max_seq_no_remote_accepted = new_size;
+ 
+ 	/* update seq_no_exceeded_after_update */
+ 	channel->seq_no_exceeded_after_update = (new_size < (ackno + window - 1));
+ 
 	return;
 }
 
+/**
+ * @internal Function that allows to check if the seq no value was
+ * exceeded after a SEQ update received.
+ *
+ * @param channel The channel to check.
+ *
+ * @return axl_true if the channel allowed seq no was exceeded after a
+ * SEQ update, otherwise axl_false is returned.
+ */
+axl_bool vortex_channel_seq_no_exceeded_after_update (VortexChannel * channel)
+{
+	/* get current vaule */
+	return channel->seq_no_exceeded_after_update;
+}	
+	
 /** 
  * @internal
  *
@@ -3293,7 +3330,7 @@ void vortex_channel_update_remote_incoming_buffer (VortexChannel * channel,
  * 
  * @return Current max sequence number to be accepted.
  */
-int  vortex_channel_get_max_seq_no_remote_accepted (VortexChannel * channel)
+unsigned int  vortex_channel_get_max_seq_no_remote_accepted (VortexChannel * channel)
 {
 	/* check reference */
 	if (channel == NULL)
@@ -3329,9 +3366,9 @@ int  vortex_channel_get_max_seq_no_remote_accepted (VortexChannel * channel)
  * received is NULL.
  */
 int                vortex_channel_get_next_frame_size         (VortexChannel * channel,
-							       int             next_seq_no,
+							       unsigned int    next_seq_no,
 							       int             message_size,
-							       int             max_seq_no)
+							       unsigned int    max_seq_no)
 {
 	/* get current context */
 	VortexCtx   * ctx = vortex_channel_get_ctx (channel);
@@ -3428,12 +3465,12 @@ VortexChannelFrameSize  vortex_channel_set_next_frame_size_handler (VortexChanne
  */
 axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel, 
 						     VortexFrame   * frame,
-						     int           * ackno,
+						     unsigned int  * ackno,
 						     int           * window)
 {
-	int         new_max_seq_no_accepted;
-	int         consumed_seqno;
-	int         window_size;
+ 	unsigned int new_max_seq_no_accepted;
+ 	unsigned int consumed_seqno;
+ 	int          window_size;
 	VortexCtx * ctx     = vortex_channel_get_ctx (channel);
 
 	if (channel == NULL || frame == NULL)
@@ -3490,13 +3527,15 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 /*	if ((new_max_seq_no_accepted - channel->max_seq_no_accepted) < (window_size / 2)) { */
  	if ((consumed_seqno - (channel->max_seq_no_accepted - window_size)) < (window_size / 2)) {
  		if (vortex_log_is_enabled (ctx)) {
- 			vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: not updated, already not consumed half of window advertised: %d < (%d / 2)",
+ 			vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: not updated, already not consumed half of window advertised: %u < (%u / 2)",
  				    (consumed_seqno - (channel->max_seq_no_accepted - window_size)), window_size);
+			vortex_log (VORTEX_LEVEL_DEBUG, "           channel=%d, ",
+ 				    channel->channel_num);
  			vortex_log (VORTEX_LEVEL_DEBUG, "           frame-content-size=%d, frame-payload-size=%d, ",
  				    vortex_frame_get_content_size (frame), vortex_frame_get_payload_size (frame));
- 			vortex_log (VORTEX_LEVEL_DEBUG, "           window_size=%d, consumed_seqno=%d, new_max_seq_no_accepted=%d",
+ 			vortex_log (VORTEX_LEVEL_DEBUG, "           window_size=%d, consumed_seqno=%u, new_max_seq_no_accepted=%u",
  				    window_size, consumed_seqno, new_max_seq_no_accepted);
- 			vortex_log (VORTEX_LEVEL_DEBUG, "           max_seq_no_accepted=%d",
+ 			vortex_log (VORTEX_LEVEL_DEBUG, "           max_seq_no_accepted=%u",
  				    channel->max_seq_no_accepted);
  		} /* end if */
 		goto not_update;
@@ -3515,7 +3554,7 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
  		/* if the client wants to change the channel window
  		 * size, do so now */
  		if (window_size != channel->desired_window_size) {
- 			vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: Changing window size from %d to %d",
+ 			vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: Changing window size from %u to %u",
  				    window_size,channel->desired_window_size);
  			window_size             = channel->desired_window_size;
  			channel->window_size    = window_size;
@@ -3523,7 +3562,7 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
  		}
 
 		vortex_log (VORTEX_LEVEL_DEBUG, 
- 			    "SEQ FRAME: updating allowed max seq no to be received from %d to %d (delta: %d, ackno: %d, window_size: %d)",
+ 			    "SEQ FRAME: updating allowed max seq no to be received from %u to %u (delta: %u, ackno: %u, window_size: %d)",
   			    channel->max_seq_no_accepted, new_max_seq_no_accepted, 
  			    (new_max_seq_no_accepted - channel->max_seq_no_accepted), consumed_seqno, window_size);
 
@@ -3535,7 +3574,7 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 		(* window ) = window_size;
 		return axl_true;
 	}
-	vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: not updating current max seq values: new max seq no: %d < max seq no: %d",
+	vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: not updating current max seq values: new max seq no: %u < max seq no: %u",
 	       new_max_seq_no_accepted, channel->max_seq_no_accepted);
  not_update:
 	(* ackno  )  = -1;
@@ -3553,13 +3592,20 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
  * 
  * @return The maximum sequence number.
  */
-int  vortex_channel_get_max_seq_no_accepted (VortexChannel * channel)
+unsigned int  vortex_channel_get_max_seq_no_accepted (VortexChannel * channel)
 {
-	/* check reference */
-	if (channel == NULL)
-		return -1;
-
 	return channel->max_seq_no_accepted;
+}
+
+/**
+ * @internal API that allows to control which is the max seq no that
+ * will accept the provided channel for incoming data.
+ */
+void          vortex_channel_set_max_seq_no_accepted (VortexChannel * channel, 
+						      unsigned int    seq_no)
+{
+	channel->max_seq_no_accepted = seq_no;
+	return;
 }
 
 /** 

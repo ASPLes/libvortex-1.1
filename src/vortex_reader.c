@@ -140,7 +140,8 @@ axl_bool      __vortex_reader_update_incoming_buffer_and_notify (VortexCtx      
 
 
 	VortexChannel     * channel0;
-	int                 ackno, window;
+	unsigned int        ackno;
+	int                 window;
 	VortexWriterData    writer;
 
 	/* now, we have to update current incoming max seq no allowed
@@ -380,14 +381,14 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		/* manage incoming SEQ frames, check if the received
 		 * ackno value is inside the seqno range for bytes
 		 * already sent. */
-		vortex_log (VORTEX_LEVEL_DEBUG, "received a SEQ frame: SEQ %d %d %d",
+		vortex_log (VORTEX_LEVEL_DEBUG, "received a SEQ frame: SEQ %d %u %d",
 		       vortex_frame_get_channel (frame), vortex_frame_get_seqno (frame),
 		       vortex_frame_get_payload_size (frame));
 
 		if (vortex_frame_get_seqno (frame) > vortex_channel_get_next_seq_no (channel)) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
-			       "received a SEQ frame specifying a seqno reference value that wasn't used (ackno: %d > max seq no sent: %d)",
-			       vortex_frame_get_seqno (frame), vortex_channel_get_next_seq_no (channel));
+				    "received a SEQ frame specifying a seqno reference value that wasn't used (ackno: %u > max seq no sent: %u)",
+				    vortex_frame_get_seqno (frame), vortex_channel_get_next_seq_no (channel));
 			
 			__vortex_connection_set_not_connected (connection, 
 							       "received a SEQ frame specifying a seqno reference value that wasn't used",
@@ -412,7 +413,11 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		
 		/* update information about the buffer state of the
 		 * remote peer for the given channel */
-		vortex_channel_update_remote_incoming_buffer (channel, frame);
+		vortex_channel_update_remote_incoming_buffer (channel, 
+							      /* ackno */
+							      vortex_frame_get_seqno (frame), 
+							      /* window */
+							      vortex_frame_get_content_size (frame)); 
 
 		/* unref the SEQ frame because it is no longer
 		 * needed */
@@ -435,7 +440,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	    vortex_frame_get_seqno (frame)) {
 
 		/* drop a log */
-		vortex_log (VORTEX_LEVEL_CRITICAL, "expected seq no %d for channel=%d, connection-id=%d wasn't found, received %d",
+		vortex_log (VORTEX_LEVEL_CRITICAL, "expected seq no %u for channel=%d, connection-id=%d wasn't found, received %u",
 			    vortex_channel_get_next_expected_seq_no (channel),
 			    vortex_channel_get_number (channel),
 			    vortex_connection_get_id (connection),
@@ -467,9 +472,9 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	if ((vortex_frame_get_seqno (frame) + vortex_frame_get_content_size (frame) - 1) > 
 	    vortex_channel_get_max_seq_no_accepted (channel)) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
-		       "Protocol violation, received a frame larger than the maximum buffer expected, your session will be closed (seq no: %d + size: %d > max seq no: %d",
-		       vortex_frame_get_seqno (frame), vortex_frame_get_content_size (frame),
-		       vortex_channel_get_max_seq_no_accepted (channel));
+			    "Protocol violation, received a frame larger than the maximum buffer expected, your session will be closed (seq no: %u + size: %d) > max seq no: %u",
+			    vortex_frame_get_seqno (frame), vortex_frame_get_content_size (frame),
+			    vortex_channel_get_max_seq_no_accepted (channel));
 		__vortex_connection_set_not_connected (connection,
 						       "Protocol violation, received a frame larger than the maximum buffer expected, your session will be closed",
 						       VortexProtocolError);

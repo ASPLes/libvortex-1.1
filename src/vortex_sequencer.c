@@ -121,9 +121,9 @@ void __vortex_sequencer_unref_and_clear (VortexConnection    * connection,
  */
 void vortex_sequencer_queue_message_and_update_status (VortexCtx            * ctx,
 						       VortexSequencerData ** _data, 
-						       int                    size_to_copy,
-						       int                    max_seq_no,
-						       int                    resequence, 
+						       unsigned int           size_to_copy,
+						       unsigned int           max_seq_no,
+						       axl_bool               resequence, 
 						       int                  * keep_on_sending)
 {
 	VortexSequencerData * data = (*_data);
@@ -137,13 +137,13 @@ void vortex_sequencer_queue_message_and_update_status (VortexCtx            * ct
 	data->step          = data->step         + size_to_copy;
 	
 	/* make next seq no value to point to the next byte to send */
-	data->first_seq_no  = data->first_seq_no + size_to_copy;
+	data->first_seq_no  = (data->first_seq_no + size_to_copy) % (MAX_SEQ_NO);
 	
 	/* make message size to be decreased the amount of bytes sent. */
 	data->message_size  = data->message_size - size_to_copy;
 	
 	vortex_log (VORTEX_LEVEL_DEBUG, 
-		    "updating message sequencing status: next seq no=%d max seq no accepted=%d message size=%d step=%d",
+		    "updating message sequencing status: next seq no=%u max seq no accepted=%u message size=%d step=%u",
 		    data->first_seq_no, max_seq_no, data->message_size, data->step);
 	
 	/* check if we can send more data */
@@ -199,10 +199,10 @@ void vortex_sequencer_queue_message_and_update_status (VortexCtx            * ct
  * @return axl_true if the channel is stalled and the message was stored,
  * otherwise the loop can continue with the delivery of this message.
  */
-int  vortex_sequencer_if_channel_stalled_queue_message (VortexCtx           * ctx,
-							VortexConnection    * connection, 
-							VortexSequencerData * data, 
-							int                   resequence)
+axl_bool  vortex_sequencer_if_channel_stalled_queue_message (VortexCtx           * ctx,
+							     VortexConnection    * connection, 
+							     VortexSequencerData * data, 
+							     axl_bool              resequence)
 {
 	/**    
 	 * We need to check that remote buffer is willing to
@@ -211,9 +211,18 @@ int  vortex_sequencer_if_channel_stalled_queue_message (VortexCtx           * ct
 	 * signaling that more bytes could be sent.
 	 */
 	if (data->first_seq_no >= vortex_channel_get_max_seq_no_remote_accepted (data->channel)) {
+
+ 		/* check if channel max seq no allowed was rounded due
+ 		 * to exceeded 4GB size after a SEQ update  */
+ 		if (vortex_channel_seq_no_exceeded_after_update (data->channel)) {
+ 			vortex_log (VORTEX_LEVEL_DEBUG, 
+ 				    "found channel allowed SEQ no exceeded after update: allowed seq-no=%u, next seq-no to use: %u (not stalled)",
+ 				    vortex_channel_get_max_seq_no_remote_accepted (data->channel), data->first_seq_no);
+ 			return axl_false; /* not stalled */
+ 		}
 		
 		vortex_log (VORTEX_LEVEL_DEBUG, 
-			    "Seems that the next seq number to use is greater or equal than max seq no (%d >= %d), which means that this channel (%d) is stalled",
+ 			    "Seems that the next seq number to use is greater or equal than max seq no (%u >= %u), which means that this channel (%d) is stalled",
 			    data->first_seq_no, 
 			    vortex_channel_get_max_seq_no_remote_accepted (data->channel), 
 			    vortex_channel_get_number (data->channel));
@@ -244,17 +253,26 @@ int  vortex_sequencer_if_channel_stalled_queue_message (VortexCtx           * ct
 
 int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * channel, VortexSequencerData * data, VortexWriterData * packet)
 {
-	int         size_to_copy;
+ 	int          size_to_copy;
+ 	unsigned int max_seq_no_accepted = vortex_channel_get_max_seq_no_remote_accepted (channel);
+  
+ 	if (vortex_channel_seq_no_exceeded_after_update (channel)) {
+ 		/* if SEQ no was exceeded, only allow until allowed
+ 		 * limit, at least, for this send operation */
+ 		max_seq_no_accepted = MAX_SEQ_NO;
+ 	} 
 
 	/* calculate how many bytes to copy from the payload
 	 * according to max_seq_no */
 	size_to_copy = vortex_channel_get_next_frame_size (channel,  
 							   data->first_seq_no, 
 							   data->message_size, 
-							   vortex_channel_get_max_seq_no_remote_accepted (channel));
+ 							   max_seq_no_accepted);
 	
 	vortex_log (VORTEX_LEVEL_DEBUG, "the channel is not stalled, continue with sequencing, about to send (size_to_copy:%d) bytes as payload (buffer:%d)...",
  		    size_to_copy, ctx->sequencer_send_buffer_size);
+ 	vortex_log (VORTEX_LEVEL_DEBUG, "channel remote max seq no accepted: %u (proposed: %u)...",
+ 		    vortex_channel_get_max_seq_no_remote_accepted (channel), max_seq_no_accepted);
 	
 	/* create the new package to be managed by the vortex writer */
 	packet->type         = data->type;
@@ -277,7 +295,7 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
  	} /* end if */
 	
 	/* we have the payload on buffer */
-	vortex_log (VORTEX_LEVEL_DEBUG, "sequencing next message: type=%d, channel num=%d, msgno=%d, more=%d, next seq=%d size=%d ansno=%d",
+	vortex_log (VORTEX_LEVEL_DEBUG, "sequencing next message: type=%d, channel num=%d, msgno=%d, more=%d, next seq=%u size=%d ansno=%d",
 		    data->type, data->channel_num, data->msg_no, !(data->message_size == size_to_copy), 
 		    data->first_seq_no, size_to_copy, data->ansno);
 
@@ -355,7 +373,7 @@ axl_bool vortex_sequencer_previous_pending_messages (VortexCtx            * ctx,
 		/* stop if the channel is stalled */
 		if ((*data)->first_seq_no >= vortex_channel_get_max_seq_no_remote_accepted (channel)) {
 			vortex_log (VORTEX_LEVEL_DEBUG, 
-				    "channel=%d is still stalled (seqno: %d, allowed seqno: %d), queued message for future delivery",
+ 				    "channel=%d is still stalled (seqno: %u, allowed seqno: %u), queued message for future delivery",
 				    vortex_channel_get_number (channel), 
 				    (*data)->first_seq_no, vortex_channel_get_max_seq_no_remote_accepted (channel));
 			/* unref the connection, we
@@ -534,7 +552,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		max_seq_no      = vortex_channel_get_max_seq_no_remote_accepted (channel);
 		keep_on_sending = axl_false;
 
- 		vortex_log (VORTEX_LEVEL_DEBUG, "sequence operation (%p): type=%d, msgno=%d, next seq no=%d message size=%d max seq no=%d step=%d",
+ 		vortex_log (VORTEX_LEVEL_DEBUG, "sequence operation (%p): type=%d, msgno=%d, next seq no=%u message size=%d max seq no=%u step=%u",
  			    data, data->type, data->msg_no, next_seq_no, message_size, max_seq_no, data->step);
   		
  		/* check if the channel is stalled and queue the
