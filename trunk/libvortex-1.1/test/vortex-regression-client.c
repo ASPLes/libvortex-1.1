@@ -207,6 +207,11 @@ void subs (struct timeval stop, struct timeval start, struct timeval * _result)
  */
 #define REGRESSION_URI_NOTHING "http://iana.org/beep/transient/vortex-regression/nothing"
 
+/**
+ * Profile that allows to check seqno limits.
+ */
+#define REGRESSION_URI_SEQNO_EXCEEDED "http://iana.org/beep/transient/vortex-regression/seqno-exceeded"
+
 /** 
  * @internal Allows to know if the connection must be created directly or
  * through the tunnel.
@@ -3338,7 +3343,8 @@ axl_bool  test_02m (void) {
 
 		/* check reply type */
 		if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_ANS) {
-			printf ("ERROR: expected to receive a ANS frame (iterator=%d)..\n", iterator);
+			printf ("ERROR: expected to receive a ANS frame (iterator=%d), type found: %d..\n", 
+				iterator, vortex_frame_get_type (frame));
 			return axl_false;
 		}
 
@@ -3955,6 +3961,215 @@ axl_bool  test_02n (void) {
 	vortex_connection_close (connection);
 
 	/* return axl_true */
+	return axl_true;
+}
+
+axl_bool  test_02o (void) {
+	VortexConnection  * connection;
+	VortexChannel     * channel;
+	VortexAsyncQueue  * queue;
+	VortexFrame       * frame;
+	unsigned int        seq_no_sent;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+
+	/* create the queue */
+	queue   = vortex_async_queue_new ();
+
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_SEQNO_EXCEEDED,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return axl_false;
+	}
+
+	/*******************************
+	 ***  FIRST PHASE: 2GB LIMIT ***
+	 *******************************/
+	/* send a message  */
+	printf ("Test 02-o: simulating send operation of 2GB - 4096 bytes..\n");
+	if (! vortex_channel_send_msg (channel, "first message", 13, NULL)) {
+		printf ("Failed to send first message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* wait for the reply */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL || vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY || ! axl_cmp (vortex_frame_get_payload (frame), "first message")) {
+		printf ("Expected to find a particular reply for first message but received something different..\n");
+		return axl_false;
+	}
+	vortex_frame_unref (frame);
+
+	/* now simulate we have sent until now 2GB - 4096 bytes = 2147479552 */ 
+	printf ("Test 02-o: updating internal counters for: 2GB - 4096 bytes = 2147479552..\n");
+	/* the following function requires to also take into
+	 * consideration previous send. Because we have sent 13 + 2
+	 * bytes (due to mime headers) we provide the value:
+	 * 2147479552 - 15 = 2147479537 to simulate 2GB - 4096 sent. */
+	vortex_channel_update_status (channel, 2147479537, 0, UPDATE_SEQ_NO);
+	vortex_channel_update_remote_incoming_buffer (channel, 2147479552, 4096);
+	vortex_channel_set_next_seq_no (channel, 2147479552);
+
+	/* send a new message with 4096 and then a new one  */
+	printf ("Test 02-o: sending 4k additional content..\n");
+	if (! vortex_channel_send_msg (channel, TEST_REGRESION_URI_4_MESSAGE, 4096, NULL)) {
+		printf ("Failed to send 4k message after first message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* check next_seq_no */
+	/* NOTE: 4096 + 2 (due to MIME headers) */
+	if (vortex_channel_get_next_seq_no (channel) != ((unsigned int) 2147479552 + 4096 + 2)) {
+		printf ("(1) Expected to find next sequence number to use, but something different was found: %u != %u\n",
+			vortex_channel_get_next_seq_no (channel) , ((unsigned int) 2147479552 + 4096 + 2));
+		return axl_false;
+	}
+
+	/* ...and the second one  */
+	printf ("Test 02-o: sending 4k additional content..\n");
+	if (! vortex_channel_send_msg (channel, TEST_REGRESION_URI_4_MESSAGE, 4096, NULL)) {
+		printf ("Failed to send 4k message after first message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* check next_seq_no */
+	/* NOTE: 4096 + 4 (due to MIME headers) */
+	if (vortex_channel_get_next_seq_no (channel) != ((unsigned int) 2147479552 + 4096 + 4096 + 4)) {
+		printf ("(2) Expected to find next sequence number to use, but something different was found: %u != %u\n",
+			vortex_channel_get_next_seq_no (channel) , ((unsigned int) 2147479552 + 4096 + 4096 + 4));
+		return axl_false;
+	}
+
+	/* check connection */
+	printf ("Test 02-o: checking connection status..\n");
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		printf ("Expected to find connection status ok, but found an error..\n");
+		return axl_false;
+	}
+
+	/* wait for the reply */
+	printf ("Test 02-o: getting first reply..\n");
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL || vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY || ! axl_cmp (vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE)) {
+		printf ("Expected to find a particular reply for first message but received something different..\n");
+		return axl_false;
+	}
+	vortex_frame_unref (frame);
+
+	/* wait for the reply */
+	printf ("Test 02-o: second reply..\n");
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL || vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY || ! axl_cmp (vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE)) {
+		printf ("Expected to find a particular reply for first message but received something different..\n");
+		return axl_false;
+	}
+	vortex_frame_unref (frame);
+
+	/* check connection */
+	printf ("Test 02-o: checking connection status..\n");
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		printf ("Expected to find connection status ok, but found an error..\n");
+		return axl_false;
+	}
+
+	/*******************************
+	 *** SECOND PHASE: 4GB LIMIT ***
+	 *******************************/
+	/* send a message  */
+	printf ("Test 02-o: simulating send operation of 4GB - 4096 bytes..\n");
+	if (! vortex_channel_send_msg (channel, "second message", 14, NULL)) {
+		printf ("Failed to send first message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* wait for the reply */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL || vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY || ! axl_cmp (vortex_frame_get_payload (frame), "second message")) {
+		printf ("Expected to find a particular reply for first message but received something different..\n");
+		return axl_false;
+	}
+	vortex_frame_unref (frame);
+
+	/* now simulate we have sent until now 4GB - 4096 bytes = 4294963200 */ 
+	/* To simulate this we have sent until now: 2147479552 + 4096 + 4096 = 2147487744 
+	   So, to simulate we have sent 4294963200 we need to provide the following value: 
+	   4294963200 - 2147487744 - 20 = 2147475436 
+	   The value 20 comes from: 14 + 2 ("second message" + mime headers) and 2 mime headers added to previous messages (2 +2) */
+	printf ("Test 02-o: updating internal counters to similate content sent: 4GB - 4096 bytes = 4294963200\n");
+	seq_no_sent = ((unsigned int) 1024 * 1024 * 1024 * 4) - 4096;
+	vortex_channel_update_status (channel, (unsigned int) 2147475436, 0, UPDATE_SEQ_NO);
+	vortex_channel_update_remote_incoming_buffer (channel, seq_no_sent , 4096);
+	vortex_channel_set_next_seq_no (channel, seq_no_sent);
+	
+
+	/* send a new message with 4096 and then a new one  */
+	printf ("Test 02-o: sending 4k additional content..\n");
+	if (! vortex_channel_send_msg (channel, TEST_REGRESION_URI_4_MESSAGE, 4096, NULL)) {
+		printf ("Failed to send 4k message after first message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* ...and the second one  */
+	printf ("Test 02-o: sending 4k additional content..\n");
+	if (! vortex_channel_send_msg (channel, TEST_REGRESION_URI_4_MESSAGE, 4096, NULL)) {
+		printf ("Failed to send 4k message after first message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* check connection */
+	printf ("Test 02-o: checking connection status..\n");
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		printf ("Expected to find connection status ok, but found an error..\n");
+		return axl_false;
+	}
+
+	/* wait for the reply */
+	printf ("Test 02-o: getting first reply..\n");
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL || vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY || ! axl_cmp (vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE)) {
+		printf ("Expected to find a particular reply for first message but received something different..\n");
+		return axl_false;
+	}
+	vortex_frame_unref (frame);
+
+	/* wait for the reply */
+	printf ("Test 02-o: second reply..\n");
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL || vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY || ! axl_cmp (vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE)) {
+		printf ("Expected to find a particular reply for first message but received something different..\n");
+		return axl_false;
+	}
+	vortex_frame_unref (frame);
+
+	/* check connection */
+	printf ("Test 02-o: checking connection status..\n");
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		printf ("Expected to find connection status ok, but found an error..\n");
+		return axl_false;
+	}
+
+	/* ok, close the channel */
+	vortex_channel_close (channel, NULL);
+
+	/* ok, close the connection */
+	vortex_connection_close (connection);
+
+	/* free queue */
+	vortex_async_queue_unref (queue);
+
 	return axl_true;
 }
 
@@ -6565,10 +6780,10 @@ int main (int  argc, char ** argv)
 	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, \n");
 	printf ("**                       test_02, test_02a, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
- 	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_03, \n");
- 	printf ("**                       test_03a, test_04, test_04a, test_04b, test_04c, test_05, \n");
- 	printf ("**                       test_05a, test_06, test_07, test_08, test_09, test_10, test_11, \n");
- 	printf ("**                       test_12, test_13\n");
+ 	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, \n");
+ 	printf ("**                       test_03, test_03a, test_04, test_04a, test_04b, test_04c, \n");
+ 	printf ("**                       test_05, test_05a, test_06, test_07, test_08, test_09, test_10, \n");
+ 	printf ("**                       test_11, test_12, test_13\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -6715,6 +6930,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_02n"))
 			run_test (test_02n, "Test 02-n", "Checking MSG number reusing", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_02o"))
+			run_test (test_02o, "Test 02-o", "Checking support for seqno transfers over 4GB (MAX SEQ NO: 4294967295)", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_03"))
 			run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
 
@@ -6831,6 +7049,8 @@ int main (int  argc, char ** argv)
 
  	run_test (test_02n, "Test 02-n", "Checking MSG number reusing", -1, -1);
 
+ 	run_test (test_02o, "Test 02-o", "Checking support for seqno transfers over 4GB (MAX SEQ NO: 4294967295)", -1, -1);
+ 
  	run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
   
  	run_test (test_03a, "Test 03-a", "vortex channel pool support", -1, -1);

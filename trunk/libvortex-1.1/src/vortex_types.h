@@ -650,7 +650,7 @@ typedef struct _VortexSequencerData {
 	 * Next sequence number to be used for the first byte on the
 	 * message hold by this structure.
 	 */
-	int              first_seq_no;
+	unsigned int     first_seq_no;
 
 	/** 
 	 * @brief The content to be sequenced into frames.
@@ -660,7 +660,7 @@ typedef struct _VortexSequencerData {
 	/** 
 	 * @brief The message size content.
 	 */
-	int              message_size;
+        int              message_size;
 
 	/** 
 	 * @brief This is a tricky value and it is used to allow
@@ -676,7 +676,7 @@ typedef struct _VortexSequencerData {
 	 * be pending and flags on steps how many bytes remains to be
 	 * sent *for the given message.
 	 */
-	int              step;
+	unsigned int     step;
 
 	/** 
 	 * @brief Signal value used by the vortex reader to instruct
@@ -684,7 +684,7 @@ typedef struct _VortexSequencerData {
 	 * maximum number of bytes to be able to receive remote peer
 	 * has been increased.
 	 */
-	int               resequence;
+	axl_bool         resequence;
 
 	/** 
 	 * @brief The ansno value to be used.

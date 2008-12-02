@@ -346,12 +346,12 @@ char  *       vortex_frame_get_raw_frame         (VortexFrame * frame)
  * @return A newly allocated raw SEQ frame. Returned value should be
  * deallocated using axl_free.
  */
-char  * vortex_frame_seq_build_up_from_params (int  channel_num,
-					       int  ackno,
-					       int  window_size)
+char  * vortex_frame_seq_build_up_from_params (int           channel_num,
+					       unsigned int  ackno,
+					       int           window_size)
 {
 	/* just build and return the string */
-	return axl_stream_strdup_printf ("SEQ %d %d %d\x0D\x0A", channel_num, ackno, window_size);
+	return axl_stream_strdup_printf ("SEQ %d %u %d\x0D\x0A", channel_num, ackno, window_size);
 }
 
 /** 
@@ -395,7 +395,7 @@ char  * vortex_frame_seq_build_up_from_params_buffer (int         channel_num,
 			(*result_size) = 0;
 
 		axl_stream_printf_buffer (buffer, buffer_size, &real_size, 
-					  "SEQ %d %d %d\x0D\x0A", channel_num, ackno, window_size);
+					  "SEQ %d %u %d\x0D\x0A", channel_num, ackno, window_size);
 		if (real_size > buffer_size) {
 			return NULL;
 		} /* end if */
@@ -409,7 +409,7 @@ char  * vortex_frame_seq_build_up_from_params_buffer (int         channel_num,
 	} /* end if */
 
 	/* use allocated function */
-	return axl_stream_strdup_printf ("SEQ %d %d %d\x0D\x0A", channel_num, ackno, window_size);
+	return axl_stream_strdup_printf ("SEQ %d %u %d\x0D\x0A", channel_num, ackno, window_size);
 }
 
 /** 
@@ -1247,6 +1247,27 @@ int  get_int_value (char  * string, int  * position)
 	return result;
 }
 
+unsigned int  get_unsigned_int_value (char  * string, int  * position)
+{
+	int          iterator = 0;
+	unsigned int result;
+	while ((string[iterator] != ' ')    &&
+	       (string[iterator] != '\x0A') && 
+	       (string[iterator] != '\x0D'))
+		iterator++;
+	/* set the new terminator */
+	string[iterator] = 0;
+
+	/* use atoi because we don't want to detect errors at this
+	 * place */
+	result   = strtoul (string, NULL, 10);
+
+	/* return the iterator position */
+	*position = (*position) + iterator + 1;
+	
+	return result;
+}
+
 
 /** 
  * @internal
@@ -1273,9 +1294,9 @@ int  vortex_frame_get_header_data (char  * beep_header, VortexFrame * frame)
 	case VORTEX_FRAME_TYPE_SEQ:
 		/* SEQ frame format: "%d %d %d\x0D\x0A"
 		   channel seqno size */
-		frame->channel    = get_int_value (beep_header, &position);
-		frame->seqno      = get_int_value (beep_header + position, &position);
-		frame->size       = get_int_value (beep_header + position, &position);
+		frame->channel    = get_int_value          (beep_header, &position);
+		frame->seqno      = get_unsigned_int_value (beep_header + position, &position);
+		frame->size       = get_int_value          (beep_header + position, &position);
 		break;
 	default:
 		/* where all cases matches: "%d %d %c %d %d\x0D\x0A"
@@ -1287,8 +1308,8 @@ int  vortex_frame_get_header_data (char  * beep_header, VortexFrame * frame)
 		frame->more_char  = beep_header [position];
 		position         += 2; /* one space and point to the
 					* next item */
-		frame->seqno      = get_int_value (beep_header + position, &position);
-		frame->size       = get_int_value (beep_header + position, &position);
+		frame->seqno      = get_unsigned_int_value (beep_header + position, &position);
+		frame->size       = get_int_value          (beep_header + position, &position);
 		break;
 
 	}
@@ -2062,7 +2083,7 @@ axl_bool      vortex_frame_are_joinable (VortexFrame * a, VortexFrame * b)
 	}
 
 	if ((a->seqno + a->size + a->mime_headers_size) != b->seqno)  {
-		vortex_log (VORTEX_LEVEL_WARNING, "frames are not joinable because seqno mismatch (%d + %d + %d != %d)",
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not joinable because seqno mismatch (%u + %d + %d != %u)",
 		       a->seqno, a->size, a->mime_headers_size, b->seqno);
 		return axl_false;
 	}
@@ -2123,7 +2144,7 @@ axl_bool      vortex_frame_are_equal (VortexFrame * a, VortexFrame * b)
 
 	/* check sequence number */
 	if (a->seqno != b->seqno) {
-		vortex_log (VORTEX_LEVEL_WARNING, "frames are not equal due to sequence number (%d != %d)",
+		vortex_log (VORTEX_LEVEL_WARNING, "frames are not equal due to sequence number (%u != %u)",
 		       a->seqno, b->seqno);
 		return axl_false;
 	}
@@ -2412,7 +2433,7 @@ int           vortex_frame_get_more_flag (VortexFrame * frame)
  *
  * @return the frame seqno or -1 if fails
  **/
-int           vortex_frame_get_seqno    (VortexFrame * frame)
+unsigned int     vortex_frame_get_seqno    (VortexFrame * frame)
 {
 	v_return_val_if_fail (frame, -1);
 

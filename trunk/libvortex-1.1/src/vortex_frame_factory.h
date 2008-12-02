@@ -80,9 +80,9 @@ char  * vortex_frame_build_up_from_params_s_buffer (VortexFrameType   type,
  						    char         *    buffer,
  						    int               buffer_size);
 
-char  *        vortex_frame_seq_build_up_from_params (int  channel_num,
-						      int  ackno,
-						      int  window_size);
+char  *        vortex_frame_seq_build_up_from_params (int           channel_num,
+						      unsigned int  ackno,
+						      int           window_size);
 
 char  * vortex_frame_seq_build_up_from_params_buffer (int    channel_num,
  						      int    ackno,
@@ -180,11 +180,11 @@ int           vortex_frame_get_msgno             (VortexFrame * frame);
 
 axl_bool      vortex_frame_get_more_flag         (VortexFrame * frame);
 
-int           vortex_frame_get_seqno             (VortexFrame * frame);
+unsigned int  vortex_frame_get_seqno             (VortexFrame * frame);
 
 int           vortex_frame_get_ansno             (VortexFrame * frame);
   
-const char * vortex_frame_get_ok_message        ();
+const char * vortex_frame_get_ok_message         (void);
   
 int           vortex_frame_get_payload_size      (VortexFrame * frame);
 

@@ -121,16 +121,19 @@ VortexFrame      * vortex_channel_build_single_pending_frame   (VortexChannel * 
 axl_bool           vortex_channel_have_complete_flag           (VortexChannel * channel);
 
 void               vortex_channel_update_status                (VortexChannel * channel, 
-								int             frame_size,
+								unsigned int    frame_size,
 								int             msg_no,
 								WhatUpdate update);
 
 void               vortex_channel_update_status_received       (VortexChannel * channel, 
-								int             frame_size,
+								unsigned int    frame_size,
 								int             msg_no,
 								WhatUpdate      update);
 
 int                vortex_channel_get_next_msg_no              (VortexChannel * channel);
+
+void               vortex_channel_set_next_seq_no              (VortexChannel * channel, 
+								unsigned int    next_seq_no);
 
 int                vortex_channel_get_last_msg_no_received     (VortexChannel * channel);
 
@@ -162,28 +165,34 @@ void               vortex_channel_set_automatic_mime           (VortexChannel  *
 
 int                vortex_channel_get_automatic_mime           (VortexChannel * channel);
 
-int                vortex_channel_get_max_seq_no_remote_accepted (VortexChannel * channel);
+unsigned int       vortex_channel_get_max_seq_no_remote_accepted (VortexChannel * channel);
 
 int                vortex_channel_get_next_frame_size         (VortexChannel * channel,
-							       int             next_seq_no,
+							       unsigned int    next_seq_no,
 							       int             message_size,
-							       int             max_seq_no);
+							       unsigned int    max_seq_no);
 
 VortexChannelFrameSize  vortex_channel_set_next_frame_size_handler (VortexChannel          * channel,
 								    VortexChannelFrameSize   next_frame_size,
 								    axlPointer               user_data);
 
 void               vortex_channel_update_remote_incoming_buffer (VortexChannel * channel, 
-								 VortexFrame   * frame);
+								 unsigned        ackno,
+								 unsigned        window);
 
-int                vortex_channel_get_max_seq_no_accepted      (VortexChannel * channel);
+axl_bool           vortex_channel_seq_no_exceeded_after_update  (VortexChannel * channel);
 
-axl_bool           vortex_channel_are_equal                    (VortexChannel * channelA,
-								VortexChannel * channelB);
+unsigned int       vortex_channel_get_max_seq_no_accepted       (VortexChannel * channel);
+
+void               vortex_channel_set_max_seq_no_accepted       (VortexChannel * channel, 
+								 unsigned int    seq_no);
+
+axl_bool           vortex_channel_are_equal                     (VortexChannel * channelA,
+								 VortexChannel * channelB);
 
 axl_bool           vortex_channel_update_incoming_buffer       (VortexChannel * channel, 
 								VortexFrame   * frame,
-								int           * ackno,
+								unsigned int  * ackno,
 								int           * window);
 
 void               vortex_channel_queue_pending_message        (VortexChannel * channel,
