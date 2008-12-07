@@ -270,6 +270,12 @@ AC_ARG_ENABLE(tunnel-support, [  --disable-tunnel-support    Makes Vortex Librar
 	      enable_tunnel_support=yes)
 AM_CONDITIONAL(ENABLE_TUNNEL_SUPPORT, test "x$enable_tunnel_support" = "xyes")
 
+dnl check for PULL API support (Single threaded pull API)
+AC_ARG_ENABLE(pull-support, [  --disable-pull-support    Makes Vortex Library to be built without PULL API support], 
+	      enable_pull_support="$enableval", 
+	      enable_pull_support=yes)
+AM_CONDITIONAL(ENABLE_PULL_SUPPORT, test "x$enable_pull_support" = "xyes")
+
 dnl general libries subsitution
 dnl AC_SUBST(LIBRARIES_CFLAGS)
 dnl AC_SUBST(LIBRARIES_LIBS)
@@ -323,6 +329,7 @@ AC_OUTPUT([
 Makefile
 src/Makefile
 tunnel/Makefile
+pull/Makefile
 xml-rpc/Makefile
 sasl/Makefile
 tls/Makefile
@@ -335,6 +342,7 @@ logo/Makefile
 vortex-1.1.pc
 vortex-xml-rpc-1.1.pc
 vortex-tunnel-1.1.pc
+vortex-pull-1.1.pc
 vortex-sasl-1.1.pc
 vortex-tls-1.1.pc])
 
@@ -419,7 +427,16 @@ else
    echo "   Build TUNNEL profile support:   disabled"
    echo 
    echo "     NOTE: To enable TUNNEL profile support you have to"
-   echo "           use --enable-xml-rpc-support option."
+   echo "           use --enable-tunnel-support option."
+fi
+if test x$enable_pull_support = xyes ; then
+   echo "   Build PULL API support:         enabled"
+   echo "     (libvortex-pull-1.1)"
+else
+   echo "   Build PULL API support:         disabled"
+   echo 
+   echo "     NOTE: To enable PULL API you have to"
+   echo "           use --enable-pull-support option."
 fi
 if test x$DOXYGEN = xyes ; then
    echo "   Build Vortex Library doc:       enabled"

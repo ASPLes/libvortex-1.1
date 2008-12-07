@@ -625,6 +625,13 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
  			vortex_log (VORTEX_LEVEL_WARNING, "failed to update MIME status for the frame, continue delivery");
  	} 
 
+	/* check for general frame received (channel != 0) */
+	if (vortex_channel_get_number (channel) != 0 && 
+	    vortex_reader_invoke_frame_received (ctx, connection, channel, frame)) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "frame delivered to global frame received handler");
+		return; /* frame was successfully delivered */
+	}
+
 	/* invoke frame received handler for second level and, if not
 	 * defined, the first level handler */
 	if (vortex_channel_invoke_received_handler (connection, channel, frame)) {
@@ -813,6 +820,71 @@ void vortex_reader_foreach_impl (VortexCtx        * ctx,
 	/* notify that the foreach operation was completed */
  foreach_impl_notify:
 	vortex_async_queue_push (data->notify, INT_TO_PTR (1));
+
+	return;
+}
+
+/**
+ * @internal Function that checks if there are a global frame received
+ * handler configured on the context provided and, in the case it is
+ * defined, the frame is delivered to that handler.
+ *
+ * @param ctx The context to check for a global frame received.
+ *
+ * @param connection The connection where the frame was received.
+ *
+ * @param channel The channel where the frame was received.
+ *
+ * @param frame The frame that was received.
+ *
+ * @return axl_true in the case the global frame received handler is
+ * defined and the frame was delivered on it.
+ */
+axl_bool  vortex_reader_invoke_frame_received       (VortexCtx        * ctx,
+						     VortexConnection * connection,
+						     VortexChannel    * channel,
+						     VortexFrame      * frame)
+{
+	/* check the reference and the handler */
+	if (ctx == NULL || ctx->global_frame_received == NULL)
+		return axl_false;
+	
+	/* no thread activation */
+	ctx->global_frame_received (channel, connection, frame, ctx->global_frame_received_data);
+	
+	/* unref the frame here */
+	vortex_frame_unref (frame);
+
+	/* return delivered */
+	return axl_true;
+}
+
+/**
+ * @brief Allows to configure a global frame received handler where
+ * all frames are delivered, overriding first and second level
+ * handlers. The frame handler is executed using the thread created
+ * for the vortex reader process, that is, without activing a new
+ * thread from the pool. This means that the function must not block
+ * the caller because no frame will be received until the handler
+ * configured on this function finish.
+ *
+ * @param ctx The context to configure.
+ *
+ * @param received The handler to configure.
+ *
+ * @param received_user_data User defined data to be configured
+ * associated to the handler. This data will be provided to the frame
+ * received handler each time it is activated.
+ */
+void      vortex_reader_set_frame_received          (VortexCtx             * ctx,
+						     VortexOnFrameReceived   received,
+						     axlPointer              received_user_data)
+{
+	v_return_if_fail (ctx);
+	
+	/* configure handler and data even if they are null */
+	ctx->global_frame_received      = received;
+	ctx->global_frame_received_data = received_user_data;
 
 	return;
 }

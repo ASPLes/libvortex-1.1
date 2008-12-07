@@ -1129,9 +1129,10 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * - \ref vortex_listener
  * - \ref vortex_greetings
  * - \ref vortex_handlers
+ * - \ref vortex_pull
  *  
  * </li>
- * <li><b>Profiles API for those already implemented on top of Vortex Library</b>
+ * <li><b>Vortex Library API profiles already implemented:</b>
  * - \ref vortex_tls
  * - \ref vortex_sasl
  * - \ref vortex_xml_rpc

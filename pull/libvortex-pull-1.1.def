@@ -1,0 +1,13 @@
+EXPORTS
+vortex_event_get_channel
+vortex_event_get_conn
+vortex_event_get_ctx
+vortex_event_get_frame
+vortex_event_get_type
+vortex_event_ref
+vortex_event_unref
+vortex_pull_frame_received
+vortex_pull_init
+vortex_pull_next_event
+vortex_pull_pending_events
+vortex_pull_pending_events_num

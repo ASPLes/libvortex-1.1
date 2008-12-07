@@ -56,6 +56,9 @@ void        vortex_ctx_set_data_full (VortexCtx       * ctx,
 axlPointer  vortex_ctx_get_data (VortexCtx       * ctx,
 				 axlPointer        key);
 
+void        vortex_ctx_install_cleanup (VortexCtx * ctx,
+					axlDestroyFunc cleanup);
+
 void        vortex_ctx_free     (VortexCtx * ctx);
 
 #endif /* __VORTEX_CTX_H__ */

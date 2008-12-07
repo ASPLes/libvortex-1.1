@@ -14,6 +14,10 @@ if ENABLE_TUNNEL_SUPPORT
 INCLUDE_TUNNEL_SUPPORT = -DENABLE_TUNNEL_SUPPORT
 endif
 
+if ENABLE_PULL_SUPPORT
+INCLUDE_PULL_SUPPORT = -DENABLE_PULL_SUPPORT
+endif
+
 if ENABLE_XML_RPC_SUPPORT
 INCLUDE_XML_RPC_SUPPORT = -DENABLE_XML_RPC_SUPPORT
 XML_RPC_SUPPORT_LIBS    = ../xml-rpc/libvortex-xml-rpc-1.1.la 
@@ -92,9 +96,9 @@ noinst_PROGRAMS = \
 	vortex-client-without-cbs \
 	vortex-close-listeners vortex-file-transfer-server vortex-file-transfer-client
 
-INCLUDES = -I../src -I../tunnel -I../xml-rpc -I../sasl -I../tls $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
+INCLUDES = -I../src -I../tunnel -I../pull -I../xml-rpc -I../sasl -I../tls $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
 	-I$(READLINE_PATH)/include -Wall -g -ansi -D__axl_disable_broken_bool_def__   \
-        -DVERSION=\""$(VORTEX_VERSION)"\" -I../src $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_VORTEX_LOG) $(INCLUDE_TUNNEL_SUPPORT)  $(INCLUDE_XML_RPC_SUPPORT) $(INCLUDE_SASL_SUPPORT)
+        -DVERSION=\""$(VORTEX_VERSION)"\" -I../src $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_VORTEX_LOG) $(INCLUDE_TUNNEL_SUPPORT) $(INCLUDE_PULL_SUPPORT)  $(INCLUDE_XML_RPC_SUPPORT) $(INCLUDE_SASL_SUPPORT)
 
 LIBS            = $(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
 
@@ -122,11 +126,18 @@ vortex_client_connections_LDADD     = $(LIBS) ../src/libvortex-1.1.la ../tunnel/
 vortex_regression_client_SOURCES   = \
 	vortex-regression-client.c vortex-regression-common.c vortex-regression-common.h \ $(vortex_regression_client_xml_rpc_files)
 
-vortex_regression_client_LDADD     = $(LIBS) ../src/libvortex-1.1.la  ../tunnel/libvortex-tunnel-1.1.la  $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS)
+vortex_regression_client_LDADD     = \
+	$(LIBS) ../src/libvortex-1.1.la  \
+	../tunnel/libvortex-tunnel-1.1.la \
+	../pull/libvortex-pull-1.1.la  $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS)
 
 vortex_regression_listener_SOURCES   = \
 	vortex-regression-listener.c vortex-regression-common.c vortex-regression-common.h \ $(vortex_regression_listener_xml_rpc_files) 
-vortex_regression_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la  ../tunnel/libvortex-tunnel-1.1.la $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS)
+vortex_regression_listener_LDADD     = \
+	$(LIBS) ../src/libvortex-1.1.la \
+	../tunnel/libvortex-tunnel-1.1.la \
+	../pull/libvortex-pull-1.1.la \
+	 $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS)
 
 vortex_server_without_cbs_SOURCES   = vortex-server-without-cbs.c
 vortex_server_without_cbs_LDADD     = $(LIBS) ../src/libvortex-1.1.la
