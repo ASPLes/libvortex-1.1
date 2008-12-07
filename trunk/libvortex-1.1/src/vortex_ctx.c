@@ -169,6 +169,34 @@ axlPointer  vortex_ctx_get_data (VortexCtx       * ctx,
 	return vortex_hash_lookup (ctx->data, key);
 }
 
+/**
+ * @brief Allows to install a cleanup function which will be called
+ * just before the \ref VortexCtx is finished (by a call to \ref
+ * vortex_exit_ctx or a manual call to \ref vortex_ctx_free).
+ *
+ * This function is provided to allow Vortex Library extensions to
+ * install its module deallocation or termination functions.
+ *
+ * @param ctx The context to configure with the provided cleanup
+ * function.  @param cleanup The cleanup function to configure. This
+ * function will receive a reference to the \ref VortexCtx.
+ */
+void        vortex_ctx_install_cleanup (VortexCtx * ctx,
+					axlDestroyFunc cleanup)
+{
+	v_return_if_fail (ctx);
+	v_return_if_fail (cleanup);
+	
+	/* init the list in the case it isn't */
+	if (ctx->cleanups == NULL) 
+		ctx->cleanups = axl_list_new (axl_list_always_return_1, NULL);
+	
+	/* add the cleanup function */
+	axl_list_append (ctx->cleanups, cleanup);
+
+	return;
+}
+
 /** 
  * @brief Releases the memory allocated by the provided \ref
  * VortexCtx.
@@ -177,16 +205,38 @@ axlPointer  vortex_ctx_get_data (VortexCtx       * ctx,
  */
 void        vortex_ctx_free (VortexCtx * ctx)
 {
+	axlDestroyFunc func;
+	int            iterator;
+
 	/* do nothing */
 	if (ctx == NULL)
 		return;
+	
+	/* call to cleanup functions defined */
+	if (ctx->cleanups) {
+		iterator = 0;
+		while (iterator < axl_list_length (ctx->cleanups)) {
+			/* get clean up function */
+			func = axl_list_get_nth (ctx->cleanups, iterator);
 
-	/* release log mutex */
-	vortex_mutex_create (&ctx->log_mutex);
+			/* call to clean */
+			func (ctx);
+
+			/* next iterator */
+			iterator++;
+		} /* end while */
+
+		/* terminate list */
+		axl_list_free (ctx->cleanups);
+		ctx->cleanups = NULL; 
+	} /* end if */
 
 	/* clear the hash */
 	vortex_hash_destroy (ctx->data);
 	ctx->data = NULL;
+
+	/* release log mutex */
+	vortex_mutex_destroy (&ctx->log_mutex);
 
 	/* free the context */
 	axl_free (ctx);

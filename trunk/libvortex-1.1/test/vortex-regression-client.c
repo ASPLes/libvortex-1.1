@@ -52,6 +52,9 @@
 /* include local headers produced by xml-rpc-gen */
 #include <test_xml_rpc.h>
 
+/* include pull API header */
+#include <vortex_pull.h>
+
 /* include local support */
 #include <vortex-regression-common.h>
 
@@ -6699,6 +6702,120 @@ axl_bool  test_13 (void)
 	return axl_true;
 }
 
+/**
+ * @brief Allows to check PULL API support.
+ *
+ * @return axl_true if all tests are ok, otherwise axl_false is
+ * returned.
+ */ 
+axl_bool test_14 (void)
+{
+	VortexCtx        * client_ctx;
+	VortexConnection * conn;
+	VortexChannel    * channel;
+	VortexEvent      * event;
+	VortexFrame      * frame;
+
+	/* create an indepenent client context */
+	client_ctx = vortex_ctx_new ();
+
+	/* init vortex on this context */
+	if (! vortex_init_ctx (client_ctx)) {
+		printf ("ERROR: failed to init client vortex context for PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	/* now activate PULL api on this context */
+	if (! vortex_pull_init (client_ctx)) {
+		printf ("ERROR: failed to activate PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 14: pull API activated..\n");
+
+	/* now do connect to the test server */
+	conn = vortex_connection_new (client_ctx, listener_host, LISTENER_PORT, NULL, NULL);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Expected to find proper connection with regression test listener..\n");
+		return axl_false;
+	} /* end if */
+
+	/* create a channel */
+	channel = vortex_channel_new (conn, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* no frame received, it is disabled */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return axl_false;
+	}
+
+	printf ("Test 14: checking frame received event..\n");
+
+	/* send some data */
+	if (! vortex_channel_send_msg (channel, "this is a  PULL API test", 24, NULL)) {
+		printf ("Expected to be able to send a message ..\n");
+		return axl_false;
+	}
+
+	/* now wait for the reply */
+	event = vortex_pull_next_event (client_ctx, 0);
+	if (event == NULL) {
+		printf ("Expected to find a non-null event from vortex_pull_next_event..\n");
+		return axl_false;
+	} /* end if */
+
+	if (vortex_event_get_type (event) != VORTEX_EVENT_FRAME_RECEIVED) {
+		printf ("Expected to find frame received event after a send operation..\n");
+		return axl_false;
+	} /* end if */
+
+	/* check that the event has defined all data associated to the
+	 * event */
+	if (! vortex_channel_are_equal (channel, vortex_event_get_channel (event))) {
+		printf ("Expected to find the same channel on event received..\n");
+		return axl_false;
+	} /* end if */
+
+	if (vortex_connection_get_id (conn) != vortex_connection_get_id (vortex_event_get_conn (event))) {
+		printf ("Expected to find the same connection on event received..\n");
+		return axl_false;
+	} /* end if */
+	
+	if (vortex_event_get_frame (event) == NULL) {
+		printf ("Expected to find a frame reference on VORTEX_EVENT_FRAME_RECEIVED..\n");
+		return axl_false;
+	}
+
+	/* get frame */
+	frame = vortex_event_get_frame (event);
+
+	if (! axl_cmp (vortex_frame_get_payload (frame), "this is a  PULL API test")) {
+		printf ("Expected to find content inside frame reply '%s', but found: '%s'\n",
+			"this is a  PULL API test", (char*) vortex_frame_get_payload (frame));
+		return axl_false;
+	} /* end if */
+
+	/* dealloc */
+	vortex_event_unref (event);
+	printf ("Test 14: frame received event ok..\n");
+
+	/* ok, close the channel */
+	vortex_channel_close (channel, NULL);
+
+	/* ok, close the connection */
+	vortex_connection_close (conn);
+
+	/* terminate client context */
+	vortex_exit_ctx (client_ctx, axl_true);
+
+	return axl_true;
+}
+
 typedef int  (*VortexRegressionTest) ();
   
  
@@ -6783,7 +6900,7 @@ int main (int  argc, char ** argv)
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, \n");
  	printf ("**                       test_03, test_03a, test_04, test_04a, test_04b, test_04c, \n");
  	printf ("**                       test_05, test_05a, test_06, test_07, test_08, test_09, test_10, \n");
- 	printf ("**                       test_11, test_12, test_13\n");
+ 	printf ("**                       test_11, test_12, test_13, test_14\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -6981,6 +7098,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_13"))
 			run_test (test_13, "Test 13", "test TUNNEL implementation", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_14"))
+			run_test (test_14, "Test 14", "Check PULL API implementation", -1, -1);
+
 		goto finish;
 	}
 
@@ -7082,6 +7202,8 @@ int main (int  argc, char ** argv)
  	run_test (test_12, "Test 12", "check connection creation timeout", -1, -1);
   
  	run_test (test_13, "Test 13", "test TUNNEL implementation", -1, -1);
+
+	run_test (test_14, "Test 14", "Check PULL API implementation", -1, -1);
 
 #if defined(AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/**

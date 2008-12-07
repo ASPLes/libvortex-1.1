@@ -54,6 +54,16 @@ int  vortex_reader_notify_change_io_api        (VortexCtx * ctx);
 
 void vortex_reader_notify_change_done_io_api   (VortexCtx * ctx);
 
+axl_bool  vortex_reader_invoke_frame_received       (VortexCtx        * ctx,
+						     VortexConnection * connection,
+						     VortexChannel    * channel,
+						     VortexFrame      * frame);
+
+void      vortex_reader_set_frame_received          (VortexCtx             * ctx,
+						     VortexOnFrameReceived   received,
+						     axlPointer              received_user_data);
+						     
+
 /* internal API */
 typedef void (*VortexForeachFunc) (VortexConnection * conn, axlPointer user_data);
 
