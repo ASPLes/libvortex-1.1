@@ -1797,11 +1797,25 @@ void __vortex_connection_check_and_notify (VortexConnection * connection,
 	int                         iterator;
 	VortexChannelStatusUpdate * statusUpdate;
 	axlList                   * list;
-#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx                 * ctx = CONN_CTX (connection);
-#endif
+
 	if (connection == NULL)
 		return;
+
+	/* check for global handlers */
+	if (vortex_channel_get_number (channel) != 0) {
+		if (is_added && ctx->global_channel_added) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "notifying channel=%d added on global channel added handler",
+				    vortex_channel_get_number (channel));
+			/* call to notify */
+			ctx->global_channel_added (channel, ctx->global_channel_added_data);
+		} else if (! is_added && ctx->global_channel_removed) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "notifying channel=%d removed on global channel removed handler",
+				    vortex_channel_get_number (channel));
+			/* call to notify */
+			ctx->global_channel_removed (channel, ctx->global_channel_removed_data);
+		} /* end if */
+	} /* end if */
 
 	/* configure the list to operate */
 	if (is_added)

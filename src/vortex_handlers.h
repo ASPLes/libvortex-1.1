@@ -263,15 +263,15 @@ typedef  axl_bool      (*VortexOnCloseChannel)      (int  channel_num,
 						     axlPointer user_data);
 
 /** 
- * @brief Async notification for incoming close channel requests that
- * allows to only get notifications about that situation, deferring
- * the channel close decision.
+ * @brief Async notification for incoming close channel requests. This
+ * handler allows to only receive the notification and defer the
+ * decision to close or not the channel.
  *
- * This is an alternative API to the \ref VortexOnCloseChannel, that
+ * This is an alternative API to \ref VortexOnCloseChannel, that
  * allows to configure a handler (this one) to be executed to get
- * notifications about the channel closed (\ref
+ * notification about channel close request (\ref
  * vortex_channel_set_close_notify_handler), and later the request is
- * completed calling to \ref vortex_channel_notify_close.
+ * completed by calling to \ref vortex_channel_notify_close.
  *
  * @param channel The channel that was notified to be closed.
  *

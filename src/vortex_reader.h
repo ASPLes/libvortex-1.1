@@ -59,10 +59,6 @@ axl_bool  vortex_reader_invoke_frame_received       (VortexCtx        * ctx,
 						     VortexChannel    * channel,
 						     VortexFrame      * frame);
 
-void      vortex_reader_set_frame_received          (VortexCtx             * ctx,
-						     VortexOnFrameReceived   received,
-						     axlPointer              received_user_data);
-						     
 
 /* internal API */
 typedef void (*VortexForeachFunc) (VortexConnection * conn, axlPointer user_data);

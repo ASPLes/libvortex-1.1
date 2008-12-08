@@ -859,36 +859,6 @@ axl_bool  vortex_reader_invoke_frame_received       (VortexCtx        * ctx,
 	return axl_true;
 }
 
-/**
- * @brief Allows to configure a global frame received handler where
- * all frames are delivered, overriding first and second level
- * handlers. The frame handler is executed using the thread created
- * for the vortex reader process, that is, without activing a new
- * thread from the pool. This means that the function must not block
- * the caller because no frame will be received until the handler
- * configured on this function finish.
- *
- * @param ctx The context to configure.
- *
- * @param received The handler to configure.
- *
- * @param received_user_data User defined data to be configured
- * associated to the handler. This data will be provided to the frame
- * received handler each time it is activated.
- */
-void      vortex_reader_set_frame_received          (VortexCtx             * ctx,
-						     VortexOnFrameReceived   received,
-						     axlPointer              received_user_data)
-{
-	v_return_if_fail (ctx);
-	
-	/* configure handler and data even if they are null */
-	ctx->global_frame_received      = received;
-	ctx->global_frame_received_data = received_user_data;
-
-	return;
-}
-
 /** 
  * @internal
  * @brief Read the next item on the vortex reader to be processed

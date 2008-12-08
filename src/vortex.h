@@ -208,9 +208,9 @@ BEGIN_C_DECLS
 /* Internal includes and external includes for Vortex API
  * consumers. */
 #include <vortex_types.h>
-#include <vortex_ctx.h>
 #include <vortex_support.h>
 #include <vortex_handlers.h>
+#include <vortex_ctx.h>
 #include <vortex_thread.h>
 #include <vortex_thread_pool.h>
 #include <vortex_queue.h>

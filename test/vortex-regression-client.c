@@ -6710,6 +6710,65 @@ axl_bool  test_13 (void)
  */ 
 axl_bool test_14 (void)
 {
+	VortexEventMask * mask;
+
+	/* create a mask */
+	mask = vortex_event_mask_new ("test-mask", 
+				      VORTEX_EVENT_CHANNEL_ADDED | VORTEX_EVENT_CHANNEL_REMOVED, 
+				      axl_true);
+	/* check if the mask detect events selected */
+	if (vortex_event_mask_is_set (mask, VORTEX_EVENT_FRAME_RECEIVED)) {
+		printf ("ERROR: Failed to check non-blocked event on a mask (frame received)\n");
+		return axl_false;
+	} /* end if */
+
+	/* check if the mask detect events selected */
+	if (vortex_event_mask_is_set (mask, VORTEX_EVENT_CLOSE_REQUEST)) {
+		printf ("ERROR: Failed to check non-blocked event on a mask (close request)\n");
+		return axl_false;
+	} /* end if */
+
+	/* check if the mask detect events selected */
+	if (! vortex_event_mask_is_set (mask, VORTEX_EVENT_CHANNEL_REMOVED)) {
+		printf ("ERROR: Failed to check blocked event on a mask (channel removed)\n");
+		return axl_false;
+	} /* end if */
+
+	/* check if the mask detect events selected */
+	if (! vortex_event_mask_is_set (mask, VORTEX_EVENT_CHANNEL_ADDED)) {
+		printf ("ERROR: Failed to check non-blocked event on a mask (channel added)\n");
+		return axl_false;
+	} /* end if */
+
+	/* disable mask */
+	vortex_event_mask_enable (mask, axl_false);
+
+	/* check if the mask detect events selected but having the mask disabled */
+	if (vortex_event_mask_is_set (mask, VORTEX_EVENT_CHANNEL_REMOVED)) {
+		printf ("ERROR: Failed to check blocked event on a disabled mask (channel removed)\n");
+		return axl_false;
+	} /* end if */
+
+	/* check if the mask detect events selected but having the mask disabled */
+	if (vortex_event_mask_is_set (mask, VORTEX_EVENT_CHANNEL_ADDED)) {
+		printf ("ERROR: Failed to check non-blocked event on a disabled mask (channel added)\n");
+		return axl_false;
+	} /* end if */
+
+	/* free the mask */
+	vortex_event_mask_free (mask);
+
+	return axl_true;
+}
+
+/**
+ * @brief Allows to check PULL API support.
+ *
+ * @return axl_true if all tests are ok, otherwise axl_false is
+ * returned.
+ */ 
+axl_bool test_14_a (void)
+{
 	VortexCtx        * client_ctx;
 	VortexConnection * conn;
 	VortexChannel    * channel;
@@ -6731,7 +6790,7 @@ axl_bool test_14 (void)
 		return axl_false;
 	} /* end if */
 
-	printf ("Test 14: pull API activated..\n");
+	printf ("Test 14-a: pull API activated..\n");
 
 	/* now do connect to the test server */
 	conn = vortex_connection_new (client_ctx, listener_host, LISTENER_PORT, NULL, NULL);
@@ -6754,7 +6813,28 @@ axl_bool test_14 (void)
 		return axl_false;
 	}
 
-	printf ("Test 14: checking frame received event..\n");
+	/*** CHANNEL ADDED EVENT ***/
+	printf ("Test 14-a: checking for added channel event..\n");
+	event = vortex_pull_next_event (client_ctx, 0);
+	if (event == NULL) {
+		printf ("ERROR: expected to find channel added event, but found NULL reference..\n");
+		return axl_false;
+	}
+	if (vortex_event_get_type (event) != VORTEX_EVENT_CHANNEL_ADDED) {
+		printf ("ERROR: expected to find channel added event, but found %d..\n", 
+			vortex_event_get_type (event));
+		return axl_false;
+	}
+	/* check frame reference */
+	if (! vortex_channel_are_equal (channel, vortex_event_get_channel (event))) {
+		printf ("ERROR: expected to find same channel reference, but found different ones %p != %p..\n",
+			channel, vortex_event_get_channel (event));
+		return axl_false;
+	}
+	vortex_event_unref (event);
+
+	/*** FRAME RECEIVED EVENT ***/
+	printf ("Test 14-a: checking frame received event..\n");
 
 	/* send some data */
 	if (! vortex_channel_send_msg (channel, "this is a  PULL API test", 24, NULL)) {
@@ -6802,16 +6882,241 @@ axl_bool test_14 (void)
 
 	/* dealloc */
 	vortex_event_unref (event);
-	printf ("Test 14: frame received event ok..\n");
+	printf ("Test 14-a: frame received event ok..\n");
 
 	/* ok, close the channel */
 	vortex_channel_close (channel, NULL);
 
 	/* ok, close the connection */
 	vortex_connection_close (conn);
+	
+	/*** CHANNEL REMOVED EVENT ***/
+	printf ("Test 14: checking for added channel event..\n");
+	event = vortex_pull_next_event (client_ctx, 0);
+	if (event == NULL) {
+		printf ("ERROR: expected to find channel added event, but found NULL reference..\n");
+		return axl_false;
+	}
+	if (vortex_event_get_type (event) != VORTEX_EVENT_CHANNEL_REMOVED) {
+		printf ("ERROR: expected to find channel added event, but found %d..\n", 
+			vortex_event_get_type (event));
+		return axl_false;
+	}
+	/* check frame reference */
+	if (! vortex_channel_are_equal (channel, vortex_event_get_channel (event))) {
+		printf ("ERROR: expected to find same channel reference, but found different ones %p != %p..\n",
+			channel, vortex_event_get_channel (event));
+		return axl_false;
+	}
+	vortex_event_unref (event);
+
+	/* check no pending event is waiting to be read */
+	if (vortex_pull_pending_events (client_ctx)) {
+		printf ("ERROR: expected to not have pending events but found: %d waiting..\n",
+			vortex_pull_pending_events_num (client_ctx));
+		return axl_false;
+	} /* end if */
 
 	/* terminate client context */
 	vortex_exit_ctx (client_ctx, axl_true);
+
+	return axl_true;
+}
+
+void test_14_b_closed_channel (int channel_num, axl_bool was_closed, const char *code, const char *msg)
+{
+	/* fake function to activate threaded close */
+	return;
+}
+
+/**
+ * @brief Allows to check PULL API support.
+ *
+ * @return axl_true if all tests are ok, otherwise axl_false is
+ * returned.
+ */ 
+axl_bool test_14_b (void)
+{
+	VortexCtx        * client_ctx;
+	VortexCtx        * listener_ctx;
+	VortexConnection * conn;
+	VortexChannel    * channel;
+	VortexEvent      * event;
+	VortexConnection * listener;
+	int                channel_num;
+	VortexEventMask  * mask;
+	axlError         * error = NULL;
+
+	/* create an indepenent client context */
+	client_ctx = vortex_ctx_new ();
+
+	/*******************************/
+	/* activate a client context   */
+	/*******************************/
+	if (! vortex_init_ctx (client_ctx)) {
+		printf ("ERROR: failed to init client vortex context for PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	/* now activate PULL api on this context */
+	if (! vortex_pull_init (client_ctx)) {
+		printf ("ERROR: failed to activate PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	/* install mask to avoid handling some events */
+	mask = vortex_event_mask_new ("client mask", 
+				      VORTEX_EVENT_CHANNEL_ADDED,
+				      axl_true);
+	if (! vortex_pull_set_event_mask (client_ctx, mask, &error)) {
+		printf ("ERROR: failed to install client event mask, error reported (code: %d): %s\n",
+			axl_error_get_code (error), axl_error_get (error));
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 14-b: pull API activated (client context)..\n");
+
+	/*******************************/
+	/* activate a listener context */
+	/*******************************/
+	listener_ctx = vortex_ctx_new ();
+
+	/* init vortex on this context */
+	if (! vortex_init_ctx (listener_ctx)) {
+		printf ("ERROR: failed to init listener vortex context for PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	/* now activate PULL api on this context */
+	if (! vortex_pull_init (listener_ctx)) {
+		printf ("ERROR: failed to activate PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	/* install mask to avoid handling some events */
+	mask = vortex_event_mask_new ("listener mask", 
+				      VORTEX_EVENT_CHANNEL_REMOVED | VORTEX_EVENT_CHANNEL_ADDED,
+				      axl_true);
+	if (! vortex_pull_set_event_mask (listener_ctx, mask, &error)) {
+		printf ("ERROR: failed to install listener event mask, error reported (code: %d): %s\n",
+			axl_error_get_code (error), axl_error_get (error));
+		return axl_false;
+	} /* end if */
+
+	/* register a profile to accept channel creation */
+	vortex_profiles_register (listener_ctx, REGRESSION_URI,
+				  /* no start handling */
+				  NULL, NULL, 
+				  /* no close handling */
+				  NULL, NULL,
+				  /* no frame received */
+				  NULL, NULL);
+	
+	/* start a listener */
+	listener = vortex_listener_new (listener_ctx, 
+					"localhost", "44012",
+					NULL, NULL);
+	
+	printf ("Test 14-b: pull API activated (listener ctx)..\n");
+
+	/* now create a connection */
+	conn = vortex_connection_new (client_ctx, "localhost", "44012", NULL, NULL);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Expected to find proper connection with regression test listener..\n");
+		return axl_false;
+	} /* end if */
+
+	/* create a channel */
+	channel = vortex_channel_new (conn, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* no frame received, it is disabled */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return axl_false;
+	}
+
+
+	/* get channel number */
+	channel_num = vortex_channel_get_number (channel);
+
+	printf ("Test 14-b: checking close channel=%d  event..\n", channel_num);
+
+	/* pass a handler to unlock this call, so we can simulate with
+	 * a single thread the client closing the channel and the
+	 * listener receiving the close channel request */
+	vortex_channel_close (channel, 
+			      test_14_b_closed_channel);
+
+	/* now receive at the listener the close request */
+	event = vortex_pull_next_event (listener_ctx, 0);
+	if (event == NULL) {
+		printf ("ERROR: Expected to find channel close request event but found NULL reference..\n");
+		return axl_false;
+	} /* end if */
+
+	if (vortex_event_get_type (event) != VORTEX_EVENT_CLOSE_REQUEST) {
+		printf ("ERROR: Expected to find channel close request event but found: %d..\n",
+			vortex_event_get_type (event));
+		return axl_false;
+	} /* end if */
+
+	/* handle close request, reply to it */
+	printf ("Test 14-b: received close channel request, completing reply..\n");
+	vortex_channel_notify_close (
+		vortex_event_get_channel (event), 
+		vortex_event_get_msgno   (event),
+		/* close the channel */
+		axl_true);
+
+	/* terminate event */
+	vortex_event_unref (event);
+
+	/* now wait for channel removed at the client */
+	event = vortex_pull_next_event (client_ctx, 0);
+
+	if (event == NULL || vortex_event_get_type (event) != VORTEX_EVENT_CHANNEL_REMOVED ||
+	    vortex_channel_get_number (vortex_event_get_channel (event)) != channel_num) {
+		printf ("ERROR: expected to find event type for channel removed, but found NULL or different event type (%d != %d) or different channel (%d != %d)",
+			vortex_event_get_type (event), VORTEX_EVENT_CHANNEL_REMOVED,
+			vortex_channel_get_number (vortex_event_get_channel (event)), channel_num);
+		return axl_false;
+	} /* end if */
+	vortex_event_unref (event);
+	
+	/* check that the channel was removed */
+	if (vortex_connection_channel_exists (conn, channel_num)) {
+		printf ("ERROR: expected to find channel %d not available on the connection..\n", channel_num);
+		return axl_false;
+	} /* end if */
+	printf ("Test 14-b: channel closed..\n");
+
+	/* ok, close the connection */
+	vortex_connection_close (conn);
+
+	/* check no pending event is waiting to be read */
+	if (vortex_pull_pending_events (client_ctx)) {
+		printf ("ERROR: expected to not have pending events but found: %d waiting..\n",
+			vortex_pull_pending_events_num (client_ctx));
+		return axl_false;
+	} /* end if */
+
+	/* terminate client context */
+	vortex_exit_ctx (client_ctx, axl_true);
+
+	/* check no pending event is waiting to be read */
+	if (vortex_pull_pending_events (listener_ctx)) {
+		printf ("ERROR: expected to not have pending events but found: %d waiting..\n",
+			vortex_pull_pending_events_num (listener_ctx));
+		return axl_false;
+	} /* end if */
+
+	/* terminate listener context */
+	vortex_exit_ctx (listener_ctx, axl_true);
 
 	return axl_true;
 }
@@ -6900,7 +7205,7 @@ int main (int  argc, char ** argv)
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, \n");
  	printf ("**                       test_03, test_03a, test_04, test_04a, test_04b, test_04c, \n");
  	printf ("**                       test_05, test_05a, test_06, test_07, test_08, test_09, test_10, \n");
- 	printf ("**                       test_11, test_12, test_13, test_14\n");
+ 	printf ("**                       test_11, test_12, test_13, test_14, test_14a, test_14b\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -7099,7 +7404,13 @@ int main (int  argc, char ** argv)
 			run_test (test_13, "Test 13", "test TUNNEL implementation", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_14"))
-			run_test (test_14, "Test 14", "Check PULL API implementation", -1, -1);
+			run_test (test_14, "Test 14", "Check PULL API event masks", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_14a"))
+			run_test (test_14_a, "Test 14-a", "Check PULL API implementation (frame receieved event)", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_14b"))
+			run_test (test_14_b, "Test 14-b", "Check PULL API implementation (close channel request event)", -1, -1);
 
 		goto finish;
 	}
@@ -7203,7 +7514,11 @@ int main (int  argc, char ** argv)
   
  	run_test (test_13, "Test 13", "test TUNNEL implementation", -1, -1);
 
-	run_test (test_14, "Test 14", "Check PULL API implementation", -1, -1);
+	run_test (test_14, "Test 14", "Check PULL API event masks", -1, -1);
+
+	run_test (test_14_a, "Test 14-a", "Check PULL API implementation (frame received event)", -1, -1);
+
+	run_test (test_14_b, "Test 14-b", "Check PULL API implementation (close channel request event)", -1, -1);
 
 #if defined(AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/**
