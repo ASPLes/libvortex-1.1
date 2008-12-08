@@ -6774,6 +6774,8 @@ axl_bool test_14_a (void)
 	VortexChannel    * channel;
 	VortexEvent      * event;
 	VortexFrame      * frame;
+	VortexEventMask  * mask;
+	axlError         * error = NULL;
 
 	/* create an indepenent client context */
 	client_ctx = vortex_ctx_new ();
@@ -6787,6 +6789,16 @@ axl_bool test_14_a (void)
 	/* now activate PULL api on this context */
 	if (! vortex_pull_init (client_ctx)) {
 		printf ("ERROR: failed to activate PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	/* install mask to avoid handling some events */
+	mask = vortex_event_mask_new ("client mask", 
+				      VORTEX_EVENT_CONNECTION_CLOSED,
+				      axl_true);
+	if (! vortex_pull_set_event_mask (client_ctx, mask, &error)) {
+		printf ("ERROR: failed to install client event mask, error reported (code: %d): %s\n",
+			axl_error_get_code (error), axl_error_get (error));
 		return axl_false;
 	} /* end if */
 
@@ -6966,7 +6978,7 @@ axl_bool test_14_b (void)
 
 	/* install mask to avoid handling some events */
 	mask = vortex_event_mask_new ("client mask", 
-				      VORTEX_EVENT_CHANNEL_ADDED,
+				      VORTEX_EVENT_CHANNEL_ADDED | VORTEX_EVENT_CONNECTION_CLOSED,
 				      axl_true);
 	if (! vortex_pull_set_event_mask (client_ctx, mask, &error)) {
 		printf ("ERROR: failed to install client event mask, error reported (code: %d): %s\n",
@@ -6995,7 +7007,10 @@ axl_bool test_14_b (void)
 
 	/* install mask to avoid handling some events */
 	mask = vortex_event_mask_new ("listener mask", 
-				      VORTEX_EVENT_CHANNEL_REMOVED | VORTEX_EVENT_CHANNEL_ADDED,
+				      VORTEX_EVENT_CHANNEL_REMOVED | 
+				      VORTEX_EVENT_CHANNEL_ADDED | 
+				      VORTEX_EVENT_CONNECTION_CLOSED |
+				      VORTEX_EVENT_CONNECTION_ACCEPTED,
 				      axl_true);
 	if (! vortex_pull_set_event_mask (listener_ctx, mask, &error)) {
 		printf ("ERROR: failed to install listener event mask, error reported (code: %d): %s\n",

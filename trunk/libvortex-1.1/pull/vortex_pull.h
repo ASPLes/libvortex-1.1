@@ -71,7 +71,7 @@ typedef enum {
 	 * @brief Undefined event. This type is used to report errors
 	 * found while using pull API.
 	 */
-	VORTEX_EVENT_UNKNOWN        = 0,
+	VORTEX_EVENT_UNKNOWN              = 0,
 	/**
 	 * @brief Even type that represents a frame received. You must
 	 * call to vortex_pull_get_frame to get the reference to the
@@ -81,7 +81,7 @@ typedef enum {
 	 * - \ref vortex_event_get_frame : frame received due to this event.
 	 * - \ref vortex_event_get_channel : the channel where the frame was received.
 	 */
-	VORTEX_EVENT_FRAME_RECEIVED = 1 << 0,
+	VORTEX_EVENT_FRAME_RECEIVED       = 1 << 0,
 	/**
 	 * @brief This event signals that a channel close request has
 	 * been received. The peer must respond to the close request
@@ -95,7 +95,7 @@ typedef enum {
 	 * With these values, the close request must be replied by
 	 * using the function \ref vortex_channel_notify_close.
 	 */
-	VORTEX_EVENT_CLOSE_REQUEST  = 1 << 1, 
+	VORTEX_EVENT_CLOSE_REQUEST       = 1 << 1, 
 
 	/**
 	 * @brief Event used to signal that a channel has been added
@@ -104,7 +104,7 @@ typedef enum {
 	 * This event has the following especific references defined:
 	 * - \ref vortex_event_get_channel : the channel that was added.
 	 */
-	VORTEX_EVENT_CHANNEL_ADDED  = 1 << 2,
+	VORTEX_EVENT_CHANNEL_ADDED       = 1 << 2,
 
 	/**
 	 * @brief Event used to signal that a channel has been removed
@@ -113,7 +113,24 @@ typedef enum {
 	 * This event has the following especific references defined:
 	 * - \ref vortex_event_get_channel : the channel that was added.
 	 */
-	VORTEX_EVENT_CHANNEL_REMOVED  = 1 << 3,
+	VORTEX_EVENT_CHANNEL_REMOVED     = 1 << 3,
+
+	/**
+	 * @brief Event notification that a particular connection has
+	 * been closed. This event is also useful to detect connection
+	 * broken.
+	 *
+	 * This event has no especific references. It only has \ref
+	 * vortex_event_get_conn defined.
+	 */
+	VORTEX_EVENT_CONNECTION_CLOSED   = 1 << 4,
+
+	/**
+	 * @brief Event notificaiton that a new incoming connection
+	 * has been accepted due to a listener started (\ref
+	 * vortex_listener_new or similar).
+	 */
+	VORTEX_EVENT_CONNECTION_ACCEPTED  = 1 << 5,
 
 } VortexEventType;
 
@@ -143,70 +160,79 @@ typedef enum {
  */
 typedef struct _VortexEventMask VortexEventMask;
 
-axl_bool           vortex_pull_init               (VortexCtx * ctx);
+axl_bool           vortex_pull_init                        (VortexCtx * ctx);
 
-void               vortex_pull_cleanup            (VortexCtx * ctx);
+void               vortex_pull_cleanup                     (VortexCtx * ctx);
 
-axl_bool           vortex_pull_pending_events     (VortexCtx * ctx);
+axl_bool           vortex_pull_pending_events              (VortexCtx * ctx);
 
-int                vortex_pull_pending_events_num (VortexCtx * ctx);
+int                vortex_pull_pending_events_num          (VortexCtx * ctx);
 
-VortexEvent      * vortex_pull_next_event         (VortexCtx * ctx, 
-						   int         milliseconds_to_wait);
+VortexEvent      * vortex_pull_next_event                  (VortexCtx * ctx, 
+						            int         milliseconds_to_wait);
 
-axl_bool           vortex_event_ref               (VortexEvent * event);
+axl_bool           vortex_event_ref                        (VortexEvent * event);
 
-void               vortex_event_unref             (VortexEvent * event);
+void               vortex_event_unref                      (VortexEvent * event);
 
-VortexEventType    vortex_event_get_type          (VortexEvent * event);
+VortexEventType    vortex_event_get_type                   (VortexEvent * event);
 
-VortexCtx        * vortex_event_get_ctx           (VortexEvent * event);
+VortexCtx        * vortex_event_get_ctx                    (VortexEvent * event);
 
-VortexConnection * vortex_event_get_conn          (VortexEvent * event);
+VortexConnection * vortex_event_get_conn                   (VortexEvent * event);
 
-VortexChannel    * vortex_event_get_channel       (VortexEvent * event);
+VortexChannel    * vortex_event_get_channel                (VortexEvent * event);
 
-VortexFrame      * vortex_event_get_frame         (VortexEvent * event);
+VortexFrame      * vortex_event_get_frame                  (VortexEvent * event);
 
-int                vortex_event_get_msgno         (VortexEvent * event);
+int                vortex_event_get_msgno                  (VortexEvent * event);
 
-VortexEventMask  * vortex_event_mask_new          (const char  * identifier,
-						   int           initial_mask,
-						   axl_bool      initial_state);
+VortexEventMask  * vortex_event_mask_new                   (const char  * identifier,
+							    int           initial_mask,
+							    axl_bool      initial_state);
 
-void               vortex_event_mask_add          (VortexEventMask * mask,
-						   int               events);
+void               vortex_event_mask_add                   (VortexEventMask * mask,
+							    int               events);
 
-void               vortex_event_mask_remove       (VortexEventMask * mask,
-						   int               events);
+void               vortex_event_mask_remove                (VortexEventMask * mask,
+							    int               events);
 
-axl_bool           vortex_event_mask_is_set       (VortexEventMask * mask,
-						   VortexEventType   event);
+axl_bool           vortex_event_mask_is_set                (VortexEventMask * mask,
+							    VortexEventType   event);
 
-void               vortex_event_mask_enable       (VortexEventMask * mask,
-						   axl_bool          enable);
+void               vortex_event_mask_enable                (VortexEventMask * mask,
+							    axl_bool          enable);
 
-axl_bool           vortex_pull_set_event_mask     (VortexCtx        * ctx,
-						   VortexEventMask  * mask,
-						   axlError        ** error);
+axl_bool           vortex_pull_set_event_mask              (VortexCtx        * ctx,
+							    VortexEventMask  * mask,
+							    axlError        ** error);
 
-void               vortex_event_mask_free         (VortexEventMask * mask);
+void               vortex_event_mask_free                  (VortexEventMask * mask);
 
 /* internal API */
-void               vortex_pull_frame_received     (VortexChannel    * channel,
-						   VortexConnection * connection,
-						   VortexFrame      * frame,
-						   axlPointer         user_data);
+void               vortex_pull_frame_received              (VortexChannel    * channel,
+							    VortexConnection * connection,
+							    VortexFrame      * frame,
+							    axlPointer         user_data);
 
-void               vortex_pull_close_notify       (VortexChannel * channel,
-						   int             msg_no,
-						   axlPointer      user_data);
+void               vortex_pull_close_notify                (VortexChannel * channel,
+							    int             msg_no,
+							    axlPointer      user_data);
 
-void               vortex_pull_channel_added      (VortexChannel * channel,
-						   axlPointer      user_data);
+void               vortex_pull_channel_added               (VortexChannel * channel,
+							    axlPointer      user_data);
 
-void               vortex_pull_channel_removed    (VortexChannel * channel,
-						   axlPointer      user_data);
+void               vortex_pull_channel_removed             (VortexChannel * channel,
+							    axlPointer      user_data);
+
+int                vortex_pull_register_close_connection   (VortexCtx               * ctx,
+							    VortexConnection        * conn,
+							    VortexConnection       ** new_conn,
+							    VortexConnectionStage     state,
+							    axlPointer                user_data);
+
+axl_bool           vortex_pull_connection_accepted         (VortexConnection * connection, 
+							    axlPointer         user_data);
 
 #endif
 

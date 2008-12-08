@@ -194,10 +194,25 @@ axl_bool           vortex_pull_init               (VortexCtx * ctx)
 	vortex_ctx_set_data (ctx, VORTEX_PULL_EVENT_MASKS, event_masks);
 	
 	/* configure internal handlers to receive notifications */
+
+	/* VORTEX_EVENT_FRAME_RECEIVED */
 	vortex_ctx_set_frame_received          (ctx, vortex_pull_frame_received, ctx);
+
+	/* VORTEX_EVENT_CLOSE_REQUEST */
 	vortex_ctx_set_close_notify_handler    (ctx, vortex_pull_close_notify, ctx);
+
+	/* VORTEX_EVENT_CHANNEL_ADDED */
 	vortex_ctx_set_channel_added_handler   (ctx, vortex_pull_channel_added, ctx);
+
+	/* VORTEX_EVENT_CHANNEL_REMOVED */
 	vortex_ctx_set_channel_removed_handler (ctx, vortex_pull_channel_removed, ctx);
+
+	/* VORTEX_EVENT_CONNECTION_CLOSED */
+	vortex_connection_set_connection_actions (ctx, CONNECTION_STAGE_POST_CREATED, 
+						  vortex_pull_register_close_connection, ctx);
+
+	/* VORTEX_EVENT_CONNECTION_ACCEPTED */
+	vortex_listener_set_on_connection_accepted (ctx, vortex_pull_connection_accepted, ctx);
 
 	/* install auto-cleanup on ctx termimation */
 	vortex_ctx_install_cleanup (ctx, (axlDestroyFunc) vortex_pull_cleanup);
@@ -866,6 +881,57 @@ void               vortex_pull_channel_removed    (VortexChannel * channel,
 		NULL,
 		-1);
 	return;
+}
+
+void vortex_pull_connection_closed (VortexConnection * connection, axlPointer user_data)
+{
+	/* call to generic implementation to marshall async
+	 * notification into a pulled event */
+	vortex_pull_event_marshaller (
+		(VortexCtx *) user_data,
+		"connection closed",
+		VORTEX_EVENT_CONNECTION_CLOSED,
+		/* null channel */
+		NULL,
+		/* connection */
+		connection,
+		/* null frame and msgno = -1 */
+		NULL, -1);
+	return;
+}
+
+/* @internal handler to install connection closed handler: VORTEX_EVENT_CONNECTION_CLOSED */
+int                vortex_pull_register_close_connection   (VortexCtx               * ctx,
+							    VortexConnection        * conn,
+							    VortexConnection       ** new_conn,
+							    VortexConnectionStage     state,
+							    axlPointer                user_data)
+{
+	/* configure connection closed, and set VortexCtx (user_data)
+	 * as optional user defined data*/
+	vortex_connection_set_on_close_full (conn, vortex_pull_connection_closed, user_data);
+	return 1;
+}
+
+/* @intenal handler for VORTEX_EVENT_CONNECTION_ACCEPTED */
+axl_bool vortex_pull_connection_accepted (VortexConnection * connection, axlPointer user_data)
+{
+	/* call to generic implementation to marshall async
+	 * notification into a pulled event */
+	vortex_pull_event_marshaller (
+		(VortexCtx *) user_data,
+		"connection accepted",
+		VORTEX_EVENT_CONNECTION_ACCEPTED,
+		/* null channel */
+		NULL,
+		/* connection */
+		connection,
+		/* null frame and msgno = -1 */
+		NULL, -1);
+
+	/* accept the connection here and let the user to close it
+	 * once received the CONNECTION_ACCEPTED notification. */
+	return axl_true;
 }
 
 /**
