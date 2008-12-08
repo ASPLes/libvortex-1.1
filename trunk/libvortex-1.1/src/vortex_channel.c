@@ -1565,11 +1565,15 @@ void            vortex_channel_set_close_handler (VortexChannel * channel,
 }
 
 /** 
- * @brief Allows to configure the closed handler: a notification that the channel is about to be removed from the connection.
+ * @brief Allows to configure the closed handler: a notification that
+ * the channel is about to be removed from the connection.
  *
  * This handler will be used by the vortex engine to provide a
  * notification that the channel is about to be unrefered and
- * disconnected from its connection. 
+ * disconnected from its connection becase it wasn't closed at the
+ * time the connection is being terminated. This handler is provided
+ * because the connection is not working and there is no way to
+ * perform proper close on channels found installed.
  * 
  * This is useful to get notifications about a channel that was not
  * closed properly (so the close handler can't be called: \ref
@@ -1583,10 +1587,9 @@ void            vortex_channel_set_close_handler (VortexChannel * channel,
  * called.
  *
  * <i><b>NOTE: </b> this function is not called if a channel was
- * created but properly closed. The handler configured (closed) is
- * called at connection termination. This means that channels that
- * aren't available at this phase (because they was closed properly)
- * aren't notified.</i>
+ * created and properly closed. This handler is called at connection
+ * termination. This means that channels that aren't available at this
+ * phase (because they was closed properly) aren't notified.</i>
  *
  * <b>What are the differences between vortex_channel_set_close_handler and vortex_channel_set_closed_handler?</b>
  *
@@ -6514,9 +6517,22 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 	}
  	vortex_channel_unref (channel);
 
+	/* check for global notify close */
+	if (channel->channel_num != 0 && ctx->global_notify_close != NULL) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "found global channel=%d close notify handler, notifying and disabling futher close handling",
+			    channel->channel_num);
+
+		/* call to notify */
+		ctx->global_notify_close (channel, vortex_frame_get_msgno (frame), ctx->global_notify_close_data);
+
+		/* close unlock the mutex */
+		vortex_mutex_unlock (&channel->close_mutex);
+		return;
+	} /* end if */
+
 	/* check if the channel has a close notify */
 	if (channel->close_notify != NULL) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "found close notify handler, notifying this and disabling close handler");
+		vortex_log (VORTEX_LEVEL_DEBUG, "found close notify handler, notifying and disabling futher close handling");
 
 		/* call to notify the close request on the channel */
 		channel->close_notify (channel, vortex_frame_get_msgno (frame), channel->close_notify_user_data);

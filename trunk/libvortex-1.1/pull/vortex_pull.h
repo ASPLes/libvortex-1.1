@@ -71,18 +71,77 @@ typedef enum {
 	 * @brief Undefined event. This type is used to report errors
 	 * found while using pull API.
 	 */
-	VORTEX_EVENT_UNKNOWN        = 1,
+	VORTEX_EVENT_UNKNOWN        = 0,
 	/**
 	 * @brief Even type that represents a frame received. You must
 	 * call to vortex_pull_get_frame to get the reference to the
 	 * frame received. 
 	 *
-	 * This event has the following references defined:
+	 * This event has the following especific references defined:
 	 * - \ref vortex_event_get_frame : frame received due to this event.
 	 * - \ref vortex_event_get_channel : the channel where the frame was received.
 	 */
-	VORTEX_EVENT_FRAME_RECEIVED = 2,
+	VORTEX_EVENT_FRAME_RECEIVED = 1 << 0,
+	/**
+	 * @brief This event signals that a channel close request has
+	 * been received. The peer must respond to the close request
+	 * as soon as possible since the block channel 0 for futher
+	 * operations.
+	 *
+	 * This event has the following especific references defined:
+	 * - \ref vortex_event_get_channel : the channel that is requested to be closed.
+	 * - \ref vortex_event_get_msgno : the msgno value that identifies the close request received.
+	 *
+	 * With these values, the close request must be replied by
+	 * using the function \ref vortex_channel_notify_close.
+	 */
+	VORTEX_EVENT_CLOSE_REQUEST  = 1 << 1, 
+
+	/**
+	 * @brief Event used to signal that a channel has been added
+	 * to a connection. This happens when a channel is created.
+	 *
+	 * This event has the following especific references defined:
+	 * - \ref vortex_event_get_channel : the channel that was added.
+	 */
+	VORTEX_EVENT_CHANNEL_ADDED  = 1 << 2,
+
+	/**
+	 * @brief Event used to signal that a channel has been removed
+	 * to a connection. This happens when a channel is closed
+	 *
+	 * This event has the following especific references defined:
+	 * - \ref vortex_event_get_channel : the channel that was added.
+	 */
+	VORTEX_EVENT_CHANNEL_REMOVED  = 1 << 3,
+
 } VortexEventType;
+
+/**
+ * @brief A type definition that allows to define a set of events that
+ * are ignored on a particular context. The event mask (\ref
+ * VortexEventMask) can configured on several context (\ref VortexCtx)
+ * where PULL API is enabled.
+ *
+ * A \ref VortexEventMask has a string identifier defined by the user
+ * (it is not required) and has an activation state that allows to
+ * block the mask during a desired period.
+ *
+ * A \ref VortexEventMask is created by using \ref
+ * vortex_event_mask_new. The following functions are used to add,
+ * remove and check events ignored by the mask:
+ *
+ *  - \ref vortex_event_mask_add
+ *  - \ref vortex_event_mask_remove
+ *  - \ref vortex_event_mask_is_set
+ *
+ * Once configured mask is associated to a context (\ref VortexCtx) to
+ * block events by using: \ref vortex_pull_set_event_mask
+ *
+ * Even having the mask installed, you can disable it temporally by
+ * using \ref vortex_event_mask_enable.
+ */
+typedef struct _VortexEventMask VortexEventMask;
 
 axl_bool           vortex_pull_init               (VortexCtx * ctx);
 
@@ -109,11 +168,45 @@ VortexChannel    * vortex_event_get_channel       (VortexEvent * event);
 
 VortexFrame      * vortex_event_get_frame         (VortexEvent * event);
 
+int                vortex_event_get_msgno         (VortexEvent * event);
+
+VortexEventMask  * vortex_event_mask_new          (const char  * identifier,
+						   int           initial_mask,
+						   axl_bool      initial_state);
+
+void               vortex_event_mask_add          (VortexEventMask * mask,
+						   int               events);
+
+void               vortex_event_mask_remove       (VortexEventMask * mask,
+						   int               events);
+
+axl_bool           vortex_event_mask_is_set       (VortexEventMask * mask,
+						   VortexEventType   event);
+
+void               vortex_event_mask_enable       (VortexEventMask * mask,
+						   axl_bool          enable);
+
+axl_bool           vortex_pull_set_event_mask     (VortexCtx        * ctx,
+						   VortexEventMask  * mask,
+						   axlError        ** error);
+
+void               vortex_event_mask_free         (VortexEventMask * mask);
+
 /* internal API */
 void               vortex_pull_frame_received     (VortexChannel    * channel,
 						   VortexConnection * connection,
 						   VortexFrame      * frame,
 						   axlPointer         user_data);
+
+void               vortex_pull_close_notify       (VortexChannel * channel,
+						   int             msg_no,
+						   axlPointer      user_data);
+
+void               vortex_pull_channel_added      (VortexChannel * channel,
+						   axlPointer      user_data);
+
+void               vortex_pull_channel_removed    (VortexChannel * channel,
+						   axlPointer      user_data);
 
 #endif
 

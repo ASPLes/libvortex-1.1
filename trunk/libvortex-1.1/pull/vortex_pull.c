@@ -39,8 +39,8 @@
 /* local include */
 #include <vortex_pull.h>
 
-#define LOG_DOMAIN "vortex-pull"
-#define VORTEX_PULL_QUEUE_KEY "vo:pu:qu"
+#define VORTEX_PULL_QUEUE_KEY   "vo:pu:qu"
+#define VORTEX_PULL_EVENT_MASKS "vo:pu:ev:ma"
 
 /**
  * \defgroup vortex_pull Vortex PULL API: A pull API suited for singled threaded or event driven environments
@@ -70,17 +70,63 @@ struct _VortexEvent {
 
 	/* @internal Optional frame reference reported */
 	VortexFrame      * frame;
+
+	/* @internal Reference to the msgno reported */
+	int                msgno;
+};
+
+struct _VortexEventMask {
+	/* @internal Mask string identifier. */
+	char             * mask_id;
+	/* @internal Mask defined */
+	int                mask;
+	/* @internal Mask activation state */
+	axl_bool           is_enabled;
 };
 
 /**
  * @internal Function used to create empty events.
  */
-VortexEvent * __vortex_event_new_empty (void)
+VortexEvent * __vortex_event_new_empty (VortexEventType    type,
+					VortexCtx        * ctx, 
+					VortexConnection * conn,
+					VortexChannel    * channel,
+					VortexFrame      * frame)
 {
 	/* create event to report */
 	VortexEvent * event   = axl_new (VortexEvent, 1);
 	event->ref_count      = 1;
 	vortex_mutex_create (&event->ref_count_mutex);
+
+	/* configure default values */
+	event->msgno          = -1;
+
+	/* update reference connection */
+	if (conn) {
+		/* ref and set */
+		if (vortex_connection_ref (conn, "__vortex_event_new_empty")) 
+			event->conn = conn;
+	} /* end if */
+	
+	/* now update channel reference counting */
+	if (channel) {
+		/* ref and set */
+		if (vortex_channel_ref (channel))
+			event->channel = channel;
+	} /* end if */
+
+	/* increase frame reference counting to make the VortexEvent
+	 * to own its reference */
+	if (frame) {
+		if (vortex_frame_ref (frame))
+			event->frame = frame;
+	} /* end if */
+
+	/* context */
+	event->ctx        = ctx;
+
+	/* type */
+	event->type       = type;
 
 	/* return event created */
 	return event;
@@ -125,6 +171,7 @@ VortexEvent * __vortex_event_new_empty (void)
 axl_bool           vortex_pull_init               (VortexCtx * ctx)
 {
 	VortexAsyncQueue * pull_pending_events;
+	axlList          * event_masks;
 
 	if (ctx == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to activate PULL API because no vortex context is defined");
@@ -138,14 +185,19 @@ axl_bool           vortex_pull_init               (VortexCtx * ctx)
 		return axl_true;
 	}
 	
-	/* activate queue */
+	/* configure event pending queue into the context */
 	pull_pending_events = vortex_async_queue_new ();
-
-	/* configure into the context */
 	vortex_ctx_set_data (ctx, VORTEX_PULL_QUEUE_KEY, pull_pending_events);
+
+	/* create the list of event masks */
+	event_masks = axl_list_new (axl_list_always_return_1, (axlDestroyFunc) vortex_event_mask_free);
+	vortex_ctx_set_data (ctx, VORTEX_PULL_EVENT_MASKS, event_masks);
 	
 	/* configure internal handlers to receive notifications */
-	vortex_reader_set_frame_received (ctx, vortex_pull_frame_received, ctx);
+	vortex_ctx_set_frame_received          (ctx, vortex_pull_frame_received, ctx);
+	vortex_ctx_set_close_notify_handler    (ctx, vortex_pull_close_notify, ctx);
+	vortex_ctx_set_channel_added_handler   (ctx, vortex_pull_channel_added, ctx);
+	vortex_ctx_set_channel_removed_handler (ctx, vortex_pull_channel_removed, ctx);
 
 	/* install auto-cleanup on ctx termimation */
 	vortex_ctx_install_cleanup (ctx, (axlDestroyFunc) vortex_pull_cleanup);
@@ -164,6 +216,7 @@ void           vortex_pull_cleanup            (VortexCtx * ctx)
 {
 	/* get the reference to the pull queue */
 	VortexAsyncQueue * pull_pending_events = vortex_ctx_get_data (ctx, VORTEX_PULL_QUEUE_KEY);
+	axlList          * list                = vortex_ctx_get_data (ctx, VORTEX_PULL_EVENT_MASKS);
 	VortexEvent      * event;
 
 	if (ctx == NULL || pull_pending_events == NULL) {
@@ -171,7 +224,8 @@ void           vortex_pull_cleanup            (VortexCtx * ctx)
 	} /* end if */
 
 	/* uninstall handlers */
-	vortex_reader_set_frame_received (ctx, NULL, NULL);
+	vortex_ctx_set_frame_received (ctx, NULL, NULL);
+	vortex_ctx_set_close_notify_handler (ctx, NULL, NULL);
 
 	/* remove all pending items */
 	while (vortex_async_queue_items (pull_pending_events) > 0) {
@@ -184,6 +238,9 @@ void           vortex_pull_cleanup            (VortexCtx * ctx)
 
 	/* terminate queue */
 	vortex_async_queue_unref (pull_pending_events);
+
+	/* terminate lists */
+	axl_list_free (list);
 
 	return;
 }
@@ -412,16 +469,284 @@ VortexFrame      * vortex_event_get_frame          (VortexEvent * event)
 }
 
 /**
- * @internal Frame received handler for PULL API.
+ * @brief Allows to get the msgno value configured on the provided
+ * event.
+ *
+ * @param event The event reference to get the msgno value from.
+ *
+ * @return The msgno configured or -1 if it fails.
  */
-void               vortex_pull_frame_received     (VortexChannel    * channel,
-						   VortexConnection * connection,
+int                vortex_event_get_msgno         (VortexEvent * event)
+{
+	if (event == NULL)
+		return -1;
+	/* return msgno configured */
+	return event->msgno;
+}
+
+/**
+ * @brief Allows to create a mask with the provided identifier,
+ * initial event mask and an initial activation state.
+ *
+ * @param identifier Unique string that will be used find the mask
+ * installed on the context.
+ *
+ * @param initial_mask Initial mask configuration.
+ *
+ * @param initial_state if the event mask is enabled or disabled. The
+ * mask must be enabled to take effect (\ref
+ * vortex_event_mask_enable).
+ *
+ * @return A newly created reference to a \ref VortexEventMask with
+ * the provided data. You must use \ref vortex_event_mask_add to add
+ * new events to mask (block). Once you are done, install the mask by
+ * using \ref vortex_pull_set_event_mask. Remember to activate the
+ * mask (if you did not provide an axl_true for <b>initial_state</b>)
+ * by using \ref vortex_event_mask_enable. 
+ */
+VortexEventMask  * vortex_event_mask_new          (const char  * identifier,
+						   int           initial_mask,
+						   axl_bool      initial_state)
+{
+	VortexEventMask * mask;
+
+	/* check value provided */
+	if (identifier == NULL)
+		return NULL;
+
+	mask             = axl_new (VortexEventMask, 1);
+	mask->mask_id    = axl_strdup (identifier);
+	mask->mask       = initial_mask;
+	mask->is_enabled = initial_state;
+	
+	/* return mask created */
+	return mask;
+} 
+
+/**
+ * @brief Allows to configure a new event to blocked by the mask
+ * reference provided.
+ *
+ * @param mask The mask to configure.
+ *
+ * @param events The list of events to configure. In the case several
+ * events are to be configured separate them with "|".
+ *
+ * \code
+ * // how to set several events 
+ * vortex_event_mask_add (mask, VORTEX_EVENT_CHANNEL_ADDED | VORTEX_EVENT_CHANNEL_REMOVED);
+ * \endcode
+ */
+void               vortex_event_mask_add          (VortexEventMask * mask,
+						   int               events)
+{
+	if (mask == NULL)
+		return;
+	/* add events to the mask */
+	mask->mask |= events;
+	return;
+}
+
+/**
+ * @brief Allows to remove an event from the mask provided.
+ *
+ * @param mask The mask to configure.
+ *
+ * @param events The list of events to remove. In the case several
+ * events are to be removed separate them with "|".
+ *
+ * \code
+ * // how to remove several events 
+ * vortex_event_mask_remove (mask, VORTEX_EVENT_CHANNEL_ADDED | VORTEX_EVENT_CHANNEL_REMOVED);
+ * \endcode
+ */
+void               vortex_event_mask_remove       (VortexEventMask * mask,
+						   int               events)
+{
+	if (mask == NULL)
+		return;
+	/* remove events to the mask */
+	mask->mask = (mask->mask & ~events);
+	return;
+}
+
+/**
+ * @brief Allows to check if an event is configred in the provided
+ * mask.
+ *
+ * @param mask The mask to check.
+ *
+ * @param event The event to check.
+ *
+ * @return axl_true in the case the event is configured in the mask,
+ * otherwise axl_false is returned.
+ */
+axl_bool           vortex_event_mask_is_set       (VortexEventMask * mask,
+						   VortexEventType   event)
+{
+	if (mask == NULL)
+		return axl_false;
+	/* check is enabled */
+	if (! mask->is_enabled)
+		return axl_false;
+	/* check the event in the mask */
+	return (mask->mask & event) > 0;
+}
+
+/**
+ * @brief Allows to enable/disable the provided mask.
+ * @param mask The mask to enable/disable.
+ * @param enable Value used to enable/disable the mask.
+ */
+void               vortex_event_mask_enable       (VortexEventMask * mask,
+						   axl_bool          enable)
+{
+	if (mask == NULL)
+		return;  
+	mask->is_enabled = enable;
+	return;
+}
+
+/**
+ * @brief Allows to install the provided event mask (\ref
+ * VortexEventMask) on the selected context (\ref VortexCtx).
+ *
+ * @param ctx The context where the mask will be installed. 
+ *
+ * @param mask The mask to install. Its effect will be cumulative with
+ * other masks installed. It is not required to unref (\ref
+ * vortex_event_mask_free) the mask before exit vortex. This is
+ * already done by \ref vortex_exit_ctx. 
+ * 
+ * @param error Optional axlError reference to report textual
+ * diagnostic errors.
+ *
+ * @return axl_true if the event mask was installed, otherwise
+ * axl_false is returned and error is updated with a textual
+ * diagnostic along with an especific error code.
+ */
+axl_bool           vortex_pull_set_event_mask     (VortexCtx        * ctx,
+						   VortexEventMask  * mask,
+						   axlError        ** error)
+{
+	axlList         * list;
+	int               iterator;
+	VortexEventMask * auxMask;
+
+	/* check reference */
+	if (ctx == NULL || mask == NULL) {
+		axl_error_report (error, -1, "Failed to set event mask because context or mask reference received is NULL");
+		return axl_false;
+	} /* end if */
+
+	/* check that the context has the pull API enabled */
+	if (vortex_ctx_get_data (ctx, VORTEX_PULL_QUEUE_KEY) == NULL) {
+		axl_error_report (error, -2, "Failed to set event mask because context provided do not have PULL API enabled");
+		return axl_false;
+	} /* end if */
+		
+	/* get the mask list */
+	list  = vortex_ctx_get_data (ctx, VORTEX_PULL_EVENT_MASKS);
+	if (list == NULL) {
+		axl_error_report (error, -3, "Failed to set event mask because event mask list reference is NULL");
+		return axl_false;
+	} /* end if */
+
+	/* check the event mask identifier is not already installed */
+	iterator = 0;
+	while (iterator < axl_list_length (list)) {
+		/* get mask installed */
+		auxMask = axl_list_get_nth (list, iterator);
+		
+		/* check the installed mask is not using a mask id
+		 * already in use. */
+		if (axl_cmp (auxMask->mask_id, mask->mask_id)) {
+			axl_error_report (error, -4, "Failed to set event mask because the mask id is already in use");
+			return axl_false;
+		} /* end if */
+
+		/* next iterator */
+		iterator++;
+	} /* end while */
+
+	/* install the mask */
+	axl_list_append (list, mask);
+	
+	return axl_true;
+}
+
+/**
+ * @internal Function that allows to check if the provided even type
+ * is filtered by context event masks installed.
+ *
+ * @param ctx The context where the PULL API, and optionally event
+ * masks are installed.
+ *
+ * @param type The event type to check if it is filtered.
+ *
+ * @return axl_true if the event is filtered, otherwise axl_false is returned.
+ */
+axl_bool vortex_pull_event_is_filtered (VortexCtx        * ctx,
+					VortexEventType    type)
+{
+	axlList         * list     = vortex_ctx_get_data (ctx, VORTEX_PULL_EVENT_MASKS);
+	int               iterator = 0;
+	VortexEventMask * mask;
+
+	/* no mask installed, no event filtered */
+	if (axl_list_length (list) < 1)
+		return axl_false;
+	
+	/* for each mask installed, check for the first filtering the
+	 * event */
+	while (iterator < axl_list_length (list)) {
+
+		/* get mask and check */
+		mask = axl_list_get_nth (list, iterator);
+		
+		/* check if it's filtered */
+		if (vortex_event_mask_is_set (mask, type)) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "event type=%d filtered by event mask %s",
+				    type, mask->mask_id);
+			return axl_true;
+		} /* end if */
+
+		/* next iterator */
+		iterator++;
+	} /* end while */
+
+	/* event type not filtered */
+	return axl_false;
+}
+
+/**
+ * @brief Release resources allocated pointed by the mask reference.
+ * @param mask The reference to terminate.
+ */
+void               vortex_event_mask_free         (VortexEventMask * mask)
+{
+	if (mask == NULL)
+		return;
+	axl_free (mask->mask_id);
+	axl_free (mask);
+	return;
+}
+
+/* @internal generic marshaller */
+void               vortex_pull_event_marshaller   (VortexCtx        * ctx,
+						   const char       * event_description,
+						   VortexEventType    type,
+						   VortexChannel    * channel,
+						   VortexConnection * conn,
 						   VortexFrame      * frame,
-						   axlPointer         user_data)
+						   int                msg_no)
 {
 	VortexEvent      * event;
 	VortexAsyncQueue * pull_pending_events;
-	VortexCtx        * ctx = user_data;
+
+	/* check if the event is fileted */
+	if (vortex_pull_event_is_filtered (ctx, type))
+		return;
 
 	/* get the reference to the queue and return if it is found to
 	 * be not defined */
@@ -429,35 +754,117 @@ void               vortex_pull_frame_received     (VortexChannel    * channel,
 	if (pull_pending_events == NULL) 
 		return;
 
-	/* update reference connection */
-	if (! vortex_connection_ref (connection, "vortex_pull_frame-received")) 
-		return;
-	
-	/* now update channel reference counting */
-	vortex_channel_ref (channel);
-
-	/* increase frame reference counting to make the VortexEvent
-	 * to own its reference */
-	vortex_frame_ref (frame);
-
 	/* create an empty event */
-	event = __vortex_event_new_empty ();
-	
-	/* references */
-	event->ctx        = user_data;
-	event->frame      = frame;
-	event->channel    = channel;
-	event->conn       = connection;
+	event = __vortex_event_new_empty (
+		/* type */
+		type,
+		/* context */
+		ctx,
+		/* connection */
+		conn,
+		/* channel */
+		channel,
+		/* frame */
+		frame);
 
-	/* configure event type */
-	event->type       = VORTEX_EVENT_FRAME_RECEIVED;
-
+	/* configure msgno */
+	event->msgno = msg_no;
+					  
 	/* queue pending event to process */
 	vortex_async_queue_push (pull_pending_events, event);
 
 	/* drop a log */
-	vortex_log (VORTEX_LEVEL_DEBUG, "(PULL API) frame received connection-id=%d, channel-num=%d",
-		    vortex_connection_get_id (connection), vortex_channel_get_number (channel));
+	vortex_log (VORTEX_LEVEL_DEBUG, "(PULL API) event: %s, connection-id=%d, channel-num=%d",
+		    event_description,
+		    /* connection */
+		    conn ? vortex_connection_get_id (conn) : -1, 
+		    channel ? vortex_channel_get_number (channel) : -1);
+	
+	return;
+}
+						   
+						   
+
+/**
+ * @internal Frame received handler for PULL API.
+ */
+void               vortex_pull_frame_received     (VortexChannel    * channel,
+						   VortexConnection * connection,
+						   VortexFrame      * frame,
+						   axlPointer         user_data)
+{
+	/* call to generic implementation to marshall async
+	 * notification into a pulled event */
+	vortex_pull_event_marshaller (
+		(VortexCtx *) user_data,
+		"frame received",
+		VORTEX_EVENT_FRAME_RECEIVED,
+		channel,
+		connection, 
+		frame,
+		/* msg no */
+		-1);
+
+	return;
+}
+
+/**
+ * @internal Close channel request pull API marshaller.
+ */
+void               vortex_pull_close_notify       (VortexChannel * channel,
+						   int             msg_no,
+						   axlPointer      user_data)
+{
+	/* call to generic implementation to marshall async
+	 * notification into a pulled event */
+	vortex_pull_event_marshaller (
+		(VortexCtx *) user_data,
+		"channel close request",
+		VORTEX_EVENT_CLOSE_REQUEST,
+		channel,
+		vortex_channel_get_connection (channel),
+		NULL,
+		msg_no);
+
+	return;
+}
+
+/**
+ * @internal Channel added pull API marshaller.
+ */
+void               vortex_pull_channel_added      (VortexChannel * channel,
+						   axlPointer      user_data)
+{
+	/* call to generic implementation to marshall async
+	 * notification into a pulled event */
+	vortex_pull_event_marshaller (
+		(VortexCtx *) user_data,
+		"channel added",
+		VORTEX_EVENT_CHANNEL_ADDED,
+		channel,
+		vortex_channel_get_connection (channel),
+		NULL,
+		-1);
+
+	return;
+}
+
+/**
+ * @internal Channel removed pull API marshaller.
+ */
+void               vortex_pull_channel_removed    (VortexChannel * channel,
+						   axlPointer      user_data)
+{
+	/* call to generic implementation to marshall async
+	 * notification into a pulled event */
+	vortex_pull_event_marshaller (
+		(VortexCtx *) user_data,
+		"channel removed",
+		VORTEX_EVENT_CHANNEL_REMOVED,
+		channel,
+		vortex_channel_get_connection (channel),
+		NULL,
+		-1);
 	return;
 }
 

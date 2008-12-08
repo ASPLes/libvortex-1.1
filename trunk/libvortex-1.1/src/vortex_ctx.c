@@ -75,7 +75,7 @@
  * @return A newly allocated reference to the \ref VortexCtx. You must
  * finish it with \ref vortex_ctx_free.
  */
-VortexCtx * vortex_ctx_new ()
+VortexCtx * vortex_ctx_new (void)
 {
 	VortexCtx * result;
 
@@ -167,6 +167,116 @@ axlPointer  vortex_ctx_get_data (VortexCtx       * ctx,
 
 	/* lookup */
 	return vortex_hash_lookup (ctx->data, key);
+}
+
+/**
+ * @brief Allows to configure a global frame received handler where
+ * all frames are delivered, overriding first and second level
+ * handlers. The frame handler is executed using the thread created
+ * for the vortex reader process, that is, without activing a new
+ * thread from the pool. This means that the function must not block
+ * the caller because no frame will be received until the handler
+ * configured on this function finish.
+ *
+ * @param ctx The context to configure.
+ *
+ * @param received The handler to configure.
+ *
+ * @param received_user_data User defined data to be configured
+ * associated to the handler. This data will be provided to the frame
+ * received handler each time it is activated.
+ */
+void      vortex_ctx_set_frame_received          (VortexCtx             * ctx,
+						  VortexOnFrameReceived   received,
+						  axlPointer              received_user_data)
+{
+	v_return_if_fail (ctx);
+	
+	/* configure handler and data even if they are null */
+	ctx->global_frame_received      = received;
+	ctx->global_frame_received_data = received_user_data;
+
+	return;
+}
+
+/** 
+ * @brief Allows to configure a global close notify handler on the
+ * provided on the provided context. 
+ * 
+ * See \ref VortexOnNotifyCloseChannel and \ref
+ * vortex_channel_notify_close to know more about this function. The
+ * handler configured on this function will affect to all channel
+ * close notifications received on the provided context.
+ * 
+ * @param ctx The context to configure with a global close channel notify.
+ *
+ * @param close_notify The close notify handler to execute.
+ *
+ * @param user_data User defined data to be passed to the close notify
+ * handler.
+ */
+void               vortex_ctx_set_close_notify_handler     (VortexCtx                  * ctx,
+							    VortexOnNotifyCloseChannel   close_notify,
+							    axlPointer                   user_data)
+{
+	/* check context received */
+	if (ctx == NULL)
+		return;
+
+	/* configure handlers */
+	ctx->global_notify_close      = close_notify;
+	ctx->global_notify_close_data = user_data;
+
+	/* nothing more to do over here */
+	return;
+}
+
+/**
+ * @brief Allows to configure a global handler that is called each
+ * time a channel is added to any connection.
+ *
+ * @param ctx The context that is being configured.
+ * @param added_handler The handler to configure.
+ * @param user_data User defined data to be passed to the handler configured.
+ */
+void        vortex_ctx_set_channel_added_handler (VortexCtx                       * ctx,
+						  VortexConnectionOnChannelUpdate   added_handler,
+						  axlPointer                        user_data)
+{
+	/* check context received */
+	if (ctx == NULL)
+		return;
+
+	/* configure handlers */
+	ctx->global_channel_added      = added_handler;
+	ctx->global_channel_added_data = user_data;
+
+	/* nothing more to do over here */
+	return;
+}
+
+/**
+ * @brief Allows to configure a global handler that is called each
+ * time a channel is added to any connection.
+ *
+ * @param ctx The context that is being configured.
+ * @param added_handler The handler to configure.
+ * @param user_data User defined data to be passed to the handler configured.
+ */
+void        vortex_ctx_set_channel_removed_handler (VortexCtx                       * ctx,
+						    VortexConnectionOnChannelUpdate   removed_handler,
+						    axlPointer                        user_data)
+{
+	/* check context received */
+	if (ctx == NULL)
+		return;
+
+	/* configure handlers */
+	ctx->global_channel_removed      = removed_handler;
+	ctx->global_channel_removed_data = user_data;
+
+	/* nothing more to do over here */
+	return;
 }
 
 /**
