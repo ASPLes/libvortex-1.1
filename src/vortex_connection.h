@@ -98,6 +98,8 @@ axl_bool            vortex_connection_close_all_channels     (VortexConnection *
 axl_bool            vortex_connection_ref                    (VortexConnection * connection,
 							      const char       * who);
 
+axl_bool            vortex_connection_uncheck_ref            (VortexConnection * connection);
+
 void                vortex_connection_unref                  (VortexConnection * connection,
 							      const char       * who);
 

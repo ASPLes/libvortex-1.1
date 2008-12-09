@@ -2096,6 +2096,38 @@ axl_bool                    vortex_connection_close                  (VortexConn
 	return axl_true;
 }
 
+/**
+ * @internal Reference counting update implementation.
+ */
+axl_bool               vortex_connection_ref_internal                    (VortexConnection * connection, 
+									  const char       * who,
+									  axl_bool           check_ref)
+{
+	VortexCtx * ctx;
+
+	v_return_val_if_fail (connection, axl_false);
+	if (check_ref)
+		v_return_val_if_fail (vortex_connection_is_ok (connection, axl_false), axl_false);
+
+	/* get a reference to the ctx */
+	ctx = connection->ctx;
+	
+	/* lock ref/unref operations over this connection */
+	vortex_mutex_lock   (&connection->ref_mutex);
+
+	/* increase and log the connection increased */
+	connection->ref_count++;
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "increased connection id=%d reference to %d by %s",
+	       connection->id,
+	       connection->ref_count, who ? who : "??" );
+
+	/* unlock ref/unref options over this connection */
+	vortex_mutex_unlock (&connection->ref_mutex);
+
+	return axl_true;
+}
+
 /** 
  * @brief Increase internal vortex connection reference counting.
  * 
@@ -2153,28 +2185,24 @@ axl_bool                    vortex_connection_close                  (VortexConn
 axl_bool               vortex_connection_ref                    (VortexConnection * connection, 
 								 const char       * who)
 {
-	VortexCtx * ctx;
+	/* checked ref */
+	return vortex_connection_ref_internal (connection, who, axl_true);
+}
 
-	v_return_val_if_fail (connection, axl_false);
-	v_return_val_if_fail (vortex_connection_is_ok (connection, axl_false), axl_false);
+/**
+ * @brief Allows to perform a ref count operation on the connection
+ * provided without checking if the connection is working (no call to
+ * \ref vortex_connection_is_ok).
+ *
+ * @param connection The connection to update.
 
-	/* get a reference to the ctx */
-	ctx = connection->ctx;
-	
-	/* lock ref/unref operations over this connection */
-	vortex_mutex_lock   (&connection->ref_mutex);
-
-	/* increase and log the connection increased */
-	connection->ref_count++;
-
-	vortex_log (VORTEX_LEVEL_DEBUG, "increased connection id=%d reference to %d by %s",
-	       connection->id,
-	       connection->ref_count, who ? who : "??" );
-
-	/* unlock ref/unref options over this connection */
-	vortex_mutex_unlock (&connection->ref_mutex);
-
-	return axl_true;
+ * @return axl_true if the reference update operation is completed,
+ * otherwise axl_false is returned.
+ */
+axl_bool               vortex_connection_uncheck_ref           (VortexConnection * connection)
+{
+	/* unchecked ref */
+	return vortex_connection_ref_internal (connection, "unchecked", axl_false);
 }
 
 /** 

@@ -7136,6 +7136,148 @@ axl_bool test_14_b (void)
 	return axl_true;
 }
 
+/**
+ * @brief Allows to check PULL API support.
+ *
+ * @return axl_true if all tests are ok, otherwise axl_false is
+ * returned.
+ */ 
+axl_bool test_14_c (void)
+{
+	VortexCtx        * client_ctx;
+	VortexCtx        * listener_ctx;
+	VortexConnection * conn;
+	int                conn2;
+	VortexEvent      * event;
+	VortexConnection * listener;
+
+	/* create an indepenent client context */
+	client_ctx = vortex_ctx_new ();
+
+	/*******************************/
+	/* activate a client context   */
+	/*******************************/
+	if (! vortex_init_ctx (client_ctx)) {
+		printf ("ERROR: failed to init client vortex context for PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	/* now activate PULL api on this context */
+	if (! vortex_pull_init (client_ctx)) {
+		printf ("ERROR: failed to activate PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 14-b: pull API activated (client context)..\n");
+
+	/*******************************/
+	/* activate a listener context */
+	/*******************************/
+	listener_ctx = vortex_ctx_new ();
+
+	/* init vortex on this context */
+	if (! vortex_init_ctx (listener_ctx)) {
+		printf ("ERROR: failed to init listener vortex context for PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	/* now activate PULL api on this context */
+	if (! vortex_pull_init (listener_ctx)) {
+		printf ("ERROR: failed to activate PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	/* register a profile to accept channel creation */
+	vortex_profiles_register (listener_ctx, REGRESSION_URI,
+				  /* no start handling */
+				  NULL, NULL, 
+				  /* no close handling */
+				  NULL, NULL,
+				  /* no frame received */
+				  NULL, NULL);
+	
+	/* start a listener */
+	listener = vortex_listener_new (listener_ctx, 
+					"localhost", "44012",
+					NULL, NULL);
+
+	/* now create a connection */
+	conn = vortex_connection_new (client_ctx, "localhost", "44012", NULL, NULL);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Expected to find proper connection with regression test listener..\n");
+		return axl_false;
+	} /* end if */
+
+	/* now receive at the listener the close request */
+	event = vortex_pull_next_event (listener_ctx, 0);
+	if (event == NULL) {
+		printf ("ERROR: Expected to find connection accepted but found NULL reference..\n");
+		return axl_false;
+	} /* end if */
+
+	if (vortex_event_get_type (event) != VORTEX_EVENT_CONNECTION_ACCEPTED) {
+		printf ("ERROR: Expected to find connection accepted event but found: %d..\n",
+			vortex_event_get_type (event));
+		return axl_false;
+	} /* end if */
+
+	/* close the connection without negotiation */
+	conn2 = vortex_connection_get_id (vortex_event_get_conn (event));
+	vortex_connection_shutdown (vortex_event_get_conn (event));
+
+	/* terminate event */
+	vortex_event_unref (event);
+
+	/* now wait for connection closed at the client */
+	event = vortex_pull_next_event (client_ctx, 0);
+
+	if (event == NULL || vortex_event_get_type (event) != VORTEX_EVENT_CONNECTION_CLOSED ||
+	    vortex_connection_get_id (conn) != vortex_connection_get_id (vortex_event_get_conn (event))) {
+		printf ("ERROR: expected to find event type for connection closed, but found NULL or different event type (%d != %d) or different connection (%d != %d)\n",
+			vortex_event_get_type (event), VORTEX_EVENT_CONNECTION_CLOSED,
+			vortex_connection_get_id (conn), vortex_connection_get_id (vortex_event_get_conn (event)));
+		return axl_false;
+	} /* end if */
+	vortex_event_unref (event);
+	
+	/* ok, close the connection */
+	vortex_connection_close (conn);
+
+	/* now wait for connection closed at the client */
+	event = vortex_pull_next_event (listener_ctx, 0);
+
+	if (event == NULL || vortex_event_get_type (event) != VORTEX_EVENT_CONNECTION_CLOSED ||
+	    conn2 != vortex_connection_get_id (vortex_event_get_conn (event))) {
+		printf ("ERROR: expected to find event type for connection closed, but found NULL or different event type (%d != %d) or different connection (%d != %d)\n",
+			vortex_event_get_type (event), VORTEX_EVENT_CONNECTION_CLOSED,
+			conn2, vortex_connection_get_id (vortex_event_get_conn (event)));
+		return axl_false;
+	} /* end if */
+	vortex_event_unref (event);
+
+	/* check no pending event is waiting to be read */
+	if (vortex_pull_pending_events (client_ctx)) {
+		printf ("ERROR: expected to not have pending events but found: %d waiting (client)..\n",
+			vortex_pull_pending_events_num (client_ctx));
+		return axl_false;
+	} /* end if */
+
+	/* terminate client context */
+	vortex_exit_ctx (client_ctx, axl_true);
+
+	/* check no pending event is waiting to be read */
+	if (vortex_pull_pending_events (listener_ctx)) {
+		printf ("ERROR: expected to not have pending events but found: %d waiting (listener)..\n",
+			vortex_pull_pending_events_num (listener_ctx));
+		return axl_false;
+	} /* end if */
+
+	/* terminate listener context */
+	vortex_exit_ctx (listener_ctx, axl_true);
+
+	return axl_true;
+}
+
 typedef int  (*VortexRegressionTest) ();
   
  
@@ -7220,7 +7362,7 @@ int main (int  argc, char ** argv)
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, \n");
  	printf ("**                       test_03, test_03a, test_04, test_04a, test_04b, test_04c, \n");
  	printf ("**                       test_05, test_05a, test_06, test_07, test_08, test_09, test_10, \n");
- 	printf ("**                       test_11, test_12, test_13, test_14, test_14a, test_14b\n");
+ 	printf ("**                       test_11, test_12, test_13, test_14, test_14a, test_14b, test_14c\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -7427,6 +7569,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_14b"))
 			run_test (test_14_b, "Test 14-b", "Check PULL API implementation (close channel request event)", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_14c"))
+			run_test (test_14_c, "Test 14-c", "Check PULL API implementation (connection close/accepted)", -1, -1);
+
 		goto finish;
 	}
 
@@ -7534,6 +7679,8 @@ int main (int  argc, char ** argv)
 	run_test (test_14_a, "Test 14-a", "Check PULL API implementation (frame received event)", -1, -1);
 
 	run_test (test_14_b, "Test 14-b", "Check PULL API implementation (close channel request event)", -1, -1);
+
+	run_test (test_14_c, "Test 14-c", "Check PULL API implementation (connection close/accepted)", -1, -1);
 
 #if defined(AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/**

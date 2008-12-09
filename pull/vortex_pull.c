@@ -90,6 +90,7 @@ struct _VortexEventMask {
 VortexEvent * __vortex_event_new_empty (VortexEventType    type,
 					VortexCtx        * ctx, 
 					VortexConnection * conn,
+					axl_bool           checked_conn_ref,
 					VortexChannel    * channel,
 					VortexFrame      * frame)
 {
@@ -104,7 +105,9 @@ VortexEvent * __vortex_event_new_empty (VortexEventType    type,
 	/* update reference connection */
 	if (conn) {
 		/* ref and set */
-		if (vortex_connection_ref (conn, "__vortex_event_new_empty")) 
+		if (checked_conn_ref && vortex_connection_ref (conn, "__vortex_event_new_empty")) 
+			event->conn = conn;
+		else if (! checked_conn_ref && vortex_connection_uncheck_ref (conn)) 
 			event->conn = conn;
 	} /* end if */
 	
@@ -449,6 +452,7 @@ VortexConnection * vortex_event_get_conn           (VortexEvent * event)
 {
 	if (event == NULL)
 		return NULL;
+
 	/* return connection configured */
 	return event->conn;
 }
@@ -753,6 +757,7 @@ void               vortex_pull_event_marshaller   (VortexCtx        * ctx,
 						   VortexEventType    type,
 						   VortexChannel    * channel,
 						   VortexConnection * conn,
+						   axl_bool           checked_conn_ref,
 						   VortexFrame      * frame,
 						   int                msg_no)
 {
@@ -777,6 +782,8 @@ void               vortex_pull_event_marshaller   (VortexCtx        * ctx,
 		ctx,
 		/* connection */
 		conn,
+		/* should check connection ref */
+		checked_conn_ref, 
 		/* channel */
 		channel,
 		/* frame */
@@ -815,7 +822,8 @@ void               vortex_pull_frame_received     (VortexChannel    * channel,
 		"frame received",
 		VORTEX_EVENT_FRAME_RECEIVED,
 		channel,
-		connection, 
+		/* connection ref and signal checked ref */
+		connection, axl_true,
 		frame,
 		/* msg no */
 		-1);
@@ -837,7 +845,8 @@ void               vortex_pull_close_notify       (VortexChannel * channel,
 		"channel close request",
 		VORTEX_EVENT_CLOSE_REQUEST,
 		channel,
-		vortex_channel_get_connection (channel),
+		/* connection ref and signal checked ref */
+		vortex_channel_get_connection (channel), axl_true,
 		NULL,
 		msg_no);
 
@@ -857,7 +866,8 @@ void               vortex_pull_channel_added      (VortexChannel * channel,
 		"channel added",
 		VORTEX_EVENT_CHANNEL_ADDED,
 		channel,
-		vortex_channel_get_connection (channel),
+		/* connection ref and signal checked ref */
+		vortex_channel_get_connection (channel), axl_true,
 		NULL,
 		-1);
 
@@ -877,7 +887,8 @@ void               vortex_pull_channel_removed    (VortexChannel * channel,
 		"channel removed",
 		VORTEX_EVENT_CHANNEL_REMOVED,
 		channel,
-		vortex_channel_get_connection (channel),
+		/* connection ref and signal checked ref */
+		vortex_channel_get_connection (channel), axl_true,
 		NULL,
 		-1);
 	return;
@@ -893,8 +904,8 @@ void vortex_pull_connection_closed (VortexConnection * connection, axlPointer us
 		VORTEX_EVENT_CONNECTION_CLOSED,
 		/* null channel */
 		NULL,
-		/* connection */
-		connection,
+		/* connection ref and signal unchecked ref */
+		connection, axl_false,
 		/* null frame and msgno = -1 */
 		NULL, -1);
 	return;
@@ -924,8 +935,8 @@ axl_bool vortex_pull_connection_accepted (VortexConnection * connection, axlPoin
 		VORTEX_EVENT_CONNECTION_ACCEPTED,
 		/* null channel */
 		NULL,
-		/* connection */
-		connection,
+		/* connection ref and signal checked ref */
+		connection, axl_true,
 		/* null frame and msgno = -1 */
 		NULL, -1);
 
