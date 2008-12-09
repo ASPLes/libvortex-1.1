@@ -73,6 +73,10 @@ void        vortex_ctx_set_channel_removed_handler (VortexCtx                   
 						    VortexConnectionOnChannelUpdate   removed_handler,
 						    axlPointer                        user_data);
 
+void        vortex_ctx_set_channel_start_handler (VortexCtx                       * ctx,
+						  VortexOnStartChannelExtended      start_handler,
+						  axlPointer                        start_handler_data);
+
 void        vortex_ctx_install_cleanup           (VortexCtx * ctx,
 						  axlDestroyFunc cleanup);
 

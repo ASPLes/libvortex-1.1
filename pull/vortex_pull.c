@@ -73,6 +73,15 @@ struct _VortexEvent {
 
 	/* @internal Reference to the msgno reported */
 	int                msgno;
+
+	/* @internal Reference to the serverName defined */
+	char             * serverName;
+
+	/* @internal Reference to the profile content defined */
+	char             * profile_content;
+
+	/* @internal Profile content encoding */
+	VortexEncoding     encoding;
 };
 
 struct _VortexEventMask {
@@ -217,6 +226,9 @@ axl_bool           vortex_pull_init               (VortexCtx * ctx)
 	/* VORTEX_EVENT_CONNECTION_ACCEPTED */
 	vortex_listener_set_on_connection_accepted (ctx, vortex_pull_connection_accepted, ctx);
 
+	/* VORTEX_EVENT_CHANNEL_START */
+	vortex_ctx_set_channel_start_handler (ctx, vortex_pull_start_handler, ctx);
+
 	/* install auto-cleanup on ctx termimation */
 	vortex_ctx_install_cleanup (ctx, (axlDestroyFunc) vortex_pull_cleanup);
 	
@@ -244,6 +256,7 @@ void           vortex_pull_cleanup            (VortexCtx * ctx)
 	/* uninstall handlers */
 	vortex_ctx_set_frame_received (ctx, NULL, NULL);
 	vortex_ctx_set_close_notify_handler (ctx, NULL, NULL);
+	vortex_ctx_set_channel_start_handler (ctx, NULL, NULL);
 
 	/* remove all pending items */
 	while (vortex_async_queue_items (pull_pending_events) > 0) {
@@ -398,6 +411,12 @@ void               vortex_event_unref              (VortexEvent * event)
 		event->channel = NULL;
 	} /* end if */
 
+	/* clear serverName and profile content */
+	axl_free (event->serverName);
+	event->serverName = NULL;
+	axl_free (event->profile_content);
+	event->profile_content = NULL;
+
 	/* unlock */
 	vortex_mutex_unlock (&event->ref_count_mutex);
 	vortex_mutex_destroy (&event->ref_count_mutex);
@@ -502,6 +521,59 @@ int                vortex_event_get_msgno         (VortexEvent * event)
 	/* return msgno configured */
 	return event->msgno;
 }
+
+/**
+ * @brief Allows to get the serverName value defined on the channel
+ * start request received (\ref VORTEX_EVENT_CHANNEL_START).
+ *
+ * @param event The event reference to get the serverName value from.
+ *
+ * @param The serverName value defined, otherwise NULL if nothing was
+ * defined.
+ */
+const char       * vortex_event_get_server_name            (VortexEvent * event)
+{
+	if (event == NULL)
+		return NULL;
+	/* return serverName configured */
+	return event->serverName;
+}
+
+/**
+ * @brief Allows to get the profile content defined on the
+ * channel start request received (\ref VORTEX_EVENT_CHANNEL_START).
+ *
+ * @param event The event reference to get the profile content value from.
+ *
+ * @param The profile content value defined, otherwise NULL if nothing was
+ * defined.
+ */
+const char       * vortex_event_get_profile_content        (VortexEvent * event)
+{
+	if (event == NULL)
+		return NULL;
+
+	/* return profile_content configured */
+	return event->profile_content;
+}
+
+/**
+ * @brief Allows to get the profile encoding defined on the channel
+ * start request received (\ref VORTEX_EVENT_CHANNEL_START).
+ *
+ * @param event The event reference to get the profile encoding value
+ * from.
+ *
+ * @param The profile encoding value defined.
+ */
+VortexEncoding     vortex_event_get_encoding               (VortexEvent * event)
+{
+	if (event == NULL)
+		return -1;
+	/* return encoding configured */
+	return event->encoding;
+}
+
 
 /**
  * @brief Allows to create a mask with the provided identifier,
@@ -752,7 +824,7 @@ void               vortex_event_mask_free         (VortexEventMask * mask)
 }
 
 /* @internal generic marshaller */
-void               vortex_pull_event_marshaller   (VortexCtx        * ctx,
+VortexEvent *      vortex_pull_event_marshaller   (VortexCtx        * ctx,
 						   const char       * event_description,
 						   VortexEventType    type,
 						   VortexChannel    * channel,
@@ -766,13 +838,13 @@ void               vortex_pull_event_marshaller   (VortexCtx        * ctx,
 
 	/* check if the event is fileted */
 	if (vortex_pull_event_is_filtered (ctx, type))
-		return;
+		return NULL;
 
 	/* get the reference to the queue and return if it is found to
 	 * be not defined */
 	pull_pending_events = vortex_ctx_get_data (ctx, VORTEX_PULL_QUEUE_KEY);
 	if (pull_pending_events == NULL) 
-		return;
+		return NULL;
 
 	/* create an empty event */
 	event = __vortex_event_new_empty (
@@ -802,7 +874,8 @@ void               vortex_pull_event_marshaller   (VortexCtx        * ctx,
 		    conn ? vortex_connection_get_id (conn) : -1, 
 		    channel ? vortex_channel_get_number (channel) : -1);
 	
-	return;
+	/* return a reference to the event created */
+	return event;
 }
 						   
 						   
@@ -943,6 +1016,50 @@ axl_bool vortex_pull_connection_accepted (VortexConnection * connection, axlPoin
 	/* accept the connection here and let the user to close it
 	 * once received the CONNECTION_ACCEPTED notification. */
 	return axl_true;
+}
+
+/* @internal handler for VORTEX_EVENT_CHANNEL_START */
+axl_bool           vortex_pull_start_handler               (char              * profile,
+							    int                 channel_num,
+							    VortexConnection  * connection,
+							    char              * serverName,
+							    char              * profile_content,
+							    char             ** profile_content_reply,
+							    VortexEncoding      encoding,
+							    axlPointer          user_data)
+{
+	/* get a reference to the channel */
+	VortexChannel * channel = vortex_connection_get_channel (connection, channel_num);
+	VortexEvent   * event;
+
+	/* call to generic implementation to marshall async
+	 * notification into a pulled event */
+	event = vortex_pull_event_marshaller (
+		(VortexCtx *) user_data,
+		"connection accepted",
+		VORTEX_EVENT_CHANNEL_START,
+		/* null channel */
+		channel,
+		/* connection ref and signal checked ref */
+		connection, axl_true,
+		/* null frame and msgno = -1 */
+		NULL, -1);
+	
+	/* check for filtered event */
+	if (event == NULL)
+		return axl_false;
+
+	/* set channel start defer */
+	channel = vortex_connection_get_channel (connection, channel_num);
+	vortex_channel_defer_start (channel);
+
+	/* configure serverName, profile_content and encoding */
+	event->serverName      = axl_strdup (serverName);
+	event->profile_content = axl_strdup (profile_content);
+	event->encoding        = encoding;
+
+	/* return axl_false but this is not the definitive decision */
+	return axl_false;
 }
 
 /**

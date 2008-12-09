@@ -132,6 +132,27 @@ typedef enum {
 	 */
 	VORTEX_EVENT_CONNECTION_ACCEPTED  = 1 << 5,
 
+	/**
+	 * @brief Event notification to signal that a channel start
+	 * request has been received.
+	 *
+	 * This event has the following espefic references defined:
+	 *
+	 * - \ref vortex_event_get_server_name (the serverName channel
+	 * start value).
+	 *
+	 * - \ref vortex_event_get_profile_content (the profile
+	 * content found in the channel start request).
+	 *
+	 * - \ref vortex_event_get_encoding (the profile encoding
+	 * found in the channel start request).
+	 *
+	 * With these values the channel start request must be replied
+	 * by accepting or denying the channel by using \ref
+	 * vortex_channel_notify_start. 
+	 */
+	VORTEX_EVENT_CHANNEL_START        = 1 << 6,
+
 } VortexEventType;
 
 /**
@@ -187,6 +208,12 @@ VortexFrame      * vortex_event_get_frame                  (VortexEvent * event)
 
 int                vortex_event_get_msgno                  (VortexEvent * event);
 
+const char       * vortex_event_get_server_name            (VortexEvent * event);
+
+const char       * vortex_event_get_profile_content        (VortexEvent * event);
+
+VortexEncoding     vortex_event_get_encoding               (VortexEvent * event);
+
 VortexEventMask  * vortex_event_mask_new                   (const char  * identifier,
 							    int           initial_mask,
 							    axl_bool      initial_state);
@@ -233,6 +260,15 @@ int                vortex_pull_register_close_connection   (VortexCtx           
 
 axl_bool           vortex_pull_connection_accepted         (VortexConnection * connection, 
 							    axlPointer         user_data);
+
+axl_bool           vortex_pull_start_handler               (char              * profile,
+							    int                 channel_num,
+							    VortexConnection  * connection,
+							    char              * serverName,
+							    char              * profile_content,
+							    char             ** profile_content_reply,
+							    VortexEncoding      encoding,
+							    axlPointer          user_data);
 
 #endif
 
