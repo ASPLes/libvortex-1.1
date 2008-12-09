@@ -105,6 +105,11 @@ struct _VortexCtx {
 	VortexConnectionOnChannelUpdate   global_channel_removed;
 	axlPointer                        global_channel_removed_data;
 
+	/* @internal Handler used to implement global channel start
+	 * event */
+	VortexOnStartChannelExtended      global_channel_start_extended;
+	axlPointer                        global_channel_start_extended_data;
+
 #if defined(AXL_OS_WIN32)
 	/**
 	 * Temporal hack to support sock limits under windows until we

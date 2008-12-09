@@ -280,6 +280,35 @@ void        vortex_ctx_set_channel_removed_handler (VortexCtx                   
 }
 
 /**
+ * @brief Allows to configure a global start channel handler (for
+ * incoming start request) which is applicable for all profiles and
+ * override vortex profiles module configuration.
+ *
+ * @param ctx The context to configure with the provided global start
+ * handler.
+ *
+ * @param start_handler The start handler to configure.
+ *
+ * @param start_handler_data User defined pointer passed to the
+ * handler.
+ */
+void        vortex_ctx_set_channel_start_handler (VortexCtx                       * ctx,
+						  VortexOnStartChannelExtended      start_handler,
+						  axlPointer                        start_handler_data)
+{
+	/* check context received */
+	if (ctx == NULL)
+		return;
+
+	/* configure handlers */
+	ctx->global_channel_start_extended       = start_handler;
+	ctx->global_channel_start_extended_data  = start_handler_data;
+
+	/* nothing more to do over here */
+	return;
+}
+
+/**
  * @brief Allows to install a cleanup function which will be called
  * just before the \ref VortexCtx is finished (by a call to \ref
  * vortex_exit_ctx or a manual call to \ref vortex_ctx_free).

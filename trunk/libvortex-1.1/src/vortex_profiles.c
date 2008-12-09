@@ -552,6 +552,15 @@ axl_bool      vortex_profiles_invoke_start (char             * uri,
 		return axl_false;
 	}
 
+	/* check if we have configure a global start channel
+	 * handler */
+	if (ctx->global_channel_start_extended) {
+		return ctx->global_channel_start_extended (
+			uri, channel_num, connection, serverName, 
+			profile_content, profile_content_reply, encoding,
+			ctx->global_channel_start_extended_data);
+	} /* end if */
+
 	/* check for a start extended */
 	if (profile->start_extended != NULL)
 		return profile->start_extended (uri, channel_num, connection, serverName, 
