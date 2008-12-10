@@ -6522,11 +6522,12 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 		vortex_log (VORTEX_LEVEL_DEBUG, "found global channel=%d close notify handler, notifying and disabling futher close handling",
 			    channel->channel_num);
 
+		/* close unlock the mutex */
+		vortex_mutex_unlock (&channel->close_mutex);
+
 		/* call to notify */
 		ctx->global_notify_close (channel, vortex_frame_get_msgno (frame), ctx->global_notify_close_data);
 
-		/* close unlock the mutex */
-		vortex_mutex_unlock (&channel->close_mutex);
 		return;
 	} /* end if */
 
@@ -6534,11 +6535,12 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 	if (channel->close_notify != NULL) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "found close notify handler, notifying and disabling futher close handling");
 
+		/* close unlock the mutex */
+		vortex_mutex_unlock (&channel->close_mutex);
+
 		/* call to notify the close request on the channel */
 		channel->close_notify (channel, vortex_frame_get_msgno (frame), channel->close_notify_user_data);
 
-		/* close unlock the mutex */
-		vortex_mutex_unlock (&channel->close_mutex);
 		return;
 		
 	} /* end if */

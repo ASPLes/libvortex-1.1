@@ -92,6 +92,8 @@ static unsigned __stdcall vortex_thread_proxy (axlPointer _data)
  * @brief Creates a new thread, executing the function provided,
  * passing the referece received to the function (user_data).
  *
+ * For complete examples on how to create threads, see \ref  VortexThreadConf documentation.
+ *
  * @param thread_def A reference to the thread identifier created by
  * the function. This parameter is not optional.
  * 

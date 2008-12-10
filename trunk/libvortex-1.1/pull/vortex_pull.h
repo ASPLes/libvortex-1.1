@@ -95,7 +95,7 @@ typedef enum {
 	 * With these values, the close request must be replied by
 	 * using the function \ref vortex_channel_notify_close.
 	 */
-	VORTEX_EVENT_CLOSE_REQUEST       = 1 << 1, 
+	VORTEX_EVENT_CHANNEL_CLOSE       = 1 << 1, 
 
 	/**
 	 * @brief Event used to signal that a channel has been added
