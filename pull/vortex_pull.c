@@ -1031,12 +1031,16 @@ axl_bool           vortex_pull_start_handler               (char              * 
 	/* get a reference to the channel */
 	VortexChannel * channel = vortex_connection_get_channel (connection, channel_num);
 	VortexEvent   * event;
+	VortexCtx     * ctx     = user_data;
+	
+	vortex_log (VORTEX_LEVEL_DEBUG, "pull API channel start received (%d: %p)",
+		    vortex_channel_get_number (channel), channel);
 
 	/* call to generic implementation to marshall async
 	 * notification into a pulled event */
 	event = vortex_pull_event_marshaller (
 		(VortexCtx *) user_data,
-		"connection accepted",
+		"channel start",
 		VORTEX_EVENT_CHANNEL_START,
 		/* null channel */
 		channel,
@@ -1045,9 +1049,11 @@ axl_bool           vortex_pull_start_handler               (char              * 
 		/* null frame and msgno = -1 */
 		NULL, -1);
 	
-	/* check for filtered event */
+	/* check for filtered event, in that case, return true */
 	if (event == NULL)
-		return axl_false;
+		return axl_true;
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "configuring channel=%d start defer..", vortex_channel_get_number (channel));
 
 	/* set channel start defer */
 	channel = vortex_connection_get_channel (connection, channel_num);
