@@ -555,6 +555,8 @@ axl_bool      vortex_profiles_invoke_start (char             * uri,
 	/* check if we have configure a global start channel
 	 * handler */
 	if (ctx->global_channel_start_extended) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "calling global start handler for channel=%d, connection-id=%d",
+			    channel_num, vortex_connection_get_id (connection));
 		return ctx->global_channel_start_extended (
 			uri, channel_num, connection, serverName, 
 			profile_content, profile_content_reply, encoding,
