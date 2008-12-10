@@ -40,12 +40,12 @@
 
 #include <vortex.h>
 
+BEGIN_C_DECLS
+
 /**
  * \addtogroup vortex_thread
  * @{
  */
-
-BEGIN_C_DECLS
 
 axl_bool           vortex_thread_create   (VortexThread      * thread_def,
 					   VortexThreadFunc    func,

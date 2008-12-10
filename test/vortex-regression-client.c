@@ -6723,7 +6723,7 @@ axl_bool test_14 (void)
 	} /* end if */
 
 	/* check if the mask detect events selected */
-	if (vortex_event_mask_is_set (mask, VORTEX_EVENT_CLOSE_REQUEST)) {
+	if (vortex_event_mask_is_set (mask, VORTEX_EVENT_CHANNEL_CLOSE)) {
 		printf ("ERROR: Failed to check non-blocked event on a mask (close request)\n");
 		return axl_false;
 	} /* end if */
@@ -7075,7 +7075,7 @@ axl_bool test_14_b (void)
 		return axl_false;
 	} /* end if */
 
-	if (vortex_event_get_type (event) != VORTEX_EVENT_CLOSE_REQUEST) {
+	if (vortex_event_get_type (event) != VORTEX_EVENT_CHANNEL_CLOSE) {
 		printf ("ERROR: Expected to find channel close request event but found: %d..\n",
 			vortex_event_get_type (event));
 		return axl_false;
@@ -7280,6 +7280,33 @@ axl_bool test_14_c (void)
 }
 
 /**
+ * @internal Helper function for test-14d test. It creates a channel
+ * in a separated thread so the main thread can handle start request.
+ */
+axlPointer test_14_d_create_channel (axlPointer user_data)
+{
+	VortexChannel    * channel;
+	VortexConnection * conn = user_data;
+
+	/* create a channel */
+	channel = vortex_channel_new (conn, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* no frame received, it is disabled */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel (TEST 14-D IS FAILING...)..");
+		return axl_false;
+	} /* end if */
+
+	/* return channel created */
+	return channel;
+}
+
+/**
  * @brief Allows to check PULL API support.
  *
  * @return axl_true if all tests are ok, otherwise axl_false is
@@ -7294,6 +7321,9 @@ axl_bool test_14_d (void)
 	VortexConnection * listener;
 	VortexEventMask  * mask;
 	axlError         * error = NULL;
+	VortexThread       thread;
+	int                channel_num;
+	VortexChannel    * channel;
 
 	/* create an indepenent client context */
 	client_ctx = vortex_ctx_new ();
@@ -7348,6 +7378,7 @@ axl_bool test_14_d (void)
 	mask = vortex_event_mask_new ("listener mask", 
 				      VORTEX_EVENT_CHANNEL_REMOVED | 
 				      VORTEX_EVENT_CHANNEL_ADDED | 
+				      VORTEX_EVENT_CHANNEL_CLOSE |
 				      VORTEX_EVENT_CONNECTION_CLOSED |
 				      VORTEX_EVENT_CONNECTION_ACCEPTED,
 				      axl_true);
@@ -7377,9 +7408,55 @@ axl_bool test_14_d (void)
 		printf ("Expected to find proper connection with regression test listener..\n");
 		return axl_false;
 	} /* end if */
+	printf ("Test 14-d: checking PULL API for channel start event, creating clieng channel..\n");
+	/* now start a thread where the client context request to
+	 * create a channel and the listener accept it by handling the
+	 * VORTEX_EVENT_CHANNEL_START */
+	if (! vortex_thread_create (&thread, test_14_d_create_channel, conn,
+				    VORTEX_THREAD_CONF_END)) {
+		printf ("ERROR: failed to create a thread to create the client channel..\n");
+		return axl_false;
+	}
+
+	/* now the listener must wait for the channel start event to
+	 * accept it */
+	event = vortex_pull_next_event (listener_ctx, 0);
+	if (event == NULL || vortex_event_get_type (event) != VORTEX_EVENT_CHANNEL_START) {
+		printf ("ERROR: expected to find event type for channel start, but found NULL or different event type (%d != %d)\n",
+			vortex_event_get_type (event), VORTEX_EVENT_CHANNEL_START);
+		return axl_false;
+	} /* end if */
+
+	/* get channel number */
+	channel_num = vortex_channel_get_number (vortex_event_get_channel (event));
+	printf ("Test 14-d: received channel=%d start request, handling..\n", channel_num);
+	if (! vortex_channel_notify_start (vortex_event_get_channel (event), 
+					   vortex_event_get_profile_content (event),
+					   /* accept channel to be created */
+					   axl_true)) {
+		printf ("ERROR: failed to notify channel start..\n");
+		return axl_false;
+	}
+	
+	/* unref event */
+	vortex_event_unref (event);
+	
+	printf ("Test 14-d: checking channel created..\n");
+
+	/* get the channel reference on the connection */
+	channel = vortex_connection_get_channel (conn, channel_num);
+	if (channel == NULL) {
+		printf ("ERROR: expected to find channel created after channel start event..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 14-d: channel created ok..\n");
 	
 	/* ok, close the connection */
 	vortex_connection_close (conn);
+
+	/* terminate thread */
+	vortex_thread_destroy (&thread, axl_false);
 
 	/* check no pending event is waiting to be read */
 	if (vortex_pull_pending_events (client_ctx)) {

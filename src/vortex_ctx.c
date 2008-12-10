@@ -260,7 +260,7 @@ void        vortex_ctx_set_channel_added_handler (VortexCtx                     
  * time a channel is added to any connection.
  *
  * @param ctx The context that is being configured.
- * @param added_handler The handler to configure.
+ * @param removed_handler The handler to configure.
  * @param user_data User defined data to be passed to the handler configured.
  */
 void        vortex_ctx_set_channel_removed_handler (VortexCtx                       * ctx,

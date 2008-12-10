@@ -528,7 +528,7 @@ int                vortex_event_get_msgno         (VortexEvent * event)
  *
  * @param event The event reference to get the serverName value from.
  *
- * @param The serverName value defined, otherwise NULL if nothing was
+ * @return The serverName value defined, otherwise NULL if nothing was
  * defined.
  */
 const char       * vortex_event_get_server_name            (VortexEvent * event)
@@ -545,7 +545,7 @@ const char       * vortex_event_get_server_name            (VortexEvent * event)
  *
  * @param event The event reference to get the profile content value from.
  *
- * @param The profile content value defined, otherwise NULL if nothing was
+ * @return The profile content value defined, otherwise NULL if nothing was
  * defined.
  */
 const char       * vortex_event_get_profile_content        (VortexEvent * event)
@@ -564,7 +564,7 @@ const char       * vortex_event_get_profile_content        (VortexEvent * event)
  * @param event The event reference to get the profile encoding value
  * from.
  *
- * @param The profile encoding value defined.
+ * @return The profile encoding value defined.
  */
 VortexEncoding     vortex_event_get_encoding               (VortexEvent * event)
 {
@@ -911,17 +911,29 @@ void               vortex_pull_close_notify       (VortexChannel * channel,
 						   int             msg_no,
 						   axlPointer      user_data)
 {
+	VortexEvent * event;
+	VortexCtx   * ctx = user_data;
+
 	/* call to generic implementation to marshall async
 	 * notification into a pulled event */
-	vortex_pull_event_marshaller (
+	event = vortex_pull_event_marshaller (
 		(VortexCtx *) user_data,
 		"channel close request",
-		VORTEX_EVENT_CLOSE_REQUEST,
+		VORTEX_EVENT_CHANNEL_CLOSE,
 		channel,
 		/* connection ref and signal checked ref */
 		vortex_channel_get_connection (channel), axl_true,
 		NULL,
 		msg_no);
+
+	if (event == NULL) {
+		/* because the CHANNEL_CLOSE has been filtered, we
+		 * have to accept channel close */
+		vortex_log (VORTEX_LEVEL_DEBUG, "because the VORTEX_EVENT_CHANNEL_CLOSE has been filtered, we have to accept channel=%d close",
+			    vortex_channel_get_number (channel));
+		vortex_channel_notify_close (channel, msg_no, axl_true);
+	} /* end if */
+
 
 	return;
 }
