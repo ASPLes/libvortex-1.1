@@ -5856,7 +5856,7 @@ axl_bool      __vortex_channel_0_frame_received_validate (VortexChannel * channe
 	return axl_true;
 }
 
-enum {START_MSG, CLOSE_MSG, ERROR_MSG, OK_MSG};
+enum {START_MSG, CLOSE_MSG, ERROR_MSG, OK_MSG, UNKNOWN_MSG};
 
 
 /** 
@@ -5903,12 +5903,13 @@ int  __vortex_channel_0_frame_received_identify_type (VortexChannel * channel0, 
 
 		/* free the error reported */
 		axl_error_free (error);
-		return axl_false;		 
+		return UNKNOWN_MSG;
 	}
 
 	
 	/* Get the root element ( ? element) */
-	node = axl_doc_get_root (doc);
+	node   = axl_doc_get_root (doc);
+	result = UNKNOWN_MSG;
 	if (NODE_CMP_NAME (node, "start"))
 		result = START_MSG;
 	if (NODE_CMP_NAME (node, "close"))
@@ -6823,7 +6824,14 @@ void vortex_channel_0_frame_received (VortexChannel    * channel0,
 	case ERROR_MSG:
 		/* should not happen */
 		break;
-	}
+	case UNKNOWN_MSG:
+		vortex_log (VORTEX_LEVEL_CRITICAL, "received unknown message type (format) on channel 0, closing connection");
+		__vortex_connection_set_not_connected (connection, 
+						       "unknown message type recevied on channel 0, closing connection",
+						       VortexProtocolError);
+		break;
+	} /* end switch */
+
 	
 	return;
 }
