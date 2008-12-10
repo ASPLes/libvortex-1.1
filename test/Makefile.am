@@ -94,7 +94,9 @@ noinst_PROGRAMS = \
 	vortex-regression-listener \
 	vortex-server-without-cbs \
 	vortex-client-without-cbs \
-	vortex-close-listeners vortex-file-transfer-server vortex-file-transfer-client
+	vortex-close-listeners \
+	vortex-file-transfer-server vortex-file-transfer-client \
+	vortex-pull-listener
 
 INCLUDES = -I../src -I../tunnel -I../pull -I../xml-rpc -I../sasl -I../tls $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
 	-I$(READLINE_PATH)/include -Wall -g -ansi -D__axl_disable_broken_bool_def__   \
@@ -159,6 +161,9 @@ vortex_file_transfer_server_LDADD     = $(LIBS) ../src/libvortex-1.1.la
 
 vortex_file_transfer_client_SOURCES   = vortex-file-transfer-client.c
 vortex_file_transfer_client_LDADD     = $(LIBS) ../src/libvortex-1.1.la
+
+vortex_pull_listener_SOURCES   = vortex-pull-listener.c
+vortex_pull_listener_LDADD     = $(LIBS) ../src/libvortex-1.1.la ../pull/libvortex-pull-1.1.la
 
 # build xml-rpc source files required by the regression test.
 test_types.h:
