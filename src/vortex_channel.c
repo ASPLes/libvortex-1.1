@@ -1001,7 +1001,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 			/* unref the channel here */
 			vortex_channel_unref (channel);
 		} else {
-			/* notify null reference receievd */
+			/* notify null reference received */
 			data->on_channel_created (-1, NULL, data->user_data);
 		} /* end if */
 
@@ -2566,9 +2566,10 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
 		}
 
 		vortex_log (VORTEX_LEVEL_WARNING, 
-			    "Received a rpy request for message %d while already waiting to reply to %d, storing and unlocking caller for later deliver",
+			    "Received a rpy request for message %d while already waiting to reply to %d on channel=%d, storing and unlocking caller for later deliver",
 			    msg_no_rpy,
-			    vortex_channel_get_next_reply_no (channel));
+			    vortex_channel_get_next_reply_no (channel),
+			    channel->channel_num);
 		
 		/* store */
 		axl_hash_insert_full (channel->stored_replies, 
@@ -4136,14 +4137,18 @@ int                vortex_channel_ref_count                       (VortexChannel
  */
 int             vortex_channel_get_next_reply_no          (VortexChannel * channel)
 {
- 	int result;
+ 	int         result;
+	VortexCtx * ctx;
   	v_return_val_if_fail (channel, -1);
   	
  	/* lock mutex */
  	vortex_mutex_lock (&channel->incoming_msg_mutex);
  
  	/* get first pending message to be replied */
+	ctx    = channel->ctx;
  	result = PTR_TO_INT (axl_list_get_first (channel->incoming_msg));
+	vortex_log (VORTEX_LEVEL_DEBUG, "returning next reply msgno no: %d (list length: %d)",
+		    result, axl_list_length (channel->incoming_msg));
  
  	/* unlock mutex */
  	vortex_mutex_unlock (&channel->incoming_msg_mutex);
@@ -6152,6 +6157,7 @@ axl_bool  vortex_channel_notify_start (VortexChannel    * new_channel,
 	VortexChannel    * channel0;
 	int                msg_no;
 	const char       * serverName;
+	VortexCtx        * ctx;
 
 	/* check references received */
 	if (new_channel == NULL)
@@ -6168,6 +6174,9 @@ axl_bool  vortex_channel_notify_start (VortexChannel    * new_channel,
 	serverName = vortex_channel_get_data (new_channel, "_vo:ch:srvnm");
 
 	/* call to notify start status */
+	ctx = channel0->ctx;
+	vortex_log (VORTEX_LEVEL_DEBUG, "doing reply to channel=%d start request, with msg_no=%d",
+		    new_channel->channel_num, msg_no);
 	return vortex_channel_notify_start_internal (serverName,
 						     conn,
 						     channel0,
@@ -6188,6 +6197,8 @@ axl_bool  vortex_channel_notify_start (VortexChannel    * new_channel,
  * to notify to the remote BEEP peer if the channel is accepted or
  * not.
  *
+ * @param channel The channel that is about to be configured with
+ * deferred start.
  */
 void               vortex_channel_defer_start                    (VortexChannel    * channel)
 {
@@ -6197,7 +6208,7 @@ void               vortex_channel_defer_start                    (VortexChannel 
 
 	/* get the result just after calling to set */
 	vortex_channel_set_data (channel, "_vo:ch:defer", INT_TO_PTR (axl_true));
-	
+
 	return;
 }
 
@@ -6313,7 +6324,14 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 	new_channel = vortex_channel_empty_new (channel_num, profile, connection);
 	vortex_connection_add_channel (connection, new_channel);
 	new_channel->is_opened = axl_false;
-	
+
+	/* configure msg_no to reply and the serverName value, this
+	 * will be used by vortex_channel_notify_start before doing
+	 * the notification to avoid race conditions */
+	vortex_channel_set_data      (new_channel, "_vo:ch:msg_no", INT_TO_PTR (vortex_frame_get_msgno (frame)));
+	/* configure the serverName */
+	if (serverName)
+		vortex_channel_set_data_full (new_channel, "_vo:ch:srvnm", axl_strdup (serverName), NULL, axl_free);
 
 	/* ask if channel can be created, (before this function it is
 	 * not needed to call any deallocation code for profile,
@@ -6326,13 +6344,6 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 	/* if the channel start is deferred, flag the msgno and do not
 	 * reply */
 	if (PTR_TO_INT (vortex_channel_get_data (new_channel, "_vo:ch:defer"))) {
-		/* configure msg_no to reply and the serverName value,
-		 * this will be used by vortex_channel_notify_start */
-		vortex_channel_set_data      (new_channel, "_vo:ch:msg_no", INT_TO_PTR (vortex_frame_get_msgno (frame)));
-
-		/* configure the serverName */
-		if (serverName)
-			vortex_channel_set_data_full (new_channel, "_vo:ch:srvnm", axl_strdup (serverName), NULL, axl_free);
 		goto free_channel_start_data;
 	}
 	
