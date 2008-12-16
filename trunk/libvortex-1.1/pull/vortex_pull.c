@@ -831,7 +831,8 @@ VortexEvent *      vortex_pull_event_marshaller   (VortexCtx        * ctx,
 						   VortexConnection * conn,
 						   axl_bool           checked_conn_ref,
 						   VortexFrame      * frame,
-						   int                msg_no)
+						   int                msg_no,
+						   axl_bool           queue_event)
 {
 	VortexEvent      * event;
 	VortexAsyncQueue * pull_pending_events;
@@ -863,9 +864,6 @@ VortexEvent *      vortex_pull_event_marshaller   (VortexCtx        * ctx,
 
 	/* configure msgno */
 	event->msgno = msg_no;
-					  
-	/* queue pending event to process */
-	vortex_async_queue_push (pull_pending_events, event);
 
 	/* drop a log */
 	vortex_log (VORTEX_LEVEL_DEBUG, "(PULL API) event: %s, connection-id=%d, channel-num=%d",
@@ -873,6 +871,10 @@ VortexEvent *      vortex_pull_event_marshaller   (VortexCtx        * ctx,
 		    /* connection */
 		    conn ? vortex_connection_get_id (conn) : -1, 
 		    channel ? vortex_channel_get_number (channel) : -1);
+
+	/* queue pending event to process */
+	if (queue_event)
+		vortex_async_queue_push (pull_pending_events, event);
 	
 	/* return a reference to the event created */
 	return event;
@@ -899,7 +901,9 @@ void               vortex_pull_frame_received     (VortexChannel    * channel,
 		connection, axl_true,
 		frame,
 		/* msg no */
-		-1);
+		-1,
+		/* queue event */
+		axl_true);
 
 	return;
 }
@@ -924,7 +928,9 @@ void               vortex_pull_close_notify       (VortexChannel * channel,
 		/* connection ref and signal checked ref */
 		vortex_channel_get_connection (channel), axl_true,
 		NULL,
-		msg_no);
+		msg_no,
+		/* queue event */
+		axl_true);
 
 	if (event == NULL) {
 		/* because the CHANNEL_CLOSE has been filtered, we
@@ -954,7 +960,9 @@ void               vortex_pull_channel_added      (VortexChannel * channel,
 		/* connection ref and signal checked ref */
 		vortex_channel_get_connection (channel), axl_true,
 		NULL,
-		-1);
+		-1,
+		/* queue event */
+		axl_true);
 
 	return;
 }
@@ -975,7 +983,9 @@ void               vortex_pull_channel_removed    (VortexChannel * channel,
 		/* connection ref and signal checked ref */
 		vortex_channel_get_connection (channel), axl_true,
 		NULL,
-		-1);
+		-1,
+		/* queue event */
+		axl_true);
 	return;
 }
 
@@ -992,7 +1002,9 @@ void vortex_pull_connection_closed (VortexConnection * connection, axlPointer us
 		/* connection ref and signal unchecked ref */
 		connection, axl_false,
 		/* null frame and msgno = -1 */
-		NULL, -1);
+		NULL, -1,
+		/* queue event */
+		axl_true);
 	return;
 }
 
@@ -1023,7 +1035,9 @@ axl_bool vortex_pull_connection_accepted (VortexConnection * connection, axlPoin
 		/* connection ref and signal checked ref */
 		connection, axl_true,
 		/* null frame and msgno = -1 */
-		NULL, -1);
+		NULL, -1,
+		/* queue event */
+		axl_true);
 
 	/* accept the connection here and let the user to close it
 	 * once received the CONNECTION_ACCEPTED notification. */
@@ -1041,9 +1055,10 @@ axl_bool           vortex_pull_start_handler               (char              * 
 							    axlPointer          user_data)
 {
 	/* get a reference to the channel */
-	VortexChannel * channel = vortex_connection_get_channel (connection, channel_num);
-	VortexEvent   * event;
-	VortexCtx     * ctx     = user_data;
+	VortexChannel    * channel = vortex_connection_get_channel (connection, channel_num);
+	VortexEvent      * event;
+	VortexCtx        * ctx     = user_data;
+	VortexAsyncQueue * pull_pending_events;
 	
 	vortex_log (VORTEX_LEVEL_DEBUG, "pull API channel start received (%d: %p)",
 		    vortex_channel_get_number (channel), channel);
@@ -1059,7 +1074,11 @@ axl_bool           vortex_pull_start_handler               (char              * 
 		/* connection ref and signal checked ref */
 		connection, axl_true,
 		/* null frame and msgno = -1 */
-		NULL, -1);
+		NULL, -1,
+		/* do not queue event to avoid race condition between
+		 * channel being flagged as deferred and the user
+		 * reading the event with a channel not flaged so */
+		axl_false);
 	
 	/* check for filtered event, in that case, return true */
 	if (event == NULL)
@@ -1075,6 +1094,11 @@ axl_bool           vortex_pull_start_handler               (char              * 
 	event->serverName      = axl_strdup (serverName);
 	event->profile_content = axl_strdup (profile_content);
 	event->encoding        = encoding;
+
+	/* queue pending event to process (if defined). Do this here
+	 * to avoid race conditions */
+	pull_pending_events = vortex_ctx_get_data (ctx, VORTEX_PULL_QUEUE_KEY);
+	vortex_async_queue_push (pull_pending_events, event);
 
 	/* return axl_false but this is not the definitive decision */
 	return axl_false;
