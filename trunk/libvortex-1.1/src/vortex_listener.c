@@ -484,7 +484,7 @@ VORTEX_SOCKET     vortex_listener_sock_listen      (VortexCtx   * ctx,
 
         if (bind(fd, (struct sockaddr *)&saddr,  sizeof (struct sockaddr_in)) == VORTEX_SOCKET_ERROR) {
 		vortex_close_socket (fd);
-		axl_error_report (error, VortexBindError, "unable to bind address");
+		axl_error_report (error, VortexBindError, "unable to bind address (port already in use or insufficient permissions)");
 		return -1;
         }
 
