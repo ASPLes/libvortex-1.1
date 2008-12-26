@@ -464,7 +464,8 @@ typedef enum {
 
 	/** 
 	 * @brief The operation can't be completed because a wrong
-	 * reference (memory address) was received.
+	 * reference (memory address) was received. This also include
+	 * NULL references where this is not expected.
 	 */
 	VortexWrongReference         = 4,
 
