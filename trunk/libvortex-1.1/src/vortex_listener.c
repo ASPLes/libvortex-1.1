@@ -408,9 +408,34 @@ typedef struct _VortexListenerData {
 	VortexCtx                * ctx;
 }VortexListenerData;
 
-axlPointer __vortex_listener_new (VortexListenerData * data)
+/**
+ * @brief Starts a generic TCP listener on the provided address and
+ * port. This function is used internally by the vortex listener
+ * module to startup the vortex listener TCP session associated,
+ * however the function can be used directly to start TCP listeners.
+ *
+ * @param ctx The context where the listener is started.
+ *
+ * @param host Host address to allocate. It can be "127.0.0.1" to only
+ * listen for localhost connections or "0.0.0.0" to listen on any
+ * address that the server has installed. It cannot be NULL.
+ *
+ * @param port The port to listen on. It cannot be NULL and it must be
+ * a non-zero string.
+ *
+ * @param error Optional axlError reference where a textual diagnostic
+ * will be reported in case of error.
+ *
+ * @return The function returns the listener socket or -1 if it
+ * fails. Optionally the axlError reports the textual especific error
+ * found. If the function returns -2 then some parameter provided was
+ * found to be NULL.
+ */
+VORTEX_SOCKET     vortex_listener_sock_listen      (VortexCtx   * ctx,
+						    const char  * host,
+						    const char  * port,
+						    axlError   ** error)
 {
-	/* get current context */
 	struct hostent     * he;
         struct in_addr     * haddr;
         struct sockaddr_in   saddr;
@@ -423,43 +448,34 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	int                  unit      = 1;
 	socklen_t            sin_size  = sizeof (sin);
 #endif	
-	char               * host      = data->host;
-	axl_bool             threaded  = data->threaded;
-	uint16_t             int_port  = (uint16_t) data->port;
-	axlPointer           user_data = data->user_data;
-	char               * message   = NULL;
-	VortexConnection   * listener;
-	VortexCtx          * ctx       = data->ctx;
+	uint16_t             int_port;
 	int                  backlog   = 0;
-	VortexStatus         status    = VortexOk;
-	char               * host_used;
 
-	/* handlers received (may be both null) */
-	VortexListenerReady      on_ready       = data->on_ready;
-	VortexListenerReadyFull  on_ready_full  = data->on_ready_full;
-	
-	/* free data */
-	axl_free (data);
+	v_return_val_if_fail (ctx,  -2);
+	v_return_val_if_fail (host, -2);
+	v_return_val_if_fail (port || strlen (port) == 0, -2);
 
+	/* resolve hostname */
 	he = gethostbyname (host);
         if (he == NULL) {
-		message = "unable to get hostname by calling gethostbyname";
-		status  = VortexNameResolvFailure;
-		goto error;
-	}
+		axl_error_report (error, VortexNameResolvFailure, "unable to get hostname by calling gethostbyname");
+		return -1;
+	} /* end if */
 
 	haddr = ((struct in_addr *) (he->h_addr_list)[0]);
 	if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		message = "unable to create a new socket";
-		status  = VortexSocketCreationError;
-		goto error;
-        }
+		axl_error_report (error, VortexSocketCreationError, "unable to create a new socket");
+		return -1;
+        } /* end if */
 
 #if defined(AXL_OS_WIN32)
 	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char  *)&unit, sizeof(BOOL));
 #else
 	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &unit, sizeof (unit));
 #endif
+
+	/* get integer port */
+	int_port  = (uint16_t) atoi (port);
 
 	memset(&saddr, 0, sizeof(struct sockaddr_in));
 	saddr.sin_family          = AF_INET;
@@ -468,57 +484,97 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 
         if (bind(fd, (struct sockaddr *)&saddr,  sizeof (struct sockaddr_in)) == VORTEX_SOCKET_ERROR) {
 		vortex_close_socket (fd);
-		message = "unable to bind address";
-		status  = VortexBindError;
-		goto error;
+		axl_error_report (error, VortexBindError, "unable to bind address");
+		return -1;
         }
 
 	/* get current backlog configuration */
 	vortex_conf_get (ctx, VORTEX_LISTENER_BACKLOG, &backlog);
 
 	if (listen(fd, backlog) == VORTEX_SOCKET_ERROR) {
-		message = "an error have occur while executing listen";
-		status  = VortexSocketCreationError;
-		goto error;
-        }
+		axl_error_report (error, VortexSocketCreationError, "an error have occur while executing listen");
+		return -1;
+        } /* end if */
 
 	/* notify listener */
 	if (getsockname (fd, (struct sockaddr *) &sin, &sin_size) < -1) {
-		message = "an error have occur while executing getsockname";
-		status  = VortexNameResolvFailure;
-		goto error;
-	}
-
-	/* unref the host and port value */
-	axl_free (host);
-
-	/* seems listener to be created, now create the BEEP
-	 * connection around it */
-	listener = vortex_connection_new_empty (ctx, fd, VortexRoleMasterListener);
-
-	/* register the listener socket at the Vortex Reader process.  */
-	vortex_reader_watch_listener (ctx, listener);
-	if (threaded) {
-		/* notify listener created */
-		host_used = vortex_support_inet_ntoa (ctx, &sin);
-		if (on_ready != NULL) {
-			on_ready (host_used, ntohs (sin.sin_port), VortexOk,
-				  "server ready for requests", user_data);
-		} /* end if */
-		
-		if (on_ready_full != NULL) {
-			on_ready_full (host_used, ntohs (sin.sin_port), VortexOk,
-				       "server ready for requests", listener, user_data);
-		} /* end if */
-		axl_free (host_used);
+		axl_error_report (error, VortexNameResolvFailure, "an error have happen while executing getsockname");
+		return -1;
 	} /* end if */
 
-	/* the listener reference */
-	return listener;
+	/* report and return fd */
+	vortex_log  (VORTEX_LEVEL_DEBUG, "running listener at %s:%d (socket: %d)", inet_ntoa(sin.sin_addr), ntohs (sin.sin_port), fd);
+	return fd;
+}
 
- error:
-	/* unref the host and port */
+axlPointer __vortex_listener_new (VortexListenerData * data)
+{
+	char               * host      = data->host;
+	axl_bool             threaded  = data->threaded;
+	char               * str_port  = axl_strdup_printf ("%d", data->port);
+	axlPointer           user_data = data->user_data;
+	char               * message   = NULL;
+	VortexConnection   * listener;
+	VortexCtx          * ctx       = data->ctx;
+	VortexStatus         status    = VortexOk;
+	char               * host_used;
+	axlError           * error     = NULL;
+	VORTEX_SOCKET        fd;
+	struct sockaddr_in   sin;
+
+	/* handlers received (may be both null) */
+	VortexListenerReady      on_ready       = data->on_ready;
+	VortexListenerReadyFull  on_ready_full  = data->on_ready_full;
+	
+	/* free data */
+	axl_free (data);
+
+	/* allocate listener */
+	fd = vortex_listener_sock_listen (ctx, host, str_port, &error);
+	
+	/* unref the host and port value */
+	axl_free (str_port);
 	axl_free (host);
+
+	/* handle returned socket or error */
+	switch (fd) {
+	case -2:
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to start listener because vortex_listener_sock_listener reported NULL parameter received");
+		status  = VortexWrongReference;
+		message = "Failed to start listener because vortex_listener_sock_listener reported NULL parameter received";
+		break;
+	case -1:
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to start listener, vortex_listener_sock_listener reported (code: %d): %s",
+			    axl_error_get_code (error), axl_error_get (error));
+		status  = axl_error_get_code (error);
+		message = axl_error_get (error);
+		break;
+	default:
+		/* listener ok */
+		/* seems listener to be created, now create the BEEP
+		 * connection around it */
+		listener = vortex_connection_new_empty (ctx, fd, VortexRoleMasterListener);
+		
+		/* register the listener socket at the Vortex Reader process.  */
+		vortex_reader_watch_listener (ctx, listener);
+		if (threaded) {
+			/* notify listener created */
+			host_used = vortex_support_inet_ntoa (ctx, &sin);
+			if (on_ready != NULL) {
+				on_ready (host_used, ntohs (sin.sin_port), VortexOk, "server ready for requests", user_data);
+			} /* end if */
+			
+			if (on_ready_full != NULL) {
+				on_ready_full (host_used, ntohs (sin.sin_port), VortexOk, "server ready for requests", listener, user_data);
+			} /* end if */
+			axl_free (host_used);
+		} /* end if */
+		
+		/* the listener reference */
+		return listener;
+	} /* end switch */
+
+	/* according to the invocation */
 	if (threaded) {
 		/* notify error found to handlers */
 		if (on_ready != NULL) 
@@ -535,6 +591,10 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 		ctx->listener_wait_lock = NULL;
 		vortex_mutex_unlock (&ctx->listener_unlock);
 	} /* end if */
+
+	/* unref error */
+	axl_error_free (error);
+
 	return NULL;	
 }
 
