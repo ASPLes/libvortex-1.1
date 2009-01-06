@@ -857,7 +857,7 @@ void xml_rpc_c_server_create_write_service (axlNode * service,
 
 	axlNode    * code;
 	axlNode    * body;
-	const char * service_content;
+	char       * service_content;
 
 	char    * type_prefix;
 
@@ -953,7 +953,14 @@ void xml_rpc_c_server_create_write_service (axlNode * service,
 		if (body != NULL) {
 			/* flag where the content was extract from */
 			xml_rpc_support_write ("/* code included from: %s */\n", ATTR_VALUE (body, "from"));
-			xml_rpc_support_write ("%s\n", axl_node_get_content (body, NULL)); 
+			
+			/* get content and translate all definitions */
+			service_content = axl_node_get_content_trans (body, NULL);
+
+			xml_rpc_support_write ("%s\n", service_content);
+
+			/* release */
+			axl_free (service_content);
 		}
 	} /* end if */
 
@@ -973,10 +980,13 @@ void xml_rpc_c_server_create_write_service (axlNode * service,
 	if (NODE_CMP_NAME (code, "code")) {
 		/* get a reference to the user service code */
 		code            = axl_node_get_child_nth (code, 0);
-		service_content = axl_node_get_content (code, NULL);
+		service_content = axl_node_get_content_trans (code, NULL);
 
 		/* write the user code */
 		xml_rpc_support_write (service_content);
+
+		/* release content */
+		axl_free (service_content);
 	}else {
 		xml_rpc_support_write ("/* WRITE HERE YOUR CODE */\n");
 		xml_rpc_support_write ("REPLY_FAULT (\"Service is not implemented yet.\", -1, ");
