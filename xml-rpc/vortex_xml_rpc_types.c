@@ -67,6 +67,12 @@ struct _XmlRpcMethodCall {
 	 * invocator object more values than the ones set after.
 	 */
 	int                   added_count;
+
+	/**
+	 * @internal Context where the method call was created.
+	 */
+	VortexCtx           * ctx;
+
 	/**
 	 * @internal
 	 * @brief A list of parameters for the method being invoked.
@@ -118,6 +124,7 @@ struct _XmlRpcMethodResponse {
 	 * @brief Stores current method response value.
 	 */
 	XmlRpcMethodValue    * value;
+
 	/** 
 	 * @internal
 	 * @brief Current string representation for the value stored.
@@ -139,6 +146,12 @@ struct _XmlRpcMethodResponse {
 
 
 struct _XmlRpcMethodValue {
+	/**
+	 * @internal
+	 * @brief Context under which the method value was created.
+	 */
+	VortexCtx            * ctx;
+
 	/**
 	 * @internal
 	 * @brief Represents which values is actually hold by the this param
@@ -267,6 +280,8 @@ struct _XmlRpcArray {
  * calling to \ref vortex_xml_rpc_method_call_free, when no longer
  * needed the reference.
  *
+ * @param ctx Context where the method call was created.
+ *
  * @param methodName The method name to invoke. This value must be not
  * NULL. The function will perform a local copy, so methodName passed
  * in value could be unrefered once this function finish.
@@ -278,18 +293,20 @@ struct _XmlRpcArray {
  * fails. The function could only fail if it receive wrong parameters
  * values according to parameter description.
  */
-XmlRpcMethodCall * vortex_xml_rpc_method_call_new (const char  * methodName, 
-						   int  parameters)
+XmlRpcMethodCall * vortex_xml_rpc_method_call_new (VortexCtx   * ctx,
+						   const char  * methodName, 
+						   int           parameters)
 {
 	XmlRpcMethodCall * result;
 
 	/* first check environment conditions */
-	v_return_val_if_fail (methodName,      NULL);
-	v_return_val_if_fail (parameters >= 0, NULL);
+	v_return_val_if_fail_msg (methodName, NULL, "failed to create method call, methodName value is NULL");
+	v_return_val_if_fail_msg (parameters >= 0, NULL, "failed to create mthod call, parameters have a non positive value");
 
 	result                       = axl_new (XmlRpcMethodCall, 1);
 	result->methodName           = axl_strdup (methodName);
 	result->release_after_invoke = axl_true;
+	result->ctx                  = ctx;
 
 	/* set the number of parameters this method name will support
 	 * in the case the value is higher than 0 */
@@ -361,26 +378,41 @@ XmlRpcMethodCall * vortex_xml_rpc_method_call_new (const char  * methodName,
  * or the type provided is not a valid value found in the enumeration,
  * not including \ref XML_RPC_UNKNOWN_VALUE.
  */
-XmlRpcMethodValue * vortex_xml_rpc_method_value_new         (XmlRpcParamType     type,
+XmlRpcMethodValue * vortex_xml_rpc_method_value_new         (VortexCtx         * ctx,
+							     XmlRpcParamType     type,
 							     axlPointer          value)
 {
 	XmlRpcMethodValue * _value;
 
 	/* perform some environment conditions */
-	v_return_val_if_fail (XML_RPC_UNKNOWN_VALUE < type && type <= XML_RPC_NUM_SUPPORTED_VALUES,
-			      NULL);
+	v_return_val_if_fail_msg (XML_RPC_UNKNOWN_VALUE < type && type <= XML_RPC_NUM_SUPPORTED_VALUES,
+				  NULL,
+				  "Failed to create method value, type received is an unsupported value");
 	/* check received value to not be null for pointer values */
-	if (type != XML_RPC_INT_VALUE     &&
-	    type != XML_RPC_DOUBLE_VALUE  &&
-	    type != XML_RPC_BOOLEAN_VALUE && 
-	    type != XML_RPC_NONE_VALUE    &&
-	    type != XML_RPC_STRUCT_VALUE  &&
-	    type != XML_RPC_ARRAY_VALUE) {
-		v_return_val_if_fail (value, NULL);
-	}
+	switch (type) {
+	case XML_RPC_STRING_VALUE:
+	case XML_RPC_BASE64_VALUE:
+		/* check and set empty string for NULL values */
+		if (value == NULL)
+			value = XML_RPC_EMPTY_STR;
+		break;
+	case XML_RPC_STRING_REF_VALUE:
+	case XML_RPC_BASE64_REF_VALUE:
+		/* check and set empty string for NULL values */
+		if (value == NULL)
+			value = axl_strdup (XML_RPC_EMPTY_STR);
+		break;
+	case XML_RPC_DATE_VALUE:
+		v_return_val_if_fail_msg (value, NULL, "Failed to create method value, received a NULL pointer for date value");
+		break;
+	default:
+		/* nothing to be done for the rest of cases */
+		break;
+	} /* end switch */
 
 	_value       = axl_new (XmlRpcMethodValue, 1);
 	_value->type = type;
+	_value->ctx  = ctx;
 	
 	/* save the value provided checking if we have received and string. */
 	switch (type) {
@@ -458,10 +490,10 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_new         (XmlRpcParamType    
  * @return A reference to the \ref XmlRpcMethodValue holding an
  * integer value.
  */
-XmlRpcMethodValue * vortex_xml_rpc_method_value_new_int         (int                 value)
+XmlRpcMethodValue * vortex_xml_rpc_method_value_new_int         (VortexCtx * ctx, int   value)
 {
 	/* create and return the xml rpc method value */
-	return vortex_xml_rpc_method_value_new (XML_RPC_INT_VALUE, INT_TO_PTR (value));
+	return vortex_xml_rpc_method_value_new (ctx, XML_RPC_INT_VALUE, INT_TO_PTR (value));
 }
 
 /** 
@@ -475,10 +507,11 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_new_int         (int            
  * @return A reference to the \ref XmlRpcMethodValue holding a double
  * value.
  */
-XmlRpcMethodValue * vortex_xml_rpc_method_value_new_double      (double              value)
+XmlRpcMethodValue * vortex_xml_rpc_method_value_new_double      (VortexCtx         * ctx, 
+								 double              value)
 {
 	/* create and return the xml method value */
-	return vortex_xml_rpc_method_value_new (XML_RPC_DOUBLE_VALUE, &value);
+	return vortex_xml_rpc_method_value_new (ctx, XML_RPC_DOUBLE_VALUE, &value);
 }
 
 /** 
@@ -492,10 +525,10 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_new_double      (double         
  * @return A reference to the \ref XmlRpcMethodValue holding a bool
  * value.
  */
-XmlRpcMethodValue * vortex_xml_rpc_method_value_new_bool        (axl_bool                 value)
+XmlRpcMethodValue * vortex_xml_rpc_method_value_new_bool        (VortexCtx         * ctx, axl_bool                 value)
 {
 	/* create and return the xml method value */
-	return vortex_xml_rpc_method_value_new (XML_RPC_BOOLEAN_VALUE, INT_TO_PTR (value ? 1 : 0));
+	return vortex_xml_rpc_method_value_new (ctx, XML_RPC_BOOLEAN_VALUE, INT_TO_PTR (value ? 1 : 0));
 }
 
 /** 
@@ -515,23 +548,23 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_copy (XmlRpcMethodValue * value)
 	case XML_RPC_STRING_REF_VALUE:
 	case XML_RPC_BASE64_REF_VALUE:
 		/* string types */
-		return method_value_new (value->type, value->value.string_value);
+		return method_value_new (value->ctx, value->type, value->value.string_value);
 	case XML_RPC_INT_VALUE:
 	case XML_RPC_BOOLEAN_VALUE:
 		/* int types */
-		return method_value_new (value->type, INT_TO_PTR (value->value.int_value));
+		return method_value_new (value->ctx, value->type, INT_TO_PTR (value->value.int_value));
 	case XML_RPC_DOUBLE_VALUE:
-		return method_value_new (value->type, (axlPointer) &value->value.double_value);
+		return method_value_new (value->ctx, value->type, (axlPointer) &value->value.double_value);
 	case XML_RPC_STRUCT_VALUE:
 		/* update reference counting */
 		vortex_xml_rpc_struct_ref (value->value.rpc_struct);
-		return method_value_new (value->type, value->value.rpc_struct);
+		return method_value_new (value->ctx, value->type, value->value.rpc_struct);
 	case XML_RPC_ARRAY_VALUE:
 		/* update reference counting */
 		vortex_xml_rpc_array_ref (value->value.rpc_array);
-		return method_value_new (value->type, value->value.rpc_array);
+		return method_value_new (value->ctx, value->type, value->value.rpc_array);
 	case XML_RPC_NONE_VALUE:
-		return method_value_new (value->type, NULL);
+		return method_value_new (value->ctx, value->type, NULL);
 	default:
 		/* nothing to do */
 		break;
@@ -661,7 +694,8 @@ void                vortex_xml_rpc_method_value_nullify         (XmlRpcMethodVal
  * 
  * @return A newly created \ref XmlRpcMethodValue or NULL if fails.
  */
-XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string (XmlRpcParamType     type,
+XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string (VortexCtx         * ctx,
+								 XmlRpcParamType     type,
 								 const char        * string_value)
 {
 	double  double_value;
@@ -674,19 +708,19 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string (XmlRpcParamType
 		int_value = (int) strtol (string_value, &string_aux, 10);
 		if ((string_aux != NULL) && (* string_aux))
 			return NULL;
-		return method_value_new (type, INT_TO_PTR (int_value));
+		return method_value_new (ctx, type, INT_TO_PTR (int_value));
 	case XML_RPC_DOUBLE_VALUE:
 		if ((string_aux != NULL) && (* string_aux))
 			return NULL;
 		double_value = vortex_support_strtod ((char *) string_value, &string_aux);
-		return method_value_new (type, (axlPointer) &double_value);
+		return method_value_new (ctx, type, (axlPointer) &double_value);
 	case XML_RPC_STRING_VALUE:
-		return method_value_new (type, (axlPointer) string_value);
+		return method_value_new (ctx, type, (axlPointer) string_value);
 	case XML_RPC_DATE_VALUE:
 		/* not supported yet */
 		break;
 	case XML_RPC_BASE64_VALUE:
-		return method_value_new (type, (axlPointer) string_value);
+		return method_value_new (ctx, type, (axlPointer) string_value);
 	case XML_RPC_ARRAY_VALUE:
 		/* not supported yet: to support this case, an string
 		 * format must be defined to allow this */
@@ -697,7 +731,7 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string (XmlRpcParamType
 		break;
 	case XML_RPC_NONE_VALUE:
 		/* create the none value */
-		return method_value_new (type, NULL);
+		return method_value_new (ctx, type, NULL);
 	default:
 		/* nothing to do */
 		break;
@@ -754,7 +788,8 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string (XmlRpcParamType
  * parameter received is NULL or the type specification is not
  * properly formated.
  */
-XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string2 (const char  * type,
+XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string2 (VortexCtx   * ctx,
+								  const char  * type,
 								  const char  * string_value)
 {
 	/* perform some environment checks */
@@ -762,13 +797,13 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string2 (const char  * 
 	v_return_val_if_fail (string_value, NULL);
 
 	if (axl_cmp ("int", type))
-		return vortex_xml_rpc_method_value_new_from_string (XML_RPC_INT_VALUE, string_value);
+		return vortex_xml_rpc_method_value_new_from_string (ctx, XML_RPC_INT_VALUE, string_value);
 
 	if (axl_cmp ("boolean", type))
-		return vortex_xml_rpc_method_value_new_from_string (XML_RPC_BOOLEAN_VALUE, string_value);
+		return vortex_xml_rpc_method_value_new_from_string (ctx, XML_RPC_BOOLEAN_VALUE, string_value);
 
 	if (axl_cmp ("string", type))
-		return vortex_xml_rpc_method_value_new_from_string (XML_RPC_STRING_VALUE, string_value);
+		return vortex_xml_rpc_method_value_new_from_string (ctx, XML_RPC_STRING_VALUE, string_value);
 
 	return NULL;
 }
@@ -921,16 +956,16 @@ axl_bool            vortex_xml_rpc_method_call_set_value    (XmlRpcMethodCall  *
  */
 axl_bool            vortex_xml_rpc_method_call_create_value (XmlRpcMethodCall  * method_call,
 							     XmlRpcParamType     type,
-							     axlPointer            value)
+							     axlPointer          value)
 {
 	XmlRpcMethodValue * _value;
+	VortexCtx         * ctx = METHOD_CALL_CTX(method_call);
 
-	v_return_val_if_fail (method_call, axl_false);
+	v_return_val_if_fail_msg (method_call, axl_false, "failed to create value, method call reference received is NULL");
 	
 	/* create the value to be added and check if it was succesful */
-	_value = vortex_xml_rpc_method_value_new (type, value);
-	if (_value == NULL)
-		return axl_false;
+	_value = vortex_xml_rpc_method_value_new (ctx, type, value);
+	v_return_val_if_fail_msg (_value, axl_false, "failed to create value, call to vortex_xml_rpc_method_value_new have failed");
 
 	/* add the value created into the method call object */
 	return vortex_xml_rpc_method_call_add_value (method_call, _value);
@@ -957,14 +992,14 @@ axl_bool                 vortex_xml_rpc_method_call_create_value_from_string (Xm
 									      const char       * string_value)
 {
 	XmlRpcMethodValue * _value;
+	VortexCtx         * ctx = METHOD_CALL_CTX(method_call);
 
-	v_return_val_if_fail (method_call, axl_false);
-	v_return_val_if_fail (string_value, axl_false);
+	v_return_val_if_fail_msg (method_call, axl_false, "Failed to create method value from string because a method call NULL reference was received");
+	v_return_val_if_fail_msg (string_value, axl_false, "Failed to create metho dvalue from string because the string received is NULL");
 	
 	/* create the value to be added and check if it was succesful */
-	_value = vortex_xml_rpc_method_value_new_from_string (type, string_value);
-	if (_value == NULL)
-		return axl_false;
+	_value = vortex_xml_rpc_method_value_new_from_string (ctx, type, string_value);
+	v_return_val_if_fail_msg (_value, axl_false, "Call to vortex_xml_rpc_method_value_new_from_string have failed, unable to create method value from string");
 
 	/* add the value created into the method call object */
 	return vortex_xml_rpc_method_call_add_value (method_call, _value);
@@ -1403,6 +1438,25 @@ char  * vortex_xml_rpc_marshall_method_value (XmlRpcMethodValue * value)
 	return NULL;
 }
 
+/**
+ * @brief Allows to get the \ref VortexCtx associated to the method
+ * call object provided.
+ *
+ * @param method_call The method call to get the context from.
+ *
+ * @param A reference to the vortex context or NULL if it fails.
+ */
+VortexCtx         * vortex_xml_rpc_method_call_get_ctx      (XmlRpcMethodCall  * method_call)
+{
+	/* check and return NULL */
+	if (method_call == NULL)
+		return NULL;
+
+	/* return reference currently configured */
+	return method_call->ctx;
+}
+
+
 /** 
  * @brief Perform a marshalling from the invocator provided
  * (<b>method_call</b>) into the appropiate XML-RPC representation.
@@ -1429,7 +1483,8 @@ char  * vortex_xml_rpc_marshall_method_value (XmlRpcMethodValue * value)
  * the method parameter count and parameters added count should be
  * equal.
  */
-char              * vortex_xml_rpc_method_call_marshall     (XmlRpcMethodCall  * method_call,
+char              * vortex_xml_rpc_method_call_marshall     (VortexCtx         * ctx,
+							     XmlRpcMethodCall  * method_call,
 							     int               * size)
 {
 	XmlRpcMethodValue * value;
@@ -1438,8 +1493,10 @@ char              * vortex_xml_rpc_method_call_marshall     (XmlRpcMethodCall  *
 	char              * stream_aux2;
 	int                 iterator;
 
-	v_return_val_if_fail (method_call, NULL);
-	v_return_val_if_fail (method_call->count == method_call->added_count, NULL);
+	v_return_val_if_fail_msg (method_call, NULL, 
+				  "failed to marshall method call, received null reference for method call");
+	v_return_val_if_fail_msg (method_call->count == method_call->added_count, NULL, 
+				  "failed to marshall method call, number of parameters added do not match (added count != count)");
 
 	/* get initial method header */
 	stream_result = axl_strdup_printf ("<?xml version=\"1.0\"?><methodCall><methodName>%s</methodName>",
@@ -1975,15 +2032,17 @@ XmlRpcMethodResponse * vortex_xml_rpc_method_response_new  (XmlRpcResponseStatus
  * containing a positive reply, with the a \ref XmlRpcMethodValue
  * inside it. NULL is returned if fail.
  */
-XmlRpcMethodResponse * vortex_xml_rpc_method_response_create (XmlRpcParamType type,
-							      axlPointer      value)
+XmlRpcMethodResponse * vortex_xml_rpc_method_response_create (VortexCtx       * ctx,
+							      XmlRpcParamType   type,
+							      axlPointer        value)
 {
 
 	XmlRpcMethodValue    * _value;
 	XmlRpcMethodResponse * response;
+	
 
 	/* creates a new method value from received values */
-	_value    = method_value_new (type, value);
+	_value    = method_value_new (ctx, type, value);
 	v_return_val_if_fail (_value, NULL);
 
 	/* returns current method response value */

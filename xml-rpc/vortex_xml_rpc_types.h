@@ -544,7 +544,8 @@ typedef struct _XmlRpcArray           XmlRpcArray;
  * The following header definitions comes to allow operations over
  * \ref XmlRpcMethodCall object.
  */
-XmlRpcMethodCall  * vortex_xml_rpc_method_call_new          (const char        * methodName,
+XmlRpcMethodCall  * vortex_xml_rpc_method_call_new          (VortexCtx         * ctx,
+							     const char        * methodName,
 							     int                 parameters);
 
 axl_bool            vortex_xml_rpc_method_call_add_value    (XmlRpcMethodCall  * method_call,
@@ -588,7 +589,20 @@ XmlRpcStruct      * vortex_xml_rpc_method_call_get_param_value_as_struct (XmlRpc
 XmlRpcArray       * vortex_xml_rpc_method_call_get_param_value_as_array  (XmlRpcMethodCall * method_call,
 									  int  position);
 
-char              * vortex_xml_rpc_method_call_marshall     (XmlRpcMethodCall  * method_call,
+/**
+ * @brief Allows to get the \ref VortexCtx associated to the method
+ * call object provided.
+ *
+ * @param mc The method call to get the context from.
+ *
+ * @param A reference to the vortex context or NULL if it fails.
+ */
+#define METHOD_CALL_CTX(mc) (vortex_xml_rpc_method_call_get_ctx (mc))
+
+VortexCtx         * vortex_xml_rpc_method_call_get_ctx      (XmlRpcMethodCall  * method_call);
+
+char              * vortex_xml_rpc_method_call_marshall     (VortexCtx         * ctx,
+							     XmlRpcMethodCall  * method_call,
 							     int               * size);
 
 void                vortex_xml_rpc_method_call_free         (XmlRpcMethodCall  * method_call);
@@ -663,14 +677,18 @@ void                __vortex_xml_rpc_method_call_get_reply_data (XmlRpcMethodCal
  * The fllowing header definitions comes to allow operations over \ref
  * XmlRpcMethodValue objects.
  */
-XmlRpcMethodValue * vortex_xml_rpc_method_value_new             (XmlRpcParamType     type,
+XmlRpcMethodValue * vortex_xml_rpc_method_value_new             (VortexCtx         * ctx,
+								 XmlRpcParamType     type,
 								 axlPointer          value);
 
-XmlRpcMethodValue * vortex_xml_rpc_method_value_new_int         (int                 value);
+XmlRpcMethodValue * vortex_xml_rpc_method_value_new_int         (VortexCtx         * ctx,
+								 int                 value);
 
-XmlRpcMethodValue * vortex_xml_rpc_method_value_new_double      (double              value);
+XmlRpcMethodValue * vortex_xml_rpc_method_value_new_double      (VortexCtx         * ctx,
+								 double              value);
 
-XmlRpcMethodValue * vortex_xml_rpc_method_value_new_bool        (axl_bool            value);
+XmlRpcMethodValue * vortex_xml_rpc_method_value_new_bool        (VortexCtx         * ctx,
+								 axl_bool            value);
 
 XmlRpcMethodValue * vortex_xml_rpc_method_value_copy            (XmlRpcMethodValue * value);
 
@@ -678,10 +696,12 @@ char              * vortex_xml_rpc_method_value_stringify       (XmlRpcMethodVal
 
 void                vortex_xml_rpc_method_value_nullify         (XmlRpcMethodValue * _value);
 
-XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string (XmlRpcParamType     type,
+XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string (VortexCtx         * ctx,
+								 XmlRpcParamType     type,
 								 const char        * string_value);
 
-XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string2 (const char  * type,
+XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string2 (VortexCtx   * ctx,
+								  const char  * type,
 								  const char  * string_value);
 
 XmlRpcParamType     vortex_xml_rpc_method_value_get_type        (XmlRpcMethodValue * value);
@@ -763,6 +783,8 @@ void                vortex_xml_rpc_method_value_free            (XmlRpcMethodVal
  * See also \ref CREATE_FAULT_REPLY to create a new \ref
  * XmlRpcMethodResponse but containing a negative reply.
  *
+ * @param ctx The context where the method reply is being created.
+ *
  * @param type The \ref XmlRpcMethodValue type to be used while
  * creating the XmlRpcMethodResponse reply.
  *
@@ -773,7 +795,7 @@ void                vortex_xml_rpc_method_value_free            (XmlRpcMethodVal
  * 
  * @return A newly created \ref XmlRpcMethodResponse
  */
-#define CREATE_OK_REPLY(type, value) vortex_xml_rpc_method_response_create (type, value);
+#define CREATE_OK_REPLY(ctx, type, value) vortex_xml_rpc_method_response_create (ctx, type, value);
 
 
 /** 
@@ -798,8 +820,9 @@ XmlRpcMethodResponse * vortex_xml_rpc_method_response_new              (XmlRpcRe
 									const char          * fault_string,
 									XmlRpcMethodValue   * value);
 
-XmlRpcMethodResponse * vortex_xml_rpc_method_response_create           (XmlRpcParamType        type,
-									axlPointer               value);
+XmlRpcMethodResponse * vortex_xml_rpc_method_response_create           (VortexCtx           * ctx,
+									XmlRpcParamType       type,
+									axlPointer            value);
 
 void                   vortex_xml_rpc_method_response_free             (XmlRpcMethodResponse * response);
 

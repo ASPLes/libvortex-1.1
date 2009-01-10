@@ -1021,8 +1021,9 @@ void xml_rpc_c_server_create_write_service (axlNode * service,
 
 	/* write variable declarations */
 	xml_rpc_support_multiple_write ("/* error support variables */\n",
-					"char * fault_error = NULL;\n",
-					"int    fault_code  = -1;\n",
+					"VortexCtx * ctx         = METHOD_CALL_CTX(method_call);\n",
+					"char      * fault_error = NULL;\n",
+					"int         fault_code  = -1;\n",
 					NULL);
 
 	/* write the variable that will hold the value */
@@ -1129,12 +1130,12 @@ void xml_rpc_c_server_create_write_service (axlNode * service,
 	if (xml_rpc_c_stub_type_is_array (doc, return_type) ||
 	    xml_rpc_c_stub_type_is_struct (doc, return_type)) {
 		xml_rpc_support_write ("/* Translate structure returned by the service */\n");
-		xml_rpc_support_write ("_result = %s_%s_marshall (result, axl_true);\n\n",
+		xml_rpc_support_write ("_result = %s_%s_marshall (ctx, result, axl_true);\n\n",
 				       comp_name_lower, return_type_lower);
 	}
 
 	xml_rpc_support_multiple_write ("/* return reply generated */\n",
-					"return CREATE_OK_REPLY (", 
+					"return CREATE_OK_REPLY (ctx, ", 
 					NULL);
 
 	/* write the variable that will hold the value */
