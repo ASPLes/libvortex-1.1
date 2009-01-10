@@ -227,13 +227,16 @@ axl_bool      vortex_reader_check_incoming_msgno (VortexCtx        * ctx,
  	/* check if the message is not already available in the
  	 * list */
  	if (! vortex_channel_check_msg_no (channel, frame)) {
- 		/* close the connection */
- 		__vortex_connection_set_not_connected (conn, "Found message number already received but still not replied", VortexProtocolError);
-  
  		/* drop a log */
  		vortex_log (VORTEX_LEVEL_CRITICAL, 
  			    "Found incoming message number %d that represents a previous message received but still not replied, protocol violation",
  			    vortex_frame_get_msgno (frame));
+
+ 		/* close the connection */
+ 		__vortex_connection_set_not_connected (conn, "Found message number already received but still not replied", VortexProtocolError);
+  
+		/* unref frame here */
+		vortex_frame_unref (frame);
 		
   		return axl_false;
  	} /* end if */

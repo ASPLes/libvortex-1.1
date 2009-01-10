@@ -3952,7 +3952,7 @@ axl_bool  test_02n (void) {
 
 	/* wait a bit */
 	queue = vortex_async_queue_new ();
-	vortex_async_queue_timedpop (queue, 10000);
+	vortex_async_queue_timedpop (queue, 20000);
 	vortex_async_queue_unref (queue);
 
 	/* check connection */
