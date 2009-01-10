@@ -21,7 +21,7 @@
 BEGIN_C_DECLS
 
 /* (un)marshaller support functions  */
-XmlRpcArray    * test_itemarray_marshall   (ItemArray * ref, axl_bool  dealloc);
+XmlRpcArray    * test_itemarray_marshall   (VortexCtx * _ctx_, ItemArray * ref, axl_bool  dealloc);
 ItemArray * test_itemarray_unmarshall (XmlRpcArray * ref, axl_bool  dealloc);
 
 /* memory (de)allocation functions */

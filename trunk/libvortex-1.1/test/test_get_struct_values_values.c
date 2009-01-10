@@ -34,8 +34,9 @@ Values * get_struct_2_values_values (Values * a, Values * b, char ** fault_error
 XmlRpcMethodResponse * __get_struct_2_values_values (XmlRpcMethodCall * method_call, VortexChannel * channel)
 {
 	/* error support variables */
-	char * fault_error = NULL;
-	int    fault_code  = -1;
+	VortexCtx * ctx         = METHOD_CALL_CTX(method_call);
+	char      * fault_error = NULL;
+	int         fault_code  = -1;
 	Values *    result = NULL;
 
 	XmlRpcStruct * _result;
@@ -75,8 +76,8 @@ XmlRpcMethodResponse * __get_struct_2_values_values (XmlRpcMethodCall * method_c
 	}
 
 	/* Translate structure returned by the service */
-	_result = test_values_marshall (result, axl_true);
+	_result = test_values_marshall (ctx, result, axl_true);
 
 	/* return reply generated */
-	return CREATE_OK_REPLY (XML_RPC_STRUCT_VALUE, _result);
+	return CREATE_OK_REPLY (ctx, XML_RPC_STRUCT_VALUE, _result);
 }

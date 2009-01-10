@@ -16,7 +16,7 @@ struct __ItemArray {
 	int count;
 };
 
-XmlRpcArray    * test_itemarray_marshall   (ItemArray * ref, axl_bool  dealloc)
+XmlRpcArray    * test_itemarray_marshall   (VortexCtx * _ctx_, ItemArray * ref, axl_bool  dealloc)
 {
 	/* array and method value */
 	XmlRpcArray * _result;
@@ -40,8 +40,8 @@ XmlRpcArray    * test_itemarray_marshall   (ItemArray * ref, axl_bool  dealloc)
 		_value = ref->array[iterator];
 
 		/* translate the value */
-		_struct = test_item_marshall (_value, axl_false);
-		_array_value = method_value_new (XML_RPC_STRUCT_VALUE, _struct);
+		_struct = test_item_marshall (_ctx_, _value, axl_false);
+		_array_value = method_value_new (_ctx_, XML_RPC_STRUCT_VALUE, _struct);
 
 		/* add the value to the array */
 		vortex_xml_rpc_array_add (_result, _array_value);

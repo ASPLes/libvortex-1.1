@@ -27,8 +27,9 @@ char * get_the_string_0 (char ** fault_error, int * fault_code, VortexChannel * 
 XmlRpcMethodResponse * __get_the_string_0 (XmlRpcMethodCall * method_call, VortexChannel * channel)
 {
 	/* error support variables */
-	char * fault_error = NULL;
-	int    fault_code  = -1;
+	VortexCtx * ctx         = METHOD_CALL_CTX(method_call);
+	char      * fault_error = NULL;
+	int         fault_code  = -1;
 	char *    result = NULL;
 
 	/* call to the user implementation */
@@ -46,5 +47,5 @@ XmlRpcMethodResponse * __get_the_string_0 (XmlRpcMethodCall * method_call, Vorte
 	}
 
 	/* return reply generated */
-	return CREATE_OK_REPLY (XML_RPC_STRING_REF_VALUE, result);
+	return CREATE_OK_REPLY (ctx, XML_RPC_STRING_REF_VALUE, result);
 }

@@ -27,8 +27,9 @@ int get_the_bool_1_0 (char ** fault_error, int * fault_code, VortexChannel * cha
 XmlRpcMethodResponse * __get_the_bool_1_0 (XmlRpcMethodCall * method_call, VortexChannel * channel)
 {
 	/* error support variables */
-	char * fault_error = NULL;
-	int    fault_code  = -1;
+	VortexCtx * ctx         = METHOD_CALL_CTX(method_call);
+	char      * fault_error = NULL;
+	int         fault_code  = -1;
 	int    result = axl_false;
 
 	/* call to the user implementation */
@@ -41,5 +42,5 @@ XmlRpcMethodResponse * __get_the_bool_1_0 (XmlRpcMethodCall * method_call, Vorte
 	}
 
 	/* return reply generated */
-	return CREATE_OK_REPLY (XML_RPC_BOOLEAN_VALUE, INT_TO_PTR (result));
+	return CREATE_OK_REPLY (ctx, XML_RPC_BOOLEAN_VALUE, INT_TO_PTR (result));
 }

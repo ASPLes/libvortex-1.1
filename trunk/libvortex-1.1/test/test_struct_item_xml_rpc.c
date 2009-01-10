@@ -11,7 +11,7 @@
 #include <test_types.h>
 
 /* (un)marshaller support functions  */
-XmlRpcStruct * test_item_marshall (Item * ref, axl_bool  dealloc)
+XmlRpcStruct * test_item_marshall (VortexCtx * _ctx_, Item * ref, axl_bool  dealloc)
 {
 	XmlRpcStruct       * _result;
 	XmlRpcStructMember * _member;
@@ -23,11 +23,11 @@ XmlRpcStruct * test_item_marshall (Item * ref, axl_bool  dealloc)
 	_result = vortex_xml_rpc_struct_new (2);
 
 	/* position member */
-	_member = vortex_xml_rpc_struct_member_new ("position", method_value_new (XML_RPC_INT_VALUE, INT_TO_PTR (ref->position)));
+	_member = vortex_xml_rpc_struct_member_new ("position", method_value_new (_ctx_, XML_RPC_INT_VALUE, INT_TO_PTR (ref->position)));
 	vortex_xml_rpc_struct_add_member (_result, _member);
 
 	/* string_position member */
-	_member = vortex_xml_rpc_struct_member_new ("string_position", method_value_new (XML_RPC_STRING_VALUE, ref->string_position ? ref->string_position : ""));
+	_member = vortex_xml_rpc_struct_member_new ("string_position", method_value_new (_ctx_, XML_RPC_STRING_VALUE, ref->string_position ? ref->string_position : ""));
 	vortex_xml_rpc_struct_add_member (_result, _member);
 
 	/* dealloc data source */

@@ -11,7 +11,7 @@
 #include <test_types.h>
 
 /* (un)marshaller support functions  */
-XmlRpcStruct * test_values_marshall (Values * ref, axl_bool  dealloc)
+XmlRpcStruct * test_values_marshall (VortexCtx * _ctx_, Values * ref, axl_bool  dealloc)
 {
 	XmlRpcStruct       * _result;
 	XmlRpcStructMember * _member;
@@ -23,15 +23,15 @@ XmlRpcStruct * test_values_marshall (Values * ref, axl_bool  dealloc)
 	_result = vortex_xml_rpc_struct_new (3);
 
 	/* count member */
-	_member = vortex_xml_rpc_struct_member_new ("count", method_value_new (XML_RPC_INT_VALUE, INT_TO_PTR (ref->count)));
+	_member = vortex_xml_rpc_struct_member_new ("count", method_value_new (_ctx_, XML_RPC_INT_VALUE, INT_TO_PTR (ref->count)));
 	vortex_xml_rpc_struct_add_member (_result, _member);
 
 	/* fraction member */
-	_member = vortex_xml_rpc_struct_member_new ("fraction", method_value_new (XML_RPC_DOUBLE_VALUE, &(ref->fraction)));
+	_member = vortex_xml_rpc_struct_member_new ("fraction", method_value_new (_ctx_, XML_RPC_DOUBLE_VALUE, &(ref->fraction)));
 	vortex_xml_rpc_struct_add_member (_result, _member);
 
 	/* status member */
-	_member = vortex_xml_rpc_struct_member_new ("status", method_value_new (XML_RPC_BOOLEAN_VALUE, INT_TO_PTR (ref->status)));
+	_member = vortex_xml_rpc_struct_member_new ("status", method_value_new (_ctx_, XML_RPC_BOOLEAN_VALUE, INT_TO_PTR (ref->status)));
 	vortex_xml_rpc_struct_add_member (_result, _member);
 
 	/* dealloc data source */
