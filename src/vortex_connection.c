@@ -831,18 +831,20 @@ axl_bool      __vortex_connection_parse_greetings (VortexConnection * connection
  *  - \ref vortex_connection_set_receive_handler
  *
  * @param ctx     The context where the operation will be performed.
- * @param session An already connected socket.  
+ * @param socket  An already connected socket.  
  * @param role    The role to be set to the connection being created.
  * 
  * @return a newly allocated \ref VortexConnection. 
  */
 VortexConnection * vortex_connection_new_empty            (VortexCtx *    ctx, 
-							   int            session, 
+							   VORTEX_SOCKET  socket, 
 							   VortexPeerRole role)
 {
 	/* creates a new connection */
-	return vortex_connection_new_empty_from_connection (ctx, session, NULL, role);
+	return vortex_connection_new_empty_from_connection (ctx, socket, NULL, role);
 }
+
+
 
 /** 
  * @internal
@@ -872,52 +874,23 @@ VortexConnection * vortex_connection_new_empty            (VortexCtx *    ctx,
  * must be deallocated using \ref vortex_connection_close.
  */
 VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx        * ctx,
-								VORTEX_SOCKET      session,
+								VORTEX_SOCKET      socket,
 								VortexConnection * __connection,
 								VortexPeerRole     role)
 {
 	VortexConnection   * connection;
 	VortexChannel      * channel;
-	struct sockaddr_in   sin;
-#if defined(AXL_OS_WIN32)
-	/* windows flavors */
-	int                  sin_size = sizeof (sin);
-#else
-	/* unix flavors */
-	socklen_t            sin_size = sizeof (sin);
-#endif
 
-	/* perform connection sanity check */
-	if (!vortex_connection_do_sanity_check (ctx, session)) 
-		return NULL;
-
-	/* disable nagle */
-	vortex_connection_set_sock_tcp_nodelay (session, axl_true);
-	
-	/* get remote peer name */
-	if (role == VortexRoleMasterListener) {
-		if (getsockname (session, (struct sockaddr *) &sin, &sin_size) < -1) {
-			vortex_log (VORTEX_LEVEL_DEBUG, "unable to get remote hostname and port");
-			return NULL;
-		} /* end if */
-	} else {
-		if (getpeername (session, (struct sockaddr *) &sin, &sin_size) < -1) {
-			vortex_log (VORTEX_LEVEL_DEBUG, "unable to get remote hostname and port");
-			return NULL;
-		} /* end if */
-	} /* end if */
-
+	/* create connection object without setting socket (this is
+	 * done by vortex_connection_set_sock) */
 	connection                     = axl_new (VortexConnection, 1);
 	connection->ctx                = ctx;
 	connection->id                 = __vortex_connection_get_next_id (ctx);
-	connection->host               = vortex_support_inet_ntoa (ctx, &sin);
-	connection->port               = axl_strdup_printf ("%d", ntohs (sin.sin_port));
 	connection->message            = axl_strdup ("session established and ready");
 	connection->status             = VortexOk;
-	connection->session            = session;
 	connection->is_connected       = axl_true;
 	connection->ref_count          = 1;
-	
+
 	/* remote side profiles, NULL reference filled by the
 	 * greetings cache */
 	connection->remote_supported_profiles = NULL;
@@ -983,16 +956,101 @@ VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx       
 		
 	} /* end if */
 	
-	/* establish the connection role and its initial next channel
-	 * number available. */
-	connection->role               = role;
-
 	/* set by default to close the underlying connection when the
 	 * connection is closed */
 	connection->close_session      = axl_true;
 
+	/* establish the connection role and its initial next channel
+	 * number available. */
+	connection->role               = role;
+
+	/* set socket provided */
+	if (socket > 0) {
+		if (! vortex_connection_set_socket (connection, socket, NULL, NULL)) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to configure socket associated to connection");
+			vortex_connection_unref (connection, "vortex_connection_new_empty_from_connection");
+			return NULL;
+		} /* end if */
+	} /* end if */
 
 	return connection;	
+}
+
+/**
+ * @brief Allows to configure the socket to be used by the provided
+ * connection. This function is usually used in conjunction with \ref
+ * vortex_connection_new_empty.
+ *
+ * @param conn The connection to be configured with the socket
+ * provided.
+ *
+ * @param sock The socket connection to configure.
+ *
+ * @param real_host Optional reference that can configure the host
+ * value associated to the socket provided. This is useful on
+ * environments were a proxy or TUNNEL is used. In such environments
+ * the host and port value get from system calls return the middle hop
+ * but not the destination host. You can safely pass NULL, causing the
+ * function to figure out which is the right value using the socket
+ * provided.
+ *
+ * @param real_port Optional reference that can configure the port
+ * value associated to the socket provided. See <b>real_host</b> param
+ * for more information. In real_host is defined, it is required to
+ * define this parameter.
+ *
+ * @return axl_true in the case the function has configured the
+ * provided socket, otherwise axl_false is returned.
+ */
+axl_bool            vortex_connection_set_socket                (VortexConnection * conn,
+								 VORTEX_SOCKET      socket,
+								 const char       * real_host,
+								 const char       * real_port)
+{
+	struct sockaddr_in   sin;
+#if defined(AXL_OS_WIN32)
+	/* windows flavors */
+	int                  sin_size = sizeof (sin);
+#else
+	/* unix flavors */
+	socklen_t            sin_size = sizeof (sin);
+#endif
+	VortexCtx          * ctx      = CONN_CTX(conn);
+
+	/* perform connection sanity check */
+	if (!vortex_connection_do_sanity_check (ctx, socket)) 
+		return axl_false;
+
+	/* disable nagle */
+	vortex_connection_set_sock_tcp_nodelay (socket, axl_true);
+
+	/* set socket */
+	conn->session = socket;
+	
+	/* get remote peer name */
+	if (real_host && real_port) {
+		/* set host and port from user values */
+		conn->host = axl_strdup (real_host);
+		conn->port = axl_strdup (real_port);
+	} else {
+		if (conn->role == VortexRoleMasterListener) {
+			if (getsockname (socket, (struct sockaddr *) &sin, &sin_size) < -1) {
+				vortex_log (VORTEX_LEVEL_DEBUG, "unable to get remote hostname and port");
+				return axl_false;
+			} /* end if */
+		} else {
+			if (getpeername (socket, (struct sockaddr *) &sin, &sin_size) < -1) {
+				vortex_log (VORTEX_LEVEL_DEBUG, "unable to get remote hostname and port");
+				return axl_false;
+			} /* end if */
+		} /* end if */
+
+		/* set host and port from socket recevied */
+		conn->host = vortex_support_inet_ntoa (ctx, &sin);
+		conn->port = axl_strdup_printf ("%d", ntohs (sin.sin_port));	
+	} /* end if */
+
+	return axl_true;
 }
 
 
@@ -1237,8 +1295,7 @@ struct in_addr * vortex_gethostbyname (VortexCtx  * ctx,
  * 
  * @param wait_for The kind of operation to wait for to be available.
  *
- * @param conn The connection that is behind the waiting operation,
- * the BEEP session.
+ * @param session The socket associated to the BEEP session.
  *
  * @param wait_period How many seconds to wait for the connection.
  * 
@@ -1248,14 +1305,14 @@ struct in_addr * vortex_gethostbyname (VortexCtx  * ctx,
  *    -2: Timeout
  *    -3: Fatal error found.
  */
-int __vortex_connection_wait_on (VortexIoWaitingFor    wait_for, 
-				 VortexConnection    * conn,
+int __vortex_connection_wait_on (VortexCtx           * ctx,
+				 VortexIoWaitingFor    wait_for, 
+				 VORTEX_SOCKET         session,
 				 int                 * wait_period)
 {
-	int         err         = -2;
-	axlPointer  wait_set;
-	int         start_time;
-	VortexCtx * ctx         = vortex_connection_get_ctx (conn);
+	int           err         = -2;
+	axlPointer    wait_set;
+	int           start_time;
 #if defined(AXL_OS_UNIX)
  	int           sock_err = 0;       
  	unsigned int  sock_err_len;
@@ -1271,7 +1328,7 @@ int __vortex_connection_wait_on (VortexIoWaitingFor    wait_for,
 	} /* end if */
 
 	/* make the socket to be nonblocking */
-	vortex_connection_set_nonblocking_socket (conn);
+	vortex_connection_set_sock_block (session, axl_false);
 
 	/* create a waiting set using current selected I/O
 	 * waiting engine. */
@@ -1289,17 +1346,20 @@ int __vortex_connection_wait_on (VortexIoWaitingFor    wait_for,
 		/* clear file set */
 		vortex_io_waiting_invoke_clear_fd_group (ctx, wait_set);
 
-		/* add the socket into the file set */
-		if (! vortex_io_waiting_invoke_add_to_fd_group (ctx, conn->session, conn, wait_set)) {
+		/* add the socket into the file set (we can pass the
+		 * socket and a NULL reference to the VortexConnection
+		 * because we won't use dispatch API: we are only
+		 * checking for changes) */
+		if (! vortex_io_waiting_invoke_add_to_fd_group (ctx, session, NULL, wait_set)) {
 			vortex_log (VORTEX_LEVEL_WARNING, "failed to add session to the waiting socket");
 			err = -4;
 			break;
 		} /* end if */
 				
 		/* perform wait operation */
-		err = vortex_io_waiting_invoke_wait (ctx, wait_set, conn->session, wait_for);
-		vortex_log (VORTEX_LEVEL_DEBUG, "__vortex_connection_wait_on (id=%d, sock=%d) operation finished, err=%d, errno=%d (%s) (ellapsed: %d)",
-			    conn->id, conn->session, err, errno, vortex_errno_get_error (errno), time (NULL) - start_time);
+		err = vortex_io_waiting_invoke_wait (ctx, wait_set, session + 1, wait_for);
+		vortex_log (VORTEX_LEVEL_DEBUG, "__vortex_connection_wait_on (sock=%d) operation finished, err=%d, errno=%d (%s) (ellapsed: %d)",
+			    session, err, errno, vortex_errno_get_error (errno), time (NULL) - start_time);
 
 		if(err == -1 /* EINTR */ || err == -2 /* SSL */)
 			continue;
@@ -1311,7 +1371,7 @@ int __vortex_connection_wait_on (VortexIoWaitingFor    wait_for,
 			 * versions that returns err > 0 but it is not
 			 * really connected */
 			sock_err_len = sizeof(sock_err);
-			if (getsockopt (conn->session, SOL_SOCKET, SO_ERROR, (char*)&sock_err, &sock_err_len) < 0){
+			if (getsockopt (session, SOL_SOCKET, SO_ERROR, (char*)&sock_err, &sock_err_len) < 0){
 				vortex_log (VORTEX_LEVEL_WARNING, "failed to get error level on waiting socket");
 				err = -5;
 			} else if (sock_err) {
@@ -1343,6 +1403,253 @@ int __vortex_connection_wait_on (VortexIoWaitingFor    wait_for,
 	return err;
 }
 
+/**
+ * @brief Allows to create a plain socket connection against the host
+ * and port provided.
+ *
+ * @param ctx The context where the connection happens.
+ *
+ * @param host The host server to connect to.
+ *
+ * @param port The port server to connect to.
+ *
+ * @param d_timeout Parameter where optionally is returned the timeout
+ * defined by the library (\ref vortex_connection_get_connect_timeout)
+ * that remains after only doing a socket connected. The value is only
+ * returned if the caller provide a reference.
+ *
+ * @param error Optional axlError reference to report an error code
+ * and a textual diagnostic.
+ *
+ * @return A connected socket or -1 if it fails. The particular error
+ * is reported at axlError optional reference.
+ */
+VORTEX_SOCKET vortex_connection_sock_connect (VortexCtx   * ctx,
+					      const char  * host,
+					      const char  * port,
+					      int         * timeout,
+					      axlError   ** error)
+{
+	struct in_addr     * haddr;
+	struct sockaddr_in   saddr;
+	int		     err          = 0;
+	VORTEX_SOCKET        session;
+
+	/*
+	 * standard tcp socket voodo connection (I would like to know
+	 * who was the great mind designer of this api)
+	 */
+	haddr = vortex_gethostbyname (ctx, host);
+        if (haddr == NULL) {
+		vortex_log (VORTEX_LEVEL_WARNING, "unable to get host name by using gethostbyname host=%s",
+			    host);
+		axl_error_report (error, VortexNameResolvFailure, "unable to get host name by using gethostbyname");
+		return -1;
+	}
+
+	/* create the socket and check if it */
+        session      = socket (AF_INET, SOCK_STREAM, 0);
+	if (session == VORTEX_INVALID_SOCKET) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to create socket");
+		axl_error_report (error, VortexNameResolvFailure, "unable to create socket (socket call have failed)");
+		return -1;
+	} /* end if */
+
+	/* do a sanity check on socket created */
+	if (!vortex_connection_do_sanity_check (ctx, session)) {
+		/* report error */
+		axl_error_report (error, VortexSocketSanityError, 
+				  "created socket descriptor using a reserved socket descriptor (%d), this is likely to cause troubles");
+		return -1;
+	} /* end if */
+	
+	/* disable nagle */
+	vortex_connection_set_sock_tcp_nodelay (session, axl_true);
+
+	/* prepare socket configuration to operate using TCP/IP
+	 * socket */
+        memset(&saddr, 0, sizeof(saddr));
+        memcpy(&saddr.sin_addr, haddr, sizeof(struct in_addr));
+        saddr.sin_family    = AF_INET;
+        saddr.sin_port      = htons((uint16_t) strtod (port, NULL));
+	
+	/* get current vortex connection timeout to check if the
+	 * application have requested to configure a particular TCP
+	 * connect timeout. */
+	if (timeout) {
+		(*timeout)  = vortex_connection_get_connect_timeout (ctx); 
+		if ((*timeout) > 0) {
+			/* translate hold value for timeout into seconds  */
+			(*timeout) = (int) (*timeout) / (int) 1000000;
+			
+			/* set non blocking connection */
+			vortex_connection_set_sock_block (session, axl_false);
+		} /* end if */
+	} /* end if */
+
+	/* do a tcp connect */
+        if (connect (session, (struct sockaddr *)&saddr, sizeof(saddr)) < 0) {
+		if(timeout == 0 || (errno != VORTEX_EINPROGRESS && errno != VORTEX_EWOULDBLOCK)) { 
+			shutdown (session, SHUT_RDWR);
+			vortex_log (VORTEX_LEVEL_WARNING, "unable to connect to remote host errno=%d, timeout=%d",
+				    errno, timeout);
+			axl_error_report (error, VortexConnectionError, "unable to connect to remote host");
+			return -1;
+		} /* end if */
+	} /* end if */
+
+	/* if a connection timeout is defined, wait until connect */
+	if (timeout && ((*timeout) > 0)) {
+		/* wait for write operation, signaling that the
+		 * connection is available */
+		err = __vortex_connection_wait_on (ctx, WRITE_OPERATIONS, session, timeout);
+
+#if defined(AXL_OS_WIN32)
+		/* under windows we have to also we to be readable */
+		if (err > 0) { 
+			err = __vortex_connection_wait_on (ctx, READ_OPERATIONS, connection, timeout);
+		} /* end if */
+#endif
+		
+		if(err <= 0){
+			/* timeout reached while waiting for the connection to terminate */
+			shutdown (session, SHUT_RDWR);
+			vortex_log (VORTEX_LEVEL_WARNING, "unable to connect to remote host (timeout)");
+			axl_error_report (error, VortexNameResolvFailure, "unable to connect to remote host (timeout)");
+			return -1;
+		} /* end if */
+	} /* end if */
+
+	/* return socket created */
+	return session;
+}
+			
+
+/**
+ * @brief Do greetings exchange (BEEP session initialization) on the
+ * provided connection.
+ *
+ * @param ctx The context where the operation will take place.
+ *
+ * @param connection The connection where the greetings exchange will
+ * take place.
+ *
+ * @param timeout A timeout defined by the caller under which the
+ * operation should finish.
+ *
+ * @return axl_true in the case greetings exchange finished properly,
+ * without errors. Otherwise axl_false is returned and the connection
+ * is flaged as unconnected with the appropiate status (\ref
+ * vortex_connection_get_status) and error message (\ref
+ * vortex_connection_get_message).
+ */
+axl_bool vortex_connection_do_greetings_exchange (VortexCtx * ctx, VortexConnection * connection, int timeout)
+{
+	VortexFrame * frame;
+	int           err;
+
+	v_return_val_if_fail (vortex_connection_is_ok (connection, axl_false), axl_false);
+
+	/* while we did not finish */
+	while (axl_true) {
+
+		/* block thread until received remote greetings */
+		vortex_log (VORTEX_LEVEL_DEBUG, "getting initial greetings frame..");
+		frame = vortex_greetings_client_process (connection);
+		vortex_log (VORTEX_LEVEL_DEBUG, "finished wait for initial greetings frame=%p timeout=%d", 
+			    frame, timeout);
+
+		/* check frame received */
+		if (frame != NULL) {
+
+			vortex_log (VORTEX_LEVEL_DEBUG, "greetings received, process reply frame");
+			break;
+
+		} else if (timeout > 0 && vortex_connection_is_ok (connection, axl_false)) {
+
+			vortex_log (VORTEX_LEVEL_WARNING, 
+				    "found NULL frame referecence connection=%d, checking to wait for read operation..",
+				    connection->id);
+
+			/* try to perform a wait operation */
+			err = __vortex_connection_wait_on (ctx, READ_OPERATIONS, connection->session, &timeout);
+			if (err <= 0 || timeout <= 0) {
+				/* timeout reached while waiting for the connection to terminate */
+				vortex_log (VORTEX_LEVEL_WARNING, 
+					    "reached timeout=%d or general operation failure=%d while waiting for initial greetings frame",
+					    err, timeout);
+				
+				/* close the connection */
+				shutdown (connection->session, SHUT_RDWR);
+				connection->session      = -1;
+
+				/* free previous message */
+				if (connection->message)
+					axl_free (connection->message);
+				connection->message      = axl_strdup_printf (
+					"reached timeout while waiting for initial greetings frame, err=%d, timeout=%d",
+					err, timeout);
+				connection->status       = VortexGreetingsFailure;
+				connection->is_connected = axl_false;
+
+				/* error found, stop greetings process */
+				return axl_false;
+			} /* end if */
+				
+			vortex_log (VORTEX_LEVEL_DEBUG,
+				    "found the connection is ready to provide data, checking..");
+			continue;
+		} else {
+			/* check if a pending frame was found */
+			if (vortex_connection_get_data (connection, VORTEX_GREETINGS_PENDING_FRAME) ||
+			    vortex_connection_get_data (connection, "frame")) {
+				vortex_log (VORTEX_LEVEL_DEBUG, "found partial greetings frame, reading rest..");
+				continue;
+			} /* end if */
+
+			/* null frame received */
+			vortex_log (VORTEX_LEVEL_CRITICAL,
+				    "Connection refused. Received null frame were it was expected initial greetings, finish connection id=%d", connection->id);
+			
+			/* timeout reached while waiting for the connection to terminate */
+			shutdown (connection->session, SHUT_RDWR);
+			connection->session      = -1;
+
+			/* free previous message */
+			if (connection->message)
+				axl_free (connection->message);
+			connection->message      = axl_strdup_printf (
+				"Connection refused. Received null frame were it was expected initial greetings, finish connection id=%d", connection->id);
+			connection->status       = VortexConnectionError;
+			connection->is_connected = axl_false;
+			return axl_false;
+		} /* end if */
+		
+	} /* end while */
+
+	/* make the connection to be blocking during the
+	 * greetings process (if it were not) */
+	vortex_connection_set_blocking_socket (connection);
+	
+	/* now we have to send greetings and process them */
+	if (! vortex_greetings_client_send (connection)) {
+		/* greetings have failed, unref the frame */
+		vortex_frame_unref (frame);
+		
+		vortex_log (VORTEX_LEVEL_DEBUG, vortex_connection_get_message (connection));
+		return axl_false;
+	}
+	
+	vortex_log (VORTEX_LEVEL_DEBUG, "greetings sent, waiting for reply");
+	
+	/* process frame response */
+	if (!vortex_connection_parse_greetings_and_enable (connection, frame))
+		return axl_false;
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "greetings exchange ok");
+	return axl_true;
+} 
+
 /** 
  * @internal
  * @brief Support function to vortex_connection_new. 
@@ -1360,123 +1667,34 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 	/* get current context */
 	VortexConnection   * connection   = data->connection;
 	VortexCtx          * ctx          = connection->ctx;
-	struct in_addr     * haddr;
-	struct sockaddr_in   saddr;
-	VortexFrame        * frame;
 	VortexChannel      * channel;
-	int 		     d_timeout    = 0;
-	int		     err          = 0;
+	axlError           * error        = NULL;
+	int                  d_timeout    = 0;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "executing connection new in %s mode to %s:%s id=%d",
 	       (data->threaded == axl_true) ? "thread" : "blocking", 
 	       connection->host, connection->port,
 	       connection->id);
 
-	/*
-	 * standard tcp socket voodo connection (I would like to know
-	 * who was the great mind designer of this api)
-	 */
-	haddr = vortex_gethostbyname (ctx, connection->host);
-        if (haddr == NULL) {
-		vortex_log (VORTEX_LEVEL_WARNING, "unable to get host name by using gethostbyname host=%s",
-			    connection->host);
-		connection->message      = axl_strdup ("unable to get host name by using gethostbyname");
-		connection->status       = VortexNameResolvFailure;
-		goto __vortex_connection_new_finalize;
-	}
+	/* configure the socket created */
+	connection->session = vortex_connection_sock_connect (ctx, connection->host, connection->port, &d_timeout, &error);
+	if (connection->session == -1) {
+		/* free previous message */
+		if (connection->message)
+			axl_free (connection->message);
 
-	/* create the socket and check if it */
-        connection->session      = socket (AF_INET, SOCK_STREAM, 0);
-	if (connection->session == VORTEX_INVALID_SOCKET) {
+		/* get error message and error status */
+		connection->message = axl_strdup (axl_error_get (error));
+		connection->status  = axl_error_get_code (error);
+		axl_error_free (error);
 
-		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to create socket");
-		connection->message = axl_strdup ("unable to create socket");
-		connection->status  = VortexNameResolvFailure;
-		goto __vortex_connection_new_finalize;
-	}
-
-
-	/* do a sanity check on socket created */
-	if (!vortex_connection_do_sanity_check (ctx, connection->session)) {
-		connection->message = axl_strdup_printf ("created socket descriptor using a reserved socket descriptor (%d), this is likely to cause troubles",
-							 connection->session);
-		connection->status       = VortexSocketSanityError;
-		goto __vortex_connection_new_finalize;
-	}
-	
-	/* disable nagle */
-	vortex_connection_set_sock_tcp_nodelay (connection->session, axl_true);
-
-	/* prepare socket configuration to operate using TCP/IP
-	 * socket */
-        memset(&saddr, 0, sizeof(saddr));
-        memcpy(&saddr.sin_addr, haddr, sizeof(struct in_addr));
-        saddr.sin_family    = AF_INET;
-        saddr.sin_port      = htons((uint16_t) strtod (connection->port, NULL));
-	
-	/* get current vortex connection timeout to check if the
-	 * application have requested to configure a particular TCP
-	 * connect timeout. */
-	d_timeout  = vortex_connection_get_connect_timeout (connection->ctx); 
-	if (d_timeout > 0) {
-		/* translate hold value for d_timeout into seconds  */
-		d_timeout = (int) d_timeout / (int) 1000000;
-
-		/* set non blocking connection */
-		vortex_connection_set_nonblocking_socket (connection);
+		/* flag as not connected */
+		connection->is_connected = axl_false;
+	} else {
+		/* flag as connected */
+		connection->is_connected = axl_true;
 	} /* end if */
-
-	/* do a tcp connect */
-        if (connect (connection->session, (struct sockaddr *)&saddr, sizeof(saddr)) < 0) {
-		if(d_timeout == 0 || (errno != VORTEX_EINPROGRESS && errno != VORTEX_EWOULDBLOCK)) { 
-			shutdown (connection->session, SHUT_RDWR);
-			vortex_log (VORTEX_LEVEL_WARNING, "unable to connect to remote host errno=%d, d_timeout=%d",
-				    errno, d_timeout);
-			connection->message = axl_strdup ("unable to connect to remote host");
-			connection->status       = VortexConnectionError;
-			goto __vortex_connection_new_finalize;
-		}
-	}
 	
-	/* if a connection timeout is defined, wait until connect */
-	if (d_timeout) {
-		/* wait for write operation, signaling that the
-		 * connection is available */
-		err = __vortex_connection_wait_on (WRITE_OPERATIONS, connection, &d_timeout);
-
-#if defined(AXL_OS_WIN32)
-		/* under windows we have to also we to be readable */
-		if (err > 0) { 
-			err = __vortex_connection_wait_on (READ_OPERATIONS, connection, &d_timeout);
-		} /* end if */
-#endif
-		
-		if(err <= 0){
-			/* timeout reached while waiting for the connection to terminate */
-			shutdown (connection->session, SHUT_RDWR);
-			vortex_log (VORTEX_LEVEL_WARNING, "unable to connect to remote host (timeout)");
-			/* free previous message */
-			if (connection->message)
-				axl_free (connection->message);
-			connection->message = axl_strdup ("unable to connect to remote host (timeout)");
-			connection->status  = VortexNameResolvFailure;
-			goto __vortex_connection_new_finalize;
-		} /* end if */
-	}
-
-	/* flag that the connection is ok, and continue with the
-	 * process */
-	connection->is_connected = axl_true;
-	goto __vortex_connection_new_invoke;
-
- __vortex_connection_new_finalize:
-	/* common case when everything goes wrong */
-	connection->is_connected = axl_false;
-	vortex_close_socket (connection->session);
-	connection->session = -1;
-		
-
- __vortex_connection_new_invoke:
 	/* according to the connection status (is_connected attribute)
 	 * perform the final operations so the connection becomes
 	 * usable. Later, the user app level is notified. */
@@ -1490,96 +1708,14 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 		vortex_connection_add_channel  (connection, channel);
 
 		/* block thread until received remote greetings */
-	__vortex_connection_try_again:
+		if (vortex_connection_do_greetings_exchange (ctx, connection, d_timeout)) {
 
-		/* block thread until received remote greetings */
-		vortex_log (VORTEX_LEVEL_DEBUG, "getting initial greetings frame..");
-		frame = vortex_greetings_client_process (connection);
-		vortex_log (VORTEX_LEVEL_DEBUG, "finished wait for initial greetings frame=%p d_timeout=%d", 
-			    frame, d_timeout);
-
-		/* check frame received */
-		if (frame != NULL)
-			vortex_log (VORTEX_LEVEL_DEBUG, "greetings received, process reply frame");
-		else if (d_timeout > 0 && vortex_connection_is_ok (connection, axl_false)) {
-
-			vortex_log (VORTEX_LEVEL_WARNING, 
-				    "found NULL frame referecence connection=%d, checking to wait for read operation..",
-				    connection->id);
-
-			/* try to perform a wait operation */
-			err = __vortex_connection_wait_on (READ_OPERATIONS, connection, &d_timeout);
-			if (err <= 0 || d_timeout <= 0) {
-				/* timeout reached while waiting for the connection to terminate */
-				vortex_log (VORTEX_LEVEL_WARNING, 
-					    "reached timeout=%d or general operation failure=%d while waiting for initial greetings frame",
-					    err, d_timeout);
-				
-				/* close the connection */
-				shutdown (connection->session, SHUT_RDWR);
-				/* free previous message */
-				if (connection->message)
-					axl_free (connection->message);
-				connection->message      = axl_strdup_printf (
-					"reached timeout while waiting for initial greetings frame, err=%d, d_timeout=%d",
-					err, d_timeout);
-				connection->status  = VortexGreetingsFailure;
-				connection->is_connected = axl_false;
-				goto __vortex_connection_new_finalize;
-			} else {
-				
-				vortex_log (VORTEX_LEVEL_DEBUG,
-					    "found the connection is ready to provide data, checking..");
-				goto __vortex_connection_try_again;
-			} /* end if */
-		} else {
-			/* check if a pending frame was found */
-			if (vortex_connection_get_data (connection, VORTEX_GREETINGS_PENDING_FRAME) ||
-			    vortex_connection_get_data (connection, "frame")) {
-				vortex_log (VORTEX_LEVEL_DEBUG, "found partial greetings frame, reading rest..");
-				goto __vortex_connection_try_again;
-			} /* end if */
-
-			/* null frame received */
-			vortex_log (VORTEX_LEVEL_CRITICAL,
-				    "Connection refused. Received null frame were it was expected initial greetings, finish connection id=%d", connection->id);
-			
-			/* timeout reached while waiting for the connection to terminate */
-			shutdown (connection->session, SHUT_RDWR);
-			/* free previous message */
-			if (connection->message)
-				axl_free (connection->message);
-			connection->message      = axl_strdup_printf (
-				"Connection refused. Received null frame were it was expected initial greetings, finish connection id=%d", connection->id);
-			connection->status  = VortexConnectionError;
-			connection->is_connected = axl_false;
-			goto __vortex_connection_new_finalize;
+			/* call to notify CONECTION_STAGE_POST_CREATED */
+			vortex_log (VORTEX_LEVEL_DEBUG, "doing post creation notification for connection id=%d", connection->id);
+			vortex_connection_actions_notify (&connection, CONNECTION_STAGE_POST_CREATED);
 		} /* end if */
+	} /* end if */
 
-		/* make the connection to be blocking during the
-		 * greetings process (if it were not) */
-		vortex_connection_set_blocking_socket (connection);
-
-		/* now we have to send greetings and process them */
-		if (! vortex_greetings_client_send (connection)) {
-			/* greetings have failed, unref the frame */
-			vortex_frame_unref (frame);
-
-			vortex_log (VORTEX_LEVEL_DEBUG, vortex_connection_get_message (connection));
-			goto __vortex_connection_new_invoke_caller;
-		}
-		
-		vortex_log (VORTEX_LEVEL_DEBUG, "greetings sent, waiting for reply");
-
-		/* process frame response */
-		if (!vortex_connection_parse_greetings_and_enable (connection, frame))
-			goto __vortex_connection_new_finalize;
-
-		/* call to notify CONECTION_STAGE_POST_CREATED */
-		vortex_log (VORTEX_LEVEL_DEBUG, "doing post creation notification for connection id=%d", connection->id);
-		vortex_connection_actions_notify (&connection, CONNECTION_STAGE_POST_CREATED);
-	}
- __vortex_connection_new_invoke_caller: 
 	/* notify on callback or simply return */
 	if (data->threaded) {
 		data->on_connected (connection, data->user_data);

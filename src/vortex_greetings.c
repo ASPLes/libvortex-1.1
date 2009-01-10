@@ -258,11 +258,7 @@ VortexFrame *  vortex_greetings_process (VortexConnection * connection)
  	pending = vortex_connection_get_data (connection,
  					      VORTEX_GREETINGS_PENDING_FRAME);
 
-	/*
-	 * Because this is a really especial case where we need to get
-	 * totally blocked until the *WHOLE* frame is receive, we set
-	 * the connection as blocking.
-	 */
+	/* get greetings info from remote peer (or a piece of it) */
 	frame = vortex_frame_get_next (connection);
 	if (frame == NULL) {
 		vortex_log (VORTEX_LEVEL_WARNING, "no frame received from remote peer");

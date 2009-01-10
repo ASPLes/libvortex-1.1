@@ -122,7 +122,7 @@ void vortex_listener_accept_connection    (VortexConnection * connection, axl_bo
 	vortex_mutex_unlock (&ctx->listener_mutex);
 
 	/* check result */
-	if (result == axl_false) {
+	if (! result) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "the server application level have dropped the provided connection");
 		/* send the error reply message */
 		vortex_channel_send_err (vortex_connection_get_channel (connection, 0), 

@@ -41,6 +41,18 @@
 
 #include <vortex.h>
 
+/** 
+ * \addtogroup vortex_channel
+ * @{
+ */
+
+/**
+ * @brief Allows to get context associated to the channel provided.
+ * @param channel The channel to get the context from.
+ * @return A reference to the context.
+ */
+#define CHANNEL_CTX(channel) (vortex_channel_get_ctx (channel))
+
 VortexChannel     * vortex_channel_new                         (VortexConnection      * connection, 
 								int                     channel_num, 
 								const char            * profile,
@@ -434,3 +446,5 @@ axl_bool            vortex_channel_remove_first_outstanding_msg_no (VortexChanne
 void               __vortex_channel_nullify_conn                   (VortexChannel  * channel);
 								   
 #endif
+
+/* @} */

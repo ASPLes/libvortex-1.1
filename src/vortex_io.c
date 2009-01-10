@@ -1142,7 +1142,7 @@ void                 vortex_io_waiting_set_add_to_fd_group     (VortexCtx       
  * added.
  */
 axl_bool               vortex_io_waiting_invoke_add_to_fd_group  (VortexCtx        * ctx,
-								  int                fds, 
+								  VORTEX_SOCKET      fds, 
 								  VortexConnection * connection, 
 								  axlPointer         fd_group)
 {
@@ -1237,10 +1237,10 @@ void                 vortex_io_waiting_set_dispatch            (VortexCtx       
  * @param user_data User defined pointer provided to the is set
  * function.
  */
-axl_bool                   vortex_io_waiting_invoke_is_set_fd_group  (VortexCtx * ctx,
-								      int         fds, 
-								      axlPointer  fd_group, 
-								      axlPointer  user_data)
+axl_bool                   vortex_io_waiting_invoke_is_set_fd_group  (VortexCtx      * ctx,
+								      VORTEX_SOCKET    fds, 
+								      axlPointer       fd_group, 
+								      axlPointer       user_data)
 {
 	if (ctx == NULL || fd_group == NULL || fds <= 0)
 		return axl_false;
