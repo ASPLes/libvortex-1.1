@@ -276,6 +276,12 @@ AC_ARG_ENABLE(pull-support, [  --disable-pull-support    Makes Vortex Library to
 	      enable_pull_support=yes)
 AM_CONDITIONAL(ENABLE_PULL_SUPPORT, test "x$enable_pull_support" = "xyes")
 
+dnl check for HTTP API support (BEEP connection through HTTP/1.1 proxy)
+AC_ARG_ENABLE(http-support, [  --disable-http-support    Makes Vortex Library to be built without HTTP CONNECT proxy support], 
+	      enable_http_support="$enableval", 
+	      enable_http_support=yes)
+AM_CONDITIONAL(ENABLE_HTTP_SUPPORT, test "x$enable_http_support" = "xyes")
+
 dnl general libries subsitution
 dnl AC_SUBST(LIBRARIES_CFLAGS)
 dnl AC_SUBST(LIBRARIES_LIBS)
@@ -333,6 +339,7 @@ pull/Makefile
 xml-rpc/Makefile
 sasl/Makefile
 tls/Makefile
+http/Makefile
 doc/Makefile
 doc/vortex-doc.doxygen
 test/Makefile
@@ -344,7 +351,9 @@ vortex-xml-rpc-1.1.pc
 vortex-tunnel-1.1.pc
 vortex-pull-1.1.pc
 vortex-sasl-1.1.pc
-vortex-tls-1.1.pc])
+vortex-tls-1.1.pc
+vortex-http-1.1.pc
+])
 
 echo "------------------------------------------"
 echo "--     VORTEX LIBRARY 1.1 SETTINGS      --"
@@ -437,6 +446,15 @@ else
    echo 
    echo "     NOTE: To enable PULL API you have to"
    echo "           use --enable-pull-support option."
+fi
+if test x$enable_http_support = xyes ; then
+   echo "   Build HTTP CONNECT proxy support:         enabled"
+   echo "     (libvortex-http-1.1)"
+else
+   echo "   Build HTTP CONNECT proxy support:         disabled"
+   echo 
+   echo "     NOTE: To enable HTTP CONNECT proxy support you have to"
+   echo "           use --enable-http-support option."
 fi
 if test x$DOXYGEN = xyes ; then
    echo "   Build Vortex Library doc:       enabled"
