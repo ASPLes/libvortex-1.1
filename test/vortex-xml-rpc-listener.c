@@ -99,7 +99,7 @@ XmlRpcMethodResponse * __sum_2_int_int (XmlRpcMethodCall * method_call)
 	}
 
 	/* return reply generated */
-	return CREATE_OK_REPLY (XML_RPC_INT_VALUE, INT_TO_PTR (result));
+	return CREATE_OK_REPLY (ctx, XML_RPC_INT_VALUE, INT_TO_PTR (result));
 	
 }
 

@@ -43,8 +43,9 @@ ItemArray * get_array_0 (char ** fault_error, int * fault_code, VortexChannel * 
 XmlRpcMethodResponse * __get_array_0 (XmlRpcMethodCall * method_call, VortexChannel * channel)
 {
 	/* error support variables */
-	char * fault_error = NULL;
-	int    fault_code  = -1;
+	VortexCtx * ctx         = METHOD_CALL_CTX(method_call);
+	char      * fault_error = NULL;
+	int         fault_code  = -1;
 	ItemArray *    result = NULL;
 
 	XmlRpcArray * _result;
@@ -63,8 +64,8 @@ XmlRpcMethodResponse * __get_array_0 (XmlRpcMethodCall * method_call, VortexChan
 	}
 
 	/* Translate structure returned by the service */
-	_result = test_itemarray_marshall (result, axl_true);
+	_result = test_itemarray_marshall (ctx, result, axl_true);
 
 	/* return reply generated */
-	return CREATE_OK_REPLY (XML_RPC_ARRAY_VALUE, _result);
+	return CREATE_OK_REPLY (ctx, XML_RPC_ARRAY_VALUE, _result);
 }

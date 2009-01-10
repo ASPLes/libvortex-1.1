@@ -29,7 +29,7 @@ struct __Values {
 BEGIN_C_DECLS
 
 /* (un)marshaller support functions  */
-XmlRpcStruct * test_values_marshall (Values * ref, axl_bool  dealloc);
+XmlRpcStruct * test_values_marshall (VortexCtx * _ctx_, Values * ref, axl_bool  dealloc);
 Values * test_values_unmarshall (XmlRpcStruct * ref, axl_bool  dealloc);
 
 /* memory (de)allocation functions */

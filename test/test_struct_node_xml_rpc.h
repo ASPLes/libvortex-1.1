@@ -28,7 +28,7 @@ struct __Node {
 BEGIN_C_DECLS
 
 /* (un)marshaller support functions  */
-XmlRpcStruct * test_node_marshall (Node * ref, axl_bool  dealloc);
+XmlRpcStruct * test_node_marshall (VortexCtx * _ctx_, Node * ref, axl_bool  dealloc);
 Node * test_node_unmarshall (XmlRpcStruct * ref, axl_bool  dealloc);
 
 /* memory (de)allocation functions */

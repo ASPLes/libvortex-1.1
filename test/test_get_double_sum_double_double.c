@@ -27,8 +27,9 @@ double get_double_sum_2_double_double (double a, double b, char ** fault_error, 
 XmlRpcMethodResponse * __get_double_sum_2_double_double (XmlRpcMethodCall * method_call, VortexChannel * channel)
 {
 	/* error support variables */
-	char * fault_error = NULL;
-	int    fault_code  = -1;
+	VortexCtx * ctx         = METHOD_CALL_CTX(method_call);
+	char      * fault_error = NULL;
+	int         fault_code  = -1;
 	double    result = 0;
 
 	/* call to the user implementation */
@@ -41,5 +42,5 @@ XmlRpcMethodResponse * __get_double_sum_2_double_double (XmlRpcMethodCall * meth
 	}
 
 	/* return reply generated */
-	return CREATE_OK_REPLY (XML_RPC_DOUBLE_VALUE, &result);
+	return CREATE_OK_REPLY (ctx, XML_RPC_DOUBLE_VALUE, &result);
 }

@@ -26,8 +26,9 @@ int operate_2_int_int (int a, int b, char ** fault_error, int * fault_code, Vort
 XmlRpcMethodResponse * __operate_2_int_int (XmlRpcMethodCall * method_call, VortexChannel * channel)
 {
 	/* error support variables */
-	char * fault_error = NULL;
-	int    fault_code  = -1;
+	VortexCtx * ctx         = METHOD_CALL_CTX(method_call);
+	char      * fault_error = NULL;
+	int         fault_code  = -1;
 	int    result = -1;
 
 	/* call to the user implementation */
@@ -40,5 +41,5 @@ XmlRpcMethodResponse * __operate_2_int_int (XmlRpcMethodCall * method_call, Vort
 	}
 
 	/* return reply generated */
-	return CREATE_OK_REPLY (XML_RPC_INT_VALUE, INT_TO_PTR (result));
+	return CREATE_OK_REPLY (ctx, XML_RPC_INT_VALUE, INT_TO_PTR (result));
 }

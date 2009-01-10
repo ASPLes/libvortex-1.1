@@ -10,12 +10,12 @@
  */
 #include <test_xml_rpc.h>
 
-XmlRpcMethodCall * __common_sum_int_int (int a, int b)
+XmlRpcMethodCall * __common_sum_int_int (VortexCtx * _ctx_, int a, int b)
 {
 	XmlRpcMethodCall * _invocator_;
 
 	/* create the method call invocator */
-	_invocator_ = method_call_new ("sum", 2);
+	_invocator_ = method_call_new (_ctx_, "sum", 2);
 
 	method_call_create_value (_invocator_, XML_RPC_INT_VALUE, INT_TO_PTR (a));
 
@@ -30,9 +30,10 @@ int test_sum_int_int_s (int a, int b, VortexChannel * channel, XmlRpcResponseSta
 {
 	XmlRpcMethodCall     * _invocator_;
 	XmlRpcMethodResponse * _response_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_sum_int_int (a, b);
+	_invocator_ = __common_sum_int_int (_ctx_, a, b);
 
 	/* perform the invocation, in a synchronous way, get blocked
 	 * until it is received */
@@ -46,9 +47,10 @@ void test_sum_int_int (int a, int b, VortexChannel * channel, XmlRpcProcessInt p
 {
 
 	XmlRpcMethodCall     * _invocator_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_sum_int_int (a, b);
+	_invocator_ = __common_sum_int_int (_ctx_, a, b);
 
 	/* perform invocation, passing an unmarshall function that
 	 * receives the int value and the handler from the user
@@ -61,12 +63,12 @@ void test_sum_int_int (int a, int b, VortexChannel * channel, XmlRpcProcessInt p
 	return;
 }
 
-XmlRpcMethodCall * __common_operate_int_int (int a, int b)
+XmlRpcMethodCall * __common_operate_int_int (VortexCtx * _ctx_, int a, int b)
 {
 	XmlRpcMethodCall * _invocator_;
 
 	/* create the method call invocator */
-	_invocator_ = method_call_new ("operate", 2);
+	_invocator_ = method_call_new (_ctx_, "operate", 2);
 
 	method_call_create_value (_invocator_, XML_RPC_INT_VALUE, INT_TO_PTR (a));
 
@@ -81,9 +83,10 @@ int test_operate_int_int_s (int a, int b, VortexChannel * channel, XmlRpcRespons
 {
 	XmlRpcMethodCall     * _invocator_;
 	XmlRpcMethodResponse * _response_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_operate_int_int (a, b);
+	_invocator_ = __common_operate_int_int (_ctx_, a, b);
 
 	/* perform the invocation, in a synchronous way, get blocked
 	 * until it is received */
@@ -97,9 +100,10 @@ void test_operate_int_int (int a, int b, VortexChannel * channel, XmlRpcProcessI
 {
 
 	XmlRpcMethodCall     * _invocator_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_operate_int_int (a, b);
+	_invocator_ = __common_operate_int_int (_ctx_, a, b);
 
 	/* perform invocation, passing an unmarshall function that
 	 * receives the int value and the handler from the user
@@ -112,12 +116,12 @@ void test_operate_int_int (int a, int b, VortexChannel * channel, XmlRpcProcessI
 	return;
 }
 
-XmlRpcMethodCall * __common_get_the_string ()
+XmlRpcMethodCall * __common_get_the_string (VortexCtx * _ctx_)
 {
 	XmlRpcMethodCall * _invocator_;
 
 	/* create the method call invocator */
-	_invocator_ = method_call_new ("get_the_string", 0);
+	_invocator_ = method_call_new (_ctx_, "get_the_string", 0);
 
 	/* return invocator created */
 	return _invocator_;
@@ -128,9 +132,10 @@ char * test_get_the_string_s (VortexChannel * channel, XmlRpcResponseStatus * st
 {
 	XmlRpcMethodCall     * _invocator_;
 	XmlRpcMethodResponse * _response_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_get_the_string ();
+	_invocator_ = __common_get_the_string (_ctx_);
 
 	/* perform the invocation, in a synchronous way, get blocked
 	 * until it is received */
@@ -144,9 +149,10 @@ void test_get_the_string (VortexChannel * channel, XmlRpcProcessString process)
 {
 
 	XmlRpcMethodCall     * _invocator_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_get_the_string ();
+	_invocator_ = __common_get_the_string (_ctx_);
 
 	/* perform invocation, passing an unmarshall function that
 	 * receives the int value and the handler from the user
@@ -159,12 +165,12 @@ void test_get_the_string (VortexChannel * channel, XmlRpcProcessString process)
 	return;
 }
 
-XmlRpcMethodCall * __common_get_the_bool_1 ()
+XmlRpcMethodCall * __common_get_the_bool_1 (VortexCtx * _ctx_)
 {
 	XmlRpcMethodCall * _invocator_;
 
 	/* create the method call invocator */
-	_invocator_ = method_call_new ("get_the_bool_1", 0);
+	_invocator_ = method_call_new (_ctx_, "get_the_bool_1", 0);
 
 	/* return invocator created */
 	return _invocator_;
@@ -175,9 +181,10 @@ axl_bool test_get_the_bool_1_s (VortexChannel * channel, XmlRpcResponseStatus * 
 {
 	XmlRpcMethodCall     * _invocator_;
 	XmlRpcMethodResponse * _response_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_get_the_bool_1 ();
+	_invocator_ = __common_get_the_bool_1 (_ctx_);
 
 	/* perform the invocation, in a synchronous way, get blocked
 	 * until it is received */
@@ -191,9 +198,10 @@ void test_get_the_bool_1 (VortexChannel * channel, XmlRpcProcessInt process)
 {
 
 	XmlRpcMethodCall     * _invocator_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_get_the_bool_1 ();
+	_invocator_ = __common_get_the_bool_1 (_ctx_);
 
 	/* perform invocation, passing an unmarshall function that
 	 * receives the int value and the handler from the user
@@ -206,12 +214,12 @@ void test_get_the_bool_1 (VortexChannel * channel, XmlRpcProcessInt process)
 	return;
 }
 
-XmlRpcMethodCall * __common_get_the_bool_2 ()
+XmlRpcMethodCall * __common_get_the_bool_2 (VortexCtx * _ctx_)
 {
 	XmlRpcMethodCall * _invocator_;
 
 	/* create the method call invocator */
-	_invocator_ = method_call_new ("get_the_bool_2", 0);
+	_invocator_ = method_call_new (_ctx_, "get_the_bool_2", 0);
 
 	/* return invocator created */
 	return _invocator_;
@@ -222,9 +230,10 @@ axl_bool test_get_the_bool_2_s (VortexChannel * channel, XmlRpcResponseStatus * 
 {
 	XmlRpcMethodCall     * _invocator_;
 	XmlRpcMethodResponse * _response_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_get_the_bool_2 ();
+	_invocator_ = __common_get_the_bool_2 (_ctx_);
 
 	/* perform the invocation, in a synchronous way, get blocked
 	 * until it is received */
@@ -238,9 +247,10 @@ void test_get_the_bool_2 (VortexChannel * channel, XmlRpcProcessInt process)
 {
 
 	XmlRpcMethodCall     * _invocator_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_get_the_bool_2 ();
+	_invocator_ = __common_get_the_bool_2 (_ctx_);
 
 	/* perform invocation, passing an unmarshall function that
 	 * receives the int value and the handler from the user
@@ -253,12 +263,12 @@ void test_get_the_bool_2 (VortexChannel * channel, XmlRpcProcessInt process)
 	return;
 }
 
-XmlRpcMethodCall * __common_get_double_sum_double_double (double a, double b)
+XmlRpcMethodCall * __common_get_double_sum_double_double (VortexCtx * _ctx_, double a, double b)
 {
 	XmlRpcMethodCall * _invocator_;
 
 	/* create the method call invocator */
-	_invocator_ = method_call_new ("get_double_sum", 2);
+	_invocator_ = method_call_new (_ctx_, "get_double_sum", 2);
 
 	method_call_create_value (_invocator_, XML_RPC_DOUBLE_VALUE, &a);
 
@@ -273,9 +283,10 @@ double test_get_double_sum_double_double_s (double a, double b, VortexChannel * 
 {
 	XmlRpcMethodCall     * _invocator_;
 	XmlRpcMethodResponse * _response_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_get_double_sum_double_double (a, b);
+	_invocator_ = __common_get_double_sum_double_double (_ctx_, a, b);
 
 	/* perform the invocation, in a synchronous way, get blocked
 	 * until it is received */
@@ -289,9 +300,10 @@ void test_get_double_sum_double_double (double a, double b, VortexChannel * chan
 {
 
 	XmlRpcMethodCall     * _invocator_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_get_double_sum_double_double (a, b);
+	_invocator_ = __common_get_double_sum_double_double (_ctx_, a, b);
 
 	/* perform invocation, passing an unmarshall function that
 	 * receives the int value and the handler from the user
@@ -304,16 +316,16 @@ void test_get_double_sum_double_double (double a, double b, VortexChannel * chan
 	return;
 }
 
-XmlRpcMethodCall * __common_get_struct_values_values (Values * a, Values * b)
+XmlRpcMethodCall * __common_get_struct_values_values (VortexCtx * _ctx_, Values * a, Values * b)
 {
 	XmlRpcMethodCall * _invocator_;
 
 	/* create the method call invocator */
-	_invocator_ = method_call_new ("get_struct", 2);
+	_invocator_ = method_call_new (_ctx_, "get_struct", 2);
 
-	method_call_create_value (_invocator_, XML_RPC_STRUCT_VALUE, test_values_marshall (a, axl_false));
+	method_call_create_value (_invocator_, XML_RPC_STRUCT_VALUE, test_values_marshall (_ctx_, a, axl_false));
 
-	method_call_create_value (_invocator_, XML_RPC_STRUCT_VALUE, test_values_marshall (b, axl_false));
+	method_call_create_value (_invocator_, XML_RPC_STRUCT_VALUE, test_values_marshall (_ctx_, b, axl_false));
 
 	/* return invocator created */
 	return _invocator_;
@@ -324,9 +336,10 @@ Values * test_get_struct_values_values_s (Values * a, Values * b, VortexChannel 
 {
 	XmlRpcMethodCall     * _invocator_;
 	XmlRpcMethodResponse * _response_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_get_struct_values_values (a, b);
+	_invocator_ = __common_get_struct_values_values (_ctx_, a, b);
 
 	/* perform the invocation, in a synchronous way, get blocked
 	 * until it is received */
@@ -340,9 +353,10 @@ void test_get_struct_values_values (Values * a, Values * b, VortexChannel * chan
 {
 
 	XmlRpcMethodCall     * _invocator_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_get_struct_values_values (a, b);
+	_invocator_ = __common_get_struct_values_values (_ctx_, a, b);
 
 	/* perform invocation, passing an unmarshall function that
 	 * receives the int value and the handler from the user
@@ -355,12 +369,12 @@ void test_get_struct_values_values (Values * a, Values * b, VortexChannel * chan
 	return;
 }
 
-XmlRpcMethodCall * __common_get_array ()
+XmlRpcMethodCall * __common_get_array (VortexCtx * _ctx_)
 {
 	XmlRpcMethodCall * _invocator_;
 
 	/* create the method call invocator */
-	_invocator_ = method_call_new ("get_array", 0);
+	_invocator_ = method_call_new (_ctx_, "get_array", 0);
 
 	/* return invocator created */
 	return _invocator_;
@@ -371,9 +385,10 @@ ItemArray * test_get_array_s (VortexChannel * channel, XmlRpcResponseStatus * st
 {
 	XmlRpcMethodCall     * _invocator_;
 	XmlRpcMethodResponse * _response_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_get_array ();
+	_invocator_ = __common_get_array (_ctx_);
 
 	/* perform the invocation, in a synchronous way, get blocked
 	 * until it is received */
@@ -387,9 +402,10 @@ void test_get_array (VortexChannel * channel, XmlRpcProcessArray process)
 {
 
 	XmlRpcMethodCall     * _invocator_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_get_array ();
+	_invocator_ = __common_get_array (_ctx_);
 
 	/* perform invocation, passing an unmarshall function that
 	 * receives the int value and the handler from the user
@@ -402,12 +418,12 @@ void test_get_array (VortexChannel * channel, XmlRpcProcessArray process)
 	return;
 }
 
-XmlRpcMethodCall * __common_get_list ()
+XmlRpcMethodCall * __common_get_list (VortexCtx * _ctx_)
 {
 	XmlRpcMethodCall * _invocator_;
 
 	/* create the method call invocator */
-	_invocator_ = method_call_new ("get_list", 0);
+	_invocator_ = method_call_new (_ctx_, "get_list", 0);
 
 	/* return invocator created */
 	return _invocator_;
@@ -418,9 +434,10 @@ Node * test_get_list_s (VortexChannel * channel, XmlRpcResponseStatus * status, 
 {
 	XmlRpcMethodCall     * _invocator_;
 	XmlRpcMethodResponse * _response_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_get_list ();
+	_invocator_ = __common_get_list (_ctx_);
 
 	/* perform the invocation, in a synchronous way, get blocked
 	 * until it is received */
@@ -434,9 +451,10 @@ void test_get_list (VortexChannel * channel, XmlRpcProcessStruct process)
 {
 
 	XmlRpcMethodCall     * _invocator_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_get_list ();
+	_invocator_ = __common_get_list (_ctx_);
 
 	/* perform invocation, passing an unmarshall function that
 	 * receives the int value and the handler from the user
@@ -449,12 +467,12 @@ void test_get_list (VortexChannel * channel, XmlRpcProcessStruct process)
 	return;
 }
 
-XmlRpcMethodCall * __common_sum2_int_int (int a, int b)
+XmlRpcMethodCall * __common_sum2_int_int (VortexCtx * _ctx_, int a, int b)
 {
 	XmlRpcMethodCall * _invocator_;
 
 	/* create the method call invocator */
-	_invocator_ = method_call_new ("aritmetic-operations/basic/sum", 2);
+	_invocator_ = method_call_new (_ctx_, "aritmetic-operations/basic/sum", 2);
 
 	method_call_create_value (_invocator_, XML_RPC_INT_VALUE, INT_TO_PTR (a));
 
@@ -469,9 +487,10 @@ int test_sum2_int_int_s (int a, int b, VortexChannel * channel, XmlRpcResponseSt
 {
 	XmlRpcMethodCall     * _invocator_;
 	XmlRpcMethodResponse * _response_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_sum2_int_int (a, b);
+	_invocator_ = __common_sum2_int_int (_ctx_, a, b);
 
 	/* perform the invocation, in a synchronous way, get blocked
 	 * until it is received */
@@ -485,9 +504,10 @@ void test_sum2_int_int (int a, int b, VortexChannel * channel, XmlRpcProcessInt 
 {
 
 	XmlRpcMethodCall     * _invocator_;
+	VortexCtx            * _ctx_ = CHANNEL_CTX(channel);
 
 	/* create the XmlRpcMethodCall object */
-	_invocator_ = __common_sum2_int_int (a, b);
+	_invocator_ = __common_sum2_int_int (_ctx_, a, b);
 
 	/* perform invocation, passing an unmarshall function that
 	 * receives the int value and the handler from the user

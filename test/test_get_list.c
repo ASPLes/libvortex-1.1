@@ -54,8 +54,9 @@ Node * get_list_0 (char ** fault_error, int * fault_code, VortexChannel * channe
 XmlRpcMethodResponse * __get_list_0 (XmlRpcMethodCall * method_call, VortexChannel * channel)
 {
 	/* error support variables */
-	char * fault_error = NULL;
-	int    fault_code  = -1;
+	VortexCtx * ctx         = METHOD_CALL_CTX(method_call);
+	char      * fault_error = NULL;
+	int         fault_code  = -1;
 	Node *    result = NULL;
 
 	XmlRpcStruct * _result;
@@ -74,8 +75,8 @@ XmlRpcMethodResponse * __get_list_0 (XmlRpcMethodCall * method_call, VortexChann
 	}
 
 	/* Translate structure returned by the service */
-	_result = test_node_marshall (result, axl_true);
+	_result = test_node_marshall (ctx, result, axl_true);
 
 	/* return reply generated */
-	return CREATE_OK_REPLY (XML_RPC_STRUCT_VALUE, _result);
+	return CREATE_OK_REPLY (ctx, XML_RPC_STRUCT_VALUE, _result);
 }

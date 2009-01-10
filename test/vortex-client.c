@@ -822,7 +822,7 @@ void vortex_client_begin_xml_rpc_invocation (VortexConnection * connection)
 	method_name  = readline ("method name to invoke: ");
 	method_count = readline ("method count to invoke: ");
 	count        = atoi (method_count);
-	invocator    = method_call_new (method_name, count);
+	invocator    = method_call_new (ctx, method_name, count);
 	
 	axl_free (method_name);
 	axl_free (method_count);
@@ -836,7 +836,7 @@ void vortex_client_begin_xml_rpc_invocation (VortexConnection * connection)
 		param_value = readline ("method parameter value: ");
 		
 		/* create the method value */
-		value = vortex_xml_rpc_method_value_new_from_string2 (param_type, param_value);
+		value = vortex_xml_rpc_method_value_new_from_string2 (ctx, param_type, param_value);
 		
 		/* release the values allocated */
 		axl_free (param_type);
