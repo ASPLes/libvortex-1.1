@@ -282,7 +282,7 @@ XmlRpcMethodValue * __vortex_xml_rpc_parse_struct_value (VortexCtx * ctx, axlNod
 	}
 
 	/* return the structure parsed */
-	return method_value_new (XML_RPC_STRUCT_VALUE, _struct);
+	return method_value_new (ctx, XML_RPC_STRUCT_VALUE, _struct);
 }
 
 /** 
@@ -358,7 +358,7 @@ XmlRpcMethodValue * __vortex_xml_rpc_parse_array_value (VortexCtx * ctx, axlNode
 		    vortex_xml_rpc_array_count (array));
 
 	/* return the structure parsed */
-	return method_value_new (XML_RPC_ARRAY_VALUE, array);
+	return method_value_new (ctx, XML_RPC_ARRAY_VALUE, array);
 }
 
 /** 
@@ -398,7 +398,7 @@ XmlRpcMethodValue * __vortex_xml_rpc_parse_value (VortexCtx * ctx, axlNode * val
 	/* check for the none value */
 	if (NODE_CMP_NAME (child, "none")) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "none value received");
-		return method_value_new (XML_RPC_NONE_VALUE, NULL);
+		return method_value_new (ctx, XML_RPC_NONE_VALUE, NULL);
 	}
 
 	/* in the case of simple top level values, get the reference
@@ -421,27 +421,27 @@ XmlRpcMethodValue * __vortex_xml_rpc_parse_value (VortexCtx * ctx, axlNode * val
 
 		/* for each value tag, convert into XML-RPC parameter */
 		if (NODE_CMP_NAME (child, "i4") || NODE_CMP_NAME (child, "int"))
-			result        = method_value_new_from_string (XML_RPC_INT_VALUE, string_value);
+			result        = method_value_new_from_string (ctx, XML_RPC_INT_VALUE, string_value);
 		
 		/* boolean case */
 		if (NODE_CMP_NAME (child, "boolean"))
-			result        = method_value_new_from_string (XML_RPC_BOOLEAN_VALUE, string_value);
+			result        = method_value_new_from_string (ctx, XML_RPC_BOOLEAN_VALUE, string_value);
 		
 		/* string case */
 		if (NODE_CMP_NAME (child, "string"))
-			result        = method_value_new_from_string (XML_RPC_STRING_VALUE, string_value);
+			result        = method_value_new_from_string (ctx, XML_RPC_STRING_VALUE, string_value);
 		       
 		/* double case */
 		if (NODE_CMP_NAME (child, "double"))
-			result        = method_value_new_from_string (XML_RPC_DOUBLE_VALUE, string_value);
+			result        = method_value_new_from_string (ctx, XML_RPC_DOUBLE_VALUE, string_value);
 		
 		/* dateTime.iso8601 */
 		if (NODE_CMP_NAME (child, "dateTime.iso8601"))
-			result        = method_value_new_from_string (XML_RPC_DATE_VALUE, string_value);
+			result        = method_value_new_from_string (ctx, XML_RPC_DATE_VALUE, string_value);
 		
 		/* base64 case */
 		if (NODE_CMP_NAME (child, "base64"))
-			result        = method_value_new_from_string (XML_RPC_BASE64_VALUE, string_value);
+			result        = method_value_new_from_string (ctx, XML_RPC_BASE64_VALUE, string_value);
 		
 		/* free and return */
 		return result;
@@ -1326,16 +1326,18 @@ axlPointer __vortex_xml_rpc_invoke (VortexXmlRpcInvokeData * data)
 	XmlRpcMethodCall     * invocator     = data->invocator;
 	XmlRpcInvokeNotify     reply_notify  = data->reply_notify;
 	axlPointer             user_data     = data->user_data;
+	VortexCtx            * ctx           = CHANNEL_CTX(channel);
 	char                 * message;
 	int                    message_size;
 
 	/* marshall the message */
-	message = vortex_xml_rpc_method_call_marshall (invocator, &message_size);
+	message = vortex_xml_rpc_method_call_marshall (ctx, invocator, &message_size);
 	
 	/* set the new frame receive handler and its data */
 	vortex_channel_set_received_handler (channel, __vortex_xml_rpc_invoke_process_reply, data);
 	
 	/* perform the invocation */
+	vortex_log (VORTEX_LEVEL_DEBUG, "sending XML-RPC message: %s", message ? message : "null");
 	if (!vortex_channel_send_msg (channel, message, message_size, NULL)) {
 		/* seems the invocation has failed */
 		__vortex_xml_rpc_notify_response (reply_notify, XML_RPC_INVOCATION_FAILURE, 
@@ -1661,7 +1663,7 @@ XmlRpcMethodCall * __vortex_xml_rpc_frame_received_parse_method_call (VortexFram
 	vortex_log (VORTEX_LEVEL_DEBUG, "invocation detected for: %s, with %d parameters", method_name, param_count);
 
 	/* build the method call */
-	method_call = method_call_new (method_name, param_count);
+	method_call = method_call_new (vortex_frame_get_ctx (frame), method_name, param_count);
 
 	/* now get all parameters */
 	iterator = 0;

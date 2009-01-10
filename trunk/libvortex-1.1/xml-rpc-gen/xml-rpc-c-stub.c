@@ -270,7 +270,7 @@ void xml_rpc_support_write_method_create_values (axlDoc * doc, axlNode * aux, ch
 				type_ref        = xml_rpc_support_to_lower (type);
 
 				/* write marshaller line */
-				xml_rpc_support_sl_write ("%s_%s_marshall (%s, axl_false)",
+				xml_rpc_support_sl_write ("%s_%s_marshall (_ctx_, %s, axl_false)",
 						       comp_name_lower, type_ref, name);
 
 				/* deallocate memory for lower names */
@@ -713,7 +713,7 @@ void xml_rpc_c_stub_write_struct_def (char  * out_dir,
 
 	/* write marshallers */
 	xml_rpc_support_write ("/* (un)marshaller support functions  */\n");
-	xml_rpc_support_write ("XmlRpcStruct * %s_%s_marshall (%s * ref, axl_bool  dealloc);\n",
+	xml_rpc_support_write ("XmlRpcStruct * %s_%s_marshall (VortexCtx * _ctx_, %s * ref, axl_bool  dealloc);\n",
 			       comp_name_lower, struct_lower, struct_name);
 	xml_rpc_support_write ("%s * %s_%s_unmarshall (XmlRpcStruct * ref, axl_bool  dealloc);\n\n",
 			       struct_name, comp_name_lower, struct_lower);
@@ -780,7 +780,7 @@ void xml_rpc_c_stub_write_struct_def (char  * out_dir,
 	xml_rpc_support_write ("#include <%s_types.h>\n\n", comp_name_lower);
 
 	xml_rpc_support_write ("/* (un)marshaller support functions  */\n");
-	xml_rpc_support_write ("XmlRpcStruct * %s_%s_marshall (%s * ref, axl_bool  dealloc)\n{\n",
+	xml_rpc_support_write ("XmlRpcStruct * %s_%s_marshall (VortexCtx * _ctx_, %s * ref, axl_bool  dealloc)\n{\n",
 			       comp_name_lower, struct_lower, struct_name);
 
 	/* push indent to write the marshall function  */
@@ -811,7 +811,7 @@ void xml_rpc_c_stub_write_struct_def (char  * out_dir,
 		type      = axl_node_get_content_trim (type_node, NULL);
 
 		xml_rpc_support_write ("/* %s member */\n", _name);
-		xml_rpc_support_write ("_member = vortex_xml_rpc_struct_member_new (\"%s\", method_value_new (", _name);
+		xml_rpc_support_write ("_member = vortex_xml_rpc_struct_member_new (\"%s\", method_value_new (_ctx_, ", _name);
 		
 		if (axl_cmp (type, "int"))
 			xml_rpc_support_sl_write ("XML_RPC_INT_VALUE, INT_TO_PTR (ref->%s)));\n", _name);
@@ -827,9 +827,9 @@ void xml_rpc_c_stub_write_struct_def (char  * out_dir,
 		else {
 			type_lower = xml_rpc_support_to_lower (type);
 			if (xml_rpc_c_stub_type_is_array (doc, type))
-				xml_rpc_support_sl_write ("XML_RPC_ARRAY_VALUE, %s_%s_marshall (ref->%s, axl_false)));\n", comp_name_lower, type_lower, _name);
+				xml_rpc_support_sl_write ("XML_RPC_ARRAY_VALUE, %s_%s_marshall (_ctx_, ref->%s, axl_false)));\n", comp_name_lower, type_lower, _name);
 			else if (xml_rpc_c_stub_type_is_struct (doc, type))
-				xml_rpc_support_sl_write ("XML_RPC_STRUCT_VALUE, %s_%s_marshall (ref->%s, axl_false)));\n", comp_name_lower, type_lower, _name);
+				xml_rpc_support_sl_write ("XML_RPC_STRUCT_VALUE, %s_%s_marshall (_ctx_, ref->%s, axl_false)));\n", comp_name_lower, type_lower, _name);
 			axl_free (type_lower);
 		}
 
@@ -1239,7 +1239,7 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 					NULL);
 
 	/* write marshallers */
-	xml_rpc_support_write ("XmlRpcArray    * %s_%s_marshall   (%s * ref, axl_bool  dealloc);\n",
+	xml_rpc_support_write ("XmlRpcArray    * %s_%s_marshall   (VortexCtx * _ctx_, %s * ref, axl_bool  dealloc);\n",
 			       comp_name_lower, name_lower, name);
 	xml_rpc_support_write ("%s * %s_%s_unmarshall (XmlRpcArray * ref, axl_bool  dealloc);\n\n",
 			       name, comp_name_lower, name_lower);
@@ -1320,7 +1320,7 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 	xml_rpc_support_write ("};\n\n");
 
 	/* write marshallers */
-	xml_rpc_support_write ("XmlRpcArray    * %s_%s_marshall   (%s * ref, axl_bool  dealloc)\n{\n",
+	xml_rpc_support_write ("XmlRpcArray    * %s_%s_marshall   (VortexCtx * _ctx_, %s * ref, axl_bool  dealloc)\n{\n",
 			       comp_name_lower, name_lower, name);
 
 	/* push indent */
@@ -1367,13 +1367,13 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 	if (! (axl_cmp (type, "int") || axl_cmp (type, "bool") || axl_cmp (type, "double"))) {
 		xml_rpc_support_write ("/* translate the value */\n");
 		if (xml_rpc_c_stub_type_is_struct (doc, type))
-			xml_rpc_support_write ("_struct = %s_%s_marshall (_value, axl_false);\n",
+			xml_rpc_support_write ("_struct = %s_%s_marshall (_ctx_, _value, axl_false);\n",
 					       comp_name_lower, type_lower);
 		else if (xml_rpc_c_stub_type_is_array (doc, type))
-			xml_rpc_support_write ("_array = %s_%s_marshall (_value, axl_false);\n");
+			xml_rpc_support_write ("_array = %s_%s_marshall (_ctx_, _value, axl_false);\n");
 	}
 
-	xml_rpc_support_write ("_array_value = method_value_new (XML_RPC_");
+	xml_rpc_support_write ("_array_value = method_value_new (_ctx_, XML_RPC_");
 	if (axl_cmp (type, "int") || axl_cmp (type, "double") || 
 	    axl_cmp (type, "string") || axl_cmp (type, "base64"))
 		xml_rpc_support_sl_write ("%s", type_upper);
@@ -2175,7 +2175,10 @@ void xml_rpc_c_stub_write_service_body (axlDoc * doc, char  * comp_name, axlNode
 	xml_rpc_support_write_function_type_prefix (aux);
 
 	/* write synchronous invocation sign */
-	xml_rpc_support_write (" (");
+	if (axl_node_have_childs (aux))
+		xml_rpc_support_write (" (VortexCtx * _ctx_, ");
+	else
+		xml_rpc_support_write (" (VortexCtx * _ctx_");
 
 	/* write function parameters */
 	xml_rpc_support_write_function_parameters (doc, aux);
@@ -2195,12 +2198,12 @@ void xml_rpc_c_stub_write_service_body (axlDoc * doc, char  * comp_name, axlNode
 	aux2 = axl_node_get_child_called (node, "method_name");
 	
 	if (aux2 == NULL) {
-		xml_rpc_support_write ("_invocator_ = method_call_new (\"%s\", %d);\n\n", 
+		xml_rpc_support_write ("_invocator_ = method_call_new (_ctx_, \"%s\", %d);\n\n", 
 				       service_name, axl_node_get_child_num (aux));
 	} else {
 		/* we have method_name defined */
 		method_name = axl_node_get_content_trim (aux2, NULL);
-		xml_rpc_support_write ("_invocator_ = method_call_new (\"%s\", %d);\n\n", 
+		xml_rpc_support_write ("_invocator_ = method_call_new (_ctx_, \"%s\", %d);\n\n", 
 				       method_name, axl_node_get_child_num (aux));
 	}
 											   
@@ -2228,7 +2231,8 @@ void xml_rpc_c_stub_write_service_body (axlDoc * doc, char  * comp_name, axlNode
 	xml_rpc_support_push_indent ();
 
 	xml_rpc_support_multiple_write ("XmlRpcMethodCall     * _invocator_;\n",
-					"XmlRpcMethodResponse * _response_;\n\n",
+					"XmlRpcMethodResponse * _response_;\n",
+					"VortexCtx            * _ctx_ = CHANNEL_CTX(channel);\n\n",
 					"/* create the XmlRpcMethodCall object */\n", NULL);
 
 	xml_rpc_support_write ("_invocator_ = __common_%s", service_name);
@@ -2236,7 +2240,10 @@ void xml_rpc_c_stub_write_service_body (axlDoc * doc, char  * comp_name, axlNode
 	/* type prefix */
 	xml_rpc_support_write_function_type_prefix (aux);
 
-	xml_rpc_support_write_sl (" (");
+	if (axl_node_have_childs (aux))
+		xml_rpc_support_sl_write (" (_ctx_, ");
+	else
+		xml_rpc_support_sl_write (" (_ctx_");
 	
 	/* write function parameters */
 	xml_rpc_support_write_function_parameters_names (aux);
@@ -2271,7 +2278,8 @@ void xml_rpc_c_stub_write_service_body (axlDoc * doc, char  * comp_name, axlNode
 	/* push the indent for the function content */
 	xml_rpc_support_push_indent ();
 
-	xml_rpc_support_multiple_write ("XmlRpcMethodCall     * _invocator_;\n\n",
+	xml_rpc_support_multiple_write ("XmlRpcMethodCall     * _invocator_;\n",
+					"VortexCtx            * _ctx_ = CHANNEL_CTX(channel);\n\n",
 					"/* create the XmlRpcMethodCall object */\n", NULL);
 
 	xml_rpc_support_write ("_invocator_ = __common_%s", service_name);
@@ -2279,7 +2287,10 @@ void xml_rpc_c_stub_write_service_body (axlDoc * doc, char  * comp_name, axlNode
 	/* type prefix */
 	xml_rpc_support_write_function_type_prefix (aux);
 
-	xml_rpc_support_sl_write (" (");
+	if (axl_node_have_childs (aux))
+		xml_rpc_support_sl_write (" (_ctx_, ");
+	else
+		xml_rpc_support_sl_write (" (_ctx_");
 	
 	/* write function parameters */
 	xml_rpc_support_write_function_parameters_names (aux);
