@@ -139,6 +139,10 @@ axl_bool      vortex_frame_send_raw              (VortexConnection * connection,
 int           vortex_frame_receive_raw           (VortexConnection * connection, 
 						  char  * buffer, int  maxlen);
 
+int           vortex_frame_readline              (VortexConnection * connection, 
+						  char             * buffer, 
+						  int                maxlen);
+
 axl_bool      vortex_frame_ref                   (VortexFrame * frame);
 
 void          vortex_frame_unref                 (VortexFrame * frame);

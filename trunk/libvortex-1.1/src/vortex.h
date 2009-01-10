@@ -285,6 +285,30 @@ if (!(expr)) {return;}
 #define v_return_val_if_fail(expr, val) \
 if (!(expr)) { return val;}
 
+/** 
+ * @internal Allows to check a condition and return if it is not
+ * meet. It also provides a way to log an error message.
+ * 
+ * @param expr The expresion to check.
+ *
+ * @param msg The message to log in the case a failure is found.
+ */
+#define v_return_if_fail_msg(expr,msg) \
+if (!(expr)) {vortex_log (VORTEX_LEVEL_CRITICAL, "%s: %s", __AXL_PRETTY_FUNCTION__, msg); return;}
+
+/** 
+ * @internal Allows to check a condition and return the given value if
+ * it is not meet. It also provides a way to log an error message.
+ * 
+ * @param expr The expresion to check.
+ *
+ * @param val The value to return if the expression is not meet.
+ *
+ * @param msg The message to log in the case a failure is found.
+ */
+#define v_return_val_if_fail_msg(expr, val, msg) \
+if (!(expr)) { vortex_log (VORTEX_LEVEL_CRITICAL, "%s: %s", __AXL_PRETTY_FUNCTION__, msg); return val;}
+
 
 BEGIN_C_DECLS
 

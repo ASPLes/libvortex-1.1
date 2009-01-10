@@ -92,6 +92,16 @@ axl_bool            vortex_connection_reconnect              (VortexConnection *
 
 axl_bool            vortex_connection_close                  (VortexConnection  * connection);
 
+VORTEX_SOCKET       vortex_connection_sock_connect           (VortexCtx   * ctx,
+							      const char  * host,
+							      const char  * port,
+							      int         * timeout,
+							      axlError   ** error);
+
+axl_bool            vortex_connection_do_greetings_exchange  (VortexCtx        * ctx, 
+							      VortexConnection * connection, 
+							      int                timeout);
+
 axl_bool            vortex_connection_close_all_channels     (VortexConnection * connection, 
 							      axl_bool           also_channel_0);
 
@@ -106,13 +116,18 @@ void                vortex_connection_unref                  (VortexConnection *
 int                 vortex_connection_ref_count              (VortexConnection * connection);
 
 VortexConnection  * vortex_connection_new_empty              (VortexCtx        * ctx,
-							      int                session,
+							      VORTEX_SOCKET      socket,
 							      VortexPeerRole     role);
 
 VortexConnection  * vortex_connection_new_empty_from_connection (VortexCtx        * ctx,
 								 VORTEX_SOCKET      socket, 
 								 VortexConnection * __connection,
 								 VortexPeerRole     role);
+
+axl_bool            vortex_connection_set_socket                (VortexConnection * conn,
+								 VORTEX_SOCKET      socket,
+								 const char       * real_host,
+								 const char       * real_port);
 
 void                vortex_connection_timeout                (VortexCtx        * ctx,
 							      long int           microseconds_to_wait);
@@ -253,8 +268,8 @@ VortexConnection  * vortex_connection_get_listener           (VortexConnection *
 VortexCtx         * vortex_connection_get_ctx                (VortexConnection * connection);
 
 VortexCtx         * vortex_connection_get_ctx_aux            (const char * file,
-							             int  line, 
-							             VortexConnection * connection);
+							      int  line, 
+							      VortexConnection * connection);
 
 VortexSendHandler      vortex_connection_set_send_handler    (VortexConnection * connection,
 							      VortexSendHandler  send_handler);

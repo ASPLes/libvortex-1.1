@@ -1128,24 +1128,24 @@ int         vortex_frame_receive_raw  (VortexConnection * connection, char  * bu
 #define VORTEX_FRAME_PENDING_LINE "vo:pe:li"
 
 /**
- * @internal
-
+ * @brief Read the next line, byte by byte until it gets a \n or
+ * maxlen is reached. Some code errors are used to manage exceptions
+ * (see return values)
  * 
- * Read the next line, byte by byte until it gets a \n or maxlen is reached. Some code errors
- * are used to manage exceptions (see return values)
- * 
- * @param connection
- * @param buffer
- * @param maxlen
+ * @param connection The connection where the read operation will be done.
+ *
+ * @param buffer A buffer to store content read from the network.
+ *
+ * @param maxlen max content to read from the network.
  * 
  * @return  values returned by this function follows:
- *  0 - remote peer have closed the file
+ *  0 - remote peer have closed the connection
  * -1 - an error have happened while reading
- * -2 - could read because this connection is on non-blocking mode and there is no
+ * -2 - could read because this connection is on non-blocking mode and there is no data.
  *  n - some data was read.
  * 
  **/
-int          __vortex_frame_readline (VortexConnection * connection, char  * buffer, int  maxlen)
+int          vortex_frame_readline (VortexConnection * connection, char  * buffer, int  maxlen)
 {
 	int         n, rc;
 	int         desp;
@@ -1404,7 +1404,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	}
 	
 	/* parse frame header, read the first line */
-	bytes_read = __vortex_frame_readline (connection, line, 99);
+	bytes_read = vortex_frame_readline (connection, line, 99);
 	if (bytes_read == -2) {
                 vortex_log (VORTEX_LEVEL_WARNING,
 			    "no data were waiting on this non-blocking connection id=%d (EWOULDBLOCK|EAGAIN errno=%d)",

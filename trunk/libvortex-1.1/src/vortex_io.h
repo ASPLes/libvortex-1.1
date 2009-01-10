@@ -83,12 +83,12 @@ void                 vortex_io_waiting_invoke_clear_fd_group   (VortexCtx       
 								axlPointer            fd_group);
 
 axl_bool             vortex_io_waiting_invoke_add_to_fd_group  (VortexCtx           * ctx,
-								int                   fds, 
+								VORTEX_SOCKET         fds, 
 								VortexConnection    * connection, 
 								axlPointer            fd_group);
 
 axl_bool             vortex_io_waiting_invoke_is_set_fd_group  (VortexCtx           * ctx,
-								int                   fds, 
+								VORTEX_SOCKET         fds, 
 								axlPointer fd_group,
 								axlPointer user_data);
 
