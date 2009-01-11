@@ -514,7 +514,7 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	char               * str_port  = axl_strdup_printf ("%d", data->port);
 	axlPointer           user_data = data->user_data;
 	char               * message   = NULL;
-	VortexConnection   * listener;
+	VortexConnection   * listener  = NULL;
 	VortexCtx          * ctx       = data->ctx;
 	VortexStatus         status    = VortexOk;
 	char               * host_used;
@@ -536,24 +536,31 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	axl_free (str_port);
 	axl_free (host);
 
+	/* listener ok */
+	/* seems listener to be created, now create the BEEP
+	 * connection around it */
+	listener = vortex_connection_new_empty (ctx, fd, VortexRoleMasterListener);
+
 	/* handle returned socket or error */
 	switch (fd) {
 	case -2:
 		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to start listener because vortex_listener_sock_listener reported NULL parameter received");
 		status  = VortexWrongReference;
 		message = "Failed to start listener because vortex_listener_sock_listener reported NULL parameter received";
+
+		/* set status */
+		__vortex_connection_set_not_connected (listener, message, status);
 		break;
 	case -1:
 		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to start listener, vortex_listener_sock_listener reported (code: %d): %s",
 			    axl_error_get_code (error), axl_error_get (error));
 		status  = axl_error_get_code (error);
 		message = axl_error_get (error);
+
+		/* set status */
+		__vortex_connection_set_not_connected (listener, message, status);
 		break;
 	default:
-		/* listener ok */
-		/* seems listener to be created, now create the BEEP
-		 * connection around it */
-		listener = vortex_connection_new_empty (ctx, fd, VortexRoleMasterListener);
 		
 		/* register the listener socket at the Vortex Reader process.  */
 		vortex_reader_watch_listener (ctx, listener);
@@ -595,7 +602,8 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	/* unref error */
 	axl_error_free (error);
 
-	return NULL;	
+	/* return listener created */
+	return listener;
 }
 
 /** 
@@ -610,9 +618,6 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
 {
 	VortexListenerData * data;
 	
-	v_return_val_if_fail (host, NULL);
-	v_return_val_if_fail (port >= 0 && port <= 65536, NULL);
-
 	/* init listener module */
 	vortex_listener_init (ctx);
 	
@@ -733,6 +738,8 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
  * }
  * int main (int argc, char ** argv) {
  *
+ *      VortexConnection * listener;
+ *
  *      // create a context
  *      ctx = vortex_ctx_new ();
  *
@@ -752,7 +759,13 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
  *                                frame_received, NULL);
  * 
  *      // now create a vortex server
- *      vortex_listener_new (ctx, "0.0.0.0", "3000", NULL, NULL);
+ *      listener = vortex_listener_new (ctx, "0.0.0.0", "3000", NULL, NULL);
+ *      if (! vortex_connection_is_ok (listener, axl_false)) {
+ *             printf ("ERROR: failed to start listener, error found (code: %d) %s\n", 
+ *                     vortex_connection_get_status (listener),
+ *                     vortex_connection_get_message (listener));
+ *             reutrn -1;
+ *      } 
  *      
  *      // wait for listener to finish (maybe due to vortex_exit call)
  *      vortex_listener_wait (ctx);
@@ -777,8 +790,8 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
  * @param user_data A user defined pointer to be passed in to
  * <i>on_ready</i> handler.
  *
- * @return The listener connection created, or NULL if the optional
- * handler is provided (on_ready). 
+ * @return The listener connection created. You must use \ref
+ * vortex_connection_is_ok to check it is started the listener.
  * 
  * <b>NOTE:</b> the reference returned is only owned by the vortex
  * engine. This is not the case of \ref vortex_connection_new where
