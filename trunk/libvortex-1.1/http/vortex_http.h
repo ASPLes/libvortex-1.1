@@ -47,6 +47,31 @@
 
 typedef struct _VortexHttpSetup VortexHttpSetup;
 
+/**
+ * @brief Configurations allowed to be set on \ref VortexHttpSetup.
+ */
+typedef enum {
+	/**
+	 * @brief Allows to configure where is located the host
+	 * running the HTTP proxy with CONNECT support.
+	 */
+	VORTEX_HTTP_CONF_ITEM_PROXY_HOST = 1,
+	/**
+	 * @brief Allows to configure on which port is running the
+	 * HTTP proxy with CONNECT support.
+	 */
+	VORTEX_HTTP_CONF_ITEM_PROXY_PORT = 2,
+} VortexHttpConfItem;
+
+VortexHttpSetup  * vortex_http_setup_new      (VortexCtx * ctx);
+
+void               vortex_http_setup_unref    (VortexHttpSetup * setup);
+
+void               vortex_http_setup_conf     (VortexHttpSetup      * setup,
+					       VortexHttpConfItem     item,
+					       const char           * str_value);
+					       
+
 VortexConnection * vortex_http_connection_new (VortexCtx            * ctx,
 					       const char           * host, 
 					       const char           * port,

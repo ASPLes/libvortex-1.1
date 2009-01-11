@@ -55,6 +55,9 @@
 /* include pull API header */
 #include <vortex_pull.h>
 
+/* include http connect header */
+#include <vortex_http.h>
+
 /* include local support */
 #include <vortex-regression-common.h>
 
@@ -225,12 +228,43 @@ VortexTunnelSettings * tunnel_settings = NULL;
 /* listener context */
 VortexCtx * ctx = NULL;
 
+/**
+ * @internal Reference to signal connection_new to do a connection
+ * through vortex HTTP CONNECT implementation.
+ */
+axl_bool enable_http_proxy = axl_false;
+
 VortexConnection * connection_new (void)
 {
+	VortexHttpSetup  * setup;
+	VortexConnection * conn;
+
 	/* create a new connection */
 	if (tunnel_tested) {
+
 		/* create a tunnel */
 		return vortex_tunnel_new (tunnel_settings, NULL, NULL);
+
+	} else if (enable_http_proxy) {
+
+		/* configure proxy options */
+		setup = vortex_http_setup_new (ctx);
+	
+		/* configure connection: assume squid running at
+		 * localhost:3128 (FIXME, add general support to configure a
+		 * different proxy location) */
+		vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_HOST, "localhost");
+		vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_PORT, "3128");
+		
+		/* create a connection */
+		conn = vortex_http_connection_new (ctx, "localhost", "443", setup, NULL, NULL);
+		
+		/* terminate setup */
+		vortex_http_setup_unref (setup);
+
+		/* return connection created */
+		return conn;
+
 	} else {
 		/* create a direct connection */
 		return vortex_connection_new (ctx, listener_host, LISTENER_PORT, NULL, NULL);
@@ -7481,6 +7515,144 @@ axl_bool test_14_d (void)
 	return axl_true;
 }
 
+/** 
+ * @brief Allows to check HTTP CONNECT implementation.
+ * 
+ * @return axl_true if all test pass, otherwise axl_false is returned.
+ */
+axl_bool  test_15 (void)
+{
+	VortexHttpSetup  * setup;
+	VortexConnection * conn;
+
+	/* configure proxy options */
+	setup = vortex_http_setup_new (ctx);
+	
+	/* configure connection: assume squid running at
+	 * localhost:3128 (FIXME, add general support to configure a
+	 * different proxy location) */
+	vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_HOST, "localhost");
+	vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_PORT, "3128");
+
+	/* create a connection */
+	conn = vortex_http_connection_new (ctx, "localhost", "443", setup, NULL, NULL);
+
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: unable to create connection to localhost:443, error found (code: %d): %s",
+			vortex_connection_get_status (conn),
+			vortex_connection_get_message (conn));
+		return axl_false;
+	} /* end if */
+
+	/* close connection */
+	vortex_connection_close (conn);
+
+	/* finish setup */
+	vortex_http_setup_unref (setup);
+
+	return axl_true;
+
+}
+
+/** 
+ * @brief Allows to check HTTP CONNECT implementation, running more
+ * regression tests under HTTP connection.
+ * 
+ * @return axl_true if all test pass, otherwise axl_false is returned.
+ */
+axl_bool  test_15a (void)
+{
+	VortexConnection * conn;
+	
+	/* enable HTTP CONNECT */
+	enable_http_proxy = axl_true;
+	printf ("Test 15-a: checking HTTP CONNECT implementation..\n");
+
+	conn = connection_new ();
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: failed to create connection under HTTP CONNECT..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 15-a::");
+	if (test_01 ())
+		printf ("Test 01: basic BEEP support [   OK   ]\n");
+	else {
+		printf ("Test 01: basic BEEP support [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 15-a::");
+	if (test_01a ())
+		printf ("Test 01-a: transfer zeroed binary frames [   OK   ]\n");
+	else {
+		printf ("Test 01-a: transfer zeroed binary frames [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 15-a::");
+	if (test_02 ())
+		printf ("Test 02: basic BEEP channel support [   OK   ]\n");
+	else {
+		printf ("Test 02: basic BEEP channel support [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 15-a::");
+	if (test_02a ()) 
+		printf ("Test 02-a: connection close notification [   OK   ]\n");
+	else {
+		printf ("Test 02-a: connection close notification [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 15-a::");
+	if (test_02b ()) 
+		printf ("Test 02-b: small message followed by close  [   OK   ]\n");
+	else {
+		printf ("Test 02-b: small message followed by close [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 15-a::");
+	if (test_02c ()) 
+		printf ("Test 02-c: huge amount of small message followed by close  [   OK   ]\n");
+	else {
+		printf ("Test 02-c: huge amount of small message followed by close [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 15-a::");
+	if (test_03 ())
+		printf ("Test 03: basic BEEP channel support (large messages) [   OK   ]\n");
+	else {
+		printf ("Test 03: basic BEEP channel support (large messages) [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 15-a::");
+	if (test_04_a ()) {
+		printf ("Test 04-a: Check ANS/NUL support, sending large content [   OK   ]\n");
+	} else {
+		printf ("Test 04-a: Check ANS/NUL support, sending large content [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 15-a::");
+	if (test_04_ab ()) {
+		printf ("Test 04-ab: Check ANS/NUL support, sending different files [   OK   ]\n");
+	} else {
+		printf ("Test 04-ab: Check ANS/NUL support, sending different files [ FAILED ]\n");
+		return axl_false;
+	}
+
+	/* close connection */
+	vortex_connection_close (conn);
+
+	return axl_true;
+}
+
+
 typedef int  (*VortexRegressionTest) ();
   
  
@@ -7566,7 +7738,7 @@ int main (int  argc, char ** argv)
  	printf ("**                       test_03, test_03a, test_04, test_04a, test_04b, test_04c, \n");
  	printf ("**                       test_05, test_05a, test_06, test_07, test_08, test_09, test_10, \n");
  	printf ("**                       test_11, test_12, test_13, test_14, test_14a, test_14b, test_14c\n");
- 	printf ("**                       test_14d\n");
+ 	printf ("**                       test_14d, test_15, test_15a\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -7779,6 +7951,12 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_14d"))
 			run_test (test_14_d, "Test 14-d", "Check PULL API implementation (channel start handling)", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_15"))
+			run_test (test_15, "Test 15", "Check HTTP CONNECT implementation", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_15a"))
+			run_test (test_15a, "Test 15-a", "Check HTTP CONNECT implementation (run tests under HTTP CONNECT)", -1, -1);
+
 		goto finish;
 	}
 
@@ -7890,6 +8068,10 @@ int main (int  argc, char ** argv)
 	run_test (test_14_c, "Test 14-c", "Check PULL API implementation (connection close/accepted)", -1, -1);
 
 	run_test (test_14_d, "Test 14-d", "Check PULL API implementation (channel start handling)", -1, -1);
+
+	run_test (test_15, "Test 15", "Check HTTP CONNECT implementation", -1, -1);
+
+	run_test (test_15a, "Test 15-a", "Check HTTP CONNECT implementation (run tests under HTTP CONNECT)", -1, -1);
 
 #if defined(AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/**
