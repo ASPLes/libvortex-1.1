@@ -4428,8 +4428,9 @@ void           __vortex_connection_set_not_connected (VortexConnection * connect
 		/* close socket connection if weren't  */
 		if (( connection->close_session) && (connection->session != -1)) {
 			vortex_log (VORTEX_LEVEL_DEBUG, "closing connection id=%d to %s:%s", 
-			       connection->id,
-			       connection->host, connection->port);
+				    connection->id,
+				    axl_check_undef (connection->host), 
+				    axl_check_undef (connection->port));
 			shutdown (connection->session, SHUT_RDWR); 
 			vortex_close_socket (connection->session);  
 			connection->session      = -1;

@@ -1170,6 +1170,7 @@ axl_bool  close_channel_connection (int channel_num, VortexConnection * conn, ax
 
 int main (int  argc, char ** argv) 
 {
+	VortexConnection * listener;
 
 	/* install default handling to get notification about
 	 * segmentation faults */
@@ -1428,11 +1429,33 @@ int main (int  argc, char ** argv)
 				  close_in_transit_received, NULL);
 	
 	/* create a vortex server */
-	vortex_listener_new (ctx, "0.0.0.0", "44010", NULL, NULL);
+	listener = vortex_listener_new (ctx, "0.0.0.0", "44010", NULL, NULL);
+	if (! vortex_connection_is_ok (listener, axl_false)) {
+		printf ("ERROR: failed to start listener at: 44010, error found (code: %d): %s\n",
+			vortex_connection_get_status (listener),
+			vortex_connection_get_message (listener));
+		return -1;
+	}
 
 	/* create a vortex server to check the tunnel profile
 	 * support */
-	vortex_listener_new (ctx, "0.0.0.0", "44110", NULL, NULL);
+	listener = vortex_listener_new (ctx, "0.0.0.0", "44110", NULL, NULL);
+	if (! vortex_connection_is_ok (listener, axl_false)) {
+		printf ("ERROR: failed to start listener at: 44110, error found (code: %d): %s\n",
+			vortex_connection_get_status (listener),
+			vortex_connection_get_message (listener));
+		return -1;
+	}
+
+	/* run also on 443 port to allow receiving http connect
+	 * request */
+	listener = vortex_listener_new (ctx, "0.0.0.0", "443", NULL, NULL);
+	if (! vortex_connection_is_ok (listener, axl_false)) {
+		printf ("ERROR: failed to start listener at: 443, error found (code: %d): %s\n",
+			vortex_connection_get_status (listener),
+			vortex_connection_get_message (listener));
+		return -1;
+	}
 
 	/* configure connection notification  */
 	vortex_listener_set_on_connection_accepted (ctx, on_accepted, NULL);
