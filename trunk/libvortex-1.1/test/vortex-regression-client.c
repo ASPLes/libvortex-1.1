@@ -257,7 +257,7 @@ VortexConnection * connection_new (void)
 		vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_PORT, "3128");
 		
 		/* create a connection */
-		conn = vortex_http_connection_new (ctx, "localhost", "443", setup, NULL, NULL);
+		conn = vortex_http_connection_new ("localhost", "443", setup, NULL, NULL);
 		
 		/* terminate setup */
 		vortex_http_setup_unref (setup);
@@ -7535,7 +7535,7 @@ axl_bool  test_15 (void)
 	vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_PORT, "3128");
 
 	/* create a connection */
-	conn = vortex_http_connection_new (ctx, "localhost", "443", setup, NULL, NULL);
+	conn = vortex_http_connection_new ("localhost", "443", setup, NULL, NULL);
 
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("ERROR: unable to create connection to localhost:443, error found (code: %d): %s",

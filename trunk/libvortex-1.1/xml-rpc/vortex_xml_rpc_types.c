@@ -370,6 +370,7 @@ XmlRpcMethodCall * vortex_xml_rpc_method_call_new (VortexCtx   * ctx,
  * vortex_xml_rpc_method_value_free (value);
  * \endcode
  * 
+ * @param ctx The context where the method value is being created.
  * @param type The type to be created.
  * @param value The value associated with the type being created
  * 
@@ -483,6 +484,8 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_new         (VortexCtx         *
  * @brief Convenience interface to \ref
  * vortex_xml_rpc_method_value_new which allows to create a new
  * XmlRpcMethodValue storing an integer value.
+ *
+ * @param ctx The context where the method value is being created.
  * 
  * @param value The integer value to store inside the \ref
  * XmlRpcMethodValue.
@@ -500,6 +503,8 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_new_int         (VortexCtx * ctx
  * @brief Convenience interface to \ref
  * vortex_xml_rpc_method_value_new which allows to create a new
  * XmlRpcMethodValue storing a double value.
+ *
+ * @param ctx The context where the method value is being created.
  * 
  * @param value The double value to store inside the \ref
  * XmlRpcMethodValue.
@@ -518,6 +523,8 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_new_double      (VortexCtx      
  * @brief Convenience interface to \ref
  * vortex_xml_rpc_method_value_new which allows to create a new
  * XmlRpcMethodValue storing a bool value.
+ *
+ * @param ctx The context where the method value is being created.
  * 
  * @param value The double value to store inside the \ref
  * XmlRpcMethodValue.
@@ -688,8 +695,11 @@ void                vortex_xml_rpc_method_value_nullify         (XmlRpcMethodVal
  * - \ref XML_RPC_BOOLEAN_VALUE
  * - \ref XML_RPC_DOUBLE_VALUE
  * - \ref XML_RPC_STRING_VALUE
+ *
+ * @param ctx The context where the method value is being created.
  * 
  * @param type The type for the new instance.
+ *
  * @param string_value A string value, representing the type configured.
  * 
  * @return A newly created \ref XmlRpcMethodValue or NULL if fails.
@@ -774,6 +784,8 @@ XmlRpcMethodValue * vortex_xml_rpc_method_value_new_from_string (VortexCtx      
  *     <td>Array value </td><td>\ref XML_RPC_ARRAY_VALUE</td><td>Not supported</td>
  *   </tr>
  * </table>
+ *
+ * @param ctx The context where the method value is being created.
  * 
  * @param type An string which specifies the method value type. See the table above.
  *
@@ -1444,7 +1456,7 @@ char  * vortex_xml_rpc_marshall_method_value (XmlRpcMethodValue * value)
  *
  * @param method_call The method call to get the context from.
  *
- * @param A reference to the vortex context or NULL if it fails.
+ * @return A reference to the vortex context or NULL if it fails.
  */
 VortexCtx         * vortex_xml_rpc_method_call_get_ctx      (XmlRpcMethodCall  * method_call)
 {
@@ -1470,7 +1482,7 @@ VortexCtx         * vortex_xml_rpc_method_call_get_ctx      (XmlRpcMethodCall  *
  * (<b>size parameter</b>) so the function could return the xml stream
  * size generated. This method is preferred over getting the xml
  * stream and then using something similar to <b>strlen</b>.
- * 
+ *
  * @param method_call The method invocator to marshall into the xml
  * representation.
  *
@@ -1483,14 +1495,15 @@ VortexCtx         * vortex_xml_rpc_method_call_get_ctx      (XmlRpcMethodCall  *
  * the method parameter count and parameters added count should be
  * equal.
  */
-char              * vortex_xml_rpc_method_call_marshall     (VortexCtx         * ctx,
-							     XmlRpcMethodCall  * method_call,
+char              * vortex_xml_rpc_method_call_marshall     (XmlRpcMethodCall  * method_call,
 							     int               * size)
 {
+	VortexCtx         * ctx = METHOD_CALL_CTX(method_call);
 	XmlRpcMethodValue * value;
 	char              * stream_result;
 	char              * stream_aux;
 	char              * stream_aux2;
+
 	int                 iterator;
 
 	v_return_val_if_fail_msg (method_call, NULL, 
@@ -2025,7 +2038,10 @@ XmlRpcMethodResponse * vortex_xml_rpc_method_response_new  (XmlRpcResponseStatus
  * inserting a \ref XmlRpcMethodValue instance created by providing
  * the <b>type</b> and <b>value</b> this function receives.
  * 
+ * @param ctx The context where the response is being created.
+ *
  * @param type The value type.
+ *
  * @param value The pointer type.
  * 
  * @return A newly allocated \ref XmlRpcMethodResponse object,

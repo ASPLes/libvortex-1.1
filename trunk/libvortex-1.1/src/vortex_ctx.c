@@ -257,7 +257,7 @@ void        vortex_ctx_set_channel_added_handler (VortexCtx                     
 
 /**
  * @brief Allows to configure a global handler that is called each
- * time a channel is added to any connection.
+ * time a channel is removed from any connection.
  *
  * @param ctx The context that is being configured.
  * @param removed_handler The handler to configure.

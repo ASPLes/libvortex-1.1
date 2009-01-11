@@ -984,7 +984,7 @@ VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx       
  * @param conn The connection to be configured with the socket
  * provided.
  *
- * @param sock The socket connection to configure.
+ * @param socket The socket connection to configure.
  *
  * @param real_host Optional reference that can configure the host
  * value associated to the socket provided. This is useful on
@@ -1413,7 +1413,7 @@ int __vortex_connection_wait_on (VortexCtx           * ctx,
  *
  * @param port The port server to connect to.
  *
- * @param d_timeout Parameter where optionally is returned the timeout
+ * @param timeout Parameter where optionally is returned the timeout
  * defined by the library (\ref vortex_connection_get_connect_timeout)
  * that remains after only doing a socket connected. The value is only
  * returned if the caller provide a reference.

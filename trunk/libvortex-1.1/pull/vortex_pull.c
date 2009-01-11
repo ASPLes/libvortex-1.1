@@ -148,12 +148,11 @@ VortexEvent * __vortex_event_new_empty (VortexEventType    type,
  * @brief Activates the pull based event notification. This interface
  * allows single threaded applications to better interface with vortex
  * API. Due to is threading nature, this pull API allows single
- * threaded deesign to "fetch" or "pull" pending events rather
+ * threaded design to "fetch" or "pull" pending events rather
  * receiving a notification through a handler.
  *
- * Once the PULL API is enabled, no async handler will be called and,
- * it is required by the application programmer do not configure new
- * handlers since that would produce an undefined behavior.
+ * Once the PULL API is enabled, no async handler will be
+ * called. Async handlers configured will be ignored.
  *
  * A proper activation sequence is described in the following example:
  *
@@ -177,8 +176,8 @@ VortexEvent * __vortex_event_new_empty (VortexEventType    type,
  * // do some work and fetch events with vortex_pull_next_event
  * \endcode
  * 
- * To stop library function, the usual function must be used: \ref
- * vortex_exit_ctx
+ * To stop library function, including PULL API, the usual function
+ * must be used: \ref vortex_exit_ctx 
  */
 axl_bool           vortex_pull_init               (VortexCtx * ctx)
 {

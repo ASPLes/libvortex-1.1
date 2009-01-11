@@ -595,14 +595,13 @@ XmlRpcArray       * vortex_xml_rpc_method_call_get_param_value_as_array  (XmlRpc
  *
  * @param mc The method call to get the context from.
  *
- * @param A reference to the vortex context or NULL if it fails.
+ * @return A reference to the vortex context or NULL if it fails.
  */
 #define METHOD_CALL_CTX(mc) (vortex_xml_rpc_method_call_get_ctx (mc))
 
 VortexCtx         * vortex_xml_rpc_method_call_get_ctx      (XmlRpcMethodCall  * method_call);
 
-char              * vortex_xml_rpc_method_call_marshall     (VortexCtx         * ctx,
-							     XmlRpcMethodCall  * method_call,
+char              * vortex_xml_rpc_method_call_marshall     (XmlRpcMethodCall  * method_call,
 							     int               * size);
 
 void                vortex_xml_rpc_method_call_free         (XmlRpcMethodCall  * method_call);

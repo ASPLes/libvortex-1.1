@@ -47,7 +47,14 @@
 
 /**
  * @brief Type representation for an event notification from the PULL
- * API.
+ * API. 
+ *
+ * An event has a type that can be check by using \ref
+ * vortex_event_get_type. According to the type, the event has some
+ * data associated which is meaningful to the event. 
+ *
+ * See \ref VortexEventType for events available and data associated
+ * to them.
  */
 typedef struct _VortexEvent      VortexEvent;
 
