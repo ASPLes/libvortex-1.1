@@ -1331,7 +1331,7 @@ axlPointer __vortex_xml_rpc_invoke (VortexXmlRpcInvokeData * data)
 	int                    message_size;
 
 	/* marshall the message */
-	message = vortex_xml_rpc_method_call_marshall (ctx, invocator, &message_size);
+	message = vortex_xml_rpc_method_call_marshall (invocator, &message_size);
 	
 	/* set the new frame receive handler and its data */
 	vortex_channel_set_received_handler (channel, __vortex_xml_rpc_invoke_process_reply, data);

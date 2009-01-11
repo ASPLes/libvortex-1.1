@@ -1130,6 +1130,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * - \ref vortex_greetings
  * - \ref vortex_handlers
  * - \ref vortex_pull
+ * - \ref vortex_http
  *  
  * </li>
  * <li><b>Vortex Library API profiles already implemented:</b>
@@ -1215,7 +1216,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * 
  * See Axl Library installation manual for more details: http://www.aspl.es/axl/html/axl_install.html
  *
- * An an example, on a debian similar system, with deb based packaging,
+ * As an example, on a debian similar system, with deb based packaging,
  * these dependencies can be installed using:
  *
  * To activate TLS profile support:
@@ -1638,7 +1639,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * destination directory. If you have problems, try to execute the
  * previous command as root.
  *
- * Because readline doesn't provide an standard way to get current
+ * Because readline doesn't provide a standard way to get current
  * installation location, the following is provided to configure
  * readline installation. You have to use the <b>READLINE_PATH</b>
  * environment var as follows:
@@ -1773,6 +1774,8 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *  - \ref vortex_manual_piggyback_support
  *  - \ref vortex_manual_using_mime
  *  - \ref vortex_manual_transfering_files
+ *  - \ref vortex_manual_http_support
+ *  - \ref vortex_manual_pull_api
  *
  *  <b>Section 5: </b>Securing and authenticating your BEEP sessions: TLS and SASL profiles
  * 
@@ -2611,7 +2614,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * <li>1) If the channel creation request was performed by providing a
  * \ref VortexOnChannelCreated application programmer doesn't need to
- * do any especial operation, it will receive piggyback reply as the
+ * do any special operation, it will receive piggyback reply as the
  * first frame received after \ref VortexOnChannelCreated is executed.
  * </li>
  *
@@ -3339,6 +3342,93 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * - vortex-file-transfer-client.c
  * - vortex-file-transfer-server.c
  *
+ * \section vortex_manual_http_support 4.4 Doing BEEP connections through HTTP proxy servers
+ *
+ * In many cases a BEEP client will require to connect to a BEEP
+ * server which is outside the local area network and that network is
+ * limited by a firewall that constrains all internet connection, only
+ * allowing HTTP/HTTPS connections if they are done through the local
+ * proxy.
+ *
+ * By using a mecanism provided by the HTTP protocol, the CONNECT
+ * method, a vortex client can connect to a remote BEEP server. This
+ * is done by using the following function:
+ *
+ * - \ref vortex_http_connection_new
+ *
+ * Previous function will create a connection to a target BEEP host,
+ * using proxy settings defined by \ref VortexHttpSetup. The
+ * connection returned will work in the same way (with no difference)
+ * as the ones returned by \ref vortex_connection_new.
+ *
+ * \section vortex_manual_pull_api 4.5 PULL API single thread event notification
+ *
+ * Vortex Library design is heavily threaded. In some cases due to
+ * programing approach or environment conditions it is required a
+ * single threaded API where a single loop can handle all async events
+ * (frame received, connection received, etc).
+ *
+ * This API will allow the programmer to not receive async
+ * notifications but pull them (\ref vortex_pull_next_event).
+ *
+ * Each call to pull an event returns an \ref VortexEvent object which
+ * includes the event type (\ref vortex_event_get_type) that guides
+ * the user to fetch for particular event data associated according to its type. 
+ *
+ * For example, if \ref vortex_event_get_type returns \ref
+ * VORTEX_EVENT_FRAME_RECEIVED the programmer should call to \ref
+ * vortex_event_get_channel to get the channel where the frame was
+ * received and to call to \ref vortex_event_get_frame to get a
+ * reference to the frame received.
+ *
+ * <b>4.5.1 PULL API activation:</b>
+ *
+ * Before using PULL event, it is required to activate the API. See
+ * \ref vortex_pull_init for details on this.
+ *
+ * <b>4.5.2 PULLing events:</b>
+ *
+ * You must use \ref vortex_pull_next_event to get the next pending
+ * event. If no pending event available the function will block the
+ * caller until new events arrive.
+ *
+ * Use \ref vortex_pull_pending_events to check if there are pending
+ * events before calling to \ref vortex_pull_next_event.
+ *
+ * <b>4.5.3 Event masking: how avoid receiving some events.</b>
+ *
+ * You can create a \ref VortexEventMask that configures a set of
+ * events to be ignored. Keep in mind that ignoring events may
+ * activate default action associated. 
+ *
+ * For example, disabling \ref VORTEX_EVENT_CHANNEL_START will cause
+ * to accept all channel start request received. 
+ *
+ * <i><b>NOTE:</b> Default action associated to each particular event is described either by the
+ * event documentation or by the default action taken by the async handler that the
+ * event represents. Check documentation.</i>
+ *
+ * <b>4.5.4 Can I use select(2) or poll(2) system call to watch sockets for changes rather than using \ref vortex_pull_next_event?</b>
+ *
+ * It is possible but you have to consider that changes notified at
+ * the socket level may not produce a fetchable event (\ref
+ * vortex_pull_next_event). This is because there is a period between
+ * a change is detected at the socket level and the time vortex engine
+ * takes for processing incoming information so it can emit an event.
+ *
+ * Keep also in mind that some events may not depend on socket
+ * traffic. For example \ref VORTEX_EVENT_CHANNEL_REMOVED is emited
+ * when a channel is removed from a connection. For example, having a
+ * connection closed suddently will make to emit a \ref
+ * VORTEX_EVENT_CHANNEL_REMOVED for each channel found.
+ *
+ * <i>In any case <b>it is recommended to use</b> \ref
+ * vortex_pull_pending_events <b>before calling to</b> \ref
+ * vortex_pull_next_event to avoid blocking.</i>
+ *
+ * <b>The recommended approach</b> is is to check for pending events
+ * and pull them on idle loops or to just get blocked on \ref vortex_pull_next_event.
+ *
  * \section vortex_manual_securing_your_session 5.1 Securing a Vortex Connection (or How to use the TLS profile)
  * 
  * As we have said, the main advantage the BEEP protocol have is that
@@ -3406,7 +3496,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * axl_bool      check_and_accept_tls_request (VortexConnection * connection, 
  *                                             char             * serverName)
  * {
- *     // perform some especial operations against the serverName
+ *     // perform some special operations against the serverName
  *     // value or the received connection, return axl_false to deny the 
  *     // TLS request, or axl_true to allow it.
  *     
@@ -3422,7 +3512,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * char * certificate_file_location (VortexConnection * connection, 
  *                                   char             * serverName)
  * {
- *     // perform some especial operation to choose which 
+ *     // perform some special operation to choose which 
  *     // certificate file to be used, then return it:
  *    
  *     return vortex_support_find_data_file (ctx, "myCertificate.cert"); 
@@ -3442,7 +3532,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * char * private_key_file_location (VortexConnection * connection, 
  *                                   char             * serverName)
  * {
- *     // perform some especial operation to choose which 
+ *     // perform some special operation to choose which 
  *     // private key file to be used, then return it:
  *    
  *     return vortex_support_find_data_file (ctx, "myPrivateKey.pem"); 
@@ -3708,7 +3798,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * this hash to create a new hash token as a result to apply it to the
  * users password. Then, this result is sent to the server. 
  * 
- * At this point, an malicious third party only could read a hash
+ * At this point, a malicious third party only could read a hash
  * version that only have meaning for the server side. Then, server
  * side requires from the application level to provide the password
  * for the user selected hashing it with the initially created hash,
@@ -4163,7 +4253,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * already connected to remote peer and the connection created already
  * have a channel created with number 0. This channel number is the
  * BEEP administrative channel and every connection have it. This
- * channel is used to perform especial operations such as create new
+ * channel is used to perform special operations such as create new
  * channels, close them and channel tuning.
  * 
  * </li>
@@ -4290,7 +4380,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * We have also talked about the administrative channel: the channel
  * 0. This channel is present on every connection established and it
- * is used for especial operations about channel management. 
+ * is used for special operations about channel management. 
  * 
  * In fact, the channel 0 is running under the definition of a profile
  * defined at the RFC 3080 called <i>Channel Management
@@ -4432,7 +4522,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * As you may guessing, there are more fun (and pain!) while using the
  * Raw invocation interface than the High level one. Both offers
- * (dis)advantages and both provides an specific functionality, that
+ * (dis)advantages and both provides a specific functionality, that
  * is required in particular situations.
  *
  * \section explaining_a_bit_interfaces The Raw invocation, The High level invocation and the protocol compiler
@@ -4448,7 +4538,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * (every RPC platform has its own version about this language), and
  * produces two products: the client stub and the server skeleton.
  *
- * The client stub is an small library that exposes the services as
+ * The client stub is a small library that exposes the services as
  * they were local functions. Inside these local functions are
  * implemented all the voodoo, using the Raw interface, to actually
  * produce the invocation.
@@ -4588,7 +4678,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * High level one while producing common RPC tasks.
  * 
  * However, this interface is required if you need to produce a custom
- * invocator that perform some especial task before doing the actual
+ * invocator that perform some special task before doing the actual
  * invocation, or just because you need a general invocation software
  * to track down all invocations received, at server side, so you can
  * re-send that invocation to another system, acting as a proxy. 
@@ -4642,7 +4732,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * XmlRpcMethodResponse) using \ref
  * vortex_xml_rpc_method_response_stringify. This function is great
  * for an example, but, in real life application, if the user
- * application requires and integer, you can't reply an string.
+ * application requires and integer, you can't reply a string.
  *
  * In this context, the usual operation performed on a \ref
  * XmlRpcMethodResponse received, is to get the value inside (\ref
@@ -4666,9 +4756,9 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * \section receiving_an_invocation Processing an incoming XML-RPC invocation
  *
- * We have seen in previous sections how an XML-RPC invocation is
+ * We have seen in previous sections how a XML-RPC invocation is
  * produced. Now, it is time to know what happens on the remote side,
- * because, until now, we have just moved the problem from an machine
+ * because, until now, we have just moved the problem from a machine
  * to another. However, the problem remains unresolved.
  * 
  * Listener side implementation is built on top of two handlers: \ref
@@ -4961,7 +5051,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * As you can see, <b>XDL format</b> is more verbose than IDL format,
  * but provides a standard format to cross boundaries between process,
- * it is easy to parse and it is more portable (there is an XML parser
+ * it is easy to parse and it is more portable (there is a XML parser
  * in every platform).
  * 
  * \section xml_rpc_gen_tool_language_types Types supported by xml-rpc-gen tool
@@ -4972,17 +5062,17 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *  -  <b>int</b>: Integer definition, four-byte signed integer (-21)
  *  -  <b>boolean</b>: Boolean definition (bound to 1/axl_true, 0/axl_false)
  *  -  <b>double</b>: double-precision signed floating point number -412.21
- *  -  <b>string</b>: An string definition "XML-RPC over BEEP!!"
+ *  -  <b>string</b>: a string definition "XML-RPC over BEEP!!"
  *  -  <b>data</b>: date/time (currently not supported)
- *  -  <b>base64</b>: An base64 encoded string (currently encoding is not done).
+ *  -  <b>base64</b>: a base64 encoded string (currently encoding is not done).
  *
  * And two compound type definitions which allows to define more types:
  *
- *  -  <b>struct</b>: An struct definition which holds named values (called members).
+ *  -  <b>struct</b>: a struct definition which holds named values (called members).
  *  -  <b>array</b>: An uniform storage for other types (including more arrays).
  *
  * Struct and array types allows to create richer type definitions
- * (even composing both). Here is an example that uses an struct
+ * (even composing both). Here is an example that uses a struct
  * declaration:
  * 
  * <b>IDL format:</b>
@@ -5062,7 +5152,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * \section xml_rpc_gen_tool_language_double Services using and returning double types
  *
- * This is no especial consideration while declaring services that
+ * This is no special consideration while declaring services that
  * makes use of the double type. Here is an example:
  * 
  * 
@@ -5305,13 +5395,13 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * Because xml-rpc-gen tool have support to include the service source
  * code definition, into the IDL/XDL definition, the compiled product
- * only required to be compiled. However programing an XML-RPC service
+ * only required to be compiled. However programing a XML-RPC service
  * usually is more complex than adding two integer. Here are some
  * considerations:
  * 
  * If the server component is produced (by default client and server
  * components are produced but it can be configured by using
- * <b>--only-client</b> or <b>--only-server</b>), it contains an xml
+ * <b>--only-client</b> or <b>--only-server</b>), it contains a xml
  * file that allows to configure the TCP/IP location. Look at:
  * <b>out/server-test/conf.xml</b>. Here is the content:
  *
@@ -5358,9 +5448,9 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * way. You can implement all your security politics at the \ref
  * VortexOnStartChannel "start handler" or at the \ref
  * VortexXmlRpcValidateResource "resource validation handler". Unless
- * it is required some especial TLS function at the server side, like
+ * it is required some special TLS function at the server side, like
  * identifying the client certificate, it is not required to implement
- * anything especial. Look at the following document with provides a
+ * anything special. Look at the following document with provides a
  * default TLS environment: \ref vortex_manual_securing_your_session.
  *
  * Because Vortex Library, at this moment, doesn't provide a profile

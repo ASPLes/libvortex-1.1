@@ -37,6 +37,15 @@
  */
 #include <vortex_http.h>
 
+/**
+ * \defgroup vortex_http Vortex HTTP CONNECT API: support for BEEP connections through HTTP proxy
+ */
+
+/**
+ * \addtogroup vortex_http
+ * @{
+ */
+
 struct _VortexHttpSetup {
 	/**
 	 * @internal Context reference.
@@ -46,7 +55,8 @@ struct _VortexHttpSetup {
 	/**
 	 * @internal reference counting.
 	 */
-	int    ref_count;
+	int           ref_count;
+	VortexMutex   mutex;
 
 	/**
 	 * @internal Proxy location.
@@ -78,8 +88,33 @@ VortexHttpSetup  * vortex_http_setup_new      (VortexCtx * ctx)
 	setup             =  axl_new (VortexHttpSetup, 1);
 	setup->ctx        = ctx;
 	setup->ref_count  = 1;
+	vortex_mutex_create (&setup->mutex);
 
 	return setup;
+}
+
+/**
+ * @brief Allows to increment the reference counting associated to the
+ * \ref VortexHttpSetup object.
+ *
+ * @param setup Reference to update reference counting.
+ *
+ * @return axl_true in the case the reference counting is updated,
+ * otherwise axl_false is returned.
+ */
+axl_bool           vortex_http_setup_ref      (VortexHttpSetup * setup)
+{
+	VortexCtx * ctx = setup ? setup->ctx : NULL;
+
+	v_return_val_if_fail_msg (setup, axl_false, "Unable to update reference counting, setup reference is NULL");
+
+	vortex_mutex_lock (&setup->mutex);
+
+	setup->ref_count++;
+
+	vortex_mutex_unlock (&setup->mutex);
+
+	return axl_true;
 }
 
 /**
@@ -92,13 +127,21 @@ void               vortex_http_setup_unref    (VortexHttpSetup * setup)
 	if (setup == NULL)
 		return;
 
+
+	/* lock mutex */
+	vortex_mutex_lock (&setup->mutex);
+
 	/* decrease ref count */
 	setup->ref_count--;
-	if (setup->ref_count != 0)
+	if (setup->ref_count != 0) {
+		vortex_mutex_unlock (&setup->mutex);
 		return;
+	}
+	vortex_mutex_unlock (&setup->mutex);
 
 	axl_free (setup->proxy_host);
 	axl_free (setup->proxy_port);
+	vortex_mutex_destroy (&setup->mutex);
 	axl_free (setup);
 	return;
 }
@@ -150,14 +193,148 @@ void               vortex_http_setup_conf     (VortexHttpSetup      * setup,
 	return;
 }
 
+typedef struct _VortexHttpConnectionData {
+	VortexCtx             * ctx;
+	 char                 * host;
+	 char                 * port;
+	 VortexHttpSetup      * setup;
+	 VortexConnectionNew    on_connected;
+	 axlPointer             user_data;
+} VortexHttpConnectionData;
+
+
 /**
- * @brief Creates a new BEEP connection to a remote HTTP server
- * supporting HTTP CONNECT method. 
- *
- * The function also allows connecting to a remote BEEP server using a
- * HTTP proxy that also support CONNECT method.
- *
- * @param ctx The context where the operation will be performed.
+ * @internal Function used to release data associated to \ref
+ * VortexHttpConnectionData
+ */
+void vortex_http_connection_data_free (VortexHttpConnectionData * data)
+{
+	if (data == NULL)
+		return;
+	axl_free (data->host);
+	axl_free (data->port);
+	vortex_http_setup_unref (data->setup);
+	axl_free (data);
+	return;
+}
+
+/**
+ * @internal Implementation of vortex_http_connection_new.
+ */
+axlPointer __vortex_http_connection_new (VortexHttpConnectionData * data)
+{
+	VORTEX_SOCKET      socket;
+	int                timeout;
+	axlError         * error = NULL;
+	VortexConnection * conn;
+	char             * http_header;
+	char               buffer[1024];
+	int                bytes_read;
+
+	/* paramters */
+	VortexCtx        * ctx   = data->ctx;
+	const char       * host  = data->host;
+	const char       * port  = data->port;
+	VortexHttpSetup  * setup = data->setup;
+	
+	/* create an empty connection object */
+	conn = vortex_connection_new_empty (ctx, -1, VortexRoleInitiator);
+
+	/* do a connection against the host */
+	vortex_log (VORTEX_LEVEL_DEBUG, "connecting to HTTP proxy: %s:%s", setup->proxy_port, setup->proxy_port);
+	timeout = vortex_connection_get_connect_timeout (ctx);
+	socket  = vortex_connection_sock_connect (ctx, setup->proxy_host, setup->proxy_port, &timeout, &error);
+	if (socket == -1) {
+		/* set message and free error */
+		__vortex_connection_set_not_connected (conn, axl_error_get (error), axl_error_get_code (error));
+		axl_error_free (error);
+
+		goto report_conn;
+	} /* end if */
+	
+	/* set socket and simulate host and port (not the host and
+	 * port from the socket) */
+	vortex_log (VORTEX_LEVEL_DEBUG, "connection ok, how associate socket..");
+	if (! vortex_connection_set_socket (conn, socket, host, port)) {
+		__vortex_connection_set_not_connected (conn, "Failed to set socket to the BEEP connection created", VortexError);
+
+		goto report_conn;
+	} /* end if */
+
+	/* create CONNECT header */
+	http_header = axl_strdup_printf ("CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\n\r\n",
+					 host, port, host, port);
+
+	/* send connect info */
+	vortex_log (VORTEX_LEVEL_DEBUG, "sending CONNECT method headers");
+	if (! vortex_frame_send_raw (conn, http_header, strlen (http_header))) {
+		axl_free (http_header);
+
+		__vortex_connection_set_not_connected (conn, "Failed to send initial CONNECT http header", VortexProtocolError);
+		goto report_conn;
+	}
+	axl_free (http_header);
+	
+	/* now read from the socket the HTTP 200 OK status */
+	vortex_log (VORTEX_LEVEL_DEBUG, "reading reply");
+
+	/* set socket in blocking mode to read content */
+	vortex_connection_set_sock_block (socket, axl_true);
+	
+	/* read line */
+	bytes_read = vortex_frame_readline (conn, buffer, 1024);
+	switch (bytes_read) {
+	case 0:
+		__vortex_connection_set_not_connected (conn, "Remote server (either the proxy or the destination BEEP server) have closed the connection", VortexError);
+		goto report_conn;
+	case -1:
+		__vortex_connection_set_not_connected (conn, "An error have happen while reading content", VortexError);
+		goto report_conn;
+	default:
+		if (bytes_read > 0) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "reply received: %s, processing", buffer);
+			if (! axl_memcmp (buffer, "HTTP/1.0 2", 10) &&
+			    ! axl_memcmp (buffer, "HTTP/1.1 2", 10)) {
+				__vortex_connection_set_not_connected (conn, "Received an negative reply. Some administrative configuration prevents from connecting to the destination requested", VortexError);
+				return conn;
+			} /* end if */
+
+			vortex_log (VORTEX_LEVEL_DEBUG, "Read the next empty line");
+			bytes_read = vortex_frame_readline (conn, buffer, 1024);
+			if (bytes_read > 2) 
+				vortex_log (VORTEX_LEVEL_WARNING, "received more than HTTP header termination, expected to find \\r\\n sequence..");
+			break;
+		} /* end if */
+
+		__vortex_connection_set_not_connected (conn, "Failed to read reply after CONNECT method request", VortexError);
+		goto report_conn;
+	} /* end switch */
+		
+	/* reached this point the remote HTTP/1.1 proxy have switched
+	 * to tunnel mode, now init greetins phase */
+	if (! vortex_connection_do_greetings_exchange (ctx, conn, timeout))
+		goto report_conn;
+
+	/* do connection notification */
+ report_conn:
+	if (data->on_connected) {
+		data->on_connected (conn, data->user_data);
+		/* free data */
+		vortex_http_connection_data_free (data);
+		return NULL;
+	} /* end if */
+
+	/* free data */
+	vortex_http_connection_data_free (data);
+	
+	vortex_log (VORTEX_LEVEL_DEBUG, "connection through HTTP proxy setup ok");
+	return conn;
+}
+
+/**
+ * @brief Creates a new BEEP connection to a remote BEEP server, by
+ * connecting to a HTTP server supporting HTTP CONNECT method (proxy
+ * server).
  *
  * @param host The remote peer to connect to. This value will be used
  * for the Host HTTP header.
@@ -183,22 +360,24 @@ void               vortex_http_setup_conf     (VortexHttpSetup      * setup,
  * must use \ref vortex_connection_is_ok to check if you are already
  * connected. 
  *
+ * <i><b>NOTE:</b> The \ref VortexCtx object to be used on this
+ * function will be the one configured on setup parameter (reference
+ * provided at \ref vortex_http_setup_new). This means you'll have to
+ * create different \ref VortexHttpSetup instances for each context
+ * you have.</i>
+ *
  */
-VortexConnection * vortex_http_connection_new (VortexCtx            * ctx,
-					       const char           * host, 
+VortexConnection * vortex_http_connection_new (const char           * host, 
 					       const char           * port,
 					       VortexHttpSetup      * setup,
 					       VortexConnectionNew    on_connected,
 					       axlPointer             user_data)
 {
-	VORTEX_SOCKET      socket;
-	int                timeout;
-	axlError         * error = NULL;
-	VortexConnection * conn;
-	char             * http_header;
-	char               buffer[1024];
-	int                bytes_read;
+	VortexHttpConnectionData * data;
+	/* ctx reference */
+	VortexCtx                * ctx = (setup) ? setup->ctx : NULL;
 
+	/* check direct references */
 	v_return_val_if_fail_msg (ctx,   NULL, "Unable to create connection, received NULL vortex context reference");
 	v_return_val_if_fail_msg (host,  NULL, "Unable to create connection, received NULL host reference");
 	v_return_val_if_fail_msg (port,  NULL, "Unable to create connection, received NULL port reference");
@@ -208,84 +387,27 @@ VortexConnection * vortex_http_connection_new (VortexCtx            * ctx,
 	v_return_val_if_fail (setup->proxy_host, NULL);
 	v_return_val_if_fail (setup->proxy_port, NULL);
 
-	/* create an empty connection object */
-	conn = vortex_connection_new_empty (ctx, -1, VortexRoleInitiator);
+	/* create invocation object */
+	data               = axl_new (VortexHttpConnectionData, 1);
+	data->ctx          = setup->ctx;
+	data->host         = axl_strdup (host);
+	data->port         = axl_strdup (port);
+	data->setup        = setup;
 
-	/* do a connection against the host */
-	vortex_log (VORTEX_LEVEL_DEBUG, "connecting to HTTP proxy: %s:%s", setup->proxy_port, setup->proxy_port);
-	timeout = vortex_connection_get_connect_timeout (ctx);
-	socket  = vortex_connection_sock_connect (ctx, setup->proxy_host, setup->proxy_port, &timeout, &error);
-	if (socket == -1) {
-		/* set message and free error */
-		__vortex_connection_set_not_connected (conn, axl_error_get (error), axl_error_get_code (error));
-		axl_error_free (error);
-		return conn;
-	} /* end if */
+	/* ref setup to avoid the user destroying it during connection
+	 * setup */
+	vortex_http_setup_ref (setup);
+	data->on_connected = on_connected;
+	data->user_data    = user_data;
+
+	if (on_connected) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "doing HTTP connection in threaded mode");
+		vortex_thread_pool_new_task (ctx, (VortexThreadFunc) __vortex_http_connection_new, data);
+		return NULL;
+	} 
 	
-	/* set socket and simulate host and port (not the host and
-	 * port from the socket) */
-	vortex_log (VORTEX_LEVEL_DEBUG, "connection ok, how associate socket..");
-	if (! vortex_connection_set_socket (conn, socket, host, port)) {
-		__vortex_connection_set_not_connected (conn, "Failed to set socket to the BEEP connection created", VortexError);
-		return conn;
-	} /* end if */
-
-	/* create CONNECT header */
-	http_header = axl_strdup_printf ("CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\n\r\n",
-					 host, port, host, port);
-
-	/* send connect info */
-	vortex_log (VORTEX_LEVEL_DEBUG, "sending CONNECT method headers");
-	if (! vortex_frame_send_raw (conn, http_header, strlen (http_header))) {
-		axl_free (http_header);
-		
-		__vortex_connection_set_not_connected (conn, "Failed to send initial CONNECT http header", VortexProtocolError);
-		return conn;
-	}
-	axl_free (http_header);
-	
-	/* now read from the socket the HTTP 200 OK status */
-	vortex_log (VORTEX_LEVEL_DEBUG, "reading reply");
-
-	/* set socket in blocking mode to read content */
-	vortex_connection_set_sock_block (socket, axl_true);
-	
-	/* read line */
-	bytes_read = vortex_frame_readline (conn, buffer, 1024);
-	switch (bytes_read) {
-	case 0:
-		__vortex_connection_set_not_connected (conn, "Remote server (either the proxy or the destination BEEP server) have closed the connection", VortexError);
-		return conn;
-	case -1:
-		__vortex_connection_set_not_connected (conn, "An error have happen while reading content", VortexError);
-		return conn;
-	default:
-		if (bytes_read > 0) {
-			vortex_log (VORTEX_LEVEL_DEBUG, "reply received: %s, processing", buffer);
-			if (! axl_memcmp (buffer, "HTTP/1.0 2", 10) &&
-			    ! axl_memcmp (buffer, "HTTP/1.1 2", 10)) {
-				__vortex_connection_set_not_connected (conn, "Received an negative reply. Some administrative configuration prevents from connecting to the destination requested", VortexError);
-				return conn;
-			} /* end if */
-
-			vortex_log (VORTEX_LEVEL_DEBUG, "Read the next empty line");
-			bytes_read = vortex_frame_readline (conn, buffer, 1024);
-			if (bytes_read > 2) 
-				vortex_log (VORTEX_LEVEL_WARNING, "received more than HTTP header termination, expected to find \\r\\n sequence..");
-			break;
-		} /* end if */
-
-		__vortex_connection_set_not_connected (conn, "Failed to read reply after CONNECT method request", VortexError);
-		return conn;
-	} /* end switch */
-		
-	/* reached this point the remote HTTP/1.1 proxy have switched
-	 * to tunnel mode, now init greetins phase */
-	if (! vortex_connection_do_greetings_exchange (ctx, conn, timeout))
-		return conn;
-	
-	vortex_log (VORTEX_LEVEL_DEBUG, "connection through HTTP proxy setup ok");
-	return conn;
+	vortex_log (VORTEX_LEVEL_DEBUG, "doing HTTP connection in blocking mode");
+	return __vortex_http_connection_new (data);
 }
 
 /**

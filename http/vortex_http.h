@@ -45,6 +45,11 @@
  * @{
  */
 
+/**
+ * @brief Connection setup object. Allows to configure additional
+ * settings required to perform a connection by using \ref
+ * vortex_http_connection_new.
+ */
 typedef struct _VortexHttpSetup VortexHttpSetup;
 
 /**
@@ -65,6 +70,8 @@ typedef enum {
 
 VortexHttpSetup  * vortex_http_setup_new      (VortexCtx * ctx);
 
+axl_bool           vortex_http_setup_ref      (VortexHttpSetup * setup);
+
 void               vortex_http_setup_unref    (VortexHttpSetup * setup);
 
 void               vortex_http_setup_conf     (VortexHttpSetup      * setup,
@@ -72,8 +79,7 @@ void               vortex_http_setup_conf     (VortexHttpSetup      * setup,
 					       const char           * str_value);
 					       
 
-VortexConnection * vortex_http_connection_new (VortexCtx            * ctx,
-					       const char           * host, 
+VortexConnection * vortex_http_connection_new (const char           * host, 
 					       const char           * port,
 					       VortexHttpSetup      * setup,
 					       VortexConnectionNew    on_connected, 
