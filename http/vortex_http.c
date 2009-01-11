@@ -38,9 +38,117 @@
 #include <vortex_http.h>
 
 struct _VortexHttpSetup {
+	/**
+	 * @internal Context reference.
+	 */
+	VortexCtx * ctx;
+
+	/**
+	 * @internal reference counting.
+	 */
+	int    ref_count;
+
+	/**
+	 * @internal Proxy location.
+	 */
 	char * proxy_host;
 	char * proxy_port;
+
+	
 };
+
+/**
+ * @brief Allows to create a \ref VortexHttpSetup object which is used
+ * to configure the HTTP CONNECT implementation.
+ *
+ * @param ctx The vortex context to associate. This parameter can't be
+ * NULL.
+ *
+ * @return A newly created reference to \ref VortexHttpSetup. Use \ref
+ * vortex_http_setup_unref to terminate it. Use \ref
+ * vortex_http_setup_conf to setup required values.
+ */
+VortexHttpSetup  * vortex_http_setup_new      (VortexCtx * ctx)
+{
+	/* at this moment nothing special */
+	VortexHttpSetup * setup;
+
+	v_return_val_if_fail_msg (ctx, NULL, "Failed to create VortexHttpSetup, received NULL reference to VortexCtx");
+
+	setup             =  axl_new (VortexHttpSetup, 1);
+	setup->ctx        = ctx;
+	setup->ref_count  = 1;
+
+	return setup;
+}
+
+/**
+ * @brief Terminates the \ref VortexHttpSetup reference provided.
+ *
+ * @param setup The reference to finish.
+ */
+void               vortex_http_setup_unref    (VortexHttpSetup * setup)
+{
+	if (setup == NULL)
+		return;
+
+	/* decrease ref count */
+	setup->ref_count--;
+	if (setup->ref_count != 0)
+		return;
+
+	axl_free (setup->proxy_host);
+	axl_free (setup->proxy_port);
+	axl_free (setup);
+	return;
+}
+
+/**
+ * @brief Allows to configure a particular value (\ref
+ * VortexHttpConfItem) on the provided setup (\ref VortexHttpSetup).
+ *
+ * @param setup The setup to configure.
+ *
+ * @param item The configuration that will be modified.
+ *
+ * @param str_value The string value to configure.
+ */
+void               vortex_http_setup_conf     (VortexHttpSetup      * setup,
+					       VortexHttpConfItem     item,
+					       const char           * str_value)
+{
+	char      * str_aux;
+	VortexCtx * ctx = (setup ? setup->ctx : NULL);
+
+	v_return_if_fail_msg (setup, "Failed to setup because it was received a NULL VortexHttpSetup reference");
+
+	switch (item) {
+	case VORTEX_HTTP_CONF_ITEM_PROXY_HOST:
+		/* record previous value */
+		str_aux = setup->proxy_host;
+
+		/* configure new value */
+		setup->proxy_host = axl_strdup (str_value);
+
+		/* dealloc previous value */
+		if (str_aux)
+			axl_free (str_aux);
+		break;
+	case VORTEX_HTTP_CONF_ITEM_PROXY_PORT:
+		/* record previous value */
+		str_aux = setup->proxy_port;
+
+		/* configure new value */
+		setup->proxy_port = axl_strdup (str_value);
+
+		/* dealloc previous value */
+		if (str_aux)
+			axl_free (str_aux);
+		break;
+	} /* end switch */
+
+	return;
+}
 
 /**
  * @brief Creates a new BEEP connection to a remote HTTP server
@@ -91,10 +199,10 @@ VortexConnection * vortex_http_connection_new (VortexCtx            * ctx,
 	char               buffer[1024];
 	int                bytes_read;
 
-	v_return_val_if_fail (ctx,   NULL);
-	v_return_val_if_fail (host,  NULL);
-	v_return_val_if_fail (port,  NULL);
-	v_return_val_if_fail (setup, NULL);
+	v_return_val_if_fail_msg (ctx,   NULL, "Unable to create connection, received NULL vortex context reference");
+	v_return_val_if_fail_msg (host,  NULL, "Unable to create connection, received NULL host reference");
+	v_return_val_if_fail_msg (port,  NULL, "Unable to create connection, received NULL port reference");
+	v_return_val_if_fail_msg (setup, NULL, "Unable to create connection, received NULL setup reference");
 
 	/* check host and port */
 	v_return_val_if_fail (setup->proxy_host, NULL);

@@ -18,6 +18,10 @@ if ENABLE_PULL_SUPPORT
 INCLUDE_PULL_SUPPORT = -DENABLE_PULL_SUPPORT
 endif
 
+if ENABLE_HTTP_SUPPORT
+INCLUDE_HTTP_SUPPORT = -DENABLE_HTTP_SUPPORT
+endif
+
 if ENABLE_XML_RPC_SUPPORT
 INCLUDE_XML_RPC_SUPPORT = -DENABLE_XML_RPC_SUPPORT
 XML_RPC_SUPPORT_LIBS    = ../xml-rpc/libvortex-xml-rpc-1.1.la 
@@ -98,9 +102,9 @@ noinst_PROGRAMS = \
 	vortex-file-transfer-server vortex-file-transfer-client \
 	vortex-pull-listener
 
-INCLUDES = -I../src -I../tunnel -I../pull -I../xml-rpc -I../sasl -I../tls $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
+INCLUDES = -I../src -I../tunnel -I../pull -I../xml-rpc -I../sasl -I../tls -I../http $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
 	-I$(READLINE_PATH)/include -Wall -g -ansi -D__axl_disable_broken_bool_def__   \
-        -DVERSION=\""$(VORTEX_VERSION)"\" -I../src $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_VORTEX_LOG) $(INCLUDE_TUNNEL_SUPPORT) $(INCLUDE_PULL_SUPPORT)  $(INCLUDE_XML_RPC_SUPPORT) $(INCLUDE_SASL_SUPPORT)
+        -DVERSION=\""$(VORTEX_VERSION)"\" -I../src $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_VORTEX_LOG) $(INCLUDE_TUNNEL_SUPPORT) $(INCLUDE_PULL_SUPPORT)  $(INCLUDE_XML_RPC_SUPPORT) $(INCLUDE_SASL_SUPPORT) $(INCLUDE_HTTP_SUPPORT)
 
 LIBS            = $(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
 
@@ -131,7 +135,8 @@ vortex_regression_client_SOURCES   = \
 vortex_regression_client_LDADD     = \
 	$(LIBS) ../src/libvortex-1.1.la  \
 	../tunnel/libvortex-tunnel-1.1.la \
-	../pull/libvortex-pull-1.1.la  $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS)
+	../http/libvortex-http-1.1.la \
+	../pull/libvortex-pull-1.1.la  $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS) 
 
 vortex_regression_listener_SOURCES   = \
 	vortex-regression-listener.c vortex-regression-common.c vortex-regression-common.h \ $(vortex_regression_listener_xml_rpc_files) 
