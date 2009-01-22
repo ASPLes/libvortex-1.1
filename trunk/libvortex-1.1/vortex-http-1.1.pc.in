@@ -9,5 +9,5 @@ Description: Robust, full featured BEEP implementation (RFC 3080/RFC 3081)
   connection through an HTTP/1.1 proxy.
 Requires: vortex-1.1
 Version: @VORTEX_VERSION@
-Libs: -L${libdir} 
+Libs: -L${libdir} -lvortex-http-1.1
 Cflags: -I${includedir}/vortex-1.1

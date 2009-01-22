@@ -43,7 +43,12 @@ urchinTracker();
 <!-- start to define the document over here -->
 <div class="all-section">
 <h3>BEEP tiny fragment (BTF): problem description and how to fix it</h3>
-
+<div class="author">
+  <p>Francis Brosnan Blázquez<br>
+  <a href="mailto:francis@aspl.es">francis@aspl.es</a><br>
+  Advanced Software Production Line, S.L. (<a href="http://www.aspl.es">http://www.aspl.es</a>)</p>
+</div>
+  
 <h2>Motivation</h2>
 
 <p>The article describes a problem which arises with bulk
@@ -81,7 +86,7 @@ mapping). In this case, <b>performance and transfer rates are OPTIMAL and no rel
   split the message into an initial frame (4096 bytes) and, once
   received the next SEQ frame, it sends the rest of message (2
   bytes). <i>NOTE: that the boundaries where split occur aren't
-  relevant (i.e 4096), if the message is split into frames of 512
+  relevant (i.e 4096), if the message is splitted into frames of 512
   bytes, and the ending frame contains 2 bytes, the same problem will arise.</i></p>
 
 <p>As the send operation evolves, this pattern keeps stable, forcing
@@ -90,10 +95,10 @@ mapping). In this case, <b>performance and transfer rates are OPTIMAL and no rel
   message (in our case 2 bytes). </p>
 
 <p>This "tiny BEEP frame" causes at the TCP layer to activate the Nagle's
-  algorithm [4] to avoid SWS [6], storing the content rather sending
+  algorithm [4] as a countermeasure to avoid SWS [6], storing the content rather sending
   it directly, causing not only to delay this frame but next one. At
   the receiver's TCP stack, the TCP delay ACK algorithm will
-  complement the interaction (and close the circle) introducing ACK delays that makes the Nagle's
+  complement this <i>"wrong interaction"</i> (closing the circle) introducing ACK delays that makes the Nagle's
   algorithm at the sending side to retain the small frame until the
   receiver's TCK delay ACK timeout is reached.</p>
 
@@ -119,8 +124,8 @@ of time.</p>
 
   On this document([5]) we find that Nagle's algorithm interact
   with TCP delayed ACK in a way that two writes followed by one read
-  causes delays that could be up to 500 ms (with my
-  experiments I'm only able to reproduce delays of 40 ms). This is
+  causes delays that could be up to 500 ms (our
+  experiments only shows delays of 40 ms on each message sent). This is
   interesting because pattern described where BTF arises implements
   two writes: a tiny frame followed by a big incomplete frame for the
   next message and then a wait to read a SEQ frame to continue with the
@@ -130,7 +135,7 @@ of time.</p>
   pair of frames for each message to be sent (big (4094 bytes)
   followed by small frame (2 bytes)), this activates problem described
   at [5] with great probabilities than a plain TCP connection where no
-  framing mechanism is running.<br><br>
+  framing mechanism is running on top of it (BEEP).<br><br>
 
   </li>
   <li class="item-description">
@@ -150,7 +155,7 @@ of time.</p>
   Additionally, the side effect is that producing twice of frames for the same
   information also involves twice of read operations at the remote
   side.<br><br>
-  
+
   </li>
   <li class="item-description"><span class="item-description">Frames produced requires "additional" work
   to be processed (at both sides):</span><br><br>
@@ -238,8 +243,8 @@ until a SEQ frame is received.<br><br>
 
 These "application level sending stops" makes more likely to activate
 the problem described at [5] than the situation where the application
-level can send the same set of data without waiting on each small followed
-by big frame send.<br><br>
+level can send the same set of data without <i>"waiting"</i> on each
+  message sent (wait caused by waiting for SEQ frames to continue with the transfer).<br><br>
 
 To corroborate this, it was tested to perform the same transfer test
 with the values that trigger the problem (message size: 4098, message

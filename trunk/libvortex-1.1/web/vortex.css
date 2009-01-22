@@ -1,22 +1,24 @@
 /* aspl logo colors: #86cef9, #000090, #0000ff, #6394ec */
 /* azul elegante: #537fa1; */
+/* azul suave:    #204a87; */
 /* rojo suave:    #d15454; */
+/* rojo fuerte:   #cc0000; */
 /* gris fuerte:   #537fa1; */
 /* azul suave:    #428ac7; */
 
 .page h3 { 
   padding-top: 20px;
   padding-left: 10px;
-  border-left: 10px solid #d15454;
-  border-bottom: 1px solid #d15454;
+  border-left: 10px solid #cc0000;
+  border-bottom: 1px solid #cc0000;
   font-size: 110%;
 }
 
 .page h2 { 
   padding-top: 15px;
   padding-left: 8px;
-  border-left: 8px solid #d15454;
-  border-bottom: 1px solid #d15454;
+  border-left: 8px solid #cc0000;
+  border-bottom: 1px solid #cc0000;
   font-size: 100%;
 }
 
@@ -30,7 +32,8 @@
 }
 
 body { 
-  background: #a0a0a0;
+  background: #1f1f1f url("background-rule.png") repeat-x;
+  
 }
 
 .page { 
@@ -67,10 +70,10 @@ div.link table {
 }
 
 .page a:link { 
-  color: #537fa1;
+  color: #3786ea;
 }
 .page a:visited { 
-  color: #537fa1;
+  color: #3786ea;
 }
 .page a:hover { 
   color: #86cef9;
@@ -81,19 +84,20 @@ div.link table {
 
 .header-content { 
   z-index: 0;
-  background: #428ac7; /* #6e92b0; /* #70a4d0;  #bac6d1; #d8e4ed;*/
+ /* #6e92b0; /* #70a4d0;  #bac6d1; #d8e4ed;*/
+/*  background: #428ac7; */
+  background: #fff url("header-rule.png") repeat-x;
   height: 140px;
 }
 
 .logo img { 
   border: 0px;
   float: left;
+  padding-left: 30px;
 }
 
 .vortex-slogan {
   float: right;
-  margin-top: 60px;
-  margin-left: -380px;
 
 }
 
@@ -117,13 +121,14 @@ div.link table {
 
 .page-menu li a { 
   padding-left: 3px;
-  border-left: 3px solid #d15454;
+  border-left: 3px solid #cc0000;
   padding-right: 10px;
 }
 
 .menu-separator { 
-  background: #537fa1;
-  height: 10px;
+/*  background: #537fa1; */
+  background: #fff url("header-sep-rule.png") repeat-x;
+  height: 15px; 
   border-bottom: 1px solid #a0a0a0;
   border-top: 1px solid #a0a0a0;
 }
@@ -136,6 +141,11 @@ div.link table {
 
 .upper-content { 
   
+}
+
+.upper-content-80 { 
+  width: 80%;
+  border-right: 1px dotted #a0a0a0;
 }
 
 .main-vortex-logo { 
@@ -177,10 +187,12 @@ div.link table {
   width: 48%;
   float: right;
   text-align: justify;
+  border-right: 1px dotted #a0a0a0;
+  padding-right: 5px;
 }
 
 .download-section { 
-  width: 66%;
+  width: 76%;
   float: left;
   text-align: justify;
   border-right: 1px dotted #a0a0a0;
@@ -188,7 +200,7 @@ div.link table {
 }
 
 .news-section { 
-  width: 66%;
+  width: 76%;
   float: left;
   text-align: justify;
   border-right: 1px dotted #a0a0a0;
@@ -196,7 +208,7 @@ div.link table {
 }
 
 .all-section { 
-  width: 100%
+  width: 100%;
 /*  float: left; */
   text-align: justify;
 /*  border-right: 1px dotted #a0a0a0; */
@@ -208,7 +220,7 @@ div.link table {
 }
 
 .support-section { 
-  width: 66%;
+  width: 76%;
   float: left;
   text-align: justify;
   border-right: 1px dotted #a0a0a0;
@@ -251,3 +263,24 @@ span.item-description {
   text-decoration: underline;
 }
 
+.author { 
+  font-size: 8pt;
+  width: 100%;
+  text-align: right;
+}
+
+.using { 
+  padding-bottom: 20px;
+  border-bottom: 1px solid #cc0000;
+}
+
+.using img { 
+  padding: 10px;
+}
+
+.vortex-lateral-ads { 
+  float: right;
+  margin-top: 40px;
+  padding-right: 5px;
+  padding-left: 5px;
+}

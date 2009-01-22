@@ -37,6 +37,8 @@
  */
 #include <vortex_http.h>
 
+#define VORTEX_HTTP_ENABLED "vo:http:en"
+
 /**
  * \defgroup vortex_http Vortex HTTP CONNECT API: support for BEEP connections through HTTP proxy
  */
@@ -230,6 +232,7 @@ axlPointer __vortex_http_connection_new (VortexHttpConnectionData * data)
 	char             * http_header;
 	char               buffer[1024];
 	int                bytes_read;
+	char             * error_msg;
 
 	/* paramters */
 	VortexCtx        * ctx   = data->ctx;
@@ -295,7 +298,11 @@ axlPointer __vortex_http_connection_new (VortexHttpConnectionData * data)
 			vortex_log (VORTEX_LEVEL_DEBUG, "reply received: %s, processing", buffer);
 			if (! axl_memcmp (buffer, "HTTP/1.0 2", 10) &&
 			    ! axl_memcmp (buffer, "HTTP/1.1 2", 10)) {
-				__vortex_connection_set_not_connected (conn, "Received an negative reply. Some administrative configuration prevents from connecting to the destination requested", VortexError);
+				error_msg = axl_strdup_printf (
+					"HTTP Proxy error, received a negative reply. Some administrative configuration prevents from connecting to the destination requested, reply received: %s",
+					buffer);
+				__vortex_connection_set_not_connected (conn, error_msg, VortexError);
+				axl_free (error_msg);
 				return conn;
 			} /* end if */
 
@@ -326,6 +333,9 @@ axlPointer __vortex_http_connection_new (VortexHttpConnectionData * data)
 
 	/* free data */
 	vortex_http_connection_data_free (data);
+
+	/* flag the connection as created through a proxy */
+	vortex_connection_set_data (conn, VORTEX_HTTP_ENABLED, INT_TO_PTR(1));
 	
 	vortex_log (VORTEX_LEVEL_DEBUG, "connection through HTTP proxy setup ok");
 	return conn;
@@ -408,6 +418,19 @@ VortexConnection * vortex_http_connection_new (const char           * host,
 	
 	vortex_log (VORTEX_LEVEL_DEBUG, "doing HTTP connection in blocking mode");
 	return __vortex_http_connection_new (data);
+}
+
+/**
+ * @brief Allows to check if the provided connection was created by
+ * using \ref vortex_http_connection_new.
+ *
+ * @param conn The connection to check for being created though an
+ * HTTP proxy server.
+ */
+axl_bool           vortex_http_connection_is_proxied (VortexConnection * conn)
+{
+	/* current status */
+	return PTR_TO_INT (vortex_connection_get_data (conn, VORTEX_HTTP_ENABLED));
 }
 
 /**
