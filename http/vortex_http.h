@@ -85,6 +85,8 @@ VortexConnection * vortex_http_connection_new (const char           * host,
 					       VortexConnectionNew    on_connected, 
 					       axlPointer             user_data);
 
+axl_bool           vortex_http_connection_is_proxied (VortexConnection * conn);
+
 #endif
 
 /* @} */
