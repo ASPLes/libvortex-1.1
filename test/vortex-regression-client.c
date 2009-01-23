@@ -73,8 +73,12 @@ char   * listener_host = NULL;
 #define LISTENER_PORT       "44010"
 
 /* listener proxy location */
-char   * listener_proxy_host = NULL;
+char   * listener_tunnel_host = NULL;
 #define LISTENER_PROXY_PORT "44110"
+
+/* HTTP proxy support */
+char   * http_proxy_host = NULL;
+char   * http_proxy_port = NULL;
 
 /* substract */
 void subs (struct timeval stop, struct timeval start, struct timeval * _result)
@@ -253,11 +257,13 @@ VortexConnection * connection_new (void)
 		/* configure connection: assume squid running at
 		 * localhost:3128 (FIXME, add general support to configure a
 		 * different proxy location) */
-		vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_HOST, "localhost");
-		vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_PORT, "3128");
+		vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_HOST, http_proxy_host);
+		vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_PORT, http_proxy_port);
 		
 		/* create a connection */
-		conn = vortex_http_connection_new ("localhost", "443", setup, NULL, NULL);
+		printf ("HTTP: doing connection to: %s:%s\n", listener_host, "443");
+		printf ("HTTP: using proxy: %s:%s..\n", http_proxy_host, http_proxy_port);
+		conn = vortex_http_connection_new (listener_host, "443", setup, NULL, NULL);
 		
 		/* terminate setup */
 		vortex_http_setup_unref (setup);
@@ -6646,7 +6652,7 @@ axl_bool  test_13 (void)
 	
 	/* add first hop */
 	vortex_tunnel_settings_add_hop (tunnel_settings,
-					TUNNEL_IP4, listener_proxy_host,
+					TUNNEL_IP4, listener_tunnel_host,
 					TUNNEL_PORT, LISTENER_PROXY_PORT,
 					TUNNEL_END_CONF);
 	
@@ -7531,14 +7537,15 @@ axl_bool  test_15 (void)
 	/* configure connection: assume squid running at
 	 * localhost:3128 (FIXME, add general support to configure a
 	 * different proxy location) */
-	vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_HOST, "localhost");
-	vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_PORT, "3128");
+	vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_HOST, http_proxy_host);
+	vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_PORT, http_proxy_port);
 
 	/* create a connection */
-	conn = vortex_http_connection_new ("localhost", "443", setup, NULL, NULL);
+	conn = vortex_http_connection_new (listener_host, "443", setup, NULL, NULL);
 
 	if (! vortex_connection_is_ok (conn, axl_false)) {
-		printf ("ERROR: unable to create connection to localhost:443, error found (code: %d): %s",
+		printf ("ERROR: unable to create connection to %s:443, error found (code: %d): %s",
+			listener_host,
 			vortex_connection_get_status (conn),
 			vortex_connection_get_message (conn));
 		return axl_false;
@@ -7720,11 +7727,15 @@ int main (int  argc, char ** argv)
 	printf ("** Additional settings:\n");
 	printf ("**\n");
 	printf ("**     >> ./vortex-regression-client [--disable-time-checks] [--run-test=NAME] \n");
-	printf ("**                                   [listener-host [listener-host-proxy]]\n");
+	printf ("**                                   [listener-host [TUNNEL-proxy-host [proxy-host [proxy-port]]]]\n");
 	printf ("**\n");
 	printf ("**       If no listener-host value is provided, it is used \"localhost\". \n");
-	printf ("**       If no listener-host-proxy value is provided, it is used the value \n");
+	printf ("**       If no TUNNEL-proxy-host value is provided, it is used the value \n");
 	printf ("**       provided for listener-host. \n");
+	printf ("**\n");
+	printf ("**       Values for proxy-host and proxy-port defines the HTTP proxy server to use\n");
+	printf ("**       to check vortex-http implementation. If proxy-host is not provided \"localhost\"\n");
+	printf ("**       is used. If proxy-port is not provided, port 3128 is used.\n");
 	printf ("**\n");
 	printf ("**       Providing --disable-time-checks will make regression test to skip those\n");
 	printf ("**       tests that could fail due to timing issues. This is useful when using\n");
@@ -7779,17 +7790,49 @@ int main (int  argc, char ** argv)
 
 	/* configure default values */
 	if (argc == 1) {
-		listener_host       = "localhost";
-		listener_proxy_host = "localhost";
+		listener_host        = "localhost";
+		listener_tunnel_host = "localhost";
+
+		/* HTTP proxy configuration */
+		http_proxy_host      = "localhost";
+		http_proxy_port      = "3128";
+		
 	} else if (argc == 2) {
 
-		listener_host       = argv[1];
-		listener_proxy_host = argv[1];
+		listener_host        = argv[1];
+		listener_tunnel_host = argv[1];
+
+		/* HTTP proxy configuration */
+		http_proxy_host      = "localhost";
+		http_proxy_port      = "3128";
 
 	} else if (argc == 3) {
 
-		listener_host       = argv[1];
-		listener_proxy_host = argv[2];
+		listener_host        = argv[1];
+		listener_tunnel_host = argv[2]; 
+
+		/* HTTP proxy configuration */
+		http_proxy_host      = "localhost";
+		http_proxy_port      = "3128";
+
+	} else if (argc == 4) {
+		
+		listener_host        = argv[1];
+		listener_tunnel_host = argv[2]; 
+
+		/* HTTP proxy configuration */
+		http_proxy_host      = argv[3];
+		http_proxy_port      = "3128";
+
+	} else if (argc == 5) {
+		
+		listener_host        = argv[1];
+		listener_tunnel_host = argv[2]; 
+
+		/* HTTP proxy configuration */
+		http_proxy_host      = argv[3];
+		http_proxy_port      = argv[4];
+
 	} /* end if */
 
 	if (listener_host == NULL) {
@@ -7797,13 +7840,15 @@ int main (int  argc, char ** argv)
 		return -1;
 	}
 
-	if (listener_proxy_host == NULL) {
+	if (listener_tunnel_host == NULL) {
 		printf ("Error: undefined value found for listener proxy host..\n");
 		return -1;
 	}
 		
-	printf ("INFO: running test against %s, with BEEP proxy located at: %s..\n",
-		listener_host, listener_proxy_host);
+	printf ("INFO: running test against %s, with BEEP TUNNEL proxy located at: %s..\n",
+		listener_host, listener_tunnel_host);
+	printf ("INFO: HTTP proxy located at: %s:%s..\n",
+		http_proxy_host, http_proxy_port);
 
 	/* init vortex library */
 	if (! vortex_init_ctx (ctx)) {

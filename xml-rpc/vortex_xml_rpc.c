@@ -1326,7 +1326,9 @@ axlPointer __vortex_xml_rpc_invoke (VortexXmlRpcInvokeData * data)
 	XmlRpcMethodCall     * invocator     = data->invocator;
 	XmlRpcInvokeNotify     reply_notify  = data->reply_notify;
 	axlPointer             user_data     = data->user_data;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx            * ctx           = CHANNEL_CTX(channel);
+#endif
 	char                 * message;
 	int                    message_size;
 

@@ -34,10 +34,11 @@ LIBS     = -Wall -g \
 	-L../tls -lvortex-tls-1.1 \
 	-L../sasl -lvortex-sasl-1.1 \
 	-L../pull -lvortex-pull-1.1 \
+	-L../http -lvortex-http-1.1 \
 	-lreadline5
 
-INCS =  -I"." -I"../src" -I"../tunnel" -I"../tls" -I"../sasl" -I"../xml-rpc" -I"../pull" \
-        -I"../../libaxl/src" -I$(DEPEND_DIR)/include
+INCS =  -I"." -I"../src" -I"../tunnel" -I"../tls" -I"../sasl" -I"../xml-rpc" -I"../pull" -I"../http" \
+        -I"../../libaxl/src" -I$(DEPEND_DIR)/include -DENABLE_SASL_SUPPORT -DENABLE_XML_RPC_SUPPORT
 
 CFLAGS   = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" -Wall -g -D__axl_disable_broken_bool_def__  
 
@@ -97,6 +98,7 @@ links:
 	cp ../tunnel/libvortex-tunnel-1.1.dll .
 	cp ../xml-rpc/libvortex-xml-rpc-1.1.dll .
 	cp ../pull/libvortex-pull-1.1.dll .
+	cp ../http/libvortex-http-1.1.dll .
 	cp ../data/*.dtd .
 	cp ../../libaxl/src/libaxl.dll .
 	cp $(OPENSSL_LIBS) .
