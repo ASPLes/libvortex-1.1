@@ -1069,32 +1069,39 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
 
 
 /**
- * \mainpage Vortex Library:  A BEEP Core implementation
+ * \mainpage Vortex Library 1.1:  A professional BEEP Core implementation
  *
  * \section intro Introduction 
  *
  * <b>Vortex Library</b> is an implementation of the <b>RFC 3080 / RFC
  * 3081</b> standard definition called the <b>BEEP Core protocol
- * mapped into TCP/IP</b> layer written in <b>C</b>. In addition, it
- * comes with a complete XML-RPC over BEEP <b>RFC 3529</b> and TUNNEL
- * (<b>RFC3620</b>) support. It has been developed by <b>Advanced
- * Software Production Line, S.L.</b> (http://www.aspl.es) as a
- * requirement for the <B>Af-Arch</B> project (http://fact.aspl.es).
+ * mapped into TCP/IP</b> layer written in <b>C</b>. 
+ *
+ * Some of its features are: 
+ *
+ * - Robust and well tested BEEP implementation with a threaded design (non-blocking parallel comunications), written in ANSI C. 
+ * - Context based API design making the library stateless. Support to run several ejecution contexts in the same process.
+ * - A complete XML-RPC over BEEP <b>RFC 3529</b> with a IDL/XDL protocol compiler (<b>xml-rpc-gen</b>).
+ * - A complete TUNNEL (<b>RFC3620</b>) support. 
+ * - Complete implementation for TLS and SASL profiles.
+ * - Modular design which allows to use only those components needed: See \ref vortex_components "vortex components"
+ * - Support to proxy BEEP connections through HTTP proxy servers. See \ref vortex_http "Vortex HTTP CONNECT API".
+ * - Support for single threaded (no async notification) programming. See \ref vortex_pull "Vortex Pull API" and \ref vortex_manual_pull_api "Notes and how to use PULL API".
+ *
+ * Vortex Library been developed by <b>Advanced Software Production
+ * Line, S.L.</b> (http://www.aspl.es). It is licensed under the LGPL
+ * 2.1 which allows open source and commercial usage.
  *
  * Vortex Library has been implemented keeping in mind security. It
  * has a consistent and easy to use API which will allow you to write
  * application protocols really fast. The API provided is really
- * stable and any change that could happen is notified using a public
- * change procedure notification (http://www.aspl.es/change/change-notification.txt).
+ * stable and any change is notified using a public change procedure
+ * notification (http://www.aspl.es/change/change-notification.txt).
  *
  * Vortex Library is being run and tested regularly under GNU/Linux
  * and Microsoft Windows platforms, but it is known to work in other
- * platforms. Its development is also checked with a regression test
+ * platforms. Its development is also checked with a <b>regression tests</b>
  * to ensure proper function across releases.
- *
- * The Vortex Library is intensively used by the <b>Af-Arch</b> project but
- * as RFC implementation <b>it can be used in a stand alone way</b> apart from
- * <b>Af-Arch</b>.
  *
  * The following section represents documents you may find useful to
  * get an idea if Vortex Library is right for you. It talks about
@@ -1102,6 +1109,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * - \ref implementation
  * - \ref features
+ * - \ref vortex_components
  * - \ref status
  * - \ref license
  *
@@ -1335,10 +1343,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * - It has been <b>designed keeping in mind security:</b> 
  * buffer overflows, DOS attacks (socket handling is done using
  * non-blocking mode), internal or external frame fragment attack or
- * channel starvation due to flooding attacks. Actually, It is been
- * used by the Af-Arch project (http://fact.aspl.es) which requires
- * transferring really large chunks of data by several channels over
- * several connection for several clients at the same time.
+ * channel starvation due to flooding attacks. 
  *
  * - It <b>supports both asynchronous and synchronous programing
  * models</b> while sending and receiving data. This means you can
@@ -1348,8 +1353,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * or event notifications when you just want to keep on waiting for an
  * specific frame to be received. Of course, while programing
  * Graphical User Interfaces the asynchronous model will allow you to
- * get the better performance avoiding the my-application-gets-blank
- * effect on requests ;-)
+ * get the better performance avoiding GUI blocking effect on requests ;-)
  *
  * - Operations such as <b>open a connection, create a channel, close
  * a channel, activate TLS profile, negotiate authentication through
@@ -1575,6 +1579,80 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  */
 
+/**
+ * \page vortex_components Vortex Library components 
+ *
+ * \section Votex Library base library and its extensions
+ *
+ * One feature of Vortex Library 1.1 series is it's new module design separating the base core
+ * BEEP library from other extensions that may be used independently. This has two main improvements from previous 1.0 design:
+ * 
+ * - Now it is posible to use only those component required, avoiding
+ * to include all vortex code
+ *
+ * - Now it is possible to add different extensions without affecting
+ * the base library. For example now it is possible to implement a
+ * different TLS implementation or evolve some component without
+ * requiring to release all the library.
+ *
+ * Vortex Library has the following components:
+ * 
+ * \image html vortex-components.png "Vortex base library and extension libraries"
+ *
+ * \section extensions_headers One header for the base library and each extension library
+ *
+ * Now each library must be used and included explicitly by the
+ * developer. For example, to use base library, sasl and tls
+ * implementation will require:
+ *
+ * \code
+ * // base library
+ * #include <vortex.h>
+ * 
+ * // include TLS header
+ * #include <vortex_tls.h>
+ *
+ * // include SASL header
+ * #include <vortex_sasl.h>
+ *
+ * // rest of available libraries with its associated header
+ * // to include its function
+ * #include <vortex_xml_rpc.h>
+ * #include <vortex_tunnel.h>
+ * #include <vortex_http.h>
+ * #include <vortex_pull.h>
+ *
+ * \endcode
+ *
+ * In general, the naming convention to follow is:
+ * \code
+ * #include <vortex_EXTENSION.h>
+ * \endcode
+ * 
+ * \section pkg_config_support Pkg-config support for each extension
+ *
+ * Now each extension provides its own pkg-config file. The following
+ * is the list of available pkg-config files included:
+ *
+ * - vortex-1.1
+ * - vortex-tls-1.1
+ * - vortex-sasl-1.1
+ * - vortex-xml-rpc-1.1
+ * - vortex-tunnel-1.1
+ * - vortex-pull-1.1
+ * - vortex-http-1.1
+ * 
+ * For example, if you are using autoconf, you can use the following
+ * example to include support for vortex base library and vortex http
+ * CONNECT support:
+ *
+ * \code
+ * dnl check for vortex
+ * PKG_CHECK_MODULES(VORTEX, vortex-1.1 >= 1.1.0 vortex-http-1.1 >= 1.1.0)
+ * AC_SUBST(VORTEX_CFLAGS)
+ * AC_SUBST(VORTEX_LIBS)
+ * \endcode
+ */
 
 /**
  * \page install Installing and Using Vortex Library

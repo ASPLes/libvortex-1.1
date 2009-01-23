@@ -31,6 +31,7 @@ build_doc:
 	(cd ../xml-rpc-gen; ./xml-rpc-gen-1.1 reg-test01.idl;)
 	doxygen vortex-doc.doxygen
 	cp main-page-logo.png html
+	cp aspl-logo-header.png html
 	cp vortex.css html
 	cp body_back.gif html
 

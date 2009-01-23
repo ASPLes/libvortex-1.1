@@ -3,7 +3,7 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: libvortex-xml-rpc
+Name: libvortex-xml-rpc-1.1
 Description: Robust, full featured BEEP implementation (RFC 3080/RFC 3081)
   XML-RPC RFC3529 implementation for Vortex 1.1
 Requires: vortex-1.1
