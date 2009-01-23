@@ -915,7 +915,9 @@ void               vortex_pull_close_notify       (VortexChannel * channel,
 						   axlPointer      user_data)
 {
 	VortexEvent * event;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx   * ctx = user_data;
+#endif
 
 	/* call to generic implementation to marshall async
 	 * notification into a pulled event */

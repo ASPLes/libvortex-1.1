@@ -106,7 +106,9 @@ VortexHttpSetup  * vortex_http_setup_new      (VortexCtx * ctx)
  */
 axl_bool           vortex_http_setup_ref      (VortexHttpSetup * setup)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx = setup ? setup->ctx : NULL;
+#endif
 
 	v_return_val_if_fail_msg (setup, axl_false, "Unable to update reference counting, setup reference is NULL");
 
@@ -163,7 +165,9 @@ void               vortex_http_setup_conf     (VortexHttpSetup      * setup,
 					       const char           * str_value)
 {
 	char      * str_aux;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx = (setup ? setup->ctx : NULL);
+#endif
 
 	v_return_if_fail_msg (setup, "Failed to setup because it was received a NULL VortexHttpSetup reference");
 

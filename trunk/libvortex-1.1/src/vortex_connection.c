@@ -1507,7 +1507,7 @@ VORTEX_SOCKET vortex_connection_sock_connect (VortexCtx   * ctx,
 #if defined(AXL_OS_WIN32)
 		/* under windows we have to also we to be readable */
 		if (err > 0) { 
-			err = __vortex_connection_wait_on (ctx, READ_OPERATIONS, connection, timeout);
+			err = __vortex_connection_wait_on (ctx, READ_OPERATIONS, session, timeout);
 		} /* end if */
 #endif
 		
