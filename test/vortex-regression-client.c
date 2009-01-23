@@ -261,8 +261,6 @@ VortexConnection * connection_new (void)
 		vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_PORT, http_proxy_port);
 		
 		/* create a connection */
-		printf ("HTTP: doing connection to: %s:%s\n", listener_host, "443");
-		printf ("HTTP: using proxy: %s:%s..\n", http_proxy_host, http_proxy_port);
 		conn = vortex_http_connection_new (listener_host, "443", setup, NULL, NULL);
 		
 		/* terminate setup */
