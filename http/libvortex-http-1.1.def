@@ -1,0 +1,8 @@
+EXPORTS
+vortex_http_connection_data_free
+vortex_http_connection_is_proxied
+vortex_http_connection_new
+vortex_http_setup_conf
+vortex_http_setup_new
+vortex_http_setup_ref
+vortex_http_setup_unref
