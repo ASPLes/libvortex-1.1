@@ -25,8 +25,7 @@ endif
 if ENABLE_XML_RPC_SUPPORT
 INCLUDE_XML_RPC_SUPPORT = -DENABLE_XML_RPC_SUPPORT
 XML_RPC_SUPPORT_LIBS    = ../xml-rpc/libvortex-xml-rpc-1.1.la 
-vortex_regression_listener_xml_rpc_files = \
-	service_dispatch.h \
+vortex_regression_listener_xml_rpc_files = service_dispatch.h \
 	service_dispatch.c \
 	test_sum_int_int.h \
 	test_sum_int_int.c \
@@ -56,8 +55,8 @@ vortex_regression_listener_xml_rpc_files = \
 	test_struct_node_xml_rpc.c \
 	test_sum2_int_int.h \
 	test_sum2_int_int.c
-vortex_regression_client_xml_rpc_files = \
-	test_types.h \
+
+vortex_regression_client_xml_rpc_files = test_types.h \
 	test_xml_rpc.h \
 	test_xml_rpc.c \
 	test_struct_values_xml_rpc.h \
@@ -83,7 +82,7 @@ endif
 certfilesdir    = $(datadir)/libvortex-1.1
 certfiles_DATA  = test-certificate.pem test-private-key.pem
 EXTRA_DIST      = Makefile.win $(certfiles_DATA) vortex-regression-client.vcproj  vortex-regression-listener.vcproj vortex-regression-client.idl \
-	mime.example.1.txt  mime.example.body.1.txt  mime.example.2.txt  mime.example.3.txt  mime.example.body.2.txt
+	mime.example.1.txt  mime.example.body.1.txt  mime.example.2.txt  mime.example.3.txt  mime.example.body.2.txt 
 bin_PROGRAMS    = vortex-client 
 noinst_PROGRAMS = \
 	vortex-listener \
@@ -130,7 +129,7 @@ vortex_client_connections_SOURCES   = vortex-client-connections.c
 vortex_client_connections_LDADD     = $(LIBS) ../src/libvortex-1.1.la ../tunnel/libvortex-tunnel-1.1.la 
 
 vortex_regression_client_SOURCES   = \
-	vortex-regression-client.c vortex-regression-common.c vortex-regression-common.h \ $(vortex_regression_client_xml_rpc_files)
+	vortex-regression-client.c vortex-regression-common.c vortex-regression-common.h $(vortex_regression_client_xml_rpc_files)
 
 vortex_regression_client_LDADD     = \
 	$(LIBS) ../src/libvortex-1.1.la  \
@@ -139,7 +138,8 @@ vortex_regression_client_LDADD     = \
 	../pull/libvortex-pull-1.1.la  $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS) 
 
 vortex_regression_listener_SOURCES   = \
-	vortex-regression-listener.c vortex-regression-common.c vortex-regression-common.h \ $(vortex_regression_listener_xml_rpc_files) 
+	vortex-regression-listener.c vortex-regression-common.c vortex-regression-common.h $(vortex_regression_listener_xml_rpc_files) 
+
 vortex_regression_listener_LDADD     = \
 	$(LIBS) ../src/libvortex-1.1.la \
 	../tunnel/libvortex-tunnel-1.1.la \
