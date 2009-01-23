@@ -3,7 +3,7 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: libvortex-pull
+Name: libvortex-pull-1.1
 Description: Robust, full featured BEEP implementation (RFC 3080/RFC 3081)
   PULL API support
 Requires: vortex-1.1

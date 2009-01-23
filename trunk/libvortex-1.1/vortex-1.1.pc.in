@@ -3,7 +3,7 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: libvortex
+Name: libvortex-1.1
 Description: Robust, full featured BEEP implementation (RFC 3080/RFC 3081)
 Requires: axl
 Version: @VORTEX_VERSION@
