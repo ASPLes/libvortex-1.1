@@ -1400,9 +1400,9 @@ void                 vortex_io_waiting_set_wait_on_fd_group    (VortexCtx       
  * 
  */
 int                  vortex_io_waiting_invoke_wait             (VortexCtx          * ctx,
-								axlPointer           fd_group, 
-								int                  max_fds,
-								VortexIoWaitingFor   wait_to)
+								        axlPointer           fd_group, 
+								        int                  max_fds,
+								        VortexIoWaitingFor   wait_to)
 {
 	/* check reference to the context */
 	if (ctx == NULL)
