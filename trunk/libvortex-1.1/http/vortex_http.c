@@ -248,11 +248,13 @@ axlPointer __vortex_http_connection_new (VortexHttpConnectionData * data)
 	conn = vortex_connection_new_empty (ctx, -1, VortexRoleInitiator);
 
 	/* do a connection against the host */
-	vortex_log (VORTEX_LEVEL_DEBUG, "connecting to HTTP proxy: %s:%s", setup->proxy_port, setup->proxy_port);
-	timeout = vortex_connection_get_connect_timeout (ctx);
-	socket  = vortex_connection_sock_connect (ctx, setup->proxy_host, setup->proxy_port, &timeout, &error);
+	vortex_log (VORTEX_LEVEL_DEBUG, "connecting to HTTP proxy: %s:%s", setup->proxy_host, setup->proxy_port);
+	timeout = vortex_connection_get_connect_timeout (ctx); 
+	socket  = vortex_connection_sock_connect (ctx, setup->proxy_host, setup->proxy_port, NULL, &error);
 	if (socket == -1) {
 		/* set message and free error */
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to connect to HTTP proxy %s:%s, error found: %s",
+			    setup->proxy_host, setup->proxy_port, axl_error_get (error));
 		__vortex_connection_set_not_connected (conn, axl_error_get (error), axl_error_get_code (error));
 		axl_error_free (error);
 
