@@ -1,0 +1,309 @@
+          ############################################
+          ##          Vortex Library 1.0.13         ##
+          ##        "The denial twist release"      ##
+          ############################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.0.13 "The denial twist" release availability: an open
+  source "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+
+  Several bug fixes and library improvement have been integrated into
+  this release, updating the library regression testwith more unit
+  checks.
+ 
+  Updated log management to allow an external function to handle
+  it. Fixed and properly implemented the limited by a timeout connect
+  (which wasn't working on previous releases) and fixed its function
+  through a regression test.
+
+Special note
+~~~~~~~~~~~~
+
+  Previous release mentioned: 
+
+  "Current release will be the last one for 1.0.X series. The next
+  series will include an API update to make the library full
+  context-based. A change notification will be produced with the
+  concrete change."
+
+  This will not be the approach as announced to our customers and in
+  the mail list [1]. In short, both branches will evolve in an
+  independent manner as long as they are alive.
+
+  [1] http://lists.aspl.es/pipermail/vortex/2008-January/000342.html
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  None.
+
+Thanks to..
+~~~~~~~~~~~
+
+  Benoit Amiaux (for providing useful feedback, patches, etc,
+  improving Vortex function on windows). Jens Alfke (for
+  providing useful comments and patches to solve bugs). 
+
+Changes since 1.0.12
+~~~~~~~~~~~~~~~~~~~~
+
+* [fix] Documented VortexCtx object,
+
+* [fix] Fixed xml-rpc-gen which wasn't initializing vortex support
+  cleanup API. Fixed some calls to axl_stream_get_until_ref
+
+* [fix] Making vortex listener regression test to check sasl support
+  to be enabled. Reported and Fixed by Jens Alfke.
+
+* [fix] Updated vortex_frame_is_error_message documentation to better
+  describe its function. Reported by Jens Alfke.
+
+* [fix] Several updates to add a "const" declaration and changing some
+  declarations from char * to void * (Reported and fixed by Jens
+  Alfke).
+
+* [new] Updated the vortex log API to allow configuring if all
+  log messages are synchronized to avoid messages to be mixed from
+  different modules. (Reported by Jens Alfke). API added:
+
+   - vortex_log_acquire_mutex
+   - vortex_log_is_enabled_acquire_mutex
+
+* [new] Updated vortex log API to allow the application level to
+  provide a handler to manage all log produced by the application.
+  Patch by Jens Alfke. API added:
+
+   - VortexLogHandler
+   - vortex_log_set_handler
+   - vortex_log_get_handler
+
+* [fix] Fixed wrong documentation (warnings and wrong references).
+
+* [fix] Exarg Makefile.win fixings and fixed vortex-client.c wrong
+  long type declaration.
+
+* [fix] Updated xml-rpc-gen tool to support a new option that allows
+  to configure additional search paths. Option added: --add-search-path.
+
+* [fix] Making vortex close channel to acquire a reference to the
+  connection during the close process, if the thread mode is
+  activated, avoiding to lose the reference if the thread planner stop
+  the close process and other running thread terminates the
+  connection. Checked regression test.
+
+* [fix] Making vortex_channel_is_opened to also check current
+  connection status to report if the channel is *really* opened (not
+  only its internal status).
+
+* [fix] Fixed double deallocation error if the dtd module was not able
+  to be initialized. Reported and fixed by Jens Alfke.
+
+* [fix] Updated configure.ac to avoid pkg-config bug while disabling
+  sasl interface.
+
+* [fix] Patches to fix vortex thread pool inclusion and variable
+  declaration at the top of _vortex_log_common (reported and fixed
+  Benoit Amiaux).
+
+* [fix] Fixed wrong connect timeout at vortex_connection_new which was
+  mixing values returned by vortex_connection_get_connect_timeout
+  (which returns microseconds) with values returned by time() (which
+  does it in seconds). Problem reported and tracked down by Benoit
+  Amiaux.
+
+* [fix] Fixing documentation and parameter name to make
+  vortex_connection_connect_timeout to receive a parameter that is
+  supposed to hold a microseconds timeout value rather and
+  seconds. (Reported by Benoit Amiaux).
+
+* [fix] Applied patch to better detect msvc while disabling log
+  produced (patch provided by Benoit Amiaux).
+
+* [fix] Making frame reply restore to check for the new next seq no
+  value to send.
+
+* [fix] Integrated regression test from (1.1 series) to check out of
+  order reply condition (inside the test_11). Checked that, without
+  the patch it is possible to reproduce the problem.
+
+* [fix] Applied patch [1/5] Disable loggin on msv2005. Reported by
+  Benoit Amiaux.
+
+* [fix] Applied patch [2/5] Fix invalid documentation and additional
+  changes to make the parameter changed to conform at the function
+  implemented. Fixed and reported by Benoit Amiaux.
+
+* [fix] Committing a modified patch from Benoit Amiaux to improve
+  vortex support module initialization: [4/5].
+
+* [fix] Fixed missing mutex initialization code at the vortex
+  connection module, which was causing to not start channel_mutex and
+  channel_update_mutex depending on the peer side (listener or
+  initiator). Unified mutex initialization code through an unique
+  function: __vortex_connection_init_mutex. Bug reported by Jens
+  Alfke.
+
+* [fix] Removed not required mutex initialization code at vortex
+  connection module due to previous change.
+
+* [fix] Ensuring vortex_channel_build_single_pending_frames to
+  properly configure the channel reference associated to the frame
+  built (Bug and its fixing reported by Jens Alfke). Updated
+  regression test to reproduce the problem and to check the fix
+  introduced.
+
+* [fix] Making vortex_listener_cleanup to check queue before
+  unreferring.
+
+* [fix] Making vortex_greetings_process to flag as a warning to not
+  receiving a frame containing the greeting. Integrated change into
+  1.0 and 1.1 branch.
+
+* [fix] Making VortexSequencerData to hold a reference to the
+  connection and to have a new flag to signal that a message
+  to be sequenced must be discarded. Integrated into both
+  branches 1.0 and 1.1.
+
+* [new] Updated vortex handler module to include a foreach handler used
+  by vortex_async_queue_foreach. Integrated into 1.0 and 1.1
+  branches. API added:
+
+   - VortexAsyncQueueForeach
+
+* [new] Updated vortex async queue API to include a new function that
+  allows to perform a foreach operation over all items stored, locking
+  the queue during the operation. Integrated change into 1.0 and 1.1
+  branches. API added:
+
+   - vortex_async_queue_foreach
+
+* [fix] Updated vortex sequencer internal function to drop all pending
+  messages to be sequenced for connections that have been closed or
+  flagged to be closed. Updated vortex main header to reorder main
+  header inclusion. Change integrated into both branches 1.0 and 1.1.
+
+* [fix] Making vortex_listener_shutdown to lock the caller during the
+  process of close the listener and all associated connections.
+
+* [fix] Making vortex listener to unref the connection after the
+  initial and second step are finished, to avoid race conditions
+  caused by a connection close in the middle of those states. Bug fix
+  integrated into 1.0 and 1.1 branches.
+
+* [fix] Improved connection timeout (connect operations with timeout
+  activated) to really implement a global timeout for all the
+  operation.  Previous implementation wasn't properly implementing all
+  cases.  Integrated bug fix into 1.0 and 1.1 branches.
+
+* [new] Updated vortex connection API to include two new functions
+  that allows to block and check I/O read operations for a particular
+  connection.  Integrated into both branches 1.0 and 1.1. API added:
+
+   - vortex_connection_block
+   - vortex_connection_is_blocked
+
+* [fix] Making vortex connection module to signal vortex sequencer
+  module to flag all its pending associated message to be discarded
+  due to connection close. Fix integrated into both branches (1.0 and
+  1.1).
+
+* [fix] Making vortex reader module to check for blocked connections
+  to avoid performing I/O reading over them and updated 
+  vortex_reader_foreach internal API to return a queue where a 
+  notification is provided. Bug fixes and updates integrated into
+  both branches (1.0 and 1.1).
+
+* [fix] Making vortex_frame_get_next to check for a connection not
+  properly initialized, if an error is found, properly signaling the
+  error rather a general connection broken. Updated both branches (1.0
+  and 1.1).
+
+* [fix] Committing missing change to export internal function from
+  vortex sequencer (vortex_sequencer_drop_connection_messages).  Bug
+  fixed in both branches.
+
+* [fix] Integrated test_12 into general regression test.  Inside on
+  both branches.
+
+* [fix] Integrated TUNNEL regression test into main test (GREAT!).
+  Integration performed on both branches (1.0 and 1.1).
+
+* [fix] Fixing documentation warnings.
+
+* [fix] Fixing minimal bug which was introducing doxygen comments
+  without having them activated.
+
+* [new] Updated vortex hash module to include a new function to remove
+  items stored without calling to destroy function. Used this to
+  implement new function to remove items stored as data associated to
+  channels. API update applied to both branches (1.0 and 1.1) API
+  added:
+
+  - vortex_hash_delete
+  - vortex_channel_delete_data
+
+* [fix] Making vortex_connection_block to lock the caller until the
+  connection is really blocked. Fix applied on both branches (1.0 and
+  1.1).
+
+* [fix] Making non-blocking connect with timeout activated to also
+  check of I/O read ready before proceeding only on windows
+  platform. Fix applied on both branches (1.0 and 1.1).
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+26th feb 2008, Madrid (Spain)

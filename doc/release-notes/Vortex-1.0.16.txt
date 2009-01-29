@@ -1,0 +1,258 @@
+      ###################################################
+      ##              Vortex Library 1.0.16            ##
+      ##              "10.000 Days release"            ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.0.16 "10.000 Days" release availability: an open source
+  "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+
+  General API update to apply axl-bool-removal-02 change notification
+  which, in general terms, improves C++ usability and makes already
+  existing C users to keep on having the same behavior.
+
+  Added support to allow buggy BEEP peers to use 0 as first MSG no
+  number on channel 0 (can be controlled via API), support to disable
+  SEQ frame generation (useful for tuning profiles). 
+
+  Updated vortex_channel_close to block the caller until the channel
+  is closed if a close in transit is detected (rather returning
+  immediately with "channel closed").
+
+  Several bugs were fixed and integrated into the regression test to
+  check solution applied.
+
+  All fixings and improvements were also available on Vortex Library
+  1.1 repository.
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  [1] vortex-conn-on-close-02
+  http://lists.aspl.es/pipermail/vortex/2008-October/000724.html
+  
+  [2] axl-bool-removal-02
+  http://lists.aspl.es/pipermail/vortex/2008-November/000743.html
+
+Thanks to..
+~~~~~~~~~~~
+  Balazs Tirpak (reported wrong delivery frame handling for channels
+  with serialize flag activated).
+ 
+  Martin Huter (helped to check and reported boolean API problem on
+  Axl Library and Vortex Library for C++ users, provided a patch for a
+  rare connection error condition with 2.4 linux kernels)
+
+  Mikhail Dmitrievsky (reported and provided a fix for a wrong
+  internal buffer size update at the vortex sequencer module).
+
+Changes since 1.0.15
+~~~~~~~~~~~~~~~~~~~~
+
+* [fix] Back ported support to cancel vortex_channel_wait_reply and
+  vortex_channel_get_reply operations under close connection condition
+  from 1.1 releases.
+
+* [fix] Fixed compilation errors on windows due to casting void* with
+  integers inside the same expression. Fixed applied to 1.0/1.1.
+
+* [fix] CHANGE-NOTIFY: Making vortex_connection_set_on_close and 
+  _full version to return void (since they were returning always NULL). 
+  Updated vortex_connection_remove_on_close_full to also require 
+  the user data pointer used to install the handler. Fix applied 
+  according to vortex-conn-on-close-01.
+
+* [fix] Flagging vortex_sasl_configure_current_properties as private
+  (it was marked as public). Updated libvortex.def file.
+
+* [new] Updated vortex xml-rpc API to include two new functions
+  to update reference counting for XmlRpcArray and XmlRpcStruct 
+  instances. API added:
+
+    - vortex_xml_rpc_struct_ref
+    - vortex_xml_rpc_array_ref
+
+  Updated internal implementation to make destroy functions to check
+  reference counters. Fixed copy functions to use this support. Fixed
+  applied 1.0/1.1.
+
+* [new] Updated vortex reader API to allow configuring protocol checks
+  making it possible to accept messages with number 0 for channel 0.
+  API added:
+
+   - vortex_reader_allow_channel0_starting_from_0
+
+* [fix] Fixed wrong handling of frames received, having the channel
+  with serialize flag activated, under contexts where mixed replies
+  (ANS..NUL/RPY) types are used to replies messages received, causing
+  some frames to be retained for delivery. Bug reported by Balazs
+  Tirpak. Fixed and added a regression test to reproduce problem and
+  check the fix (test_02k). Imported fix into 1.1 series.
+
+* [fix] Flagging vortex_channel_cleanup as internal. (1.0/1.1).
+
+* [fix] Starting to apply axl-bool-removal-02 change notification
+  updating xml-rpc-gen implementation. Applied change on 1.0/1.1.
+
+* [fix] Fixed bug causing to not properly notify reply written in the
+  case the listener side issue a MSG and the initiator reply with ANS
+  series ended by NUL. Fix applied to 1.0/1.1
+
+* [fix] Making vortex tunnel implementation to disable SEQ frame
+  generation during handshake to avoid introducing unexpected
+  information during the connection reset.  Applied to 1.0/1.1
+  
+* [fix] Improved checks performed during the channel and connection
+  negotiation for TUNNEL profile. Applied to 1.0/1.1
+
+* [fix] Updated error handling on TLS implementation to show full
+  error stack provided by OpenSSL (the proper manner to debug TLS
+  failures). Applied change to 1.0/1.1
+
+* [fix] Disabled SEQ frame generation during TLS negotiation to avoid
+  producing noise in the middle of the connection reset. Applied
+  change to 1.0/1.1
+
+* [fix] Applied update to remove bool type replaced by int as defined
+  by axl-bool-removal-02. Fix applied to 1.0/1.1.
+
+* [fix] Applied change to XML-RPC implementation axl-bool-removal-02.
+  (1.0/1.1).
+
+* [new] Updated connection API to include two new functions that
+  allows to disable SEQ frame generation and to check current
+  status. This is useful in the case a tuning profile is being
+  developed to avoid introducing "noise" during the session reset. API
+  added (1.0/1.1):
+
+    - vortex_connection_seq_frame_updates
+    - vortex_connection_seq_frame_updates_status
+
+* [fix] Making internal vortex_connection_do_sanity_check to also
+  check if the socket looks ok. Applied (1.0/1.1).
+
+* [fix] Making replaced calls to inet_ntoa with thread safe version
+  vortex_support_inet_ntoa. API added (1.0/1.1):
+
+   - vortex_support_inet_ntoa
+
+* [fix] Added additional check during wait conditions, inside vortex
+  connection module where TCP connect is signaled but the connection
+  is broken (really rare case under 2.4 linux kernels with older glibc
+  version. Fixed and reported by Martin Huter).
+
+* [fix] Applying axl-bool-removal-02 changes to vortex support module
+  (1.0/1.1).
+
+* [fix] Added internal check inside mime processing for frame received
+  to avoid processing SEQ frames (though it should never reach this
+  point).  Applied 1.0/1.1.
+
+* [fix] Making vortex listener on ready notification to use thread
+  safe inet_ntoa to notify host allocated by the listener.
+
+* [fix] Committing more updates to both branches (1.0/1.1) due to
+   axl-bool-removal-02.
+
+* [fix] Flagging vortex_channel_is_empty_pending_message as public
+  (1.0/1.1).
+
+* [new] Updated vortex hash memory handling to provide reference
+  counting support. Updated vortex_hash_create and vortex_hash_destroy
+  to take into consideration reference counting. Added new functions
+  to control reference counting (1.0/1.1):
+
+   - vortex_hash_ref
+   - vortex_hash_unref
+
+  Added new function to lock the caller until some change is detected
+  on a hash. API added (1.0/1.1):
+ 
+   - vortex_hash_lock_until_changed 
+
+* [new] Making vortex_channel_close to lock the caller in the case
+  that the channels is already in close process (due to incoming
+  accepted close msg), returning the caller after the channel is
+  completely closed rather returning immediately (1.0/1.1).
+
+* [fix] Fixed VortexConnectionOnChannelUpdate documentation.
+  
+* [fix] Cleaning vortex sequencer code. Applied 1.0/1.1
+
+* [fix] Fixed wrong vortex sequencer internal sending buffer resizing
+  in the case the size requested is twice actual size
+  allocated. Reported by Mikhail Dmitrievsky. Fixed on 1.0/1.1. Added
+  regression test to check the fix introduced.
+
+* [fix] Nullify connection reference from channel on connection close
+  to avoid channel references to access to a closed and deallocated
+  connection. Applied 1.0/1.1
+
+* [fix] Ensured all memory is deallocated for pending messages that
+  were queued due to channel stale status, under situations where the
+  connection is suddenly lost. Applied fix and added regression test
+  to check this (test_02m2). (1.0/1.1).
+
+* [fix] Making vortex_channel_get_reply to allow returning content
+  even in the case the channel reference received is NULL or the
+  connection is closed, under situations that pending elements are
+  available. Updated code to avoid installing the close connection
+  detection in the case the connection is already broken. (1.0/1.1).
+
+* [fix] General update on Makefile.win files (1.0/1.1) to reduce the
+  resulting library size.
+
+* [fix] Updated vortex_channel_new_full/v documentation to reflect
+  that profile_content and profile_content_format already places the
+  CDATA declaration.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+14th nov 2008, Madrid (Spain)

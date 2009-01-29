@@ -1,0 +1,207 @@
+          ############################################
+          ##          Vortex Library 1.0.14         ##
+          ##            "spybreak release"          ##
+          ############################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.0.14 "spybreak" release availability: an open source "BEEP
+  Core" protocol implementation written in C, mapped onto TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+
+  Starting from this release vortex will no longer depend on external
+  DTD files for its function. They are now included, inline into the
+  source code using the axl-knife tool to refresh changes.
+
+  Fixed several bugs and updated regression test to reproduce them and
+  check the fix introduced. 
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  None.
+
+Thanks to..
+~~~~~~~~~~~
+
+  Jens Alfke (for fixing, proposing and reporting several bugs and
+  improvements). 
+
+  Antoine Mahé (for providing a fix to make client greetings to also
+  advice its profiles).
+
+Changes since 1.0.13
+~~~~~~~~~~~~~~~~~~~~
+
+* [fix] Fixed bug inside channel creation process which didn't allow
+  to start sending content from the listener side right after the
+  channel being accepted. Updated regression test to reproduce the
+  problem and check the fix introduced. Reported by Jens Alfke
+  (1.0/1.1).
+
+* [fix] Fixed race condition at the SASL notification. Updated
+  regression test to reproduce and check the fix. (1.0/1.1).
+
+* [fix] Updated regression test to check that a channel could be
+  closed at the channel create notification. Found already
+  supported. Updated channel creation to check channel status before
+  the channel notification to avoid notifying a possible
+  piggyback. (1.0/1.1).
+
+* [fix] Updating regression tests (copyright).
+
+* [fix] Fixed bug inside vortex connection creation when timeout
+  activated, causing to lock the caller until consume all the timeout
+  for hosts refusing the connection rather than failing soon.  Missing
+  connection status check before receiving wrong greetings
+  reply. Reported by Jens Alfke (1.0/1.1).
+
+* [fix] Fixed wrong handling at TLS profile implementation causing to
+  not properly recover during TLS failures (TLS protocol handshake).
+  Fixed memory leak (error reply frame for TLS implementation wasn't
+  released). (1.0/1.1).
+
+* [fix] Making vortex client side implementation for TLS profile to not
+  unref the connection on protocol failure. Rather, return the
+  reference to the user the let the application space to implement its
+  error handling (1.0/1.1).
+
+* [fix] Updated vortex_connection_set_auto_tls documentation to
+  include more references about its function (1.0/1.1).
+
+* [fix] Fixed vortex_tls_start_negociation_sync to return a reference
+  to the connection received if a timeout is found (1.0/1.1).
+
+* [fix] Fixed bug inside xml-rpc-gen tool which was produced add to
+  array method without checking if the type held by the array could
+  support this.
+
+* [fix] removing not properly configured checking at
+  vortex_frame_send_raw causing to fail on nullified zero send operations.
+
+* [new] Updating vortex-regression-client to allow configuring the
+  regression listener location (and the associated BEEP proxy), taking
+  as default localhost location if no value is provided.
+
+* [fix] Updating vortex regression test 12 to include support to start
+  fake listener at the remote regression test, allowing to check
+  timeout support on separate hosts.
+
+* [fix] Fixed memory leak on connection failures, associated to the
+  error message.
+
+* [fix] Fixing bug which was causing to not properly implement
+  connection timeout (tcp connect wasn't limited by the
+  timeout). Reported by Jens Alfke.
+
+* [fix] Fixing change notify..
+
+* [fix] Enforcing to use axl library 0.4.15
+
+* [fix] Committing changes to use --ifnewer option from axl-knife to
+  build DTD files.
+
+* [fix] Committing change notification.
+
+* [fix] Taking advantage from axl-knife tool, now the library loads
+  its associated DTDs from an C inline representation generated,
+  removing the inconvenience to load dtd from files. Great.  Fix
+  applied on both branches.
+
+* [fix] Fixed wrong detection of the ctx creation handler at the
+  server side implementation of the TLS profile causing to fail
+  (because the key and certificate functions were not configured).
+  Reported and fixed by Jens Alfke.
+
+* [fix] More address modifications.
+
+* [fix] Change ASPL office location.
+
+* [fix] Updated vortex_channel_send_err documentation to include some
+  clarifications about its function.
+
+* [fix] Fixed missing check for references received (status and
+  status_message) at vortex_tls_start_negociation_sync, under a
+  timeout condition. Change applied to 1.0 and 1.1 branch. Reported by
+  Jens Alfke.
+
+* [fix] Fixed wrong openssl headers include causing building
+  environments without tls to fail. Fixed on both branches.
+
+* [fix] Updated vortex client greetings implementation to also advice
+  profiles supported. Initial patch provided by Antoine Mahé for 1.0
+  and now adapted to 1.1 branch.
+
+* [new] Updated regression test to reproduce and check the client
+  greetings advice support. Updated both branches.
+
+* [fix] Making vortex reader to not set as not connected a connection
+  broken that was found to be not possible to add to the watching
+  list.  Updated log message associated to not scare the
+  developer. Fix applied on both branches.
+
+* [fix] Making vortex_profiles_unregister to uninstall the profile
+  removed from an internal list used by vortex_profiles_* functions.
+  Fix applied on both branches.
+
+* [fix] Fixed race condition at the sasl auth negotiation, under case
+  where the remote peer has denied the SASL auth id. Bug fix applied
+  on both branches and checked against regression test.
+
+* [fix] Fixed sasl process error notification (there was some cases
+  the notification was done twice). Fixed on both branches.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+4th apr 2008, Madrid (Spain)

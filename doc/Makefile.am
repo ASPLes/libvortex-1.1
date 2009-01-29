@@ -5,7 +5,8 @@ EXTRA_DIST = vortex-doc.doxygen \
 	     main-page-logo.png \
 	     xml-rpc-invocation.png \
 	     vortex.css mime-structure.png af-arch.idl change-resource.idl \
-	     body_back.gif body-include.idl body-include-file.idl
+	     body_back.gif body-include.idl body-include-file.idl \
+	     vortex-components.png aspl-logo-header.png
 bin_SCRIPTS = initial_build_doc
 
 help:

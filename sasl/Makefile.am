@@ -1,4 +1,4 @@
-EXTRA_DIST = Makefile.win libvortex-sasl-1.1.def
+EXTRA_DIST = Makefile.win libvortex-sasl-1.1.def vortex-sasl.dtd.h
 
 if ENABLE_VORTEX_LOG
 INCLUDE_VORTEX_LOG=-DENABLE_VORTEX_LOG

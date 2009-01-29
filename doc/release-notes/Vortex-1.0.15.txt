@@ -1,0 +1,484 @@
+      ###################################################
+      ##              Vortex Library 1.0.15            ##
+      ## "The attack of the mutant protocols! release" ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.0.15 "The attack of the mutant protocols!" release
+  availability: an open source "BEEP Core" protocol implementation
+  written in C, mapped onto TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://fact.aspl.es
+      [Af-Arch homepage where Vortex Library is being developed]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+
+  Several bugs fixed and integrated into the regression test to
+  reproduce and check associated fix. General documentation update.
+
+  General BEEP engine update: support to read frame fragment on
+  greetings (low latency connections) and inside the BEEP header, to
+  control how is segmented a message via application handlers.
+
+  Mayor update to improve memory handling, reducing its requirements.
+
+  General update to fix wrong MIME implementation. Added real support
+  (a more capable API) to handle MIME (access to body content and
+  headers found).
+
+  All fixings and improvements were also ported into Vortex Library
+  1.1 repository.
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+
+  [1] vortex-sasl-rename-01
+  http://lists.aspl.es/pipermail/vortex/2008-April/000496.html
+
+Thanks to..
+~~~~~~~~~~~
+
+  - Jens Alfke (provided several suggestions and patches to fix bugs).
+
+  - Balaz Tirpak (provided patches and worked on vortex-sasl-rename-01
+  change notification).
+
+  - Mihail Dmitrievsky (provided complete description to fix a bug at 
+  the channel module).
+
+  - Benoit Amiaux (reported wrong deallocation handling at sasl
+    module).
+  
+
+Changes since 1.0.14
+~~~~~~~~~~~~~~~~~~~~
+
+* [fix] Moving two log messages from critical/warning to warning/debug
+  (closing connection wrongly configured at 1.0 and a log when the
+  channel is stalled). Reported by Jens Alfke.
+
+* [fix] Applied a fix to check channel reference received at channel
+  creation, under situation where it was denied by the remote side and
+  the threaded mode is activated. Reported and fixed by Jens
+  Alfke. Imported fix into 1.1.
+
+* [fix] Updated regression test to reproduce problem fixed by previous
+  log and check the fix introduced. Making regression test introduced
+  to check error codes returned by channel creation failures (profile
+  not supported: 554 and channel creation denied: 421). Update applied
+  to 1.0 and 1.1.
+
+* [fix] Updated vortex_channel_new documentation to state that the
+  channel reference can't be used until the process finish.
+
+* [fix] Fixed const declaration at vortex_sasl_accept_negociation and
+  vortex_sasl_accept_negociation_full. Reported by Dexter.
+
+* [fix] Fixed wrong internal handling for reply sent on a channel
+  which wasn't checking if the reply sent was complete causing to
+  signal more replies sent than actual value. Updated regression test
+  to reproduce and check this problem that was causing a peer to not
+  be able to close a connection after sending huge replies.  Fixed
+  introduced in 1.0 and 1.1. Problem reported by Mihail Dmitrievsky.
+
+* [new] Moving from internal API to the public the following function
+  that allows to wait if all replies were sent for a particular
+  channel. API added:
+
+   - vortex_channel_block_until_replies_are_sent
+
+* [fix] Moving all files to utf-8.
+
+* [fix] Committing change notification vortex-sasl-rename-01
+  (Proposed with Patch by Balazs Tirpak).
+
+* [fix] Applying change vortex-sasl-rename-01 provided by accepted
+  change notification (Balazs Tirpak).
+
+* [fix] Updated vortex_connection_shutdown to better reflect its
+  functions and how it interacts with the side that created the
+  connection and its associated reference counting.
+
+* [fix] Added new regression test to check wait reply
+  function. Nothing to fix for now. Updated vortex_channel_wait_reply
+  function to explain some details and to state that
+  vortex_frame_unref must be used to deallocate frame returned. Ported
+  changes into 1.1 series.
+
+* [new] Added new function to vortex frame module to check current
+  reference counting status. Ported changes into 1.1 series.
+
+* [fix] Renaming internal type GsaslData into VortexGsaslData to avoid
+  type confusion. Checked all calls to axl_free and replaced those
+  that require gsasl_free to be used (to ensure the allocation engine
+  used from gsasl is the same used to release resources).  Reported by
+  Benoit Amiaux. Change introduced into 1.0 and imported into
+  1.1. Check regression test.
+
+* [fix] Updating internal vortex sequencer implementation to support
+  any frame size to split into. It was only supported to splitting up
+  to fill all the available receiver's buffer. Change applied to
+  1.0/1.1.
+
+* [fix] Fixed vortex initial greetings processing to support reading
+  greetings fragmented (rather assuming a single shot). Change applied
+  to 1.0/1.1. Bug reported by Jens Alfke.
+
+* [fix] Committing missing change that implements updates at the
+  vortex sequencer module.
+
+* [fix] Updated vortex sequencer module to acquire a reference to the
+  channel associated to a pending transfer and to release it once
+  finished (fixed race condition on high load data send followed by a
+  close). Ported changed into 1.1.
+
+* [new] Updated vortex sequencer to allow handling any size of frame
+  splitting and to check if the channel allows more content to be sent
+  rather putting into sleep waiting for the next SEQ frame. Updated
+  vortex sequencer internals to call to a external function that
+  defines how many data is to be sent on the next frame
+  produced. Using new function:
+  vortex_channel_get_next_frame_size. Ported change into 1.1
+
+* [new] Updated vortex channel and handlers to include support to
+  configure a handler that allows to control how many data must be
+  used to produce next frame at the sequencer. This will allow to
+  implement sender patterns that better fits low latency or high
+  bandwidth connections. Ported change into 1.1. API added:
+
+    - vortex_channel_get_next_frame_size
+    - vortex_channel_set_next_frame_size_handler (configure)
+    - VortexChannelFrameSize (handler)
+
+* [fix] Updated vortex_channel_ref to check if the channel is opened
+  and if the ref counting is ok. Ported fix into 1.1.
+
+* [fix] Making vortex channel to clear its reference to the sequencer
+  data before posting fixing a possible race condition. Ported fix
+  into 1.1.
+
+* [new] Updated vortex regression test to include initial
+  implementation to check vortex bandwidth performance. Updated
+  regression test options to allow disabling timing checks (useful
+  when running regression test with valgrind and similar
+  tools). Ported update into 1.1
+  
+* [fix] Update into the listener side connection accept engine to
+  support frame fragmentation on greetings. Updated regression test to
+  simulate and check this new feature. Ported into 1.1 series.
+
+* [new] Updated vortex connection module to include new functions to
+  provide and get a frame segmentation which will operate globally to
+  all channels if no segmentator is found on the particular channel.
+  Also added a global segmentator support which is used in the channel
+  no segmentator for the connection and the channel is found. API
+  added:
+
+    - vortex_connection_get_next_frame_size
+    - vortex_connection_set_next_frame_size_handler
+    - vortex_connection_set_default_next_frame_size_handler
+
+  Changes introduced in both series (1.0/1.1).
+
+* [new] Added a new function and internal modifications to implement
+  channel window change. Patch provided by Jens Alfke. Applied
+  modified and updated regression test to check transfer rate and the
+  new API introduced. Ported API updated and regression test to 1.1
+  series.  API added:
+
+   - vortex_channel_set_window_size
+
+* [new] Added support to regression test to allow executing a single
+  test selected. Changed ported to 1.1 series.
+
+* [fix] Separating part of test_02g into test_02h. Changed ported into
+  1.1
+
+* [fix] Updated vortex_channel_is_ready documentation to signify it
+  only cares about pending replies for messages sent, not those
+  received.
+
+* [fix] Changing function prototype to return (int) for
+  vortex_connection_get_mss.
+
+* [new] Added new error symbol (VORTEX_EAGAIN) to handle EAGAIN error.
+
+* [fix] Making vortex_frame_send_raw to be more robust against write
+  operation errors. This was exposed by new window size change support
+  causing more data to be written. Making vortex_frame_get_next to
+  also be more robust against frame fragmentation. Several updates
+  introduced into regression test to reproduce and check fix
+  introduced.
+
+* [fix] Updated regression test to check unref after close operation
+  on a channel. No bug was found. Ported change into 1.1.
+
+* [fix] Making vortex_channel_unref to check reference and internal
+  reference counting before proceeding.
+
+* [fix] Making vortex_channel_ref to now check ->is_opened
+  flag. Updating vortex_xml_rpc_invoke to get a reference to the
+  channel during the invocation process (released later by
+  __vortex_xml_rpc_invoke). Ported to 1.1.
+
+* [fix] Updated documentation (fixing typos).
+
+* [fix] making vortex connection establishment to support frame
+  fragmentation on greetings frame, that is, a partial frame received,
+  still not complete.  Applied fix 1.0 and 1.1. This fixes a bug
+  exposed while using vortex on high latency connections.
+
+* [fix] Fixed wrong frame more flag checking at
+  vortex_greetings_process. Fix applied to 1.0 and 1.1.
+
+* [fix] Updated vortex frame module to support content fragmentation
+  at the BEEP header. This fixes a bug exposed while using vortex on
+  high latency connections with low bandwidth. Fixed applied to 1.0
+  and 1.1 Checked against regression test_02f, test_02g and test_02h.
+
+* [fix] Updated vortex_frame_get_more_flag to explain to how use the
+  function to check for the flag in a proper manner. (1.0/1.1).
+
+* [fix] Making vortex_channel_get_data and vortex_channel_get_data to
+  check internal reference to the hash used. Updated
+  vortex_connection_new_empty_from_connection to create an empty hash
+  rather than moving and nullify the reference. Fixed in 1.0/1.1. Bug
+  reported by Jens Alfke.
+
+* [fix] Flagging vortex_connection_get_mss to be non-portable due to
+  windows API limitations.
+
+* [fix] Fixing compilation bug at vortex_connection_get_mss.
+
+* [new] General commit to properly implement MIME support inside
+  Vortex (committing update into 1.0/1.1). Still some work is required
+  though regression tests are passed. Now vortex fully support MIME
+  structured format (still missing multipart) allowing to get all
+  headers found in an incoming message. Also fixes bug produced by not
+  introducing a CR+LF prefixing content without MIME headers. Added
+  initial regression test (test_01d) to check MIME parser. API added:
+
+   - vortex_frame_mime_process
+   - vortex_frame_set_mime_header
+   - vortex_frame_get_mime_header
+   - vortex_frame_get_mime_header_name
+   - vortex_frame_get_mime_header_content
+   - vortex_frame_get_mime_header_next
+   - vortex_frame_get_mime_header_count
+   - vortex_frame_get_content
+   - vortex_frame_get_content_size
+   - VORTEX_FRAME_GET_MIME_HEADER
+
+* [fix] Updating autogen.sh files to make all warnings to be errors.
+
+* [fix] Removing not required checks at
+  vortex_connection_invoke_receive (1.0/1.1).
+
+* [fix] Updated MIME internal implementation inside frame, to remove
+  axlHash usage, replacing it with a custom structure to better fit
+  MIME requirements.
+
+* [fix] Updated regression test.
+
+* [fix] Making vortex sequencer SEQ frame received processing to be
+  pushed at the head of the queue to increase priority (1.0/1.1).
+
+* [new] Updated vortex async queue API to include a function that
+  allows to push data directly into the first position (next item to
+  be popped). API added:
+  
+   - vortex_async_queue_priority_push
+   - QUEUE_PRIORITY_PUSH (macro)
+
+* [fix] Fixed vortex_connection_close wrong memory access, caused by
+  calling to the function at the listener side, with a connection in
+  listener or master mode. Added internal checks to properly unref
+  when required.  (Fixed in 1.0/1.1).
+
+* [fix] Removing wrong condition at vortex_frame_get_next (1.0/1.1).
+
+* [new] Committing files to explain BTF syndrome and how it degrades
+  BEEP performance. Still working on it.
+
+* [fix] Refactored vortex sequencer internal code to make it more easy
+  to maintain to allow moving it into new features. (1.0/1.1)
+
+* [fix] Making SEQ frame notification handling to always issue a SEQ
+  frame if a NUL frame is received (to avoid BTF). (1.0/1.1).
+
+* [fix] Making vortex reader check and issue SEQ frames as soon as
+  possible.  (1.0/1.1).
+
+* [fix] Making connection creation to disable Nagle's algorithm by
+  default to avoid BTF (http://www.aspl.es/vortex/btf.html).
+
+* [fix] Committing updates to the BTF document (1.0/1.1).
+
+* [fix] Making vortex sequencer to reuse an internal buffer to perform
+  send operations, reducing the allocation/deallocation pattern for
+  each send (1.0/1.1).
+
+* [fix] Making vortex reader to use an internal buffer for SEQ frames
+  produced to avoid alloc/dealloc operations for each SEQ frame
+  notification (1.0/1.1).
+
+* [new] Updated vortex frame API to include new functions to produce
+  frames on a provided buffer. API added:
+
+   - vortex_frame_seq_build_up_from_params_buffer
+   - vortex_frame_build_up_from_params_s_buffer
+
+* [fix] Updating vortex_channel_set_serialize documentation to better
+  explain its function and how to use the function at the listener
+  side.
+
+* [fix] Improved close in transit support by checking more scenarios,
+  while supporting previous ones. Removed wait reply once an
+  affirmative reply is found to avoid generating a fake accept when it
+  is not required. (1.0/1.1). Funny.
+
+* [fix] Updated regression test and vortex engine to support ordered
+  delivery at the server side (activated by
+  vortex_channel_set_serialize) which wasn't implemented. Test 02i
+  reproduce and check the enforced ordered delivery.
+
+* [fix] Moved WaitReplyData structure to vortex channel module to
+  avoid exposing its details to the API.
+  
+* [fix] Making vortex_connection_is_blocked and
+  vortex_connection_block internal handling to be done with a direct
+  variable inside the VortexConnection structure to avoid using the
+  general purpose hash to store its state, improving 4,12% vortex
+  reader loop. Fix (1.0/1.1).
+
+* [fix] Fixing vortex_frame_get_next to avoid calling to
+  axl_stream_cmp 5 times to check the BEEP header (missing else if was
+  causing not required function activations). Fix (1.0/1.1).
+
+* [fix] Making vortex_frame_get_next to avoid allocating twice memory
+  for each frame received. Now the function reuse the buffer used to
+  receive the frame ans holder for the VortexFrame structure received.
+  Fix (1.0/1.1).
+
+* [fix] Updated regression test_04a to check different sizes and
+  number of blocks to transfer. (1.0/1.1).
+
+* [new] Updated vortex profiles API to include two new functions as
+  part of the automatic MIME header addition configuration at profile
+  level.  (1.0/1.1) API added:
+  
+    - vortex_profiles_set_automatic_mime
+    - vortex_profiles_get_automatic_mime
+
+* [fix] Making internal frame MIME state to implement a reference
+  counting mechanism to share the information between several
+  frames. Especially used by vortex_frame_copy. Fix applied to
+  1.0/1.1.
+
+* [new] Implemented library level MIME header automatic addition
+  configuration through a new item at vortex_conf_set/get. (1.0/1.1)
+  API added:
+
+    - VORTEX_AUTOMATIC_MIME_HANDLING (enum)
+
+  Updated vortex_conf_set/get to properly support this new value.
+
+* [new] Implemented channel level automatic MIME header addition.
+  (1.0/1.1) API added:
+    
+     - vortex_channel_set_automatic_mime
+     - vortex_channel_get_automatic_mime
+
+* [fix] Updated vortex channel module documentation (1.0/1.1)
+
+* [fix] Fixed race deallocation condition at second level 
+  frame received execution. Applied fix at (1.0/1.1).
+
+* [fix] Finished initial implementation with full MIME structure
+  support.  Added regression test to check features introduced
+  (test_01d). Still more documentation is required (1.0/1.1).
+
+* [fix] Fixed autoconf files to detect mingw platform and add ws2_lib
+  reference to the linker. Applied patch into 1.0/1.1.
+
+* [fix] Enforcing reference to axl 0.5.3 release.
+
+* [fix] Committing changes to MIME documentation.
+
+* [fix] More documentation about MIME (1.0/1.1).
+
+* [fix] Committing more documentation to explain how applies MIME
+  support to sending functions (1.0/1.1).
+
+* [fix] Fix bug at vortex_connection_cleanup which wasn't properly
+  terminating a mutex (connection_new_notify_mutex). It was
+  initializing it again! (????).
+
+* [fix] Improved MIME regression tests and fixed some bugs under
+  situations were messages received aren't MIME ready. (1.0/1.1).
+
+* [fix] Fixed wrong documentation associated to
+  VORTEX_AUTOMATIC_MIME_HANDLING. (1.0/1.1).
+
+* [fix] Making vortex_frame_get_content_type and 
+  vortex_frame_get_transfer_encoding to return NULL if it is found
+  a frame without MIME content. (1.0/1.1).
+
+* [fix] Making vortex_frame_get_content to return the payload 
+  (raw message) in the case a non-MIME message was received.
+
+* [fix] Fixed regression test for MIME support on windows (fopen
+  ("rb")) (1.0/1.1).
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line is leading the Af-Arch project: a
+  complete framework to develop distributed application to manage
+  enterprise process.
+
+  Af-Arch project relies on Vortex Library to exchange data between
+  its distributed nodes.
+
+  Advanced Software Production Line also provides GNU/Linux support
+  and consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+4th jul 2008, Madrid (Spain)
