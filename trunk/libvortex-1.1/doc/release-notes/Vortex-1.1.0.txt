@@ -1,0 +1,126 @@
+
+      ###################################################
+      ##              Vortex Library 1.1.0             ##
+      ##            "Masters of War release"           ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.1.0 "Masters of War" release availability: an open source
+  "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.aspl.es/turbulence
+      [Turbulence BEEP server homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+Vortex Library 1.1: next step into BEEP development
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  After one year of work, this is the first official release for
+  Vortex Library 1.1 series which includes a new set of core changes
+  and new features to make the library more usable and extensible than
+  previous 1.0 series.
+
+  #### Context based API ####
+
+  Vortex Library 1.1 has a general API update to make the library
+  context-based, storing all status and user configuration into an
+  external opaque object inside the user space, making the library
+  fully stateless.
+
+  This allows to have several independent Vortex execution contexts
+  inside the same process or doing administrative tasks like, for
+  example stopping a particular context.
+
+  This API change is a core fundamental change required by Turbulence
+  BEEP application server to allow its function on Microsoft Windows
+  platform.
+
+  #### Library separation: modular design ####
+
+  Now Vortex Library 1.1 is composed by a base library and a set of
+  extension libraries that provides additional functionality like
+  profiles or specific APIs.
+
+  This change allows to reduce installation elements and to allow
+  developers and distributors to select only those components used.
+
+  Rather than including all features into a single library (like
+  Vortex Library 1.0) this will allow independent development for each
+  piece of code and will improve extension developments.
+
+  #### PULL API: single threaded API ####
+
+  Vortex Library 1.1 now includes a single threaded API for those
+  scenarios where all events must be handled inside the same main
+  thread in a non-blocking manner.
+
+  PULL API is implemented as an extension library that, once connected
+  to the base library, marshalls all async events into pullable events
+  that are fetched from a single loop.
+
+  #### HTTP CONNECT: HTTP proxy support for BEEP peers ####
+  
+  A interesting extension library that allows creating BEEP clients
+  that can connect to remote BEEP servers by using a local HTTP proxy,
+  allowing better integration in those scenarios where a local
+  firewall do not allow direct connections.
+
+Long list of changes
+~~~~~~~~~~~~~~~~~~~~
+
+  Vortex Library 1.1 was developed in parallel with 1.0 series during
+  the last year making some improvements to be imported from/to 1.0
+  series. The following is the list of all changes that also includes
+  some changes already notified in previous 1.0 releases:
+
+    http://www.aspl.es/vortex/changes-from-1.0.txt
+
+Many thanks to
+~~~~~~~~~~~~~~
+
+Many thanks to people that have provided suggestions, comments,
+patches, etc, helping to create Vortex Library 1.1. Special mention to
+Sam Roberts, Benoit Amiaux, Jens Alfke, Mihail Dmitrievsky, Martin
+Huter and Balazs Tirpak.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+29th Jan 2009, Madrid (Spain)

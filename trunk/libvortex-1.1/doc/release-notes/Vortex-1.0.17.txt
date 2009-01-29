@@ -1,0 +1,128 @@
+      ###################################################
+      ##              Vortex Library 1.0.17            ##
+      ##               "Lost Keys release"             ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.0.17 "Lost Keys" release availability: an open source
+  "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library has been developed inside the Af-Arch project as its
+  data transport layer.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit. Currently it is running under Microsoft Windows
+  and GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+The release in short
+~~~~~~~~~~~~~~~~~~~~
+
+  Several bug fixes, especially MSG number support so values can be
+  reused as long as they are replied (as defined by RFC). Also fixed
+  support to transfer more than 4GB in the same channel.
+
+Thanks to..
+~~~~~~~~~~~
+  Sam Roberts (provided several patches and valuable suggestions to
+  fix MSG number support).
+
+  Benoit Amiaux (provided patches to fix compilation warnings).
+
+  Szilard Pfeiffer (reported wrong usage of INT_TO_PTR).
+
+Changes since 1.0.16
+~~~~~~~~~~~~~~~~~~~~
+
+* [fix] Applied patch to solve minor compilation warnings 
+  provided by Benoit Amiaux. Imported patch into 1.1 branch.
+
+* [fix] Wrong use of INT_TO_PTR applied on a pointer reference which
+  causes segmentation faults on 64bits platforms. Bug reported with
+  initial fixings by Szilard Pfeiffer. Imported fix into 1.1 branch.
+
+* [fix] Fixing test vortex-listener-connections.c with patch provided
+  by Sam Roberts (additional modifications were required).  Reworked
+  patch to apply it on 1.1 branch.
+
+* [fix] Making vortex sequencer module to be stopped after vortex
+  reader module (1.0/1.1).
+
+* [fix] Making vortex_support_unsetenv to be programmed internally
+  with setenv. This avoids using unsetenv. Removed unsetenv
+  declaration from vortex header.
+
+* [fix] Updating exarg files (1.0/1.1) for xml-rpc-gen tool.
+
+* [fix] Adding documentation about transferring files.
+
+* [fix] General engine update to allow remote BEEP peers to reuse MSG
+  no in the range of 0..2147483647 while connecting to Vortex,
+  allowing to reuse those MSG numbers as long as they are replied.
+
+  Thanks to Sam Roberts who reported and provided useful comments to
+  fix this issue. Created a regression test to check new support
+  introduced. 
+
+  Even having updated MSG number checking support vortex will still
+  use its current MSG number generation pattern (starting from 0 and
+  going to 2147483647 by updating 1 unit).  Applied updated to
+  1.0/1.1.
+
+* [fix] Added more msg no sequences to check on test_02n. Applied to
+  1.0/1.1. Nothing fixed.
+
+* [fix] Making vortex_channel_get_next_msg_no to reset proposed value
+  if limit is reached. (1.0/1.1).
+
+* [fix] Checked and fixed support to transfer more than 4GB over the
+  same channel, reusing seqno values (ranging from 0 up to
+  4294967295). Added regression test to simulate a large transfer
+  (test 02-o). Applied 1.0/1.1.
+
+* [fix] Fixing exarg_strdup_printfv to get it compiled and working on
+  windows. Updated associated projects using libexarg files.
+
+* [fix] Making xml-rpc-gen tool to translate xml definitions due to
+  CDATA content. Fix imported into 1.0 series.
+
+* [fix] Fixed memory leak (frame unref) when msgno value is reused
+  without reply. Backported fix into 1.0.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+22th jan 2009, Madrid (Spain)
