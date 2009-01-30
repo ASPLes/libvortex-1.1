@@ -69,6 +69,10 @@ div.link table {
   margin-left: 40px;
 }
 
+div.link td { 
+  vertical-align: top;
+}
+
 .page a:link { 
   color: #3786ea;
 }
