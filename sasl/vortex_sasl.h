@@ -41,9 +41,6 @@
 /* include base library */
 #include <vortex.h>
 
-/* include inline dtds */
-#include <vortex-sasl.dtd.h>
-
 /**
  * \addtogroup vortex_sasl
  * @{

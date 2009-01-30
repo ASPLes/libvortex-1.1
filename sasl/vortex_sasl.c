@@ -39,6 +39,9 @@
 /* include local module */
 #include <vortex_sasl.h>
 
+/* include inline dtds */
+#include <vortex-sasl.dtd.h>
+
 #if defined(AXL_OS_UNIX)
 #include <unistd.h> /* gethostname */
 #endif
