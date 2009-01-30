@@ -4,9 +4,11 @@ It was downloaded from http://www.aspl.es/vortex
 
 Upstream Author: Advanced Software Production Line, S.L.
 
-Copyright: 2008 Advanced Software Production Line, S.L.
+Copyright: 2009 Advanced Software Production Line, S.L.
 
 License: Vortex Library 1.1 is license under the LGPL 2.1
+         xml-rpc-gen-1.1 and vortex-client tool are licensed 
+         under GPL.
 
 The Debian packaging is (C) 2008, Advanced Software Production Line, S.L.
 is licensed under the GPL, see `/usr/share/common-licenses/GPL'.
