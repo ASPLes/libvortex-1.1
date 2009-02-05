@@ -275,7 +275,7 @@ span.item-description {
 
 .using { 
   padding-bottom: 20px;
-  border-bottom: 1px solid #cc0000;
+/*  border-bottom: 1px solid #cc0000; */
 }
 
 .using img { 
@@ -335,4 +335,22 @@ span.item-description {
   border: 1px solid white;
   padding: 2px;
   font-weight: bold;
+}
+
+.testimonial-content { 
+  font-style: italic;
+  font-weight: bold;
+  width: 100%;
+  margin: 0px;
+  padding-left: 10px;
+  padding-bottom: 10px;
+ 
+}
+
+.testimonial-author { 
+  font-style: normal;
+  margin: 0px;
+  padding: 0px;
+  position: relative; left: 65%; top: 0%; z-index: 1;
+  font-weight: normal;
 }
