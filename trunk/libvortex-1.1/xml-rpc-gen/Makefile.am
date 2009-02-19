@@ -51,8 +51,11 @@ exarg.h exarg.c:
 	test -e exarg.h || cp ../../libexarg/src/exarg.h .
 	test -e exarg.c || cp ../../libexarg/src/exarg.c .
 
+xml-rpc.dtd.h: xml-rpc.dtd
+	axl-knife --input xml-rpc.dtd --dtd-to-c --output xml-rpc.dtd.h --ifnewer
 
-xml_rpc_gen_1_1_SOURCES = exarg.h exarg.c xml-rpc-gen.c xml-rpc.h \
+
+xml_rpc_gen_1_1_SOURCES = exarg.h exarg.c xml-rpc-gen.c xml-rpc.h xml-rpc.dtd.h \
 	xml-rpc-support.h xml-rpc-support.c \
 	xml-rpc-c-stub.h xml-rpc-c-stub.c \
 	xml-rpc-autoconf.h xml-rpc-autoconf.c \

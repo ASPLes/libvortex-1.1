@@ -22,6 +22,8 @@
 /* global include */
 #include <xml-rpc.h>
 
+/* local dtd include */
+#include <xml-rpc.dtd.h>
 
 #define HELP_HEADER "xml-rpc-gen-1.1: a protocol compiler for the XDL language\n\
 Copyright (C) 2006  Advanced Software Production Line, S.L.\n\n"
@@ -275,7 +277,6 @@ void xml_rpc_gen_compile ()
 int main (int argc, char **argv)
 {
 	axlError   * error;
-	char       * file;
 	char      ** paths;
 	int          iterator;
 
@@ -350,19 +351,8 @@ int main (int argc, char **argv)
 	/* init the axl library and load the DTD */
 	axl_init ();
 	
-	/* file the file to load */
-	file = xml_rpc_support_find_data_file ("xml-rpc.dtd");
-	if (file == NULL) {
-		/* show error found */
-		fprintf (stderr, "error: unable to find DTD definition: 'xml-rpc.dtd', check your installation\n");
-
-		/* terminate xml-rpc-gen tool */
-		xml_rpc_gen_finish ();
-		return -1;
-	}
-
 	/* load the DTD XML-RPC definition */
-	dtd = axl_dtd_parse_from_file (file, &error);
+	dtd = axl_dtd_parse (XML_RPC_DTD, -1, &error);
 	if (dtd == NULL) {
 		/* show error found */
 		fprintf (stderr, "error: unable to load dtd file '%s', check your installation, \n%s\n",
@@ -374,9 +364,6 @@ int main (int argc, char **argv)
 		return -1;
 	}
 	
-	/* release the file path created */
-	axl_free (file);
-
 	/* check and show program version */
 	if (exarg_is_defined ("version")) {
 		/* show current version */
