@@ -40,6 +40,8 @@
 
 #include <vortex.h>
 
+BEGIN_C_DECLS
+
 /**
  * \addtogroup vortex_tls 
  * @{ 
@@ -126,6 +128,8 @@ axl_bool           vortex_tls_auto_tlsfixate_conection   (VortexCtx             
 							  VortexConnection       ** new_conn,
 							  VortexConnectionStage    stage,
 							  axlPointer               user_data);
+
+END_C_DECLS
 
 #endif
 /* @} */

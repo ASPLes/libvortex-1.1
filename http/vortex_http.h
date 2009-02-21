@@ -40,6 +40,8 @@
 
 #include <vortex.h>
 
+BEGIN_C_DECLS
+
 /**
  * \addtogroup vortex_http
  * @{
@@ -86,6 +88,8 @@ VortexConnection * vortex_http_connection_new (const char           * host,
 					       axlPointer             user_data);
 
 axl_bool           vortex_http_connection_is_proxied (VortexConnection * conn);
+
+END_C_DECLS
 
 #endif
 

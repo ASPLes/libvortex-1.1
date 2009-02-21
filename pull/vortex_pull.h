@@ -40,6 +40,8 @@
 
 #include <vortex.h>
 
+BEGIN_C_DECLS
+
 /**
  * \addtogroup vortex_pull
  * @{
@@ -276,6 +278,8 @@ axl_bool           vortex_pull_start_handler               (char              * 
 							    char             ** profile_content_reply,
 							    VortexEncoding      encoding,
 							    axlPointer          user_data);
+
+END_C_DECLS
 
 #endif
 

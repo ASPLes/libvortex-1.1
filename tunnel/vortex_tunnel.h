@@ -40,6 +40,8 @@
 
 #include <vortex.h>
 
+BEGIN_C_DECLS
+
 /**
  * \addtogroup vortex_tunnel
  * @{
@@ -197,6 +199,9 @@ VortexConnection     * __vortex_tunnel_new_common       (VortexTunnelSettings * 
 							 axl_bool               do_tunning_rest,
 							 VortexConnectionNew    on_connected,
 							 axlPointer             user_data);
+
+END_C_DECLS
+
 #endif
 
 /* @} */
