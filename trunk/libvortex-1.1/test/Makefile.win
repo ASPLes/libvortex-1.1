@@ -103,7 +103,7 @@ links:
 	cp ../../libaxl/src/libaxl.dll .
 	cp $(OPENSSL_LIBS) .
 	cp $(GSASL_LIBS) .
-	strip --strip-unneeded libgsasl-7.dll libgcrypt-11.dll libgpg-error-0.dll
+	strip --strip-unneeded libgsasl-7.dll
 
 %.o: %.c
 	$(CC) -c $< -o $@ $(CFLAGS)
