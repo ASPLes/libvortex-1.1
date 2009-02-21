@@ -41,6 +41,8 @@
 /* include base library */
 #include <vortex.h>
 
+BEGIN_C_DECLS
+
 /**
  * \addtogroup vortex_sasl
  * @{
@@ -567,6 +569,7 @@ axl_bool           vortex_sasl_accept_negotiation_full        (VortexCtx  * ctx,
 							       const char * mech, 
 							       axlPointer user_data);
 
+END_C_DECLS
        
 #endif
 

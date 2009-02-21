@@ -39,6 +39,8 @@
 /* include main header */
 #include <vortex.h>
 
+BEGIN_C_DECLS
+
 /* include types */
 #include <vortex_xml_rpc_types.h>
 
@@ -388,6 +390,8 @@ axlPointer vortex_xml_rpc_unmarshall_array_sync (XmlRpcMethodResponse    * respo
 axl_bool  vortex_xml_rpc_init    (VortexCtx * ctx);
 
 void      vortex_xml_rpc_cleanup (VortexCtx * ctx);
+
+END_C_DECLS
 
 #endif
 
