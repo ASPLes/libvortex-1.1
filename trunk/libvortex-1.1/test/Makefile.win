@@ -102,8 +102,11 @@ links:
 	cp ../data/*.dtd .
 	cp ../../libaxl/src/libaxl.dll .
 	cp $(OPENSSL_LIBS) .
+        # copy gsasl libraries and strip them
 	cp $(GSASL_LIBS) .
 	strip --strip-unneeded libgsasl-7.dll
+	strip --strip-unneeded libgcrypt-11.dll
+	strip --strip-unneeded libgpg-error-0.dll
 
 %.o: %.c
 	$(CC) -c $< -o $@ $(CFLAGS)
