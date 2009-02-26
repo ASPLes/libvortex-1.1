@@ -5338,16 +5338,18 @@ typedef struct _ReceivedInvokeData {
 	 } /* end if */                                                                                              \
    } /* end if */                                                                                                    \
                                                                                                                      \
-   /* if the frame previously handled was a */                                                                       \
-   /* unlock */                                                                                                      \
-   vortex_mutex_unlock   (&mutex);                                                                                   \
-                                                                                                                     \
    if (frame != NULL) {                                                                                              \
-       vortex_log (VORTEX_LEVEL_WARNING, "restored frame that can now be delivered");                    \
+       vortex_log (VORTEX_LEVEL_WARNING, "restored frame that can now be delivered");                                \
        /* deliver the frame as received */                                                                           \
        (*caller_frame) = frame;                                                                                      \
+                                                                                                                     \
+       /* unlock */                                                                                                  \
+       vortex_mutex_unlock   (&mutex);                                                                               \
        return axl_true;                                                                                              \
    } /* end if */                                                                                                    \
+                                                                                                                     \
+   /* unlock */                                                                                                      \
+   vortex_mutex_unlock   (&mutex);                                                                                   \
 }while(0);
 
 
