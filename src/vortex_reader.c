@@ -289,7 +289,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	axl_bool           more;
 	char             * raw_frame;
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "something to read");
+	vortex_log (VORTEX_LEVEL_DEBUG, "something to read conn-id=%d", vortex_connection_get_id (connection));
 
 	/* check if there are pre read handler to be executed on this 
 	   connection. */
