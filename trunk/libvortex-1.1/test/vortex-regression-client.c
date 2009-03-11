@@ -495,9 +495,10 @@ axl_bool  test_01a (void) {
 	return axl_true;
 }
 
-void test_01b_created (int             channel_num, 
-		       VortexChannel * channel, 
-		       axlPointer      user_data)
+void test_01b_created (int                channel_num, 
+		       VortexChannel    * channel, 
+		       VortexConnection * conn,
+		       axlPointer         user_data)
 {
 	VortexAsyncQueue * queue = user_data;
 
@@ -1566,7 +1567,10 @@ axl_bool  test_01d (void) {
 
 #define TEST_02_MAX_CHANNELS 24
 
-void test_02_channel_created (int channel_num, VortexChannel * channel, axlPointer user_data)
+void test_02_channel_created (int                channel_num, 
+			      VortexChannel    * channel, 
+			      VortexConnection * conn, 
+			      axlPointer         user_data)
 {
 	
 	/* check error code received */
@@ -3676,10 +3680,11 @@ axl_bool  test_02m2 (void) {
 axl_bool test_02n_check_sequence (VortexChannel * channel, VortexAsyncQueue * queue, 
 				  int first, int second, int third, int fourth)
 {
-	int           msg_no   = -1;
-	int           msg_no_used;
-	int           iterator = 0;
-	VortexFrame * frame;
+	int                msg_no   = -1;
+	int                msg_no_used;
+	int                iterator = 0;
+	VortexFrame      * frame;
+	VortexAsyncQueue * sleep_queue = vortex_async_queue_new ();
 
 	/* do sends operations */
 	while (iterator < 4) {
@@ -3719,6 +3724,9 @@ axl_bool test_02n_check_sequence (VortexChannel * channel, VortexAsyncQueue * qu
 			return axl_false;
 		}
 		printf ("Test 02-n: sent message with msgno %d..\n", msg_no);
+
+		/* after each send, wait a bit */
+		vortex_async_queue_timedpop (sleep_queue, 2000);
 
 		/* next iterator */
 		iterator++;
@@ -3768,6 +3776,8 @@ axl_bool test_02n_check_sequence (VortexChannel * channel, VortexAsyncQueue * qu
 		/* next iterator */
 		iterator++;
 	} /* end if */
+
+	vortex_async_queue_unref (sleep_queue);
 	
 	return axl_true;
 }

@@ -1,0 +1,68 @@
+
+       #####################################
+       ####     Change notification     ####
+       #####################################
+
+    Change Id: vortex-notify-start-01
+ Project name: Vortex Library
+  Included in: already included and to be shipped with next stable release
+               1.1.1
+       Status: NOTIFY
+       Author: Francis Brosnan Blázquez
+
+Motivation
+~~~~~~~~~~
+
+Current definition of VortexOnChannelCreated do not provide a
+reference to the connection under which the channel start request was
+issued.
+
+Because the channel reference provided on that function is NULL if
+channel start fails, the only way to get errors found is to call to
+vortex_connection_pop_channel_error. However, it is required a
+reference to the connection under which the channel start took place.
+
+This change notification modifies the VortexOnChannelCreated handler
+definition to include a reference to the connection used.
+
+Change Description
+~~~~~~~~~~~~~~~~~~
+
+New definition includes a reference to the connection where the
+channel start was issued as follows:
+
+typedef void (* VortexOnChannelCreated) (int                channel_num, 
+                                         VortexChannel    * channel, 
+					 VortexConnection * conn,
+					 axlPointer         user_data);
+
+
+Solution to incompatibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This change notification creates an API and binary incompatibility for
+those users creating channels in an async manner, using
+VortexOnChannelCreated handler.
+
+If your code create channels using NULL for the last two parameters
+of:
+
+  - vortex_channel_new
+  - vortex_channel_new_full
+  - vortex_channel_new_fullv
+
+..then the change have no effect for you. Otherwise, an update for the
+handler receiving the channel start reply must be updated as indicated
+previously.
+
+
+References
+~~~~~~~~~~
+[1] Project link: 
+    http://vortex.aspl.es
+
+[2] Change notification published by the project:
+    http://vortex.aspl.es/doc.html
+
+[3] Change notification definition
+    http://www.aspl.es/change/change-notification.txt
