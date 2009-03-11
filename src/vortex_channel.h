@@ -89,6 +89,7 @@ VortexChannel     * vortex_channel_new_fullv                   (VortexConnection
 								const char            * profile_content_format, 
 								...);
 
+
 axl_bool           vortex_channel_close_full                   (VortexChannel * channel, 
 								VortexOnClosedNotificationFull on_closed, 
 								axlPointer user_data);

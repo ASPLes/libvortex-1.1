@@ -1144,7 +1144,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
  * @param close_user_data      user data to be passed in to close handler.
  * @param received             handler to manage frame reception on channel.
  * @param received_user_data   data to be passed in to <i>received</i> handler.
- * @param on_channel_created   a callback to be able to make channel process to be async.
+ * @param on_channel_created   An async callback where the channel creation is notified. Defining this callback makes the function to not block the caller.
  * @param user_data            user data to be passed in to \ref VortexOnChannelCreated "on_channel_created".
  * 
  * @return The newly created channel or NULL if fails under
@@ -1229,7 +1229,7 @@ VortexChannel * vortex_channel_new (VortexConnection      * connection,
  * @param close_user_data      User data to be passed in to close handler.
  * @param received             Handler to manage frame reception on channel.
  * @param received_user_data   Data to be passed in to <i>received</i> handler.
- * @param on_channel_created   A callback to be able to make channel process to be async.
+ * @param on_channel_created   An async callback where the channel creation is notified. Defining this callback makes the function to not block the caller.
  * @param user_data            User data to be passed in to \ref VortexOnChannelCreated "on_channel_created".
  * 
  * @return the newly created channel or NULL if fails under
@@ -1317,7 +1317,7 @@ VortexChannel * vortex_channel_new_full (VortexConnection      * connection,
  * @param close_user_data        User space data to be passed in to the close channel handler.
  * @param received               The frame received handler.
  * @param received_user_data     User space data to be passed in to the frame received handler.
- * @param on_channel_created     Async notification callback to be executed once the channel is created or not.
+ * @param on_channel_created     An async callback where the channel creation is notified. Defining this callback makes the function to not block the caller.
  * @param user_data              User space data to be passed in to <b>on_channel_created</b>
  *
  * @param profile_content_format The profile content using a
