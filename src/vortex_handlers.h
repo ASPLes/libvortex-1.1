@@ -334,14 +334,18 @@ typedef  void     (*VortexOnFrameReceived)     (VortexChannel    * channel,
  * needed to hold a reference to channel. You can get it by using
  * \ref vortex_connection_get_channel.
  * 
+ * In the case an error is found (channel reference is NULL or
+ * channel_num is -1) you can use \ref
+ * vortex_connection_pop_channel_error to get more details.
  * 
  * @param channel_num the channel number for the new channel created
  * @param channel the channel created
  * @param user_data user defined data passed in to this async notifier.
  */
-typedef void      (*VortexOnChannelCreated)  (int             channel_num,
-					      VortexChannel * channel,
-					      axlPointer      user_data);
+typedef void      (*VortexOnChannelCreated)  (int                channel_num,
+					      VortexChannel    * channel,
+					      VortexConnection * conn,
+					      axlPointer         user_data);
 
 /** 
  * @brief Async notifier for Vortex Channel Pool creation.

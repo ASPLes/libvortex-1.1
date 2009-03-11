@@ -986,6 +986,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 			/* invoke the channel created handler */
 			data->on_channel_created (channel->channel_num,
 						  channel, 
+						  data->connection,
 						  data->user_data);
 			
 			/* if piggyback is defined, invoke the frame received
@@ -1002,7 +1003,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 			vortex_channel_unref (channel);
 		} else {
 			/* notify null reference received */
-			data->on_channel_created (-1, NULL, data->user_data);
+			data->on_channel_created (-1, NULL, data->connection, data->user_data);
 		} /* end if */
 
 		/* free no longer needed data */
