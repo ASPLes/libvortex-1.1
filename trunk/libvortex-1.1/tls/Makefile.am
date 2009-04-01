@@ -15,7 +15,7 @@ libvortex_tls_1_1_includedir = $(includedir)/vortex-1.1
 lib_LTLIBRARIES = libvortex-tls-1.1.la
 
 libvortex_tls_1_1_la_SOURCES = vortex_tls.c 
-libvortex_tls_1_1_include_HEADERS = vortex_tls.h
+libvortex_tls_1_1_include_HEADERS = vortex_tls.h vortex-tls.dtd.h
 
 libvortex_tls_1_1_la_LIBADD = \
 	$(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS) $(TLS_LIBS) ../src/libvortex-1.1.la 
