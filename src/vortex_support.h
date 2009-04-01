@@ -99,7 +99,7 @@ typedef enum {
 	/** 
 	 * @brief Check if the path provided is a regular file.
 	 */
-	FILE_IS_REGULAR = 1 << 3,
+	FILE_IS_REGULAR = 1 << 3
 } VortexFileTest;
 
 axl_bool vortex_support_file_test                  (const char * path,   

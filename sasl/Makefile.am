@@ -15,7 +15,7 @@ libvortex_sasl_1_1_includedir = $(includedir)/vortex-1.1
 lib_LTLIBRARIES = libvortex-sasl-1.1.la
 
 libvortex_sasl_1_1_la_SOURCES = vortex_sasl.c 
-libvortex_sasl_1_1_include_HEADERS = vortex_sasl.h
+libvortex_sasl_1_1_include_HEADERS = vortex_sasl.h vortex-sasl.dtd.h
 
 libvortex_sasl_1_1_la_LIBADD = \
 	$(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS) $(SASL_LIBS) ../src/libvortex-1.1.la
