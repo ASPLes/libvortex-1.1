@@ -62,6 +62,7 @@ void frame_received (VortexChannel    * channel,
 				 37,
 				 vortex_frame_get_msgno (frame));
 
+#if defined(ENABLE_SASL_SUPPORT)
 	/* drop a log about the sasl properties */
 	if (vortex_sasl_is_authenticated (connection)) {
 		/* check the connection to be authenticated because
@@ -78,6 +79,9 @@ void frame_received (VortexChannel    * channel,
 	}else {
 		printf ("Connection not authenticated..\n");
 	}
+#else
+	printf ("ERROR: failed to check SASL auth data. Current build does not have SASL support\n");
+#endif
 
 	printf ("VORTEX_LISTENER: CLOSE CHANNEL (pid: %d)\n", getpid ());
 
@@ -257,11 +261,16 @@ int  main (int  argc, char  ** argv)
 		return -1;
 	} /* end if */
 
+#if defined(ENABLE_SASL_SUPPORT)
 	/* check and initiliaze SASL */
 	if (! vortex_sasl_init (ctx)) {
 		printf ("Current Vortex Library is not prepared for SASL profile");
 		return -1;
 	}
+#else
+	printf ("Current build does not have SASL support..\n");
+	return -1;
+#endif
 	
 	/* Checking for parameter "full" */
 	if (argc == 2 && axl_cmp("full", argv[1])) {

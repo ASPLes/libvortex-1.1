@@ -1349,6 +1349,7 @@ int main (int  argc, char ** argv)
 		return -1;
 	}
 
+#if defined(ENABLE_SASL_SUPPORT)
 	if (vortex_sasl_init (ctx)) {
 		/* set default ANONYMOUS validation handler */
 		vortex_sasl_set_anonymous_validation (ctx, sasl_anonymous_validation);
@@ -1398,10 +1399,10 @@ int main (int  argc, char ** argv)
 		/* configure default realm for all connections for the DIGEST-MD5 */
 		vortex_listener_set_default_realm (ctx, "aspl.es");  
 
-	} else {
-		printf("Skipping SASL setup, since Vortex is not configured with SASL support\n");
 	}
-	
+#else
+	printf("Skipping SASL setup, since Vortex is not configured with SASL support\n");
+#endif	
 	/* configure support for TUNNEL profile support */
 	vortex_tunnel_accept_negotiation (ctx, NULL, NULL);
 	

@@ -250,8 +250,8 @@ if test "$enable_sasl_support" = "yes" ; then
    AC_SUBST(SASL_CFLAGS)
    AC_SUBST(SASL_LIBS)
    AC_SUBST(HAVE_GSASL_FREE)
-   AM_CONDITIONAL(ENABLE_SASL_SUPPORT, test "x$enable_sasl_support" = "xyes")
 fi
+AM_CONDITIONAL(ENABLE_SASL_SUPPORT, test "x$enable_sasl_support" = "xyes")
 
 dnl check for XML-RPC RFC3529 support
 AC_ARG_ENABLE(xml-rpc-support, [  --disable-xml-rpc-support    Makes Vortex Library to be built without XML-RPC (RFC3529) support], 
