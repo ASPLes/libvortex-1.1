@@ -372,11 +372,16 @@ int  main (int  argc, char  ** argv)
 	}
 
 
+#if defined(ENABLE_TLS_SUPPORT)
 	/* check for TLS initialization */
 	if (! vortex_tls_init (ctx)) {
 		printf ("Current Vortex Library is not prepared for TLS profile");
 		return -1;
 	}
+#else
+	printf ("Current build does not have TLS support.\n");
+	return -1;
+#endif
 
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */

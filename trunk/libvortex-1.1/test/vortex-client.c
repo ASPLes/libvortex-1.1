@@ -1016,6 +1016,10 @@ int main (int argc, char *argv[])
 	VortexStatus       status;
 	char             * status_message;
 
+	/* some resets to make gcc happy if tls is not activated */
+	status         = 0;
+	status_message = NULL;
+
 	/* init the context */
 	ctx = vortex_ctx_new ();
 	
@@ -1104,17 +1108,23 @@ int main (int argc, char *argv[])
 		}
 
 		if (axl_memcmp ("auto tls", line, 8)) {
+#if defined(ENABLE_TLS_SUPPORT)
 			/* enable auto tls profile negotiation not allowing TLS failures */
 			vortex_tls_set_auto_tls (ctx, auto_tls_profile, axl_false, NULL);
 			printf ("Auto TLS profile negotiation is: %s\n", auto_tls_profile ? "ON" : "OFF");
 			auto_tls_profile = !auto_tls_profile;
 			continue;
+#else
+			printf ("Current build does not have TLS support.\n");
+			continue;
+#endif
 		}
 
 		if (axl_memcmp ("enable tls", line, 10)) {
 			if (!check_connected ("can't enable TLS if not connected first", connection))
 				continue;
 
+#if defined(ENABLE_TLS_SUPPORT)
 			/* initialize and check if current vortex library supports TLS */
 			if (! vortex_tls_init (ctx)) {
 				printf ("Unable to activate TLS, Vortex Library is not prepared\n");
@@ -1129,6 +1139,10 @@ int main (int argc, char *argv[])
 			printf ("\nTLS Negociation status: %s, message=%s\n",
 				 (status == VortexOk) ? "Ok" : "Error",
 				 (status_message != NULL) ? status_message : "none");
+#else
+			printf ("Current build does not have TLS support.\n");
+			continue;
+#endif
 
 			
 			continue;

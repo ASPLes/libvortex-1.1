@@ -792,6 +792,7 @@ axlPointer block_ctx_creation (VortexConnection * connection, axlPointer user_da
 axl_bool  regression_tls_handle_query (VortexConnection * connection, char * serverName)
 {
 
+#if defined(ENABLE_TLS_SUPPORT)
 	printf ("Receiving request to start tls auth, with status=%d..\n", enable_block_tls_queries);
 	if (enable_block_tls_queries) {
 		/* return to not accept TLS query but revert state for
@@ -804,6 +805,10 @@ axl_bool  regression_tls_handle_query (VortexConnection * connection, char * ser
 
 		return axl_false;
 	} /* end if */
+#else
+	printf ("--- WARNING: Current build does not have TLS support.\n");
+	return axl_false;
+#endif
 
 	return axl_true;
 }
@@ -1342,12 +1347,16 @@ int main (int  argc, char ** argv)
 				  /* default frame */
 				  frame_seqno_exceeded, NULL);
 
+#if defined(ENABLE_TLS_SUPPORT)
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */
 	if (! vortex_tls_accept_negotiation (ctx, regression_tls_handle_query, NULL, NULL)) {
 		printf ("Unable to start accepting TLS profile requests");
 		return -1;
 	}
+#else
+	printf ("--- WARNING: Current build does not have TLS support.\n");
+#endif
 
 #if defined(ENABLE_SASL_SUPPORT)
 	if (vortex_sasl_init (ctx)) {
@@ -1401,7 +1410,7 @@ int main (int  argc, char ** argv)
 
 	}
 #else
-	printf("Skipping SASL setup, since Vortex is not configured with SASL support\n");
+	printf("--- WARNING: Skipping SASL setup, since Vortex is not configured with SASL support\n");
 #endif	
 	/* configure support for TUNNEL profile support */
 	vortex_tunnel_accept_negotiation (ctx, NULL, NULL);
