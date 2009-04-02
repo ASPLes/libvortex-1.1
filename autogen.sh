@@ -64,4 +64,4 @@ automake --add-missing --Werror;
 autoconf --force --warnings=error;
 
 
-./configure $@ --enable-maintainer-mode --enable-compile-warnings
+./configure $@ --enable-maintainer-mode

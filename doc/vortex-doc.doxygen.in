@@ -477,7 +477,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = ../src ../tunnel ../xml-rpc ../tls ../sasl ../pull ../http
+INPUT                  = @top_srcdir@/src @top_srcdir@/tunnel @top_srcdir@/xml-rpc @top_srcdir@/tls @top_srcdir@/sasl @top_srcdir@/pull @top_srcdir@/http
 
 # This tag can be used to specify the character encoding of the source files that 
 # doxygen parses. Internally doxygen uses the UTF-8 encoding, which is also the default 
@@ -532,12 +532,12 @@ EXCLUDE_SYMBOLS        =
 # directories that contain example code fragments that are included (see 
 # the \include command).
 
-EXAMPLE_PATH           = ../test \
-                         . \
-                         ../src \
-                         ../xml-rpc-gen \
-                         ../xml-rpc-gen/out/client-test \
-                         ../xml-rpc-gen/out/server-test
+EXAMPLE_PATH           = @top_srcdir@/test \
+                         @top_srcdir@/doc \
+                         @top_srcdir@/src \
+                         @top_srcdir@/xml-rpc-gen \
+                         @top_builddir@/xml-rpc-gen/out/client-test \
+                         @top_builddir@/xml-rpc-gen/out/server-test 
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the 
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 
@@ -557,8 +557,8 @@ EXAMPLE_RECURSIVE      = NO
 # directories that contain image that are included in the documentation (see 
 # the \image command).
 
-IMAGE_PATH             = ../logo \
-                         ../doc
+IMAGE_PATH             = @top_srcdir@/logo \
+                         @top_srcdir@/doc
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should 
 # invoke to filter for each input file. Doxygen will invoke the filter program 
@@ -690,13 +690,13 @@ HTML_FILE_EXTENSION    = .html
 # each generated HTML page. If it is left blank doxygen will generate a 
 # standard header.
 
-HTML_HEADER            = vortex-doc-header.html
+HTML_HEADER            = @top_srcdir@/doc/vortex-doc-header.html
 
 # The HTML_FOOTER tag can be used to specify a personal HTML footer for 
 # each generated HTML page. If it is left blank doxygen will generate a 
 # standard footer.
 
-HTML_FOOTER            = vortex-doc-footer.html
+HTML_FOOTER            = @top_srcdir@/doc/vortex-doc-footer.html
 
 # The HTML_STYLESHEET tag can be used to specify a user-defined cascading 
 # style sheet that is used by each HTML page. It can be used to 

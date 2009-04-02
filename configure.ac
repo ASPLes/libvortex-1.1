@@ -37,7 +37,8 @@ dnl
 
 AC_INIT(src/vortex.h)
 
-VORTEX_VERSION=`cat VERSION`
+configure_dir=`dirname "$0"`
+VORTEX_VERSION=`cat $configure_dir/VERSION`
 AC_SUBST(VORTEX_VERSION)
 
 AC_CONFIG_AUX_DIR(.)
@@ -143,7 +144,7 @@ AM_CONDITIONAL(ENABLE_POLL_SUPPORT, test "x$enable_poll" = "xyes")
 
 dnl Check for the Linux epoll interface; epoll* may be available in libc
 dnl with Linux kernels 2.6.X
-AC_CACHE_CHECK([for epoll(2) support], [enable_epoll],
+AC_CACHE_CHECK([for epoll(2) support], [enable_cv_epoll],
 [AC_TRY_RUN([
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -151,11 +152,11 @@ AC_CACHE_CHECK([for epoll(2) support], [enable_epoll],
 int main()
 {
     return epoll_create(5) == -1;
-}], [enable_epoll=yes], [enable_epoll=no], [enable_epoll=no])])
-AM_CONDITIONAL(ENABLE_EPOLL_SUPPORT, test "x$enable_epoll" = "xyes")
+}], [enable_cv_epoll=yes], [enable_cv_epoll=no], [enable_cv_epoll=no])])
+AM_CONDITIONAL(ENABLE_EPOLL_SUPPORT, test "x$enable_cv_epoll" = "xyes")
 
 dnl select the best I/O platform
-if test x$enable_epoll = xyes ; then
+if test x$enable_cv_epoll = xyes ; then
    default_platform="epoll"
 elif test x$enable_poll = xyes ; then
    default_platform="poll"
@@ -361,7 +362,7 @@ echo "------------------------------------------"
 echo "   Installation prefix:            [$prefix]"
 echo "      select(2) support:           [yes]"
 echo "      poll(2) support:             [$enable_poll]"
-echo "      epoll(2) support:            [$enable_epoll]"
+echo "      epoll(2) support:            [$enable_cv_epoll]"
 echo "      default:                     [$default_platform]"
 echo "      debug log support:           [$enable_vortex_log]"
 echo "      pthread cflags=$PTHREAD_CFLAGS, libs=$PTHREAD_LIBS"
