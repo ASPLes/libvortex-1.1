@@ -645,6 +645,7 @@ axl_bool  __vortex_client_connection_status (axlPointer key, axlPointer value, a
 
 void vortex_client_connection_status (VortexConnection * connection)
 {
+#if defined(ENABLE_SASL_SUPPORT)
 	char  * authid = vortex_sasl_get_propertie (connection, VORTEX_SASL_AUTH_ID);
 
 	printf ("Connection status:\n   Id=%d\n   TLS status=%s\n   SASL auth status=%s, auth id=%s\n", 
@@ -656,6 +657,7 @@ void vortex_client_connection_status (VortexConnection * connection)
 	printf ("Created channel over this session:\n");
 
 	vortex_connection_foreach_channel (connection, __vortex_client_connection_status, NULL);
+#endif
 	
 	return;
 }
@@ -672,12 +674,17 @@ void vortex_client_begin_auth () {
 	/* check for connection status */
 	if (!check_connected ("can't start SASL auth if not connected first", connection))
 		return;
-	
+
+#if defined(ENABLE_SASL_SUPPORT)	
 	/* check and init SASL state on the provided context */
 	if (! vortex_sasl_init (ctx)) {
 		printf ("Unable to begin SASL negotiation. Current Vortex Library doesn't support SASL");
 		return;
 	}
+#else
+	printf ("vortex-client does not have SASL support.\n");
+	return;
+#endif
 	
 	printf ("Choose a profile to negociate: \n");
 	printf ("1) %s\n", VORTEX_SASL_ANONYMOUS);
