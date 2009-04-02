@@ -1992,9 +1992,14 @@ char * test_04_ab_gen_md5 (const char * file)
 	/* close the file and return the content */
 	fclose (handle);
 
+#if defined(ENABLE_TLS_SUPPORT)
 	/* now create the md5 representation */
 	resultAux = vortex_tls_get_digest_sized (VORTEX_MD5, result, status.st_size);
 	axl_free (result);
+#else
+	printf ("Current build does not have TLS support.\n");
+	resultAux = NULL;
+#endif
 
 	return resultAux;
 }
@@ -2018,6 +2023,11 @@ axl_bool  test_04_ab_common (VortexConnection * connection, int window_size, con
 
 	if (amount_transferred)
 		(*amount_transferred) = 0;
+
+#if ! defined(ENABLE_TLS_SUPPORT)	
+	printf ("--- WARNING: Current build does not have TLS support (UNABLE TO TRANSFER).\n");
+	return axl_true;
+#endif
 
 	/* create the queue */
 	queue = vortex_async_queue_new ();
@@ -4555,11 +4565,16 @@ axl_bool  test_05 (void)
 	/* vortex connection */
 	VortexConnection * connection;
 
+#if defined(ENABLE_TLS_SUPPORT)
 	/* initialize and check if current vortex library supports TLS */
 	if (! vortex_tls_init (ctx)) {
 		printf ("--- WARNING: Unable to activate TLS, current vortex library has not TLS support activated. \n");
 		return axl_true;
 	}
+#else
+	printf ("--- WARNING: Current build does not have TLS support.\n");
+	return axl_true;
+#endif
 
 	/* create a new connection */
 	connection = connection_new ();
@@ -4770,11 +4785,16 @@ axl_bool  test_05_a (void)
 	VortexConnection * connection;
 	VortexConnection * connection2;
 
+#if defined(ENABLE_TLS_SUPPORT)
 	/* initialize and check if current vortex library supports TLS */
 	if (! vortex_tls_init (ctx)) {
 		printf ("--- WARNING: Unable to activate TLS, current vortex library has not TLS support activated. \n");
 		return axl_true;
 	}
+#else
+	printf ("--- WARNING: Current build does not have TLS support.\n");
+	return axl_true;
+#endif
 
 	/* create a new connection */
 	connection = connection_new ();
