@@ -6326,7 +6326,6 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 	 * deallocated. Flag the channel to be not connected.*/
 	new_channel = vortex_channel_empty_new (channel_num, profile, connection);
 	vortex_connection_add_channel (connection, new_channel);
-	new_channel->is_opened = axl_false;
 
 	/* configure msg_no to reply and the serverName value, this
 	 * will be used by vortex_channel_notify_start before doing
