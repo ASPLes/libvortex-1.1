@@ -6325,6 +6325,18 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 	 * reference. If start handler fails, the channel is
 	 * deallocated. Flag the channel to be not connected.*/
 	new_channel = vortex_channel_empty_new (channel_num, profile, connection);
+	if (new_channel == NULL) {
+		/* drop a warning */
+		vortex_log (VORTEX_LEVEL_WARNING, 
+			    "unable to complete incoming start channel request, vortex_channel_empty_new returned empty reference (maybe broken connection)");
+
+		/* deallocate unsued memory */
+		vortex_support_free (3, profile,      axl_free,
+				     serverName,      axl_free,
+				     profile_content, axl_free);
+		return;
+	} /* end if */
+
 	vortex_connection_add_channel (connection, new_channel);
 
 	/* configure msg_no to reply and the serverName value, this
