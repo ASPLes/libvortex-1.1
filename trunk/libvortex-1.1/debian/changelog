@@ -1,3 +1,9 @@
+libvortex-1.1 (1.1.1-0) unstable; urgency=low
+
+  * New upstream release (Tesla is now my master).
+
+ -- Francis Brosnan Blázquez <francis@aspl.es>  Tue, 28 Apr 2009 20:14:10 +0200
+
 libvortex-1.1 (1.1.0-2) unstable; urgency=low
 
   * New upstream release (Masters of war)
