@@ -1,0 +1,119 @@
+
+      ###################################################
+      ##              Vortex Library 1.1.1             ##
+      ##            "Tesla is my master now!"          ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.1.1 "Tesla is my master now!" release availability: an
+  open source "BEEP Core" protocol implementation written in C, mapped
+  onto TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.aspl.es/turbulence
+      [Turbulence BEEP server homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+This release in short
+~~~~~~~~~~~~~~~~~~~~~
+   Bug fix release. 
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+
+  [1] vortex-notify-start-01
+  http://lists.aspl.es/pipermail/vortex/2009-March/000822.html
+
+Thanks to..
+~~~~~~~~~~~
+  Benoit Amiux, Lawrence MacIntyre and Juhani.
+
+Changes since 1.1.0
+~~~~~~~~~~~~~~~~~~~
+
+* [fix] Removing not required sentence to configure channel to be not
+  opened during its creation. This is already done by
+  vortex_channel_empty_new. Fix imported from 1.0. Reported by Benoit
+  Amiaux. Fixed crash based on a race condition activated by this
+  sentence.
+
+* [fix] Applied changes to make the project compilable (test files and
+  regression tests) if not TLS support is added.
+
+* [fix] Making test directory to be compilable without sasl support.
+
+* [fix] General project changes to make vortex compilable when sources
+  and installation directories aren't different.
+
+* [fix] Removing spurious comma after enum declaration. Added missing
+  vortex-tls.dtd.h and vortex-sasl.dtd.h to distribution.  (Reported
+  Lawrence MacIntyre).
+
+* [fix] Applied vortex-notify-start-01 (CHANGE-NOTIFY). Updated
+  regression tests to check changes introduced.
+
+* [fix] Fixing a documentation on vortex_channel_new*
+
+* [fix] Improving comment dropped by vortex_reader module when
+  something has to be read from the wire...
+
+* [fix] Moved mutex release after frame variable configuration inside
+  CHECK_PENDING_FRAME (vortex_channel.c).
+
+* [fix] Fixed dependencies with GSASL libraries on windows.  Updated
+   gsasl.nsi and gsasl-win32-compile.txt with latest instructions.
+
+* [fix] Adding c++ extern header decls in all extensions to make them
+  usable for c++ users/compilers. This directive wasn't imported from
+  base library (Problem reported by Juhani).
+
+* [fix] Making xml-rpc-gen-1.1 tool to include xml-rpc.dtd as a header
+  created by axl-knife. Now it is no longer required to bundle
+  xml-rpc.dtd file.
+
+* [fix] Moving vortex_sasl.dtd.h include file from public header to
+  vortex_sasl.c to avoid users to include it.
+
+* [fix] Adding references to debian package support for vortex.
+
+* [fix] General update to add debian package support.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+24th Apr 2009, Madrid (Spain)

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+cd src; make update-def; cd -
+cd tls; make update-def; cd -
+cd sasl; make update-def; cd -
+cd tunnel; make update-def; cd -
+cd xml-rpc; make update-def; cd -
+cd pull; make update-def; cd -
+cd http; make update-def; cd -
+
