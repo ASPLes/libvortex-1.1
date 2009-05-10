@@ -202,8 +202,16 @@ void                vortex_connection_set_close_socket       (VortexConnection *
 void                vortex_connection_add_channel            (VortexConnection * connection, 
 							      VortexChannel * channel);
 
+void                vortex_connection_add_channel_common     (VortexConnection * connection,
+							      VortexChannel    * channel,
+							      axl_bool           do_notify);
+
 void                vortex_connection_remove_channel         (VortexConnection * connection, 
 							      VortexChannel * channel);
+
+void                vortex_connection_remove_channel_common  (VortexConnection * connection, 
+							      VortexChannel    * channel,
+							      axl_bool           do_notify);
 
 const char        * vortex_connection_get_host               (VortexConnection * connection);
 
@@ -379,6 +387,10 @@ void                vortex_connection_remove_channel_pool    (VortexConnection  
 
 axl_bool            __vortex_connection_parse_greetings      (VortexConnection * connection, 
 							      VortexFrame * frame);
+
+void                __vortex_connection_check_and_notify     (VortexConnection * connection, 
+							      VortexChannel    * channel, 
+							      axl_bool           is_added);
 
 int                 vortex_connection_get_mss                (VortexConnection * connection);
 

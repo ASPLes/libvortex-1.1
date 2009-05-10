@@ -6093,9 +6093,8 @@ axl_bool  vortex_channel_notify_start_internal (const char       * serverName,
 			result = axl_false;
 		}  /* end if */
 			
-
 		/* deallocate the channel created */
-		vortex_connection_remove_channel (conn, new_channel);
+		vortex_connection_remove_channel_common (conn, new_channel, axl_false); 
 
 		/* free references */
 		axl_free (start_rpy);
@@ -6129,9 +6128,11 @@ axl_bool  vortex_channel_notify_start_internal (const char       * serverName,
 		result = axl_false;
 	} 
 
-
 	/* free start reply */
 	axl_free (start_rpy);
+
+	/* notify here channel added */
+	__vortex_connection_check_and_notify (conn, new_channel, axl_true);
 
 	return result;
 }
@@ -6337,7 +6338,8 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 		return;
 	} /* end if */
 
-	vortex_connection_add_channel (connection, new_channel);
+	/* add channel to the connection but without notification */
+	vortex_connection_add_channel_common (connection, new_channel, axl_false);
 
 	/* configure msg_no to reply and the serverName value, this
 	 * will be used by vortex_channel_notify_start before doing
@@ -6386,7 +6388,7 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 		vortex_support_free (3, serverName, axl_free, error_msg, axl_free, profile, axl_free);
 
 		/* deallocate the channel created */
-		vortex_connection_remove_channel (connection, new_channel);
+		vortex_connection_remove_channel_common (connection, new_channel, axl_false);
 
 		return;
 	}

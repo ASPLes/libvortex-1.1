@@ -858,6 +858,29 @@ void               vortex_async_queue_push      (VortexAsyncQueue * queue,
 }
 
 /** 
+ * @brief Allows to push data into the queue withtout acquiring the
+ * internal lock. This function must be used in conjuntion with \ref
+ * vortex_async_queue_lock and \ref vortex_async_queue_unlock.
+ * 
+ * @param queue The queue where data will be pushed.
+ *
+ * @param data A reference to the data to be pushed. It is not allowed
+ * to push null references.
+ */
+void               vortex_async_queue_unlocked_push  (VortexAsyncQueue * queue,
+						      axlPointer         data)
+{
+
+	v_return_if_fail (queue);
+	v_return_if_fail (data);
+
+	/* push the data */
+	axl_list_prepend (queue->data, data);
+	
+	return;
+}
+
+/** 
  * @brief Allows to push data into the queue but moving the reference
  * provided into the queue head (causing next call to
  * vortex_async_queue_pop to receive this reference). This function
@@ -1220,6 +1243,39 @@ void               vortex_async_queue_foreach   (VortexAsyncQueue         * queu
 	/* unlock the mutex */
 	vortex_mutex_unlock (&queue->mutex);
 
+	return;
+}
+
+/** 
+ * @brief Allows to lock the queue, making the caller the only thread
+ * owning the queue. This function should be used in conjuntion with
+ * vortex_async_queue_unlocked_push. Call to vortex_async_queue_push
+ * will lock the caller forever until a call to
+ * vortex_async_queue_unlock is done.
+ * 
+ * @param queue The queue to lock.
+ */
+void               vortex_async_queue_lock      (VortexAsyncQueue * queue)
+{
+	v_return_if_fail (queue);
+	vortex_mutex_lock (&queue->mutex);
+	return;
+}
+
+/** 
+ * @brief Allows to unlock the queue. See \ref
+ * vortex_async_queue_lock.
+ * @param queue The queue to unlock.
+ */
+void               vortex_async_queue_unlock    (VortexAsyncQueue * queue)
+{
+	v_return_if_fail (queue);
+
+	/* signal if waiters are available */
+	if (queue->waiters > 0)
+		vortex_cond_signal (&queue->cond);
+
+	vortex_mutex_unlock (&queue->mutex);
 	return;
 }
 
