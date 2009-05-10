@@ -580,6 +580,23 @@ axl_bool  test_01b (void) {
 
 } /* end test_01b */
 
+void test_01c_channel_created (int                channel_num,
+			       VortexChannel    * channel,
+			       VortexConnection * conn,
+			       axlPointer         user_data)
+{
+	VortexAsyncQueue * queue = user_data;
+	printf ("Test 01-c: Received channel creation notification..\n");
+
+	/* push all data */
+	vortex_async_queue_unlocked_push (queue, INT_TO_PTR(-4));
+	vortex_async_queue_unlocked_push (queue, channel);
+
+	/* release the lock */
+	vortex_async_queue_unlock (queue);
+	return;
+}
+
 axl_bool  test_01c (void) {
 	VortexConnection  * connection;
 	VortexAsyncQueue  * queue;
@@ -600,6 +617,9 @@ axl_bool  test_01c (void) {
 	iterator = 0;
 	while (iterator < 1) {
 
+		/* acquire the lock (released in test_01c_channel_created) */
+		vortex_async_queue_lock (queue);
+
 		/* create a channel */
 		channel = vortex_channel_new (connection, 0,
 					      REGRESSION_URI_FAST_SEND,
@@ -608,16 +628,24 @@ axl_bool  test_01c (void) {
 					      /* no frame received */
 					      vortex_channel_queue_reply, queue,
 					      /* no async channel creation */
-					      NULL, NULL);
-		
-		if (channel == NULL) {
-			printf ("Unable to create channel for fast send..\n");
-			return axl_false;
-		} /* end if */
+					      test_01c_channel_created, queue);
 
 		/* check connection here */
 		if (! vortex_connection_is_ok (connection, axl_false)) {
 			printf ("Test 01-c: (1) Failed to check connection, it should be running..\n");
+			return axl_false;
+		} /* end if */
+
+		/* receive first the notification that the channel is now created */
+		channel = vortex_async_queue_pop (queue);
+		if (PTR_TO_INT (channel) != -4) {
+			printf ("Test 01-c: (1.-1) expected to find channel creation notification but found another value..\n");
+			return axl_false;
+		} /* end if */
+		channel = vortex_async_queue_pop (queue);
+
+		if (channel == NULL) {
+			printf ("Unable to create channel for fast send..\n");
 			return axl_false;
 		} /* end if */
 

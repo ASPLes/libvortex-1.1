@@ -113,6 +113,9 @@ void               vortex_async_queue_push      (VortexAsyncQueue * queue,
 void               vortex_async_queue_priority_push  (VortexAsyncQueue * queue,
 						      axlPointer         data);
 
+void               vortex_async_queue_unlocked_push  (VortexAsyncQueue * queue,
+						      axlPointer         data);
+
 axlPointer         vortex_async_queue_pop       (VortexAsyncQueue * queue);
 
 axlPointer         vortex_async_queue_timedpop  (VortexAsyncQueue * queue,
@@ -131,6 +134,10 @@ void               vortex_async_queue_unref     (VortexAsyncQueue * queue);
 void               vortex_async_queue_foreach   (VortexAsyncQueue         * queue,
 						 VortexAsyncQueueForeach    foreach_func,
 						 axlPointer                 user_data);
+
+void               vortex_async_queue_lock      (VortexAsyncQueue * queue);
+
+void               vortex_async_queue_unlock    (VortexAsyncQueue * queue);
 
 END_C_DECLS
 

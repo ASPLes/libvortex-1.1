@@ -3648,7 +3648,38 @@ void                vortex_connection_set_close_socket       (VortexConnection *
  * @param channel the channel to add.
  */
 void               vortex_connection_add_channel          (VortexConnection * connection, 
-							   VortexChannel * channel)
+							   VortexChannel    * channel)
+{
+	/* call to common implementation */
+	vortex_connection_add_channel_common (connection, channel, axl_true);
+	return;
+}
+
+/** 
+ * @brief Adds a VortexChannel into an existing VortexConnection,
+ * allowing to configure notification.
+ *
+ * The channel to be added must not exists inside <i>connection</i>,
+ * otherwise an error will be produced and channel will not be added.
+ *
+ * This function only adds the data structure which represents a
+ * channel. It doesn't make any work about beep channel starting or
+ * something similar.  
+ *
+ * Mainly, this function is only useful for internal vortex library
+ * purposes.
+ * 
+ * @param connection the connection where channel will be added.
+ *
+ * @param channel the channel to add.
+ *
+ * @param do_notify axl_true to fire handlers configured at \ref
+ * vortex_connection_set_channel_added_handler otherwise, this
+ * notification is not done.
+ */
+void               vortex_connection_add_channel_common (VortexConnection * connection,
+							 VortexChannel    * channel,
+							 axl_bool           do_notify)
 {
 	VortexChannel * _channel;
 	VortexCtx     * ctx;
@@ -3683,7 +3714,8 @@ void               vortex_connection_add_channel          (VortexConnection * co
 	vortex_mutex_unlock (&connection->channel_mutex);
 
 	/* check and notify the channel to be removed. */
-	__vortex_connection_check_and_notify (connection, channel, axl_true);
+	if (do_notify) 
+		__vortex_connection_check_and_notify (connection, channel, axl_true);
 
 	return;
 }
@@ -3696,6 +3728,26 @@ void               vortex_connection_add_channel          (VortexConnection * co
  */
 void               vortex_connection_remove_channel       (VortexConnection * connection, 
 							   VortexChannel    * channel)
+{
+	vortex_connection_remove_channel_common (connection, channel, axl_true);
+	return;
+}
+
+/** 
+ * @brief Removes the given channel from this connection. 
+ * 
+ * @param connection the connection where the channel will be removed.
+ *
+ * @param channel the channel to remove from the connection.
+ *
+ * @param do_notify Allows to configure if the channel removal
+ * notification is done. If axl_false is provided, handlers configured
+ * by \ref vortex_connection_set_channel_removed_handler aren't
+ * called.
+ */
+void                vortex_connection_remove_channel_common  (VortexConnection * connection, 
+							      VortexChannel    * channel,
+							      axl_bool           do_notify)
 {
 	int         channel_num;
 	VortexCtx * ctx;
@@ -3713,7 +3765,8 @@ void               vortex_connection_remove_channel       (VortexConnection * co
 	vortex_log (VORTEX_LEVEL_DEBUG, "removing channel id=%d", channel_num);
 
 	/* check and notify the channel to be removed. */
-	__vortex_connection_check_and_notify (connection, channel, axl_false);
+	if (do_notify)
+		__vortex_connection_check_and_notify (connection, channel, axl_false);
 
 	/* remove the channel */
 	vortex_hash_remove (connection->channels, INT_TO_PTR (channel_num));
