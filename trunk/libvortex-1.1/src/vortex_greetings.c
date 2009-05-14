@@ -322,7 +322,8 @@ axl_bool            vortex_greetings_is_reply_ok    (VortexFrame      * frame, V
 	/* check greetings reply */
 	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
-			    "frame error, expected RPY frame type on greetings process");
+			    "frame error, expected RPY frame type on greetings process. Frame content: '%s'",
+			    vortex_frame_get_payload (frame));
 		__vortex_connection_set_not_connected (connection, "frame error, expected RPY frame type on greetings process",
 						       VortexProtocolError);
 		vortex_frame_unref (frame);
