@@ -1506,7 +1506,9 @@ int      vortex_tls_process_start_msg (char              * profile,
 	/* check profile content */
 	vortex_log (VORTEX_LEVEL_DEBUG, "received TLS negotiation request");
 	if (profile_content == NULL || !axl_cmp (profile_content, "<ready />")) {
-		vortex_log (VORTEX_LEVEL_WARNING, "received a TLS channel request having a missing or wrong profile content");
+		vortex_log (VORTEX_LEVEL_WARNING, 
+			    "received a TLS channel request having a missing or wrong profile content ('%s')",
+			    profile_content);
 		return axl_false;
 	}
 	
