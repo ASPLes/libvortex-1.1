@@ -789,7 +789,7 @@ axlPointer block_ctx_creation (VortexConnection * connection, axlPointer user_da
 	return NULL;
 }
 
-axl_bool  regression_tls_handle_query (VortexConnection * connection, char * serverName)
+axl_bool  regression_tls_handle_query (VortexConnection * connection, const char * serverName)
 {
 
 #if defined(ENABLE_TLS_SUPPORT)
@@ -996,32 +996,34 @@ void frame_received_ordered_delivery (VortexChannel    * channel,
 	return;
 }
 
-int close_channel_connection_delay = 0;
+#define FAILURE_KEY_COUNT "vo:su"
 
 void frame_channel_connection (VortexChannel    * channel,
 			       VortexConnection * connection,
 			       VortexFrame      * frame,
 			       axlPointer         user_data)
 {
+	int close_channel_connection_delay = 
+		PTR_TO_INT (vortex_connection_get_data (connection, FAILURE_KEY_COUNT));
+
 	/* check the signal to close the connection */
 	if (close_channel_connection_delay == 3) {
 		printf ("suddently-close(%d): close connection on receive data\n", close_channel_connection_delay);
-
-		/* reset value */
-		close_channel_connection_delay = 0;
 
 		/* close the connection */
 		vortex_connection_shutdown (connection);
 	} /* end if */
 }
 
-axl_bool  frame_received_mix_replies_state = axl_false;
+#define MIX_REPLIES_KEY "vo:mix:rep"
 
 void      frame_received_mix_replies (VortexChannel    * channel,
 				     VortexConnection * connection,
 				     VortexFrame      * frame,
 				     axlPointer         user_data)
 {
+	axl_bool  frame_received_mix_replies_state = PTR_TO_INT (vortex_connection_get_data (connection, MIX_REPLIES_KEY));
+
 	if (frame_received_mix_replies_state) {
 		/* reply with RPY */
 		printf ("Test-02k: sending RPY type...\n");
@@ -1036,6 +1038,7 @@ void      frame_received_mix_replies (VortexChannel    * channel,
 
 	/* alternate replies with RPY and ANS */
 	frame_received_mix_replies_state = ! frame_received_mix_replies_state;
+	vortex_connection_set_data (connection, MIX_REPLIES_KEY, INT_TO_PTR (frame_received_mix_replies_state));
 
 	return;
 }
@@ -1128,19 +1131,33 @@ void frame_seqno_exceeded (VortexChannel    * channel,
 }
 
 
-axl_bool  start_channel_connection (int                channel_num, 
-				    VortexConnection * connection,
-				    axlPointer         user_data)
+axl_bool  start_suddently_closed (
+	const char       * profile,
+	int                channel_num, 
+	VortexConnection * connection,
+	const char       * serverName,
+	const char       * profile_content,
+	char            ** profile_reply,
+	VortexEncoding     encoding,
+	axlPointer         user_data)
 {
+	/* get received configuration */
+	int close_channel_connection_delay = 0;
+
+	if (profile_content != NULL) {
+		/* get failure count configuration */
+		close_channel_connection_delay = atoi (profile_content);
+
+		printf ("Connection delay failure: %d..\n", close_channel_connection_delay);
+		vortex_connection_set_data (connection, FAILURE_KEY_COUNT, INT_TO_PTR (close_channel_connection_delay));
+
+	} /* end if */
 
 	/* check the signal to close the connection */
 	if (close_channel_connection_delay == 2) {
 		printf ("suddently-close(%d): close connection on start operation\n", close_channel_connection_delay);
 		/* close the connection */
 		vortex_connection_shutdown (connection);
-
-		/* update indicator */
-		close_channel_connection_delay++;
 	} /* end if */
 
 
@@ -1155,6 +1172,9 @@ axl_bool  close_channel_connection (int channel_num, VortexConnection * conn, ax
 {
 	VortexAsyncQueue * queue;
 
+	int close_channel_connection_delay = 
+		PTR_TO_INT (vortex_connection_get_data (conn, FAILURE_KEY_COUNT));
+
 	if (close_channel_connection_delay == 1) {
 		printf ("suddently-close(%d): close connection with delay\n", close_channel_connection_delay);
 		/* create a queue, wait and unref */
@@ -1164,9 +1184,6 @@ axl_bool  close_channel_connection (int channel_num, VortexConnection * conn, ax
 	} else {
 		printf ("suddently-close(%d): close connection without delay\n", close_channel_connection_delay);
 	}
-
-	/* reverse value for the next invocation */
-	close_channel_connection_delay++;
 
 	/* disconnect */
 	vortex_connection_shutdown (conn);
@@ -1299,13 +1316,16 @@ int main (int  argc, char ** argv)
 
 	/* register a profile */
 	vortex_profiles_register (ctx, REGRESSION_URI_SUDDENTLY_CLOSE,
-				  /* start channel connection which
-				   * closes it on third attempt */
-				  start_channel_connection, NULL,
+				  /* no start handler */
+				  NULL, NULL,
 				  /* close request where the connection is closed. */
 				  close_channel_connection, NULL, 
 				  /* no frame received */
 				  frame_channel_connection, NULL);
+
+	vortex_profiles_register_extended_start (ctx, REGRESSION_URI_SUDDENTLY_CLOSE,
+						 /* start channel extended handler */
+						 start_suddently_closed, NULL);
 
 	/* regiester a profile */
  	vortex_profiles_register (ctx, REGRESSION_URI_MIXING_REPLIES,

@@ -185,6 +185,7 @@ pre.fragment {
   left: 84%;
   top: 30%;
   background: #c9c9c9;
+  z-index: -1;
 }
 
 .lateral-ad iframe { 

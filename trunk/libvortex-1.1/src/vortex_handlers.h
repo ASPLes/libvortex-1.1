@@ -220,11 +220,11 @@ typedef  axl_bool      (*VortexOnStartChannel)      (int  channel_num,
  * 
  * @return axl_true if the new channel can be created or axl_false if not. 
  */
-typedef axl_bool      (*VortexOnStartChannelExtended) (char              * profile,
+typedef axl_bool      (*VortexOnStartChannelExtended) (const char        * profile,
 						       int                 channel_num,
 						       VortexConnection  * connection,
-						       char              * serverName,
-						       char              * profile_content,
+						       const char        * serverName,
+						       const char        * profile_content,
 						       char             ** profile_content_reply,
 						       VortexEncoding      encoding,
 						       axlPointer          user_data);
@@ -650,7 +650,7 @@ typedef void     (*VortexTlsActivation)          (VortexConnection * connection,
  * the session TLS-fication.
  */
 typedef axl_bool      (*VortexTlsAcceptQuery) (VortexConnection * connection,
-					       char             * serverName);
+					       const char       * serverName);
 
 /** 
  * @brief Handler definition for those function allowing to locate the
@@ -705,7 +705,7 @@ typedef axl_bool      (*VortexTlsAcceptQuery) (VortexConnection * connection,
  * @return A newly allocated value containing the path to the certificate file.
  */
 typedef char  * (* VortexTlsCertificateFileLocator) (VortexConnection * connection,
-						     char             * serverName);
+						     const char       * serverName);
 	
 /** 
  * @brief Handler definition for those function allowing to locate the
@@ -721,7 +721,7 @@ typedef char  * (* VortexTlsCertificateFileLocator) (VortexConnection * connecti
  * @return A newly allocated value containing the path to the private key file.
  */
 typedef char  * (* VortexTlsPrivateKeyFileLocator) (VortexConnection * connection,
-						    char             * serverName);
+						    const char       * serverName);
 
 /** 
  * @brief Handler definition used by the TLS profile, to allow the

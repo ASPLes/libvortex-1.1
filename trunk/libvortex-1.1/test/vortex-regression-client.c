@@ -3137,14 +3137,18 @@ axl_bool  test_02j (void) {
 	} /* end if */
 
 	/* create a channel */
-	channel = vortex_channel_new (connection, 0,
-				      REGRESSION_URI_SUDDENTLY_CLOSE,
-				      /* no close handling */
-				      NULL, NULL,
-				      /* no frame received */
-				      NULL, NULL,
-				      /* no async channel creation */
-				      NULL, NULL);
+	channel = vortex_channel_new_full (connection, 0,
+					   /* serverName */
+					   NULL,
+					   REGRESSION_URI_SUDDENTLY_CLOSE,
+					   /* profile content encoding and profile content */
+					   EncodingNone, "1", 1,
+					   /* no close handling */
+					   NULL, NULL,
+					   /* no frame received */
+					   NULL, NULL,
+					   /* no async channel creation */
+					   NULL, NULL);
 
 	if (channel == NULL) {
 		printf ("ERROR: unable to create channel to check enforced server side ordered delivery..\n");
@@ -3172,14 +3176,18 @@ axl_bool  test_02j (void) {
 	} /* end if */
 
 	/* create a channel (support for broken channel start) */
-	channel = vortex_channel_new (connection, 0,
-				      REGRESSION_URI_SUDDENTLY_CLOSE,
-				      /* no close handling */
-				      NULL, NULL,
-				      /* no frame received */
-				      NULL, NULL,
-				      /* no async channel creation */
-				      NULL, NULL);
+	channel = vortex_channel_new_full (connection, 0,
+					   /* serverName */
+					   NULL,
+					   REGRESSION_URI_SUDDENTLY_CLOSE,
+					   /* profile content encoding and profile content */
+					   EncodingNone, "2", 1,
+					   /* no close handling */
+					   NULL, NULL,
+					   /* no frame received */
+					   NULL, NULL,
+					   /* no async channel creation */
+					   NULL, NULL);
 
 	if (channel != NULL) {
 		printf ("ERROR: expected NULL channel reference..\n");
@@ -3204,14 +3212,18 @@ axl_bool  test_02j (void) {
 
 	/* create a channel (support for broken channel start) */
 	queue   = vortex_async_queue_new ();
-	channel = vortex_channel_new (connection, 0,
-				      REGRESSION_URI_SUDDENTLY_CLOSE,
-				      /* no close handling */
-				      NULL, NULL,
-				      /* no frame received */
-				      vortex_channel_queue_reply, queue,
-				      /* no async channel creation */
-				      NULL, NULL);
+	channel = vortex_channel_new_full (connection, 0,
+					   /* serverName */
+					   NULL,
+					   REGRESSION_URI_SUDDENTLY_CLOSE,
+					   /* profile content encoding and profile content */
+					   EncodingNone, "3", 1,
+					   /* no close handling */
+					   NULL, NULL,
+					   /* no frame received */
+					   NULL, NULL,
+					   /* no async channel creation */
+					   NULL, NULL);
 	if (channel == NULL) {
 		printf ("ERROR: expected NULL channel reference..\n");
 		return axl_false;
