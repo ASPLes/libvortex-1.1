@@ -752,7 +752,7 @@ axl_bool      __vortex_sasl_is_error_content (VortexFrame * frame,
  * fails. Value returned must be deallocated with axl_free. status
  * variable must be also deallocated using axl_free
  */
-char    * __vortex_sasl_get_base64_blob (char                  * frame_content,
+char    * __vortex_sasl_get_base64_blob (const char            * frame_content,
 					 VortexConnection      * connection, 
 					 VortexSaslAuthNotify    process_status, 
 					 axlPointer              user_data,
@@ -1875,7 +1875,7 @@ char  * __build_blob_reply (char  * status, char  * blob_content)
  * @return 
  */
 axl_bool      __vortex_sasl_server_iterate (VortexConnection * connection, 
-					    char             * payload,
+					    const char       * payload,
 					    char            ** payload_reply)
 {
 	char             * blob          = NULL;
@@ -1978,11 +1978,11 @@ axl_bool      __vortex_sasl_server_iterate (VortexConnection * connection,
  * 
  * @return 
  */
-axl_bool      __vortex_sasl_accept_negotiation_start (char              * profile,
+axl_bool      __vortex_sasl_accept_negotiation_start (const char        * profile,
 						      int                 channel_num,
 						      VortexConnection  * connection,
-						      char              * serverName,
-						      char              * profile_content,
+						      const char        * serverName,
+						      const char        * profile_content,
 						      char             ** profile_content_reply,
 						      VortexEncoding      encoding,
 						      axlPointer          user_data)

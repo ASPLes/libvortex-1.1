@@ -270,11 +270,11 @@ int                vortex_pull_register_close_connection   (VortexCtx           
 axl_bool           vortex_pull_connection_accepted         (VortexConnection * connection, 
 							    axlPointer         user_data);
 
-axl_bool           vortex_pull_start_handler               (char              * profile,
+axl_bool           vortex_pull_start_handler               (const char        * profile,
 							    int                 channel_num,
 							    VortexConnection  * connection,
-							    char              * serverName,
-							    char              * profile_content,
+							    const char        * serverName,
+							    const char        * profile_content,
 							    char             ** profile_content_reply,
 							    VortexEncoding      encoding,
 							    axlPointer          user_data);

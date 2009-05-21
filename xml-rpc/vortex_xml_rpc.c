@@ -1820,7 +1820,7 @@ void __vortex_xml_rpc_frame_received (VortexChannel    * channel,
  * filled.
  */
 axl_bool      __vortex_xml_rpc_parse_bootmsg (VortexCtx   * ctx,
-					      char        *  profile_content, 
+					      const char  *  profile_content, 
 					      char       ** resource, 
 					      char       ** profile_content_reply)
 {
@@ -1915,11 +1915,11 @@ axl_bool      __vortex_xml_rpc_parse_bootmsg (VortexCtx   * ctx,
  * is accepted or not accepted but so the channel. axl_false should be
  * returned only if the channel and the resource are denied.
  */
-axl_bool      __vortex_xml_rpc_start_msg (char              * profile,
+axl_bool      __vortex_xml_rpc_start_msg (const char        * profile,
 					  int                 channel_num,
 					  VortexConnection  * connection,
-					  char              * serverName,
-					  char              * profile_content,
+					  const char        * serverName,
+					  const char        * profile_content,
 					  char             ** profile_content_reply,
 					  VortexEncoding      encoding,
 					  axlPointer          user_data)

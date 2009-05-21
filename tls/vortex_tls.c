@@ -1477,11 +1477,11 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
  * @param profile_content_reply
  * @param encoding 
  */
-int      vortex_tls_process_start_msg (char              * profile,
+int      vortex_tls_process_start_msg (const char        * profile,
 				       int                 channel_num,
 				       VortexConnection  * connection,
-				       char              * serverName,
-				       char              * profile_content,
+				       const char        * serverName,
+				       const char        * profile_content,
 				       char             ** profile_content_reply,
 				       VortexEncoding      encoding,
 				       axlPointer          user_data)
@@ -1587,7 +1587,7 @@ int      vortex_tls_process_start_msg (char              * profile,
  * TLS request.
  */
 axl_bool      vortex_tls_default_accept     (VortexConnection * connection,
-					     char             * serverName)
+					     const char       * serverName)
 {
 	return axl_true;
 }
@@ -1598,7 +1598,7 @@ axl_bool      vortex_tls_default_accept     (VortexConnection * connection,
  * certificate used by the Vortex Library.
  */
 char  * vortex_tls_default_certificate (VortexConnection * connection,
-				        char             * serverName)
+				        const char       * serverName)
 {
 	VortexCtx   * ctx         = vortex_connection_get_ctx (connection);
 	char        * certificate;
@@ -1618,7 +1618,7 @@ char  * vortex_tls_default_certificate (VortexConnection * connection,
  * private key used by the Vortex Library.
  */
 char  * vortex_tls_default_private_key (VortexConnection * connection,
-				        char             * serverName)
+				        const char       * serverName)
 {
 	VortexCtx   * ctx = vortex_connection_get_ctx (connection);
 

@@ -788,11 +788,11 @@ void __vortex_tunnel_pass_octets (VortexConnection * connection)
  * @internal Implementation for the start tunnel request on the
  * connection provided.
  */
-axl_bool  __vortex_tunnel_start_request (char             * profile, 
+axl_bool  __vortex_tunnel_start_request (const char       * profile, 
 					 int                channel_num, 
 					 VortexConnection * connection, 
-					 char             * serverName, 
-					 char             * profile_content, 
+					 const char       * serverName, 
+					 const char       * profile_content, 
 					 char            ** profile_content_reply, 
 					 VortexEncoding     encoding, 
 					 axlPointer         user_data)
