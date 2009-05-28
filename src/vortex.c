@@ -4185,9 +4185,18 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * 
  */
 
-/** \page profile_example Implementing a profile tutorial (C API)
+/** 
+ * \page profile_example Implementing a profile tutorial (C API)
  * 
  * \section profile_example_intro Introduction
+ *
+ * <i><b>NOTE:</b> All code developed on this tutorial can be found
+ * inside the Vortex Library repository, inside the <b>test/</b>
+ * directory. Files created in this tutorial: vortex-simple-listener.c
+ * and vortex-simple-client.c. The following are the subversion links: </i>
+ *
+ *  - https://dolphin.aspl.es/svn/publico/af-arch/trunk/libvortex-1.1/test/vortex-simple-client.c
+ *  - https://dolphin.aspl.es/svn/publico/af-arch/trunk/libvortex-1.1/test/vortex-simple-listener.c
  *
  * We are going to create a simple server which implements a simple
  * profile defined as: <i>every message it receives, is replied with the payload
@@ -4490,11 +4499,9 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * vortex_profiles_register and implemented on top of the Vortex
  * Library.
  *
- * <i><b>NOTE:</b> All code developed on this tutorial can be
- * found inside the Vortex Library repository, directory <b>test</b>.</i>
  */
 
-/**
+/** 
  * \page programming_with_xml_rpc Vortex XML-RPC programming manual (C API)
  *
  * \section intro Introduction
