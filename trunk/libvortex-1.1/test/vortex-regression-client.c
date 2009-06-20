@@ -8120,7 +8120,7 @@ int main (int  argc, char ** argv)
   
  	run_test (test_02g, "Test 02-g", "check basic BEEP support with different frame sizes", -1, -1);
   
- 	run_test (test_02h, "Test 02-h", "check bandwith performrace with different window and segmentator sizes", -1, -1);
+ 	run_test (test_02h, "Test 02-h", "check bandwith performance with different window and segmentator sizes", -1, -1);
 
  	run_test (test_02i, "Test 02-i", "check enforced ordered delivery at server side", -1, -1);
 
