@@ -7544,7 +7544,7 @@ axl_bool          vortex_channel_is_up_to_date (VortexChannel * channel)
  *
  * @return a new Wait Reply object. 
  */
-WaitReplyData * vortex_channel_create_wait_reply ()
+WaitReplyData * vortex_channel_create_wait_reply (void)
 {
 	WaitReplyData * data;	
 	data           = axl_new (WaitReplyData, 1);
