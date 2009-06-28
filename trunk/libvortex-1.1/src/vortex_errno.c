@@ -327,7 +327,7 @@ char  * vortex_errno_get_error         (int  __errno)
 
 }
 
-char  * vortex_errno_get_last_error    ()
+char  * vortex_errno_get_last_error    (void)
 {
 	return (errno == 0) ? NULL : vortex_errno_get_error (errno);
 }

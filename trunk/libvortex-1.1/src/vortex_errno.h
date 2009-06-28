@@ -46,6 +46,6 @@ void    vortex_errno_show_last_error   (VortexCtx * ctx);
 
 char  * vortex_errno_get_error         (int  __errno);
 
-char  * vortex_errno_get_last_error    ();
+char  * vortex_errno_get_last_error    (void);
 
 #endif
