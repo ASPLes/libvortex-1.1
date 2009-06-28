@@ -38,19 +38,57 @@
 
 #include <py_vortex_ctx.h>
 
-typedef struct {
+struct _PyVortexCtx {
 	/* header required to initialize python required bits for
 	   every python object */
 	PyObject_HEAD
+
 	/* pointer to the vortex context */
 	VortexCtx * ctx;
-} PyVortexCtx;
+};
 
-static int py_vortex_ctx_init(PyVortexCtx *self, PyObject *args, PyObject *kwds)
+/** 
+ * @brief Allows to get the VortexCtx type definition found inside the
+ * PyVortexCtx encapsulation.
+ *
+ * @param py_vortex_ctx The PyVortexCtx that holds a reference to the
+ * inner VortexCtx.
+ *
+ * @return A reference to the inner VortexCtx.
+ */
+VortexCtx * py_vortex_ctx_get (PyVortexCtx * py_vortex_ctx)
+{
+	if (py_vortex_ctx == NULL)
+		return NULL;
+	
+	/* return current context created */
+	return py_vortex_ctx->ctx;
+}
+
+static int py_vortex_ctx_init_type (PyVortexCtx *self, PyObject *args, PyObject *kwds)
 {
     return 0;
 }
 
+/** 
+ * @brief Function used to allocate memory required by the object vortex.ctx
+ */
+static PyObject * py_vortex_ctx_new (PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+	PyVortexCtx *self;
+
+	/* create the object */
+	self = (PyVortexCtx *)type->tp_alloc(type, 0);
+
+	/* create the context */
+	self-> ctx = vortex_ctx_new ();
+
+	return (PyObject *)self;
+}
+
+/** 
+ * @brief Function used to finish and dealloc memory used by the object vortex.ctx
+ */
 static void py_vortex_ctx_dealloc (PyVortexCtx* self)
 {
 	/* free ctx */
@@ -63,30 +101,53 @@ static void py_vortex_ctx_dealloc (PyVortexCtx* self)
 	return;
 }
 
-static PyObject * py_vortex_ctx_new (PyTypeObject *type, PyObject *args, PyObject *kwds)
+/** 
+ * @brief Direct wrapper for the vortex_init_ctx function. This method
+ * receives a vortex.ctx object and initializes it calling to
+ * vortex_init_ctx.
+ */
+static PyObject * py_vortex_ctx_init (PyVortexCtx* self)
 {
-	PyVortexCtx *self;
+	PyObject *_result;
 
-	/* create the object */
-	self = (PyVortexCtx *)type->tp_alloc(type, 0);
-
-	return (PyObject *)self;
+	/* call to init context and build result value */
+	_result = Py_BuildValue ("i", vortex_init_ctx (self->ctx));
+	
+	return _result;
 }
+
+/** 
+ * @brief Direct wrapper for the vortex_init_ctx function. This method
+ * receives a vortex.ctx object and initializes it calling to
+ * vortex_init_ctx.
+ */
+static PyObject * py_vortex_ctx_exit (PyVortexCtx* self)
+{
+	/* call to finish context: do not dealloc ->ctx, this is
+	   already done by the type deallocator */
+	vortex_exit_ctx (self->ctx, axl_false);
+
+	/* return None */
+	return Py_BuildValue ("");
+}
+
 
 /* static PyMemberDef py_vortex_ctx_members[] = { */
 /* 	{NULL}  /\* Definition end *\/ */
 /* }; */
 
-/* static PyMethodDef py_vortex_ctx_methods[] = { */
-/* 	{NULL}  /\* Sentinel *\/ */
-/* }; */
-
-
+static PyMethodDef py_vortex_ctx_methods[] = { 
+	{"init", (PyCFunction) py_vortex_ctx_init, METH_NOARGS,
+	 "Inits the Vortex context starting all vortex functions associated. This API call is required before using the rest of the Vortex API."},
+	{"exit", (PyCFunction) py_vortex_ctx_exit, METH_NOARGS,
+	 "Finish the Vortex context. This call must be the last one Vortex API usage (for this context)."},
+ 	{NULL}  
+}; 
 
 static PyTypeObject PyVortexCtxType = {
     PyObject_HEAD_INIT(NULL)
     0,                         /* ob_size*/
-    "vortex.ctx",              /* tp_name*/
+    "vortex.Ctx",              /* tp_name*/
     sizeof(PyVortexCtx),       /* tp_basicsize*/
     0,                         /* tp_itemsize*/
     (destructor)py_vortex_ctx_dealloc, /* tp_dealloc*/
@@ -112,7 +173,7 @@ static PyTypeObject PyVortexCtxType = {
     0,		               /* tp_weaklistoffset */
     0,		               /* tp_iter */
     0,		               /* tp_iternext */
-    0, /* py_vortex_ctx_methods, */     /* tp_methods */
+    py_vortex_ctx_methods,     /* tp_methods */
     0, /* py_vortex_ctx_members, */     /* tp_members */
     0,                         /* tp_getset */
     0,                         /* tp_base */
@@ -120,7 +181,7 @@ static PyTypeObject PyVortexCtxType = {
     0,                         /* tp_descr_get */
     0,                         /* tp_descr_set */
     0,                         /* tp_dictoffset */
-    (initproc)py_vortex_ctx_init,      /* tp_init */
+    (initproc)py_vortex_ctx_init_type,      /* tp_init */
     0,                         /* tp_alloc */
     py_vortex_ctx_new,         /* tp_new */
 
@@ -137,7 +198,7 @@ void init_vortex_ctx (PyObject * module)
 		return;
 	
 	Py_INCREF (&PyVortexCtxType);
-	PyModule_AddObject(module, "ctx", (PyObject *)&PyVortexCtxType);
+	PyModule_AddObject(module, "Ctx", (PyObject *)&PyVortexCtxType);
 
 	return;
 }

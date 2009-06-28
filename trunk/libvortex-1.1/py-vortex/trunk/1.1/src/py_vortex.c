@@ -50,8 +50,9 @@ PyMODINIT_FUNC initvortex(void)
 	if (module == NULL)
 		return;
 
-	/* call to register ctx module */
+	/* call to register all vortex modules and types */
 	init_vortex_ctx (module);
+	init_vortex_connection (module);
 
 	return;
 }

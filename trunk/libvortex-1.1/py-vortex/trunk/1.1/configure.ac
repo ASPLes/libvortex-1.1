@@ -45,25 +45,44 @@ AC_INIT(pyvortex, PYGOBJECT_VERSION, [http://www.aspl.es/vortex])
 AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE
 
+# get python includes 
 PYTHON_INCLUDES=`python-config --includes 2>/dev/null`
 old_CPPFLAGS=$CPPFLAGS
 CPPFLAGS="-Wall -Werror $PYTHON_INCLUDES"
 echo "Python includes: $PYTHON_INCLUDES"
+AC_SUBST(PYTHON_INCLUDES)
 
 AC_TRY_COMPILE([#include <Python.h>],
   [Py_InitModule3(NULL, NULL, NULL);],
   python_devel_found=yes,
   python_devel_found=no)
-AC_MSG_RESULT($python_devel_found)
+AC_MSG_RESULT([Python development headers status: $python_devel_found])
 if test "x$python_devel_found" = "xno"; then
    AC_MSG_ERROR([Cannot find Python.h header or current python development environment do not compile symbols required. On debian try to install python-dev package.])
 fi
+
+# get python flags and libs
+PYTHON_CFLAGS=`python-config --cflags 2>/dev/null`
+PYTHON_LIBS=`python-config --ldflags 2>/dev/null`
+AC_SUBST(PYTHON_CFLAGS)
+AC_SUBST(PYTHON_LIBS)
+
+dnl check for vortex
+PKG_CHECK_MODULES(VORTEX, vortex-1.1)
+AC_SUBST(VORTEX_CFLAGS)
+AC_SUBST(VORTEX_LIBS)
+
+dnl check for axl
+PKG_CHECK_MODULES(AXL, axl)
+AC_SUBST(AXL_CFLAGS)
+AC_SUBST(AXL_LIBS)
 
 AC_PROG_LIBTOOL
 
 AC_OUTPUT([
 Makefile
-src/Makefile])
+src/Makefile
+test/Makefile])
 
 echo "------------------------------------------"
 echo "--       PyVortex EXTENSION SETTINGS    --"

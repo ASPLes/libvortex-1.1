@@ -1,8 +1,17 @@
-all: build_extension
+INCLUDES = -Wall -g -ansi -I. -DCOMPILATION_DATE=`date +%s` \
+	   -DVERSION=\"$(PYVORTEX_VERSION)\" \
+	   $(AXL_CFLAGS) $(VORTEX_CFLAGS) $(PYTHON_CFLAGS) 
 
-build_extension:
-	python setup.py build_ext --include-dirs /usr/include/vortex-1.1:/usr/include/axl:. --inplace
+lib_LTLIBRARIES    = libpython-vortex.la
+libpython_vortex_la_SOURCES  = \
+	py_vortex.h py_vortex.c \
+	py_vortex_ctx.h py_vortex_ctx.c \
+	py_vortex_connection.h py_vortex_connection.c
 
-clean: 
-	rm -rf build/
-	rm -f vortex.so
+libpython_vortex_la_LDFLAGS  = $(PYTHON_LIBS) $(VORTEX_LIBS) $(AXL_LIBS)
+
+# post-build script
+all-local: libpython-vortex.la
+	@echo "Running postbuild tasks.."
+	@cp `find ./ -name libpython-vortex.so* -type f` vortex.so
+
