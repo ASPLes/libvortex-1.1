@@ -38,13 +38,30 @@
 
 #include <py_vortex_connection.h>
 
-typedef struct {
+struct _PyVortexConnection {
 	/* header required to initialize python required bits for
 	   every python object */
 	PyObject_HEAD
 	/* pointer to the VortexConnection object */
 	VortexConnection * conn;
-} PyVortexConnection;
+};
+
+/** 
+ * @brief Allows to get the VortexConnection reference inside the
+ * PyVortexConnection.
+ *
+ * @param py_conn The reference that holds the connection inside.
+ *
+ * @return A reference to the VortexConnection inside or NULL if it fails.
+ */
+VortexConnection * py_vortex_connection_get (PyVortexConnection * py_conn)
+{
+	/* return NULL reference */
+	if (py_conn == NULL)
+		return NULL;
+	/* return py connection */
+	return py_conn->conn;
+}
 
 static int py_vortex_connection_init_type (PyVortexConnection *self, PyObject *args, PyObject *kwds)
 {
@@ -106,18 +123,36 @@ static PyObject * py_vortex_connection_is_ok (PyVortexConnection* self)
 }
 
 /** 
- * @brief Direct wrapper for the vortex_connection_is_ok function. 
+ * @brief Direct wrapper for the vortex_connection_close function. 
  */
 static PyObject * py_vortex_connection_close (PyVortexConnection* self)
 {
 	PyObject *_result;
+	axl_bool  result;
 
 	/* call to check connection and build the value with the
 	   result. Do not free the connection in the case of
 	   failure. */
-	_result = Py_BuildValue ("i", vortex_connection_close (self->conn));
+	result  = vortex_connection_close (self->conn);
+	_result = Py_BuildValue ("i", result);
+
+	/* check to nullify connection reference in the case the connection is closed */
+	if (result) 
+		self->conn = NULL;
 	
 	return _result;
+}
+
+/** 
+ * @brief Direct wrapper for the vortex_connection_shutdown function. 
+ */
+static PyObject * py_vortex_connection_shutdown (PyVortexConnection* self)
+{
+	/* shut down the connection */
+	vortex_connection_shutdown (self->conn);
+
+	/* return none */
+	return Py_BuildValue ("");
 }
 
 /** 
@@ -179,6 +214,9 @@ PyObject * py_vortex_connection_get_attr (PyObject *o, PyObject *attr_name) {
 	} else if (axl_cmp (attr, "port")) {
 		/* found error_msg attribute */
 		return Py_BuildValue ("s", vortex_connection_get_port (self->conn));
+	} else if (axl_cmp (attr, "num_channels")) {
+		/* found error_msg attribute */
+		return Py_BuildValue ("i", vortex_connection_channels_count (self->conn));
 	} /* end if */
 
 	/* printf ("Attribute not found: '%s'..\n", attr); */
@@ -191,11 +229,58 @@ PyObject * py_vortex_connection_get_attr (PyObject *o, PyObject *attr_name) {
 	return NULL;
 }
 
+
+static PyObject * py_vortex_connection_open_channel (PyObject * self, PyObject * args, PyObject * kwds)
+{
+	PyVortexChannel    * py_channel;
+	VortexChannel      * channel;
+	int                  number;
+	const char         * profile;
+
+	/* now parse arguments */
+	static char *kwlist[] = {"number", "profile", NULL};
+
+	/* parse and check result */
+	if (! PyArg_ParseTupleAndKeywords(args, kwds, "is", kwlist, &number, &profile))
+		return NULL;
+
+	/* now try to create the channel */
+	channel = vortex_channel_new (
+		/* pass the BEEP connection */
+		PY_CONN_GET(self), 
+		/* channel number and profile */
+		number, profile,
+		/* close handler */
+		NULL, NULL, 
+		/* frame received handler */
+		NULL, NULL,
+		/* on channel created */
+		NULL, NULL);
+
+	/* check for error found */
+	if (channel == NULL) 
+		return Py_BuildValue ("");
+
+	/* call to create reference */
+	py_channel = py_vortex_channel_create (channel);
+
+	/* return reference created */
+	return (PyObject *) py_channel;
+}
+
 static PyMethodDef py_vortex_connection_methods[] = { 
+	/* is_ok */
 	{"is_ok", (PyCFunction) py_vortex_connection_is_ok, METH_NOARGS,
 	 "Allows to check current vortex.Connection status. In the case False is returned the connection is no longer operative. "},
+	/* open_channel */
+	{"open_channel", (PyCFunction) py_vortex_connection_open_channel, METH_VARARGS | METH_KEYWORDS,
+	 "Allows to open a channel on the provided connection (BEEP session)."},
+	/* close */
 	{"close", (PyCFunction) py_vortex_connection_close, METH_NOARGS,
-	 "Allows to close a the BEEP session (vortex.Connection) following all BEEP close negotation phase. The method returns True in the case the connection was cleanly closed, otherwise False is returned. "},
+	 "Allows to close a the BEEP session (vortex.Connection) following all BEEP close negotation phase. The method returns True in the case the connection was cleanly closed, otherwise False is returned. If this operation finishes properly, the reference should not be used."},
+	/* shutdown */
+	{"shutdown", (PyCFunction) py_vortex_connection_shutdown, METH_NOARGS,
+	 "Allows to shutdown the BEEP session. This operation closes the underlaying transport without going into the full BEEP close process. It is still required to call to .close method to fully finish the connection. After the shutdown the caller can still use the reference and check its status. After a close operation the connection cannot be used again."},
  	{NULL}  
 }; 
 

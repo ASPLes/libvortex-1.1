@@ -88,6 +88,106 @@ def test_02():
     info ("Now closing the BEEP session..");
     conn.close ();
 
+    ctx.exit ()
+
+    # finish ctx 
+    del ctx
+
+    return True;
+
+# test connection shutdown before close.
+def test_03 ():
+    # call to initialize a context 
+    ctx = vortex.Ctx ();
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context");
+        return False;
+
+    # call to create a connection
+    conn = vortex.Connection (ctx, host, port);
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg);
+        return False;
+
+    # now shutdown
+    conn.shutdown ();
+    
+    # now close the connection (already shutted down)
+    conn.close ();
+
+    ctx.exit ()
+
+    # finish ctx 
+    del ctx
+
+    return True;
+
+# create a channel
+def test_04 ():
+    # call to initialize a context 
+    ctx = vortex.Ctx ();
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context");
+        return False;
+
+    # call to create a connection
+    conn = vortex.Connection (ctx, host, port);
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg);
+        return False;
+
+    # now create a channel
+    channel     = conn.open_channel (0, REGRESSION_URI);
+
+    if not channel:
+        error ("Expected to find proper channel creation, but error found:");
+        # get first message
+        error = conn.pop_channel_error ();
+        while error:
+            error ("Found error message: " + str (error.code) + ": " + error.msg);
+
+            # next message
+            error = conn.pop_channel_error ();
+        return False;
+
+    # check channel installed
+    if conn.num_channels != 2:
+        error ("Expected to find only two channels installed (administrative BEEP channel 0 and test channel) but found: " + conn.num_channels ());
+        return False;
+
+    # now close the channel
+    if not channel.close ():
+        error ("Expected to find proper channel close operation, but error found: ");
+        # get first message
+        error = conn.pop_channel_error ();
+        while error:
+            error ("Found error message: " + str (error.code) + ": " + error.msg);
+
+            # next message
+            error = conn.pop_channel_error ();
+        return False;
+
+    # check channel installed
+    if conn.num_channels != 1:
+        error ("Expected to find only one channel installed (administrative BEEP channel 0) but found: " + conn.num_channels ());
+        return False;
+    
+    # now close the connection (already shutted down)
+    conn.close ();
+
+    ctx.exit ()
+
+    # finish ctx 
+    del ctx
+
     return True;
 
 ###########################
@@ -124,12 +224,17 @@ def run_all_tests():
 # declare list of tests available
 tests = [
     (test_01, "Check Vortex context initialization"),
-    (test_02, "Check Vortex basic BEEP connection")
+    (test_02, "Check Vortex basic BEEP connection"),
+    (test_03, "Check Vortex basic BEEP connection (shutdown)"),
+    (test_04, "Check Vortex basic BEEP channel creation")
 ]
 
 # declare default host and port
 host = "localhost"
 port = "44010"
+
+# regression test beep uris
+REGRESSION_URI = "http://iana.org/beep/transient/vortex-regression";
 
 if __name__ == '__main__':
     iterator = 0

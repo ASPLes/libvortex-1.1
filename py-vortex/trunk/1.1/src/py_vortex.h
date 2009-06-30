@@ -52,5 +52,6 @@
 /* include other modules */
 #include <py_vortex_ctx.h>
 #include <py_vortex_connection.h>
+#include <py_vortex_channel.h>
 
 #endif
