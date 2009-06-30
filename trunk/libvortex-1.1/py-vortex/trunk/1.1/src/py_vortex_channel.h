@@ -35,25 +35,16 @@
  *      Email address:
  *         info@aspl.es - http://www.aspl.es/vortex
  */
+#ifndef __PY_VORTEX_CHANNEL_H__
+#define __PY_VORTEX_CHANNEL_H__
+
+/* include base header */
 #include <py_vortex.h>
 
-/** 
- * @internal Function that inits all vortex modules and classes.
- */
-PyMODINIT_FUNC initvortex(void)
-{
-	PyObject * module;
+typedef struct _PyVortexChannel PyVortexChannel;
 
-	/* register vortex module */
-	module = Py_InitModule3("vortex", NULL, 
-			   "Example module that creates an extension type.");
-	if (module == NULL)
-		return;
+void              init_vortex_channel      (PyObject * module);
 
-	/* call to register all vortex modules and types */
-	init_vortex_ctx        (module);
-	init_vortex_connection (module);
-	init_vortex_channel    (module);
+PyVortexChannel * py_vortex_channel_create (VortexChannel * channel);
 
-	return;
-}
+#endif

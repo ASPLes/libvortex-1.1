@@ -38,9 +38,19 @@
 #ifndef __PY_VORTEX_CONNECTION_H__
 #define __PY_VORTEX_CONNECTION_H__
 
+/** 
+ * @brief Type representation for the python object that holds a
+ * VortexConnection inside it.
+ */
+typedef struct _PyVortexConnection PyVortexConnection;
+
 /* include base header */
 #include <py_vortex.h>
 
 void init_vortex_connection (PyObject * module);
+
+VortexConnection * py_vortex_connection_get (PyVortexConnection * py_conn);
+
+#define PY_CONN_GET(py_obj) (((PyVortexConnection*)self)->conn)
 
 #endif
