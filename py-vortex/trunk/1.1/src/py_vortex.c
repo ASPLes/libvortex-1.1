@@ -51,9 +51,10 @@ PyMODINIT_FUNC initvortex(void)
 		return;
 
 	/* call to register all vortex modules and types */
-	init_vortex_ctx        (module);
-	init_vortex_connection (module);
-	init_vortex_channel    (module);
+	init_vortex_ctx         (module);
+	init_vortex_connection  (module);
+	init_vortex_channel     (module);
+	init_vortex_async_queue (module);
 
 	return;
 }

@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 #  PyVortex: Vortex Library Python bindings
 #  Copyright (C) 2009 Advanced Software Production Line, S.L.
@@ -45,6 +46,58 @@ import vortex
 ####################
 # regression tests #
 ####################
+
+def test_00_a():
+    ##########
+    # create a queue
+    queue = vortex.AsyncQueue ();
+
+    # call to terminate queue 
+    del queue;
+
+    #########
+
+    # create a queue
+    queue = vortex.AsyncQueue ();
+
+    # call to unref
+    iterator = 0
+    while iterator < 100:
+        # unref 
+        queue.unref ();
+        
+        # next operation
+        iterator += 1;
+
+    # and now finish 
+    del queue;
+
+    ######### now check data storage
+    queue = vortex.AsyncQueue ();
+    
+    # push items
+    queue.push (1);
+    queue.push (2);
+    queue.push (3);
+    
+    # get items
+    value = queue.pop ();
+    if value != 3:
+        error ("Expected to find 3 but found: " + value);
+        return False;
+
+    if value != 2:
+        error ("Expected to find 2 but found: " + value);
+        return False;
+
+    if value != 1:
+        error ("Expected to find 1 but found: " + value);
+        return False;
+
+    # call to unref 
+    queue.unref ();
+
+    return True;
 
 def test_01():
     # call to initilize a context and to finish it 
@@ -190,6 +243,71 @@ def test_04 ():
 
     return True;
 
+# create a channel
+def test_05 ():
+    # call to initialize a context 
+    ctx = vortex.Ctx ();
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context");
+        return False;
+
+    # call to create a connection
+    conn = vortex.Connection (ctx, host, port);
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg);
+        return False;
+
+    # now create a channel
+    channel  = conn.open_channel (0, REGRESSION_URI);
+
+    if not channel:
+        error ("Expected to find proper channel creation, but error found:");
+        # get first message
+        error = conn.pop_channel_error ();
+        while error:
+            error ("Found error message: " + str (error.code) + ": " + error.msg);
+
+            # next message
+            error = conn.pop_channel_error ();
+        return False;
+
+    # configure frame received handler 
+    queue = vortex.AsyncQueue ();
+    channel.set_frame_received (test_05_received, queue);
+
+    # send a message to test */
+    channel.send_msg ("This is a test")
+
+    # wait for the reply 
+    frame = queue.pop ();
+
+    # finish the queue (not required)
+    queue.unref ();
+
+    # check frame content here 
+    if frame.content != "This is a test":
+        error ("Received frame content " + frame.content + ", but expected: 'This is a test'");
+        return False;
+
+    # check frame type
+    if frame.type != "RPY":
+        error ("Expected to receive frame type RPY but found: " + frame.type);
+        return False;
+    
+    # now close the connection (already shutted down)
+    conn.close ();
+
+    ctx.exit ()
+
+    # finish ctx 
+    del ctx
+
+    return True;
+
 ###########################
 # intraestructure support #
 ###########################
@@ -206,6 +324,7 @@ def ok (msg):
 def run_all_tests():
     test_count = 0
     for test in tests:
+
         # print log
         info ("Test-" + str(test_count) + ": Running " + test[1])
         
@@ -223,15 +342,17 @@ def run_all_tests():
 
 # declare list of tests available
 tests = [
-    (test_01, "Check Vortex context initialization"),
-    (test_02, "Check Vortex basic BEEP connection"),
-    (test_03, "Check Vortex basic BEEP connection (shutdown)"),
-    (test_04, "Check Vortex basic BEEP channel creation")
+    (test_00_a, "Check PyVortex async queue wrapper")
+#    (test_01,   "Check PyVortex context initialization"),
+#    (test_02,   "Check PyVortex basic BEEP connection"),
+#    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
+#    (test_04,   "Check PyVortex basic BEEP channel creation"),
+#    (test_05,   "Check BEEP basic data exchange")
 ]
 
 # declare default host and port
-host = "localhost"
-port = "44010"
+host     = "localhost"
+port     = "44010"
 
 # regression test beep uris
 REGRESSION_URI = "http://iana.org/beep/transient/vortex-regression";

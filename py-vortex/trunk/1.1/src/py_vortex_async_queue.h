@@ -35,24 +35,20 @@
  *      Email address:
  *         info@aspl.es - http://www.aspl.es/vortex
  */
+#ifndef __PY_VORTEX_ASYNC_QUEUE_H__
+#define __PY_VORTEX_ASYNC_QUEUE_H__
 
-#ifndef __PY_VORTEX_H__
-#define __PY_VORTEX_H__
+/* include base header */
+#include <py_vortex.h>
 
-/* include python devel headers */
-#include <Python.h>
+/** 
+ * @brief Object definition that represents the Python encapsulation
+ * for VortexAsyncQueue API type.
+ */
+typedef struct _PyVortexAsyncQueue PyVortexAsyncQueue;
 
-/* include vortex headers */
-#include <vortex.h>
+VortexAsyncQueue * py_vortex_async_queue_get (PyVortexAsyncQueue * py_vortex_async_queue);
 
-#ifndef PyMODINIT_FUNC	/* declarations for DLL import/export */
-#define PyMODINIT_FUNC void
-#endif
-
-/* include other modules */
-#include <py_vortex_ctx.h>
-#include <py_vortex_connection.h>
-#include <py_vortex_channel.h>
-#include <py_vortex_async_queue.h>
+void init_vortex_async_queue(PyObject * module);
 
 #endif
