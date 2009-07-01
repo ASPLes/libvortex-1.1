@@ -1201,6 +1201,56 @@ void               vortex_async_queue_unref     (VortexAsyncQueue * queue)
 }
 
 /** 
+ * @brief Allows to perform a safe unref operation (nullifying the
+ * caller's queue reference).
+ *
+ * @param queue The queue where to perform the safe unref operation.
+ */
+void               vortex_async_queue_safe_unref (VortexAsyncQueue ** queue)
+{
+	VortexAsyncQueue * _queue = (*queue);
+
+	v_return_if_fail (_queue);
+
+	/* get the mutex */
+	vortex_mutex_lock (&_queue->mutex);
+
+	/* update reference */
+	_queue->reference--;
+
+	/* check reference couting */
+	if (_queue->reference == 0) {
+
+		/* nullify queue */
+		(*queue) = NULL;
+
+		/* free the list */
+		axl_list_free (_queue->data);
+		_queue->data = NULL;
+
+		/* free the conditional var */
+		vortex_cond_destroy (&_queue->cond);
+		
+		/* unlock the mutex */
+		vortex_mutex_unlock (&_queue->mutex);
+
+		/* destroy the mutex */
+		vortex_mutex_destroy (&_queue->mutex);
+
+		/* free the node itself */
+		axl_free (_queue);
+
+		return;
+	} /* end if */
+
+	/* unlock the mutex */
+	vortex_mutex_unlock (&_queue->mutex);
+	
+	return;
+}
+
+
+/** 
  * @brief Allows to perform a foreach operation on the provided queue,
  * applying the provided function over all items stored.
  * 
