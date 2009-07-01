@@ -92,7 +92,7 @@ static PyObject * py_vortex_async_queue_new (PyTypeObject *type, PyObject *args,
 static void py_vortex_async_queue_dealloc (PyVortexAsyncQueue* self)
 {
 	/* free async_queue */
-	vortex_async_queue_safe_unref (&(self->async_queue));
+	vortex_async_queue_safe_unref (&(self->async_queue)); 
 
 	/* free the node it self */
 	self->ob_type->tp_free ((PyObject*)self);
@@ -103,13 +103,19 @@ static void py_vortex_async_queue_dealloc (PyVortexAsyncQueue* self)
 /** 
  * @brief Direct wrapper for the vortex_async_queue_push function. 
  */
-static PyObject * py_vortex_async_queue_push (PyVortexAsyncQueue* self, PyObject * arg)
+static PyObject * py_vortex_async_queue_push (PyVortexAsyncQueue* self, PyObject * args)
 {
-	/* get a reference to the object */
-	Py_INCREF (arg);
+	PyObject * obj;
+
+	/* now implement other attributes */
+	if (! PyArg_ParseTuple (args, "O", &obj))
+		return NULL;
+
+	/* incremenet reference count */
+	Py_INCREF (obj);
 
 	/* push the item */
-	vortex_async_queue_push (self->async_queue, arg);
+	vortex_async_queue_push (self->async_queue, obj);
 
 	/* return none */
 	return Py_BuildValue ("");
@@ -126,7 +132,7 @@ static PyObject * py_vortex_async_queue_pop (PyVortexAsyncQueue* self)
 	_result = vortex_async_queue_pop (self->async_queue);
 
 	/* decrement reference counting */
-	Py_DECREF (_result);
+	/* Py_DECREF (_result);*/
 
 	return _result;
 }
@@ -149,7 +155,7 @@ static PyObject * py_vortex_async_queue_timedpop (PyVortexAsyncQueue* self, PyOb
 	_result = vortex_async_queue_timedpop (self->async_queue, microseconds);
 
 	/* decrement reference counting */
-	Py_DECREF (_result);
+	/* Py_DECREF (_result); */
 
 	return _result;
 }
@@ -160,7 +166,7 @@ static PyObject * py_vortex_async_queue_timedpop (PyVortexAsyncQueue* self, PyOb
 static PyObject * py_vortex_async_queue_unref (PyVortexAsyncQueue* self)
 {
 	/* decrease reference counting */
-	vortex_async_queue_safe_unref (&(self->async_queue));
+	vortex_async_queue_safe_unref (&(self->async_queue)); 
 
 	/* return None */
 	return Py_BuildValue ("");
