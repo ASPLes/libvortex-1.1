@@ -94,6 +94,10 @@ VortexCtx * vortex_ctx_new (void)
 	/**** vortex_thread_pool.c: init ****/
 	result->thread_pool_exclusive = axl_true;
 
+	/* init reference counting */
+	vortex_mutex_create (&result->ref_mutex);
+	result->ref_count = 1;
+
 	/* return context created */
 	return result;
 }
@@ -337,6 +341,45 @@ void        vortex_ctx_install_cleanup (VortexCtx * ctx,
 }
 
 /** 
+ * @brief Allows to increase reference count to the VortexCtx
+ * instance.
+ *
+ * @param ctx The reference to update its reference count.
+ */
+void        vortex_ctx_ref                       (VortexCtx  * ctx)
+{
+	/* do nothing */
+	if (ctx == NULL)
+		return;
+
+	/* acquire the mutex */
+	vortex_mutex_lock (&ctx->ref_mutex);
+	ctx->ref_count++;
+	vortex_mutex_unlock (&ctx->ref_mutex);
+
+	return;
+}
+
+/** 
+ * @brief Decrease reference count and nullify caller's pointer in the
+ * case the count reaches 0.
+ *
+ * @param ctx The context to decrement reference count. In the case 0
+ * is reached the VortexCtx instance is deallocated and the callers
+ * reference is nullified.
+ */
+void        vortex_ctx_unref                     (VortexCtx ** ctx)
+{
+	/* call to unref */
+	vortex_ctx_free (*ctx);
+	
+	/* check to nullify */
+	if ((*ctx) != NULL && (*ctx)->ref_count <= 0)
+		(*ctx) = NULL;
+	return;
+}
+
+/** 
  * @brief Releases the memory allocated by the provided \ref
  * VortexCtx.
  * 
@@ -350,6 +393,16 @@ void        vortex_ctx_free (VortexCtx * ctx)
 	/* do nothing */
 	if (ctx == NULL)
 		return;
+
+	/* acquire the mutex */
+	vortex_mutex_lock (&ctx->ref_mutex);
+	ctx->ref_count--;
+
+	if (ctx->ref_count != 0) {
+		/* release mutex */
+		vortex_mutex_unlock (&ctx->ref_mutex);
+		return;
+	} /* end if */
 	
 	/* call to cleanup functions defined */
 	if (ctx->cleanups) {
@@ -376,6 +429,10 @@ void        vortex_ctx_free (VortexCtx * ctx)
 
 	/* release log mutex */
 	vortex_mutex_destroy (&ctx->log_mutex);
+	
+	/* release and clean mutex */
+	vortex_mutex_unlock (&ctx->ref_mutex);
+	vortex_mutex_destroy (&ctx->ref_mutex);
 
 	/* free the context */
 	axl_free (ctx);
