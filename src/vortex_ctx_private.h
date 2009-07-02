@@ -44,6 +44,8 @@
 #include <vortex.h>
 
 struct _VortexCtx {
+	VortexMutex          ref_mutex;
+	int                  ref_count;
 
 	/* global hash to store arbitrary data */
 	VortexHash         * data;
