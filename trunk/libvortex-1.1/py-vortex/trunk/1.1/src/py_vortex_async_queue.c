@@ -112,7 +112,7 @@ static PyObject * py_vortex_async_queue_push (PyVortexAsyncQueue* self, PyObject
 		return NULL;
 
 	/* incremenet reference count */
-	Py_INCREF (obj);
+	Py_INCREF (obj); 
 
 	/* push the item */
 	vortex_async_queue_push (self->async_queue, obj);
@@ -126,13 +126,17 @@ static PyObject * py_vortex_async_queue_push (PyVortexAsyncQueue* self, PyObject
  */
 static PyObject * py_vortex_async_queue_pop (PyVortexAsyncQueue* self)
 {
-	PyObject *_result;
-
+	PyObject           * _result;
+	
 	/* get the value */
 	_result = vortex_async_queue_pop (self->async_queue);
 
-	/* decrement reference counting */
-	/* Py_DECREF (_result);*/
+	/* acquire the GIL before returning to ensure the caller is
+	 * running inside the authorized thread */
+	PyGILState_Ensure();
+
+	/* do not decrement reference counting. It was increased to
+	 * provide a reference owned by the caller */
 
 	return _result;
 }
@@ -154,8 +158,12 @@ static PyObject * py_vortex_async_queue_timedpop (PyVortexAsyncQueue* self, PyOb
 	/* get the value */
 	_result = vortex_async_queue_timedpop (self->async_queue, microseconds);
 
-	/* decrement reference counting */
-	/* Py_DECREF (_result); */
+	/* acquire the GIL before returning to ensure the caller is
+	 * running inside the authorized thread */
+	PyGILState_Ensure();
+
+	/* do not decrement reference counting. It was increased to
+	 * provide a reference owned by the caller */
 
 	return _result;
 }

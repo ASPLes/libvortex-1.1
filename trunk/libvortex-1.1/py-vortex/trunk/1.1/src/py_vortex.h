@@ -54,5 +54,6 @@
 #include <py_vortex_connection.h>
 #include <py_vortex_channel.h>
 #include <py_vortex_async_queue.h>
+#include <py_vortex_frame.h>
 
 #endif

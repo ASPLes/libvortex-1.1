@@ -54,7 +54,7 @@ struct _PyVortexConnection {
  *
  * @return A reference to the VortexConnection inside or NULL if it fails.
  */
-VortexConnection * py_vortex_connection_get (PyVortexConnection * py_conn)
+VortexConnection * py_vortex_connection_get  (PyVortexConnection * py_conn)
 {
 	/* return NULL reference */
 	if (py_conn == NULL)
@@ -84,14 +84,17 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 	/* now parse arguments */
 	static char *kwlist[] = {"ctx", "host", "port", NULL};
 
-	/* parse and check result */
-	if (! PyArg_ParseTupleAndKeywords(args, kwds, "Oss", kwlist, &py_vortex_ctx, &host, &port))
-		return NULL;
-
-	/* printf ("Received request to connect to: %s:%s\n", host, port); */
-	
-	/* create the vortex connection in a blocking manner */
-	self->conn = vortex_connection_new (py_vortex_ctx_get (py_vortex_ctx), host, port, NULL, NULL);
+	/* check args */
+	if (args != NULL) {
+		/* parse and check result */
+		if (! PyArg_ParseTupleAndKeywords(args, kwds, "Oss", kwlist, &py_vortex_ctx, &host, &port))
+			return (PyObject *) self;
+		
+		/* create the vortex connection in a blocking manner */
+		self->conn = vortex_connection_new (py_vortex_ctx_get (py_vortex_ctx), host, port, NULL, NULL);
+	} else {
+		printf ("Args is null, empty initialization..\n");
+	} /* end if */
 
 	return (PyObject *)self;
 }
@@ -327,6 +330,27 @@ static PyTypeObject PyVortexConnectionType = {
     py_vortex_connection_new,  /* tp_new */
 
 };
+
+/** 
+ * @brief Allows to create a new PyVortexConnection instance using the
+ * reference received.
+ *
+ * @param conn The connection to use as reference to wrap
+ *
+ * @return A newly created PyVortexConnection reference.
+ */
+PyVortexConnection * py_vortex_connection_create   (VortexConnection * conn)
+{
+	/* return a new instance */
+	PyVortexConnection * obj = (PyVortexConnection *) PyObject_CallObject ((PyObject *) &PyVortexConnectionType, NULL);
+
+	/* set channel reference received */
+	if (obj)
+		obj->conn = conn;
+
+	/* return object */
+	return obj;
+}
 
 /** 
  * @brief Inits the vortex connection module. It is implemented as a type.

@@ -329,6 +329,14 @@ def test_04 ():
 
     return True
 
+def test_05_received (conn, channel, frame, data):
+    print ("test_05_received: Frame received, content: " + frame.payload + ", size: " + str (frame.payload_size));
+
+    # push data received
+    data.push (frame);
+    
+    return
+
 # create a channel
 def test_05 ():
     # call to initialize a context 
@@ -353,12 +361,12 @@ def test_05 ():
     if not channel:
         error ("Expected to find proper channel creation, but error found:")
         # get first message
-        error = conn.pop_channel_error ()
-        while error:
-            error ("Found error message: " + str (error.code) + ": " + error.msg)
+        error_data = conn.pop_channel_error ()
+        while error_data:
+            error ("Found error message: " + str (error_data.code) + ": " + error_data.msg)
 
             # next message
-            error = conn.pop_channel_error ()
+            error_data = conn.pop_channel_error ()
         return False
 
     # configure frame received handler 
@@ -366,31 +374,38 @@ def test_05 ():
     channel.set_frame_received (test_05_received, queue)
 
     # send a message to test */
-    channel.send_msg ("This is a test")
+    print ("Sending frame..")
+    channel.send_msg ("This is a test", 14)
 
-    # wait for the reply 
+    # wait for the reply
+    print ("Wait for reply..");
     frame = queue.pop ()
 
     # finish the queue (not required)
     queue.unref ()
 
+    print ("Checking content received..")
+
     # check frame content here 
-    if frame.content != "This is a test":
-        error ("Received frame content " + frame.content + ", but expected: 'This is a test'")
+    if frame.payload != "This is a test":
+        error ("Received frame content '" + frame.payload + "', but expected: 'This is a test'")
         return False
 
     # check frame type
     if frame.type != "RPY":
         error ("Expected to receive frame type RPY but found: " + frame.type)
         return False
+
+    print ("Closing connection..")
     
     # now close the connection (already shutted down)
     conn.close ()
 
+    print ("finishing context..")
+
     ctx.exit ()
 
-    # finish ctx 
-    del ctx
+    print ("Returning from test..")
 
     return True
 
@@ -407,7 +422,7 @@ def error (msg):
 def ok (msg):
     print "[  OK   ] : " + msg
 
-def run_all_tests():
+def run_all_tests ():
     test_count = 0
     for test in tests:
 
@@ -428,11 +443,11 @@ def run_all_tests():
 
 # declare list of tests available
 tests = [
-    (test_00_a, "Check PyVortex async queue wrapper"),
-    (test_01,   "Check PyVortex context initialization"),
-    (test_02,   "Check PyVortex basic BEEP connection"),
-    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
-    (test_04,   "Check PyVortex basic BEEP channel creation"),
+#    (test_00_a, "Check PyVortex async queue wrapper"),
+#    (test_01,   "Check PyVortex context initialization"),
+#    (test_02,   "Check PyVortex basic BEEP connection"),
+#    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
+#    (test_04,   "Check PyVortex basic BEEP channel creation"),
     (test_05,   "Check BEEP basic data exchange")
 ]
 

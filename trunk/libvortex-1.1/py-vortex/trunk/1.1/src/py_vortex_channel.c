@@ -44,6 +44,9 @@ struct _PyVortexChannel {
 	PyObject_HEAD
 	/* pointer to the VortexChannel object */
 	VortexChannel * channel;
+	/* frame received handler and data */
+	PyObject      * frame_received;
+	PyObject      * frame_received_data;
 };
 
 static int py_vortex_channel_init_type (PyVortexChannel *self, PyObject *args, PyObject *kwds)
@@ -98,6 +101,149 @@ static PyObject * py_vortex_channel_close (PyVortexChannel* self)
 
 
 /** 
+ * @internal Function used to implement general frame received
+ * handling.
+ */
+void     py_vortex_channel_received     (VortexChannel    * channel,
+					 VortexConnection * connection,
+					 VortexFrame      * frame,
+					 axlPointer         user_data)
+{
+	/* reference to the python channel */
+	PyVortexChannel    * py_channel = user_data; 
+	PyVortexConnection * py_conn;
+	PyVortexFrame      * py_frame;
+	PyObject           * args;
+	PyGILState_STATE     state;
+
+	printf ("Frame received, preparing invocation..\n");
+
+	/* acquire the GIL */
+	state = PyGILState_Ensure();
+
+	printf ("Ok..proceeding..\n");
+
+	/* create a PyVortexFrame instance */
+	py_frame = py_vortex_frame_create (frame);
+	
+	/* create a PyVortexConnection instance */
+	py_conn  = py_vortex_connection_create (connection);
+
+	/* create a tuple to contain arguments */
+	args = PyTuple_New (4);
+
+	Py_INCREF ((PyObject *) py_conn);
+	PyTuple_SetItem (args, 0, (PyObject *) py_conn);
+
+	Py_INCREF ((PyObject *) py_channel);
+	PyTuple_SetItem (args, 1, (PyObject *) py_channel);
+
+	Py_INCREF ((PyObject *) py_frame);
+	PyTuple_SetItem (args, 2, (PyObject *) py_frame);
+
+	Py_INCREF ((PyObject *) py_channel->frame_received_data);
+	PyTuple_SetItem (args, 3, (PyObject *) py_channel->frame_received_data);
+
+	printf ("Frame received, dictionary created..\n");
+
+	/* now invoke */
+	printf ("py_vortex_channel_frame_received Channel: %p\n", py_channel);
+	printf ("py_vortex_channel_frame_received frame received: %p\n", py_channel->frame_received);
+	printf ("py_vortex_channel_frame_received args: %p\n", args);
+	
+	PyObject_Call (py_channel->frame_received, args, NULL);
+
+	printf ("Frame received, call complete..\n");
+	
+	/* release tuple and dict */
+	Py_DECREF (args);
+
+	printf ("Frame received, memory released..\n");
+
+	/* release memory used by py_frame, py_conn, py_channel ? */
+
+	/* release the GIL */
+	PyGILState_Release(state);
+
+	printf ("GIL released!..\n");
+
+	return;
+}
+
+static PyObject * py_vortex_channel_set_frame_received (PyVortexChannel * self, PyObject * args, PyObject * kwds)
+{
+	PyObject * handler = NULL;
+	PyObject * data    = NULL;
+
+	/* parse args received */
+	static char *kwlist[] = {"handler", "data", NULL};
+
+	/* parse and check result */
+	if (! PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &handler, &data))
+		return NULL;
+
+	/* check values received */
+	if (! PyCallable_Check (handler)) 
+		return NULL;
+
+	/* unref prevous handler and data associated if defined */
+	if (self->frame_received) {
+		Py_DECREF (self->frame_received);
+	} /* end if */
+	self->frame_received = handler;
+
+	if (self->frame_received_data) {
+		Py_DECREF (self->frame_received_data);
+	} /* end if */
+	self->frame_received_data = data;
+
+	/* in the case no frame received configured, set None value */
+	if (! self->frame_received_data) {
+		/* set None */
+		self->frame_received_data = Py_BuildValue ("");
+	}
+
+	/* increment reference counting */
+	if (self->frame_received)
+		Py_INCREF (self->frame_received);
+	if (self->frame_received_data)
+		Py_INCREF (self->frame_received_data);
+
+	printf ("Configured frame received..\n");
+	printf ("Channel: %p\n", self);
+	printf ("frame received: %p\n", self->frame_received);
+
+	/* reconfigure the frame received for used for all channels */
+	vortex_channel_set_received_handler (self->channel, py_vortex_channel_received, self);
+
+	/* return none */
+	return Py_BuildValue ("");
+}
+
+static PyObject * py_vortex_channel_send_msg (PyVortexChannel * self, PyObject * args)
+{
+	const char * content = NULL;
+	int          size    = 0;
+	axl_bool     result;
+	int          msg_no  = 0;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "si", &content, &size))
+		return NULL;
+
+	/* call to send the message */
+	result = vortex_channel_send_msg (self->channel, content, size, &msg_no);
+
+	/* return none in the case of failure */
+	if (! result)
+		return Py_BuildValue ("");
+
+	/* and return the message number used in the case of proper
+	 * send operation */
+	return Py_BuildValue ("i", msg_no);
+}
+
+/** 
  * @brief This function implements the generic attribute getting that
  * allows to perform complex member resolution (not merely direct
  * member access).
@@ -130,6 +276,10 @@ PyObject * py_vortex_channel_get_attr (PyObject *o, PyObject *attr_name) {
 }
 
 static PyMethodDef py_vortex_channel_methods[] = { 
+	{"send_msg", (PyCFunction) py_vortex_channel_send_msg, METH_VARARGS,
+	 "Allows to send the message with type MSG."},
+	{"set_frame_received", (PyCFunction) py_vortex_channel_set_frame_received, METH_VARARGS | METH_KEYWORDS,
+	 "Allows to configure the frame received handler."},
 	{"close", (PyCFunction) py_vortex_channel_close, METH_NOARGS,
 	 "Allows to close the selected channel and to remove it from the BEEP session."},
  	{NULL}  
