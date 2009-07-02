@@ -35,24 +35,16 @@
  *      Email address:
  *         info@aspl.es - http://www.aspl.es/vortex
  */
-#ifndef __PY_VORTEX_CONNECTION_H__
-#define __PY_VORTEX_CONNECTION_H__
-
-/** 
- * @brief Type representation for the python object that holds a
- * VortexConnection inside it.
- */
-typedef struct _PyVortexConnection PyVortexConnection;
+#ifndef __PY_VORTEX_FRAME_H__
+#define __PY_VORTEX_FRAME_H__
 
 /* include base header */
 #include <py_vortex.h>
 
-void init_vortex_connection (PyObject * module);
+typedef struct _PyVortexFrame PyVortexFrame;
 
-VortexConnection   * py_vortex_connection_get    (PyVortexConnection * py_conn);
+void              init_vortex_frame      (PyObject * module);
 
-PyVortexConnection * py_vortex_connection_create (VortexConnection * conn);
-
-#define PY_CONN_GET(py_obj) (((PyVortexConnection*)self)->conn)
+PyVortexFrame * py_vortex_frame_create (VortexFrame * frame);
 
 #endif

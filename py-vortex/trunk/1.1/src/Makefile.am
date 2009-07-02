@@ -8,7 +8,8 @@ libpython_vortex_la_SOURCES  = \
 	py_vortex_ctx.h py_vortex_ctx.c \
 	py_vortex_connection.h py_vortex_connection.c \
 	py_vortex_channel.h py_vortex_channel.c \
-	py_vortex_async_queue.h py_vortex_async_queue.c
+	py_vortex_async_queue.h py_vortex_async_queue.c \
+	py_vortex_frame.h py_vortex_frame.c
 
 libpython_vortex_la_LDFLAGS  = $(PYTHON_LIBS) $(VORTEX_LIBS) $(AXL_LIBS)
 
