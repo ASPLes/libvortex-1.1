@@ -126,6 +126,11 @@ void     py_vortex_channel_received     (VortexChannel    * channel,
 	/* create a PyVortexConnection instance */
 	py_conn  = py_vortex_connection_create (connection);
 
+	/* rebuild py_channel in the case null reference is received
+	 * inside */
+	if (py_channel->channel == NULL)
+		py_channel->channel = channel;
+
 	/* create a tuple to contain arguments */
 	args = PyTuple_New (4);
 
@@ -140,6 +145,8 @@ void     py_vortex_channel_received     (VortexChannel    * channel,
 	/* increment reference counting because the tuple will
 	 * decrement the reference passed when he thinks it is no
 	 * longer used. */
+	printf ("py_channel: %p..\n", py_channel);
+	printf ("py_channel->frame_received_data: %p..\n", py_channel->frame_received_data);
 	Py_INCREF (py_channel->frame_received_data);
 	PyTuple_SetItem (args, 3, py_channel->frame_received_data);
 
@@ -153,7 +160,48 @@ void     py_vortex_channel_received     (VortexChannel    * channel,
 	/* release the GIL */
 	PyGILState_Release(state);
 
+	printf ("py_channel_frame_received finished..\n");
+
 	return;
+}
+
+/** 
+ * @brief Allows to configure the python frame received handler
+ * identified by the handler variable and its associated data (data).
+ * 
+ * @param self The channel to be configured with a frame received handler.
+ *
+ * @param handler The handler to be called on each frame received.
+ *
+ * @param data User defined data to be passed to the handler.
+ *
+ * @return axl_true if the frame received handler was properly
+ * configured otherwise axl_false is returned.
+ */
+axl_bool  py_vortex_channel_configure_frame_received  (PyVortexChannel * self, PyObject * handler, PyObject * data)
+{
+	/* check values received */
+	if (! PyCallable_Check (handler) || self == NULL) 
+		return axl_false;
+
+	/* unref prevous handler and data associated if defined */
+	Py_XDECREF (self->frame_received);
+	self->frame_received = handler;
+
+	Py_XDECREF (self->frame_received_data);
+	self->frame_received_data = data ? data : Py_None;
+
+	printf ("--> Configuring self->frame_received_data: %p..\n", self->frame_received_data);
+
+	/* increment reference counting */
+	Py_XINCREF (self->frame_received);
+	Py_INCREF  (self->frame_received_data);
+
+	/* reconfigure the frame received for used for all channels */
+	if (self->channel)
+		vortex_channel_set_received_handler (self->channel, py_vortex_channel_received, self);
+
+	return axl_true;
 }
 
 static PyObject * py_vortex_channel_set_frame_received (PyVortexChannel * self, PyObject * args, PyObject * kwds)
@@ -168,32 +216,13 @@ static PyObject * py_vortex_channel_set_frame_received (PyVortexChannel * self, 
 	if (! PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &handler, &data))
 		return NULL;
 
-	/* check values received */
-	if (! PyCallable_Check (handler)) 
+	/* configure frame received */
+	if (! py_vortex_channel_configure_frame_received (self, handler, data))
 		return NULL;
 
-	/* unref prevous handler and data associated if defined */
-	Py_XDECREF (self->frame_received);
-	self->frame_received = handler;
-
-	Py_XDECREF (self->frame_received_data);
-	self->frame_received_data = data;
-
-	/* in the case no frame received configured, set None value */
-	if (! self->frame_received_data) {
-		/* set None */
-		self->frame_received_data = Py_BuildValue ("");
-	}
-
-	/* increment reference counting */
-	Py_XINCREF (self->frame_received);
-	Py_XINCREF (self->frame_received_data);
-
-	/* reconfigure the frame received for used for all channels */
-	vortex_channel_set_received_handler (self->channel, py_vortex_channel_received, self);
-
 	/* return none */
-	return Py_BuildValue ("");
+	Py_INCREF (Py_None);
+	return Py_None;
 }
 
 static PyObject * py_vortex_channel_send_msg (PyVortexChannel * self, PyObject * args)
@@ -348,6 +377,50 @@ PyObject * py_vortex_channel_create (VortexChannel * channel)
 
 	/* return object */
 	return (PyObject *) obj;
+}
+
+/** 
+ * @brief Returns an empty PyVortexChannel definition.
+ *
+ * @return A reference to a newly created PyVortexChannel.
+ */
+PyObject      * py_vortex_channel_create_empty (void)
+{
+	return PyObject_CallObject ((PyObject *) &PyVortexChannelType, NULL);
+}
+
+/** 
+ * @brief Allows to configure the channel reference into the python
+ * channel.
+ */
+void            py_vortex_channel_set    (PyVortexChannel * py_channel, 
+					  VortexChannel   * channel)
+{
+	/* do nothing if null reference is received */
+	if (py_channel == NULL)
+		return;
+
+	/* set the channel (even if it is null) */
+	py_channel->channel = channel;
+	return;
+}
+
+/** 
+ * @brief Allows to get the VortexChannel reference that is stored
+ * inside the python channel reference received.
+ *
+ * @param channel The python wrapper that contains the channel to be returned.
+ *
+ * @return A reference to the channel inside the python channel.
+ */
+VortexChannel * py_vortex_channel_get    (PyVortexChannel * channel)
+{
+	/* check null values */
+	if (channel == NULL)
+		return NULL;
+
+	/* return the channel reference inside */
+	return channel->channel;
 }
 
 /** 

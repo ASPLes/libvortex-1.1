@@ -45,6 +45,8 @@ typedef struct _PyVortexFrame PyVortexFrame;
 
 void              init_vortex_frame      (PyObject * module);
 
-PyObject * py_vortex_frame_create (VortexFrame * frame, axl_bool acquire_ref);
+PyObject        * py_vortex_frame_create (VortexFrame * frame, axl_bool acquire_ref);
+
+VortexFrame     * py_vortex_frame_get    (PyVortexFrame * frame);
 
 #endif

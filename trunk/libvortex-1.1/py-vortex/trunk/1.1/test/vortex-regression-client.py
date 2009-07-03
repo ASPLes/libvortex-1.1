@@ -607,6 +607,89 @@ def test_08 ():
 
     return True
 
+def test_09 ():
+    # max channels
+    test_09_max_channels = 24;
+    
+    # call to initialize a context 
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # call to create a connection
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # now create a channel
+    queue    = vortex.AsyncQueue ()
+
+    iterator = 0
+    channels = []
+    while iterator < test_09_max_channels:
+        # create the channel
+        channels.append (conn.open_channel (0, REGRESSION_URI))
+
+        # set frame received
+        channels[iterator].set_frame_received (test_06_received, queue)
+
+        # next iterator
+        iterator += 1
+
+    # send content over all channels
+    for channel in channels:
+        channel.send_msg ("This is a test..", 16)
+
+    print ("test_09: Messages sent..");
+
+    # pop all messages replies
+    iterator = 0
+    while iterator < test_09_max_channels:
+
+        print ("test_09: about to receive a frame..");
+        
+        # get frame
+        frame = queue.pop ()
+
+        # check content
+        if frame.payload != "This is a test..":
+            error ("Expected to find 'This is a test' but found: " + frame.payload)
+            return False
+
+        # next iterator
+        iterator += 1
+
+    print ("test_09: After all frames received..");
+
+    # check no pending items are in the queue
+    if queue.items != 0:
+        error ("Expected to find 0 items on the queue, but found: " + queue.items)
+        return False
+
+    # now close all channels
+    for channel in channels:
+        # close the channels
+        channel.close ()
+
+    # check channels opened on the connection
+    if conn.num_channels != 1:
+        error ("Expected to find only two channels installed (administrative BEEP channel 0 and test channel) but found: " + conn.num_channels ())
+        return False
+    
+    # close connection
+    conn.close ()
+
+    # finish context
+    ctx.exit ()
+
+    return True
+
 ###########################
 # intraestructure support #
 ###########################
@@ -640,15 +723,16 @@ def run_all_tests ():
 
 # declare list of tests available
 tests = [
-    (test_00_a, "Check PyVortex async queue wrapper"),
-    (test_01,   "Check PyVortex context initialization"),
-    (test_02,   "Check PyVortex basic BEEP connection"),
-    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
-    (test_04,   "Check PyVortex basic BEEP channel creation"),
-    (test_05,   "Check BEEP basic data exchange"),
-    (test_06,   "Check BEEP check several send operations (serialize)"),
-    (test_07,   "Check BEEP check several send operations (one send, one receive)"),
-    (test_08,   "Check BEEP transfer zeroed binaries frames")
+#    (test_00_a, "Check PyVortex async queue wrapper"),
+#    (test_01,   "Check PyVortex context initialization"),
+#    (test_02,   "Check PyVortex basic BEEP connection"),
+#    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
+#    (test_04,   "Check PyVortex basic BEEP channel creation"),
+#    (test_05,   "Check BEEP basic data exchange"),
+#    (test_06,   "Check BEEP check several send operations (serialize)"),
+#    (test_07,   "Check BEEP check several send operations (one send, one receive)"),
+#    (test_08,   "Check BEEP transfer zeroed binaries frames"),
+    (test_09,   "Check BEEP channel support")
 ]
 
 # declare default host and port

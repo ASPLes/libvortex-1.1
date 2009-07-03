@@ -45,6 +45,25 @@ typedef struct _PyVortexChannel PyVortexChannel;
 
 void              init_vortex_channel      (PyObject * module);
 
-PyObject * py_vortex_channel_create (VortexChannel * channel);
+PyObject      * py_vortex_channel_create (VortexChannel * channel);
+
+PyObject      * py_vortex_channel_create_empty (void);
+
+VortexChannel * py_vortex_channel_get    (PyVortexChannel * channel);
+
+void            py_vortex_channel_set    (PyVortexChannel * py_channel, 
+					  VortexChannel   * channel);
+
+/** internal handler used to link python frame received and C frame
+ * received. It is available the public header because
+ * connection.open_channel may use it. **/
+void            py_vortex_channel_received     (VortexChannel    * channel,
+						VortexConnection * connection,
+						VortexFrame      * frame,
+						axlPointer         user_data);
+
+axl_bool        py_vortex_channel_configure_frame_received (PyVortexChannel * self, 
+							    PyObject        * handler, 
+							    PyObject        * data);
 
 #endif
