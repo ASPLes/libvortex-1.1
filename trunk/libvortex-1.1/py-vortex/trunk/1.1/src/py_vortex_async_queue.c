@@ -228,13 +228,13 @@ PyObject * py_vortex_async_queue_get_attr (PyObject *o, PyObject *attr_name) {
 	/* printf ("received request to return attribute value of '%s'..\n", attr); */
 
 	if (axl_cmp (attr, "length")) {
-		/* found error_msg attribute */
+		/* found length attribute */
 		return Py_BuildValue ("i", vortex_async_queue_length (self->async_queue));
 	} else if (axl_cmp (attr, "waiters")) {
-		/* found error_msg attribute */
+		/* found waiters attribute */
 		return Py_BuildValue ("i", vortex_async_queue_waiters (self->async_queue));
 	} else if (axl_cmp (attr, "items")) {
-		/* found error_msg attribute */
+		/* found items attribute */
 		return Py_BuildValue ("i", vortex_async_queue_items (self->async_queue));
 	} /* end if */
 
