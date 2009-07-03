@@ -543,6 +543,70 @@ def test_07 ():
 
     return True
 
+def test_08 ():
+    # call to initialize a context 
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # call to create a connection
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # now create a channel
+    channel  = conn.open_channel (0, REGRESSION_URI_ZERO)
+
+    # configure frame received
+    queue    = vortex.AsyncQueue ()
+
+    # configure frame received
+    channel.set_frame_received (test_06_received, queue)
+
+    # build the content to transfer (add r to avoid python to handle it)
+    message = r"\0\0\0\0\0\0\0\0" * 8192
+
+    iterator = 0
+    while iterator < 10:
+        # send the message
+        channel.send_msg (message, len (message))
+
+        # next iterator
+        iterator += 1
+
+    # now receive content and check
+    iterator = 0
+    while iterator < 10:
+        # receive 
+        frame = queue.pop ()
+
+        # check content
+        if frame.payload != message:
+            error ("Expected to find binary zerored string but found string mismatch")
+            return False
+
+        # check content length
+        if frame.payload_size != len (message):
+            error ("String size mismatch, expected to find: " + str (len (message)) + ", but found: " + frame.payload_size)
+            return False
+
+        # next iterator
+        iterator += 1
+
+    # close connection
+    conn.close ()
+
+    # finish context
+    ctx.exit ()
+
+    return True
+
 ###########################
 # intraestructure support #
 ###########################
@@ -573,7 +637,6 @@ def run_all_tests ():
     
     ok ("All tests ok!")
     return True
-        
 
 # declare list of tests available
 tests = [
@@ -584,7 +647,8 @@ tests = [
     (test_04,   "Check PyVortex basic BEEP channel creation"),
     (test_05,   "Check BEEP basic data exchange"),
     (test_06,   "Check BEEP check several send operations (serialize)"),
-    (test_07,   "Check BEEP check several send operations (one send, one receive)")
+    (test_07,   "Check BEEP check several send operations (one send, one receive)"),
+    (test_08,   "Check BEEP transfer zeroed binaries frames")
 ]
 
 # declare default host and port
@@ -592,7 +656,8 @@ host     = "localhost"
 port     = "44010"
 
 # regression test beep uris
-REGRESSION_URI = "http://iana.org/beep/transient/vortex-regression"
+REGRESSION_URI      = "http://iana.org/beep/transient/vortex-regression"
+REGRESSION_URI_ZERO = "http://iana.org/beep/transient/vortex-regression/zero"
 
 if __name__ == '__main__':
     iterator = 0
