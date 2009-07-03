@@ -127,13 +127,15 @@ static PyObject * py_vortex_async_queue_push (PyVortexAsyncQueue* self, PyObject
 static PyObject * py_vortex_async_queue_pop (PyVortexAsyncQueue* self)
 {
 	PyObject           * _result;
+
+	/* allow other threads to enter into the python space */
+	Py_BEGIN_ALLOW_THREADS
 	
 	/* get the value */
 	_result = vortex_async_queue_pop (self->async_queue);
 
-	/* acquire the GIL before returning to ensure the caller is
-	 * running inside the authorized thread */
-	PyGILState_Ensure();
+	/* restore thread state */
+	Py_END_ALLOW_THREADS
 
 	/* do not decrement reference counting. It was increased to
 	 * provide a reference owned by the caller */
@@ -155,12 +157,14 @@ static PyObject * py_vortex_async_queue_timedpop (PyVortexAsyncQueue* self, PyOb
 	if (! PyArg_Parse (args, "i", &microseconds))
 		return NULL;
 
+	/* allow other threads to enter into the python space */
+	Py_BEGIN_ALLOW_THREADS
+
 	/* get the value */
 	_result = vortex_async_queue_timedpop (self->async_queue, microseconds);
 
-	/* acquire the GIL before returning to ensure the caller is
-	 * running inside the authorized thread */
-	PyGILState_Ensure();
+	/* restore thread state */
+	Py_END_ALLOW_THREADS
 
 	/* do not decrement reference counting. It was increased to
 	 * provide a reference owned by the caller */

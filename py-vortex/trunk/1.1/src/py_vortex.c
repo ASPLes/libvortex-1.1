@@ -47,9 +47,6 @@ PyMODINIT_FUNC initvortex(void)
 	/* call to initilize threading API and to acquire the lock */
 	PyEval_InitThreads();
 
-	/* release the lock because it won't be used now */
-	PyEval_ReleaseLock ();
-
 	/* register vortex module */
 	module = Py_InitModule3("vortex", NULL, 
 			   "Example module that creates an extension type.");
