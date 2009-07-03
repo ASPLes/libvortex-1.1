@@ -49,27 +49,27 @@ import vortex
 
 def test_00_a_check (queue):
 
-    a_tuple = queue.pop ();
+    a_tuple = queue.pop ()
     if not a_tuple:
-        error ("Found not defined expected tuple, but found: " + a_tuple);
-        return False;
+        error ("Found not defined expected tuple, but found: " + a_tuple)
+        return False
     if a_tuple[0] != 2 or a_tuple[1] != 3:
         error ("Expected to find differente values but found: " + str (a_tuple[0]) + ", and: " + str (a_tuple[1]))
-        return False;
+        return False
 
     # get a string
-    a_string = queue.pop ();
+    a_string = queue.pop ()
     if a_string != "This is an string":
-        error ("Expected to receive string: 'This is an string', but received: " + a_string);
-        return False;
+        error ("Expected to receive string: 'This is an string', but received: " + a_string)
+        return False
 
     # get a list
-    a_list = queue.pop ();
+    a_list = queue.pop ()
     if len (a_list) != 4:
-        error ("Expected to find list length: " + len (a_list));
-        return False;
+        error ("Expected to find list length: " + len (a_list))
+        return False
 
-    return True;
+    return True
 
 def test_00_a():
     ##########
@@ -153,13 +153,13 @@ def test_00_a():
 
     # get a tuple
     if not test_00_a_check (queue):
-        return False;
+        return False
 
     # unref the queue
-    queue.unref ();
+    queue.unref ()
 
     #### now add several different item
-    queue    = vortex.AsyncQueue ();
+    queue    = vortex.AsyncQueue ()
     iterator = 0
     while iterator < 1000:
         
@@ -175,13 +175,13 @@ def test_00_a():
     while iterator < 1000:
         # check queue items
         if not test_00_a_check (queue):
-            return False;
+            return False
         
         # next iterator
         iterator += 1
 
     # finish the queue
-    queue.unref ();
+    queue.unref ()
 
     return True
 
@@ -330,10 +330,10 @@ def test_04 ():
     return True
 
 def test_05_received (conn, channel, frame, data):
-    print ("test_05_received: Frame received, content: " + frame.payload + ", size: " + str (frame.payload_size));
+    print ("test_05_received: Frame received, content: " + frame.payload + ", size: " + str (frame.payload_size))
 
     # push data received
-    data.push (frame);
+    data.push (frame)
     
     return
 
@@ -374,17 +374,19 @@ def test_05 ():
     channel.set_frame_received (test_05_received, queue)
 
     # send a message to test */
-    print ("Sending frame..")
+    print ("test_05: Sending frame..")
     channel.send_msg ("This is a test", 14)
 
     # wait for the reply
-    print ("Wait for reply..");
+    print ("test_05: Wait for reply..")
     frame = queue.pop ()
+
+    print ("test_05: unref the async queue..")
 
     # finish the queue (not required)
     queue.unref ()
 
-    print ("Checking content received..")
+    print ("test_05: Checking content received..")
 
     # check frame content here 
     if frame.payload != "This is a test":
@@ -396,16 +398,16 @@ def test_05 ():
         error ("Expected to receive frame type RPY but found: " + frame.type)
         return False
 
-    print ("Closing connection..")
+    print ("test_05: Closing connection..")
     
     # now close the connection (already shutted down)
     conn.close ()
 
-    print ("finishing context..")
+    print ("test_05: finishing context..")
 
     ctx.exit ()
 
-    print ("Returning from test..")
+    print ("test_05: Returning from test..")
 
     return True
 

@@ -345,8 +345,9 @@ PyVortexConnection * py_vortex_connection_create   (VortexConnection * conn)
 	PyVortexConnection * obj = (PyVortexConnection *) PyObject_CallObject ((PyObject *) &PyVortexConnectionType, NULL);
 
 	/* set channel reference received */
-	if (obj)
+	if (obj) {
 		obj->conn = conn;
+	} /* end if */
 
 	/* return object */
 	return obj;

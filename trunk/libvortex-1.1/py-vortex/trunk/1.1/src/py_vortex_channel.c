@@ -116,12 +116,12 @@ void     py_vortex_channel_received     (VortexChannel    * channel,
 	PyObject           * args;
 	PyGILState_STATE     state;
 
-	printf ("Frame received, preparing invocation..\n");
+	printf ("py_vortex_channel_received: Frame received, preparing invocation..\n");
 
 	/* acquire the GIL */
 	state = PyGILState_Ensure();
 
-	printf ("Ok..proceeding..\n");
+	printf ("py_vortex_channel_received: Ok..proceeding..\n");
 
 	/* create a PyVortexFrame instance */
 	py_frame = py_vortex_frame_create (frame);
@@ -144,7 +144,7 @@ void     py_vortex_channel_received     (VortexChannel    * channel,
 	Py_INCREF ((PyObject *) py_channel->frame_received_data);
 	PyTuple_SetItem (args, 3, (PyObject *) py_channel->frame_received_data);
 
-	printf ("Frame received, dictionary created..\n");
+	printf ("py_vortex_channel_received: Frame received, dictionary created..\n");
 
 	/* now invoke */
 	printf ("py_vortex_channel_frame_received Channel: %p\n", py_channel);
@@ -153,19 +153,19 @@ void     py_vortex_channel_received     (VortexChannel    * channel,
 	
 	PyObject_Call (py_channel->frame_received, args, NULL);
 
-	printf ("Frame received, call complete..\n");
+	printf ("py_vortex_channel_frame_received: Frame received, call complete..\n");
 	
 	/* release tuple and dict */
 	Py_DECREF (args);
 
-	printf ("Frame received, memory released..\n");
+	printf ("py_vortex_channel_frame_received: Frame received, memory released..\n");
 
 	/* release memory used by py_frame, py_conn, py_channel ? */
 
 	/* release the GIL */
 	PyGILState_Release(state);
 
-	printf ("GIL released!..\n");
+	printf ("py_vortex_channel_frame_received: GIL released!..\n");
 
 	return;
 }
