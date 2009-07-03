@@ -370,11 +370,24 @@ void        vortex_ctx_ref                       (VortexCtx  * ctx)
  */
 void        vortex_ctx_unref                     (VortexCtx ** ctx)
 {
+	VortexCtx * _ctx;
+	axl_bool   nullify;
+
+	/* do nothing with a null reference */
+	if (ctx == NULL || (*ctx) == NULL)
+		return;
+
+	/* check if we have to nullify after unref */
+	_ctx = (*ctx);
+	vortex_mutex_lock (&_ctx->ref_mutex);
+	nullify =  (_ctx->ref_count == 1);
+	vortex_mutex_unlock (&_ctx->ref_mutex);
+
 	/* call to unref */
 	vortex_ctx_free (*ctx);
 	
 	/* check to nullify */
-	if ((*ctx) != NULL && (*ctx)->ref_count <= 0)
+	if (nullify)
 		(*ctx) = NULL;
 	return;
 }
