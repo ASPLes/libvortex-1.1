@@ -37,6 +37,38 @@
  */
 #include <py_vortex.h>
 
+
+/** 
+ * @brief Function that implements vortex_channel_queue_reply handler
+ * used as frame received handler.
+ */
+static PyObject * py_vortex_queue_reply (PyVortexChannel * self, PyObject * args)
+{
+	PyVortexConnection  * conn    = NULL;
+	PyVortexChannel     * channel = NULL;
+	PyVortexFrame       * frame   = NULL;
+	PyVortexAsyncQueue  * data    = NULL;
+	
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "OOOO", &conn, &channel, &frame, &data))
+		return NULL;
+
+	/* call to the native API */
+	vortex_channel_queue_reply (py_vortex_channel_get (channel),
+				    py_vortex_connection_get (conn),
+				    py_vortex_frame_get (frame),
+				    py_vortex_async_queue_get (data));
+
+	Py_INCREF (Py_None);
+	return Py_None;
+}
+
+static PyMethodDef py_vortex_methods[] = { 
+	{"queue_reply", (PyCFunction) py_vortex_queue_reply, METH_VARARGS,
+	 "Implementation of vortex_channel_queue_reply. The function is used inside the queue reply method that requires this handler to be configured as frame received then to use channel.get_reply."},
+ 	{NULL}  
+}; 
+
 /** 
  * @internal Function that inits all vortex modules and classes.
  */
@@ -48,7 +80,7 @@ PyMODINIT_FUNC initvortex(void)
 	PyEval_InitThreads();
 
 	/* register vortex module */
-	module = Py_InitModule3("vortex", NULL, 
+	module = Py_InitModule3("vortex", py_vortex_methods, 
 			   "Example module that creates an extension type.");
 	if (module == NULL)
 		return;

@@ -239,13 +239,33 @@ static PyObject * py_vortex_connection_open_channel (PyObject * self, PyObject *
 	VortexChannel      * channel;
 	int                  number;
 	const char         * profile;
+	PyObject           * frame_received      = NULL;
+	PyObject           * frame_received_data = NULL;
 
 	/* now parse arguments */
-	static char *kwlist[] = {"number", "profile", NULL};
+	static char *kwlist[] = {"number", "profile", "frame_received", "frame_received_data", NULL};
 
 	/* parse and check result */
-	if (! PyArg_ParseTupleAndKeywords(args, kwds, "is", kwlist, &number, &profile))
+	if (! PyArg_ParseTupleAndKeywords(args, kwds, "is|OO", kwlist, &number, &profile, 
+					  /* optional parameters */
+					  &frame_received, &frame_received_data)) {
+		printf ("ParseTupleAndKeywords have failed..\n");
 		return NULL;
+	}
+
+	/* create an empty channel reference */
+	py_channel = py_vortex_channel_create_empty ();
+
+	/* check for frame received configuration */
+	if (frame_received && PyCallable_Check (frame_received)) {
+		printf ("Found request to open channel and to also configure frame received!!\n");
+		/* call to set the handler */
+		if (! py_vortex_channel_configure_frame_received (
+			    (PyVortexChannel *) py_channel, 
+			    frame_received, 
+			    frame_received_data))
+			return NULL;
+	} /* end if */
 
 	/* now try to create the channel */
 	channel = vortex_channel_new (
@@ -256,16 +276,21 @@ static PyObject * py_vortex_connection_open_channel (PyObject * self, PyObject *
 		/* close handler */
 		NULL, NULL, 
 		/* frame received handler */
-		NULL, NULL,
+		frame_received ? py_vortex_channel_received : NULL, py_channel,
 		/* on channel created */
 		NULL, NULL);
 
 	/* check for error found */
-	if (channel == NULL) 
-		return Py_BuildValue ("");
+	if (channel == NULL) {
+		/* release python channel reference */
+		Py_DECREF (py_channel);
+		Py_INCREF (Py_None);
+		return Py_None;
+	}
 
-	/* call to create reference */
-	py_channel = py_vortex_channel_create (channel);
+	/* set the channel */
+	py_vortex_channel_set ((PyVortexChannel *) py_channel, channel);
+	printf ("Configured channel into python channel..\n");
 
 	/* return reference created */
 	return py_channel;

@@ -266,4 +266,22 @@ void init_vortex_frame (PyObject * module)
 	return;
 }
 
+/** 
+ * @brief Allows to get the VortexFrame reference that is stored
+ * inside the python frame reference received.
+ *
+ * @param frame The python wrapper that contains the frame to be returned.
+ *
+ * @return A reference to the frame inside the python frame.
+ */
+VortexFrame * py_vortex_frame_get    (PyVortexFrame * frame)
+{
+	/* check null values */
+	if (frame == NULL)
+		return NULL;
+
+	/* return the frame reference inside */
+	return frame->frame;
+}
+
 
