@@ -146,10 +146,10 @@ PyObject * py_vortex_frame_get_attr (PyObject *o, PyObject *attr_name) {
 		return Py_BuildValue ("i", vortex_frame_get_content_size (self->frame));
 	} else if (axl_cmp (attr, "payload")) {
 		/* get payload attribute */
-		return Py_BuildValue ("z", vortex_frame_get_payload (self->frame));
+		return Py_BuildValue ("z#", vortex_frame_get_payload (self->frame), vortex_frame_get_payload_size (self->frame));
 	} else if (axl_cmp (attr, "content")) {
 		/* get payload attribute */
-		return Py_BuildValue ("z", vortex_frame_get_content (self->frame));
+		return Py_BuildValue ("z#", vortex_frame_get_content (self->frame), vortex_frame_get_content_size (self->frame));
 	} /* end if */
 
 	/* first implement generic attr already defined */
