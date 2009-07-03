@@ -209,9 +209,26 @@ static PyTypeObject PyVortexFrameType = {
 };
 
 /** 
- * @brief Creates new empty frame instance.
+ * @brief Creates new empty frame instance. The function acquire a new
+ * reference to the frame (vortex_frame_unref) because it us assumed
+ * the caller is inside a frame received handler or a similar handler
+ * where it is assumed the frame will be no longer available after
+ * handler has finished.
+ *
+ * In the case you are wrapping a frame and you already own a
+ * reference to them, you can set acquire_ref to axl_false.
+ *
+ * @param frame The frame to wrap creating a PyVortexFrame reference.
+ *
+ * @param acquire_ref Signal the function to acquire a reference to
+ * the vortex_frame_ref making the PyVortexFrame returned to "own" a
+ * reference to the frame. In the case acquire_ref is axl_false, the
+ * caller is telling the function to "steal" a reference from the
+ * frame.
+ *
+ * @return A newly created PyVortexFrame reference, casted to PyObject.
  */
-PyVortexFrame * py_vortex_frame_create (VortexFrame * frame)
+PyObject * py_vortex_frame_create (VortexFrame * frame, axl_bool acquire_ref)
 {
 	/* return a new instance */
 	PyVortexFrame * obj = (PyVortexFrame *) PyObject_CallObject ((PyObject *) &PyVortexFrameType, NULL);
@@ -230,7 +247,7 @@ PyVortexFrame * py_vortex_frame_create (VortexFrame * frame)
 	} /* end if */
 
 	/* return object */
-	return obj;
+	return (PyObject *) obj;
 }
 
 /** 

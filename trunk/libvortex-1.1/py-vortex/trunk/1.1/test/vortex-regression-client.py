@@ -330,7 +330,6 @@ def test_04 ():
     return True
 
 def test_05_received (conn, channel, frame, data):
-    print ("test_05_received: Frame received, content: " + frame.payload + ", size: " + str (frame.payload_size))
 
     # push data received
     data.push (frame)
@@ -374,19 +373,13 @@ def test_05 ():
     channel.set_frame_received (test_05_received, queue)
 
     # send a message to test */
-    print ("test_05: Sending frame..")
     channel.send_msg ("This is a test", 14)
 
     # wait for the reply
-    print ("test_05: Wait for reply..")
     frame = queue.pop ()
-
-    print ("test_05: unref the async queue..")
 
     # finish the queue (not required)
     queue.unref ()
-
-    print ("test_05: Checking content received..")
 
     # check frame content here 
     if frame.payload != "This is a test":
@@ -398,16 +391,10 @@ def test_05 ():
         error ("Expected to receive frame type RPY but found: " + frame.type)
         return False
 
-    print ("test_05: Closing connection..")
-    
     # now close the connection (already shutted down)
     conn.close ()
 
-    print ("test_05: finishing context..")
-
     ctx.exit ()
-
-    print ("test_05: Returning from test..")
 
     return True
 
@@ -445,11 +432,11 @@ def run_all_tests ():
 
 # declare list of tests available
 tests = [
-#    (test_00_a, "Check PyVortex async queue wrapper"),
-#    (test_01,   "Check PyVortex context initialization"),
-#    (test_02,   "Check PyVortex basic BEEP connection"),
-#    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
-#    (test_04,   "Check PyVortex basic BEEP channel creation"),
+    (test_00_a, "Check PyVortex async queue wrapper"),
+    (test_01,   "Check PyVortex context initialization"),
+    (test_02,   "Check PyVortex basic BEEP connection"),
+    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
+    (test_04,   "Check PyVortex basic BEEP channel creation"),
     (test_05,   "Check BEEP basic data exchange")
 ]
 

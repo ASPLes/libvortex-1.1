@@ -235,7 +235,7 @@ PyObject * py_vortex_connection_get_attr (PyObject *o, PyObject *attr_name) {
 
 static PyObject * py_vortex_connection_open_channel (PyObject * self, PyObject * args, PyObject * kwds)
 {
-	PyVortexChannel    * py_channel;
+	PyObject           * py_channel;
 	VortexChannel      * channel;
 	int                  number;
 	const char         * profile;
@@ -268,7 +268,7 @@ static PyObject * py_vortex_connection_open_channel (PyObject * self, PyObject *
 	py_channel = py_vortex_channel_create (channel);
 
 	/* return reference created */
-	return (PyObject *) py_channel;
+	return py_channel;
 }
 
 static PyMethodDef py_vortex_connection_methods[] = { 
@@ -339,7 +339,7 @@ static PyTypeObject PyVortexConnectionType = {
  *
  * @return A newly created PyVortexConnection reference.
  */
-PyVortexConnection * py_vortex_connection_create   (VortexConnection * conn)
+PyObject * py_vortex_connection_create   (VortexConnection * conn)
 {
 	/* return a new instance */
 	PyVortexConnection * obj = (PyVortexConnection *) PyObject_CallObject ((PyObject *) &PyVortexConnectionType, NULL);
@@ -350,7 +350,7 @@ PyVortexConnection * py_vortex_connection_create   (VortexConnection * conn)
 	} /* end if */
 
 	/* return object */
-	return obj;
+	return (PyObject *) obj;
 }
 
 /** 
