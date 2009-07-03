@@ -225,8 +225,8 @@ static PyObject * py_vortex_channel_send_msg (PyVortexChannel * self, PyObject *
  * member access).
  */
 PyObject * py_vortex_channel_get_attr (PyObject *o, PyObject *attr_name) {
-	const char         * attr = NULL;
-	PyObject           * result;
+	const char      * attr = NULL;
+	PyObject        * result;
 	PyVortexChannel * self = (PyVortexChannel *) o;
 
 	/* now implement other attributes */
@@ -250,6 +250,36 @@ PyObject * py_vortex_channel_get_attr (PyObject *o, PyObject *attr_name) {
 	
 	return NULL;
 }
+
+/** 
+ * @brief Implements attribute set operation.
+ */
+int py_vortex_channel_set_attr (PyObject *o, PyObject *attr_name, PyObject *v)
+{
+	const char      * attr = NULL;
+	PyVortexChannel * self = (PyVortexChannel *) o;
+	axl_bool          boolean_value = axl_false;
+
+	/* now implement other attributes */
+	if (! PyArg_Parse (attr_name, "s", &attr))
+		return -1;
+
+	if (axl_cmp (attr, "set_serialize")) {
+		/* found set serialize operation, get the boolean value */
+		if (! PyArg_Parse (v, "i", &boolean_value))
+			return -1;
+		
+		/* call to set serialize on channel */
+		vortex_channel_set_serialize (self->channel, boolean_value);
+
+		/* return operation ok */
+		return 0;
+	} /* end if */
+
+	/* now implement generic setter */
+	return PyObject_GenericSetAttr (o, attr_name, v);
+}
+
 
 static PyMethodDef py_vortex_channel_methods[] = { 
 	{"send_msg", (PyCFunction) py_vortex_channel_send_msg, METH_VARARGS,
@@ -281,7 +311,7 @@ static PyTypeObject PyVortexChannelType = {
     0,                         /* tp_call*/
     0,                         /* tp_str*/
     py_vortex_channel_get_attr, /* tp_getattro*/
-    0,                         /* tp_setattro*/
+    py_vortex_channel_set_attr, /* tp_setattro*/
     0,                         /* tp_as_buffer*/
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,  /* tp_flags*/
     "vortex.Channel, the object used to represent a BEEP channel running a particular profile.",           /* tp_doc */

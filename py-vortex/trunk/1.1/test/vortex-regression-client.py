@@ -391,9 +391,154 @@ def test_05 ():
         error ("Expected to receive frame type RPY but found: " + frame.type)
         return False
 
+    # check frame sizes
+    if frame.content_size != 16:
+        error ("Expected to find content size equal to 16 but found: " + frame.content_size)
+        
+    # check frame sizes
+    if frame.payload_size != 14:
+        error ("Expected to find payload size equal to 14 but found: " + frame.payload_size)
+
+
     # now close the connection (already shutted down)
     conn.close ()
 
+    ctx.exit ()
+
+    return True
+
+def test_06_received (conn, channel, frame, data):
+    # push frame received
+    data.push (frame)
+
+def test_06 ():
+    # call to initialize a context 
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # call to create a connection
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # now create a channel
+    channel  = conn.open_channel (0, REGRESSION_URI)
+
+    # flag the channel to do deliveries in a serial form
+    channel.set_serialize = True
+
+    # configure frame received
+    queue    = vortex.AsyncQueue ()
+    channel.set_frame_received (test_06_received, queue)
+
+    # send 100 frames and receive its replies
+    iterator = 0
+    while iterator < 100:
+        # build message
+        message = ";; This buffer is for notes you don't want to save, and for Lisp evaluation.\n\
+;; If you want to create a file, visit that file with C-x C-f,\n\
+;; then enter the text in that file's own buffer: message num: " + str (iterator)
+
+        # send the message
+        channel.send_msg (message, len (message))
+
+        # update iterator
+        iterator += 1
+
+    # now receive and process all messages
+    iterator = 0
+    while iterator < 100:
+        # build message to check
+        message = ";; This buffer is for notes you don't want to save, and for Lisp evaluation.\n\
+;; If you want to create a file, visit that file with C-x C-f,\n\
+;; then enter the text in that file's own buffer: message num: " + str (iterator)
+
+        # now get a frame
+        frame = queue.pop ()
+
+        # check content
+        if frame.payload != message:
+            error ("Expected to find message '" + message + "' but found: '" + frame.payload + "'")
+            return False
+
+        # next iterator
+        iterator += 1
+
+    # now check there are no pending message in the queue
+    if queue.items != 0:
+        error ("Expected to find 0 items in the queue but found: " + queue.items)
+        return False
+
+    # close connection
+    conn.close ()
+
+    # finish context
+    ctx.exit ()
+
+    return True
+
+def test_07 ():
+    # call to initialize a context 
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # call to create a connection
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # now create a channel
+    channel  = conn.open_channel (0, REGRESSION_URI)
+
+    # configure frame received
+    queue    = vortex.AsyncQueue ()
+    channel.set_frame_received (test_06_received, queue)
+
+    # send 100 frames and receive its replies
+    iterator = 0
+    while iterator < 100:
+        # build message
+        message = ";; This buffer is for notes you don't want to save, and for Lisp evaluation.\n\
+;; If you want to create a file, visit that file with C-x C-f,\n\
+;; then enter the text in that file's own buffer: message num: " + str (iterator)
+
+        # send the message
+        channel.send_msg (message, len (message))
+
+        # now get a frame
+        frame = queue.pop ()
+
+        # check content
+        if frame.payload != message:
+            error ("Expected to find message '" + message + "' but found: '" + frame.payload + "'")
+            return False
+
+        # next iterator
+        iterator += 1
+
+    # now check there are no pending message in the queue
+    if queue.items != 0:
+        error ("Expected to find 0 items in the queue but found: " + queue.items)
+        return False
+
+    # close connection
+    conn.close ()
+
+    # finish context
     ctx.exit ()
 
     return True
@@ -437,7 +582,9 @@ tests = [
     (test_02,   "Check PyVortex basic BEEP connection"),
     (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
     (test_04,   "Check PyVortex basic BEEP channel creation"),
-    (test_05,   "Check BEEP basic data exchange")
+    (test_05,   "Check BEEP basic data exchange"),
+    (test_06,   "Check BEEP check several send operations (serialize)"),
+    (test_07,   "Check BEEP check several send operations (one send, one receive)")
 ]
 
 # declare default host and port
