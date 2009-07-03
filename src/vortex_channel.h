@@ -354,7 +354,7 @@ axl_bool           vortex_channel_is_ready                       (VortexChannel 
 void               vortex_channel_queue_reply                    (VortexChannel    * channel,
 								  VortexConnection * connection,
 								  VortexFrame      * frame,
-								  axlPointer user_data);
+								  axlPointer         user_data);
 
 VortexFrame      * vortex_channel_get_reply                      (VortexChannel    * channel,
 								  VortexAsyncQueue * queue);
