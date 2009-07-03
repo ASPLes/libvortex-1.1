@@ -45,6 +45,6 @@ typedef struct _PyVortexChannel PyVortexChannel;
 
 void              init_vortex_channel      (PyObject * module);
 
-PyVortexChannel * py_vortex_channel_create (VortexChannel * channel);
+PyObject * py_vortex_channel_create (VortexChannel * channel);
 
 #endif
