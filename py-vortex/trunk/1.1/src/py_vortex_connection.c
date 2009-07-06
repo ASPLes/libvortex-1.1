@@ -116,8 +116,10 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 	/* check args */
 	if (args != NULL) {
 		/* parse and check result */
-		if (! PyArg_ParseTupleAndKeywords(args, kwds, "Oss", kwlist, &py_vortex_ctx, &host, &port))
+		if (! PyArg_ParseTupleAndKeywords(args, kwds, "Oss", kwlist, &py_vortex_ctx, &host, &port)) {
+			py_vortex_log (PY_VORTEX_DEBUG, "found empty request to create a PyVortexConnection ref..");
 			return (PyObject *) self;
+		}
 		
 		/* create the vortex connection in a blocking manner */
 		self->conn = vortex_connection_new (py_vortex_ctx_get (py_vortex_ctx), host, port, NULL, NULL);
@@ -171,6 +173,7 @@ static void py_vortex_connection_dealloc (PyVortexConnection* self)
 
 	/* decrease reference on PyVortexCtx used */
 	if (self->py_vortex_ctx) {
+		py_vortex_log (PY_VORTEX_DEBUG, "unref PyVortexCtx associated: %p", self->py_vortex_ctx);
 		Py_DECREF (__PY_OBJECT (self->py_vortex_ctx));
 		self->py_vortex_ctx = NULL;
 	} /* endif */
@@ -230,12 +233,38 @@ static PyObject * py_vortex_connection_pop_channel_error (PyVortexConnection * s
 }
 
 /** 
+ * @internal function that maps connection roles to string values.
+ */
+const char * __py_vortex_connection_stringify_role (VortexConnection * conn)
+{
+	/* check known roles to return its appropriate string */
+	switch (vortex_connection_get_role (conn)) {
+	case VortexRoleInitiator:
+		return "initiator";
+	case VortexRoleListener:
+		return "listener";
+	case VortexRoleMasterListener:
+		return "master-listener";
+	default:
+		break;
+	}
+
+	/* return unknown string */
+	return "unknown";
+}
+
+/** 
  * @brief Direct wrapper for the vortex_connection_close function. 
  */
 static PyObject * py_vortex_connection_close (PyVortexConnection* self)
 {
 	PyObject *_result;
 	axl_bool  result;
+
+	if (self->conn) {
+		py_vortex_log (PY_VORTEX_DEBUG, "closing connection id: %d (%s)",
+			       vortex_connection_get_id (self->conn), __py_vortex_connection_stringify_role (self->conn));
+	} /* end if */
 
 	/* call to check connection and build the value with the
 	   result. Do not free the connection in the case of
@@ -244,8 +273,9 @@ static PyObject * py_vortex_connection_close (PyVortexConnection* self)
 	_result = Py_BuildValue ("i", result);
 
 	/* check to nullify connection reference in the case the connection is closed */
-	if (result) 
-		self->conn = NULL;
+	if (result) {
+		self->conn = NULL; 
+	}
 	
 	return _result;
 }
@@ -313,17 +343,30 @@ PyObject * py_vortex_connection_get_attr (PyObject *o, PyObject *attr_name) {
 		/* found error_msg attribute */
 		return Py_BuildValue ("s", vortex_connection_get_message (self->conn));
 	} else if (axl_cmp (attr, "status")) {
-		/* found error_msg attribute */
+		/* found status attribute */
 		return Py_BuildValue ("i", vortex_connection_get_status (self->conn));
 	} else if (axl_cmp (attr, "host")) {
-		/* found error_msg attribute */
+		/* found host attribute */
 		return Py_BuildValue ("s", vortex_connection_get_host (self->conn));
 	} else if (axl_cmp (attr, "port")) {
-		/* found error_msg attribute */
+		/* found port attribute */
 		return Py_BuildValue ("s", vortex_connection_get_port (self->conn));
 	} else if (axl_cmp (attr, "num_channels")) {
-		/* found error_msg attribute */
+		/* found num_channels attribute */
 		return Py_BuildValue ("i", vortex_connection_channels_count (self->conn));
+	} else if (axl_cmp (attr, "role")) {
+		/* found role attribute */
+		switch (vortex_connection_get_role (self->conn)) {
+		case VortexRoleInitiator:
+			return Py_BuildValue ("s", "initiator");
+		case VortexRoleListener:
+			return Py_BuildValue ("s", "listener");
+		case VortexRoleMasterListener:
+			return Py_BuildValue ("s", "master-listener");
+		default:
+			break;
+		}
+		return Py_BuildValue ("s", "unknown");
 	} /* end if */
 
 	/* printf ("Attribute not found: '%s'..\n", attr); */
@@ -348,6 +391,10 @@ static PyObject * py_vortex_connection_open_channel (PyObject * self, PyObject *
 
 	/* now parse arguments */
 	static char *kwlist[] = {"number", "profile", "frame_received", "frame_received_data", NULL};
+
+	/* check if this is a listener connection that cannot provide
+	   this service */
+	PY_VORTEX_CONNECTION_CHECK_NOT_ROLE(self, VortexRoleMasterListener, "open_channel");
 
 	/* parse and check result */
 	if (! PyArg_ParseTupleAndKeywords(args, kwds, "is|OO", kwlist, &number, &profile, 
@@ -499,11 +546,18 @@ PyObject * py_vortex_connection_create   (VortexConnection * conn,
 	if (obj && conn) {
 		/* check to acquire a ref */
 		if (acquire_ref) {
-			vortex_connection_ref (conn, "py_vortex_connection_create");
+			py_vortex_log (PY_VORTEX_DEBUG, "acquiring a reference to conn: %p, ctx: %p (role: %s)",
+				       conn, ctx, __py_vortex_connection_stringify_role (conn));
+			/* check ref */
+			if (! vortex_connection_ref (conn, "py_vortex_connection_create")) {
+				py_vortex_log (PY_VORTEX_CRITICAL, "failed to acquire reference, unable to create connection");
+				Py_DECREF (obj);
+				return NULL;
+			}
 
 			/* configure the ctx received */
 			obj->py_vortex_ctx = ctx;
-			Py_XINCREF (__PY_OBJECT (ctx));
+			Py_XINCREF (__PY_OBJECT (obj->py_vortex_ctx));
 		} /* end if */
 
 		/* configure the reference */

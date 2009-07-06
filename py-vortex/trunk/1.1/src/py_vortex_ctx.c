@@ -224,12 +224,22 @@ PyObject * py_vortex_ctx_create (VortexCtx * ctx)
 	PyVortexCtx * obj = (PyVortexCtx *) PyObject_CallObject ((PyObject *) &PyVortexCtxType, NULL);
 
 	if (obj) {
-		/* acquire a reference to the VortexCtx */
-		obj->ctx = ctx;
-		vortex_ctx_ref (ctx);
+		/* acquire a reference to the VortexCtx if defined */
+		if (ctx) {
+			py_vortex_log (PY_VORTEX_DEBUG, "found ctx reference defined, creating PyVortexCtx reusing reference received (deallocating previous one)");
+			/* free previous ctx */
+			vortex_ctx_free (obj->ctx);
+
+			obj->ctx = ctx;
+			vortex_ctx_ref (ctx);
+			
+		} 
 
 		/* flag to not exit once the ctx is deallocated */
 		obj->exit_pending = axl_false;
+		
+		py_vortex_log (PY_VORTEX_DEBUG, "created vortex.Ctx (self: %p, self->ctx: %p)", 
+			       obj, obj->ctx);
 		
 		return __PY_OBJECT (obj);
 	} /* end if */
