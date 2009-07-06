@@ -130,6 +130,7 @@ void     py_vortex_channel_received     (VortexChannel    * channel,
 	PyVortexChannel    * py_channel = user_data; 
 	PyObject           * py_conn;
 	PyObject           * py_frame;
+	PyObject           * py_ctx;
 	PyObject           * args;
 	PyGILState_STATE     state;
 	PyObject           * result;
@@ -141,15 +142,19 @@ void     py_vortex_channel_received     (VortexChannel    * channel,
 	py_frame = py_vortex_frame_create (frame, axl_true);
 	
 	/* create a PyVortexConnection instance */
+        py_ctx   = py_vortex_ctx_create (vortex_connection_get_ctx (connection));
 	py_conn  = py_vortex_connection_create (
 		/* connection to wrap */
 		connection, 
 		/* context: create a copy */
-		py_vortex_ctx_create (vortex_connection_get_ctx (connection)),
+		py_ctx,
 		/* acquire a reference to the connection */
 		axl_true,  
 		/* do not close the connection when the reference is collected, close_ref=axl_false */
 		axl_false);
+
+	/* decrement py_ctx reference since it is now owned by py_conn */
+	Py_DECREF (py_ctx);
 
 	/* rebuild py_channel in the case null reference is received
 	 * inside */

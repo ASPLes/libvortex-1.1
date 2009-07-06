@@ -106,6 +106,7 @@ static PyObject * py_vortex_create_listener (PyVortexChannel * self, PyObject * 
 	const char         * port          = NULL;
 	PyObject           * py_vortex_ctx = NULL;
 	VortexConnection   * listener      = NULL;
+	PyObject           * py_listener;
 
 	/* now parse arguments */
 	static char *kwlist[] = {"ctx", "host", "port", NULL};
@@ -113,6 +114,9 @@ static PyObject * py_vortex_create_listener (PyVortexChannel * self, PyObject * 
 	/* parse and check result */
 	if (! PyArg_ParseTupleAndKeywords(args, kwds, "Oss", kwlist, &py_vortex_ctx, &host, &port))
 		return NULL;
+
+	/* allow other threads to enter into the python space */
+	Py_BEGIN_ALLOW_THREADS
 	
 	/* create a listener */
 	listener = vortex_listener_new_full (
@@ -121,10 +125,18 @@ static PyObject * py_vortex_create_listener (PyVortexChannel * self, PyObject * 
 		/* host and port */
 		host, port, NULL, NULL);
 
+	/* restore thread state */
+	Py_END_ALLOW_THREADS
+
 	if (vortex_connection_is_ok (listener, axl_false)) {
+		py_vortex_log (PY_VORTEX_DEBUG, "created a listener running at: %s:%s (refs: %d)", 
+			       vortex_connection_get_host (listener),
+			       vortex_connection_get_port (listener),
+			       vortex_connection_ref_count (listener));
+
 		/* create the listener and acquire a reference to the
 		 * PyVortexCtx */
-		return py_vortex_connection_create (
+		py_listener = py_vortex_connection_create (
 			/* connection reference wrapped */
 			listener, 
 			/* context */
@@ -133,6 +145,13 @@ static PyObject * py_vortex_create_listener (PyVortexChannel * self, PyObject * 
 			axl_true,
 			/* close ref on variable collect */
 			axl_true);
+		
+		py_vortex_log (PY_VORTEX_DEBUG, "py_listener running at: %s:%s (refs: %d)", 
+			       vortex_connection_get_host (listener),
+			       vortex_connection_get_port (listener),
+			       vortex_connection_ref_count (listener));
+
+		return py_listener;
 	} /* end if */
 	
 	/* reply work done */
