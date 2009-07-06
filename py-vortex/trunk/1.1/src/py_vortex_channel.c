@@ -149,8 +149,6 @@ void     py_vortex_channel_received     (VortexChannel    * channel,
 		/* acquire a reference to the connection */
 		axl_true,  
 		/* do not close the connection when the reference is collected, close_ref=axl_false */
-		axl_false, 
-		/* is listener? no */
 		axl_false);
 
 	/* rebuild py_channel in the case null reference is received

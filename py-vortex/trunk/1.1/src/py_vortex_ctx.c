@@ -58,13 +58,13 @@ struct _PyVortexCtx {
  *
  * @return A reference to the inner VortexCtx.
  */
-VortexCtx * py_vortex_ctx_get (PyVortexCtx * py_vortex_ctx)
+VortexCtx * py_vortex_ctx_get (PyObject * py_vortex_ctx)
 {
 	if (py_vortex_ctx == NULL)
 		return NULL;
 	
 	/* return current context created */
-	return py_vortex_ctx->ctx;
+	return ((PyVortexCtx *)py_vortex_ctx)->ctx;
 }
 
 static int py_vortex_ctx_init_type (PyVortexCtx *self, PyObject *args, PyObject *kwds)

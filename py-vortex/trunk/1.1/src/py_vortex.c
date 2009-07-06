@@ -104,7 +104,7 @@ static PyObject * py_vortex_create_listener (PyVortexChannel * self, PyObject * 
 {
 	const char         * host          = NULL;
 	const char         * port          = NULL;
-	PyVortexCtx        * py_vortex_ctx = NULL;
+	PyObject           * py_vortex_ctx = NULL;
 	VortexConnection   * listener      = NULL;
 
 	/* now parse arguments */
@@ -132,8 +132,6 @@ static PyObject * py_vortex_create_listener (PyVortexChannel * self, PyObject * 
 			/* acquire a reference */
 			axl_true,
 			/* close ref on variable collect */
-			axl_true,
-			/* is listener */
 			axl_true);
 	} /* end if */
 	
