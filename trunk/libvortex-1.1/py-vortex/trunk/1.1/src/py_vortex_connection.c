@@ -60,8 +60,20 @@ struct _PyVortexConnection {
 	 * (PyVortexConnection) reusing a VortexConnection
 	 * reference. See \ref py_vortex_connection_create.
 	 */ 
-	PyVortexCtx      * py_vortex_ctx;
+	PyObject       * py_vortex_ctx;
 };
+
+#define PY_VORTEX_CONNECTION_CHECK_NOT_ROLE(py_conn, role, method)                                                \
+do {                                                                                                              \
+	if (vortex_connection_get_role (((PyVortexConnection *)py_conn)->conn) == role) {                         \
+	         py_vortex_log (PY_VORTEX_CRITICAL,                                                               \
+                                "trying to run a method %s not supported by the role %d, connection id: %d",      \
+				method, role, vortex_connection_get_id (((PyVortexConnection *)py_conn)->conn));  \
+	         Py_INCREF(Py_None);                                                                              \
+		 return Py_None;                                                                                  \
+	}                                                                                                         \
+} while(0);
+		 
 
 /** 
  * @brief Allows to get the VortexConnection reference inside the
@@ -93,7 +105,7 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 	PyVortexConnection * self;
 	const char         * host = NULL;
 	const char         * port = NULL;
-	PyVortexCtx        * py_vortex_ctx;
+	PyObject           * py_vortex_ctx;
 
 	/* create the object */
 	self = (PyVortexConnection *)type->tp_alloc(type, 0);
@@ -190,6 +202,10 @@ static PyObject * py_vortex_connection_pop_channel_error (PyVortexConnection * s
 	PyObject * result;
 	int        code = 0;
 	char     * msg  = NULL;
+
+	/* check if this is a listener connection that cannot provide
+	   this service */
+	PY_VORTEX_CONNECTION_CHECK_NOT_ROLE(self, VortexRoleMasterListener, "pop_channel_error");
 
 	/* check for channel errors */
 	if (vortex_connection_pop_channel_error (self->conn, &code, &msg)) {
@@ -465,10 +481,9 @@ static PyTypeObject PyVortexConnectionType = {
  * @return A newly created PyVortexConnection reference.
  */
 PyObject * py_vortex_connection_create   (VortexConnection * conn, 
-					  PyVortexCtx      * ctx,
+					  PyObject         * ctx,
 					  axl_bool           acquire_ref,
-					  axl_bool           close_ref,
-					  axl_bool           is_listener)
+					  axl_bool           close_ref)
 {
 	/* return a new instance */
 	PyVortexConnection * obj = (PyVortexConnection *) PyObject_CallObject ((PyObject *) &PyVortexConnectionType, NULL);

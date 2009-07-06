@@ -57,10 +57,9 @@ void init_vortex_connection (PyObject * module);
 VortexConnection   * py_vortex_connection_get    (PyVortexConnection * py_conn);
 
 PyObject * py_vortex_connection_create (VortexConnection * conn, 
-					PyVortexCtx      * ctx,
+					PyObject         * ctx,
 					axl_bool           acquire_ref,
-					axl_bool           close_ref,
-					axl_bool           is_listener);
+					axl_bool           close_ref);
 
 #define PY_CONN_GET(py_obj) (((PyVortexConnection*)self)->conn)
 

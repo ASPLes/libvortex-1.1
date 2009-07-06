@@ -47,7 +47,7 @@ typedef struct _PyVortexCtx PyVortexCtx;
 /* include base header */
 #include <py_vortex.h>
 
-VortexCtx * py_vortex_ctx_get (PyVortexCtx * py_vortex_ctx);
+VortexCtx * py_vortex_ctx_get (PyObject * py_vortex_ctx);
 
 PyObject * py_vortex_ctx_create (VortexCtx * ctx);
 
