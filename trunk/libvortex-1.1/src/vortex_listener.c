@@ -647,16 +647,17 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
  * @brief Creates a new Vortex Listener accepting incoming connections
  * on the given <b>host:port</b> configuration.
  *
- * If user provies an \ref VortexListenerReady "on_ready" callback,
- * it will be notified on it, in a separated thread, once the process
- * have finished. Check documentation for the \ref VortexListenerReady
- * handler which is the async definition for \ref VortexListenerReady "on_ready" handler.
+ * If user provides an \ref VortexListenerReady "on_ready" callback,
+ * the listener will be notified on it, in a separated thread, once
+ * the process has finished. Check \ref VortexListenerReady handler
+ * documentation which is on_ready handler type.
  * 
  * On that notification will also be passed the host and port actually
  * allocated. Think about using as host 0.0.0.0 and port 0. These
  * values will cause to \ref vortex_listener_new to allocate the
- * system configured hostname and a randomly free port. See \ref
- * vortex_handlers "this section" for more info about on_ready.
+ * system configured hostname and a random free port. See \ref
+ * vortex_handlers "this section" for more info about on_ready
+ * parameter.
  *
  * Host and port value provided to this function could be unrefered
  * once returning from this function. The function performs a local
@@ -686,7 +687,7 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
  * In the case the <b>on_ready</b> handler is provided, the function
  * will return NULL.
  *
- * Here is an little example to start a vortex listener server:
+ * Here is an example to start a vortex listener server:
  *
  * \code
  * // On this example you'll find:
@@ -780,18 +781,19 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
  *
  * @param ctx The context where the operation will be performed.
  *
- * @param host The host to listen to.
+ * @param host The host to listen on.
  *
- * @param port The port to listen to.
+ * @param port The port to listen on.
  *
- * @param on_ready A optional notify callback to get when vortex
- * listener is ready to perform replies.
+ * @param on_ready A optional callback to get a notification when
+ * vortex listener is ready to accept requests.
  *
  * @param user_data A user defined pointer to be passed in to
  * <i>on_ready</i> handler.
  *
- * @return The listener connection created. You must use \ref
- * vortex_connection_is_ok to check it is started the listener.
+ * @return The listener connection created (represented by a \ref
+ * VortexConnection reference). You must use \ref
+ * vortex_connection_is_ok to check if the server was started.
  * 
  * <b>NOTE:</b> the reference returned is only owned by the vortex
  * engine. This is not the case of \ref vortex_connection_new where
@@ -827,18 +829,14 @@ VortexConnection * vortex_listener_new (VortexCtx           * ctx,
  * listener, by configuring the optional handler on_ready_full (\ref
  * VortexListenerReadyFull).
  *
- * If your intention isn't getting a reference to the connection
- * created, you can safely use \ref vortex_listener_new and \ref
- * vortex_listener_new2.
- *
  * @param ctx The context where the operation will be performed.
  * 
- * @param host The host to listen to.
+ * @param host The host to listen on.
  *
- * @param port The port to listen to.
+ * @param port The port to listen on.
  *
- * @param on_ready_full A optional notify callback to get when vortex
- * listener is ready to perform replies.
+ * @param on_ready_full A optional callback to get a notification when
+ * vortex listener is ready to accept requests.
  *
  * @param user_data A user defined pointer to be passed in to
  * <i>on_ready</i> handler.
@@ -851,13 +849,15 @@ VortexConnection * vortex_listener_new (VortexCtx           * ctx,
  * the caller acquires automatically a reference to the connection (as
  * well as the vortex engine). 
  * 
- * In this case, if your intention is to keep a reference for later
- * operations, you must call to \ref vortex_connection_ref to avoid
- * losing the reference if the system drops the connection. In the
- * same direction, you can't call to \ref vortex_connection_close if
- * you don't own the reference returned by this function.
+ * In this case, if your intention is to own a reference to the
+ * listener for later operations, you must call to \ref
+ * vortex_connection_ref to avoid losing the reference if the system
+ * drops the connection. In the same direction, you can't call to \ref
+ * vortex_connection_close if you don't own the reference returned by
+ * this function.
  * 
- * To close immediately a listener you can use \ref vortex_connection_shutdown.
+ * To close immediately a listener you can use \ref
+ * vortex_connection_shutdown.
  */
 VortexConnection * vortex_listener_new_full  (VortexCtx   * ctx,
 					      const char  * host,

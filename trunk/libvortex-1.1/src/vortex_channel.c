@@ -7376,6 +7376,10 @@ VortexFrame      * vortex_channel_get_reply                      (VortexChannel 
 	VortexFrame * frame;
 	VortexCtx   * ctx     = vortex_channel_get_ctx (channel);
 
+	/* NOTE: In the case this function is modified it is required
+	 * to check py_vortex_channel_get_reply (py_vortex_channel.c)
+	 * implementation found inside python-vortex binding. */
+
 	/* check for piggyback reply */
 	if (channel != NULL) {
 		frame = vortex_channel_get_piggyback (channel);

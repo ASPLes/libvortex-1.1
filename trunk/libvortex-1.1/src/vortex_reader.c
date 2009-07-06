@@ -709,6 +709,9 @@ axl_bool   vortex_reader_register_watch (VortexReaderData * data, axlList * con_
 			/* check if we can free this connection */
 			vortex_connection_unref (connection, "vortex reader (process)");
 			vortex_log (VORTEX_LEVEL_DEBUG, "received a non-valid connection, ignoring it");
+
+			/* release data */
+			axl_free (data);
 			return axl_false;
 		}
 			
