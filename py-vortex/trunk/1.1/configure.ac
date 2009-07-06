@@ -36,14 +36,16 @@ dnl
 dnl      Email address:
 dnl         info@aspl.es - http://www.aspl.es/xml
 dnl
+AC_INIT(src/py_vortex.h)
+
 configure_dir=`dirname "$0"`
-PYVORTEX_VERSION=`cat $configure_dir/VERSION`
-AC_SUBST(PYVORTEX_VERSION)
+PY_VORTEX_VERSION=`cat $configure_dir/VERSION`
+AC_SUBST(PY_VORTEX_VERSION)
 
-AC_INIT(pyvortex, PYGOBJECT_VERSION, [http://www.aspl.es/vortex])
-
+AC_CONFIG_AUX_DIR(.)
+AM_INIT_AUTOMAKE(py_vortex, $PY_VORTEX_VERSION)
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE
+AM_MAINTAINER_MODE
 
 # get python includes 
 PYTHON_INCLUDES=`python-config --includes 2>/dev/null`
@@ -77,6 +79,12 @@ PKG_CHECK_MODULES(AXL, axl)
 AC_SUBST(AXL_CFLAGS)
 AC_SUBST(AXL_LIBS)
 
+dnl check for console log
+AC_ARG_ENABLE(py-vortex-log, [  --enable-py-vortex-log       Enable building PyVortex console debug log support [default=yes]], 
+	      enable_py_vortex_log="$enableval", 
+	      enable_py_vortex_log=yes)
+AM_CONDITIONAL(ENABLE_PY_VORTEX_LOG, test "x$enable_py_vortex_log" = "xyes")
+
 AC_PROG_LIBTOOL
 
 AC_OUTPUT([
@@ -87,6 +95,8 @@ test/Makefile])
 echo "------------------------------------------"
 echo "--       PyVortex EXTENSION SETTINGS    --"
 echo "------------------------------------------"
+echo "      PyVortex $PY_VORTEX_VERSION"
+echo "      PyVortex log: $enable_py_vortex_log "
 echo "------------------------------------------"
 echo "--     NOW TYPE: make; make install     --"
 echo "------------------------------------------"

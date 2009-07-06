@@ -42,8 +42,25 @@ struct _PyVortexConnection {
 	/* header required to initialize python required bits for
 	   every python object */
 	PyObject_HEAD
+
 	/* pointer to the VortexConnection object */
 	VortexConnection * conn;
+
+	/** 
+	 * @internal variable used to signal the type to close the
+	 * connection wrapped (VortexConnection) when the reference
+	 * PyVortexConnection is garbage collected.
+	 */
+	axl_bool           close_ref;
+
+	/** 
+	 * @brief Reference to the PyVortexCtx that was used to create
+	 * the connection. In may be null because some function inside
+	 * the PyVortex API may create a connection
+	 * (PyVortexConnection) reusing a VortexConnection
+	 * reference. See \ref py_vortex_connection_create.
+	 */ 
+	PyVortexCtx      * py_vortex_ctx;
 };
 
 /** 
@@ -92,8 +109,27 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 		
 		/* create the vortex connection in a blocking manner */
 		self->conn = vortex_connection_new (py_vortex_ctx_get (py_vortex_ctx), host, port, NULL, NULL);
-	} else {
-		printf ("Args is null, empty initialization..\n");
+
+		/* own a copy of py_vortex_ctx */
+		self->py_vortex_ctx = py_vortex_ctx;
+		Py_INCREF (__PY_OBJECT (py_vortex_ctx) );
+
+		/* signal this instance as a master copy to be closed
+		 * if the reference is collected and the connection is
+		 * working */
+		self->close_ref = axl_true;
+
+		if (vortex_connection_is_ok (self->conn, axl_false)) {
+			py_vortex_log (PY_VORTEX_DEBUG, "created connection id %d, with %s:%s",
+				       vortex_connection_get_id (self->conn), 
+				       vortex_connection_get_host (self->conn),
+				       vortex_connection_get_port (self->conn));
+		} else {
+			py_vortex_log (PY_VORTEX_CRITICAL, "failed to connect with %s:%s, connection id: %d",
+				       vortex_connection_get_host (self->conn),
+				       vortex_connection_get_port (self->conn),
+				       vortex_connection_get_id (self->conn));
+		} /* end if */
 	} /* end if */
 
 	return (PyObject *)self;
@@ -104,6 +140,29 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
  */
 static void py_vortex_connection_dealloc (PyVortexConnection* self)
 {
+	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortexConnection id: %d", vortex_connection_get_id (self->conn));
+
+	/* finish the connection in the case it is no longer referenced */
+	if (vortex_connection_is_ok (self->conn, axl_false) && self->close_ref) {
+		py_vortex_log (PY_VORTEX_DEBUG, "shutting down BEEP session associated at connection finalize id: %d (connection is ok, and close_ref is activated)", 
+			       vortex_connection_get_id (self->conn));
+		vortex_connection_shutdown (self->conn);
+		vortex_connection_close (self->conn);
+	} else {
+		py_vortex_log (PY_VORTEX_DEBUG, "unref the connection id: %d", vortex_connection_get_id (self->conn));
+		/* only unref the connection */
+		vortex_connection_unref (self->conn, "py_vortex_connection_dealloc");
+	} /* end if */
+
+	/* nullify */
+	self->conn = NULL;
+
+	/* decrease reference on PyVortexCtx used */
+	if (self->py_vortex_ctx) {
+		Py_DECREF (__PY_OBJECT (self->py_vortex_ctx));
+		self->py_vortex_ctx = NULL;
+	} /* endif */
+
 	/* free the node it self */
 	self->ob_type->tp_free ((PyObject*)self);
 
@@ -123,6 +182,35 @@ static PyObject * py_vortex_connection_is_ok (PyVortexConnection* self)
 	_result = Py_BuildValue ("i", vortex_connection_is_ok (self->conn, axl_false));
 	
 	return _result;
+}
+
+static PyObject * py_vortex_connection_pop_channel_error (PyVortexConnection * self)
+{
+	/* create a tuple to contain arguments */
+	PyObject * result;
+	int        code = 0;
+	char     * msg  = NULL;
+
+	/* check for channel errors */
+	if (vortex_connection_pop_channel_error (self->conn, &code, &msg)) {
+		/* found error message */
+		result = PyTuple_New (2);
+		PyTuple_SetItem (result, 0, Py_BuildValue ("i", code));
+		PyTuple_SetItem (result, 1, Py_BuildValue ("s", msg));
+
+		py_vortex_log (PY_VORTEX_DEBUG, "poping channel error code: %d, msg: %s",
+			       code, msg);
+		
+		/* release msg */
+		axl_free (msg);
+
+		/* return tuple */
+		return result;
+	} /* end if */
+
+	/* no error is found, return None */
+	Py_INCREF (Py_None);
+	return Py_None;
 }
 
 /** 
@@ -249,22 +337,26 @@ static PyObject * py_vortex_connection_open_channel (PyObject * self, PyObject *
 	if (! PyArg_ParseTupleAndKeywords(args, kwds, "is|OO", kwlist, &number, &profile, 
 					  /* optional parameters */
 					  &frame_received, &frame_received_data)) {
-		printf ("ParseTupleAndKeywords have failed..\n");
 		return NULL;
 	}
 
 	/* create an empty channel reference */
-	py_channel = py_vortex_channel_create_empty ();
+	py_channel = py_vortex_channel_create_empty (PY_VORTEX_CONNECTION (self));
 
 	/* check for frame received configuration */
 	if (frame_received && PyCallable_Check (frame_received)) {
-		printf ("Found request to open channel and to also configure frame received!!\n");
 		/* call to set the handler */
 		if (! py_vortex_channel_configure_frame_received (
 			    (PyVortexChannel *) py_channel, 
 			    frame_received, 
-			    frame_received_data))
+			    frame_received_data)) {
+			
+			py_vortex_log (PY_VORTEX_CRITICAL, "failed to configure frame received handler, unable to create channel");
+
+			/* decrease py ref created */
+			Py_DECREF (py_channel);
 			return NULL;
+		}
 	} /* end if */
 
 	/* now try to create the channel */
@@ -290,7 +382,6 @@ static PyObject * py_vortex_connection_open_channel (PyObject * self, PyObject *
 
 	/* set the channel */
 	py_vortex_channel_set ((PyVortexChannel *) py_channel, channel);
-	printf ("Configured channel into python channel..\n");
 
 	/* return reference created */
 	return py_channel;
@@ -303,6 +394,9 @@ static PyMethodDef py_vortex_connection_methods[] = {
 	/* open_channel */
 	{"open_channel", (PyCFunction) py_vortex_connection_open_channel, METH_VARARGS | METH_KEYWORDS,
 	 "Allows to open a channel on the provided connection (BEEP session)."},
+	/* pop_channel_error */
+	{"pop_channel_error", (PyCFunction) py_vortex_connection_pop_channel_error, METH_NOARGS,
+	 "API wrapper for vortex_connection_pop_channel_error. Each time this method is called, a tulple (code, msg) is returned containing the error code and the error message. One tuple is returned for each channel error found. In the case no error is stored on the connection None is returned."},
 	/* close */
 	{"close", (PyCFunction) py_vortex_connection_close, METH_NOARGS,
 	 "Allows to close a the BEEP session (vortex.Connection) following all BEEP close negotation phase. The method returns True in the case the connection was cleanly closed, otherwise False is returned. If this operation finishes properly, the reference should not be used."},
@@ -362,15 +456,42 @@ static PyTypeObject PyVortexConnectionType = {
  *
  * @param conn The connection to use as reference to wrap
  *
+ * @param acquire_ref Allows to configure if py_conn reference must
+ * acquire a reference to the connection.
+ *
+ * @param close_ref Allows to signal the object created to close or
+ * not the connection when the reference is garbage collected.
+ *
  * @return A newly created PyVortexConnection reference.
  */
-PyObject * py_vortex_connection_create   (VortexConnection * conn)
+PyObject * py_vortex_connection_create   (VortexConnection * conn, 
+					  PyVortexCtx      * ctx,
+					  axl_bool           acquire_ref,
+					  axl_bool           close_ref,
+					  axl_bool           is_listener)
 {
 	/* return a new instance */
 	PyVortexConnection * obj = (PyVortexConnection *) PyObject_CallObject ((PyObject *) &PyVortexConnectionType, NULL);
 
+	/* check ref created */
+	if (obj == NULL)
+		return NULL;
+
+	/* configure close_ref */
+	obj->close_ref = close_ref;
+
 	/* set channel reference received */
-	if (obj) {
+	if (obj && conn) {
+		/* check to acquire a ref */
+		if (acquire_ref) {
+			vortex_connection_ref (conn, "py_vortex_connection_create");
+
+			/* configure the ctx received */
+			obj->py_vortex_ctx = ctx;
+			Py_XINCREF (__PY_OBJECT (ctx));
+		} /* end if */
+
+		/* configure the reference */
 		obj->conn = conn;
 	} /* end if */
 

@@ -47,11 +47,20 @@ typedef struct _PyVortexConnection PyVortexConnection;
 /* include base header */
 #include <py_vortex.h>
 
+/** 
+ * @brief Cast a PyObject reference into a PyVortexConnection.
+ */
+#define PY_VORTEX_CONNECTION(c) ((PyVortexConnection *)c)
+
 void init_vortex_connection (PyObject * module);
 
 VortexConnection   * py_vortex_connection_get    (PyVortexConnection * py_conn);
 
-PyObject * py_vortex_connection_create (VortexConnection * conn);
+PyObject * py_vortex_connection_create (VortexConnection * conn, 
+					PyVortexCtx      * ctx,
+					axl_bool           acquire_ref,
+					axl_bool           close_ref,
+					axl_bool           is_listener);
 
 #define PY_CONN_GET(py_obj) (((PyVortexConnection*)self)->conn)
 

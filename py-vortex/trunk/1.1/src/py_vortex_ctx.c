@@ -45,6 +45,8 @@ struct _PyVortexCtx {
 
 	/* pointer to the vortex context */
 	VortexCtx * ctx;
+	/* flags if the PyVortexCtx is pending to exit */
+	axl_bool    exit_pending;
 };
 
 /** 
@@ -91,6 +93,13 @@ static PyObject * py_vortex_ctx_new (PyTypeObject *type, PyObject *args, PyObjec
  */
 static void py_vortex_ctx_dealloc (PyVortexCtx* self)
 {
+	py_vortex_log (PY_VORTEX_DEBUG, "collecting vortex.Ctx ref: %p (self->ctx: %p)", self, self->ctx);
+
+	/* check for pending exit */
+	if (self->exit_pending) {
+		Py_DECREF ( py_vortex_ctx_exit (self) );
+	} /* end if */
+
 	/* free ctx */
 	vortex_ctx_free (self->ctx);
 	self->ctx = NULL;
@@ -110,8 +119,15 @@ static PyObject * py_vortex_ctx_init (PyVortexCtx* self)
 {
 	PyObject *_result;
 
+	/* check to not reinitialize */
+	if (self->exit_pending) {
+		py_vortex_log (PY_VORTEX_WARNING, "called to initialize a context twice");
+		return Py_BuildValue ("i", axl_true);
+	} /* end if */
+
 	/* call to init context and build result value */
-	_result = Py_BuildValue ("i", vortex_init_ctx (self->ctx));
+	self->exit_pending = vortex_init_ctx (self->ctx);
+	_result = Py_BuildValue ("i", self->exit_pending);
 	
 	return _result;
 }
@@ -121,14 +137,21 @@ static PyObject * py_vortex_ctx_init (PyVortexCtx* self)
  * receives a vortex.ctx object and initializes it calling to
  * vortex_init_ctx.
  */
-static PyObject * py_vortex_ctx_exit (PyVortexCtx* self)
+PyObject * py_vortex_ctx_exit (PyVortexCtx* self)
 {
-	/* call to finish context: do not dealloc ->ctx, this is
-	   already done by the type deallocator */
-	vortex_exit_ctx (self->ctx, axl_false);
+	if (self->exit_pending) {
+		py_vortex_log (PY_VORTEX_DEBUG, "finishing vortex.Ctx %p (self->ctx: %p)", self, self->ctx);
+		/* call to finish context: do not dealloc ->ctx, this is
+		   already done by the type deallocator */
+		vortex_exit_ctx (self->ctx, axl_false);
+
+		/* flag as exit done */
+		self->exit_pending = axl_false;
+	}
 
 	/* return None */
-	return Py_BuildValue ("");
+	Py_INCREF (Py_None);
+	return Py_None;
 }
 
 
@@ -186,6 +209,34 @@ static PyTypeObject PyVortexCtxType = {
     py_vortex_ctx_new,         /* tp_new */
 
 };
+
+/** 
+ * @brief Allows to create a PyVortexCtx wrapper for the VortexCtx
+ * reference received.
+ *
+ * @param ctx The VortexCtx reference to wrap.
+ *
+ * @return A newly created PyVortexCtx reference.
+ */
+PyObject * py_vortex_ctx_create (VortexCtx * ctx)
+{
+	/* return a new instance */
+	PyVortexCtx * obj = (PyVortexCtx *) PyObject_CallObject ((PyObject *) &PyVortexCtxType, NULL);
+
+	if (obj) {
+		/* acquire a reference to the VortexCtx */
+		obj->ctx = ctx;
+		vortex_ctx_ref (ctx);
+
+		/* flag to not exit once the ctx is deallocated */
+		obj->exit_pending = axl_false;
+		
+		return __PY_OBJECT (obj);
+	} /* end if */
+
+	/* failed to create object */
+	return NULL;
+}
 
 /** 
  * @brief Inits the vortex ctx module. It is implemented as a type.

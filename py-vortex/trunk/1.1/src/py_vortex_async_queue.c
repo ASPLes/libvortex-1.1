@@ -81,7 +81,9 @@ static PyObject * py_vortex_async_queue_new (PyTypeObject *type, PyObject *args,
 	self = (PyVortexAsyncQueue *)type->tp_alloc(type, 0);
 
 	/* create the context */
-	self-> async_queue = vortex_async_queue_new ();
+	self->async_queue = vortex_async_queue_new ();
+
+	py_vortex_log (PY_VORTEX_DEBUG, "created new AsyncQueue: %p, self->queue: %p", self, self->async_queue);
 
 	return (PyObject *)self;
 }
@@ -91,6 +93,10 @@ static PyObject * py_vortex_async_queue_new (PyTypeObject *type, PyObject *args,
  */
 static void py_vortex_async_queue_dealloc (PyVortexAsyncQueue* self)
 {
+	/* do a log */
+	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortxAsyncQueue reference: %p, self->queue: %p", 
+		       self, self->async_queue);
+
 	/* free async_queue */
 	vortex_async_queue_safe_unref (&(self->async_queue)); 
 
@@ -114,11 +120,14 @@ static PyObject * py_vortex_async_queue_push (PyVortexAsyncQueue* self, PyObject
 	/* incremenet reference count */
 	Py_INCREF (obj); 
 
+	py_vortex_log (PY_VORTEX_DEBUG, "pushing object %p into queue: %p, self->queue: %p",
+		       obj, self, self->async_queue);
+
 	/* push the item */
 	vortex_async_queue_push (self->async_queue, obj);
 
-	/* return none */
-	return Py_BuildValue ("");
+	Py_INCREF (Py_None);
+	return Py_None;
 }
 
 /** 
@@ -130,16 +139,20 @@ static PyObject * py_vortex_async_queue_pop (PyVortexAsyncQueue* self)
 
 	/* allow other threads to enter into the python space */
 	Py_BEGIN_ALLOW_THREADS
-	
+
+	py_vortex_log (PY_VORTEX_DEBUG, "allowed other threads to enter python space, poping next item (queue.pop ())");
+
 	/* get the value */
 	_result = vortex_async_queue_pop (self->async_queue);
+
+        py_vortex_log (PY_VORTEX_DEBUG, "Finished wait on queue.pop (), reference returned: %p (queue: %p, self->queue: %p)", 
+		       _result, self, self->async_queue);
 
 	/* restore thread state */
 	Py_END_ALLOW_THREADS
 
 	/* do not decrement reference counting. It was increased to
 	 * provide a reference owned by the caller */
-
 	return _result;
 }
 
@@ -168,21 +181,27 @@ static PyObject * py_vortex_async_queue_timedpop (PyVortexAsyncQueue* self, PyOb
 
 	/* do not decrement reference counting. It was increased to
 	 * provide a reference owned by the caller */
-
 	return _result;
 }
 
 /** 
  * @brief Direct mapping for unref operation vortex_async_queue_unref
  */
-static PyObject * py_vortex_async_queue_unref (PyVortexAsyncQueue* self)
+/* static PyObject * py_vortex_async_queue_unref (PyVortexAsyncQueue* self)
 {
+	py_vortex_log (PY_VORTEX_DEBUG, "calling to queue.unref (): %p, self->queue: %p",
+		       self, self->async_queue); 
+		       */
 	/* decrease reference counting */
-	vortex_async_queue_safe_unref (&(self->async_queue)); 
+	/*	vortex_async_queue_safe_unref (&(self->async_queue)); */
+
+	/* and decrement references to the pyobject */
+	/*	Py_CLEAR (self); */
 
 	/* return None */
-	return Py_BuildValue ("");
-}
+	/*	Py_INCREF (Py_None);
+	return Py_None;
+	}*/
 
 /** 
  * @brief Direct mapping for the ref operation vortex_async_queue_ref.
@@ -192,8 +211,12 @@ static PyObject * py_vortex_async_queue_ref (PyVortexAsyncQueue* self)
 	/* increase reference counting */
 	vortex_async_queue_ref (self->async_queue);
 
+	/* and decrement references to the pyobject */
+	Py_INCREF (self);
+
 	/* return None */
-	return Py_BuildValue ("");
+	Py_INCREF (Py_None);
+	return Py_None;
 }
 
 
@@ -206,8 +229,8 @@ static PyMethodDef py_vortex_async_queue_methods[] = {
 	 "Allows to get the next item available on the queue (vortex.AsyncQueue) limiting the wait period to the value (microseconds) provided. This method will block the caller. Check items attribute to know if there are pending elements."},
 	{"ref", (PyCFunction) py_vortex_async_queue_ref, METH_NOARGS,
 	 "Allows to increase reference counting on the provided queue reference. "},
-	{"unref", (PyCFunction) py_vortex_async_queue_unref, METH_NOARGS,
-	 "Allows to decrease reference counting on the provided queue reference. If reached 0 the queue is finished."},
+/*	{"unref", (PyCFunction) py_vortex_async_queue_unref, METH_NOARGS,
+	"Allows to decrease reference counting on the provided queue reference. If reached 0 the queue is finished."}, */
  	{NULL}  
 }; 
 

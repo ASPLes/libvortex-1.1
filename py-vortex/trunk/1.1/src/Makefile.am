@@ -1,6 +1,10 @@
+if ENABLE_PY_VORTEX_LOG
+INCLUDE_PY_VORTEX_LOG=-DENABLE_PY_VORTEX_LOG
+endif
+
 INCLUDES = -Wall -g -ansi -I. -DCOMPILATION_DATE=`date +%s` \
-	   -DVERSION=\"$(PYVORTEX_VERSION)\" \
-	   $(AXL_CFLAGS) $(VORTEX_CFLAGS) $(PYTHON_CFLAGS) 
+	   -DVERSION=\"$(PY_VORTEX_VERSION)\" \
+	   $(AXL_CFLAGS) $(VORTEX_CFLAGS) $(PYTHON_CFLAGS) $(INCLUDE_PY_VORTEX_LOG)
 
 lib_LTLIBRARIES    = libpython-vortex.la
 libpython_vortex_la_SOURCES  = \
@@ -17,4 +21,5 @@ libpython_vortex_la_LDFLAGS  = $(PYTHON_LIBS) $(VORTEX_LIBS) $(AXL_LIBS)
 all-local: libpython-vortex.la
 	@echo "Running postbuild tasks.."
 	@cp `find ./ -name libpython-vortex.so* -type f` vortex.so
+
 

@@ -38,17 +38,22 @@
 #ifndef __PY_VORTEX_CTX_H__
 #define __PY_VORTEX_CTX_H__
 
-/* include base header */
-#include <py_vortex.h>
-
 /** 
  * @brief Object definition that represents the Python encapsulation
  * for VortexCtx API type.
  */
 typedef struct _PyVortexCtx PyVortexCtx;
 
+/* include base header */
+#include <py_vortex.h>
+
 VortexCtx * py_vortex_ctx_get (PyVortexCtx * py_vortex_ctx);
 
+PyObject * py_vortex_ctx_create (VortexCtx * ctx);
+
 void init_vortex_ctx(PyObject * module);
+
+/** internal declaration **/
+PyObject * py_vortex_ctx_exit (PyVortexCtx* self);
 
 #endif

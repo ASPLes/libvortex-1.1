@@ -43,6 +43,12 @@
 
 typedef struct _PyVortexFrame PyVortexFrame;
 
+/** 
+ * @brief Public macro that allows to perform a casting to the
+ * PyVortexFrame type.
+ */
+#define PY_VORTEX_FRAME(f) ((PyVortexFrame *)f)
+
 void              init_vortex_frame      (PyObject * module);
 
 PyObject        * py_vortex_frame_create (VortexFrame * frame, axl_bool acquire_ref);
