@@ -79,22 +79,6 @@ def test_00_a():
     # call to terminate queue 
     del queue
 
-    #########
-
-    # create a queue
-    queue = vortex.AsyncQueue ()
-
-    # call to unref
-    iterator = 0
-    while iterator < 100:
-        # unref 
-        queue.unref ()
-        
-        # next operation
-        iterator += 1
-
-    # and now finish 
-    del queue
 
     ######### now check data storage
     queue = vortex.AsyncQueue ()
@@ -121,7 +105,7 @@ def test_00_a():
         return False
 
     # call to unref 
-    queue.unref ()
+    # del queue # queue.unref ()
 
     ###### now masive add operations
     queue = vortex.AsyncQueue ()
@@ -141,9 +125,6 @@ def test_00_a():
             return False
         iterator += 1
 
-    # finish queue 
-    queue.unref ()
-
     ##### now add different types of data
     queue = vortex.AsyncQueue ()
 
@@ -154,9 +135,6 @@ def test_00_a():
     # get a tuple
     if not test_00_a_check (queue):
         return False
-
-    # unref the queue
-    queue.unref ()
 
     #### now add several different item
     queue    = vortex.AsyncQueue ()
@@ -179,9 +157,6 @@ def test_00_a():
         
         # next iterator
         iterator += 1
-
-    # finish the queue
-    queue.unref ()
 
     return True
 
@@ -289,12 +264,12 @@ def test_04 ():
     if not channel:
         error ("Expected to find proper channel creation, but error found:")
         # get first message
-        error = conn.pop_channel_error ()
+        err = conn.pop_channel_error ()
         while error:
-            error ("Found error message: " + str (error.code) + ": " + error.msg)
+            error ("Found error message: " + str (err[0]) + ": " + err[1])
 
             # next message
-            error = conn.pop_channel_error ()
+            err = conn.pop_channel_error ()
         return False
 
     # check channel installed
@@ -306,12 +281,12 @@ def test_04 ():
     if not channel.close ():
         error ("Expected to find proper channel close operation, but error found: ")
         # get first message
-        error = conn.pop_channel_error ()
+        err = conn.pop_channel_error ()
         while error:
-            error ("Found error message: " + str (error.code) + ": " + error.msg)
+            error ("Found error message: " + str (err[0]) + ": " + err[1])
 
             # next message
-            error = conn.pop_channel_error ()
+            err = conn.pop_channel_error ()
         return False
 
     # check channel installed
@@ -360,12 +335,12 @@ def test_05 ():
     if not channel:
         error ("Expected to find proper channel creation, but error found:")
         # get first message
-        error_data = conn.pop_channel_error ()
+        err = conn.pop_channel_error ()
         while error_data:
-            error ("Found error message: " + str (error_data.code) + ": " + error_data.msg)
+            error ("Found error message: " + str (err[0]) + ": " + err[1])
 
             # next message
-            error_data = conn.pop_channel_error ()
+            err = conn.pop_channel_error ()
         return False
 
     # configure frame received handler 
@@ -377,9 +352,6 @@ def test_05 ():
 
     # wait for the reply
     frame = queue.pop ()
-
-    # finish the queue (not required)
-    queue.unref ()
 
     # check frame content here 
     if frame.payload != "This is a test":
@@ -634,38 +606,29 @@ def test_09 ():
     channels = []
     while iterator < test_09_max_channels:
         # create the channel
-        channels.append (conn.open_channel (0, REGRESSION_URI))
-
-        # set frame received
-        channels[iterator].set_frame_received (test_06_received, queue)
+        channels.append (conn.open_channel (0, REGRESSION_URI, 
+                                            # configure frame received
+                                            frame_received=vortex.queue_reply, frame_received_data=queue))
 
         # next iterator
         iterator += 1
 
     # send content over all channels
     for channel in channels:
-        channel.send_msg ("This is a test..", 16)
-
-    print ("test_09: Messages sent..");
+        # check message send status
+        if channel.send_msg ("This is a test..", 16) < 0:
+            print ("Failed to send message..")
 
     # pop all messages replies
-    iterator = 0
-    while iterator < test_09_max_channels:
+    for channel in channels:
 
-        print ("test_09: about to receive a frame..");
-        
         # get frame
-        frame = queue.pop ()
+        frame = channel.get_reply (queue)
 
         # check content
         if frame.payload != "This is a test..":
             error ("Expected to find 'This is a test' but found: " + frame.payload)
             return False
-
-        # next iterator
-        iterator += 1
-
-    print ("test_09: After all frames received..");
 
     # check no pending items are in the queue
     if queue.items != 0:
@@ -675,13 +638,15 @@ def test_09 ():
     # now close all channels
     for channel in channels:
         # close the channels
-        channel.close ()
+        if not channel.close ():
+            error ("Expected to close channel opened previously, but found an error..")
+            return False
 
     # check channels opened on the connection
     if conn.num_channels != 1:
-        error ("Expected to find only two channels installed (administrative BEEP channel 0 and test channel) but found: " + conn.num_channels ())
+        error ("Expected to find only two channels installed (administrative BEEP channel 0 and test channel) but found: " + str (conn.num_channels))
         return False
-    
+
     # close connection
     conn.close ()
 
@@ -689,6 +654,69 @@ def test_09 ():
     ctx.exit ()
 
     return True
+
+def test_10 ():
+    
+    # call to initialize a context 
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # call to create a connection
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # open a channel
+    channel = conn.open_channel (0, REGRESSION_URI_DENY)
+    if channel: 
+        error ("Expected to find channel error but found a proper channel reference")
+        return False
+
+    # check errors here 
+    err = conn.pop_channel_error ()
+    if err[0] != 554:
+        error ("Expected to find error code 554 but found: " + str (err[0]))
+        return False
+
+    # check for no more pending errors
+    err = conn.pop_channel_error ();
+    if err:
+        error ("Expected to find None (no error) but found: " + err)
+        return False
+
+    # open a channel (DENY with a supported profile) 
+    channel = conn.open_channel (0, REGRESSION_URI_DENY_SUPPORTED)
+    if channel: 
+        error ("Expected to find channel error but found a proper channel reference")
+        return False
+
+    # check errors here 
+    err = conn.pop_channel_error ()
+    if err[0] != 421:
+        error ("Expected to find error code 421 but found: " + str (err[0]))
+        return False
+
+    # check for no more pending errors
+    err = conn.pop_channel_error ();
+    if err:
+        error ("Expected to find None (no error) but found: " + err)
+        return False
+
+    # close connection
+    conn.close ()
+
+    # finish context
+    ctx.exit ()
+
+    return True
+
 
 ###########################
 # intraestructure support #
@@ -708,7 +736,7 @@ def run_all_tests ():
     for test in tests:
 
         # print log
-        info ("Test-" + str(test_count) + ": Running " + test[1])
+        info ("TEST-" + str(test_count) + ": Running " + test[1])
         
         # call test
         if not test[0]():
@@ -723,16 +751,17 @@ def run_all_tests ():
 
 # declare list of tests available
 tests = [
-#    (test_00_a, "Check PyVortex async queue wrapper"),
-#    (test_01,   "Check PyVortex context initialization"),
-#    (test_02,   "Check PyVortex basic BEEP connection"),
-#    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
-#    (test_04,   "Check PyVortex basic BEEP channel creation"),
-#    (test_05,   "Check BEEP basic data exchange"),
-#    (test_06,   "Check BEEP check several send operations (serialize)"),
-#    (test_07,   "Check BEEP check several send operations (one send, one receive)"),
-#    (test_08,   "Check BEEP transfer zeroed binaries frames"),
-    (test_09,   "Check BEEP channel support")
+    (test_00_a, "Check PyVortex async queue wrapper"),
+    (test_01,   "Check PyVortex context initialization"),
+    (test_02,   "Check PyVortex basic BEEP connection"),
+    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
+    (test_04,   "Check PyVortex basic BEEP channel creation"),
+    (test_05,   "Check BEEP basic data exchange"),
+    (test_06,   "Check BEEP check several send operations (serialize)"),
+    (test_07,   "Check BEEP check several send operations (one send, one receive)"),
+    (test_08,   "Check BEEP transfer zeroed binaries frames"),
+    (test_09,   "Check BEEP channel support"),
+    (test_10,   "Check BEEP channel creation deny")
 ]
 
 # declare default host and port
@@ -742,6 +771,8 @@ port     = "44010"
 # regression test beep uris
 REGRESSION_URI      = "http://iana.org/beep/transient/vortex-regression"
 REGRESSION_URI_ZERO = "http://iana.org/beep/transient/vortex-regression/zero"
+REGRESSION_URI_DENY = "http://iana.org/beep/transient/vortex-regression/deny"
+REGRESSION_URI_DENY_SUPPORTED = "http://iana.org/beep/transient/vortex-regression/deny_supported"
 
 if __name__ == '__main__':
     iterator = 0

@@ -49,6 +49,66 @@
 #define PyMODINIT_FUNC void
 #endif
 
+/** 
+ * @brief PyVortex macro used to cast objects to PyObject.
+ */
+#define __PY_OBJECT(o) ((PyObject *)o)
+
+/** 
+ * @brief Enum used to configure debug level used by the binding.
+ */
+typedef enum {
+	/** 
+	 * @brief Debug and information messages.
+	 */
+	PY_VORTEX_DEBUG   = 1,
+	/** 
+	 * @brief Warning messages
+	 */
+	PY_VORTEX_WARNING = 2,
+	/** 
+	 * @brief Critical messages.
+	 */
+	PY_VORTEX_CRITICAL   = 3,
+} PyVortexLog;
+
+/* console debug support:
+ *
+ * If enabled, the log reporting is activated as usual. 
+ */
+#if defined(ENABLE_PY_VORTEX_LOG)
+# define py_vortex_log(l, m, ...)    do{_py_vortex_log  (__AXL_FILE__, __AXL_LINE__, l, m, ##__VA_ARGS__);}while(0)
+# define py_vortex_log2(l, m, ...)   do{_py_vortex_log2  (__AXL_FILE__, __AXL_LINE__, l, m, ##__VA_ARGS__);}while(0)
+#else
+# if defined(AXL_OS_WIN32) && !( defined(__GNUC__) || _MSC_VER >= 1400)
+/* default case where '...' is not supported but log is still
+ * disabled */
+#   define py_vortex_log _py_vortex_log
+#   define py_vortex_log2 _py_vortex_log2
+# else
+#   define py_vortex_log(l, m, ...) /* nothing */
+#   define py_vortex_log2(l, m, message, ...) /* nothing */
+# endif
+#endif
+
+void _py_vortex_log (const char          * file,
+		     int                   line,
+		     PyVortexLog           log_level,
+		     const char          * message,
+		     ...);
+
+void _py_vortex_log2 (const char          * file,
+		      int                   line,
+		      PyVortexLog           log_level,
+		      const char          * message,
+		      ...);
+
+axl_bool py_vortex_log_is_enabled       (void);
+
+axl_bool py_vortex_log2_is_enabled      (void);
+
+axl_bool py_vortex_color_log_is_enabled (void);
+
 /* include other modules */
 #include <py_vortex_ctx.h>
 #include <py_vortex_connection.h>

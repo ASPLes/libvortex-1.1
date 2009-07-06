@@ -42,11 +42,16 @@ struct _PyVortexChannel {
 	/* header required to initialize python required bits for
 	   every python object */
 	PyObject_HEAD
+
 	/* pointer to the VortexChannel object */
-	VortexChannel * channel;
+	VortexChannel      * channel;
+	
+	/* reference to the connection */
+	PyVortexConnection * py_conn;
+
 	/* frame received handler and data */
-	PyObject      * frame_received;
-	PyObject      * frame_received_data;
+	PyObject           * frame_received;
+	PyObject           * frame_received_data;
 };
 
 static int py_vortex_channel_init_type (PyVortexChannel *self, PyObject *args, PyObject *kwds)
@@ -74,6 +79,21 @@ static PyObject * py_vortex_channel_new (PyTypeObject *type, PyObject *args, PyO
  */
 static void py_vortex_channel_dealloc (PyVortexChannel* self)
 {
+
+	/* release reference associated */
+	py_vortex_log  (PY_VORTEX_DEBUG, "Calling to unref the channel: %d (self: %p, self->channel: %p)..", 
+			vortex_channel_get_number (self->channel), self, self->channel);
+	vortex_channel_unref (self->channel);
+	self->channel = NULL; 
+
+	/* decrement reference counting on py_conn */
+	Py_XDECREF (__PY_OBJECT (self->py_conn));
+	self->py_conn = NULL;
+
+	/* finish frame received and associated data */
+	Py_CLEAR (self->frame_received);
+	Py_CLEAR (self->frame_received_data);
+
 	/* free the node it self */
 	self->ob_type->tp_free ((PyObject*)self);
 
@@ -89,12 +109,9 @@ static PyObject * py_vortex_channel_close (PyVortexChannel* self)
 	axl_bool  result;
 
 	/* close the channel */
+	py_vortex_log (PY_VORTEX_DEBUG, "closing channel %d..", vortex_channel_get_number (self->channel));
 	result  = vortex_channel_close (self->channel, NULL);
 	_result = Py_BuildValue ("i", result);
-
-	/* check to nullify channel reference in the case the channel is closed */
-	if (result) 
-		self->channel = NULL;
 	
 	return _result;
 }
@@ -124,12 +141,25 @@ void     py_vortex_channel_received     (VortexChannel    * channel,
 	py_frame = py_vortex_frame_create (frame, axl_true);
 	
 	/* create a PyVortexConnection instance */
-	py_conn  = py_vortex_connection_create (connection);
+	py_conn  = py_vortex_connection_create (
+		/* connection to wrap */
+		connection, 
+		/* context: create a copy */
+		py_vortex_ctx_create (vortex_connection_get_ctx (connection)),
+		/* acquire a reference to the connection */
+		axl_true,  
+		/* do not close the connection when the reference is collected, close_ref=axl_false */
+		axl_false, 
+		/* is listener? no */
+		axl_false);
 
 	/* rebuild py_channel in the case null reference is received
 	 * inside */
-	if (py_channel->channel == NULL)
+	if (py_channel->channel == NULL) {
+		/* acquire reference */
+		vortex_channel_ref (channel);
 		py_channel->channel = channel;
+	}
 
 	/* create a tuple to contain arguments */
 	args = PyTuple_New (4);
@@ -139,14 +169,15 @@ void     py_vortex_channel_received     (VortexChannel    * channel,
 	 * ownership of the reference to that function, making it
 	 * responsible of calling to Py_DECREF when required. */
 	PyTuple_SetItem (args, 0, py_conn);
+
+	Py_INCREF (py_channel);
 	PyTuple_SetItem (args, 1, (PyObject *) py_channel);
+
 	PyTuple_SetItem (args, 2, py_frame);
 
 	/* increment reference counting because the tuple will
 	 * decrement the reference passed when he thinks it is no
 	 * longer used. */
-	printf ("py_channel: %p..\n", py_channel);
-	printf ("py_channel->frame_received_data: %p..\n", py_channel->frame_received_data);
 	Py_INCREF (py_channel->frame_received_data);
 	PyTuple_SetItem (args, 3, py_channel->frame_received_data);
 
@@ -159,8 +190,6 @@ void     py_vortex_channel_received     (VortexChannel    * channel,
 
 	/* release the GIL */
 	PyGILState_Release(state);
-
-	printf ("py_channel_frame_received finished..\n");
 
 	return;
 }
@@ -190,8 +219,6 @@ axl_bool  py_vortex_channel_configure_frame_received  (PyVortexChannel * self, P
 
 	Py_XDECREF (self->frame_received_data);
 	self->frame_received_data = data ? data : Py_None;
-
-	printf ("--> Configuring self->frame_received_data: %p..\n", self->frame_received_data);
 
 	/* increment reference counting */
 	Py_XINCREF (self->frame_received);
@@ -240,12 +267,53 @@ static PyObject * py_vortex_channel_send_msg (PyVortexChannel * self, PyObject *
 	result = vortex_channel_send_msg (self->channel, content, size, &msg_no);
 
 	/* return none in the case of failure */
-	if (! result)
-		return Py_BuildValue ("");
+	if (! result) {
+		Py_INCREF (Py_None);
+		return Py_None;
+	} /* end if */
 
 	/* and return the message number used in the case of proper
 	 * send operation */
 	return Py_BuildValue ("i", msg_no);
+}
+
+static PyObject * py_vortex_channel_get_reply (PyVortexChannel * self, PyObject * args)
+{
+	PyVortexAsyncQueue * queue = NULL;
+	PyVortexFrame      * py_frame;
+	VortexFrame        * frame;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "O", &queue))
+		return NULL;
+
+	/* first check we don't have a pending piggy to avoid mixing references */
+	frame = vortex_channel_get_piggyback (self->channel);
+	if (frame != NULL) {
+		/* found piggy back, build a py_frame with this reference */
+		return py_vortex_frame_create (frame, axl_false);
+	} /* end if */
+
+	/* allow other threads to enter into the python space */
+	Py_BEGIN_ALLOW_THREADS
+
+	/* get the next item inside the queue. We are returning the
+	 * reference stored directly because py_vortex_queue_reply
+	 * already stored the frame received as a PyVortexFrame
+	 * object */
+	py_frame = PY_VORTEX_FRAME ( vortex_channel_get_reply (self->channel, py_vortex_async_queue_get (queue)) );
+
+	/* restore thread state */
+	Py_END_ALLOW_THREADS
+
+	if (py_frame == NULL)  {
+		/* failed to get next frame */
+		Py_INCREF (Py_None);
+		return  Py_None;
+	} /* end */
+
+	/* return frame found */
+	return __PY_OBJECT (py_frame);
 }
 
 /** 
@@ -270,6 +338,11 @@ PyObject * py_vortex_channel_get_attr (PyObject *o, PyObject *attr_name) {
 	} else if (axl_cmp (attr, "profile")) {
 		/* found error_msg attribute */
 		return Py_BuildValue ("s", vortex_channel_get_profile (self->channel));
+	} else if (axl_cmp (attr, "conn")) {
+
+		/* return connection associated to the channel */
+		Py_INCREF (__PY_OBJECT (self->py_conn));
+		return __PY_OBJECT (self->py_conn);
 	} /* end if */
 
 	/* first implement generic attr already defined */
@@ -315,6 +388,8 @@ static PyMethodDef py_vortex_channel_methods[] = {
 	 "Allows to send the message with type MSG."},
 	{"set_frame_received", (PyCFunction) py_vortex_channel_set_frame_received, METH_VARARGS | METH_KEYWORDS,
 	 "Allows to configure the frame received handler."},
+	{"get_reply", (PyCFunction) py_vortex_channel_get_reply, METH_VARARGS,
+	 "Python implementation of vortex_channel_get_reply function. This methods is part of the get reply method where it is required to configure as frame_received handler the function vortex.queue_reply, causing all frames received to be queued. These frames are later retrieved by using this method, that is, channel.get_reply (queue). The advantage of this method is that allows to get all frames received (replies, error, messages..) and it also support returning the first piggyback received on the channel."},
 	{"close", (PyCFunction) py_vortex_channel_close, METH_NOARGS,
 	 "Allows to close the selected channel and to remove it from the BEEP session."},
  	{NULL}  
@@ -366,14 +441,25 @@ static PyTypeObject PyVortexChannelType = {
 /** 
  * @brief Creates new empty channel instance.
  */
-PyObject * py_vortex_channel_create (VortexChannel * channel)
+PyObject * py_vortex_channel_create (VortexChannel * channel, PyVortexConnection * py_conn)
 {
 	/* return a new instance */
-	PyVortexChannel * obj = (PyVortexChannel *) PyObject_CallObject ((PyObject *) &PyVortexChannelType, NULL);
+	PyVortexChannel * obj;
+
+	/* increase reference counting */
+	if ((channel == NULL) || (! vortex_channel_ref (channel)))
+		return NULL;
+
+	/* create the channel object */
+	obj = (PyVortexChannel *) PyObject_CallObject ((PyObject *) &PyVortexChannelType, NULL);
 
 	/* set channel reference received */
-	if (obj)
+	if (obj->channel) 
 		obj->channel = channel;
+
+	/* acquire a reference to the py_conn if defined */
+	obj->py_conn = py_conn;
+	Py_XINCREF (__PY_OBJECT (obj->py_conn));
 
 	/* return object */
 	return (PyObject *) obj;
@@ -382,11 +468,19 @@ PyObject * py_vortex_channel_create (VortexChannel * channel)
 /** 
  * @brief Returns an empty PyVortexChannel definition.
  *
+ * @param py_conn Reference to the python connection.
+ *
  * @return A reference to a newly created PyVortexChannel.
  */
-PyObject      * py_vortex_channel_create_empty (void)
+PyObject      * py_vortex_channel_create_empty (PyVortexConnection * py_conn)
 {
-	return PyObject_CallObject ((PyObject *) &PyVortexChannelType, NULL);
+	PyVortexChannel * py_channel = (PyVortexChannel *) PyObject_CallObject ((PyObject *) &PyVortexChannelType, NULL);
+
+	/* acquire a reference to the py_conn if defined */
+	py_channel->py_conn = py_conn;
+	Py_XINCREF (__PY_OBJECT (py_channel->py_conn));
+	
+	return __PY_OBJECT (py_channel);
 }
 
 /** 
@@ -400,8 +494,13 @@ void            py_vortex_channel_set    (PyVortexChannel * py_channel,
 	if (py_channel == NULL)
 		return;
 
+	/* increase reference counting */
+	if (! vortex_channel_ref (channel))
+		return;
+
 	/* set the channel (even if it is null) */
 	py_channel->channel = channel;
+
 	return;
 }
 
