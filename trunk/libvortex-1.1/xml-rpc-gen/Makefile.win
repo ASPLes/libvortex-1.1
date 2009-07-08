@@ -1,4 +1,9 @@
 # xml-rpc-gen makefile for windows
+ifdef enable_vortex_log
+   vortex_dll = -lvortex-debug-1.1
+else
+   vortex_dll = -lvortex-1.1
+endif
 
 CC       = gcc.exe -g -Wall
 OBJ      = exarg.o xml-rpc-support.o xml-rpc-gen-translate.o xml-rpc-gen.o xml-rpc-autoconf.o xml-rpc-c-server.o xml-rpc-c-stub.o
@@ -7,7 +12,7 @@ PROGRAMS = xml-rpc-gen.exe
 
 LIBS     = -Wall -g \
 	-L../../libaxl/src -L$(DEPEND_DIR)/bin -laxl  \
-	-L../src/ -lvortex-1.1
+	-L../src/ $(vortex_dll)
 
 INCS =  -I"." -I"../../libaxl/src" -I$(DEPEND_DIR)/include -I"../../libexarg/src" -I"../src/" -DOS_WIN32
 

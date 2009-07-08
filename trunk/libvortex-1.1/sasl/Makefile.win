@@ -1,7 +1,13 @@
 # Makefile for windows (mingw)
 OBJ  = vortex_sasl.o 
 
-DLL        = $(vortex_sasl_1_1_dll).dll
+ifdef enable_vortex_log
+   DLL = $(vortex_debug_sasl_1_1_dll).dll
+   vortex_dll = -lvortex-debug-1.1
+else
+   DLL = $(vortex_sasl_1_1_dll).dll
+   vortex_dll = -lvortex-1.1
+endif
 IMPORT_DLL = $(DLL).a
 STATIC_LIB = $(vortex_sasl_1_1_dll).a
 
@@ -10,7 +16,7 @@ STATIC_LIB = $(vortex_sasl_1_1_dll).a
 #	--add-stdcall-alias \
 #	-lws2_32 \
 #	-lintl  -liconv  -lm 
-LIBS = -Wall $(enable_gcc_debug) -L"../src" -L"../../libaxl/src/" -laxl -lws2_32 -lvortex-1.1 $(OPENSSL_LIBS) $(GSASL_LIBS) $(search_lib_path) 
+LIBS = -Wall $(enable_gcc_debug) -L"../src" -L"../../libaxl/src/" -laxl -lws2_32 $(vortex_dll) $(OPENSSL_LIBS) $(GSASL_LIBS) $(search_lib_path) 
 
 # build vortex with log support
 INCS = -Wall $(enable_gcc_debug) -I"." -I"../../libaxl/src" -I"../src" $(enable_vortex_log) -DENABLE_SASL_SUPPORT -DHAVE_GSASL_FREE
@@ -37,7 +43,18 @@ $(DLL): $(OBJ)
 	$(CC) -m$(MODE) -shared -Wl,--out-implib,$(IMPORT_DLL) --export-all-symbols \
 		  $(OBJ) -o $(DLL)        $(LIBS)
 	lib.exe /def:libvortex-sasl-1.1.def
+ifdef enable_vortex_log
+	cp libvortex-sasl-1.1.lib $(release_dir)/libvortex-sasl-debug-1.1.lib
+	cp libvortex-sasl-1.1.def $(release_dir)/libvortex-sasl-debug-1.1.def
+	cp libvortex-sasl-1.1.exp $(release_dir)/libvortex-sasl-debug-1.1.exp
+else
+	cp libvortex-sasl-1.1.lib $(release_dir)/
+	cp libvortex-sasl-1.1.def $(release_dir)/
+	cp libvortex-sasl-1.1.exp $(release_dir)/
+endif
 	strip --strip-unneeded $(DLL)
+	cp $(DLL) $(release_dir)/
+	cp $(DLL).a $(release_dir)/
 
 %.o: %.c
 	$(CC) -c $< -o $@ $(CFLAGS)

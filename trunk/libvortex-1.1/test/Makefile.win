@@ -1,3 +1,39 @@
+ifdef enable_vortex_log
+   vortex_dll         = -lvortex-debug-1.1
+   vortex_tunnel_dll  = -lvortex-tunnel-debug-1.1
+   vortex_xml_rpc_dll = -lvortex-xml-rpc-debug-1.1
+   vortex_tls_dll     = -lvortex-tls-debug-1.1
+   vortex_sasl_dll    = -lvortex-sasl-debug-1.1
+   vortex_pull_dll    = -lvortex-pull-debug-1.1
+   vortex_http_dll    = -lvortex-http-debug-1.1
+
+   # file created
+   vortex_file_dll         = libvortex-debug-1.1.dll
+   vortex_file_tunnel_dll  = libvortex-tunnel-debug-1.1.dll
+   vortex_file_xml_rpc_dll = libvortex-xml-rpc-debug-1.1.dll
+   vortex_file_tls_dll     = libvortex-tls-debug-1.1.dll
+   vortex_file_sasl_dll    = libvortex-sasl-debug-1.1.dll
+   vortex_file_pull_dll    = libvortex-pull-debug-1.1.dll
+   vortex_file_http_dll    = libvortex-http-debug-1.1.dll
+else
+   vortex_dll         = -lvortex-1.1
+   vortex_tunnel_dll  = -lvortex-tunnel-1.1
+   vortex_xml_rpc_dll = -lvortex-xml-rpc-1.1
+   vortex_tls_dll     = -lvortex-tls-1.1
+   vortex_sasl_dll    = -lvortex-sasl-1.1
+   vortex_pull_dll    = -lvortex-pull-1.1
+   vortex_http_dll    = -lvortex-http-1.1
+
+   # file created
+   vortex_file_dll         = libvortex-1.1.dll
+   vortex_file_tunnel_dll  = libvortex-tunnel-1.1.dll
+   vortex_file_xml_rpc_dll = libvortex-xml-rpc-1.1.dll
+   vortex_file_tls_dll     = libvortex-tls-1.1.dll
+   vortex_file_sasl_dll    = libvortex-sasl-1.1.dll
+   vortex_file_pull_dll    = libvortex-pull-1.1.dll
+   vortex_file_http_dll    = libvortex-http-1.1.dll
+endif
+
 CC       = gcc.exe -g -Wall
 OBJ      = vortex-listener.o \
            vortex-client.o \
@@ -28,17 +64,17 @@ PROGRAMS = vortex-listener.exe \
 
 LIBS     = -Wall -g \
 	-lws2_32 $(search_lib_path) \
-	-L../src -L../../libaxl/src -L$(DEPEND_DIR)/bin -laxl -lvortex-1.1 \
-	-L../tunnel -lvortex-tunnel-1.1 \
-	-L../xml-rpc -lvortex-xml-rpc-1.1 \
-	-L../tls -lvortex-tls-1.1 \
-	-L../sasl -lvortex-sasl-1.1 \
-	-L../pull -lvortex-pull-1.1 \
-	-L../http -lvortex-http-1.1 \
+	-L../src -L../../libaxl/src -L$(DEPEND_DIR)/bin -laxl $(vortex_dll) \
+	-L../tunnel $(vortex_tunnel_dll) \
+	-L../xml-rpc $(vortex_xml_rpc_dll) \
+	-L../tls $(vortex_tls_dll) \
+	-L../sasl $(vortex_sasl_dll) \
+	-L../pull $(vortex_pull_dll) \
+	-L../http $(vortex_http_dll) \
 	-lreadline5
 
 INCS =  -I"." -I"../src" -I"../tunnel" -I"../tls" -I"../sasl" -I"../xml-rpc" -I"../pull" -I"../http" \
-        -I"../../libaxl/src" -I$(DEPEND_DIR)/include -DENABLE_SASL_SUPPORT -DENABLE_XML_RPC_SUPPORT
+        -I"../../libaxl/src" -I$(DEPEND_DIR)/include -DENABLE_SASL_SUPPORT -DENABLE_XML_RPC_SUPPORT -DENABLE_TLS_SUPPORT
 
 CFLAGS   = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" -Wall -g -D__axl_disable_broken_bool_def__  
 
@@ -50,7 +86,8 @@ all-before:
 	cd ../src;make -f Makefile.win
 
 clean: clean-custom
-	${RM} $(OBJ) $(PROGRAMS) *.dll
+
+	${RM} $(OBJ) $(PROGRAMS) *.dll *.o
 
 vortex-client.exe: vortex-client.o 
 	$(CC) -mconsole $< -o $@ $(LIBS)
@@ -92,13 +129,13 @@ vortex-client-connections.exe: vortex-client-connections.o
 
 links:
 	cp $(READLINE_LIBS) .
-	cp ../src/libvortex-1.1.dll .
-	cp ../sasl/libvortex-sasl-1.1.dll .
-	cp ../tls/libvortex-tls-1.1.dll .
-	cp ../tunnel/libvortex-tunnel-1.1.dll .
-	cp ../xml-rpc/libvortex-xml-rpc-1.1.dll .
-	cp ../pull/libvortex-pull-1.1.dll .
-	cp ../http/libvortex-http-1.1.dll .
+	cp ../src/$(vortex_file_dll) .
+	cp ../sasl/$(vortex_file_sasl_dll) .
+	cp ../tls/$(vortex_file_tls_dll) .
+	cp ../tunnel/$(vortex_file_tunnel_dll) .
+	cp ../xml-rpc/$(vortex_file_xml_rpc_dll) .
+	cp ../pull/$(vortex_file_pull_dll) .
+	cp ../http/$(vortex_file_http_dll) .
 	cp ../data/*.dtd .
 	cp ../../libaxl/src/libaxl.dll .
 	cp $(OPENSSL_LIBS) .
