@@ -5,12 +5,16 @@ _vortex_log_common
 vortex_async_queue_foreach
 vortex_async_queue_items
 vortex_async_queue_length
+vortex_async_queue_lock
 vortex_async_queue_new
 vortex_async_queue_pop
 vortex_async_queue_priority_push
 vortex_async_queue_push
 vortex_async_queue_ref
+vortex_async_queue_safe_unref
 vortex_async_queue_timedpop
+vortex_async_queue_unlock
+vortex_async_queue_unlocked_push
 vortex_async_queue_unref
 vortex_async_queue_waiters
 vortex_channel_0_frame_received
@@ -158,6 +162,7 @@ vortex_conf_get
 vortex_conf_set
 vortex_connection_actions_notify
 vortex_connection_add_channel
+vortex_connection_add_channel_common
 vortex_connection_add_channel_pool
 vortex_connection_block
 vortex_connection_channel_exists
@@ -224,6 +229,7 @@ vortex_connection_ref
 vortex_connection_ref_count
 vortex_connection_ref_internal
 vortex_connection_remove_channel
+vortex_connection_remove_channel_common
 vortex_connection_remove_channel_pool
 vortex_connection_remove_on_close_full
 vortex_connection_sanity_socket_check
@@ -261,6 +267,7 @@ vortex_ctx_free
 vortex_ctx_get_data
 vortex_ctx_install_cleanup
 vortex_ctx_new
+vortex_ctx_ref
 vortex_ctx_set_channel_added_handler
 vortex_ctx_set_channel_removed_handler
 vortex_ctx_set_channel_start_handler
@@ -268,6 +275,7 @@ vortex_ctx_set_close_notify_handler
 vortex_ctx_set_data
 vortex_ctx_set_data_full
 vortex_ctx_set_frame_received
+vortex_ctx_unref
 vortex_dtds_cleanup
 vortex_dtds_get_channel_dtd
 vortex_dtds_init
