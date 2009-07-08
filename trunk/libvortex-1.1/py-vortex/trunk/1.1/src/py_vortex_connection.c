@@ -154,7 +154,7 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
  */
 static void py_vortex_connection_dealloc (PyVortexConnection* self)
 {
-	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortexConnection id: %d", vortex_connection_get_id (self->conn));
+	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortexConnection id: %d (%p)", vortex_connection_get_id (self->conn), self);
 
 	/* finish the connection in the case it is no longer referenced */
 	if (vortex_connection_is_ok (self->conn, axl_false) && self->close_ref) {
