@@ -45,3 +45,12 @@ SUBDIRS = src $(PULL_SUPPORT_DIR) $(TUNNEL_SUPPORT_DIR) $(XML_RPC_SUPPORT_DIR) $
 EXTRA_DIST = vortex-1.1.pc.in VERSION libvortex.sln
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = vortex-1.1.pc $(PULL_PKGCONFIG) $(TUNNEL_PKGCONFIG) $(XML_RPC_PKGCONFIG) $(SASL_PKGCONFIG) $(TLS_PKGCONFIG) $(HTTP_PKGCONFIG)
+
+update-defs:
+	cd src; make update-def; cd ..
+	cd tls; make update-def; cd ..
+	cd sasl; make update-def; cd ..
+	cd tunnel; make update-def; cd ..
+	cd xml-rpc; make update-def; cd ..
+	cd pull; make update-def; cd ..
+	
