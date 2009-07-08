@@ -148,6 +148,9 @@ axl_bool      vortex_log2_is_enabled (VortexCtx * ctx)
 
 /** 
  * @brief Enable console vortex log.
+ *
+ * You can also enable log by setting VORTEX_DEBUG environment
+ * variable to 1.
  * 
  * @param ctx The context where the operation will be performed.
  *
@@ -178,6 +181,14 @@ void     vortex_log_enable       (VortexCtx * ctx, axl_bool      status)
 
 /** 
  * @brief Enable console second level vortex log.
+ * 
+ * You can also enable log by setting VORTEX_DEBUG2 environment
+ * variable to 1.
+ *
+ * Activating second level debug also requires to call to \ref
+ * vortex_log_enable (axl_true). In practical terms \ref
+ * vortex_log_enable (axl_false) disables all log reporting even
+ * having \ref vortex_log2_enable (axl_true) enabled.
  * 
  * @param ctx The context where the operation will be performed.
  *
@@ -244,6 +255,9 @@ axl_bool      vortex_color_log_is_enabled (VortexCtx * ctx)
  *  - red:  errors, critical 
  *  - yellow: warnings
  *  - green: info, debug
+ *
+ * You can also enable color log by setting VORTEX_DEBUG_COLOR
+ * environment variable to 1.
  * 
  * @param ctx The context where the operation will be performed.
  *
