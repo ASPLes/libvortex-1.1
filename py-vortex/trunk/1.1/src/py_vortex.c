@@ -119,6 +119,7 @@ static PyObject * py_vortex_create_listener (PyVortexChannel * self, PyObject * 
 	Py_BEGIN_ALLOW_THREADS
 	
 	/* create a listener */
+	py_vortex_log (PY_VORTEX_DEBUG, "creating listener using: %s:%s", host, port);
 	listener = vortex_listener_new_full (
 		/* context */
 		py_vortex_ctx_get (py_vortex_ctx),
