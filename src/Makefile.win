@@ -21,9 +21,13 @@ OBJ  = vortex.o \
        vortex_errno.o \
        vortex_win32.o
 
-DLL        = $(vortex_1_1_dll).dll
-IMPORT_DLL = $(DLL).a
-STATIC_LIB = $(vortex_1_1_dll).a
+ifdef enable_vortex_log
+   DLL = $(vortex_debug_1_1_dll).dll
+else
+   DLL = $(vortex_1_1_dll).dll
+endif
+IMPORT_DLL     = $(DLL).a
+STATIC_LIB     = $(vortex_1_1_dll).a
 
 #LIBS = -Wall $(enable_gcc_debug) -L"$(BASE_DIR)/lib" \
 #	-L"$(BASE_DIR)/bin" \
@@ -69,7 +73,18 @@ $(DLL): $(OBJ)
 	$(CC) -m$(MODE) -shared -Wl,--out-implib,$(IMPORT_DLL) --export-all-symbols \
 		  $(OBJ) -o $(DLL)        $(LIBS)
 	lib.exe /def:libvortex-1.1.def
+ifdef enable_vortex_log
+	cp libvortex-1.1.lib $(release_dir)/libvortex-debug-1.1.lib
+	cp libvortex-1.1.def $(release_dir)/libvortex-debug-1.1.def
+	cp libvortex-1.1.exp $(release_dir)/libvortex-debug-1.1.exp
+else
+	cp libvortex-1.1.lib $(release_dir)/
+	cp libvortex-1.1.def $(release_dir)/
+	cp libvortex-1.1.exp $(release_dir)/
+endif
 	strip --strip-unneeded $(DLL)
+	cp $(DLL) $(release_dir)/
+	cp $(DLL).a $(release_dir)/
 
 %.o: %.c
 	$(CC) -c $< -o $@ $(CFLAGS)
