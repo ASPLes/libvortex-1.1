@@ -24,7 +24,7 @@ VortexTunnelSettings * tunnel_settings = NULL;
 /* listener context */
 VortexCtx * ctx = NULL;
 
-VortexConnection * connection_new ()
+VortexConnection * connection_new (void)
 {
 	/* create a new connection */
 	if (tunnel_settings) {

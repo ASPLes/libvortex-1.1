@@ -8,7 +8,7 @@ if ENABLE_VORTEX_LOG
 INCLUDE_VORTEX_LOG=-DENABLE_VORTEX_LOG
 endif
 
-INCLUDES = -I. -I$(top_srcdir)/src -Wall -ansi -g -I$(top_srcdir) -D__COMPILING_VORTEX__ -D__axl_disable_broken_bool_def__  \
+INCLUDES = -I. -I$(top_srcdir)/src -Wall  -Wstrict-prototypes -ansi -g -I$(top_srcdir) -D__COMPILING_VORTEX__ -D__axl_disable_broken_bool_def__  \
 	$(AXL_CFLAGS) $(INCLUDE_VORTEX_LOG) $(PTHREAD_CFLAGS) \
 	-DVERSION=\""$(VORTEX_VERSION)"\" $(INCLUDE_PULL_SUPPORT) \
 	-DPACKAGE_DTD_DIR=\""$(datadir)"\" \

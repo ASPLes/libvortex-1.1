@@ -7728,7 +7728,7 @@ axl_bool  test_15a (void)
 }
 
 
-typedef int  (*VortexRegressionTest) ();
+typedef int  (*VortexRegressionTest) (void);
   
  
 void run_test (VortexRegressionTest test, const char * test_name, const char * message, 

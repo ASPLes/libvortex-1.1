@@ -565,6 +565,7 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 		/* register the listener socket at the Vortex Reader process.  */
 		vortex_reader_watch_listener (ctx, listener);
 		if (threaded) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "doing listener notification (threaded mode)");
 			/* notify listener created */
 			host_used = vortex_support_inet_ntoa (ctx, &sin);
 			if (on_ready != NULL) {
@@ -578,6 +579,8 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 		} /* end if */
 		
 		/* the listener reference */
+		vortex_log (VORTEX_LEVEL_DEBUG, "returning listener running at %s:%s (non-threaded mode)", 
+			    vortex_connection_get_host (listener), vortex_connection_get_port (listener));
 		return listener;
 	} /* end switch */
 

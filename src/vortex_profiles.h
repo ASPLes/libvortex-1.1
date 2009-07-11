@@ -41,7 +41,7 @@
 #include <vortex.h>
 
 
-int      vortex_profiles_register                (VortexCtx             * ctx,
+axl_bool vortex_profiles_register                (VortexCtx             * ctx,
 						  const char            * uri,
 						  VortexOnStartChannel    start,
 						  axlPointer              start_user_data,
@@ -50,10 +50,10 @@ int      vortex_profiles_register                (VortexCtx             * ctx,
 						  VortexOnFrameReceived   received,
 						  axlPointer              received_user_data);
 
-int      vortex_profiles_unregister              (VortexCtx             * ctx,
+axl_bool vortex_profiles_unregister              (VortexCtx             * ctx,
 						  const char            * uri);
 
-int      vortex_profiles_set_mime_type           (VortexCtx             * ctx,
+axl_bool vortex_profiles_set_mime_type           (VortexCtx             * ctx,
 						  const char            * uri,
 						  const char            * mime_type,
 						  const char            * transfer_encoding);
@@ -64,7 +64,7 @@ const char   * vortex_profiles_get_mime_type           (VortexCtx       * ctx,
 const char   * vortex_profiles_get_transfer_encoding   (VortexCtx        * ctx,
 							const char       * uri);
 
-int       vortex_profiles_register_extended_start (VortexCtx                    * ctx,
+axl_bool  vortex_profiles_register_extended_start (VortexCtx                    * ctx,
 						   const char                   * uri,
 						   VortexOnStartChannelExtended   extended_start,
 						   axlPointer                     extended_start_user_data);
@@ -83,12 +83,12 @@ axl_bool  vortex_profiles_invoke_close            (char  * uri,
 axl_bool  vortex_profiles_is_defined_close        (VortexCtx   * ctx,
 						   const char  * uri);
 
-int       vortex_profiles_invoke_frame_received   (const char       * uri,
+axl_bool  vortex_profiles_invoke_frame_received   (const char       * uri,
 						   int                channel_num,
 						   VortexConnection * connection,
 						   VortexFrame      * frame);
 
-int       vortex_profiles_is_defined_received     (VortexCtx        * ctx,
+axl_bool  vortex_profiles_is_defined_received     (VortexCtx        * ctx,
 						   const char       * uri);
 
 axlList * vortex_profiles_get_actual_list         (VortexCtx        * ctx);
