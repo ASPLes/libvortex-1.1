@@ -105,7 +105,7 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 	PyVortexConnection * self;
 	const char         * host = NULL;
 	const char         * port = NULL;
-	PyObject           * py_vortex_ctx;
+	PyObject           * py_vortex_ctx = NULL;
 
 	/* create the object */
 	self = (PyVortexConnection *)type->tp_alloc(type, 0);
@@ -116,10 +116,15 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 	/* check args */
 	if (args != NULL) {
 		/* parse and check result */
-		if (! PyArg_ParseTupleAndKeywords(args, kwds, "Oss", kwlist, &py_vortex_ctx, &host, &port)) {
+		if (! PyArg_ParseTupleAndKeywords(args, kwds, "|Oss", kwlist, &py_vortex_ctx, &host, &port)) 
+			return NULL;
+
+		/* check for empty creation */
+		if (py_vortex_ctx == NULL) {
 			py_vortex_log (PY_VORTEX_DEBUG, "found empty request to create a PyVortexConnection ref..");
 			return (PyObject *) self;
 		}
+			
 		
 		/* create the vortex connection in a blocking manner */
 		self->conn = vortex_connection_new (py_vortex_ctx_get (py_vortex_ctx), host, port, NULL, NULL);
@@ -154,7 +159,9 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
  */
 static void py_vortex_connection_dealloc (PyVortexConnection* self)
 {
-	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortexConnection id: %d (%p)", vortex_connection_get_id (self->conn), self);
+	int conn_id = vortex_connection_get_id (self->conn);
+
+	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortexConnection id: %d (%p)", conn_id, self);
 
 	/* finish the connection in the case it is no longer referenced */
 	if (vortex_connection_is_ok (self->conn, axl_false) && self->close_ref) {
@@ -180,6 +187,8 @@ static void py_vortex_connection_dealloc (PyVortexConnection* self)
 
 	/* free the node it self */
 	self->ob_type->tp_free ((PyObject*)self);
+
+	py_vortex_log (PY_VORTEX_DEBUG, "terminated PyVortexConnection dealloc with id: %d (self: %p)", conn_id, self);
 
 	return;
 }
@@ -285,11 +294,15 @@ static PyObject * py_vortex_connection_close (PyVortexConnection* self)
  */
 static PyObject * py_vortex_connection_shutdown (PyVortexConnection* self)
 {
+	py_vortex_log (PY_VORTEX_DEBUG, "calling to shutdown connection id: %d, self: %p",
+		       vortex_connection_get_id (self->conn), self);
+
 	/* shut down the connection */
 	vortex_connection_shutdown (self->conn);
 
 	/* return none */
-	return Py_BuildValue ("");
+	Py_INCREF (Py_None);
+	return Py_None;
 }
 
 /** 
@@ -533,11 +546,13 @@ PyObject * py_vortex_connection_create   (VortexConnection * conn,
 					  axl_bool           close_ref)
 {
 	/* return a new instance */
-	PyVortexConnection * obj = (PyVortexConnection *) PyObject_CallObject ((PyObject *) &PyVortexConnectionType, NULL);
+	PyVortexConnection * obj = (PyVortexConnection *) PyObject_CallObject ((PyObject *) &PyVortexConnectionType, NULL); 
 
 	/* check ref created */
-	if (obj == NULL)
+	if (obj == NULL) {
+		py_vortex_log (PY_VORTEX_CRITICAL, "Failed to create PyVortexConnection object, returning NULL");
 		return NULL;
+	} /* end if */
 
 	/* configure close_ref */
 	obj->close_ref = close_ref;

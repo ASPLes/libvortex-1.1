@@ -100,7 +100,7 @@ static PyObject * py_vortex_queue_reply (PyVortexChannel * self, PyObject * args
  * @brief Allows to start a listener running on the address and port
  * specified.
  */
-static PyObject * py_vortex_create_listener (PyVortexChannel * self, PyObject * args, PyObject * kwds)
+static PyObject * py_vortex_create_listener (PyObject * self, PyObject * args, PyObject * kwds)
 {
 	const char         * host          = NULL;
 	const char         * port          = NULL;
@@ -112,12 +112,9 @@ static PyObject * py_vortex_create_listener (PyVortexChannel * self, PyObject * 
 	static char *kwlist[] = {"ctx", "host", "port", NULL};
 
 	/* parse and check result */
-	if (! PyArg_ParseTupleAndKeywords(args, kwds, "Oss", kwlist, &py_vortex_ctx, &host, &port))
+	if (! PyArg_ParseTupleAndKeywords (args, kwds, "Oss", kwlist, &py_vortex_ctx, &host, &port))
 		return NULL;
 
-	/* allow other threads to enter into the python space */
-	Py_BEGIN_ALLOW_THREADS
-	
 	/* create a listener */
 	py_vortex_log (PY_VORTEX_DEBUG, "creating listener using: %s:%s", host, port);
 	listener = vortex_listener_new_full (
@@ -126,18 +123,16 @@ static PyObject * py_vortex_create_listener (PyVortexChannel * self, PyObject * 
 		/* host and port */
 		host, port, NULL, NULL);
 
-	/* restore thread state */
-	Py_END_ALLOW_THREADS
-
 	if (vortex_connection_is_ok (listener, axl_false)) {
-		py_vortex_log (PY_VORTEX_DEBUG, "created a listener running at: %s:%s (refs: %d)", 
+		py_vortex_log (PY_VORTEX_DEBUG, "created a listener running at: %s:%s (refs: %d, id: %d)", 
 			       vortex_connection_get_host (listener),
 			       vortex_connection_get_port (listener),
-			       vortex_connection_ref_count (listener));
+			       vortex_connection_ref_count (listener),
+			       vortex_connection_get_id (listener));
 
 		/* create the listener and acquire a reference to the
 		 * PyVortexCtx */
-		py_listener = py_vortex_connection_create (
+		py_listener =  py_vortex_connection_create (
 			/* connection reference wrapped */
 			listener, 
 			/* context */
@@ -146,16 +141,18 @@ static PyObject * py_vortex_create_listener (PyVortexChannel * self, PyObject * 
 			axl_true,
 			/* close ref on variable collect */
 			axl_true);
-		
-		py_vortex_log (PY_VORTEX_DEBUG, "py_listener running at: %s:%s (refs: %d)", 
+
+		py_vortex_log (PY_VORTEX_DEBUG, "py_listener running at: %s:%s (refs: %d, id: %d)", 
 			       vortex_connection_get_host (listener),
 			       vortex_connection_get_port (listener),
-			       vortex_connection_ref_count (listener));
-
+			       vortex_connection_ref_count (listener),
+			       vortex_connection_get_id (listener));
+		
 		return py_listener;
 	} /* end if */
 	
 	/* reply work done */
+	py_vortex_log (PY_VORTEX_CRITICAL, "failed to create listener, returning None..");
 	Py_INCREF (Py_None);
 	return Py_None;
 }
@@ -167,7 +164,7 @@ static PyMethodDef py_vortex_methods[] = {
 	/* create_listener */
 	{"create_listener", (PyCFunction) py_vortex_create_listener, METH_VARARGS | METH_KEYWORDS,
 	 "Wrapper of the set of functions that allows to create a BEEP listener. The function returns a new vortex.Connection that represents a listener running on the port and address provided."},
- 	{NULL}  
+	{NULL, NULL, 0, NULL}   /* sentinel */
 }; 
 
 /** 
@@ -181,7 +178,7 @@ PyMODINIT_FUNC initvortex(void)
 	PyEval_InitThreads();
 
 	/* register vortex module */
-	module = Py_InitModule3("vortex", py_vortex_methods, 
+	module = Py_InitModule3 ("vortex", py_vortex_methods, 
 			   "Example module that creates an extension type.");
 	if (module == NULL)
 		return;
