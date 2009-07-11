@@ -120,13 +120,16 @@ axl_bool      __vortex_profiles_default_close (int                channel_num,
  * @brief Allows to register a new profile inside the Vortex Library.
  *
  * Register a profile to be used on channel creation. Profiles are
- * used by Vortex channels to know which message to exchange and the
- * channel semantics. To be able to create vortex channels you must
- * register at least one profile.
+ * used by Vortex channels to know which message to exchange allowing
+ * the application level to implement the channel semantic. To be able
+ * to create vortex channels you must register at least one profile.
  *
  * On vortex session establishment, vortex peer acting as server sends
  * to vortex peer acting as client (or initiator) its registered
- * profiles. This enable both sides to know if they can talk together.
+ * profiles. This enable both sides to know if they can talk together
+ * (there are exceptions to this rule since some BEEP peers may hide
+ * which profiles are really supported until, for example, proper
+ * authentication is negotiated).
  *
  * In order to get an idea about profile names to use you can see
  * actual reserved profiles name defined by BEEP RFC. Some on them
@@ -149,18 +152,19 @@ axl_bool      __vortex_profiles_default_close (int                channel_num,
  * sends the close channel message. The \ref VortexOnCloseChannel "close" 
  * handler is executed on that event.
  * 
- * For all frames received, \ref VortexOnFrameReceived "received" handler will be executed.
+ * For all frames received, \ref VortexOnFrameReceived "received"
+ * handler will be executed.
  *
  * You can get more info about these handlers \ref vortex_handlers
  * "here". You can also read the following \ref profile_example
  * "document to know more about profiles".
  * 
  * If you don't provide handlers for \ref VortexOnStartChannel "start"
- * and \ref VortexOnCloseChannel "close", a default handler will be used.
+ * and \ref VortexOnCloseChannel "close", a default handler will be
+ * used.
  * 
- * These default handlers always return axl_true, so, on channel creation
- * it will accept always and on channel closing it will accept
- * always.
+ * These default handlers always return axl_true, so, on channel
+ * creation it will accept and on channel closing it will accept.
  *
  * If you don't provide a received handler, all data received will be
  * acknowledged but dropped.
@@ -187,11 +191,11 @@ axl_bool      __vortex_profiles_default_close (int                channel_num,
  * handler. It only allows you to get notified about the channel
  * number requested to be created and the connection where it was
  * received the petition. On most cases it is not needed more
- * information. 
+ * information.
  * 
  * However, the start message have several optional attributes and
  * content element that are used by profile definitions to implement
- * things such as TLS. On that case it is need to get notified with
+ * things such as TLS. On that case it is needed to get notified with
  * all data available. You can check \ref
  * vortex_profiles_register_extended_start function to know more about
  * this issue.
@@ -201,7 +205,7 @@ axl_bool      __vortex_profiles_default_close (int                channel_num,
  * implemented by Vortex Library to receive frames.
  *
  * You can also check \ref profile_example "this tutorial" about
- * creating new profiles for your application. 
+ * creating new profiles for your application.
  *
  * 
  * @param ctx                 The context where the operation will be performed.
