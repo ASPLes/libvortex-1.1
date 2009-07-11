@@ -157,6 +157,140 @@ static PyObject * py_vortex_create_listener (PyObject * self, PyObject * args, P
 	return Py_None;
 }
 
+void py_vortex_decref (PyObject * obj)
+{
+	Py_XDECREF (obj);
+	return;
+}
+
+#define PY_VORTEX_REGISTER_PROFILE_ITEM(s, o) do {                                       \
+	if (o) {                                                                         \
+	        Py_INCREF (o);                                                           \
+		vortex_ctx_set_data_full (py_vortex_ctx_get (py_vortex_ctx),             \
+					  /* key and value */                            \
+					  axl_strdup_printf (s, uri), o,                 \
+					  /* destroy functions */                        \
+					  axl_free, (axlDestroyFunc) py_vortex_decref);  \
+	}                                                                                \
+} while (0);
+
+/** 
+ * @internal Implementation used by py_vortex_register_profile to
+ * bridge into python notifying start request.
+ */
+axl_bool py_vortex_profile_start (int                channel_num,
+				  VortexConnection * conn,
+				  axlPointer         user_data)
+{
+	return axl_true;
+}
+
+/** 
+ * @internal Implementation used by py_vortex_register_profile to
+ * bridge into python notifying close request.
+ */
+axl_bool py_vortex_profile_close (int                channel_num,
+				  VortexConnection * connection,
+				  axlPointer         user_data)
+{
+	return axl_true;
+}
+
+/** 
+ * @internal Implementation used by py_vortex_register_profile to
+ * bridge into python notifying frame received.
+ */
+void py_vortex_profile_frame_received (VortexChannel    * channel,
+				       VortexConnection * conn,
+				       VortexFrame      * frame,
+				       axlPointer user_data)
+{
+	return;
+}
+
+/** 
+ * @brief Allows to register a profile and its associated handlers
+ * that will be used for incoming requests.
+ */
+static PyObject * py_vortex_register_profile (PyObject * self, PyObject * args, PyObject * kwds)
+{
+	const char         * uri           = NULL;
+	PyObject           * py_vortex_ctx = NULL;
+
+	PyObject           * start         = NULL;
+	PyObject           * start_data    = NULL;
+
+	PyObject           * close         = NULL;
+	PyObject           * close_data    = NULL;
+
+	PyObject           * frame_received       = NULL;
+	PyObject           * frame_received_data  = NULL;
+
+	/* now parse arguments */
+	static char *kwlist[] = {"ctx", "uri", "start", "start_data", "close", "close_data", "frame_received", "frame_received_data", NULL};
+
+	/* parse and check result */
+	if (! PyArg_ParseTupleAndKeywords (args, kwds, "Os|OOOOOO", kwlist, 
+					   &py_vortex_ctx, &uri, 
+					   &start, &start_data, 
+					   &close, &close_data, 
+					   &frame_received, &frame_received_data))
+		return NULL;
+
+	py_vortex_log (PY_VORTEX_DEBUG, "received request to register profile %s", uri);
+
+	/* check handlers defined */
+	if (start != NULL && ! PyCallable_Check (start)) {
+		py_vortex_log (PY_VORTEX_DEBUG, "defined start handler but received a non callable object, unable to register %s", uri);
+		return NULL;
+	} /* end if */
+
+	if (close != NULL && ! PyCallable_Check (close)) {
+		py_vortex_log (PY_VORTEX_DEBUG, "defined start handler but received a non callable object, unable to register %s", uri);
+		return NULL;
+	} /* end if */
+
+	if (frame_received != NULL && ! PyCallable_Check (frame_received)) {
+		py_vortex_log (PY_VORTEX_DEBUG, "defined start handler but received a non callable object, unable to register %s", uri);
+		return NULL;
+	} /* end if */
+
+	py_vortex_log (PY_VORTEX_DEBUG, "calling to register %s", uri);
+	
+	/* call to register */
+	if (! vortex_profiles_register (py_vortex_ctx_get (py_vortex_ctx),
+					uri,
+					/* start */
+					start ? py_vortex_profile_start : NULL, 
+					start ? start_data : NULL,
+					/* close */
+					close ? py_vortex_profile_close : NULL, 
+					close ? close_data : NULL,
+					/* frame_received */
+					frame_received ? py_vortex_profile_frame_received : NULL, 
+					frame_received ? frame_received_data : NULL)) {
+		py_vortex_log (PY_VORTEX_CRITICAL, "failure found while registering %s at vortex_profiles_register", uri);
+		return NULL;
+	} /* end if */
+
+	py_vortex_log (PY_VORTEX_DEBUG, "acquiring references to handlers and objects..");
+
+	/* acquire a reference to the register content */
+	PY_VORTEX_REGISTER_PROFILE_ITEM ("%s_start", start);
+	PY_VORTEX_REGISTER_PROFILE_ITEM ("%s_start_data", start_data);
+
+	PY_VORTEX_REGISTER_PROFILE_ITEM ("%s_close", close);
+	PY_VORTEX_REGISTER_PROFILE_ITEM ("%s_close_data", close_data);
+
+	PY_VORTEX_REGISTER_PROFILE_ITEM ("%s_frame_received", frame_received);
+	PY_VORTEX_REGISTER_PROFILE_ITEM ("%s_frame_received_data", frame_received_data);
+	
+	/* reply work done */
+	py_vortex_log (PY_VORTEX_DEBUG, "registered beep uri: %s", uri);
+	Py_INCREF (Py_None);
+	return Py_None;
+}
+
 static PyMethodDef py_vortex_methods[] = { 
 	/* queue reply */
 	{"queue_reply", (PyCFunction) py_vortex_queue_reply, METH_VARARGS,
@@ -164,6 +298,9 @@ static PyMethodDef py_vortex_methods[] = {
 	/* create_listener */
 	{"create_listener", (PyCFunction) py_vortex_create_listener, METH_VARARGS | METH_KEYWORDS,
 	 "Wrapper of the set of functions that allows to create a BEEP listener. The function returns a new vortex.Connection that represents a listener running on the port and address provided."},
+	/* register_profile */
+	{"register_profile", (PyCFunction) py_vortex_register_profile, METH_VARARGS | METH_KEYWORDS,
+	 "Function that allows to register a profile with its associated handlers (frame received, channel start and channel close)."},
 	{NULL, NULL, 0, NULL}   /* sentinel */
 }; 
 
