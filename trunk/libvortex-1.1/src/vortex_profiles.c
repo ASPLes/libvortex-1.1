@@ -216,14 +216,14 @@ axl_bool      __vortex_profiles_default_close (int                channel_num,
  * @return The function return axl_true if the profile was properly
  * registered. Otherwise axl_false is returned.
  */
-int  vortex_profiles_register (VortexCtx             * ctx,
-			       const char            * uri,
-			       VortexOnStartChannel    start,
-			       axlPointer              start_user_data,
-			       VortexOnCloseChannel    close,
-			       axlPointer              close_user_data,
-			       VortexOnFrameReceived   received,
-			       axlPointer              received_user_data)
+axl_bool  vortex_profiles_register (VortexCtx             * ctx,
+				    const char            * uri,
+				    VortexOnStartChannel    start,
+				    axlPointer              start_user_data,
+				    VortexOnCloseChannel    close,
+				    axlPointer              close_user_data,
+				    VortexOnFrameReceived   received,
+				    axlPointer              received_user_data)
 {
 	/* get current context */
 	VortexProfile * profile;
@@ -256,8 +256,8 @@ int  vortex_profiles_register (VortexCtx             * ctx,
 		return axl_true;
 	}
 
-		vortex_log (VORTEX_LEVEL_DEBUG, "profile %s is already registered, updating its settings",
-			    uri);
+	vortex_log (VORTEX_LEVEL_DEBUG, "profile %s is already registered, updating its settings",
+		    uri);
 	
 	/* set new data for the given profile */
 	profile->start              = start ? start : __vortex_profiles_default_start;
@@ -283,7 +283,7 @@ int  vortex_profiles_register (VortexCtx             * ctx,
  * @return axl_true if the profile was unregistered, otherwise axl_false is
  * returned.
  */
-int      vortex_profiles_unregister              (VortexCtx             * ctx,
+axl_bool vortex_profiles_unregister              (VortexCtx             * ctx,
 						  const char            * uri)
 {
 	/* get current context */
@@ -336,7 +336,7 @@ int      vortex_profiles_unregister              (VortexCtx             * ctx,
  * @return axl_true if the basic MIME configuration was done, otherwise
  * axl_false is returned.
  */
-int      vortex_profiles_set_mime_type           (VortexCtx             * ctx,
+axl_bool vortex_profiles_set_mime_type           (VortexCtx             * ctx,
 						  const char            * uri,
 						  const char            * mime_type,
 						  const char            * transfer_encoding)
@@ -466,7 +466,7 @@ const char  * vortex_profiles_get_transfer_encoding (VortexCtx   * ctx,
  * @return axl_true if the extended start handler was configured,
  * otherwise axl_false is returned.
  */
-int      vortex_profiles_register_extended_start (VortexCtx                    * ctx,
+axl_bool vortex_profiles_register_extended_start (VortexCtx                    * ctx,
 						  const char                   * uri,
 						  VortexOnStartChannelExtended   extended_start,
 						  axlPointer                     extended_start_user_data)

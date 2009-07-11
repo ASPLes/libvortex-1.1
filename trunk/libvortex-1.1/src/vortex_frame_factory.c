@@ -103,7 +103,7 @@ typedef struct _VortexMimeStatus {
  * @internal Creates a new vortex mime status (a structure to hold all
  * information about MIME for the particular frame).
  */
-VortexMimeStatus * vortex_frame_mime_status_new ()
+VortexMimeStatus * vortex_frame_mime_status_new (void)
 {
 	VortexMimeStatus * status;
 

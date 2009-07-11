@@ -47,7 +47,7 @@ VortexConnection * connection;
 axl_bool           auto_tls_profile = axl_true;
 
 
-void vortex_client_show_help () {
+void vortex_client_show_help (void) {
 	printf ("Vortex-client cmd help:\n");
 	printf (" -- general commands --\n");
 	printf ("  help              - Show this help.\n");
@@ -87,13 +87,13 @@ void vortex_client_show_help () {
 
 }
 
-void vortex_show_initial_greetings () 
+void vortex_show_initial_greetings (void) 
 {
 	printf ("Vortex-client v.%s: a cmd tool to test vortex (and BEEP-enabled) peers\n", VERSION);
 	printf ("Copyright (c) 2005 Advanced Software Production Line, S.L.\n");
 }
 
-char  *  get_and_check_cancel () {
+char  *  get_and_check_cancel (void) {
 	char  * response = NULL;
 
 	printf ("  0) cancel process\n");
@@ -662,7 +662,7 @@ void vortex_client_connection_status (VortexConnection * connection)
 	return;
 }
 
-void vortex_client_begin_auth () {
+void vortex_client_begin_auth (void) {
 	int       profile;
 	char    * profile_selected = NULL;
 	char    * response;
