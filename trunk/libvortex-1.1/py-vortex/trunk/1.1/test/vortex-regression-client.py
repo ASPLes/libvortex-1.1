@@ -39,6 +39,7 @@
 
 # import sys for command line parsing
 import sys
+import time
 
 # import python vortex binding
 import vortex
@@ -581,7 +582,7 @@ def test_08 ():
 
 def test_09 ():
     # max channels
-    test_09_max_channels = 24;
+    test_09_max_channels = 24
     
     # call to initialize a context 
     ctx = vortex.Ctx ()
@@ -686,7 +687,7 @@ def test_10 ():
         return False
 
     # check for no more pending errors
-    err = conn.pop_channel_error ();
+    err = conn.pop_channel_error ()
     if err:
         error ("Expected to find None (no error) but found: " + err)
         return False
@@ -704,7 +705,7 @@ def test_10 ():
         return False
 
     # check for no more pending errors
-    err = conn.pop_channel_error ();
+    err = conn.pop_channel_error ()
     if err:
         error ("Expected to find None (no error) but found: " + err)
         return False
@@ -742,26 +743,12 @@ def test_11 ():
     conn.close ()
 
     # now open a listener and check its function
-    print ("creating listener..")
     listener = vortex.create_listener (ctx, "0.0.0.0", "0")
-    
-    return True
 
-    # check status
-#    if not listener.is_ok ():
-#        error ("Expected to find proper listener creation, but found an error: " + listener.msg)
-#        return False
+    # call to shutdown 
+    listener.shutdown ()
 
-    # close the listener
-    print ("closing listener")
- #   listener.close ()
 
-    print ("finishing ctx..")
-
-#    ctx.exit ()
-    
-    print ("returning from test....")
-    
     return True
 
 
@@ -781,14 +768,16 @@ def ok (msg):
 def run_all_tests ():
     test_count = 0
     for test in tests:
-
-        # print log
+        
+         # print log
         info ("TEST-" + str(test_count) + ": Running " + test[1])
         
         # call test
         if not test[0]():
             error ("detected test failure at: " + test[1])
             return False
+
+        info ("TEST-" + str(test_count) + ": OK")
         
         # next test
         test_count += 1
@@ -798,17 +787,17 @@ def run_all_tests ():
 
 # declare list of tests available
 tests = [
-#    (test_00_a, "Check PyVortex async queue wrapper"),
-#    (test_01,   "Check PyVortex context initialization"),
-#    (test_02,   "Check PyVortex basic BEEP connection"),
-#    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
-#    (test_04,   "Check PyVortex basic BEEP channel creation"),
-#    (test_05,   "Check BEEP basic data exchange"),
-#    (test_06,   "Check BEEP check several send operations (serialize)"),
-#    (test_07,   "Check BEEP check several send operations (one send, one receive)"),
-#    (test_08,   "Check BEEP transfer zeroed binaries frames"),
-#    (test_09,   "Check BEEP channel support"),
-#    (test_10,   "Check BEEP channel creation deny"),
+    (test_00_a, "Check PyVortex async queue wrapper"),
+    (test_01,   "Check PyVortex context initialization"),
+    (test_02,   "Check PyVortex basic BEEP connection"),
+    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
+    (test_04,   "Check PyVortex basic BEEP channel creation"),
+    (test_05,   "Check BEEP basic data exchange"),
+    (test_06,   "Check BEEP check several send operations (serialize)"),
+    (test_07,   "Check BEEP check several send operations (one send, one receive)"),
+    (test_08,   "Check BEEP transfer zeroed binaries frames"),
+    (test_09,   "Check BEEP channel support"),
+    (test_10,   "Check BEEP channel creation deny"),
     (test_11,   "Check BEEP listener support")
 ]
 

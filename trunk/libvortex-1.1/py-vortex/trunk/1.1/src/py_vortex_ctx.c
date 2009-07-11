@@ -97,6 +97,7 @@ static void py_vortex_ctx_dealloc (PyVortexCtx* self)
 
 	/* check for pending exit */
 	if (self->exit_pending) {
+		py_vortex_log (PY_VORTEX_DEBUG, "found vortex.Ctx () exiting pending flag enabled, finishing context..");
 		Py_DECREF ( py_vortex_ctx_exit (self) );
 	} /* end if */
 
