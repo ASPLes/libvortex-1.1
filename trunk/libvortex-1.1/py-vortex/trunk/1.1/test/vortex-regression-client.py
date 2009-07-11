@@ -761,6 +761,14 @@ def test_11 ():
         error ("Expected to find channel error but found a proper channel reference")
         return False
 
+    # now try to connect 
+    conn = vortex.Connection (ctx, listener.host, listener.port)
+    
+    # check connection
+    if not conn.is_ok ():
+        error ("Expected to find proper connection to local listener")
+        return False
+
     # call to shutdown 
     listener.shutdown ()
 
