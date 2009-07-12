@@ -816,13 +816,13 @@ tests = [
 #    (test_02,   "Check PyVortex basic BEEP connection"),
 #    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
 #    (test_04,   "Check PyVortex basic BEEP channel creation"),
-#    (test_05,   "Check BEEP basic data exchange"),
+    (test_05,   "Check BEEP basic data exchange"),
 #    (test_06,   "Check BEEP check several send operations (serialize)"),
 #    (test_07,   "Check BEEP check several send operations (one send, one receive)"),
 #    (test_08,   "Check BEEP transfer zeroed binaries frames"),
 #    (test_09,   "Check BEEP channel support"),
 #    (test_10,   "Check BEEP channel creation deny"),
-    (test_11,   "Check BEEP listener support")
+#    (test_11,   "Check BEEP listener support")
 ]
 
 # declare default host and port

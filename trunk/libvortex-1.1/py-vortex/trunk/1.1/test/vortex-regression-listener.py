@@ -37,6 +37,9 @@
 #         info@aspl.es - http://www.aspl.es/vortex
 #
 import vortex
+import signal
+import time
+import sys
 
 def info (msg):
     print "[ INFO  ] : " + msg
@@ -48,20 +51,37 @@ def ok (msg):
     print "[  OK   ] : " + msg
 
 def default_frame_received (conn, channel, frame, data):
+    print ("Received a frame with content: " + frame.payload)
     # reply to the frame received
     if not channel.send_rpy (frame.payload, frame.payload_size, frame.msgno):
         error ("Failed to send reply, some parts of the regression test are not working")
     
     return
 
-if __name__ = '__main__':
+# regression test beep uris
+REGRESSION_URI      = "http://iana.org/beep/transient/vortex-regression"
+REGRESSION_URI_ZERO = "http://iana.org/beep/transient/vortex-regression/zero"
+REGRESSION_URI_DENY = "http://iana.org/beep/transient/vortex-regression/deny"
+REGRESSION_URI_DENY_SUPPORTED = "http://iana.org/beep/transient/vortex-regression/deny_supported"
+
+def signal_handler (signal, stackframe):
+    print ("Received signal: " + str (signal))
+    return
+
+if __name__ == '__main__':
+
     # create a context
     ctx = vortex.Ctx ()
 
     # init context
     if not ctx.init ():
         error ("Unable to init ctx, failed to start listener")
-        return 0
+        sys.exit(-1)
+
+    # configure signal handling
+    signal.signal (signal.SIGTERM, signal_handler)
+    signal.signal (signal.SIGINT, signal_handler)
+    signal.signal (signal.SIGQUIT, signal_handler)
 
     # register all profiles used 
     vortex.register_profile (ctx, REGRESSION_URI,
@@ -69,11 +89,11 @@ if __name__ = '__main__':
 
     # create a listener
     info ("starting listener at 0.0.0.0:44010")
-    listener = vortex.Listener (ctx, "0.0.0.0", "44010")
+    listener = vortex.create_listener (ctx, "0.0.0.0", "44010")
 
     # do a wait operation
     info ("waiting requests..")
-    listener.wait ()
+    vortex.wait_listeners (ctx)
 
-    return 0
+    sys.exit (0)
         

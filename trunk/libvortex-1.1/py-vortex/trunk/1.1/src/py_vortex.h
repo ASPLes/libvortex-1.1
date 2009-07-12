@@ -109,6 +109,8 @@ axl_bool py_vortex_log2_is_enabled      (void);
 
 axl_bool py_vortex_color_log_is_enabled (void);
 
+void     py_vortex_handle_and_clear_exception (PyObject * py_conn);
+
 /* include other modules */
 #include <py_vortex_ctx.h>
 #include <py_vortex_connection.h>

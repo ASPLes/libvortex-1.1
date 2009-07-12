@@ -292,7 +292,7 @@ static PyObject * py_vortex_connection_close (PyVortexConnection* self)
 /** 
  * @brief Direct wrapper for the vortex_connection_shutdown function. 
  */
-static PyObject * py_vortex_connection_shutdown (PyVortexConnection* self)
+PyObject * py_vortex_connection_shutdown (PyVortexConnection* self)
 {
 	py_vortex_log (PY_VORTEX_DEBUG, "calling to shutdown connection id: %d, self: %p",
 		       vortex_connection_get_id (self->conn), self);
@@ -417,7 +417,7 @@ static PyObject * py_vortex_connection_open_channel (PyObject * self, PyObject *
 	}
 
 	/* create an empty channel reference */
-	py_channel = py_vortex_channel_create_empty (PY_VORTEX_CONNECTION (self));
+	py_channel = py_vortex_channel_create_empty (self);
 
 	/* check for frame received configuration */
 	if (frame_received && PyCallable_Check (frame_received)) {

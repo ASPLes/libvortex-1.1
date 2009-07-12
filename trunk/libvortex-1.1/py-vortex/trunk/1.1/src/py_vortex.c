@@ -157,22 +157,46 @@ static PyObject * py_vortex_create_listener (PyObject * self, PyObject * args, P
 	return Py_None;
 }
 
+/** 
+ * @brief Implementation of vortex.wait_listeners which blocks the
+ * caller until all vortex library is stopped.
+ */
+static PyObject * py_vortex_wait_listeners (PyObject * self, PyObject * args)
+{
+	
+	PyObject           * py_vortex_ctx = NULL;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "O", &py_vortex_ctx))
+		return NULL;
+
+	/* received context, increase its reference during the wait
+	   operation */
+	Py_INCREF (py_vortex_ctx);
+
+	/* allow other threads to enter into the python space */
+	Py_BEGIN_ALLOW_THREADS
+
+	/* call to wait for listeners */
+	py_vortex_log (PY_VORTEX_DEBUG, "waiting listeners to finish");
+	vortex_listener_wait (py_vortex_ctx_get (py_vortex_ctx));
+	py_vortex_log (PY_VORTEX_DEBUG, "wait for listeners ended, returning");
+
+	/* restore thread state */
+	Py_END_ALLOW_THREADS
+
+	Py_DECREF (py_vortex_ctx);
+	
+	/* return none */
+	Py_INCREF (Py_None);
+	return Py_None;
+}
+
 void py_vortex_decref (PyObject * obj)
 {
 	Py_XDECREF (obj);
 	return;
 }
-
-#define PY_VORTEX_REGISTER_PROFILE_ITEM(s, o) do {                                       \
-	if (o) {                                                                         \
-	        Py_INCREF (o);                                                           \
-		vortex_ctx_set_data_full (py_vortex_ctx_get (py_vortex_ctx),             \
-					  /* key and value */                            \
-					  axl_strdup_printf (s, uri), o,                 \
-					  /* destroy functions */                        \
-					  axl_free, (axlDestroyFunc) py_vortex_decref);  \
-	}                                                                                \
-} while (0);
 
 /** 
  * @internal Implementation used by py_vortex_register_profile to
@@ -196,6 +220,23 @@ axl_bool py_vortex_profile_close (int                channel_num,
 	return axl_true;
 }
 
+#define PY_VORTEX_REGISTER_PROFILE_ITEM(s, o) do {                                       \
+	if (o) {                                                                         \
+	        Py_INCREF (o);                                                           \
+		vortex_ctx_set_data_full (py_vortex_ctx_get (py_vortex_ctx),             \
+					  /* key and value */                            \
+					  axl_strdup_printf (s, uri), o,                 \
+					  /* destroy functions */                        \
+					  axl_free, (axlDestroyFunc) py_vortex_decref);  \
+	}                                                                                \
+} while (0);
+
+#define PY_VORTEX_REGISTER_PROFILE_ITEM_GET(obj, s, channel, py_ctx) do {                \
+         tmp_str = axl_strdup_printf (s, vortex_channel_get_profile (channel));          \
+         obj     = vortex_ctx_get_data (py_vortex_ctx_get (py_ctx), tmp_str);	         \
+         axl_free (tmp_str);                                                             \
+} while (0);
+
 /** 
  * @internal Implementation used by py_vortex_register_profile to
  * bridge into python notifying frame received.
@@ -203,8 +244,82 @@ axl_bool py_vortex_profile_close (int                channel_num,
 void py_vortex_profile_frame_received (VortexChannel    * channel,
 				       VortexConnection * conn,
 				       VortexFrame      * frame,
-				       axlPointer user_data)
+				       axlPointer         user_data)
 {
+	PyGILState_STATE     state;
+	PyObject           * py_frame;
+	PyObject           * py_channel;
+	PyObject           * py_ctx;
+	PyObject           * py_conn;
+	PyObject           * frame_received;
+	PyObject           * frame_received_data;
+	PyObject           * args;
+	char               * tmp_str;
+	PyObject           * result;
+
+	/* acquire the GIL */
+	state = PyGILState_Ensure();
+
+	/* create a PyVortexFrame instance */
+	py_frame = py_vortex_frame_create (frame, axl_true);
+	
+	/* create a PyVortexConnection instance */
+        py_ctx   = py_vortex_ctx_create (vortex_connection_get_ctx (conn));
+
+	/* get references to handlers */
+	PY_VORTEX_REGISTER_PROFILE_ITEM_GET (frame_received,      "%s_frame_received", channel, py_ctx);
+	PY_VORTEX_REGISTER_PROFILE_ITEM_GET (frame_received_data, "%s_frame_received_data", channel, py_ctx);
+
+	/* set to none rather than NULL */
+	if (frame_received_data == NULL)
+		frame_received_data = Py_None;
+
+	py_conn  = py_vortex_connection_create (
+		/* connection to wrap */
+		conn, 
+		/* context: create a copy */
+		py_ctx,
+		/* acquire a reference to the connection */
+		axl_true,  
+		/* do not close the connection when the reference is collected, close_ref=axl_false */
+		axl_false);
+
+	/* create the channel */
+	py_channel = py_vortex_channel_create (channel, py_conn);
+
+	/* decrement py_ctx reference since it is now owned by py_conn */
+	Py_DECREF (py_ctx);
+
+	/* create a tuple to contain arguments */
+	args = PyTuple_New (4);
+
+	/* the following function PyTuple_SetItem "steals" a reference
+	 * which is the python way to say that we are transfering the
+	 * ownership of the reference to that function, making it
+	 * responsible of calling to Py_DECREF when required. */
+	PyTuple_SetItem (args, 0, py_conn);
+	PyTuple_SetItem (args, 1, py_channel);
+	PyTuple_SetItem (args, 2, py_frame);
+
+	/* increment reference counting because the tuple will
+	 * decrement the reference passed when he thinks it is no
+	 * longer used. */
+	Py_INCREF (frame_received_data);
+	PyTuple_SetItem (args, 3, frame_received_data);
+
+	/* now invoke */
+	result = PyObject_Call (frame_received, args, NULL);
+	
+	py_vortex_log (PY_VORTEX_DEBUG, "frame notification finished, checking for exceptions..");
+	py_vortex_handle_and_clear_exception (py_conn);
+
+	/* release tuple and result returned (which may be null) */
+	Py_DECREF (args);
+	Py_XDECREF (result);
+
+	/* release the GIL */
+	PyGILState_Release(state);
+
 	return;
 }
 
@@ -298,6 +413,9 @@ static PyMethodDef py_vortex_methods[] = {
 	/* create_listener */
 	{"create_listener", (PyCFunction) py_vortex_create_listener, METH_VARARGS | METH_KEYWORDS,
 	 "Wrapper of the set of functions that allows to create a BEEP listener. The function returns a new vortex.Connection that represents a listener running on the port and address provided."},
+	/* wait_listeners */
+	{"wait_listeners", (PyCFunction) py_vortex_wait_listeners, METH_VARARGS,
+	 "Direct wrapper for vortex_listener_wait. This function is optional and it is used at the listener side to make the main thread to not finish after all vortex initialization."},
 	/* register_profile */
 	{"register_profile", (PyCFunction) py_vortex_register_profile, METH_VARARGS | METH_KEYWORDS,
 	 "Function that allows to register a profile with its associated handlers (frame received, channel start and channel close)."},
@@ -528,4 +646,81 @@ void _py_vortex_log2 (const char          * file,
 
 	return;
 #endif
+}
+
+/** 
+ * @brief Allows to check, handle and clear exception state.
+ */ 
+void py_vortex_handle_and_clear_exception (PyObject * py_conn)
+{
+	PyObject * ptype      = NULL;
+	PyObject * pvalue     = NULL;
+	PyObject * ptraceback = NULL;
+	PyObject * list;
+	PyObject * string;
+	PyObject * mod;
+	int        iterator;
+	char     * str;
+	char     * str_aux;
+
+
+	/* check exception */
+	if (PyErr_Occurred()) {
+		py_vortex_log (PY_VORTEX_CRITICAL, "found exception...handling..");
+
+		/* fetch exception state */
+		PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+
+		/* import traceback module */
+		mod = PyImport_ImportModule("traceback");
+		if (! mod) {
+			py_vortex_log (PY_VORTEX_CRITICAL, "failed to import traceback module, printing error to console");
+			/* print exception */
+			PyErr_Print ();
+			goto clean_up;
+		} /* end if */
+
+		/* list of backtrace items */
+		list     = PyObject_CallMethod (mod, "format_exception", "OOO", ptype,  pvalue, ptraceback);
+		iterator = 0;
+		str      = axl_strdup ("PyVortex found exception inside: \n");
+		while (iterator < PyList_Size (list)) {
+			/* get the string */
+			string  = PyList_GetItem (list, iterator);
+
+			str_aux = str;
+			str     = axl_strdup_printf ("%s%s", str_aux, PyString_AsString (string));
+			axl_free (str_aux);
+
+			/* next iterator */
+			iterator++;
+		}
+
+		/* drop a log */
+		py_vortex_log (PY_VORTEX_CRITICAL, str);
+		axl_free (str);
+
+		/* create an empty string \n */
+		Py_DECREF (list);
+		Py_DECREF (mod);
+
+
+	clean_up:
+		/* call to finish retrieved vars .. */
+		Py_XDECREF (ptype);
+		Py_XDECREF (pvalue);
+		Py_XDECREF (ptraceback);
+
+		if (py_conn) {
+			/* shutdown connection due to unhandled exception found */
+			py_vortex_log (PY_VORTEX_CRITICAL, "shutting down connection due to unhandled exception found");
+			Py_DECREF ( py_vortex_connection_shutdown (PY_VORTEX_CONNECTION (py_conn)) );
+		}
+		
+
+	} /* end if */
+
+	/* clear exception */
+	PyErr_Clear ();
+	return;
 }
