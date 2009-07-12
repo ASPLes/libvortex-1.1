@@ -47,7 +47,7 @@ struct _PyVortexChannel {
 	VortexChannel      * channel;
 	
 	/* reference to the connection */
-	PyVortexConnection * py_conn;
+	PyObject           * py_conn;
 
 	/* frame received handler and data */
 	PyObject           * frame_received;
@@ -444,7 +444,7 @@ static PyTypeObject PyVortexChannelType = {
 /** 
  * @brief Creates new empty channel instance.
  */
-PyObject * py_vortex_channel_create (VortexChannel * channel, PyVortexConnection * py_conn)
+PyObject * py_vortex_channel_create (VortexChannel * channel, PyObject * py_conn)
 {
 	/* return a new instance */
 	PyVortexChannel * obj;
@@ -462,7 +462,7 @@ PyObject * py_vortex_channel_create (VortexChannel * channel, PyVortexConnection
 
 	/* acquire a reference to the py_conn if defined */
 	obj->py_conn = py_conn;
-	Py_XINCREF (__PY_OBJECT (obj->py_conn));
+	Py_XINCREF (obj->py_conn);
 
 	/* return object */
 	return (PyObject *) obj;
@@ -475,13 +475,13 @@ PyObject * py_vortex_channel_create (VortexChannel * channel, PyVortexConnection
  *
  * @return A reference to a newly created PyVortexChannel.
  */
-PyObject      * py_vortex_channel_create_empty (PyVortexConnection * py_conn)
+PyObject      * py_vortex_channel_create_empty (PyObject * py_conn)
 {
 	PyVortexChannel * py_channel = (PyVortexChannel *) PyObject_CallObject ((PyObject *) &PyVortexChannelType, NULL);
 
 	/* acquire a reference to the py_conn if defined */
 	py_channel->py_conn = py_conn;
-	Py_XINCREF (__PY_OBJECT (py_channel->py_conn));
+	Py_XINCREF (py_channel->py_conn);
 	
 	return __PY_OBJECT (py_channel);
 }
