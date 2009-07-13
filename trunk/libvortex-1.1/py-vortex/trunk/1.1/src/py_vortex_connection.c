@@ -73,6 +73,27 @@ do {                                                                            
 		 return Py_None;                                                                                  \
 	}                                                                                                         \
 } while(0);
+
+/** 
+ * @internal function that maps connection roles to string values.
+ */
+const char * __py_vortex_connection_stringify_role (VortexConnection * conn)
+{
+	/* check known roles to return its appropriate string */
+	switch (vortex_connection_get_role (conn)) {
+	case VortexRoleInitiator:
+		return "initiator";
+	case VortexRoleListener:
+		return "listener";
+	case VortexRoleMasterListener:
+		return "master-listener";
+	default:
+		break;
+	}
+
+	/* return unknown string */
+	return "unknown";
+}
 		 
 
 /** 
@@ -161,14 +182,17 @@ static void py_vortex_connection_dealloc (PyVortexConnection* self)
 {
 	int conn_id = vortex_connection_get_id (self->conn);
 
-	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortexConnection id: %d (%p)", conn_id, self);
+	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortexConnection id: %d (%p, role: %s)", 
+		       conn_id, self, __py_vortex_connection_stringify_role (self->conn));
 
 	/* finish the connection in the case it is no longer referenced */
 	if (vortex_connection_is_ok (self->conn, axl_false) && self->close_ref) {
-		py_vortex_log (PY_VORTEX_DEBUG, "shutting down BEEP session associated at connection finalize id: %d (connection is ok, and close_ref is activated)", 
-			       vortex_connection_get_id (self->conn));
+		py_vortex_log (PY_VORTEX_DEBUG, "shutting down BEEP session associated at connection finalize id: %d (connection is ok, and close_ref is activated, refs: %d)", 
+			       vortex_connection_get_id (self->conn),
+			       vortex_connection_ref_count (self->conn));
 		vortex_connection_shutdown (self->conn);
-		vortex_connection_close (self->conn);
+		vortex_connection_unref (self->conn, "py_vortex_connection_dealloc when is ok");
+		py_vortex_log (PY_VORTEX_DEBUG, "ref count after close: %d", vortex_connection_ref_count (self->conn));
 	} else {
 		py_vortex_log (PY_VORTEX_DEBUG, "unref the connection id: %d", vortex_connection_get_id (self->conn));
 		/* only unref the connection */
@@ -242,27 +266,6 @@ static PyObject * py_vortex_connection_pop_channel_error (PyVortexConnection * s
 }
 
 /** 
- * @internal function that maps connection roles to string values.
- */
-const char * __py_vortex_connection_stringify_role (VortexConnection * conn)
-{
-	/* check known roles to return its appropriate string */
-	switch (vortex_connection_get_role (conn)) {
-	case VortexRoleInitiator:
-		return "initiator";
-	case VortexRoleListener:
-		return "listener";
-	case VortexRoleMasterListener:
-		return "master-listener";
-	default:
-		break;
-	}
-
-	/* return unknown string */
-	return "unknown";
-}
-
-/** 
  * @brief Direct wrapper for the vortex_connection_close function. 
  */
 static PyObject * py_vortex_connection_close (PyVortexConnection* self)
@@ -271,8 +274,10 @@ static PyObject * py_vortex_connection_close (PyVortexConnection* self)
 	axl_bool  result;
 
 	if (self->conn) {
-		py_vortex_log (PY_VORTEX_DEBUG, "closing connection id: %d (%s)",
-			       vortex_connection_get_id (self->conn), __py_vortex_connection_stringify_role (self->conn));
+		py_vortex_log (PY_VORTEX_DEBUG, "closing connection id: %d (%s, refs: %d)",
+			       vortex_connection_get_id (self->conn), 
+			       __py_vortex_connection_stringify_role (self->conn), 
+			       vortex_connection_ref_count (self->conn));
 	} /* end if */
 
 	/* call to check connection and build the value with the
@@ -283,9 +288,10 @@ static PyObject * py_vortex_connection_close (PyVortexConnection* self)
 
 	/* check to nullify connection reference in the case the connection is closed */
 	if (result) {
+		py_vortex_log (PY_VORTEX_DEBUG, "close ok, nullifying..");
 		self->conn = NULL; 
 	}
-	
+
 	return _result;
 }
 

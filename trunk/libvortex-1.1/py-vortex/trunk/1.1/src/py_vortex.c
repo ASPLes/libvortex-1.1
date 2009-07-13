@@ -37,6 +37,9 @@
  */
 #include <py_vortex.h>
 
+/* signal handling */
+#include <signal.h>
+
 #if defined(ENABLE_PY_VORTEX_LOG)
 /** 
  * @brief Variable used to track if environment variables associated
@@ -157,22 +160,51 @@ static PyObject * py_vortex_create_listener (PyObject * self, PyObject * args, P
 	return Py_None;
 }
 
+VortexCtx * py_vortex_wait_listeners_ctx = NULL;
+
+void py_vortex_wait_listeners_sig_handler (int _signal)
+{
+	VortexCtx * ctx = py_vortex_wait_listeners_ctx;
+
+	/* nullify context */
+	py_vortex_wait_listeners_ctx = NULL;
+
+	py_vortex_log (PY_VORTEX_DEBUG, "received signal %d, unlocking (ctx: %p)", _signal, ctx);
+	vortex_listener_unlock (ctx);
+	return;
+}
+
 /** 
  * @brief Implementation of vortex.wait_listeners which blocks the
  * caller until all vortex library is stopped.
  */
-static PyObject * py_vortex_wait_listeners (PyObject * self, PyObject * args)
+static PyObject * py_vortex_wait_listeners (PyObject * self, PyObject * args, PyObject * kwds)
 {
 	
-	PyObject           * py_vortex_ctx = NULL;
+	PyObject           * py_vortex_ctx    = NULL;
+	axl_bool             unlock_on_signal = axl_false;
+
+	/* now parse arguments */
+	static char *kwlist[] = {"ctx", "unlock_on_signal", NULL};
 
 	/* parse and check result */
-	if (! PyArg_ParseTuple (args, "O", &py_vortex_ctx))
+	if (! PyArg_ParseTupleAndKeywords (args, kwds, "O|i", kwlist, &py_vortex_ctx, &unlock_on_signal))
 		return NULL;
 
 	/* received context, increase its reference during the wait
 	   operation */
 	Py_INCREF (py_vortex_ctx);
+
+	/* configure signal handling to detect signal emision */
+	if (unlock_on_signal) {
+		/* record ctx */
+		py_vortex_wait_listeners_ctx = py_vortex_ctx_get (py_vortex_ctx);
+
+		/* configure handler */
+		signal (SIGTERM, py_vortex_wait_listeners_sig_handler);
+		signal (SIGQUIT, py_vortex_wait_listeners_sig_handler);
+		signal (SIGINT,  py_vortex_wait_listeners_sig_handler);
+	} /* end if */
 
 	/* allow other threads to enter into the python space */
 	Py_BEGIN_ALLOW_THREADS
@@ -414,7 +446,7 @@ static PyMethodDef py_vortex_methods[] = {
 	{"create_listener", (PyCFunction) py_vortex_create_listener, METH_VARARGS | METH_KEYWORDS,
 	 "Wrapper of the set of functions that allows to create a BEEP listener. The function returns a new vortex.Connection that represents a listener running on the port and address provided."},
 	/* wait_listeners */
-	{"wait_listeners", (PyCFunction) py_vortex_wait_listeners, METH_VARARGS,
+	{"wait_listeners", (PyCFunction) py_vortex_wait_listeners, METH_VARARGS | METH_KEYWORDS,
 	 "Direct wrapper for vortex_listener_wait. This function is optional and it is used at the listener side to make the main thread to not finish after all vortex initialization."},
 	/* register_profile */
 	{"register_profile", (PyCFunction) py_vortex_register_profile, METH_VARARGS | METH_KEYWORDS,
