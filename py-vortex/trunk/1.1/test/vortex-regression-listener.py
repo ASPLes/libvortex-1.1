@@ -38,7 +38,6 @@
 #
 import vortex
 import signal
-import time
 import sys
 
 def info (msg):
@@ -93,7 +92,8 @@ if __name__ == '__main__':
 
     # do a wait operation
     info ("waiting requests..")
-    vortex.wait_listeners (ctx)
+    vortex.wait_listeners (ctx, unlock_on_signal=True)
 
-    sys.exit (0)
+    
+
         
