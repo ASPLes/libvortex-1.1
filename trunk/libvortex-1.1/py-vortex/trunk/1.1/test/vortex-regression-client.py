@@ -775,6 +775,97 @@ def test_11 ():
 
     return True
 
+def test_12_on_close_a (conn, queue):
+    queue.push (1)
+
+def test_12_on_close_b (conn, queue):
+    queue.push (2)
+
+def test_12_on_close_c (conn, queue):
+    queue.push (3)
+
+def test_12():
+       # create a context
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # call to create a connection
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # create a queue
+    queue = vortex.AsyncQueue ()
+
+    # configure on close 
+    conn.set_on_close (test_12_on_close_a, queue)
+    conn.set_on_close (test_12_on_close_b, queue)
+    conn.set_on_close (test_12_on_close_c, queue)
+
+    # now shutdown 
+    conn.shutdown ()
+
+    # wait for replies 
+    value = queue.pop ()
+    if value != 1:
+        error ("Expected to find 1 but found" + str (value))
+        return False
+
+    # wait for replies 
+    value = queue.pop ()
+    if value != 2:
+        error ("Expected to find 2 but found" + str (value))
+        return False
+
+    # wait for replies 
+    value = queue.pop ()
+    if value != 3:
+        error ("Expected to find 3 but found" + str (value))
+        return False
+
+    # re-connect 
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # configure on close 
+    conn.set_on_close (test_12_on_close_a, queue)
+    conn.set_on_close (test_12_on_close_a, queue)
+    conn.set_on_close (test_12_on_close_a, queue)
+
+    # now shutdown 
+    conn.shutdown ()
+
+    # wait for replies 
+    value = queue.pop ()
+    if value != 1:
+        error ("Expected to find 1 but found" + str (value))
+        return False
+
+    # wait for replies 
+    value = queue.pop ()
+    if value != 1:
+        error ("Expected to find 1 but found" + str (value))
+        return False
+
+    # wait for replies 
+    value = queue.pop ()
+    if value != 1:
+        error ("Expected to find 1 but found" + str (value))
+        return False
+
+    return True
+
 
 ###########################
 # intraestructure support #
@@ -822,7 +913,8 @@ tests = [
     (test_08,   "Check BEEP transfer zeroed binaries frames"),
     (test_09,   "Check BEEP channel support"),
     (test_10,   "Check BEEP channel creation deny"),
-    (test_11,   "Check BEEP listener support")
+    (test_11,   "Check BEEP listener support"),
+    (test_12,   "Check connection on close notification")
 ]
 
 # declare default host and port
