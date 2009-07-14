@@ -50,12 +50,15 @@ def ok (msg):
     print "[  OK   ] : " + msg
 
 def default_frame_received (conn, channel, frame, data):
-    print ("Received a frame with content: " + frame.payload)
     # reply to the frame received
     if not channel.send_rpy (frame.payload, frame.payload_size, frame.msgno):
         error ("Failed to send reply, some parts of the regression test are not working")
     
     return
+
+def deny_supported (channel_num, conn, data):
+    # always deny 
+    return False
 
 # regression test beep uris
 REGRESSION_URI      = "http://iana.org/beep/transient/vortex-regression"
@@ -85,6 +88,10 @@ if __name__ == '__main__':
     # register all profiles used 
     vortex.register_profile (ctx, REGRESSION_URI,
                              frame_received=default_frame_received)
+    vortex.register_profile (ctx, REGRESSION_URI_ZERO,
+                             frame_received=default_frame_received)
+    vortex.register_profile (ctx, REGRESSION_URI_DENY_SUPPORTED,
+                             start=deny_supported)
 
     # create a listener
     info ("starting listener at 0.0.0.0:44010")
