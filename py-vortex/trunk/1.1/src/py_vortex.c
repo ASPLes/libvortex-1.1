@@ -318,6 +318,7 @@ void py_vortex_profile_frame_received (VortexChannel    * channel,
 
 	/* create the channel */
 	py_channel = py_vortex_channel_create (channel, py_conn);
+	py_vortex_log (PY_VORTEX_DEBUG, "notifying frame received over channel: %d", vortex_channel_get_number (channel));
 
 	/* decrement py_ctx reference since it is now owned by py_conn */
 	Py_DECREF (py_ctx);
