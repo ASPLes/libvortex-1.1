@@ -187,9 +187,14 @@ void     py_vortex_channel_received     (VortexChannel    * channel,
 	/* now invoke */
 	result = PyObject_Call (py_channel->frame_received, args, NULL);
 
+	py_vortex_log (PY_VORTEX_DEBUG, "frame notification finished, checking for exceptions..");
+	py_vortex_handle_and_clear_exception (py_conn);
+
 	/* release tuple and result returned (which may be null) */
 	Py_DECREF (args);
 	Py_XDECREF (result);
+
+	
 
 	/* release the GIL */
 	PyGILState_Release(state);
@@ -263,7 +268,7 @@ static PyObject * py_vortex_channel_send_msg (PyVortexChannel * self, PyObject *
 	int          msg_no  = 0;
 
 	/* parse and check result */
-	if (! PyArg_ParseTuple (args, "si", &content, &size))
+	if (! PyArg_ParseTuple (args, "zi", &content, &size))
 		return NULL;
 
 	/* call to send the message */
@@ -278,6 +283,60 @@ static PyObject * py_vortex_channel_send_msg (PyVortexChannel * self, PyObject *
 	/* and return the message number used in the case of proper
 	 * send operation */
 	return Py_BuildValue ("i", msg_no);
+}
+
+PyObject * py_vortex_channel_send_rpy (PyVortexChannel * self, PyObject * args)
+{
+	const char * content = NULL;
+	int          size    = 0;
+	axl_bool     result;
+	int          msg_no  = 0;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "zii", &content, &size, &msg_no))
+		return NULL;
+
+	/* remove the following log since it is not secure */
+	py_vortex_log (PY_VORTEX_DEBUG, "received request to send rpy, channel: %p (id: %d), content: %s, size: %d, msg_no: %d",
+		       self->channel, vortex_channel_get_number (self->channel), content, size, msg_no);
+
+	/* call to send reply */
+	result = vortex_channel_send_rpy (self->channel, content, size, msg_no);
+
+	py_vortex_log (PY_VORTEX_DEBUG, "after sending RPY frame, status found was: %d", result);
+
+	/* return none in the case of failure */
+	if (! result) {
+		Py_INCREF (Py_None);
+		return Py_None;
+	} /* end if */
+
+	/* return reply status (1 if it was ok, otherwise use 0) */
+	return Py_BuildValue ("i", result);
+}
+
+PyObject * py_vortex_channel_send_err (PyVortexChannel * self, PyObject * args)
+{
+	const char * content = NULL;
+	int          size    = 0;
+	axl_bool     result;
+	int          msg_no  = 0;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "zii", &content, &size, &msg_no))
+		return NULL;
+
+	/* call to send reply */
+	result = vortex_channel_send_err (self->channel, content, size, msg_no);
+
+	/* return none in the case of failure */
+	if (! result) {
+		Py_INCREF (Py_None);
+		return Py_None;
+	} /* end if */
+
+	/* return reply status (1 if it was ok, otherwise use 0) */
+	return Py_BuildValue ("i", result);
 }
 
 static PyObject * py_vortex_channel_get_reply (PyVortexChannel * self, PyObject * args)
@@ -333,7 +392,8 @@ PyObject * py_vortex_channel_get_attr (PyObject *o, PyObject *attr_name) {
 	if (! PyArg_Parse (attr_name, "s", &attr))
 		return NULL;
 
-	/* printf ("received request to return attribute value of '%s'..\n", attr); */
+	py_vortex_log (PY_VORTEX_DEBUG, "received request to report channel attr name %s (self: %p)",
+		       attr, o);
 
 	if (axl_cmp (attr, "number")) {
 		/* found error_msg attribute */
@@ -387,12 +447,22 @@ int py_vortex_channel_set_attr (PyObject *o, PyObject *attr_name, PyObject *v)
 
 
 static PyMethodDef py_vortex_channel_methods[] = { 
+	/* send_msg */
 	{"send_msg", (PyCFunction) py_vortex_channel_send_msg, METH_VARARGS,
 	 "Allows to send the message with type MSG."},
+	/* send_rpy */
+	{"send_rpy", (PyCFunction) py_vortex_channel_send_rpy, METH_VARARGS,
+	 "Allows to reply to a MSG received with a RPY message."},
+	/* send_err */
+	{"send_err", (PyCFunction) py_vortex_channel_send_err, METH_VARARGS,
+	 "Allows to reply to a MSG received with a ERR message."},
+	/* set_frame_received */
 	{"set_frame_received", (PyCFunction) py_vortex_channel_set_frame_received, METH_VARARGS | METH_KEYWORDS,
 	 "Allows to configure the frame received handler."},
+	/* get_reply */
 	{"get_reply", (PyCFunction) py_vortex_channel_get_reply, METH_VARARGS,
 	 "Python implementation of vortex_channel_get_reply function. This methods is part of the get reply method where it is required to configure as frame_received handler the function vortex.queue_reply, causing all frames received to be queued. These frames are later retrieved by using this method, that is, channel.get_reply (queue). The advantage of this method is that allows to get all frames received (replies, error, messages..) and it also support returning the first piggyback received on the channel."},
+	/* close */
 	{"close", (PyCFunction) py_vortex_channel_close, METH_NOARGS,
 	 "Allows to close the selected channel and to remove it from the BEEP session."},
  	{NULL}  
@@ -450,19 +520,26 @@ PyObject * py_vortex_channel_create (VortexChannel * channel, PyObject * py_conn
 	PyVortexChannel * obj;
 
 	/* increase reference counting */
-	if ((channel == NULL) || (! vortex_channel_ref (channel)))
+	if ((channel == NULL) || (! vortex_channel_ref (channel))) {
+		py_vortex_log (PY_VORTEX_CRITICAL, "failed to create PyChannel reference, received NULL reference or vortex_channel_ref failed");
 		return NULL;
+	}
 
 	/* create the channel object */
 	obj = (PyVortexChannel *) PyObject_CallObject ((PyObject *) &PyVortexChannelType, NULL);
 
 	/* set channel reference received */
-	if (obj->channel) 
-		obj->channel = channel;
+	if (channel)  {
+		obj->channel = channel; 
+	} /* end if */
 
 	/* acquire a reference to the py_conn if defined */
 	obj->py_conn = py_conn;
 	Py_XINCREF (obj->py_conn);
+
+	py_vortex_log (PY_VORTEX_DEBUG, "created PyChannel reference with number=%d (connection: %d, self: %p, channel: %p)",
+		       vortex_channel_get_number (channel), vortex_connection_get_id (py_vortex_connection_get (PY_VORTEX_CONNECTION (py_conn))), 
+		       obj, obj->channel);
 
 	/* return object */
 	return (PyObject *) obj;
