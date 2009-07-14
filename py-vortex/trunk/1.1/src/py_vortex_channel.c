@@ -194,8 +194,6 @@ void     py_vortex_channel_received     (VortexChannel    * channel,
 	Py_DECREF (args);
 	Py_XDECREF (result);
 
-	
-
 	/* release the GIL */
 	PyGILState_Release(state);
 

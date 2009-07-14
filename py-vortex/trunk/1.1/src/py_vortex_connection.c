@@ -469,6 +469,135 @@ static PyObject * py_vortex_connection_open_channel (PyObject * self, PyObject *
 	return py_channel;
 }
 
+/** 
+ * @internal The following is an auxiliar structure used to bridge
+ * set_on_close_full call into python. Because Vortex version allows
+ * configuring several handlers at the same time, it is required to
+ * track a different object with full state to properly bridge the
+ * notification received into python without mixing notifications. See
+ * py_vortex_connection_set_on_close to know how this is used.
+ */
+typedef struct _PyVortexConnectionSetOnCloseData {
+	char               * id;
+	PyVortexConnection * py_conn;
+	PyObject           * on_close;
+	PyObject           * on_close_data;
+} PyVortexConnectionSetOnCloseData;
+
+void py_vortex_connection_set_on_close_free (PyVortexConnectionSetOnCloseData * on_close_obj)
+{
+	/* unref all content hold */
+	Py_DECREF (on_close_obj->on_close);
+	Py_DECREF (on_close_obj->on_close_data);
+
+	/* unref the node itself */
+	axl_free  (on_close_obj);
+
+	return;
+}
+
+void py_vortex_connection_set_on_close_handler (VortexConnection * conn, 
+						axlPointer         _on_close_obj)
+{
+	PyVortexConnectionSetOnCloseData * on_close_obj = _on_close_obj;
+	PyGILState_STATE                   state;
+	PyObject                         * args;
+	PyObject                         * result;
+
+	/* notify on close notification received */
+	py_vortex_log (PY_VORTEX_DEBUG, "found on close notification for connection id=%d", vortex_connection_get_id (conn));
+	
+	/*** bridge into python ***/
+	/* acquire the GIL */
+	state = PyGILState_Ensure();
+	
+	/* create a tuple to contain arguments */
+	args = PyTuple_New (2);
+
+	Py_INCREF (on_close_obj->py_conn);
+	PyTuple_SetItem (args, 0, __PY_OBJECT (on_close_obj->py_conn));
+	Py_INCREF (on_close_obj->on_close_data);
+	PyTuple_SetItem (args, 1, on_close_obj->on_close_data);
+
+	/* now invoke */
+	result = PyObject_Call (on_close_obj->on_close, args, NULL);
+
+	py_vortex_log (PY_VORTEX_DEBUG, "connection on close finished, checking for exceptions..");
+	py_vortex_handle_and_clear_exception (__PY_OBJECT (on_close_obj->py_conn));
+
+	Py_DECREF (result);
+	Py_DECREF (args);
+
+	/* release the GIL */
+	PyGILState_Release(state);
+
+	return;
+}
+
+static PyObject * py_vortex_connection_set_on_close (PyObject * self, PyObject * args, PyObject * kwds)
+{
+	PyObject                         * on_close      = NULL;
+	PyObject                         * on_close_data = NULL;
+	PyVortexConnectionSetOnCloseData * on_close_obj;
+	
+
+	/* now parse arguments */
+	static char *kwlist[] = {"on_close", "on_close_data", NULL};
+
+	/* parse and check result */
+	if (! PyArg_ParseTupleAndKeywords(args, kwds, "OO", kwlist, &on_close, &on_close_data)) 
+		return NULL;
+
+	/* check handler received */
+	if (on_close == NULL || ! PyCallable_Check (on_close)) {
+		py_vortex_log (PY_VORTEX_CRITICAL, "received on_close handler which is not a callable object");
+		return NULL;
+	} /* end if */
+
+	/* configure an on close handler to bridge into python */
+	on_close_obj                = axl_new (PyVortexConnectionSetOnCloseData, 1);
+
+	/* NOTE: do not increase py_conn reference to avoid circular
+	   referencing which will prevent collecting memory */
+	on_close_obj->py_conn       = PY_VORTEX_CONNECTION (self);
+
+	/* configure on_close handler */
+	on_close_obj->on_close      = on_close;
+	Py_INCREF (on_close);
+
+	/* configure on_close_data handler data */
+	if (on_close_data == NULL)
+		on_close_data = Py_None;
+	on_close_obj->on_close_data = on_close_data;
+	Py_INCREF (on_close_data);
+
+	/* the key */
+	on_close_obj->id            = axl_strdup_printf ("%p", on_close_obj);
+
+	/* make this object to be available as long as the connection is working */
+	vortex_connection_set_data_full (
+                /* the connection */
+                py_vortex_connection_get (PY_VORTEX_CONNECTION (on_close_obj->py_conn)),
+		/* the key and value */
+		on_close_obj->id, on_close_obj,
+		/* destroy functions */
+		axl_free, (axlDestroyFunc) py_vortex_connection_set_on_close_free);
+
+	/* configure on_close_full */
+	vortex_connection_set_on_close_full (
+               /* the connection with on close */
+	       py_vortex_connection_get (PY_VORTEX_CONNECTION (on_close_obj->py_conn)),
+	       /* the handler */
+	       py_vortex_connection_set_on_close_handler, 
+	       /* the object with all references */
+	       on_close_obj);
+					     
+
+	/* set configured */
+	Py_INCREF (Py_None);
+	return Py_None;
+}
+
 static PyMethodDef py_vortex_connection_methods[] = { 
 	/* is_ok */
 	{"is_ok", (PyCFunction) py_vortex_connection_is_ok, METH_NOARGS,
@@ -479,6 +608,9 @@ static PyMethodDef py_vortex_connection_methods[] = {
 	/* pop_channel_error */
 	{"pop_channel_error", (PyCFunction) py_vortex_connection_pop_channel_error, METH_NOARGS,
 	 "API wrapper for vortex_connection_pop_channel_error. Each time this method is called, a tulple (code, msg) is returned containing the error code and the error message. One tuple is returned for each channel error found. In the case no error is stored on the connection None is returned."},
+	/* set_on_close */
+	{"set_on_close", (PyCFunction) py_vortex_connection_set_on_close, METH_VARARGS | METH_KEYWORDS,
+	 "API wrapper for vortex_connection_set_on_close_full. This method allows to configure a handler which will be called in case the connection is closed. This is useful to detect client or server broken connection."},
 	/* close */
 	{"close", (PyCFunction) py_vortex_connection_close, METH_NOARGS,
 	 "Allows to close a the BEEP session (vortex.Connection) following all BEEP close negotation phase. The method returns True in the case the connection was cleanly closed, otherwise False is returned. If this operation finishes properly, the reference should not be used."},
