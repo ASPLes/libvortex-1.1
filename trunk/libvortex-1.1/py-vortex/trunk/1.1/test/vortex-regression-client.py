@@ -331,7 +331,7 @@ def test_05 ():
         return False
 
     # now create a channel
-    channel  = conn.open_channel (0, REGRESSION_URI)
+    channel = conn.open_channel (0, REGRESSION_URI)
 
     if not channel:
         error ("Expected to find proper channel creation, but error found:")
@@ -346,13 +346,13 @@ def test_05 ():
 
     # configure frame received handler 
     queue = vortex.AsyncQueue ()
-    channel.set_frame_received (test_05_received, queue)
+    channel.set_frame_received (vortex.queue_reply, queue)
 
     # send a message to test */
     channel.send_msg ("This is a test", 14)
 
     # wait for the reply
-    frame = queue.pop ()
+    frame = channel.get_reply (queue)
 
     # check frame content here 
     if frame.payload != "This is a test":
@@ -811,18 +811,18 @@ def run_all_tests ():
 
 # declare list of tests available
 tests = [
-#    (test_00_a, "Check PyVortex async queue wrapper"),
-#    (test_01,   "Check PyVortex context initialization"),
-#    (test_02,   "Check PyVortex basic BEEP connection"),
-#    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
-#    (test_04,   "Check PyVortex basic BEEP channel creation"),
+    (test_00_a, "Check PyVortex async queue wrapper"),
+    (test_01,   "Check PyVortex context initialization"),
+    (test_02,   "Check PyVortex basic BEEP connection"),
+    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
+    (test_04,   "Check PyVortex basic BEEP channel creation"),
     (test_05,   "Check BEEP basic data exchange"),
-#    (test_06,   "Check BEEP check several send operations (serialize)"),
-#    (test_07,   "Check BEEP check several send operations (one send, one receive)"),
-#    (test_08,   "Check BEEP transfer zeroed binaries frames"),
-#    (test_09,   "Check BEEP channel support"),
-#    (test_10,   "Check BEEP channel creation deny"),
-#    (test_11,   "Check BEEP listener support")
+    (test_06,   "Check BEEP check several send operations (serialize)"),
+    (test_07,   "Check BEEP check several send operations (one send, one receive)"),
+    (test_08,   "Check BEEP transfer zeroed binaries frames"),
+    (test_09,   "Check BEEP channel support"),
+    (test_10,   "Check BEEP channel creation deny"),
+    (test_11,   "Check BEEP listener support")
 ]
 
 # declare default host and port

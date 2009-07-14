@@ -230,28 +230,6 @@ void py_vortex_decref (PyObject * obj)
 	return;
 }
 
-/** 
- * @internal Implementation used by py_vortex_register_profile to
- * bridge into python notifying start request.
- */
-axl_bool py_vortex_profile_start (int                channel_num,
-				  VortexConnection * conn,
-				  axlPointer         user_data)
-{
-	return axl_true;
-}
-
-/** 
- * @internal Implementation used by py_vortex_register_profile to
- * bridge into python notifying close request.
- */
-axl_bool py_vortex_profile_close (int                channel_num,
-				  VortexConnection * connection,
-				  axlPointer         user_data)
-{
-	return axl_true;
-}
-
 #define PY_VORTEX_REGISTER_PROFILE_ITEM(s, o) do {                                       \
 	if (o) {                                                                         \
 	        Py_INCREF (o);                                                           \
@@ -268,6 +246,106 @@ axl_bool py_vortex_profile_close (int                channel_num,
          obj     = vortex_ctx_get_data (py_vortex_ctx_get (py_ctx), tmp_str);	         \
          axl_free (tmp_str);                                                             \
 } while (0);
+
+/** 
+ * @internal Implementation used by py_vortex_register_profile to
+ * bridge into python notifying start request.
+ */
+axl_bool  py_vortex_profile_start  (int                channel_num,
+				    VortexConnection * conn,
+				    axlPointer         user_data)
+{
+	PyGILState_STATE     state;
+	PyObject           * py_conn;
+	PyObject           * py_ctx;
+	PyObject           * start;
+	PyObject           * start_data;
+	char               * tmp_str;
+	VortexChannel      * channel;
+	PyObject           * args;
+	PyObject           * result;
+	axl_bool             _result;
+
+	/* acquire the GIL */
+	state = PyGILState_Ensure();
+
+	/* create a PyVortexConnection instance */
+        py_ctx   = py_vortex_ctx_create (vortex_connection_get_ctx (conn));
+
+	/* get a reference to the actual channel being accepted */
+	channel  = vortex_connection_get_channel (conn, channel_num);
+
+	/* get references to handlers */
+	PY_VORTEX_REGISTER_PROFILE_ITEM_GET (start,      "%s_start",      channel, py_ctx);
+	PY_VORTEX_REGISTER_PROFILE_ITEM_GET (start_data, "%s_start_data", channel, py_ctx);
+
+	/* provide a default value */
+	if (start_data == NULL)
+		start_data = Py_None;
+
+	/* create a PyVortexConnection instance */
+        py_ctx   = py_vortex_ctx_create (vortex_connection_get_ctx (conn));
+	py_conn  = py_vortex_connection_create (
+		/* connection to wrap */
+		conn, 
+		/* context: create a copy */
+		py_ctx,
+		/* acquire a reference to the connection */
+		axl_true,  
+		/* do not close the connection when the reference is collected, close_ref=axl_false */
+		axl_false);
+
+	/* decrement py_ctx reference since it is now owned by py_conn */
+	Py_DECREF (py_ctx);
+
+	/* create a tuple to contain arguments */
+	args = PyTuple_New (3);
+
+	/* the following function PyTuple_SetItem "steals" a reference
+	 * which is the python way to say that we are transfering the
+	 * ownership of the reference to that function, making it
+	 * responsible of calling to Py_DECREF when required. */
+	PyTuple_SetItem (args, 0, Py_BuildValue ("i", channel_num));
+	PyTuple_SetItem (args, 1, py_conn);
+
+	/* increment reference counting because the tuple will
+	 * decrement the reference passed when he thinks it is no
+	 * longer used. */
+	Py_INCREF (start_data);
+	PyTuple_SetItem (args, 2, start_data);
+
+	/* now invoke */
+	result = PyObject_Call (start, args, NULL);
+	
+	py_vortex_log (PY_VORTEX_DEBUG, "channel start notification finished, checking for exceptions..");
+	py_vortex_handle_and_clear_exception (py_conn);
+
+	/* translate result */
+	_result = axl_false;
+	PyArg_Parse (result, "i", &_result);
+	py_vortex_log (PY_VORTEX_DEBUG, "channel start notification result: %d..", _result);
+		
+
+	/* release tuple and result returned (which may be null) */
+	Py_DECREF (args);
+	Py_XDECREF (result);
+
+	/* release the GIL */
+	PyGILState_Release(state);
+	
+	return _result;
+}
+
+/** 
+ * @internal Implementation used by py_vortex_register_profile to
+ * bridge into python notifying close request.
+ */
+axl_bool py_vortex_profile_close (int                channel_num,
+				  VortexConnection * connection,
+				  axlPointer         user_data)
+{
+	return axl_true;
+}
 
 /** 
  * @internal Implementation used by py_vortex_register_profile to
@@ -288,7 +366,7 @@ void py_vortex_profile_frame_received (VortexChannel    * channel,
 	PyObject           * args;
 	char               * tmp_str;
 	PyObject           * result;
-
+	
 	/* acquire the GIL */
 	state = PyGILState_Ensure();
 
