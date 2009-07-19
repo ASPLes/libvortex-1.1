@@ -170,8 +170,11 @@ void     vortex_log_enable       (VortexCtx * ctx, axl_bool      status)
 		/* flag the new value */
 		ctx->debug = axl_true;
 		
-	} else
+	} else {
+		/* log disabled */
+		ctx->debug = axl_false;
 		vortex_support_unsetenv ("VORTEX_DEBUG");
+	}
 	return;
 #else
 	/* just return */
@@ -207,8 +210,10 @@ void     vortex_log2_enable       (VortexCtx * ctx, axl_bool      status)
 		
 		/* flag the new value */
 		ctx->debug2 = axl_true;
-	} else
+	} else {
+		ctx->debug2 = axl_false;
 		vortex_support_unsetenv ("VORTEX_DEBUG2");
+	}
 	return;
 #else
 	/* just return */
