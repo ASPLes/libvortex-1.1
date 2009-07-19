@@ -1132,6 +1132,9 @@ int  __vortex_reader_check_listener_list (VortexCtx     * ctx,
 		connection = axl_list_cursor_get (srv_cursor);
 
 		if (!vortex_connection_is_ok (connection, axl_false)) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "vortex reader found listener id=%d not operational, unreference",
+				    vortex_connection_get_id (connection));
+
 			/* connection isn't ok, unref it */
 			vortex_connection_unref (connection, "vortex reader (process), listener closed");
 
