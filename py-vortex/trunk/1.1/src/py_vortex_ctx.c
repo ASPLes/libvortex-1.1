@@ -155,10 +155,93 @@ PyObject * py_vortex_ctx_exit (PyVortexCtx* self)
 	return Py_None;
 }
 
+/** 
+ * @brief This function implements the generic attribute getting that
+ * allows to perform complex member resolution (not merely direct
+ * member access).
+ */
+PyObject * py_vortex_ctx_get_attr (PyObject *o, PyObject *attr_name) {
+	const char      * attr = NULL;
+	PyObject        * result;
+	PyVortexCtx     * self = (PyVortexCtx *) o;
 
-/* static PyMemberDef py_vortex_ctx_members[] = { */
-/* 	{NULL}  /\* Definition end *\/ */
-/* }; */
+	/* now implement other attributes */
+	if (! PyArg_Parse (attr_name, "s", &attr))
+		return NULL;
+
+	py_vortex_log (PY_VORTEX_DEBUG, "received request to report channel attr name %s (self: %p)",
+		       attr, o);
+
+	if (axl_cmp (attr, "log")) {
+		/* log attribute */
+		return Py_BuildValue ("i", vortex_log_is_enabled (self->ctx));
+	} else if (axl_cmp (attr, "log2")) {
+		/* log2 attribute */
+		return Py_BuildValue ("i", vortex_log2_is_enabled (self->ctx));
+	} else if (axl_cmp (attr, "color_log")) {
+		/* color_log attribute */
+		return Py_BuildValue ("i", vortex_color_log_is_enabled (self->ctx));
+	} /* end if */
+
+	/* first implement generic attr already defined */
+	result = PyObject_GenericGetAttr (o, attr_name);
+	if (result)
+		return result;
+	
+	return NULL;
+}
+
+/** 
+ * @brief Implements attribute set operation.
+ */
+int py_vortex_ctx_set_attr (PyObject *o, PyObject *attr_name, PyObject *v)
+{
+	const char      * attr = NULL;
+	PyVortexCtx     * self = (PyVortexCtx *) o;
+	axl_bool          boolean_value = axl_false;
+
+	/* now implement other attributes */
+	if (! PyArg_Parse (attr_name, "s", &attr))
+		return -1;
+
+	if (axl_cmp (attr, "log")) {
+		/* configure log */
+		if (! PyArg_Parse (v, "i", &boolean_value))
+			return -1;
+		
+		/* configure log */
+		vortex_log_enable (self->ctx, boolean_value);
+
+		/* return operation ok */
+		return 0;
+	} else if (axl_cmp (attr, "log2")) {
+		/* configure log2 */
+		if (! PyArg_Parse (v, "i", &boolean_value))
+			return -1;
+		
+		/* configure log */
+		vortex_log2_enable (self->ctx, boolean_value);
+
+		/* return operation ok */
+		return 0;
+
+	} else if (axl_cmp (attr, "color_log")) {
+		/* configure color_log */
+		if (! PyArg_Parse (v, "i", &boolean_value))
+			return -1;
+		
+		/* configure log */
+		vortex_color_log_enable (self->ctx, boolean_value);
+
+		/* return operation ok */
+		return 0;
+
+	} /* end if */
+
+	/* now implement generic setter */
+	return PyObject_GenericSetAttr (o, attr_name, v);
+}
+
 
 static PyMethodDef py_vortex_ctx_methods[] = { 
 	{"init", (PyCFunction) py_vortex_ctx_init, METH_NOARGS,
@@ -186,8 +269,8 @@ static PyTypeObject PyVortexCtxType = {
     0,                         /* tp_hash */
     0,                         /* tp_call*/
     0,                         /* tp_str*/
-    0,                         /* tp_getattro*/
-    0,                         /* tp_setattro*/
+    py_vortex_ctx_get_attr,    /* tp_getattro*/
+    py_vortex_ctx_set_attr,    /* tp_setattro*/
     0,                         /* tp_as_buffer*/
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,  /* tp_flags*/
     "Vortex context object required to function with Vortex API",           /* tp_doc */
