@@ -702,7 +702,7 @@ PyObject * py_vortex_connection_create   (VortexConnection * conn,
 			py_vortex_log (PY_VORTEX_DEBUG, "acquiring a reference to conn: %p, ctx: %p (role: %s)",
 				       conn, ctx, __py_vortex_connection_stringify_role (conn));
 			/* check ref */
-			if (! vortex_connection_ref (conn, "py_vortex_connection_create")) {
+			if (! vortex_connection_ref_internal (conn, "py_vortex_connection_create", axl_false)) {
 				py_vortex_log (PY_VORTEX_CRITICAL, "failed to acquire reference, unable to create connection");
 				Py_DECREF (obj);
 				return NULL;

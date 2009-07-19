@@ -866,6 +866,46 @@ def test_12():
 
     return True
 
+def test_13():
+    # create a context
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    iterator = 0
+    while iterator < 4:
+        # create a listener
+        listener = vortex.create_listener (ctx, "0.0.0.0", "0")
+
+        # check listener status
+        if not listener.is_ok ():
+            error ("Expected to find proper listener creation, but found error: " + listener.error_msg)
+            return False
+
+        # create another listener reusing the port
+        listener2 = vortex.create_listener (ctx, "0.0.0.0", listener.port)
+
+        if listener2.is_ok ():
+            error ("Expected to find failure while creating a second listener reusing a port: " + listener2.error_msg)
+            return False
+
+        # close listener2
+        listener2.close ()
+
+        # check listener status
+        if not listener.is_ok ():
+            error ("Expected to find proper listener creation, but found error: " + listener.error_msg)
+            return False
+
+        # close the listener
+        listener.close ()
+
+        iterator += 1
+
+    return True
 
 ###########################
 # intraestructure support #
@@ -914,7 +954,8 @@ tests = [
     (test_09,   "Check BEEP channel support"),
     (test_10,   "Check BEEP channel creation deny"),
     (test_11,   "Check BEEP listener support"),
-    (test_12,   "Check connection on close notification")
+    (test_12,   "Check connection on close notification"),
+    (test_13,   "Check wrong listener allocation")
 ]
 
 # declare default host and port
