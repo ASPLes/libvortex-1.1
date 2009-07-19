@@ -119,23 +119,22 @@ static PyObject * py_vortex_create_listener (PyObject * self, PyObject * args, P
 		return NULL;
 
 	/* create a listener */
-	py_vortex_log (PY_VORTEX_DEBUG, "creating listener using: %s:%s", host, port);
 	listener = vortex_listener_new_full (
 		/* context */
 		py_vortex_ctx_get (py_vortex_ctx),
 		/* host and port */
 		host, port, NULL, NULL);
 
-	if (vortex_connection_is_ok (listener, axl_false)) {
-		py_vortex_log (PY_VORTEX_DEBUG, "created a listener running at: %s:%s (refs: %d, id: %d)", 
-			       vortex_connection_get_host (listener),
-			       vortex_connection_get_port (listener),
-			       vortex_connection_ref_count (listener),
-			       vortex_connection_get_id (listener));
+	py_vortex_log (PY_VORTEX_DEBUG, "creating listener using: %s:%s (%p, status: %d)", host, port,
+		       listener, vortex_connection_is_ok (listener, axl_false));
 
-		/* create the listener and acquire a reference to the
-		 * PyVortexCtx */
-		py_listener =  py_vortex_connection_create (
+	/* do not check if the connection is ok, to return a different
+	   value. Rather return a PyVortexConnection in all cases
+	   allowing the user to call to .is_ok () */
+
+	/* create the listener and acquire a reference to the
+	 * PyVortexCtx */
+	py_listener =  py_vortex_connection_create (
 			/* connection reference wrapped */
 			listener, 
 			/* context */
@@ -145,19 +144,16 @@ static PyObject * py_vortex_create_listener (PyObject * self, PyObject * args, P
 			/* close ref on variable collect */
 			axl_true);
 
-		py_vortex_log (PY_VORTEX_DEBUG, "py_listener running at: %s:%s (refs: %d, id: %d)", 
-			       vortex_connection_get_host (listener),
-			       vortex_connection_get_port (listener),
-			       vortex_connection_ref_count (listener),
-			       vortex_connection_get_id (listener));
-		
-		return py_listener;
-	} /* end if */
+	/* handle exception */
+	py_vortex_handle_and_clear_exception (py_listener);
+
+	py_vortex_log (PY_VORTEX_DEBUG, "py_listener running at: %s:%s (refs: %d, id: %d)", 
+		       vortex_connection_get_host (listener),
+		       vortex_connection_get_port (listener),
+		       vortex_connection_ref_count (listener),
+		       vortex_connection_get_id (listener));
 	
-	/* reply work done */
-	py_vortex_log (PY_VORTEX_CRITICAL, "failed to create listener, returning None..");
-	Py_INCREF (Py_None);
-	return Py_None;
+	return py_listener;
 }
 
 VortexCtx * py_vortex_wait_listeners_ctx = NULL;
