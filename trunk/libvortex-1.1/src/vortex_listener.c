@@ -408,7 +408,7 @@ typedef struct _VortexListenerData {
 	VortexCtx                * ctx;
 }VortexListenerData;
 
-/**
+/** 
  * @brief Starts a generic TCP listener on the provided address and
  * port. This function is used internally by the vortex listener
  * module to startup the vortex listener TCP session associated,
@@ -463,8 +463,12 @@ VORTEX_SOCKET     vortex_listener_sock_listen      (VortexCtx   * ctx,
 	} /* end if */
 
 	haddr = ((struct in_addr *) (he->h_addr_list)[0]);
-	if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		axl_error_report (error, VortexSocketCreationError, "unable to create a new socket");
+	if ((fd = socket(AF_INET, SOCK_STREAM, 0)) <= 2) {
+		/* do not allow creating sockets reusing stdin (0),
+		   stdout (1), stderr (2) */
+		vortex_log (VORTEX_LEVEL_DEBUG, "failed to create listener socket: %d (errno=%d:%s)", fd, errno, vortex_errno_get_error (errno));
+		axl_error_report (error, VortexSocketCreationError, 
+				  "failed to create listener socket: %d (errno=%d:%s)", fd, errno, vortex_errno_get_error (errno));
 		return -1;
         } /* end if */
 
@@ -483,8 +487,9 @@ VORTEX_SOCKET     vortex_listener_sock_listen      (VortexCtx   * ctx,
         memcpy(&saddr.sin_addr, haddr, sizeof(struct in_addr));
 
         if (bind(fd, (struct sockaddr *)&saddr,  sizeof (struct sockaddr_in)) == VORTEX_SOCKET_ERROR) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
+		axl_error_report (error, VortexBindError, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
 		vortex_close_socket (fd);
-		axl_error_report (error, VortexBindError, "unable to bind address (port already in use or insufficient permissions)");
 		return -1;
         }
 
@@ -541,6 +546,9 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	 * connection around it */
 	listener = vortex_connection_new_empty (ctx, fd, VortexRoleMasterListener);
 
+	vortex_log (VORTEX_LEVEL_DEBUG, "listener reference created (%p, id: %d, socket: %d)", listener, 
+		    vortex_connection_get_id (listener), fd);
+
 	/* handle returned socket or error */
 	switch (fd) {
 	case -2:
@@ -561,7 +569,6 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 		__vortex_connection_set_not_connected (listener, message, status);
 		break;
 	default:
-		
 		/* register the listener socket at the Vortex Reader process.  */
 		vortex_reader_watch_listener (ctx, listener);
 		if (threaded) {
@@ -809,7 +816,11 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
  * same direction, you can't call to \ref vortex_connection_close if
  * you don't own the reference returned by this function.
  * 
- * To close immediately a listener you can use \ref vortex_connection_shutdown.
+ * To close immediately a listener you can use \ref
+ * vortex_connection_shutdown. In the case the listener was not
+ * started (because \ref vortex_connection_is_ok returned axl_false),
+ * you must use \ref vortex_connection_close to terminate the
+ * reference (NOT vortex_connection_shutdown).
  */
 VortexConnection * vortex_listener_new (VortexCtx           * ctx,
 					const char          * host, 
@@ -946,6 +957,17 @@ void vortex_listener_wait (VortexCtx * ctx)
 	if (ctx == NULL)
 		return;
 
+	/* check and init listener_wait_lock if it wasn't: init
+	   lock */
+	vortex_mutex_lock (&ctx->listener_mutex);
+	
+	/* create listener locker */
+	if (ctx->listener_wait_lock == NULL) 
+		ctx->listener_wait_lock = vortex_async_queue_new ();
+
+	/* unlock */
+	vortex_mutex_unlock (&ctx->listener_mutex);
+
 	/* double locking to ensure waiting */
 	vortex_log (VORTEX_LEVEL_DEBUG, "Locking listener");
 	if (ctx->listener_wait_lock != NULL) {
@@ -963,7 +985,7 @@ void vortex_listener_wait (VortexCtx * ctx)
 	return;
 }
 
-/**
+/** 
  * @brief Signals to unblock the listener blocked at the \ref vortex_listener_wait.
  * 
  * Under normal circumstances, this function must not be called
@@ -1016,7 +1038,7 @@ void vortex_listener_unlock (VortexCtx * ctx)
 	return;
 }
 
-/**
+/** 
  * @internal
  * 
  * Internal vortex function. This function allows
@@ -1033,11 +1055,6 @@ void vortex_listener_init (VortexCtx * ctx)
 	/* init lock */
 	vortex_mutex_lock (&ctx->listener_mutex);
 	
-	/* create listener locker */
-	if (ctx->listener_wait_lock == NULL) {
-		ctx->listener_wait_lock = vortex_async_queue_new ();
-	}
-
 	/* init the server on accept connection list */
 	if (ctx->listener_on_accept_handlers == NULL)
 		ctx->listener_on_accept_handlers = axl_list_new (axl_list_always_return_1, axl_free);
@@ -1054,6 +1071,7 @@ void vortex_listener_init (VortexCtx * ctx)
  */
 void vortex_listener_cleanup (VortexCtx * ctx)
 {
+	VortexAsyncQueue * queue;
 	v_return_if_fail (ctx);
 
 	axl_list_free (ctx->listener_on_accept_handlers);
@@ -1062,9 +1080,18 @@ void vortex_listener_cleanup (VortexCtx * ctx)
 	axl_free (ctx->listener_default_realm);
 	ctx->listener_default_realm = NULL;
 
-	if (ctx->listener_wait_lock)
-		vortex_async_queue_unref (ctx->listener_wait_lock);
+	/* acquire queue and nullify */
+	queue = ctx->listener_wait_lock;
 	ctx->listener_wait_lock = NULL;
+	vortex_log (VORTEX_LEVEL_DEBUG, "listener wait queue ref: %p", queue);
+	if (queue) {
+		/* remove pending items from the queue */
+		while (vortex_async_queue_items (queue) > 0)
+			vortex_async_queue_pop (queue);
+		/* unref the queue */
+		vortex_async_queue_unref (queue);
+	}
+
 
 	return;
 }

@@ -1593,6 +1593,46 @@ axl_bool  test_01d (void) {
 
 } /* end test_01c */
 
+axl_bool test_01e (void) {
+
+	VortexConnection * listener;
+	VortexConnection * listener2;
+	int                times = 4;
+	
+
+	/* create two listeners using the same port and check the second tries fails */
+ test_01e_do_test:
+	listener = vortex_listener_new (ctx, "0.0.0.0", "0", NULL, NULL);
+	if (! vortex_connection_is_ok (listener, axl_false)) {
+		printf ("ERROR: Expected to find proper listener creation, but failure was found..\n");
+		return axl_false;
+	} /* end if */
+	
+	/* now create a second listener using previous listener port */
+	listener2 = vortex_listener_new (ctx, "0.0.0.0", vortex_connection_get_port (listener), NULL, NULL);
+	if (vortex_connection_is_ok (listener2, axl_false)) {
+		printf ("ERROR: expected to find listener failure, but found proper status code..\n");
+		return axl_false;
+	}
+	vortex_connection_close (listener2);
+
+	/* check listener here */
+	if (! vortex_connection_is_ok (listener, axl_false)) {
+		printf ("ERROR: expected to find proper listener status (first one created), but found a failure..\n");
+		return axl_false;
+	} /* end if */
+
+	/* shutdown listener */
+	vortex_connection_shutdown (listener);
+
+	/* now, now do the same operation but several times */
+	times--;
+	if (times > 0)
+		goto test_01e_do_test;
+	
+	return axl_true;
+}
+
 #define TEST_02_MAX_CHANNELS 24
 
 void test_02_channel_created (int                channel_num, 
@@ -7929,6 +7969,8 @@ int main (int  argc, char ** argv)
 	vortex_io_waiting_use (ctx, VORTEX_IO_WAIT_SELECT);
 
 	if (run_test_name) {
+		printf ("INFO: Checking to run test: %s..\n", run_test_name);
+
 		if (axl_cmp (run_test_name, "test_00"))
 			run_test (test_00, "Test 00", "Async Queue support", -1, -1);
 
@@ -7946,6 +7988,9 @@ int main (int  argc, char ** argv)
 
 		if (axl_cmp (run_test_name, "test_01d"))
 			run_test (test_01d, "Test 01-d", "MIME support", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_01e"))
+			run_test (test_01e, "Test 01-e", "Check listener douple port allocation", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
@@ -8103,6 +8148,8 @@ int main (int  argc, char ** argv)
  	run_test (test_01c, "Test 01-c", "check immediately send (31/03/2008)", -1, -1);
   
  	run_test (test_01d, "Test 01-d", "MIME support", -1, -1);
+
+ 	run_test (test_01e, "Test 01-e", "Check listener douple port allocation", -1, -1);
   
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   

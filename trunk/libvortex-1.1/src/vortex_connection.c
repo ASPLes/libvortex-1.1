@@ -964,19 +964,24 @@ VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx       
 	 * number available. */
 	connection->role               = role;
 
-	/* set socket provided */
-	if (socket > 0) {
+	/* set socket provided (do not allow stdin(0), stdout(1), stderr(2) */
+	if (socket > 2) {
 		if (! vortex_connection_set_socket (connection, socket, NULL, NULL)) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to configure socket associated to connection");
 			vortex_connection_unref (connection, "vortex_connection_new_empty_from_connection");
 			return NULL;
 		} /* end if */
+	} else {
+		/* set a wrong socket connection in the case a not
+		   proper value is received */
+		vortex_log (VORTEX_LEVEL_WARNING, "received wrong socket fd, setting invalid fd beacon: -1");
+		connection->session = -1;
 	} /* end if */
 
 	return connection;	
 }
 
-/**
+/** 
  * @brief Allows to configure the socket to be used by the provided
  * connection. This function is usually used in conjunction with \ref
  * vortex_connection_new_empty.
@@ -2218,8 +2223,20 @@ axl_bool                    vortex_connection_close                  (VortexConn
 		if ((refcount - 1) == 0) {
 			return axl_true;
 		}
-	}else 
+	} else {
 		vortex_log (VORTEX_LEVEL_DEBUG, "closing a connection which is not opened, unref resources..");
+		/* check here for the case when a close operation is
+		   requested for a listener that was started but not
+		   created (port binding problem, port bind
+		   permission, etc). This is allowed because under
+		   such cases, vortex reader do not own a reference to
+		   the listener and it is required to remove it,
+		   allowing to do so by the user. */
+		if (connection->role == VortexRoleMasterListener)  {
+			vortex_connection_unref (connection, "vortex_connection_close");
+			return axl_true;
+		}
+	}
 
  	/* unref vortex connection resources, but check first this is
  	 * not a listener connection, which is already owned by the
@@ -4453,6 +4470,11 @@ void           __vortex_connection_set_not_connected (VortexConnection * connect
 	vortex_mutex_lock (&connection->op_mutex);
 
 	if (connection->is_connected) {
+		/* acquire a reference to the connection during the
+		   shutdown to avoid race conditions with listener
+		   connections and the vortex reader loop */
+		vortex_connection_ref_internal (connection, "set-not-connected", axl_false);
+
 		vortex_log (VORTEX_LEVEL_DEBUG, "flagging the connection as non-connected: %s", message ? message : "");
 		connection->is_connected = axl_false;
 
@@ -4494,6 +4516,10 @@ void           __vortex_connection_set_not_connected (VortexConnection * connect
 			/* notify sequencer to drop all packages */
 			vortex_sequencer_drop_connection_messages (connection);
  	        } /* end if */
+
+		/* finish reference acquired after unlocking and doing
+		   all close stuff */
+		vortex_connection_unref (connection, "set-not-connected");
 
 		return;
 	}

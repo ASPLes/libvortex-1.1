@@ -394,6 +394,11 @@ void                __vortex_connection_check_and_notify     (VortexConnection *
 
 int                 vortex_connection_get_mss                (VortexConnection * connection);
 
+/** private API **/
+axl_bool               vortex_connection_ref_internal                    (VortexConnection * connection, 
+									  const char       * who,
+									  axl_bool           check_ref);
+
 #endif
 
 /* @} */
