@@ -357,6 +357,16 @@ axl_bool  vortex_mutex_destroy (VortexMutex       * mutex_def)
  * 
  * @param mutex_def The reference to the mutex to be locked. If the
  * mutex reference is NULL no lock operation is performed.
+ *
+ * NOTE: It is important to use the pair of calls to \ref
+ * vortex_mutex_lock and \ref vortex_mutex_unlock from the same
+ * thread. This is because under windows, the couple of functions
+ * WaitForSingleObject and ReleaseMutex are used to implement lock and
+ * unlocking. Under this context, a thread not owning a mutex
+ * (acquired via WaitForSingleObject) can't release it with
+ * ReleaseMutex. This has the case consequence that a thread that has
+ * not called to vortex_mutex_lock cannot do a vortex_mutex_unlock
+ * until the owner thread do it.
  */
 void vortex_mutex_lock    (VortexMutex       * mutex_def)
 {
@@ -1302,8 +1312,14 @@ void               vortex_async_queue_foreach   (VortexAsyncQueue         * queu
  * vortex_async_queue_unlocked_push. Call to vortex_async_queue_push
  * will lock the caller forever until a call to
  * vortex_async_queue_unlock is done.
- * 
+ *
  * @param queue The queue to lock.
+ * 
+ * NOTE: To produce portable code, the thread calling to this function
+ * must also call to \ref vortex_async_queue_unlock. It is not
+ * supported by Microsoft Windows platforms to do a call to \ref
+ * vortex_async_queue_unlock from a different thread that issue the
+ * call to \ref vortex_async_queue_lock.
  */
 void               vortex_async_queue_lock      (VortexAsyncQueue * queue)
 {
