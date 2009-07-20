@@ -588,12 +588,16 @@ void test_01c_channel_created (int                channel_num,
 	VortexAsyncQueue * queue = user_data;
 	printf ("Test 01-c: Received channel creation notification..\n");
 
+	/* lock during the push */
+	vortex_async_queue_lock (queue);
+
 	/* push all data */
 	vortex_async_queue_unlocked_push (queue, INT_TO_PTR(-4));
 	vortex_async_queue_unlocked_push (queue, channel);
 
-	/* release the lock */
+	/* unlock now */
 	vortex_async_queue_unlock (queue);
+
 	return;
 }
 
@@ -616,9 +620,6 @@ axl_bool  test_01c (void) {
 
 	iterator = 0;
 	while (iterator < 1) {
-
-		/* acquire the lock (released in test_01c_channel_created) */
-		vortex_async_queue_lock (queue);
 
 		/* create a channel */
 		channel = vortex_channel_new (connection, 0,
