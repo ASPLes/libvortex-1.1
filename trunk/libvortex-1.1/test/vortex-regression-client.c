@@ -1610,6 +1610,8 @@ axl_bool test_01e (void) {
 	} /* end if */
 	
 	/* now create a second listener using previous listener port */
+	printf ("Test 01-e: listener created, now creating second listener reusing port: %s\n", 
+		vortex_connection_get_port (listener));
 	listener2 = vortex_listener_new (ctx, "0.0.0.0", vortex_connection_get_port (listener), NULL, NULL);
 	if (vortex_connection_is_ok (listener2, axl_false)) {
 		printf ("ERROR: expected to find listener failure, but found proper status code..\n");
