@@ -437,19 +437,20 @@ VORTEX_SOCKET     vortex_listener_sock_listen      (VortexCtx   * ctx,
 						    axlError   ** error)
 {
 	struct hostent     * he;
-        struct in_addr     * haddr;
-        struct sockaddr_in   saddr;
+       struct in_addr     * haddr;
+       struct sockaddr_in   saddr;
 	struct sockaddr_in   sin;
 	VORTEX_SOCKET        fd;
 #if defined(AXL_OS_WIN32)
-	BOOL                 unit      = axl_true;
+/*	BOOL                 unit      = axl_true; */
 	int                  sin_size  = sizeof (sin);
 #else    	
-	int                  unit      = 1;
+/*	int                  unit      = 1; */
 	socklen_t            sin_size  = sizeof (sin);
 #endif	
 	uint16_t             int_port;
 	int                  backlog   = 0;
+	int                  bind_res;
 
 	v_return_val_if_fail (ctx,  -2);
 	v_return_val_if_fail (host, -2);
@@ -472,26 +473,32 @@ VORTEX_SOCKET     vortex_listener_sock_listen      (VortexCtx   * ctx,
 		return -1;
         } /* end if */
 
-#if defined(AXL_OS_WIN32)
-	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char  *)&unit, sizeof(BOOL));
-#else
-	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &unit, sizeof (unit));
-#endif
+	/**
+	 * commented since it seems to produce bad results
+	 * #if defined(AXL_OS_WIN32)
+	 * setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char  *)&unit, sizeof(BOOL));
+	 * #else
+	 * setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &unit, sizeof (unit));
+	 * #endif 
+	 */
 
 	/* get integer port */
 	int_port  = (uint16_t) atoi (port);
 
 	memset(&saddr, 0, sizeof(struct sockaddr_in));
 	saddr.sin_family          = AF_INET;
-        saddr.sin_port            = htons(int_port);
-        memcpy(&saddr.sin_addr, haddr, sizeof(struct in_addr));
+	saddr.sin_port            = htons(int_port);
+       memcpy(&saddr.sin_addr, haddr, sizeof(struct in_addr));
 
-        if (bind(fd, (struct sockaddr *)&saddr,  sizeof (struct sockaddr_in)) == VORTEX_SOCKET_ERROR) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
+       /* call to bind */
+       bind_res = bind(fd, (struct sockaddr *)&saddr,  sizeof (struct sockaddr_in));
+       vortex_log (VORTEX_LEVEL_DEBUG, "bind(2) call returned: %d", bind_res);
+       if (bind_res == VORTEX_SOCKET_ERROR) {
+	       vortex_log (VORTEX_LEVEL_DEBUG, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
 		axl_error_report (error, VortexBindError, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
 		vortex_close_socket (fd);
 		return -1;
-        }
+       }
 
 	/* get current backlog configuration */
 	vortex_conf_get (ctx, VORTEX_LISTENER_BACKLOG, &backlog);
