@@ -1,3 +1,4 @@
+# -*- makefile -*- 
 ifdef enable_vortex_log
    vortex_dll         = -lvortex-debug-1.1
    vortex_tunnel_dll  = -lvortex-tunnel-debug-1.1
@@ -141,9 +142,11 @@ links:
 	cp $(OPENSSL_LIBS) .
         # copy gsasl libraries and strip them
 	cp $(GSASL_LIBS) .
+ifndef enable_vortex_log
 	strip --strip-unneeded libgsasl-7.dll
 	strip --strip-unneeded libgcrypt-11.dll
 	strip --strip-unneeded libgpg-error-0.dll
+endif
 
 %.o: %.c
 	$(CC) -c $< -o $@ $(CFLAGS)

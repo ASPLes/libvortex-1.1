@@ -1,4 +1,4 @@
-# Makefile for windows (mingw)
+# -*- makefile -*- Makefile for windows (mingw)
 OBJ  = vortex_tunnel.o 
 
 ifdef enable_vortex_log
@@ -52,8 +52,8 @@ else
 	cp libvortex-tunnel-1.1.lib $(release_dir)/
 	cp libvortex-tunnel-1.1.def $(release_dir)/
 	cp libvortex-tunnel-1.1.exp $(release_dir)/
-endif
 	strip --strip-unneeded $(DLL)
+endif
 	cp $(DLL) $(release_dir)/
 	cp $(DLL).a $(release_dir)/
 
