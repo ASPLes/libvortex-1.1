@@ -270,24 +270,43 @@ static PyObject * py_vortex_connection_pop_channel_error (PyVortexConnection * s
  */
 static PyObject * py_vortex_connection_close (PyVortexConnection* self)
 {
-	PyObject *_result;
-	axl_bool  result;
+	PyObject       * _result;
+	axl_bool         result;
+	VortexPeerRole   role     = VortexRoleUnknown;
+	const char     * str_role = NULL;
 
 	if (self->conn) {
 		py_vortex_log (PY_VORTEX_DEBUG, "closing connection id: %d (%s, refs: %d)",
 			       vortex_connection_get_id (self->conn), 
 			       __py_vortex_connection_stringify_role (self->conn), 
 			       vortex_connection_ref_count (self->conn));
+		/* get peer role to avoid race conditions */
+		role     = vortex_connection_get_role (self->conn);
+		str_role = __py_vortex_connection_stringify_role (self->conn);
 	} /* end if */
 
-	/* call to check connection and build the value with the
-	   result. Do not free the connection in the case of
-	   failure. */
-	result  = vortex_connection_close (self->conn);
+	/* according to the connection role and status, do a shutdown
+	 * or a close */
+	if (role == VortexRoleMasterListener &&
+	    (vortex_connection_is_ok (self->conn, axl_false))) {
+		py_vortex_log (PY_VORTEX_DEBUG, "shutting down working master listener connection id=%d", 
+			       vortex_connection_get_id (self->conn));
+		result = axl_true;
+		vortex_connection_shutdown (self->conn);
+	} else  {
+		py_vortex_log (PY_VORTEX_DEBUG, "closing connection id=%d (role: %s)", 
+			       vortex_connection_get_id (self->conn), str_role);
+		result  = vortex_connection_close (self->conn);
+	} /* end if */
 	_result = Py_BuildValue ("i", result);
 
 	/* check to nullify connection reference in the case the connection is closed */
 	if (result) {
+		/* check if we have to unref the connection in the
+		 * case of a master listener */
+		if (role == VortexRoleMasterListener)
+			vortex_connection_unref (self->conn, "py_vortex_connection_close (master-listener)");
+
 		py_vortex_log (PY_VORTEX_DEBUG, "close ok, nullifying..");
 		self->conn = NULL; 
 	}
