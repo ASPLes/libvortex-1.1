@@ -116,7 +116,9 @@ void               vortex_async_queue_priority_push  (VortexAsyncQueue * queue,
 void               vortex_async_queue_unlocked_push  (VortexAsyncQueue * queue,
 						      axlPointer         data);
 
-axlPointer         vortex_async_queue_pop       (VortexAsyncQueue * queue);
+axlPointer         vortex_async_queue_pop          (VortexAsyncQueue * queue);
+
+axlPointer         vortex_async_queue_unlocked_pop (VortexAsyncQueue * queue);
 
 axlPointer         vortex_async_queue_timedpop  (VortexAsyncQueue * queue,
 						 long int           microseconds);
