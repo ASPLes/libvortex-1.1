@@ -892,6 +892,11 @@ def test_13():
             error ("Expected to find failure while creating a second listener reusing a port: " + listener2.error_msg)
             return False
 
+        # check the role even knowning it is not working
+        if listener2.role != "master-listener":
+            error ("Expected to find master-listener role but found: " + listener2.role)
+            return False
+
         # close listener2
         listener2.close ()
 

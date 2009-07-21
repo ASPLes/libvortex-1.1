@@ -293,7 +293,7 @@ axl_bool  py_vortex_profile_start  (int                channel_num,
 
 	/* decrement py_ctx reference since it is now owned by py_conn */
 	Py_DECREF (py_ctx);
-
+	
 	/* create a tuple to contain arguments */
 	args = PyTuple_New (3);
 
