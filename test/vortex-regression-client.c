@@ -194,30 +194,30 @@ void subs (struct timeval stop, struct timeval start, struct timeval * _result)
  */
 #define REGRESSION_URI_SUDDENTLY_CLOSE "http://iana.org/beep/transient/vortex-regression/suddently-close"
 
-/**
+/** 
  * Profile use to identify the regression test to check replies mixed
  * (ANS..NUL with RPY).
  */
 #define REGRESSION_URI_MIXING_REPLIES "http://iana.org/beep/transient/vortex-regression/mixing-replies"
 
-/**
+/** 
  * Profile used to identify the regression test to check connection
  * close after ans/nul reply.
  */
 #define REGRESSION_URI_ANS_NUL_REPLY_CLOSE "http://iana.org/beep/transient/vortex-regression/ans-nul-reply-close"
 
-/**
+/** 
  * Profile used to identify the regression test to check connection
  * close after ans/nul reply.
  */
 #define REGRESSION_URI_CLOSE_AFTER_ANS_NUL_REPLIES "http://iana.org/beep/transient/vortex-regression/close-after-ans-nul-replies"
 
-/**
+/** 
  * Profile that does nothing.
  */
 #define REGRESSION_URI_NOTHING "http://iana.org/beep/transient/vortex-regression/nothing"
 
-/**
+/** 
  * Profile that allows to check seqno limits.
  */
 #define REGRESSION_URI_SEQNO_EXCEEDED "http://iana.org/beep/transient/vortex-regression/seqno-exceeded"
@@ -232,7 +232,7 @@ VortexTunnelSettings * tunnel_settings = NULL;
 /* listener context */
 VortexCtx * ctx = NULL;
 
-/**
+/** 
  * @internal Reference to signal connection_new to do a connection
  * through vortex HTTP CONNECT implementation.
  */
@@ -1617,6 +1617,15 @@ axl_bool test_01e (void) {
 		printf ("ERROR: expected to find listener failure, but found proper status code..\n");
 		return axl_false;
 	}
+
+	/* check connection role (even having it not connected) */
+	if (vortex_connection_get_role (listener2) != VortexRoleMasterListener) {
+		printf ("ERROR: expected to find role %d, but found %d..\n", 
+			VortexRoleMasterListener, vortex_connection_get_role (listener2));
+		return axl_false;
+	} /* end if */
+
+	/* close the listener */
 	vortex_connection_close (listener2);
 
 	/* check listener here */

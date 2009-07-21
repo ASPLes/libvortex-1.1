@@ -4993,13 +4993,13 @@ int                 vortex_connection_get_pending_msgs       (VortexConnection *
  * @param connection The VortexConnection to get the current role from.
  * 
  * @return Current role represented by \ref VortexPeerRole. If the
- * given connection is not connected, using \ref
- * vortex_connection_is_ok, the function will return \ref VortexRoleUnknown.
+ * function receives a NULL reference it will return \ref
+ * VortexRoleUnknown.
  */
 VortexPeerRole      vortex_connection_get_role               (VortexConnection * connection)
 {
-	if (!vortex_connection_is_ok (connection, axl_false))
-		return VortexRoleUnknown;
+	/* if null reference received, return unknown role */
+	v_return_val_if_fail (connection, VortexRoleUnknown);
 
 	return connection->role;
 }
