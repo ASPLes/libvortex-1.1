@@ -445,7 +445,7 @@ VORTEX_SOCKET     vortex_listener_sock_listen      (VortexCtx   * ctx,
 /*	BOOL                 unit      = axl_true; */
 	int                  sin_size  = sizeof (sin);
 #else    	
-/*	int                  unit      = 1; */
+	int                  unit      = 1; 
 	socklen_t            sin_size  = sizeof (sin);
 #endif	
 	uint16_t             int_port;
@@ -473,14 +473,16 @@ VORTEX_SOCKET     vortex_listener_sock_listen      (VortexCtx   * ctx,
 		return -1;
         } /* end if */
 
-	/**
-	 * commented since it seems to produce bad results
-	 * #if defined(AXL_OS_WIN32)
-	 * setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char  *)&unit, sizeof(BOOL));
-	 * #else
-	 * setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &unit, sizeof (unit));
-	 * #endif 
-	 */
+#if defined(AXL_OS_WIN32)
+	/* Do not issue a reuse addr which causes on windows to reuse
+	 * the same address:port for the same process. Under linux,
+	 * reusing the address means that consecutive process can
+	 * reuse the address without being blocked by a wait
+	 * state.  */
+	/* setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char  *)&unit, sizeof(BOOL)); */
+#else
+	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &unit, sizeof (unit));
+#endif 
 
 	/* get integer port */
 	int_port  = (uint16_t) atoi (port);
