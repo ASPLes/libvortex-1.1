@@ -59,131 +59,6 @@
 #include <signal.h>
 #endif
 
-/** 
- * Profile use to identify the regression test server.
- */
-#define REGRESSION_URI "http://iana.org/beep/transient/vortex-regression"
-
-/** 
- * A profile to check default close channel action.
- */
-#define REGRESSION_URI_2 "http://iana.org/beep/transient/vortex-regression/2"
-
-/** 
- * A profile to check wrong order reply.
- */
-#define REGRESSION_URI_3 "http://iana.org/beep/transient/vortex-regression/3"
-
-/** 
- * A profile to check wrong order reply.
- */
-#define REGRESSION_URI_4 "http://iana.org/beep/transient/vortex-regression/4"
-
-/** 
- * A profile to check wrong order reply.
- */
-#define REGRESSION_URI_5 "http://iana.org/beep/transient/vortex-regression/5"
-
-/** 
- * A profile to check wrong order reply.
- */
-#define REGRESSION_URI_6 "http://iana.org/beep/transient/vortex-regression/6"
-
-/** 
- * A profile to check wrong order reply.
- */
-#define REGRESSION_URI_6bis "http://iana.org/beep/transient/vortex-regression/6bis"
-
-/**
- * A profile to check close in transit support.
- */ 
-#define CLOSE_IN_TRANSIT_URI "http://iana.org/beep/transient/close-in-transit"
-
-/** 
- * A profile to check sending zeroed binary frames.
- */
-#define REGRESSION_URI_ZERO "http://iana.org/beep/transient/vortex-regression/zero"
-
-/** 
- * A profile to check connection timeout against unresponsive
- * listeners.
- */
-#define REGRESSION_URI_LISTENERS "http://iana.org/beep/transient/vortex-regression/fake-listener"
-
-/** 
- * A profile to check sending zeroed binary frames.
- */
-#define REGRESSION_URI_ZERO "http://iana.org/beep/transient/vortex-regression/zero"
-
-/** 
- * A profile to check sending zeroed binary frames.
- */
-#define REGRESSION_URI_BLOCK_TLS "http://iana.org/beep/transient/vortex-regression/block-tls"
-
-/** 
- * A regression test profile that allows to check if the listener can
- * send data just after accepting the channel to be created.
- */
-#define REGRESSION_URI_FAST_SEND "http://iana.org/beep/transient/vortex-regression/fast-send"
-
-/** 
- * A regression test profile to check channel deny operations. This
- * profile is supported by the remote listener.
- */
-#define REGRESSION_URI_DENY_SUPPORTED "http://iana.org/beep/transient/vortex-regression/deny_supported"
-
-/** 
- * A regression test profile to check channel deny operations. This
- * profile is supported by the remote listener.
- */
-#define REGRESSION_URI_CLOSE_AFTER_LARGE_REPLY "http://iana.org/beep/transient/vortex-regression/close-after-large-reply"
-
-/** 
- * Profile use to identify the regression test client and server mime
- * support.
- */
-#define REGRESSION_URI_MIME "http://iana.org/beep/transient/vortex-regression/mime"
-
-/** 
- * Profile use to identify the regression test client and server mime
- * support.
- */
-#define REGRESSION_URI_ORDERED_DELIVERY "http://iana.org/beep/transient/vortex-regression/ordered-delivery"
-
-/** 
- * Profile use to identify the regression test client and server mime
- * support.
- */
-#define REGRESSION_URI_SUDDENTLY_CLOSE "http://iana.org/beep/transient/vortex-regression/suddently-close"
-
-/**
- * Profile use to identify the regression test to check replies mixed
- * (ANS..NUL with RPY).
- */
-#define REGRESSION_URI_MIXING_REPLIES "http://iana.org/beep/transient/vortex-regression/mixing-replies"
-
-/**
- * Profile used to identify the regression test to check connection
- * close after ans/nul reply.
- */
-#define REGRESSION_URI_ANS_NUL_REPLY_CLOSE "http://iana.org/beep/transient/vortex-regression/ans-nul-reply-close"
-
-/**
- * Profile used to identify the regression test to check connection
- * close after ans/nul reply.
- */
-#define REGRESSION_URI_CLOSE_AFTER_ANS_NUL_REPLIES "http://iana.org/beep/transient/vortex-regression/close-after-ans-nul-replies"
-
-/**
- * Profile that does nothing.
- */
-#define REGRESSION_URI_NOTHING "http://iana.org/beep/transient/vortex-regression/nothing"
-
-/**
- * Profile that allows to check seqno limits.
- */
-#define REGRESSION_URI_SEQNO_EXCEEDED "http://iana.org/beep/transient/vortex-regression/seqno-exceeded"
-
 void frame_received_fake_listeners  (VortexChannel    * channel,
 				     VortexConnection * connection,
 				     VortexFrame      * frame,
@@ -585,8 +460,8 @@ char  * sasl_cram_md5_validation (VortexConnection * connection,
 }
 
 char  * sasl_cram_md5_validation_full (VortexConnection * connection,
-				  const char  * auth_id,
-				  axlPointer user_data)
+				       const char  * auth_id,
+				       axlPointer user_data)
 {
 	if (axl_cmp ("cram md5!", (char*)user_data )) {
 		return sasl_cram_md5_validation (connection, auth_id);
@@ -617,6 +492,82 @@ char  * sasl_digest_md5_validation_full (VortexConnection * connection,
 	printf ("Received digest md5 validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.", auth_id);
 	return axl_false;
 }
+
+#if defined(ENABLE_SASL_SUPPORT) 
+/** 
+ * @internal Common SASL handler for all profiles
+ */
+axlPointer  common_auth_handler  (VortexConnection * conn,
+				  VortexSaslProps  * props,
+				  axlPointer         user_data)
+{
+	printf ("Received request to handle profile %s (common sasl handler)\n", props->mech);
+
+	/* check anonymous support */
+	if (axl_cmp (props->mech, VORTEX_SASL_ANONYMOUS)) {
+
+		/* check the beacon */
+		if (! axl_cmp (user_data, "anonymous beacon 123123")) {
+			printf ("ERROR: expected to find anonymous beacon %s, but found %s..\n",
+				(char *)user_data, "anonymous beacon 123123");
+			return axl_false;
+		} /* end if */
+
+		return INT_TO_PTR (sasl_anonymous_validation (conn, props->anonymous_token));
+
+	} else if (axl_cmp (props->mech, VORTEX_SASL_EXTERNAL)) {
+
+		/* check the beacon */
+		if (! axl_cmp ((char *)user_data, "external beacon 123123")) {
+			printf ("ERROR: expected to find external beacon %s, but found %s..\n",
+				(char *)user_data, "external beacon 123123");
+			return axl_false;
+		} /* end if */
+
+		return INT_TO_PTR (sasl_external_validation (conn, props->authorization_id));
+
+	} else if (axl_cmp (props->mech, VORTEX_SASL_PLAIN)) {
+
+		/* check the beacon */
+		if (! axl_cmp ((char *)user_data, "plain beacon 123123")) {
+			printf ("ERROR: expected to find plain beacon %s, but found %s..\n",
+				(char *)user_data, "plain beacon 123123");
+			return axl_false;
+		} /* end if */
+
+		return INT_TO_PTR (sasl_plain_validation (conn, props->auth_id, props->authorization_id, props->password));
+
+	} else if (axl_cmp (props->mech, VORTEX_SASL_CRAM_MD5)) {
+
+		/* check the beacon */
+		if (! axl_cmp ((char *)user_data, "cram-md5 beacon 123123")) {
+			printf ("ERROR: expected to find cram-md5 beacon %s, but found %s..\n",
+				(char *)user_data, "cram-md5 beacon 123123");
+			return axl_false;
+		} /* end if */
+
+		/* signal we are returning a password */
+		props->return_password = axl_true;
+		return sasl_cram_md5_validation (conn, props->auth_id);
+
+	} else if (axl_cmp (props->mech, VORTEX_SASL_DIGEST_MD5)) {
+
+		/* check the beacon */
+		if (! axl_cmp ((char *)user_data, "digest-md5 beacon 123123")) {
+			printf ("ERROR: expected to find digest-md5 beacon %s, but found %s..\n",
+				(char *)user_data, "digest-md5 beacon 123123");
+			return axl_false;
+		} /* end if */
+
+		/* signal we are returning a password */
+		props->return_password = axl_true;
+		return sasl_digest_md5_validation (conn, props->auth_id, props->authorization_id, props->realm);
+	}
+
+	/* reject auth by default */
+	return axl_false;
+}
+#endif
 
 
 #ifdef AXL_OS_UNIX
@@ -1193,6 +1144,9 @@ axl_bool  close_channel_connection (int channel_num, VortexConnection * conn, ax
 int main (int  argc, char ** argv) 
 {
 	VortexConnection * listener;
+#if defined(ENABLE_SASL_SUPPORT)
+	VortexCtx        * ctx2;
+#endif
 
 	/* install default handling to get notification about
 	 * segmentation faults */
@@ -1487,6 +1441,57 @@ int main (int  argc, char ** argv)
 		return -1;
 	}
 
+#if defined(ENABLE_SASL_SUPPORT)
+	/* run also on 44011 to test unified SASL handling */
+	ctx2 = vortex_ctx_new ();
+	if (! vortex_init_ctx (ctx2)) {
+		printf ("ERROR: failed to init vortex ctx object required to check unified SASL API..\n");
+		return -1;
+	}
+	/* enable sasl */
+	if (! vortex_sasl_init (ctx2)) {
+		printf ("ERROR: failed to init SASL to check unified API..\n");
+		return -1;
+	} /* end if */
+
+	listener = vortex_listener_new (ctx2, "0.0.0.0", "44011", NULL, NULL);
+	if (! vortex_connection_is_ok (listener, axl_false)) {
+		printf ("ERROR: failed to start listener at: 44011, error found (code: %d): %s\n",
+			vortex_connection_get_status (listener),
+			vortex_connection_get_message (listener));
+		return -1;
+	}
+
+	/* configure the handler */
+	if (! vortex_sasl_accept_negotiation_common (ctx2, VORTEX_SASL_ANONYMOUS, common_auth_handler, "anonymous beacon 123123")) {
+		printf ("ERROR: Failed to register anonymous profile using common api..\n");
+		return -1;
+	}
+
+	if (! vortex_sasl_accept_negotiation_common (ctx2, VORTEX_SASL_PLAIN, common_auth_handler, "plain beacon 123123")) {
+		printf ("ERROR: Failed to register plain profile using common api..\n");
+		return -1;
+	}
+
+	if (! vortex_sasl_accept_negotiation_common (ctx2, VORTEX_SASL_EXTERNAL, common_auth_handler, "external beacon 123123")) {
+		printf ("ERROR: Failed to register external profile using common api..\n");
+		return -1;
+	}
+
+	if (! vortex_sasl_accept_negotiation_common (ctx2, VORTEX_SASL_CRAM_MD5, common_auth_handler, "cram-md5 beacon 123123")) {
+		printf ("ERROR: Failed to register cram-md5 profile using common api..\n");
+		return -1;
+	}
+
+	if (! vortex_sasl_accept_negotiation_common (ctx2, VORTEX_SASL_DIGEST_MD5, common_auth_handler, "digest-md5 beacon 123123")) {
+		printf ("ERROR: Failed to register digest-md5 profile using common api..\n");
+		return -1;
+	}
+
+#else
+	printf("--- WARNING: Skipping SASL unified API check, since Vortex is not configured with SASL support\n");
+#endif
+
 	/* configure connection notification  */
 	vortex_listener_set_on_connection_accepted (ctx, on_accepted, NULL);
 
@@ -1499,6 +1504,9 @@ int main (int  argc, char ** argv)
 
 	/* terminate process */
 	vortex_exit_ctx (ctx, axl_true);
+#if defined(ENABLE_SASL_SUPPORT)
+	vortex_exit_ctx (ctx2, axl_true);
+#endif
 
 	return 0;
 }
