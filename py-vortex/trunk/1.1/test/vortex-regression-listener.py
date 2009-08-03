@@ -37,8 +37,13 @@
 #         info@aspl.es - http://www.aspl.es/vortex
 #
 import vortex
+import vortex.sasl
+import vortex.tls
 import signal
 import sys
+
+# import common items for reg test
+from regtest_common import *
 
 def info (msg):
     print "[ INFO  ] : " + msg
@@ -56,15 +61,73 @@ def default_frame_received (conn, channel, frame, data):
     
     return
 
+def frame_replies_ans (conn, channel, frame, data):
+    if frame.type == "MSG":
+        # received request, reply
+        print ("Received msg, replying..")
+        iterator = 0
+        while iterator < 10:
+            # send message
+            channel.send_ans (TEST_REGRESSION_URI_4_MESSAGE, len (TEST_REGRESSION_URI_4_MESSAGE), frame.msg_no)
+
+            # next message
+            print ("Message sent: iterator=" + str (iterator))
+            iterator += 1
+
+        # finish transmission
+        print ("Sending NUL frame: iterator=" + str (iterator))
+        channel.finalize_ans (frame.msg_no)
+        return
+
+    # this must not be reached
+    print ("ERROR: received request to handle a frame type not expected..shutting down connection\n")
+    conn.shutdown ()
+
+    return
+
 def deny_supported (channel_num, conn, data):
     # always deny 
     return False
 
-# regression test beep uris
-REGRESSION_URI      = "http://iana.org/beep/transient/vortex-regression"
-REGRESSION_URI_ZERO = "http://iana.org/beep/transient/vortex-regression/zero"
-REGRESSION_URI_DENY = "http://iana.org/beep/transient/vortex-regression/deny"
-REGRESSION_URI_DENY_SUPPORTED = "http://iana.org/beep/transient/vortex-regression/deny_supported"
+def sasl_auth_handler (conn, auth_props, user_data):
+    
+    print ("Received request to complete auth process using profile: " + auth_props["mech"])
+    # check plain
+    if auth_props["mech"] == vortex.sasl.PLAIN:
+        if auth_props["auth_id"] == "bob" and auth_props["password"] == "secret":
+            return True
+
+    # check anonymous
+    if auth_props["mech"] == vortex.sasl.ANONYMOUS:
+        if auth_props["anonymous_token"] == "test@aspl.es":
+            return True
+
+    # check digest-md5
+    if auth_props["mech"] == vortex.sasl.DIGEST_MD5:
+        if auth_props["auth_id"] == "bob":
+            # set password notification
+            auth_props["return_password"] = True
+            return "secret"
+
+    # check cram-md5
+    if auth_props["mech"] == vortex.sasl.CRAM_MD5:
+        if auth_props["auth_id"] == "bob":
+            # set password notification
+            auth_props["return_password"] = True
+            return "secret"
+    
+    # deny if not accepted
+    return False
+
+def tls_accept_handler(conn, server_name, data):
+    print ("Received request to accept TLS for serverName: " + str (server_name))
+    return True
+
+def tls_cert_handler(conn, server_name, data):
+    return "test.crt"
+
+def tls_key_handler(conn, server_name, data):
+    return "test.key"
 
 def signal_handler (signal, stackframe):
     print ("Received signal: " + str (signal))
@@ -92,10 +155,32 @@ if __name__ == '__main__':
                              frame_received=default_frame_received)
     vortex.register_profile (ctx, REGRESSION_URI_DENY_SUPPORTED,
                              start=deny_supported)
+    vortex.register_profile (ctx, REGRESSION_URI_ANS,
+                             frame_received=frame_replies_ans)
+    
+    # enable sasl listener support
+    vortex.sasl.accept_mech (ctx, "plain", sasl_auth_handler)
+    vortex.sasl.accept_mech (ctx, "anonymous", sasl_auth_handler)
+    vortex.sasl.accept_mech (ctx, "digest-md5", sasl_auth_handler)
+    vortex.sasl.accept_mech (ctx, "cram-md5", sasl_auth_handler)
+
+    # enable tls support
+    vortex.tls.accept_tls (ctx, 
+                           # accept handler
+                           accept_handler=tls_accept_handler, accept_handler_data="test", 
+                           # cert handler
+                           cert_handler=tls_cert_handler, cert_handler_data="test 2",
+                           # key handler
+                           key_handler=tls_key_handler, key_handler_data="test 3")
 
     # create a listener
     info ("starting listener at 0.0.0.0:44010")
     listener = vortex.create_listener (ctx, "0.0.0.0", "44010")
+
+    # check listener started
+    if not listener.is_ok ():
+        error ("ERROR: failed to start listener. Maybe there is another instance running at 44010?")
+        sys.exit (-1)
 
     # do a wait operation
     info ("waiting requests..")

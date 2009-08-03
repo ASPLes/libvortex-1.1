@@ -50,10 +50,12 @@ PyObject      * py_vortex_channel_create (VortexChannel * channel,
 
 PyObject      * py_vortex_channel_create_empty (PyObject * py_conn);
 
-VortexChannel * py_vortex_channel_get    (PyVortexChannel * channel);
+VortexChannel * py_vortex_channel_get    (PyObject        * channel);
 
 void            py_vortex_channel_set    (PyVortexChannel * py_channel, 
 					  VortexChannel   * channel);
+
+axl_bool        py_vortex_channel_check  (PyObject        * obj);
 
 /** internal handler used to link python frame received and C frame
  * received. It is available the public header because

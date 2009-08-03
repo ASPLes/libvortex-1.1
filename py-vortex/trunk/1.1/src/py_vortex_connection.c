@@ -104,13 +104,15 @@ const char * __py_vortex_connection_stringify_role (VortexConnection * conn)
  *
  * @return A reference to the VortexConnection inside or NULL if it fails.
  */
-VortexConnection * py_vortex_connection_get  (PyVortexConnection * py_conn)
+VortexConnection * py_vortex_connection_get  (PyObject * py_conn)
 {
+	PyVortexConnection * _py_conn = (PyVortexConnection *) py_conn;
+
 	/* return NULL reference */
-	if (py_conn == NULL)
+	if (_py_conn == NULL)
 		return NULL;
 	/* return py connection */
-	return py_conn->conn;
+	return _py_conn->conn;
 }
 
 static int py_vortex_connection_init_type (PyVortexConnection *self, PyObject *args, PyObject *kwds)
@@ -181,6 +183,7 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 static void py_vortex_connection_dealloc (PyVortexConnection* self)
 {
 	int conn_id = vortex_connection_get_id (self->conn);
+	int ref_count;
 
 	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortexConnection id: %d (%p, role: %s)", 
 		       conn_id, self, __py_vortex_connection_stringify_role (self->conn));
@@ -191,8 +194,9 @@ static void py_vortex_connection_dealloc (PyVortexConnection* self)
 			       vortex_connection_get_id (self->conn),
 			       vortex_connection_ref_count (self->conn));
 		vortex_connection_shutdown (self->conn);
+		ref_count = vortex_connection_ref_count (self->conn);
 		vortex_connection_unref (self->conn, "py_vortex_connection_dealloc when is ok");
-		py_vortex_log (PY_VORTEX_DEBUG, "ref count after close: %d", vortex_connection_ref_count (self->conn));
+		py_vortex_log (PY_VORTEX_DEBUG, "ref count after close: %d", ref_count - 1);
 	} else {
 		py_vortex_log (PY_VORTEX_DEBUG, "unref the connection id: %d", vortex_connection_get_id (self->conn));
 		/* only unref the connection */
@@ -328,6 +332,22 @@ PyObject * py_vortex_connection_shutdown (PyVortexConnection* self)
 	/* return none */
 	Py_INCREF (Py_None);
 	return Py_None;
+}
+
+/** 
+ * @brief Allows to nullify the internal reference to the
+ * VortexConnection object.
+ */ 
+void                 py_vortex_connection_nullify  (PyObject           * py_conn)
+{
+	PyVortexConnection * _py_conn = (PyVortexConnection *) py_conn;
+	if (py_conn == NULL)
+		return;
+	
+	/* nullify the connection to make it available to other owner
+	 * or process */
+	_py_conn->conn = NULL;
+	return;
 }
 
 /** 
@@ -498,7 +518,7 @@ static PyObject * py_vortex_connection_open_channel (PyObject * self, PyObject *
  */
 typedef struct _PyVortexConnectionSetOnCloseData {
 	char               * id;
-	PyVortexConnection * py_conn;
+	PyObject           * py_conn;
 	PyObject           * on_close;
 	PyObject           * on_close_data;
 } PyVortexConnectionSetOnCloseData;
@@ -544,7 +564,7 @@ void py_vortex_connection_set_on_close_handler (VortexConnection * conn,
 	py_vortex_log (PY_VORTEX_DEBUG, "connection on close finished, checking for exceptions..");
 	py_vortex_handle_and_clear_exception (__PY_OBJECT (on_close_obj->py_conn));
 
-	Py_DECREF (result);
+	Py_XDECREF (result);
 	Py_DECREF (args);
 
 	/* release the GIL */
@@ -578,7 +598,7 @@ static PyObject * py_vortex_connection_set_on_close (PyObject * self, PyObject *
 
 	/* NOTE: do not increase py_conn reference to avoid circular
 	   referencing which will prevent collecting memory */
-	on_close_obj->py_conn       = PY_VORTEX_CONNECTION (self);
+	on_close_obj->py_conn       = self;
 
 	/* configure on_close handler */
 	on_close_obj->on_close      = on_close;
@@ -596,7 +616,7 @@ static PyObject * py_vortex_connection_set_on_close (PyObject * self, PyObject *
 	/* make this object to be available as long as the connection is working */
 	vortex_connection_set_data_full (
                 /* the connection */
-                py_vortex_connection_get (PY_VORTEX_CONNECTION (on_close_obj->py_conn)),
+                py_vortex_connection_get (on_close_obj->py_conn),
 		/* the key and value */
 		on_close_obj->id, on_close_obj,
 		/* destroy functions */
@@ -605,7 +625,7 @@ static PyObject * py_vortex_connection_set_on_close (PyObject * self, PyObject *
 	/* configure on_close_full */
 	vortex_connection_set_on_close_full (
                /* the connection with on close */
-	       py_vortex_connection_get (PY_VORTEX_CONNECTION (on_close_obj->py_conn)),
+	       py_vortex_connection_get (on_close_obj->py_conn),
 	       /* the handler */
 	       py_vortex_connection_set_on_close_handler, 
 	       /* the object with all references */
@@ -615,6 +635,62 @@ static PyObject * py_vortex_connection_set_on_close (PyObject * self, PyObject *
 	/* set configured */
 	Py_INCREF (Py_None);
 	return Py_None;
+}
+
+typedef struct _PyVortexConnectionSelectChannels {
+	const char * profile;
+	PyObject   * list;
+	PyObject   * conn;
+} PyVortexConnectionSelectChannels;
+
+axl_bool  py_vortex_connection_find_by_uri_select_channels (VortexChannel * channel, axlPointer user_data)
+{
+	PyVortexConnectionSelectChannels * data = (PyVortexConnectionSelectChannels *) user_data;
+	PyObject                         * py_channel;
+	
+	/* check channel to run the profile selected */
+	if (vortex_channel_is_running_profile (channel, data->profile)) {
+		py_vortex_log (PY_VORTEX_DEBUG, "found channel=%s running the profile, adding to the result", 
+			       data->profile);
+		/* found, add it to the list */
+		py_channel = py_vortex_channel_create (channel, data->conn);
+		if (PyList_Append (data->list, py_channel) == -1) {
+			py_vortex_log (PY_VORTEX_CRITICAL, "failed to add channel %p into the list");
+			py_vortex_handle_and_clear_exception (data->conn);
+			return axl_true;
+		}
+		Py_XDECREF (py_channel);
+	}
+
+	/* always returns axl_false to check all channels */
+	return axl_false;
+}
+
+static PyObject * py_vortex_connection_find_by_uri (PyObject * self, PyObject * args)
+{
+	const char                       * profile = NULL; 
+	PyObject                         * result;
+	PyVortexConnectionSelectChannels * data = NULL;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "z", &profile)) 
+		return NULL;
+
+	/* init the result */
+	result = PyList_New (0);
+
+	/* find all channels with the provided profile */
+	data          = axl_new (PyVortexConnectionSelectChannels, 1);
+	data->profile = profile;
+	data->list    = result;
+	data->conn    = self;
+	vortex_connection_get_channel_by_func (PY_VORTEX_CONNECTION (self)->conn, 
+					       py_vortex_connection_find_by_uri_select_channels,
+					       data);
+
+	/* free memory used */
+	axl_free (data);
+	return result;
 }
 
 static PyMethodDef py_vortex_connection_methods[] = { 
@@ -630,6 +706,9 @@ static PyMethodDef py_vortex_connection_methods[] = {
 	/* set_on_close */
 	{"set_on_close", (PyCFunction) py_vortex_connection_set_on_close, METH_VARARGS | METH_KEYWORDS,
 	 "API wrapper for vortex_connection_set_on_close_full. This method allows to configure a handler which will be called in case the connection is closed. This is useful to detect client or server broken connection."},
+	/* find_by_uri */
+	{"find_by_uri", (PyCFunction) py_vortex_connection_find_by_uri, METH_VARARGS,
+	 "Allows to get a reference to all channels opened on the conection using a particular profile."},
 	/* close */
 	{"close", (PyCFunction) py_vortex_connection_close, METH_NOARGS,
 	 "Allows to close a the BEEP session (vortex.Connection) following all BEEP close negotation phase. The method returns True in the case the connection was cleanly closed, otherwise False is returned. If this operation finishes properly, the reference should not be used."},
@@ -738,6 +817,37 @@ PyObject * py_vortex_connection_create   (VortexConnection * conn,
 
 	/* return object */
 	return (PyObject *) obj;
+}
+
+/** 
+ * @brief Allows to get a reference to the PyVortexCtx reference used
+ * by the provided PyVortexConnection.
+ * 
+ * @param py_conn A reference to PyVortexConnection object.
+ */
+PyObject           * py_vortex_connection_get_ctx  (PyObject         * py_conn)
+{
+	PyVortexConnection * _py_conn = (PyVortexConnection *) py_conn;
+	/* check object received */
+	if (! py_vortex_connection_check (py_conn))
+		return NULL;
+
+	/* return context */
+	return  _py_conn->py_vortex_ctx;
+}
+
+/** 
+ * @brief Allows to check if the PyObject received represents a
+ * PyVortexConnection reference.
+ */
+axl_bool             py_vortex_connection_check    (PyObject          * obj)
+{
+	/* check null references */
+	if (obj == NULL)
+		return axl_false;
+
+	/* return check result */
+	return PyObject_TypeCheck (obj, &PyVortexConnectionType);
 }
 
 /** 

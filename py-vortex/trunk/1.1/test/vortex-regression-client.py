@@ -44,6 +44,15 @@ import time
 # import python vortex binding
 import vortex
 
+# import vortex sasl support
+import vortex.sasl
+
+# import vortex tls support
+import vortex.tls
+
+# import common items for reg test
+from regtest_common import *
+
 ####################
 # regression tests #
 ####################
@@ -259,6 +268,12 @@ def test_04 ():
         error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
         return False
 
+    # check find by uri method
+    channels = conn.find_by_uri (REGRESSION_URI)
+    if len (channels) != 0:
+        error ("Expected to find 0 channels opened with " + REGRESSION_URI + ", but found: " + str (len (channels)))
+        return False
+
     # now create a channel
     channel     = conn.open_channel (0, REGRESSION_URI)
 
@@ -271,6 +286,25 @@ def test_04 ():
 
             # next message
             err = conn.pop_channel_error ()
+        return False
+
+    # check ready flag 
+    if not channel.is_ready:
+        error ("Expected to find channel flagged as ready..")
+        return False
+
+    # check find by uri method
+    channels = conn.find_by_uri (REGRESSION_URI)
+    if len (channels) != 1:
+        error ("Expected to find 1 channels opened with " + REGRESSION_URI + ", but found: " + str (len (channels)))
+        return False
+
+    if channels[0].number != channel.number:
+        error ("Expected to find equal channel number, but found: " + str (channels[0].number))
+        return False
+
+    if channels[0].profile != channel.profile:
+        error ("Expected to find equal channel number, but found: " + str (channels[0].number))
         return False
 
     # check channel installed
@@ -718,6 +752,85 @@ def test_10 ():
 
     return True
 
+def test_10_a ():
+    
+    # call to initialize a context 
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # call to create a connection
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # open a channel
+    queue   = vortex.AsyncQueue ()
+    channel = conn.open_channel (0, REGRESSION_URI_ANS, 
+                                 frame_received=vortex.queue_reply, frame_received_data=queue)
+    if not channel: 
+        error ("Expected to find channel error but found a proper channel reference")
+        return False
+
+    # enable serialization
+    channel.set_serialize = True
+
+    # send a message to receive all the content
+    channel.send_msg ("give da content", 15)
+
+    # wait for all replies 
+    iterator = 0
+    while iterator < 10:
+        # get frame
+        frame = channel.get_reply (queue)
+        if not frame:
+            print ("ERROR: expected to not receive None")
+            
+            # check connection
+            if not conn.is_ok ():
+                print ("ERROR: found connection closed (not working)")
+        
+            return False
+            
+        # check frame type
+        if frame.type != "ANS":
+            error ("Expected to receive frame type ANS but received: " + frame.type)
+            return False
+
+        # check frame size
+        if frame.payload_size != len (TEST_REGRESSION_URI_4_MESSAGE):
+            error ("Expected to receive " + str (frame.payload_size) + " bytes but received: " + str (len (TEST_REGRESSION_URI_4_MESSAGE)))
+            return False
+
+        # check frame content
+        if frame.payload != TEST_REGRESSION_URI_4_MESSAGE:
+            error ("Expected to receive content: " + frame.payload + " but received: " + TEST_REGRESSION_URI_4_MESSAGE)
+            return False
+
+        # next message
+        iterator += 1
+        
+    # now check for last ans 
+    frame = channel.get_reply (queue)
+
+    # check frame type
+    if frame.type != "NUL":
+        error ("Expected to receive frame type NUL but received: " + frame.type)
+        return False
+
+    # check frame size
+    if frame.payload_size != 0:
+        error ("Expected to receive 0 bytes but received: " + str (frame.payload_size))
+        return False
+
+    return True
+
 def test_11 ():
     # create a context
     ctx = vortex.Ctx ()
@@ -912,6 +1025,504 @@ def test_13():
 
     return True
 
+def test_14():
+    # create a context
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # connect
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # now authenticate connection
+    if not vortex.sasl.init (ctx):
+        error ("Expected to find proper authentication initialization, but found an error")
+        return False
+
+    # do an auth opeation using plain profile
+    (status, message) = vortex.sasl.start_auth (conn=conn, profile="plain", auth_id="bob", password="secret")
+
+    # check for VortexOk status 
+    if status != 2: 
+        error ("Expected to find VortexOk status code, but found: " + str (status) + ", error message was: " + message)
+        return False
+        
+    # check authentication status
+    if not vortex.sasl.is_authenticated (conn):
+        error ("Expected to find is authenticated status but found un-authenticated connection")
+        return False
+
+    if "http://iana.org/beep/SASL/PLAIN" != vortex.sasl.method_used (conn):
+        error ("Expected to find method used: http://iana.org/beep/SASL/PLAIN, but found: " + vortex.sasl.method_used (conn))
+        return False
+
+    # check auth id 
+    if vortex.sasl.auth_id (conn) != "bob":
+        error ("Expected to find auth id bob but found: " + vortex.sasl.auth_id (conn))
+        return False
+
+    # close connection
+    conn.close ()
+    
+    # do a SASL PLAIN try with wrong crendetials
+    conn = vortex.Connection (ctx, host, port)
+
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # do an auth opeation using plain profile
+    (status, message) = vortex.sasl.start_auth (conn=conn, profile="plain", auth_id="bob", password="secret1")
+
+    if status != 1:
+        error ("Expected to find status 1 but found: " + str (status))
+        
+    # check authentication status
+    if vortex.sasl.is_authenticated (conn):
+        error ("Expected to not find is authenticated status but found un-authenticated connection")
+        return False
+
+    if vortex.sasl.method_used (conn):
+        error ("Expected to find none method used but found: " + vortex.sasl.method_used (conn))
+        return False
+
+    # check auth id 
+    if vortex.sasl.auth_id (conn):
+        error ("Expected to find none auth id but found something defined: " + vortex.sasl.auth_id (conn))
+        return False
+
+    return True
+
+def test_15():
+    # create a context
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # connect
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # now authenticate connection
+    if not vortex.sasl.init (ctx):
+        error ("Expected to find proper authentication initialization, but found an error")
+        return False
+
+    # do an auth opeation using anonymous profile
+    (status, message) = vortex.sasl.start_auth (conn=conn, profile="anonymous", anonymous_token="test@aspl.es")
+
+    # check for VortexOk status 
+    if status != 2: 
+        error ("Expected to find VortexOk status code, but found: " + str (status) + ", error message was: " + message)
+        return False
+        
+    # check authentication status
+    if not vortex.sasl.is_authenticated (conn):
+        error ("Expected to find is authenticated status but found un-authenticated connection")
+        return False
+
+    if vortex.sasl.ANONYMOUS != vortex.sasl.method_used (conn):
+        error ("Expected to find method used: http://iana.org/beep/SASL/ANONYMOUS, but found: " + vortex.sasl.method_used (conn))
+        return False
+
+    # close connection
+    conn.close ()
+    
+    # do a SASL ANONYMOUS try with wrong crendetials
+    conn = vortex.Connection (ctx, host, port)
+
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # do an auth opeation using anonymous profile
+    (status, message) = vortex.sasl.start_auth (conn=conn, profile="anonymous", anonymous_token="wrong@aspl.es")
+
+    if status != 1:
+        error ("Expected to find status 1 but found: " + str (status))
+        
+    # check authentication status
+    if vortex.sasl.is_authenticated (conn):
+        error ("Expected to not find is authenticated status but found un-authenticated connection")
+        return False
+
+    if vortex.sasl.method_used (conn):
+        error ("Expected to find none method used but found: " + vortex.sasl.method_used (conn))
+        return False
+    
+
+    return True
+
+def test_16():
+    # create a context
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # connect
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # now authenticate connection
+    if not vortex.sasl.init (ctx):
+        error ("Expected to find proper authentication initialization, but found an error")
+        return False
+
+    # do an auth opeation using DIGEST-MD5 profile
+    (status, message) = vortex.sasl.start_auth (conn=conn, profile="digest-md5", auth_id="bob", password="secret", realm="aspl.es")
+
+    # check for VortexOk status 
+    if status != 2: 
+        error ("Expected to find VortexOk status code, but found: " + str (status) + ", error message was: " + message)
+        return False
+        
+    # check authentication status
+    if not vortex.sasl.is_authenticated (conn):
+        error ("Expected to find is authenticated status but found un-authenticated connection")
+        return False
+
+    if vortex.sasl.DIGEST_MD5 != vortex.sasl.method_used (conn):
+        error ("Expected to find method used: " + vortex.sasl.DIGEST_MD5 + ", but found: " + vortex.sasl.method_used (conn))
+        return False
+
+    # check auth id 
+    if vortex.sasl.auth_id (conn) != "bob":
+        error ("Expected to find auth id bob but found: " + vortex.sasl.auth_id (conn))
+        return False
+
+    # close connection
+    conn.close ()
+    
+    # do a SASL DIGEST-MD5 try with wrong crendetials
+    conn = vortex.Connection (ctx, host, port)
+
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # do an auth opeation using DIGEST-MD5 profile
+    (status, message) = vortex.sasl.start_auth (conn=conn, profile="digest-md5", auth_id="bob", password="secret1")
+
+    if status != 1:
+        error ("Expected to find status 1 but found: " + str (status))
+        
+    # check authentication status
+    if vortex.sasl.is_authenticated (conn):
+        error ("Expected to not find is authenticated status but found un-authenticated connection")
+        return False
+
+    if vortex.sasl.method_used (conn):
+        error ("Expected to find none method used but found: " + vortex.sasl.method_used (conn))
+        return False
+
+    # check auth id 
+    if vortex.sasl.auth_id (conn):
+        error ("Expected to find none auth id but found something defined: " + vortex.sasl.auth_id (conn))
+        return False
+    
+
+    return True
+
+def test_17():
+    # create a context
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # connect
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # now authenticate connection
+    if not vortex.sasl.init (ctx):
+        error ("Expected to find proper authentication initialization, but found an error")
+        return False
+
+    # do an auth opeation using CRAM-MD5 profile
+    (status, message) = vortex.sasl.start_auth (conn=conn, profile="cram-md5", auth_id="bob", password="secret")
+
+    # check for VortexOk status 
+    if status != 2: 
+        error ("Expected to find VortexOk status code, but found: " + str (status) + ", error message was: " + message)
+        return False
+        
+    # check authentication status
+    if not vortex.sasl.is_authenticated (conn):
+        error ("Expected to find is authenticated status but found un-authenticated connection")
+        return False
+
+    if vortex.sasl.CRAM_MD5 != vortex.sasl.method_used (conn):
+        error ("Expected to find method used: " + vortex.sasl.CRAM_MD5 + ", but found: " + vortex.sasl.method_used (conn))
+        return False
+
+    # check auth id 
+    if vortex.sasl.auth_id (conn) != "bob":
+        error ("Expected to find auth id bob but found: " + vortex.sasl.auth_id (conn))
+        return False
+
+    # close connection
+    conn.close ()
+    
+    # do a SASL CRAM-MD5 try with wrong crendetials
+    conn = vortex.Connection (ctx, host, port)
+
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # do an auth opeation using CRAM-MD5 profile
+    (status, message) = vortex.sasl.start_auth (conn=conn, profile="cram-md5", auth_id="bob", password="secret1")
+
+    if status != 1:
+        error ("Expected to find status 1 but found: " + str (status))
+        
+    # check authentication status
+    if vortex.sasl.is_authenticated (conn):
+        error ("Expected to not find is authenticated status but found un-authenticated connection")
+        return False
+
+    if vortex.sasl.method_used (conn):
+        error ("Expected to find none method used but found: " + vortex.sasl.method_used (conn))
+        return False
+
+    # check auth id 
+    if vortex.sasl.auth_id (conn):
+        error ("Expected to find none auth id but found something defined: " + vortex.sasl.auth_id (conn))
+        return False
+
+    return True
+
+def test_18_common (conn):
+    # now create a channel and send content 
+    channel  = conn.open_channel (0, REGRESSION_URI)
+
+    # flag the channel to do deliveries in a serial form
+    channel.set_serialize = True
+
+    # configure frame received
+    queue    = vortex.AsyncQueue ()
+    channel.set_frame_received (vortex.queue_reply, queue)
+
+    # send 100 frames and receive its replies
+    iterator = 0
+    while iterator < 100:
+        # build message
+        message = ";; This buffer is for notes you don't want to save, and for Lisp evaluation.\n\
+;; If you want to create a file, visit that file with C-x C-f,\n\
+;; then enter the text in that file's own buffer: message num: " + str (iterator)
+
+        # send the message
+        channel.send_msg (message, len (message))
+
+        # update iterator
+        iterator += 1
+
+    info ("receiving replies..")
+
+    # now receive and process all messages
+    iterator = 0
+    while iterator < 100:
+        # build message to check
+        message = ";; This buffer is for notes you don't want to save, and for Lisp evaluation.\n\
+;; If you want to create a file, visit that file with C-x C-f,\n\
+;; then enter the text in that file's own buffer: message num: " + str (iterator)
+
+        # now get a frame
+        frame = channel.get_reply (queue)
+
+        # check content
+        if frame.payload != message:
+            error ("Expected to find message '" + message + "' but found: '" + frame.payload + "'")
+            return False
+
+        # next iterator
+        iterator += 1
+
+    # now check there are no pending message in the queue
+    if queue.items != 0:
+        error ("Expected to find 0 items in the queue but found: " + queue.items)
+        return False
+
+    return True
+
+def test_18():
+    # create a context
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # now enable tls support on the connection
+    if not vortex.tls.init (ctx):
+        error ("Expected to find proper authentication initialization, but found an error")
+        return False
+
+    # connect
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # enable TLS on the connection 
+    (conn, status, status_msg) = vortex.tls.start_tls (conn)
+
+    # check connection after tls activation
+    if not conn.is_ok ():
+        error ("Expected to find proper connection status after TLS activation..")
+        return False
+
+    # check status 
+    if status != vortex.status_OK:
+        error ("Expected to find status code : " + str (vortex.status_OK) + ", but found: " + str (status))
+
+    info ("TLS session activated, sending content..")
+    if not test_18_common (conn):
+        return False
+
+    return True
+
+def test_19_notify (conn, status, status_msg, queue):
+    # push a tuple
+    queue.push ((conn, status, status_msg))
+    return
+
+def test_19():
+    # create a context
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # now enable tls support on the connection
+    if not vortex.tls.init (ctx):
+        error ("Expected to find proper authentication initialization, but found an error")
+        return False
+
+    # connect
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # enable TLS on the connection using async notification
+    queue = vortex.AsyncQueue ()
+    if vortex.tls.start_tls (conn, tls_notify=test_19_notify, tls_notify_data=queue):
+        error ("Expected to receive None after async tls activation, but something different was found")
+        return False
+
+    # wait for the connection
+    (conn, status, statu_msg) = queue.pop ()
+
+    # check connection after tls activation
+    if not conn.is_ok ():
+        error ("Expected to find proper connection status after TLS activation..")
+        return False
+
+    # check status 
+    if status != vortex.status_OK:
+        error ("Expected to find status code : " + str (vortex.status_OK) + ", but found: " + str (status))
+
+    info ("TLS session activated, sending content..")
+    if not test_18_common (conn):
+        return False
+
+    return True
+
+def test_20_notify(conn, status, status_msg, queue):
+    # push status
+    queue.push ((status, status_msg))
+
+def test_20():
+    # create a context
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # connect
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # now authenticate connection
+    if not vortex.sasl.init (ctx):
+        error ("Expected to find proper authentication initialization, but found an error")
+        return False
+
+    # do an auth opeation using plain profile
+    queue = vortex.AsyncQueue ()
+    if vortex.sasl.start_auth (conn=conn, profile="plain", auth_id="bob", password="secret", auth_notify=test_20_notify, auth_notify_data=queue):
+        error ("Expected to find none result but found something different..")
+
+    # wait for reply
+    (status, status_msg) = queue.pop ()
+
+    # check for VortexOk status 
+    if status != 2: 
+        error ("Expected to find VortexOk status code, but found: " + str (status) + ", error message was: " + message)
+        return False
+        
+    # check authentication status
+    if not vortex.sasl.is_authenticated (conn):
+        error ("Expected to find is authenticated status but found un-authenticated connection")
+        return False
+
+    if "http://iana.org/beep/SASL/PLAIN" != vortex.sasl.method_used (conn):
+        error ("Expected to find method used: http://iana.org/beep/SASL/PLAIN, but found: " + vortex.sasl.method_used (conn))
+        return False
+
+    # check auth id 
+    if vortex.sasl.auth_id (conn) != "bob":
+        error ("Expected to find auth id bob but found: " + vortex.sasl.auth_id (conn))
+        return False
+
+    # close connection
+    conn.close ()
+    
+    return True
+
 ###########################
 # intraestructure support #
 ###########################
@@ -937,8 +1548,6 @@ def run_all_tests ():
             error ("detected test failure at: " + test[1])
             return False
 
-        info ("TEST-" + str(test_count) + ": OK")
-        
         # next test
         test_count += 1
     
@@ -958,20 +1567,22 @@ tests = [
     (test_08,   "Check BEEP transfer zeroed binaries frames"),
     (test_09,   "Check BEEP channel support"),
     (test_10,   "Check BEEP channel creation deny"),
+    (test_10_a,   "Check BEEP channel creation deny"),
     (test_11,   "Check BEEP listener support"),
     (test_12,   "Check connection on close notification"),
-    (test_13,   "Check wrong listener allocation")
+    (test_13,   "Check wrong listener allocation"),
+    (test_14,   "Check SASL PLAIN support"),
+    (test_15,   "Check SASL ANONYMOUS support"),
+    (test_16,   "Check SASL DIGEST-MD5 support"),
+    (test_17,   "Check SASL CRAM-MD5 support"),
+    (test_18,   "Check TLS support"),
+    (test_19,   "Check TLS support (async notification)"),
+    (test_20,   "Check SASL PLAIN support (async notification)"),
 ]
 
 # declare default host and port
 host     = "localhost"
 port     = "44010"
-
-# regression test beep uris
-REGRESSION_URI      = "http://iana.org/beep/transient/vortex-regression"
-REGRESSION_URI_ZERO = "http://iana.org/beep/transient/vortex-regression/zero"
-REGRESSION_URI_DENY = "http://iana.org/beep/transient/vortex-regression/deny"
-REGRESSION_URI_DENY_SUPPORTED = "http://iana.org/beep/transient/vortex-regression/deny_supported"
 
 if __name__ == '__main__':
     iterator = 0

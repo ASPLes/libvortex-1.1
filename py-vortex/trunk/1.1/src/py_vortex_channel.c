@@ -337,6 +337,52 @@ PyObject * py_vortex_channel_send_err (PyVortexChannel * self, PyObject * args)
 	return Py_BuildValue ("i", result);
 }
 
+PyObject * py_vortex_channel_send_ans (PyVortexChannel * self, PyObject * args)
+{
+	const char * content = NULL;
+	int          size    = 0;
+	axl_bool     result;
+	int          msg_no  = 0;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "zii", &content, &size, &msg_no))
+		return NULL;
+
+	/* call to send ans reply */
+	result = vortex_channel_send_ans_rpy (self->channel, content, size, msg_no);
+
+	/* return none in the case of failure */
+	if (! result) {
+		Py_INCREF (Py_None);
+		return Py_None;
+	} /* end if */
+
+	/* return reply status (1 if it was ok, otherwise use 0) */
+	return Py_BuildValue ("i", result);
+}
+
+PyObject * py_vortex_channel_finalize_ans (PyVortexChannel * self, PyObject * args)
+{
+	axl_bool     result;
+	int          msg_no  = 0;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "i", &msg_no))
+		return NULL;
+
+	/* call to send ans reply */
+	result = vortex_channel_finalize_ans_rpy (self->channel, msg_no);
+
+	/* return none in the case of failure */
+	if (! result) {
+		Py_INCREF (Py_None);
+		return Py_None;
+	} /* end if */
+
+	/* return reply status (1 if it was ok, otherwise use 0) */
+	return Py_BuildValue ("i", result);
+}
+
 static PyObject * py_vortex_channel_get_reply (PyVortexChannel * self, PyObject * args)
 {
 	PyVortexAsyncQueue * queue = NULL;
@@ -399,6 +445,9 @@ PyObject * py_vortex_channel_get_attr (PyObject *o, PyObject *attr_name) {
 	} else if (axl_cmp (attr, "profile")) {
 		/* found error_msg attribute */
 		return Py_BuildValue ("s", vortex_channel_get_profile (self->channel));
+	} else if (axl_cmp (attr, "is_ready")) {
+		/* found is_ready attribute */
+		return Py_BuildValue ("i", vortex_channel_is_ready (self->channel));
 	} else if (axl_cmp (attr, "conn")) {
 
 		/* return connection associated to the channel */
@@ -454,6 +503,12 @@ static PyMethodDef py_vortex_channel_methods[] = {
 	/* send_err */
 	{"send_err", (PyCFunction) py_vortex_channel_send_err, METH_VARARGS,
 	 "Allows to reply to a MSG received with a ERR message."},
+	/* send_ans */
+	{"send_ans", (PyCFunction) py_vortex_channel_send_ans, METH_VARARGS,
+	 "Allows to reply to a MSG received with a ANS message."},
+	/* finalize_ans */
+	{"finalize_ans", (PyCFunction) py_vortex_channel_finalize_ans, METH_VARARGS,
+	 "Allows to terminate a series of ANS replies with the last NUL frame."},
 	/* set_frame_received */
 	{"set_frame_received", (PyCFunction) py_vortex_channel_set_frame_received, METH_VARARGS | METH_KEYWORDS,
 	 "Allows to configure the frame received handler."},
@@ -536,7 +591,7 @@ PyObject * py_vortex_channel_create (VortexChannel * channel, PyObject * py_conn
 	Py_XINCREF (obj->py_conn);
 
 	py_vortex_log (PY_VORTEX_DEBUG, "created PyChannel reference with number=%d (connection: %d, self: %p, channel: %p)",
-		       vortex_channel_get_number (channel), vortex_connection_get_id (py_vortex_connection_get (PY_VORTEX_CONNECTION (py_conn))), 
+		       vortex_channel_get_number (channel), vortex_connection_get_id (py_vortex_connection_get (py_conn)), 
 		       obj, obj->channel);
 
 	/* return object */
@@ -590,15 +645,32 @@ void            py_vortex_channel_set    (PyVortexChannel * py_channel,
  *
  * @return A reference to the channel inside the python channel.
  */
-VortexChannel * py_vortex_channel_get    (PyVortexChannel * channel)
+VortexChannel * py_vortex_channel_get    (PyObject * channel)
 {
+	PyVortexChannel * _channel = (PyVortexChannel *) channel;
+
 	/* check null values */
-	if (channel == NULL)
+	if (_channel == NULL)
 		return NULL;
 
 	/* return the channel reference inside */
-	return channel->channel;
+	return _channel->channel;
 }
+
+/** 
+ * @brief Allows to check if the reference received points to a
+ * channel.
+ */ 
+axl_bool        py_vortex_channel_check  (PyObject        * obj)
+{
+	/* check null references */
+	if (obj == NULL)
+		return axl_false;
+
+	/* return check result */
+	return PyObject_TypeCheck (obj, &PyVortexChannelType);
+}
+
 
 /** 
  * @brief Inits the vortex channel module. It is implemented as a type.

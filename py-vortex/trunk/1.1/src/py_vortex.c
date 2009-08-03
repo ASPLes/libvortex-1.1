@@ -318,9 +318,10 @@ axl_bool  py_vortex_profile_start  (int                channel_num,
 
 	/* translate result */
 	_result = axl_false;
-	PyArg_Parse (result, "i", &_result);
-	py_vortex_log (PY_VORTEX_DEBUG, "channel start notification result: %d..", _result);
-		
+	if (result) {
+		PyArg_Parse (result, "i", &_result);
+		py_vortex_log (PY_VORTEX_DEBUG, "channel start notification result: %d..", _result);
+	} /* end if */
 
 	/* release tuple and result returned (which may be null) */
 	Py_DECREF (args);
@@ -531,8 +532,8 @@ static PyMethodDef py_vortex_methods[] = {
 
 /** 
  * @internal Function that inits all vortex modules and classes.
- */
-PyMODINIT_FUNC initvortex(void)
+ */ 
+PyMODINIT_FUNC  initlibpy_vortex_11 (void)
 {
 	PyObject * module;
 
@@ -540,9 +541,9 @@ PyMODINIT_FUNC initvortex(void)
 	PyEval_InitThreads();
 
 	/* register vortex module */
-	module = Py_InitModule3 ("vortex", py_vortex_methods, 
-			   "Example module that creates an extension type.");
-	if (module == NULL)
+	module = Py_InitModule3 ("libpy_vortex_11", py_vortex_methods, 
+				 "Base module that include core BEEP elements implemented by the Vortex base library");
+	if (module == NULL) 
 		return;
 
 	/* call to register all vortex modules and types */
@@ -756,6 +757,12 @@ void _py_vortex_log2 (const char          * file,
 }
 
 /** 
+ * @internal Handler used to notify exception catched and handled by
+ * py_vortex_handle_and_clear_exception.
+ */
+PyVortexExceptionHandler py_vortex_exception_handler = NULL;
+
+/** 
  * @brief Allows to check, handle and clear exception state.
  */ 
 void py_vortex_handle_and_clear_exception (PyObject * py_conn)
@@ -788,9 +795,21 @@ void py_vortex_handle_and_clear_exception (PyObject * py_conn)
 		} /* end if */
 
 		/* list of backtrace items */
+		py_vortex_log (PY_VORTEX_CRITICAL, "formating exception: ptype:%p  pvalue:%p  ptraceback:%p",
+			       ptype, pvalue, ptraceback);
+
+		/* check ptraceback */
+		if (ptraceback == NULL) {
+			ptraceback = Py_None;
+			Py_INCREF (Py_None);
+		} /* end if */
+
 		list     = PyObject_CallMethod (mod, "format_exception", "OOO", ptype,  pvalue, ptraceback);
 		iterator = 0;
-		str      = axl_strdup ("PyVortex found exception inside: \n");
+		if (py_vortex_exception_handler)
+			str      = axl_strdup ("");
+		else
+			str      = axl_strdup ("PyVortex found exception inside: \n");
 		while (iterator < PyList_Size (list)) {
 			/* get the string */
 			string  = PyList_GetItem (list, iterator);
@@ -805,10 +824,16 @@ void py_vortex_handle_and_clear_exception (PyObject * py_conn)
 
 		/* drop a log */
 		py_vortex_log (PY_VORTEX_CRITICAL, str);
+		if (py_vortex_exception_handler) {
+			/* remove trailing \n */
+			str[strlen (str) - 1] = 0;
+			py_vortex_exception_handler (str);
+		}
+		/* free message */
 		axl_free (str);
 
 		/* create an empty string \n */
-		Py_DECREF (list);
+		Py_XDECREF (list);
 		Py_DECREF (mod);
 
 
@@ -818,7 +843,9 @@ void py_vortex_handle_and_clear_exception (PyObject * py_conn)
 		Py_XDECREF (pvalue);
 		Py_XDECREF (ptraceback);
 
-		if (py_conn) {
+		/* check connection reference and its role to close it
+		 * in the case we are working at the listener side */
+		if (py_conn && (vortex_connection_get_role (py_vortex_connection_get (py_conn)) != VortexRoleInitiator)) {
 			/* shutdown connection due to unhandled exception found */
 			py_vortex_log (PY_VORTEX_CRITICAL, "shutting down connection due to unhandled exception found");
 			Py_DECREF ( py_vortex_connection_shutdown (PY_VORTEX_CONNECTION (py_conn)) );
@@ -829,5 +856,24 @@ void py_vortex_handle_and_clear_exception (PyObject * py_conn)
 
 	/* clear exception */
 	PyErr_Clear ();
+	return;
+}
+
+/** 
+ * @brief Allows to configure a handler that will receive the
+ * exception message created. This is useful inside the context of
+ * PyVortex and Turbulence because exception propagated from python
+ * into the c space are handled by \ref
+ * py_vortex_handle_and_clear_exception which support notifying the
+ * entire exception message on the handler here configured.
+ *
+ * @param handler The handler to configure to receive all exception
+ * handling.
+ */
+void     py_vortex_set_exception_handler (PyVortexExceptionHandler handler)
+{
+	/* configure the handler */
+	py_vortex_exception_handler = handler;
+
 	return;
 }
