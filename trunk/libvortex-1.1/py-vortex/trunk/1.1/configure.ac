@@ -47,6 +47,8 @@ AM_INIT_AUTOMAKE(py_vortex, $PY_VORTEX_VERSION)
 AM_CONFIG_HEADER(config.h)
 AM_MAINTAINER_MODE
 
+AM_PATH_PYTHON([2.3])
+
 # get python includes 
 PYTHON_INCLUDES=`python-config --includes 2>/dev/null`
 old_CPPFLAGS=$CPPFLAGS
@@ -74,6 +76,16 @@ PKG_CHECK_MODULES(VORTEX, vortex-1.1)
 AC_SUBST(VORTEX_CFLAGS)
 AC_SUBST(VORTEX_LIBS)
 
+dnl check for vortex sasl
+PKG_CHECK_MODULES(VORTEX_SASL, vortex-sasl-1.1)
+AC_SUBST(VORTEX_SASL_CFLAGS)
+AC_SUBST(VORTEX_SASL_LIBS)
+
+dnl check for vortex tls
+PKG_CHECK_MODULES(VORTEX_TLS, vortex-tls-1.1)
+AC_SUBST(VORTEX_TLS_CFLAGS)
+AC_SUBST(VORTEX_TLS_LIBS)
+
 dnl check for axl
 PKG_CHECK_MODULES(AXL, axl)
 AC_SUBST(AXL_CFLAGS)
@@ -87,16 +99,24 @@ AM_CONDITIONAL(ENABLE_PY_VORTEX_LOG, test "x$enable_py_vortex_log" = "xyes")
 
 AC_PROG_LIBTOOL
 
+dnl get site dinamic library extension
+SHARED_EXTENSION=$shrext_cmds
+AC_SUBST(SHARED_EXTENSION)
+
 AC_OUTPUT([
 Makefile
 src/Makefile
-test/Makefile])
+test/Makefile
+py-vortex.pc
+py-vortex-sasl.pc
+py-vortex-tls.pc])
 
 echo "------------------------------------------"
 echo "--       PyVortex EXTENSION SETTINGS    --"
 echo "------------------------------------------"
 echo "      PyVortex $PY_VORTEX_VERSION"
 echo "      PyVortex log: $enable_py_vortex_log "
+echo "      System shared extension: $SHARED_EXTENSION"
 echo "------------------------------------------"
 echo "--     NOW TYPE: make; make install     --"
 echo "------------------------------------------"

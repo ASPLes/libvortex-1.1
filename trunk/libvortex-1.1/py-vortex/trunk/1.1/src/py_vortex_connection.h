@@ -52,16 +52,22 @@ typedef struct _PyVortexConnection PyVortexConnection;
  */
 #define PY_VORTEX_CONNECTION(c) ((PyVortexConnection *)c)
 
-void                 init_vortex_connection        (PyObject * module);
+void                 init_vortex_connection        (PyObject           * module);
 
-VortexConnection   * py_vortex_connection_get      (PyVortexConnection * py_conn);
+VortexConnection   * py_vortex_connection_get      (PyObject           * py_conn);
 
-PyObject           * py_vortex_connection_create   (VortexConnection * conn, 
-						    PyObject         * ctx,
-						    axl_bool           acquire_ref,
-						    axl_bool           close_ref);
+PyObject           * py_vortex_connection_create   (VortexConnection   * conn, 
+						    PyObject           * ctx,
+						    axl_bool             acquire_ref,
+						    axl_bool             close_ref);
 
-PyObject           * py_vortex_connection_shutdown (PyVortexConnection* self);
+PyObject           * py_vortex_connection_get_ctx  (PyObject           * py_conn);
+
+PyObject           * py_vortex_connection_shutdown (PyVortexConnection * self);
+
+void                 py_vortex_connection_nullify  (PyObject           * py_conn);
+
+axl_bool             py_vortex_connection_check    (PyObject           * obj);
 
 #define PY_CONN_GET(py_obj) (((PyVortexConnection*)self)->conn)
 

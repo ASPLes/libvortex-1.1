@@ -126,13 +126,13 @@ PyObject * py_vortex_frame_get_attr (PyObject *o, PyObject *attr_name) {
 
 		/* return None */
 		return Py_BuildValue ("");
-	} else if (axl_cmp (attr, "msgno")) {
+	} else if (axl_cmp (attr, "msgno") || axl_cmp (attr, "msg_no")) {
 		/* get msgno attribute */
 		return Py_BuildValue ("i", vortex_frame_get_msgno (self->frame));
-	} else if (axl_cmp (attr, "seqno")) {
+	} else if (axl_cmp (attr, "seqno") || axl_cmp (attr, "seq_no")) {
 		/* get seqno attribute */
 		return Py_BuildValue ("i", vortex_frame_get_seqno (self->frame));
-	} else if (axl_cmp (attr, "ansno")) {
+	} else if (axl_cmp (attr, "ansno") || axl_cmp (attr, "ans_no")) {
 		/* get ansno attribute */
 		return Py_BuildValue ("i", vortex_frame_get_ansno (self->frame));
 	} else if (axl_cmp (attr, "more_flag")) {

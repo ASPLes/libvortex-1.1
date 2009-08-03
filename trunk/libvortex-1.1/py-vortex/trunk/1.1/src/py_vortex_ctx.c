@@ -333,6 +333,20 @@ PyObject * py_vortex_ctx_create (VortexCtx * ctx)
 }
 
 /** 
+ * @brief Allows to check if the PyObject received represents a
+ * PyVortexCtx reference.
+ */
+axl_bool             py_vortex_ctx_check    (PyObject          * obj)
+{
+	/* check null references */
+	if (obj == NULL)
+		return axl_false;
+
+	/* return check result */
+	return PyObject_TypeCheck (obj, &PyVortexCtxType);
+}
+
+/** 
  * @brief Inits the vortex ctx module. It is implemented as a type.
  */
 void init_vortex_ctx (PyObject * module) 

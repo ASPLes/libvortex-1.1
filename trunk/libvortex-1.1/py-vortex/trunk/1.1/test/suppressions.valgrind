@@ -1,0 +1,1456 @@
+{
+   Generic python memory check
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:code_dealloc
+   fun:load_source_module
+   fun:import_submodule
+   fun:load_next
+   fun:import_module_level
+   fun:PyImport_ImportModuleLevel
+   fun:builtin___import__
+   fun:PyObject_Call
+   fun:PyEval_CallObjectWithKeywords
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalCodeEx
+}
+{
+   Generic python memory check 2
+   Memcheck:Cond
+   fun:PyObject_Free
+   fun:PyGrammar_AddAccelerators
+   fun:PyParser_New
+   fun:parsetok
+   fun:PyRun_StringFlags
+   fun:builtin_eval
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalCodeEx
+   fun:PyEval_EvalCode
+   fun:PyImport_ExecCodeModuleEx
+   fun:load_source_module
+}
+{
+   Generic python memory check 3
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:code_dealloc
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 4
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:tupledealloc
+   fun:code_dealloc
+   fun:load_source_module
+   fun:import_submodule
+   fun:load_next
+   fun:import_module_level
+   fun:PyImport_ImportModuleLevel
+   fun:builtin___import__
+   fun:PyObject_Call
+   fun:PyEval_CallObjectWithKeywords
+   fun:PyEval_EvalFrameEx
+}
+{
+   Generic python memory check 5
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:code_dealloc
+   fun:tupledealloc
+   fun:code_dealloc
+   fun:load_source_module
+   fun:import_submodule
+   fun:load_next
+   fun:import_module_level
+   fun:PyImport_ImportModuleLevel
+   fun:builtin___import__
+   fun:PyObject_Call
+   fun:PyEval_CallObjectWithKeywords
+}
+{
+   Generic python memory check 6
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:tupledealloc
+   fun:code_dealloc
+   fun:tupledealloc
+   fun:code_dealloc
+   fun:load_source_module
+   fun:import_submodule
+   fun:load_next
+   fun:import_module_level
+   fun:PyImport_ImportModuleLevel
+   fun:builtin___import__
+   fun:PyObject_Call
+}
+{
+   Generic python memory check 7
+   Memcheck:Value8
+   fun:PyObject_Free
+   fun:PyGrammar_AddAccelerators
+   fun:PyParser_New
+   fun:parsetok
+   fun:PyRun_StringFlags
+   fun:builtin_eval
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalCodeEx
+   fun:PyEval_EvalCode
+   fun:PyImport_ExecCodeModuleEx
+   fun:load_source_module
+}
+{
+   Generic python memory check 9
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:PyGrammar_AddAccelerators
+   fun:PyParser_New
+   fun:parsetok
+   fun:PyRun_StringFlags
+   fun:builtin_eval
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalCodeEx
+   fun:PyEval_EvalCode
+   fun:PyImport_ExecCodeModuleEx
+   fun:load_source_module
+}
+{
+   Generic python memory check 10
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:compiler_unit_free
+   fun:PyAST_Compile
+   fun:PyRun_StringFlags
+   fun:builtin_eval
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalCodeEx
+   fun:PyEval_EvalCode
+   fun:PyImport_ExecCodeModuleEx
+   fun:load_source_module
+   fun:import_submodule
+}
+{
+   Generic python memory check 11
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:PyAST_Compile
+   fun:PyRun_StringFlags
+   fun:builtin_eval
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalCodeEx
+   fun:PyEval_EvalCode
+   fun:PyImport_ExecCodeModuleEx
+   fun:load_source_module
+   fun:import_submodule
+   fun:load_next
+}
+{
+   Generic python memory check 3
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:code_dealloc
+   fun:frame_dealloc
+   fun:tb_dealloc
+   fun:tb_dealloc
+   fun:PyDict_DelItem
+   fun:PyDict_DelItemString
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalCodeEx
+   fun:PyEval_EvalCode
+   fun:PyImport_ExecCodeModuleEx
+}
+{
+   Generic python memory check 12
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:code_dealloc
+   fun:PyRun_StringFlags
+   fun:builtin_eval
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalCodeEx
+   fun:PyEval_EvalCode
+   fun:PyImport_ExecCodeModuleEx
+   fun:load_source_module
+   fun:import_submodule
+   fun:load_next
+}
+{
+   Generic python memory check 13
+   Memcheck:Cond
+   fun:PyObject_Free
+   fun:compiler_unit_free
+   fun:PyAST_Compile
+   fun:PyRun_StringFlags
+   fun:builtin_eval
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalCodeEx
+   fun:PyEval_EvalCode
+   fun:PyImport_ExecCodeModuleEx
+   fun:load_source_module
+   fun:import_submodule
+}
+{
+   Generic python memory check 14
+   Memcheck:Value8
+   fun:PyObject_Free
+   fun:compiler_unit_free
+   fun:PyAST_Compile
+   fun:PyRun_StringFlags
+   fun:builtin_eval
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalCodeEx
+   fun:PyEval_EvalCode
+   fun:PyImport_ExecCodeModuleEx
+   fun:load_source_module
+   fun:import_submodule
+}
+{
+   Generic python memory check 15
+   Memcheck:Cond
+   fun:PyObject_Free
+   fun:PyAST_Compile
+   fun:PyRun_StringFlags
+   fun:builtin_eval
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalCodeEx
+   fun:PyEval_EvalCode
+   fun:PyImport_ExecCodeModuleEx
+   fun:load_source_module
+   fun:import_submodule
+   fun:load_next
+}
+{
+   Generic python memory check 16
+   Memcheck:Value8
+   fun:PyObject_Free
+   fun:PyAST_Compile
+   fun:PyRun_StringFlags
+   fun:builtin_eval
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalCodeEx
+   fun:PyEval_EvalCode
+   fun:PyImport_ExecCodeModuleEx
+   fun:load_source_module
+   fun:import_submodule
+   fun:load_next
+}
+{
+   Generic python memory check 17
+   Memcheck:Cond
+   fun:PyObject_Free
+   fun:code_dealloc
+   fun:frame_dealloc
+   fun:tb_dealloc
+   fun:tb_dealloc
+   fun:PyDict_DelItem
+   fun:PyDict_DelItemString
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalCodeEx
+   fun:PyEval_EvalCode
+   fun:PyImport_ExecCodeModuleEx
+}
+{
+   Generic python memory check 18
+   Memcheck:Value8
+   fun:PyObject_Free
+   fun:code_dealloc
+   fun:frame_dealloc
+   fun:tb_dealloc
+   fun:tb_dealloc
+   fun:PyDict_DelItem
+   fun:PyDict_DelItemString
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalCodeEx
+   fun:PyEval_EvalCode
+   fun:PyImport_ExecCodeModuleEx
+}
+{
+   Generic python memory check 19
+   Memcheck:Cond
+   fun:PyObject_Free
+   fun:code_dealloc
+   fun:tupledealloc
+   fun:code_dealloc
+   fun:load_source_module
+   fun:import_submodule
+   fun:load_next
+   fun:import_module_level
+   fun:PyImport_ImportModuleLevel
+   fun:builtin___import__
+   fun:PyObject_CallFunctionObjArgs
+   fun:PyImport_Import
+}
+{
+   Generic python memory check 20
+   Memcheck:Value8
+   fun:PyObject_Free
+   fun:code_dealloc
+   fun:tupledealloc
+   fun:code_dealloc
+   fun:load_source_module
+   fun:import_submodule
+   fun:load_next
+   fun:import_module_level
+   fun:PyImport_ImportModuleLevel
+   fun:builtin___import__
+   fun:PyObject_CallFunctionObjArgs
+   fun:PyImport_Import
+}
+{
+   Generic python memory check 21
+   Memcheck:Cond
+   fun:PyObject_Free
+   fun:code_dealloc
+   fun:load_source_module
+   fun:import_submodule
+   fun:ensure_fromlist
+   fun:import_module_level
+   fun:PyImport_ImportModuleLevel
+   fun:builtin___import__
+   fun:PyObject_Call
+   fun:PyEval_CallObjectWithKeywords
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalCodeEx
+}
+{
+   Generic python memory check 22
+   Memcheck:Value8
+   fun:PyObject_Free
+   fun:code_dealloc
+   fun:load_source_module
+   fun:import_submodule
+   fun:ensure_fromlist
+   fun:import_module_level
+   fun:PyImport_ImportModuleLevel
+   fun:builtin___import__
+   fun:PyObject_Call
+   fun:PyEval_CallObjectWithKeywords
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalCodeEx
+}
+{
+   Generic python memory check 23
+   Memcheck:Cond
+   fun:PyObject_Free
+   fun:tupledealloc
+   fun:code_dealloc
+   fun:load_source_module
+   fun:import_submodule
+   fun:ensure_fromlist
+   fun:import_module_level
+   fun:PyImport_ImportModuleLevel
+   fun:builtin___import__
+   fun:PyObject_Call
+   fun:PyEval_CallObjectWithKeywords
+   fun:PyEval_EvalFrameEx
+}
+{
+   Generic python memory check 24
+   Memcheck:Value8
+   fun:PyObject_Free
+   fun:tupledealloc
+   fun:code_dealloc
+   fun:load_source_module
+   fun:import_submodule
+   fun:ensure_fromlist
+   fun:import_module_level
+   fun:PyImport_ImportModuleLevel
+   fun:builtin___import__
+   fun:PyObject_Call
+   fun:PyEval_CallObjectWithKeywords
+   fun:PyEval_EvalFrameEx
+}
+{
+   Generic python memory check 25
+   Memcheck:Cond
+   fun:PyObject_Realloc
+   fun:PyNode_AddChild
+   fun:PyParser_AddToken
+   fun:parsetok
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 26
+   Memcheck:Value8
+   fun:PyObject_Realloc
+   fun:PyNode_AddChild
+   fun:PyParser_AddToken
+   fun:parsetok
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 27
+   Memcheck:Cond
+   fun:PyObject_Free
+   fun:freechildren
+   fun:freechildren
+   fun:PyNode_Free
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 28
+   Memcheck:Cond
+   fun:PyObject_Free
+   fun:freechildren
+   fun:freechildren
+   fun:freechildren
+   fun:freechildren
+   fun:freechildren
+   fun:PyNode_Free
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 29
+   Memcheck:Cond
+   fun:PyObject_Free
+   fun:freechildren
+   fun:PyNode_Free
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 30
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:freechildren
+   fun:PyNode_Free
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 31
+   Memcheck:Value8
+   fun:PyObject_Free
+   fun:freechildren
+   fun:freechildren
+   fun:PyNode_Free
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 32
+   Memcheck:Value8
+   fun:PyObject_Free
+   fun:freechildren
+   fun:freechildren
+   fun:freechildren
+   fun:freechildren
+   fun:freechildren
+   fun:PyNode_Free
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 33
+   Memcheck:Value8
+   fun:PyObject_Free
+   fun:freechildren
+   fun:PyNode_Free
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 34
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:PyNode_Free
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 35
+   Memcheck:Addr4
+   fun:PyObject_Realloc
+   fun:compiler_next_instr
+   fun:compiler_addop_i
+   fun:compiler_visit_expr
+   fun:compiler_visit_expr
+   fun:compiler_visit_expr
+   fun:compiler_visit_expr
+   fun:compiler_visit_expr
+   fun:compiler_visit_stmt
+   fun:compiler_visit_stmt
+   fun:compiler_function
+   fun:PyAST_Compile
+}
+{
+   Generic python memory check 36
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:compiler_unit_free
+   fun:compiler_exit_scope
+   fun:compiler_function
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 37
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:compiler_exit_scope
+   fun:compiler_function
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 38
+   Memcheck:Addr4
+   fun:PyObject_Realloc
+   fun:compiler_next_instr
+   fun:compiler_nameop
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 39
+   Memcheck:Addr4
+   fun:PyObject_Realloc
+   fun:compiler_next_instr
+   fun:compiler_addop
+   fun:compiler_visit_stmt
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 40
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:compiler_unit_free
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 41
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 43
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:code_dealloc
+   fun:func_dealloc
+   fun:insertdict
+   fun:PyDict_SetItem
+   fun:_PyModule_Clear
+   fun:PyImport_Cleanup
+   fun:Py_Finalize
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 44
+   Memcheck:Cond
+   fun:PyObject_Free
+   fun:code_dealloc
+   fun:func_dealloc
+   fun:insertdict
+   fun:PyDict_SetItem
+   fun:_PyModule_Clear
+   fun:PyImport_Cleanup
+   fun:Py_Finalize
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 45
+   Memcheck:Value8
+   fun:PyObject_Free
+   fun:code_dealloc
+   fun:func_dealloc
+   fun:insertdict
+   fun:PyDict_SetItem
+   fun:_PyModule_Clear
+   fun:PyImport_Cleanup
+   fun:Py_Finalize
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 46
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:func_dealloc
+   fun:insertdict
+   fun:PyDict_SetItem
+   fun:_PyModule_Clear
+   fun:PyImport_Cleanup
+   fun:Py_Finalize
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 47
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:insertdict
+   fun:PyDict_SetItem
+   fun:_PyModule_Clear
+   fun:PyImport_Cleanup
+   fun:Py_Finalize
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 48
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:code_dealloc
+   fun:func_dealloc
+   fun:dict_dealloc
+   fun:class_dealloc
+   fun:tupledealloc
+   fun:class_dealloc
+   fun:tupledealloc
+   fun:class_dealloc
+   fun:instance_dealloc
+   fun:insertdict
+   fun:PyDict_SetItem
+}
+{
+   Generic python memory check 49
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:dict_dealloc
+   fun:dict_dealloc
+   fun:_PyImport_Fini
+   fun:Py_Finalize
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 50
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:dict_dealloc
+   fun:dict_dealloc
+   fun:dict_dealloc
+   fun:_PyImport_Fini
+   fun:Py_Finalize
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 51
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:code_dealloc
+   fun:func_dealloc
+   fun:list_dealloc
+   fun:PyInterpreterState_Clear
+   fun:Py_Finalize
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 52
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:func_dealloc
+   fun:dict_dealloc
+   fun:class_dealloc
+   fun:tupledealloc
+   fun:class_dealloc
+   fun:tupledealloc
+   fun:class_dealloc
+   fun:tupledealloc
+   fun:subtype_dealloc
+   fun:dict_dealloc
+   fun:PyInterpreterState_Clear
+}
+{
+   Generic python memory check 53
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:dict_dealloc
+   fun:class_dealloc
+   fun:tupledealloc
+   fun:class_dealloc
+   fun:tupledealloc
+   fun:class_dealloc
+   fun:tupledealloc
+   fun:subtype_dealloc
+   fun:dict_dealloc
+   fun:PyInterpreterState_Clear
+   fun:Py_Finalize
+}
+{
+   Generic python memory check 54
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:code_dealloc
+   fun:func_dealloc
+   fun:dict_dealloc
+   fun:class_dealloc
+   fun:tupledealloc
+   fun:class_dealloc
+   fun:tupledealloc
+   fun:subtype_dealloc
+   fun:dict_dealloc
+   fun:PyInterpreterState_Clear
+   fun:Py_Finalize
+}
+{
+   Generic python memory check 55
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:PyGrammar_RemoveAccelerators
+   fun:Py_Finalize
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 56
+   Memcheck:Addr4
+   fun:PyObject_Realloc
+   fun:PyNode_AddChild
+   fun:PyParser_AddToken
+   fun:parsetok
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 57
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:freechildren
+   fun:freechildren
+   fun:PyNode_Free
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 58
+   Memcheck:Addr4
+   fun:PyObject_Realloc
+   fun:compiler_next_instr
+   fun:compiler_addop
+   fun:compiler_visit_expr
+   fun:compiler_visit_expr
+   fun:compiler_visit_expr
+   fun:compiler_visit_expr
+   fun:compiler_visit_stmt
+   fun:compiler_visit_stmt
+   fun:compiler_function
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+}
+{
+   Generic python memory check 59
+   Memcheck:Addr4
+   fun:PyObject_Realloc
+   fun:compiler_next_instr
+   fun:compiler_nameop
+   fun:compiler_visit_expr
+   fun:compiler_visit_stmt
+   fun:compiler_visit_stmt
+   fun:compiler_function
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 60
+   Memcheck:Addr4
+   fun:PyObject_Realloc
+   fun:_PyString_Resize
+   fun:assemble
+   fun:compiler_function
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 61
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:assemble
+   fun:compiler_function
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 62
+   Memcheck:Addr4
+   fun:PyObject_Realloc
+   fun:compiler_next_instr
+   fun:compiler_nameop
+   fun:compiler_visit_expr
+   fun:compiler_visit_expr
+   fun:compiler_visit_expr
+   fun:compiler_visit_expr
+   fun:compiler_visit_stmt
+   fun:compiler_for
+   fun:compiler_function
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+}
+{
+   Generic python memory check 63
+   Memcheck:Addr4
+   fun:PyObject_Realloc
+   fun:compiler_next_instr
+   fun:compiler_addop
+   fun:compiler_visit_stmt
+   fun:compiler_visit_stmt
+   fun:compiler_for
+   fun:compiler_function
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 64
+   Memcheck:Addr4
+   fun:PyObject_Realloc
+   fun:compiler_next_instr
+   fun:compiler_addop_i
+   fun:compiler_visit_expr
+   fun:compiler_visit_stmt
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 65
+   Memcheck:Addr4
+   fun:PyObject_Realloc
+   fun:_PyString_Resize
+   fun:assemble
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 65
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:assemble
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 66
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:code_dealloc
+   fun:load_source_module
+   fun:load_package
+   fun:import_submodule
+   fun:load_next
+   fun:import_module_level
+   fun:PyImport_ImportModuleLevel
+   fun:builtin___import__
+   fun:PyObject_Call
+   fun:PyEval_CallObjectWithKeywords
+   fun:PyEval_EvalFrameEx
+}
+{
+   Generic python memory check 67
+   Memcheck:Addr4
+   fun:PyObject_Realloc
+   fun:compiler_next_instr
+   fun:compiler_addop_o
+   fun:compiler_visit_expr
+   fun:compiler_visit_stmt
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 68
+   Memcheck:Cond
+   fun:PyObject_Free
+   fun:freechildren
+   fun:freechildren
+   fun:freechildren
+   fun:PyNode_Free
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 69
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:freechildren
+   fun:freechildren
+   fun:freechildren
+   fun:PyNode_Free
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 70
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:tupledealloc
+   fun:assemble
+   fun:compiler_function
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 71
+   Memcheck:Value8
+   fun:PyObject_Free
+   fun:freechildren
+   fun:freechildren
+   fun:freechildren
+   fun:PyNode_Free
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 72
+   Memcheck:Addr4
+   fun:PyObject_Realloc
+   fun:compiler_next_instr
+   fun:compiler_addop_j
+   fun:compiler_visit_stmt
+   fun:compiler_function
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 73
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:tupledealloc
+   fun:assemble
+   fun:PyAST_Compile
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 74
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:tupledealloc
+   fun:code_dealloc
+   fun:PyRun_FileExFlags
+   fun:PyRun_SimpleFileExFlags
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 75
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:tupledealloc
+   fun:code_dealloc
+   fun:func_dealloc
+   fun:insertdict
+   fun:PyDict_SetItem
+   fun:_PyModule_Clear
+   fun:PyImport_Cleanup
+   fun:Py_Finalize
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 76
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:dict_dealloc
+   fun:_PyImport_Fini
+   fun:Py_Finalize
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 77
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:dict_dealloc
+   fun:subtype_dealloc
+   fun:dict_dealloc
+   fun:PyInterpreterState_Clear
+   fun:Py_Finalize
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 78
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:dict_dealloc
+   fun:class_dealloc
+   fun:tupledealloc
+   fun:subtype_dealloc
+   fun:dict_dealloc
+   fun:PyInterpreterState_Clear
+   fun:Py_Finalize
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Generic python memory check 79
+   Memcheck:Addr4
+   fun:PyObject_Free
+   fun:dict_dealloc
+   fun:PyInterpreterState_Clear
+   fun:Py_Finalize
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Memory used by python 1
+   Memcheck:Leak
+   fun:malloc
+   fun:strdup
+   fun:Py_InitializeEx
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Memory used by python 2
+   Memcheck:Leak
+   fun:malloc
+   fun:PyList_New
+   fun:do_mkvalue
+   fun:va_build_value
+   fun:Py_BuildValue
+   fun:PyImport_Import
+   fun:PyImport_ImportModule
+   fun:_PyExc_Init
+   fun:Py_InitializeEx
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Memory used by python 3
+   Memcheck:Leak
+   fun:calloc
+   obj:/lib/libdl-2.7.so
+   fun:dlopen
+   fun:_PyImport_GetDynLoadFunc
+   fun:_PyImport_LoadDynamicModule
+   fun:import_submodule
+   fun:load_next
+   fun:import_module_level
+   fun:PyImport_ImportModuleLevel
+   fun:builtin___import__
+   fun:PyObject_Call
+   fun:PyEval_CallObjectWithKeywords
+}
+{
+   Memory used by python 4
+   Memcheck:Leak
+   fun:malloc
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/libdl-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/libdl-2.7.so
+}
+{
+   Memory used by python 5
+   Memcheck:Leak
+   fun:malloc
+   fun:calculate_path
+   fun:Py_GetProgramFullPath
+   fun:_PySys_Init
+   fun:Py_InitializeEx
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Memory used by python 6
+   Memcheck:Leak
+   fun:malloc
+   fun:PyThread_allocate_lock
+   fun:PyInterpreterState_New
+   fun:Py_InitializeEx
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Memory used by python 7
+   Memcheck:Leak
+   fun:malloc
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/libdl-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/libdl-2.7.so
+   fun:dlopen
+   fun:_PyImport_GetDynLoadFunc
+   fun:_PyImport_LoadDynamicModule
+   fun:import_submodule
+   fun:load_next
+}
+{
+   Memory used by python 8
+   Memcheck:Leak
+   fun:malloc
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/libdl-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/libdl-2.7.so
+   fun:dlopen
+   fun:_PyImport_GetDynLoadFunc
+   fun:_PyImport_LoadDynamicModule
+}
+{
+   Memory used by python 9
+   Memcheck:Leak
+   fun:malloc
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/libdl-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/libdl-2.7.so
+}
+{
+   Memory used by python 10
+   Memcheck:Leak
+   fun:realloc
+   fun:PyList_Append
+   fun:PyType_Ready
+   fun:_PyExc_Init
+   fun:Py_InitializeEx
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Memory used by python 11
+   Memcheck:Leak
+   fun:malloc
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/libdl-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/libdl-2.7.so
+   fun:dlopen
+   fun:_PyImport_GetDynLoadFunc
+}
+{
+   Memory used by python 12
+   Memcheck:Leak
+   fun:malloc
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/libdl-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/libdl-2.7.so
+   fun:dlopen
+   fun:_PyImport_GetDynLoadFunc
+   fun:_PyImport_LoadDynamicModule
+   fun:import_submodule
+}
+{
+   Memory used by python 13
+   Memcheck:Leak
+   fun:malloc
+   fun:_PyInt_Init
+   fun:Py_InitializeEx
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Memory used by python 14
+   Memcheck:Leak
+   fun:malloc
+   fun:realloc
+   fun:PyObject_Malloc
+   fun:_PyObject_GC_NewVar
+   fun:PyTuple_New
+   fun:PyType_Ready
+   fun:PyType_Ready
+   fun:_Py_ReadyTypes
+   fun:Py_InitializeEx
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Memory used by python 15
+   Memcheck:Leak
+   fun:malloc
+   fun:PyString_FromStringAndSize
+   fun:r_object
+   fun:r_object
+   fun:r_object
+   fun:r_object
+   fun:r_object
+   fun:r_object
+   fun:PyMarshal_ReadLastObjectFromFile
+   fun:load_source_module
+   fun:import_submodule
+   fun:load_next
+}
+{
+   Memory used by python 16
+   Memcheck:Leak
+   fun:malloc
+   fun:PyStructSequence_InitType
+   fun:initposix
+   fun:init_builtin
+   fun:load_module
+   fun:import_submodule
+   fun:load_next
+   fun:import_module_level
+   fun:PyImport_ImportModuleLevel
+   fun:builtin___import__
+   fun:PyObject_Call
+   fun:PyEval_CallObjectWithKeywords
+}
+{
+   Memory used by python 17
+   Memcheck:Leak
+   fun:malloc
+   fun:_PyObject_GC_NewVar
+   fun:PyFrame_New
+   fun:PyEval_EvalCodeEx
+   fun:function_call
+   fun:PyObject_Call
+   fun:instancemethod_call
+   fun:PyObject_Call
+   fun:slot_tp_init
+   fun:type_call
+   fun:PyObject_Call
+   fun:PyEval_EvalFrameEx
+}
+{
+   Memory used by python 18
+   Memcheck:Leak
+   fun:malloc
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/libdl-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/libdl-2.7.so
+   fun:dlopen
+   fun:_PyImport_GetDynLoadFunc
+   fun:_PyImport_LoadDynamicModule
+   fun:import_submodule
+}
+{
+   Memory used by python 19
+   Memcheck:Leak
+   fun:malloc
+   fun:PyString_FromString
+   fun:PyType_Ready
+   fun:PyType_Ready
+   fun:_Py_ReadyTypes
+   fun:Py_InitializeEx
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Memory used by python 20
+   Memcheck:Leak
+   fun:calloc
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/libdl-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/libdl-2.7.so
+   fun:dlopen
+   fun:_PyImport_GetDynLoadFunc
+   fun:_PyImport_LoadDynamicModule
+   fun:import_submodule
+}
+{
+   Memory used by python 21
+   Memcheck:Leak
+   fun:malloc
+   fun:_PyObject_GC_Malloc
+   fun:PyType_GenericAlloc
+   fun:type_new
+   fun:type_call
+   fun:call_function_tail
+   fun:PyObject_CallFunction
+   fun:PyErr_NewException
+   fun:initzipimport
+   fun:init_builtin
+   fun:load_module
+   fun:import_submodule
+}
+{
+   Memory used by python 22
+   Memcheck:Leak
+   fun:malloc
+   fun:_PyObject_GC_New
+   fun:PyDict_New
+   fun:Py_InitializeEx
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Memory used by python 23
+   Memcheck:Leak
+   fun:calloc
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/libdl-2.7.so
+   obj:/lib/ld-2.7.so
+   obj:/lib/libdl-2.7.so
+   fun:dlopen
+   fun:_PyImport_GetDynLoadFunc
+}
+{
+   Memory used by python 24
+   Memcheck:Leak
+   fun:malloc
+   fun:_PyObject_GC_New
+   fun:PyDict_New
+   fun:PyType_Ready
+   fun:PyType_Ready
+   fun:_Py_ReadyTypes
+   fun:Py_InitializeEx
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Memory used by python 25
+   Memcheck:Leak
+   fun:malloc
+   fun:dictresize
+   fun:PyType_Ready
+   fun:PyType_Ready
+   fun:_Py_ReadyTypes
+   fun:Py_InitializeEx
+   fun:Py_Main
+   fun:(below main)
+}
+{
+   Memory used by python 26
+   Memcheck:Leak
+   fun:malloc
+   fun:PyObject_Malloc
+   fun:_PyObject_GC_NewVar
+   fun:PyTuple_New
+   fun:PyType_Ready
+   fun:PyType_Ready
+   fun:_Py_ReadyTypes
+   fun:Py_InitializeEx
+   fun:Py_Main
+   fun:(below main)
+}

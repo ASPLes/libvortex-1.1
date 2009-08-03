@@ -35,27 +35,13 @@
  *      Email address:
  *         info@aspl.es - http://www.aspl.es/vortex
  */
-#ifndef __PY_VORTEX_CTX_H__
-#define __PY_VORTEX_CTX_H__
 
-/** 
- * @brief Object definition that represents the Python encapsulation
- * for VortexCtx API type.
- */
-typedef struct _PyVortexCtx PyVortexCtx;
+#ifndef __PY_VORTEX_TLS_H__
+#define __PY_VORTEX_TLS_H__
 
-/* include base header */
+/* include base library */
 #include <py_vortex.h>
 
-VortexCtx * py_vortex_ctx_get    (PyObject * py_vortex_ctx);
-
-PyObject  * py_vortex_ctx_create (VortexCtx * ctx);
-
-axl_bool    py_vortex_ctx_check  (PyObject  * obj);
-
-void        init_vortex_ctx      (PyObject * module);
-
-/** internal declaration **/
-PyObject  * py_vortex_ctx_exit   (PyVortexCtx* self);
+PyMODINIT_FUNC initlibpy_vortex_tls_11 (void);
 
 #endif

@@ -1,3 +1,5 @@
+EXTRA_DIST=__init__.py sasl.py tls.py
+
 if ENABLE_PY_VORTEX_LOG
 INCLUDE_PY_VORTEX_LOG=-DENABLE_PY_VORTEX_LOG
 endif
@@ -6,20 +8,55 @@ INCLUDES = -Wall -g -ansi -I. -DCOMPILATION_DATE=`date +%s` \
 	   -DVERSION=\"$(PY_VORTEX_VERSION)\" \
 	   $(AXL_CFLAGS) $(VORTEX_CFLAGS) $(PYTHON_CFLAGS) $(INCLUDE_PY_VORTEX_LOG)
 
-lib_LTLIBRARIES    = libpython-vortex.la
-libpython_vortex_la_SOURCES  = \
-	py_vortex.h py_vortex.c \
-	py_vortex_ctx.h py_vortex_ctx.c \
-	py_vortex_connection.h py_vortex_connection.c \
-	py_vortex_channel.h py_vortex_channel.c \
-	py_vortex_async_queue.h py_vortex_async_queue.c \
-	py_vortex_frame.h py_vortex_frame.c
+lib_LTLIBRARIES    = libpy_vortex_11.la libpy_vortex_sasl_11.la libpy_vortex_tls_11.la
 
-libpython_vortex_la_LDFLAGS  = $(PYTHON_LIBS) $(VORTEX_LIBS) $(AXL_LIBS)
+# libpy_vortex_11.la
+libpy_vortex_11_la_include_HEADERS  = \
+	py_vortex.h \
+	py_vortex_ctx.h \
+	py_vortex_connection.h \
+	py_vortex_channel.h  \
+	py_vortex_async_queue.h \
+	py_vortex_frame.h 
+libpy_vortex_11_la_SOURCES  = \
+	py_vortex.c \
+	py_vortex_ctx.c \
+	py_vortex_connection.c \
+	py_vortex_channel.c \
+	py_vortex_async_queue.c \
+	py_vortex_frame.c
+libpy_vortex_11_la_LDFLAGS  = $(PYTHON_LIBS) $(VORTEX_LIBS) $(AXL_LIBS)
+libpy_vortex_11_la_includedir = $(includedir)/py_vortex
+
+# libpy_vortex_sasl_11.la
+libpy_vortex_sasl_11_la_include_HEADERS = \
+	py_vortex_sasl.h
+libpy_vortex_sasl_11_la_SOURCES = \
+	py_vortex_sasl.c
+libpy_vortex_sasl_11_la_LDFLAGS  = $(PYTHON_LIBS) $(VORTEX_LIBS) $(VORTEX_SASL_LIBS) $(AXL_LIBS) libpy_vortex_11.la
+libpy_vortex_sasl_11_la_includedir = $(includedir)/py_vortex
+
+# libpy_vortex_tls_11.la
+libpy_vortex_tls_11_la_include_HEADERS = \
+	py_vortex_tls.h
+libpy_vortex_tls_11_la_SOURCES = \
+	py_vortex_tls.c
+libpy_vortex_tls_11_la_LDFLAGS  = $(PYTHON_LIBS) $(VORTEX_LIBS) $(VORTEX_TLS_LIBS) $(AXL_LIBS) libpy_vortex_11.la
+libpy_vortex_tls_11_la_includedir = $(includedir)/py_vortex
+
+libdir = ${pythondir}/vortex
 
 # post-build script
-all-local: libpython-vortex.la
+all-local: 
 	@echo "Running postbuild tasks.."
-	@cp `find ./ -name libpython-vortex.so* -type f` vortex.so
 
+clean-local:
+	@rm -f vortex$(SHARED_EXTENSION) _sasl$(SHARED_EXTENSION) _tls$(SHARED_EXTENSION)
 
+install-exec-hook:
+	@echo "site installation ${pythondir}/vortex.."
+	install -m 644 \
+		sasl.py \
+		tls.py \
+		__init__.py \
+		${pythondir}/vortex
