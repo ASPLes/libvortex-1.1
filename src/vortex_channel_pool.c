@@ -538,6 +538,7 @@ VortexChannelPool * vortex_channel_pool_new_full       (VortexConnection        
 	data->received                 = received;
 	data->received_user_data       = received_user_data;
 	data->on_channel_pool_created  = on_channel_pool_created;
+	data->user_data                = user_data;
 	data->threaded                 = (on_channel_pool_created != NULL);
 
 	/* invoke threaded mode if defined on_channel_pool_created */
