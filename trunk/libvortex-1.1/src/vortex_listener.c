@@ -527,7 +527,7 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	axl_bool             threaded  = data->threaded;
 	char               * str_port  = axl_strdup_printf ("%d", data->port);
 	axlPointer           user_data = data->user_data;
-	char               * message   = NULL;
+	const char         * message   = NULL;
 	VortexConnection   * listener  = NULL;
 	VortexCtx          * ctx       = data->ctx;
 	VortexStatus         status    = VortexOk;
@@ -604,9 +604,9 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	if (threaded) {
 		/* notify error found to handlers */
 		if (on_ready != NULL) 
-			on_ready      (NULL, 0, status, message, user_data);
+			on_ready      (NULL, 0, status, (char*) message, user_data);
 		if (on_ready_full != NULL) 
-			on_ready_full (NULL, 0, status, message, NULL, user_data);
+			on_ready_full (NULL, 0, status, (char*) message, NULL, user_data);
 	} else {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to start vortex server, error was: %s, unblocking vortex_listener_wait",
 		       message);
@@ -1119,6 +1119,17 @@ void vortex_listener_cleanup (VortexCtx * ctx)
  *
  * @param _data User space data to be passed in to the handler
  * executed.
+ *
+ * Note this handler is called before any socket exchange to allow
+ * denying as soon as possible. Though the handler receives a
+ * reference to the \ref VortexConnection to be accepted/denied, it is only
+ * provided to allow storing or reconfiguring the connection. 
+ * 
+ * In other words, when the handler is called, the BEEP session is
+ * still not established. If you need to execute custom operations
+ * once the connection is fully registered with the BEEP session
+ * established, see \ref vortex_connection_set_connection_actions with
+ * \ref CONNECTION_STAGE_POST_CREATED.
  */
 void          vortex_listener_set_on_connection_accepted (VortexCtx                  * ctx,
 							  VortexOnAcceptedConnection   on_accepted, 
