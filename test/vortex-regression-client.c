@@ -70,7 +70,8 @@ axl_bool disable_time_checks = axl_false;
 
 /* listener location */
 char   * listener_host = NULL;
-#define LISTENER_PORT       "44010"
+#define LISTENER_PORT              "44010"
+#define LISTENER_UNIFIED_SASL_PORT "44011"
 
 /* listener proxy location */
 char   * listener_tunnel_host = NULL;
@@ -97,130 +98,6 @@ void subs (struct timeval stop, struct timeval start, struct timeval * _result)
 	/* seconds */
 	_result->tv_sec = stop.tv_sec - start.tv_sec;
 }
-
-/** 
- * Profile use to identify the regression test server.
- */
-#define REGRESSION_URI "http://iana.org/beep/transient/vortex-regression"
-
-/** 
- * A profile to check default close channel action.
- */
-#define REGRESSION_URI_2 "http://iana.org/beep/transient/vortex-regression/2"
-
-/** 
- * A profile to check wrong order reply.
- */
-#define REGRESSION_URI_3 "http://iana.org/beep/transient/vortex-regression/3"
-
-/** 
- * A profile to check wrong order reply.
- */
-#define REGRESSION_URI_4 "http://iana.org/beep/transient/vortex-regression/4"
-
-/** 
- * A profile to check ans content transfered for a series of files
- */
-#define REGRESSION_URI_5 "http://iana.org/beep/transient/vortex-regression/5"
-
-/** 
- * A profile to check ans content transfered for a series of files
- */
-#define REGRESSION_URI_6 "http://iana.org/beep/transient/vortex-regression/6"
-
-/** 
- * A profile to check ans content transfered for a series of files
- */
-#define REGRESSION_URI_6bis "http://iana.org/beep/transient/vortex-regression/6bis"
-
-/**
- * A profile to check close in transit support.
- */ 
-#define CLOSE_IN_TRANSIT_URI "http://iana.org/beep/transient/close-in-transit"
-
-/** 
- * A profile to check sending zeroed binary frames.
- */
-#define REGRESSION_URI_ZERO "http://iana.org/beep/transient/vortex-regression/zero"
-
-/** 
- * A profile to check connection timeout against unresponsive
- * listeners.
- */
-#define REGRESSION_URI_LISTENERS "http://iana.org/beep/transient/vortex-regression/fake-listener"
-
-/** 
- * A profile to check sending zeroed binary frames.
- */
-#define REGRESSION_URI_BLOCK_TLS "http://iana.org/beep/transient/vortex-regression/block-tls"
-
-/** 
- * A regression test profile that allows to check if the listener can
- * send data just after accepting the channel to be created.
- */
-#define REGRESSION_URI_FAST_SEND "http://iana.org/beep/transient/vortex-regression/fast-send"
-
-/** 
- * A regression test profile to check channel deny operations. This
- * profile must not be supported by the listener side.
- */
-#define REGRESSION_URI_DENY "http://iana.org/beep/transient/vortex-regression/deny"
-
-/** 
- * A regression test profile to check channel deny operations. This
- * profile is supported by the remote listener.
- */
-#define REGRESSION_URI_DENY_SUPPORTED "http://iana.org/beep/transient/vortex-regression/deny_supported"
-
-/** 
- * A regression test profile to check channel deny operations. This
- * profile is supported by the remote listener.
- */
-#define REGRESSION_URI_CLOSE_AFTER_LARGE_REPLY "http://iana.org/beep/transient/vortex-regression/close-after-large-reply"
-
-/** 
- * Profile use to identify the regression test client and server mime
- * support.
- */
-#define REGRESSION_URI_MIME "http://iana.org/beep/transient/vortex-regression/mime"
-
-/** 
- * Profile use to identify the regression test to check ordered delivered
- */
-#define REGRESSION_URI_ORDERED_DELIVERY "http://iana.org/beep/transient/vortex-regression/ordered-delivery"
-
-/** 
- * Profile use to identify the regression test to check close operation.
- */
-#define REGRESSION_URI_SUDDENTLY_CLOSE "http://iana.org/beep/transient/vortex-regression/suddently-close"
-
-/** 
- * Profile use to identify the regression test to check replies mixed
- * (ANS..NUL with RPY).
- */
-#define REGRESSION_URI_MIXING_REPLIES "http://iana.org/beep/transient/vortex-regression/mixing-replies"
-
-/** 
- * Profile used to identify the regression test to check connection
- * close after ans/nul reply.
- */
-#define REGRESSION_URI_ANS_NUL_REPLY_CLOSE "http://iana.org/beep/transient/vortex-regression/ans-nul-reply-close"
-
-/** 
- * Profile used to identify the regression test to check connection
- * close after ans/nul reply.
- */
-#define REGRESSION_URI_CLOSE_AFTER_ANS_NUL_REPLIES "http://iana.org/beep/transient/vortex-regression/close-after-ans-nul-replies"
-
-/** 
- * Profile that does nothing.
- */
-#define REGRESSION_URI_NOTHING "http://iana.org/beep/transient/vortex-regression/nothing"
-
-/** 
- * Profile that allows to check seqno limits.
- */
-#define REGRESSION_URI_SEQNO_EXCEEDED "http://iana.org/beep/transient/vortex-regression/seqno-exceeded"
 
 /** 
  * @internal Allows to know if the connection must be created directly or
@@ -5457,6 +5334,11 @@ axl_bool  test_04_c (void) {
 	return axl_true;
 }
 
+VortexConnection * test_06_enable_unified_api (void)
+{
+	return vortex_connection_new (ctx, listener_host, LISTENER_UNIFIED_SASL_PORT, NULL, NULL);
+}
+
 
 /** 
  * @brief Checking SASL profile support.
@@ -5469,6 +5351,7 @@ axl_bool  test_06 (void)
 	VortexStatus       status;
 	char             * status_message = NULL;
 	VortexConnection * connection;
+	axl_bool           use_unified_api = axl_false;
 
 	/* check and initialize  SASL support */
 	if (! vortex_sasl_init (ctx)) {
@@ -5476,16 +5359,21 @@ axl_bool  test_06 (void)
 		return axl_true;
 	}
 
-	/**** CHECK SASL ANONYMOUS MECHANISM ****/
+test_06_run_test:
 	
-	/* create a new connection */
-	connection = connection_new ();
+	/* check to enable listener unified handling */
+	if (use_unified_api) {
+		printf ("Test 06: Testing unified API..\n");
+		connection = test_06_enable_unified_api ();
+	} else 
+		connection = connection_new ();
 
 	/* check connection created */
 	if (! vortex_connection_is_ok (connection, axl_false)) {
 		return axl_false;
 	}
 
+	/**** CHECK SASL ANONYMOUS MECHANISM ****/
 	printf ("Test 06: SASL ANONYMOUS profile support ");
 
 	/* begin SASL ANONYMOUS negotiation */ 
@@ -5733,6 +5621,12 @@ axl_bool  test_06 (void)
 	vortex_connection_close (connection);
 
 	printf ("[   OK   ]\n");
+
+	/* check for unified api */
+	if (! use_unified_api) {
+		use_unified_api = axl_true;
+		goto test_06_run_test;
+	}
 #endif
 #else
 	printf ("--- WARNING: unable to run SASL tests, no sasl library was built\n");

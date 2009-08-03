@@ -687,7 +687,7 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 	/* check remote certificate (if it is present) */
 	server_cert = SSL_get_peer_certificate (ssl);
 	if (server_cert == NULL) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "server side didn't set a certificate for this session, this is a bad news");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "server side didn't set a certificate for this session, these are bad news");
 		vortex_support_free (2, ssl, SSL_free, ctx, SSL_CTX_free);
 		return axl_false;
 	}
@@ -991,15 +991,15 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 		/* notify user space */
 		process_status (connection, 
 				(status) ? VortexOk : VortexError, 
-				(status) ? "TLS negotiation finished, now we can talk using the ciphered way!" :
+				(status) ? "TLS negotiation finished, now we can talk using the cyphered way!" :
 				"TLS negotiation have failed!",  user_data);
 	}
 	return NULL;
 }
 
 /** 
- * @brief Starts the TLS underlying transport security negotiation
- * for the given connection.
+ * @brief Starts the TLS underlying transport security negotiation for
+ * the given connection.
  *
  * This function implements the client side for the TLS
  * profile. Inside the BEEP protocol definition, the TLS profile
@@ -1008,7 +1008,8 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
  * BEEP stack.  TLS profile allows to secure underlying network
  * connection using the TLS v1.0 protocol.
  *
- * Here is an example on how to activate the TLS profile (details are explained after the example):
+ * Here is an example on how to activate the TLS profile (details are
+ * explained after the example):
  * 
  * \code
  * // simple function with triggers the TLS process
@@ -1069,11 +1070,11 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
  * caller. Once the TLS process have finished, no matter its result,
  * the status will be notified using \ref VortexTlsActivation "process_status" handler.
  *
- * Because the TLS negotiation involves a tuning reset, the
- * connection provided to this function will be unrefered without
- * closing the underlying socket. This means that the connection
- * provided at this function must be no longer used, closed or
- * unrefered. 
+ * Because the TLS negotiation involves a tuning reset, the connection
+ * provided to this function will be unrefered without closing the
+ * underlying socket. This means that the connection provided at this
+ * function must be no longer used, closed or unrefered. No transfer
+ * operation must take place during the TLS activation.
  * 
  * The connection provided at \ref VortexTlsActivation
  * "process_status" handler is the one to be used once the TLS process
@@ -1088,15 +1089,15 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
  * valid not only to try again the TLS activation but to use it
  * without secure transmission.
  *
- * Once a connection is TLS-ficated the function just return without
- * doing nothing, if an attempt to secure the connection is made. You
- * could check TLS status for a given connection using \ref
- * vortex_connection_is_tlsficated.
+ * Once TLS is activated on a connection the function just return
+ * without doing nothing, if an attempt to secure the connection is
+ * made again. You could check TLS status for a given connection using
+ * \ref vortex_connection_is_tlsficated.
  *
  * A call to \ref vortex_tls_init is required to start the TLS context
  * inside the provided \ref VortexCtx. Next calls won't perform any
- * operation than returning axl_true (signaling the library is
- * initialized).
+ * operation more than returning axl_true (signaling the library
+ * is/was initialized).
  *
  * If you need to know more about how to activate TLS support on
  * server side (well, actually for the listener role) check out this
@@ -1107,7 +1108,7 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
  * created. This is done by using \ref vortex_tls_set_auto_tls
  * function. Once activated, every call to \ref vortex_connection_new
  * will automatically negotiate the TLS profile once connected before
- * notifying user space code for the connection creation.  *
+ * notifying user space code for the connection creation.
  *
  * <b>NOTE:</b> As part of the TLS negotiation, all channels inside
  * the given connection will be closed.
@@ -1121,8 +1122,8 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
  * @param connection The connection where the secure underlying transport
  * will be started.
  *
- * @param serverName A server name value to be notified to the
- * remote peer so it could react in a different way depending on this
+ * @param serverName A server name value to be notified to the remote
+ * peer so it could react in a different way depending on this
  * value. Function will perform a copy from the given value if it is
  * not a NULL one. You can free the passed in value just after the
  * function returns.
@@ -1382,7 +1383,7 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 
 		/* configure certificate file */
 		certificate_file = vortex_connection_get_data (connection, "tls:certificate-file");
-		printf ("Using certificate: %s\n", certificate_file);
+		vortex_log (VORTEX_LEVEL_DEBUG, "Using certificate: %s\n", certificate_file);
 		if (SSL_CTX_use_certificate_file (ssl_ctx, certificate_file, SSL_FILETYPE_PEM) <= 0) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
 				    "there was an error while setting certificate file into the SSl context, unable to start TLS profile");
@@ -1764,7 +1765,7 @@ VortexConnection * vortex_tls_start_negotiation_sync     (VortexConnection  * co
  * While using TLS under BEEP, as a peer protocol, any instance
  * running could receive a TLS request for its activation. This
  * function allows to configure if such request will be allowed or
- * recognized. 
+ * recognized.
  * 
  * Default TLS configuration is to not allow receive a TLS request. 
  *
@@ -1783,7 +1784,7 @@ VortexConnection * vortex_tls_start_negotiation_sync     (VortexConnection  * co
  * 
  * - 2. In the other hand, Vortex Library listeners could enable
  * accepting TLS incoming connections so they publish as a possible
- * profile the TLS one. This is done by calling to this function. 
+ * profile the TLS one. This is done by calling to this function.
  *
  * This function allows to define several handlers to configure the
  * TLS support. These handlers are defined per profile which means
@@ -1820,9 +1821,6 @@ VortexConnection * vortex_tls_start_negotiation_sync     (VortexConnection  * co
  * Vortex Library will not do any additional configure operation once
  * create the SSL context (SSL_CTX).</i>
  *  
- * 
- * 
- *
  * @param accept_handler A handler executed to notify user app level
  * that a TLS request was received, allowing to accept or deny it
  * according to the value returned by the handler. You can use NULL
@@ -1845,7 +1843,8 @@ VortexConnection * vortex_tls_start_negotiation_sync     (VortexConnection  * co
  *
  * @param ctx The context where the operation will be performed.
  *
- * @return Returns it the current server instance could accept incoming TLS connections.
+ * @return Returns it the current server instance could accept
+ * incoming TLS connections.
  */
 axl_bool    vortex_tls_accept_negotiation (VortexCtx                       * ctx,
 					   VortexTlsAcceptQuery              accept_handler, 

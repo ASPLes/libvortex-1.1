@@ -70,6 +70,256 @@ typedef enum {
  */
 #define VORTEX_TLS_PROFILE_URI "http://iana.org/beep/TLS"
 
+/** 
+ * @brief Async notifications for TLS activation.
+ *
+ * Once the process for TLS negotiation have started, using \ref
+ * vortex_tls_start_negotiation function, the status for such process is notified
+ * using this handler type definition.
+ *
+ * The <i>status</i> value have to be checked in order to know if the
+ * transport negotiation have finished successfully. Along the previous
+ * variable, the <i>status_message</i> have a textual diagnostic about
+ * the current status received.
+ * 
+ * While invoking \ref vortex_tls_start_negotiation you could provide an user
+ * space pointer, using the <i>user_data</i> parameter. That user data
+ * is received on this handler.
+ *
+ * Functions using this handler:
+ *  \ref vortex_tls_start_negotiation
+ * 
+ * 
+ * @param connection The connection where the TLS activation status is
+ * being notified.
+ *
+ * @param status The process status.
+ *
+ * @param status_message A textual message representing the process
+ * status.
+ *
+ * @param user_data A user defined pointer established at function
+ * which received this handler.
+ */
+typedef void     (*VortexTlsActivation)          (VortexConnection * connection,
+						  VortexStatus       status,
+						  char             * status_message,
+						  axlPointer         user_data);
+
+/** 
+ * @brief Handler definition for those function used to configure if a
+ * given TLS request should be accepted or denied.
+ *
+ * Once a TLS request is received this handler will be executed to
+ * notify user space application on top of Vortex Library if the request should be denied or not. The
+ * handler will receive the connection where the request was received
+ * and an optional value serverName which represents a request to act as 
+ * the server name the value represent.
+ * 
+ * This handler definition is used by:
+ *   - \ref vortex_tls_accept_negotiation
+ * 
+ * @param connection The connection where the TLS request was received.
+ * @param serverName Optional serverName value requesting, if defined, to act as the server defined by this value.
+ * 
+ * @return axl_true if the TLS request should be accepted. axl_false to deny
+ * activating TLS for this session.
+ */
+typedef axl_bool      (*VortexTlsAcceptQuery) (VortexConnection * connection,
+					       const char       * serverName);
+
+/** 
+ * @brief Handler definition for those function allowing to locate the
+ * certificate file to be used while enabling TLS support.
+ * 
+ * Once a TLS negotiation is started two files are required to enable
+ * TLS cyphering: the certificate and the private key. Two handlers
+ * are used by the Vortex Library to allow user app level to configure
+ * file locations for both files.
+ * 
+ * This handler is used to configure location for the certificate
+ * file. The function will receive the connection where the TLS is
+ * being request to be activated and the serverName value which hold a
+ * optional host name value requesting to act as the server configured
+ * by this value.
+ * 
+ * The function must return a path to the certificate using a
+ * dynamically allocated value. Once finished, Vortex Library will
+ * unref it.
+ * 
+ * <b>The function should return a basename file avoiding full path file
+ * names</b>. This is because the Vortex Library will use \ref
+ * vortex_support_find_data_file function to locate the file
+ * provided. That function is configured to lookup on the configured
+ * search path provided by \ref vortex_support_add_search_path or \ref
+ * vortex_support_add_search_path_ref.
+ * 
+ * As a consequence: 
+ * 
+ * - If all certificate files are located at
+ *  <b>/etc/repository/certificates</b> and the <b>serverName.cert</b> is to
+ *   be used <b>DO NOT</b> return on this function <b>/etc/repository/certificates/serverName.cert</b>
+ *
+ * - Instead, configure <b>/etc/repository/certificates</b> at \ref
+ *    vortex_support_add_search_path and return <b>servername.cert</b>.
+ * 
+ * - Doing previous practice will allow your code to be as
+ *   platform/directory-structure independent as possible. The same
+ *   function works on every installation, the only question to be
+ *   configured are the search paths to lookup.
+ *  
+ * 
+ * @param connection The connection where the TLS negotiation was
+ * received.
+ *
+ * @param serverName An optional value requesting to act as the server
+ * <b>serverName</b>. This value is supposed to be used to select the
+ * right certificate file (according to the common value stored on
+ * it).
+ * 
+ * This handler is used by:
+ *  - \ref vortex_tls_accept_negotiation 
+ * 
+ * @return A newly allocated value containing the path to the
+ * certificate file.
+ */
+typedef char  * (* VortexTlsCertificateFileLocator) (VortexConnection * connection,
+						     const char       * serverName);
+
+/** 
+ * @brief Handler definition for those function allowing to locate the
+ * private key file to be used while enabling TLS support.
+ * 
+ * See \ref VortexTlsCertificateFileLocator handler. This handler
+ * allows to define how is located the private key file used for the
+ * session TLS-fication.
+ * 
+ * This handler is used by:
+ *  - \ref vortex_tls_accept_negotiation 
+ * 
+ * @return A newly allocated value containing the path to the private key file.
+ */
+typedef char  * (* VortexTlsPrivateKeyFileLocator) (VortexConnection * connection,
+						    const char       * serverName);
+
+/** 
+ * @brief Handler definition used by the TLS profile, to allow the
+ * application level to provide the function that must be executed to
+ * create an (SSL_CTX *) object, used to perform the TLS activation.
+ *
+ * This handler is used by: 
+ *  - \ref vortex_tls_set_ctx_creation
+ *  - \ref vortex_tls_set_default_ctx_creation
+ *
+ * By default the Vortex TLS implementation will use its own code to
+ * create the SSL_CTX object if not provided the handler. However,
+ * such code is too general, so it is recomended to provide your own
+ * context creation.
+ *
+ * Inside this function you must configure all your stuff to tweak the
+ * OpenSSL behaviour. Here is an example:
+ * 
+ * \code
+ * axlPointer * __ctx_creation (VortexConnection * conection,
+ *                              axlPointer         user_data)
+ * {
+ *     SSL_CTX * ctx;
+ *
+ *     // create the context using the TLS method (for client side)
+ *     ctx = SSL_CTX_new (TLSv1_method ());
+ *
+ *     // configure the root CA and its directory to perform verifications
+ *     if (SSL_CTX_load_verify_locations (ctx, "your-ca-file.pem", "you-ca-directory")) {
+ *         // failed to configure SSL_CTX context 
+ *         SSL_CTX_free (ctx);
+ *         return NULL;
+ *     }
+ *     if (SSL_CTX_set_default_verify_paths () != 1) {
+ *         // failed to configure SSL_CTX context 
+ *         SSL_CTX_free (ctx);
+ *         return NULL;
+ *     }
+ *
+ *     // configure the client certificate (public key)
+ *     if (SSL_CTX_use_certificate_chain_file (ctx, "your-client-certificate.pem")) {
+ *         // failed to configure SSL_CTX context 
+ *         SSL_CTX_free (ctx);
+ *         return NULL;
+ *     }
+ *
+ *     // configure the client private key 
+ *     if (SSL_CTX_use_PrivateKey_file (ctx, "your-client-private-key.rpm", SSL_FILETYPE_PEM)) {
+ *         // failed to configure SSL_CTX context 
+ *         SSL_CTX_free (ctx);
+ *         return NULL;
+ *     }
+ *
+ *     // set the verification level for the client side
+ *     SSL_CTX_set_verify (ctx, SSL_VERIFY_PEER, NULL);
+ *     SSL_CTX_set_verify_depth(ctx, 4);
+ *
+ *     // our ctx is configured
+ *     return ctx;
+ * }
+ * \endcode
+ *
+ * For the server side, the previous example mostly works, but you
+ * must reconfigure the call to SSL_CTX_set_verify, providing
+ * something like this:
+ * 
+ * \code
+ *    SSL_CTX_set_verify (ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+ * \endcode
+ *
+ * See OpenSSL documenation for SSL_CTX_set_verify and SSL_CTX_set_verify_depth.
+ * 
+ * @param connection The connection that has been requested to be
+ * activated the TLS profile, for which a new SSL_CTX must be created. 
+ * 
+ * @param user_data An optional user pointer defined at either \ref
+ * vortex_tls_set_default_ctx_creation and \ref
+ * vortex_tls_set_ctx_creation.
+ * 
+ * @return You must return a newly allocated SSL_CTX or NULL if the
+ * handler must signal that the TLS activation must not be performed.
+ */
+typedef axlPointer (* VortexTlsCtxCreation) (VortexConnection * connection,
+					     axlPointer         user_data);
+
+
+/** 
+ * @brief Allows to configure a post-condition function to be executed
+ * to perform additional checkings.
+ *
+ * This handler is used by:
+ * 
+ *  - \ref vortex_tls_set_post_check
+ *  - \ref vortex_tls_set_default_post_check
+ *
+ * The function must return axl_true to signal that checkings was
+ * passed, otherwise axl_false must be returned. In such case, the
+ * connection will be dropped.
+ * 
+ * @param connection The connection that was TLS-fixated and
+ * additional checks were configured.
+ * 
+ * @param user_data User defined data passed to the function, defined
+ * at \ref vortex_tls_set_post_check and \ref
+ * vortex_tls_set_default_post_check.
+ *
+ * @param ssl The SSL object created for the process.
+ * 
+ * @param ctx The SSL_CTX object created for the process.
+ * 
+ * @return axl_true to accept the connection, otherwise, axl_false must be
+ * returned.
+ */
+typedef axl_bool  (*VortexTlsPostCheck) (VortexConnection * connection, 
+					 axlPointer         user_data, 
+					 axlPointer         ssl, 
+					 axlPointer         ctx);
+
+
 axl_bool           vortex_tls_init                       (VortexCtx            * ctx);
 
 void               vortex_tls_set_ctx_creation           (VortexConnection     * connection,

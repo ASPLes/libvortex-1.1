@@ -84,7 +84,7 @@ BEGIN_C_DECLS
  * vortex_sasl_start_auth or \ref vortex_sasl_accept_negotiation.
  * Currently GSSAPI is not supported by Vortex Library.
  */
-#define VORTEX_SASL_GSSAPI        "http://iana.org/beep/SASL/GASSAPI"
+#define VORTEX_SASL_GSSAPI        "http://iana.org/beep/SASL/GSSAPI"
 /** 
  * @brief KERBEROS_V4 profile identification to be used at \ref
  * vortex_sasl_start_auth or \ref vortex_sasl_accept_negotiation.
@@ -519,8 +519,82 @@ typedef char  *      (*VortexSaslAuthDigestMd5Full)       (VortexConnection * co
 							   const char       * realm,
 							   axlPointer         user_data);
 
+/** 
+ * @brief Type definition used by \ref VortexSaslCommonHandler which
+ * transports all properties required by a particular SASL
+ * profile. Keep in mind not all fields are filled: each SASL profile
+ * requires different values.
+ */
+typedef struct _VortexSaslProps {
+	/** 
+	 * @brief Mechanism being validated.
+	 */
+	const char * mech;
+	/** 
+	 * @brief Anonymous token used by \ref VORTEX_SASL_ANONYMOUS profile.
+	 */
+	const char * anonymous_token;
+	/** 
+	 * @brief auth_id value (the user login) used by \ref
+	 * VORTEX_SASL_PLAIN, \ref VORTEX_SASL_CRAM_MD5 and \ref
+	 * VORTEX_SASL_DIGEST_MD5.
+	 */
+	const char * auth_id;
+	/** 
+	 * @brief authorization_id (the user login on behalf which the
+	 * connection will act) used by \ref VORTEX_SASL_EXTERNAL
+	 * and optional for \ref VORTEX_SASL_PLAIN and \ref
+	 * VORTEX_SASL_DIGEST_MD5.
+	 */
+	const char * authorization_id;
+	/** 
+	 * @brief the password value used by \ref VORTEX_SASL_PLAIN.
+	 */
+	const char * password;
+	/** 
+	 * @brief Realm or domain where the SASL auth process is
+	 * taking place. This is used by \ref VORTEX_SASL_DIGEST_MD5.
+	 */
+	const char * realm;
+	
+	/** 
+	 * @brief Allows to signal the handler is returning a
+	 * password.
+	 */
+	axl_bool     return_password;
+} VortexSaslProps;
 
-int                vortex_sasl_init                      (VortexCtx            * ctx);
+/** 
+ * @brief Common handler that unifies all SASL profiles allowing to
+ * manage all incoming SASL request, for all supported profiles, using
+ * the same handler. 
+ * 
+ * This handler receives the connection where the SASL request is
+ * taking place along with the set of properties that defines the auth
+ * request. The type definition \ref VortexSaslProps includes all
+ * elements required to complete the auth request. 
+ * 
+ * For example, if a SASL PLAIN request is received, the handler must
+ * look into VortexSaslProps: auth_id, authorization_id and password
+ * and return axl_true in the case of proper validation or axl_false
+ * if not. 
+ * 
+ * Other SASL profiles must return the password as provided by the
+ * user, in such case returning the valid password will complete the
+ * request while returning NULL will cause the auth process to fail.
+ * 
+ * The idea behind this handler is to server as a common
+ * implementation for new SASL profiles without requiring to all more
+ * API elements.
+ *
+ * This handler is used with \ref vortex_sasl_accept_negotiation_common.
+ */
+typedef axlPointer   (*VortexSaslCommonHandler)           (VortexConnection * connection,
+							   VortexSaslProps  * properties,
+							   axlPointer         user_data);
+
+
+axl_bool           vortex_sasl_init                      (VortexCtx            * ctx);
 
 void               vortex_sasl_cleanup                   (VortexCtx            * ctx);
 
@@ -562,12 +636,16 @@ void               vortex_sasl_set_cram_md5_validation_full   (VortexCtx * ctx, 
 void               vortex_sasl_set_digest_md5_validation      (VortexCtx * ctx, VortexSaslAuthDigestMd5 auth_handler);
 void               vortex_sasl_set_digest_md5_validation_full (VortexCtx * ctx, VortexSaslAuthDigestMd5Full auth_handler);
 
-
 axl_bool           vortex_sasl_accept_negotiation             (VortexCtx  * ctx, 
 							       const char * mech);
 axl_bool           vortex_sasl_accept_negotiation_full        (VortexCtx  * ctx,
 							       const char * mech, 
 							       axlPointer user_data);
+
+axl_bool           vortex_sasl_accept_negotiation_common      (VortexCtx                * ctx,
+							       const char               * mech,
+							       VortexSaslCommonHandler    auth_handler,
+							       axlPointer                 user_data);
 
 END_C_DECLS
        
