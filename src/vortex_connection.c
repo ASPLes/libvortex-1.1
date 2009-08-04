@@ -2168,6 +2168,12 @@ axl_bool            vortex_connection_reconnect              (VortexConnection *
  * 
  * @return axl_true if connection was closed and axl_false if not. If there
  * are channels still working, the connection will not be closed.
+ *
+ * <b>NOTE:</b> Using full close procedure (the one implemented by this
+ * function) may make your connection to suffer BNRA (see
+ * http://www.aspl.es/vortex/draft-brosnan-beep-limit-close.txt). In
+ * general, is a good practise to close the connection using
+ * \ref vortex_connection_shutdown.
  */
 axl_bool                    vortex_connection_close                  (VortexConnection * connection)
 {
