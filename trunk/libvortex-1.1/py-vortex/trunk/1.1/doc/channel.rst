@@ -1,0 +1,101 @@
+:mod:`vortex` --- PyVortexChannel class
+==========================================
+
+.. currentmodule:: vortex
+
+
+API documentation for vortex.Channel object representing a BEEP channel.
+
+==========
+Module API
+==========
+
+.. class:: Channel
+
+   .. method:: send_msg (content, size)
+   
+      Allows to send a message (content) with the size provided.
+
+      :param content: The content to send.
+      :type  content: String (may contain binary data like \0)
+
+      :param size: The content size
+      :type  size: Integer > 0
+
+      :rtype: Returns the msg_no used for the send operation.
+
+   .. method:: send_rpy (content, size, msg_no)
+   
+      Allows to send a reply message (frame type RPY) to a message received (frame type MSG) with the provided msg_no.
+
+      :param content: The content to send.
+      :type  content: String (may contain binary data like \0)
+
+      :param size: The content size
+      :type  size: Integer > 0
+
+      :param msg_no: The frame msgno that identifies the frame  MSG we are replying
+      :type  msg_no: Integer > 0
+
+      :rtype: Returns True if the reply operation was done, otherwise False is returned. 
+
+   .. method:: send_err (content, size, msg_no)
+   
+      Allows to send an error reply message (frame type ERR) to a message received (frame type MSG) with the provided msg_no.
+
+      :param content: The content to send.
+      :type  content: String (may contain binary data like \0)
+
+      :param size: The content size
+      :type  size: Integer > 0
+
+      :param msg_no: The frame msgno that identifies the frame  MSG we are replying
+      :type  msg_no: Integer > 0
+
+      :rtype: Returns True if the reply operation was done, otherwise False is returned. 
+
+   .. method:: send_ans (content, size, msg_no)
+   
+      Allows to send a reply message (frame type ANS) to a message received (frame type MSG) with the provided msg_no.
+
+      :param content: The content to send.
+      :type  content: String (may contain binary data like \0)
+
+      :param size: The content size
+      :type  size: Integer > 0
+
+      :param msg_no: The frame msgno that identifies the frame  MSG we are replying
+      :type  msg_no: Integer > 0
+
+      :rtype: Returns True if the reply operation was done, otherwise False is returned. 
+
+   .. method:: finalize_ans (msg_no)
+   
+      Finish an ANS exchange with the last NUL frame (created by this method). 
+
+      :param msg_no: The frame msgno that identifies the frame  MSG we are replying with the last NUL.
+      :type  msg_no: Integer > 0
+
+      :rtype: Returns True if the reply operation was done, otherwise False is returned. 
+
+   .. method:: set_frame_received (handler, data)
+   
+      Allows to configure the frame received handler (the method or function that will be called for each frame received over this channel). The frame handler must have the following signature::
+      
+          def frame_received (conn, channel, frame, data):
+              # handle frame received
+	      return
+
+      :param handler: The handler to configure
+      :type  handler:  :ref:`frame-received-handler`.
+
+      :param size: The content size
+      :type  size: Integer > 0
+
+      :param msg_no: The frame msgno that identifies the frame  MSG we are replying
+      :type  msg_no: Integer > 0
+
+      :rtype: Returns True if the reply operation was done, otherwise False is returned. 
+
+
+
