@@ -1,5 +1,5 @@
-:mod:`vortex` --- PyVortex base module
-======================================
+:mod:`vortex` --- PyVortex base module: base functions
+======================================================
 
 .. module:: vortex
    :synopsis: Vortex library base module
@@ -8,6 +8,19 @@
 
 This modules includes all functions required to establish a BEEP
 session, create channels and develop BEEP profiles.
+
+This module also includes type definition for the following classes:
+
+.. toctree::
+   :maxdepth: 1
+
+   ctx
+   connection
+   channel
+   frame
+   asyncqueue
+   handlers
+   vortexsasl
 
 ==========
 Module API

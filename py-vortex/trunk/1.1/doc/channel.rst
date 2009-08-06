@@ -1,10 +1,15 @@
-:mod:`vortex` --- PyVortexChannel class
-==========================================
+:mod:`vortex` --- PyVortexChannel class: BEEP channel creation and management
+=============================================================================
 
 .. currentmodule:: vortex
 
 
-API documentation for vortex.Channel object representing a BEEP channel.
+=====
+Intro
+=====
+
+API documentation for vortex.Channel object representing a BEEP
+channel.
 
 ==========
 Module API
@@ -96,6 +101,57 @@ Module API
       :type  msg_no: Integer > 0
 
       :rtype: Returns True if the reply operation was done, otherwise False is returned. 
+ 
+      
+   .. method:: get_reply (queue)
+   
+      This method is used as part of the queue reply method. It receives the queue configured along with vortex.queue_reply method as frame received. Calling to this method will block the caller until a frame is received.
+
+      The following is an example of queue reply method::
+      
+           # configure frame received handler 
+           queue = vortex.AsyncQueue ()
+           channel.set_frame_received (vortex.queue_reply, queue)
+
+           # wait for the reply
+           while True:
+               frame = channel.get_reply (queue)
+               
+               # frame content received
+               print ("Received frame type: " + frame.type + ", content: " + frame.payload)
+
+      :param handler: The queue that was activated with vortex.queue_reply (as :ref:`frame-received-handler`)
+      :type  handler: vortex.AsyncQueue
+
+      :rtype: Returns next frame received (vortex.Frame) or None if it fails
+
+   .. method:: close ()
+   
+      Allows to request close the channel. The function will issue a close request that must be accepted by remote BEEP peer. 
+
+      :rtype: Returns True if the channel was closed, otherwise False is returned. In the case false is returned you can use :meth:`Connection.pop_channel_error`.
+
+   .. attribute:: number
+
+      (Read only attribute) (Number) returns the channel number.
+
+   .. attribute:: profile
+
+      (Read only attribute) (String) returns the channel profile.
+
+   .. attribute:: is_ready
+
+      (Read only attribute) (True/False) returns is ready status. See vortex_channel_is_ready for more information.
+
+   .. attribute:: conn
+
+      (Read only attribute) (vortex.Connection) returns a reference to the connection where the channel is working.
+
+   .. attribute:: set_serialize
+
+      (Write only attribute) (True/False) Allows to configure channel delivery serialization. See also vortex_channel_set_serialize.
 
 
-
+ 
+      
+    
