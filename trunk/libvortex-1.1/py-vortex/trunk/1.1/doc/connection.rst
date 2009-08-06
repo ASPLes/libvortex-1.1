@@ -1,5 +1,5 @@
-:mod:`vortex` --- PyVortexConnection class
-==========================================
+:mod:`vortex` --- PyVortexConnection class: BEEP session creation and management
+================================================================================
 
 .. currentmodule:: vortex
 
