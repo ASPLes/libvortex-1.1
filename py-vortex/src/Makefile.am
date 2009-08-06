@@ -5,8 +5,8 @@ INCLUDE_PY_VORTEX_LOG=-DENABLE_PY_VORTEX_LOG
 endif
 
 INCLUDES = -Wall -g -ansi -I. -DCOMPILATION_DATE=`date +%s` \
-	   -DVERSION=\"$(PY_VORTEX_VERSION)\" \
-	   $(AXL_CFLAGS) $(VORTEX_CFLAGS) $(PYTHON_CFLAGS) $(INCLUDE_PY_VORTEX_LOG)
+	   -DVERSION=\"$(VORTEX_VERSION)\" \
+	   $(AXL_CFLAGS) -I$(top_srcdir)/src -I$(top_srcdir)/sasl -I$(top_srcdir)/tls $(PYTHON_CFLAGS) $(INCLUDE_PY_VORTEX_LOG)
 
 lib_LTLIBRARIES    = libpy_vortex_11.la libpy_vortex_sasl_11.la libpy_vortex_tls_11.la
 
@@ -25,7 +25,7 @@ libpy_vortex_11_la_SOURCES  = \
 	py_vortex_channel.c \
 	py_vortex_async_queue.c \
 	py_vortex_frame.c
-libpy_vortex_11_la_LDFLAGS  = $(PYTHON_LIBS) $(VORTEX_LIBS) $(AXL_LIBS)
+libpy_vortex_11_la_LDFLAGS  = $(PYTHON_LIBS) $(top_srcdir)/src/libvortex-1.1.la $(AXL_LIBS)
 libpy_vortex_11_la_includedir = $(includedir)/py_vortex
 
 # libpy_vortex_sasl_11.la
@@ -33,7 +33,7 @@ libpy_vortex_sasl_11_la_include_HEADERS = \
 	py_vortex_sasl.h
 libpy_vortex_sasl_11_la_SOURCES = \
 	py_vortex_sasl.c
-libpy_vortex_sasl_11_la_LDFLAGS  = $(PYTHON_LIBS) $(VORTEX_LIBS) $(VORTEX_SASL_LIBS) $(AXL_LIBS) libpy_vortex_11.la
+libpy_vortex_sasl_11_la_LDFLAGS  = $(PYTHON_LIBS) $(top_srcdir)/src/libvortex-1.1.la $(top_srcdir)/sasl/libvortex-sasl-1.1.la $(AXL_LIBS) libpy_vortex_11.la
 libpy_vortex_sasl_11_la_includedir = $(includedir)/py_vortex
 
 # libpy_vortex_tls_11.la
@@ -41,7 +41,7 @@ libpy_vortex_tls_11_la_include_HEADERS = \
 	py_vortex_tls.h
 libpy_vortex_tls_11_la_SOURCES = \
 	py_vortex_tls.c
-libpy_vortex_tls_11_la_LDFLAGS  = $(PYTHON_LIBS) $(VORTEX_LIBS) $(VORTEX_TLS_LIBS) $(AXL_LIBS) libpy_vortex_11.la
+libpy_vortex_tls_11_la_LDFLAGS  = $(PYTHON_LIBS) $(top_srcdir)/src/libvortex-1.1.la $(top_srcdir)/tls/libvortex-tls-1.1.la $(AXL_LIBS) libpy_vortex_11.la
 libpy_vortex_tls_11_la_includedir = $(includedir)/py_vortex
 
 libdir = ${pythondir}/vortex

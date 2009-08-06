@@ -283,6 +283,48 @@ AC_ARG_ENABLE(http-support, [  --disable-http-support    Makes Vortex Library to
 	      enable_http_support=yes)
 AM_CONDITIONAL(ENABLE_HTTP_SUPPORT, test "x$enable_http_support" = "xyes")
 
+dnl check for py-vortex support
+AC_ARG_ENABLE(py-vortex,   [   --disable-py-vortex       Makes Vortex Library to be build without PyVortex: python bindings support],
+              enable_py_vortex_support="$enableval",
+	      enable_py_vortex_support=yes)
+AM_CONDITIONAL(ENABLE_PY_VORTEX_SUPPORT, test "x$enable_py_vortex_support" = "xyes")
+if test "$enable_py_vortex_support" = "yes" ; then
+   AM_PATH_PYTHON([2.3])
+
+   # get python includes 
+   PYTHON_INCLUDES=`python-config --includes 2>/dev/null`
+   old_CPPFLAGS=$CPPFLAGS
+   CPPFLAGS="-Wall -Werror $PYTHON_INCLUDES"
+   echo "Python includes: $PYTHON_INCLUDES"
+   AC_SUBST(PYTHON_INCLUDES)
+
+   AC_TRY_COMPILE([#include <Python.h>],
+      [Py_InitModule3(NULL, NULL, NULL);],
+      python_devel_found=yes,
+      python_devel_found=no)
+   AC_MSG_RESULT([Python development headers status: $python_devel_found])
+   if test "x$python_devel_found" = "xno"; then
+       AC_MSG_ERROR([Cannot find Python.h header or current python development environment do not compile symbols required. On debian try to install python-dev package.])
+   fi
+
+   # get python flags and libs
+   PYTHON_CFLAGS=`python-config --cflags 2>/dev/null`
+   PYTHON_LIBS=`python-config --ldflags 2>/dev/null`
+   AC_SUBST(PYTHON_CFLAGS)
+   AC_SUBST(PYTHON_LIBS)
+
+   dnl get site dinamic library extension
+   SHARED_EXTENSION=$shrext_cmds
+   AC_SUBST(SHARED_EXTENSION)
+fi
+
+dnl check for console log
+AC_ARG_ENABLE(py-vortex-log, [  --enable-py-vortex-log       Enable building PyVortex console debug log support [default=yes]], 
+	      enable_py_vortex_log="$enableval", 
+	      enable_py_vortex_log=yes)
+AM_CONDITIONAL(ENABLE_PY_VORTEX_LOG, test "x$enable_py_vortex_log" = "xyes")
+
+
 dnl general libries subsitution
 dnl AC_SUBST(LIBRARIES_CFLAGS)
 dnl AC_SUBST(LIBRARIES_LIBS)
@@ -341,6 +383,12 @@ xml-rpc/Makefile
 sasl/Makefile
 tls/Makefile
 http/Makefile
+py-vortex/Makefile
+py-vortex/src/Makefile
+py-vortex/test/Makefile
+py-vortex/py-vortex.pc
+py-vortex/py-vortex-sasl.pc
+py-vortex/py-vortex-tls.pc
 doc/Makefile
 doc/vortex-doc.doxygen
 test/Makefile
@@ -377,9 +425,9 @@ echo "      cflags: $AXL_CFLAGS"
 echo "      libs:   $AXL_LIBS"
 echo
 if test x$readline_found = xtrue ; then
-   echo "   Build vortex-client tool:       enabled"
+   echo "   Build vortex-client tool:                 enabled"
 else
-   echo "   Build vortex-client tool:       disabled"
+   echo "   Build vortex-client tool:                 disabled"
    echo 
    echo "     NOTE: To enable vortex-client tool building"
    echo "     it is needed to have readline on this system. "
@@ -387,10 +435,10 @@ else
    echo "     using --enable-vortex-client option."
 fi
 if test x$enable_tls_support = xyes ; then
-   echo "   Build TLS profile support:      enabled"
+   echo "   Build TLS profile support:                enabled"
    echo "     (libvortex-tls-1.1)"
 else
-   echo "   Build TLS profile support:      disabled"
+   echo "   Build TLS profile support:                disabled"
    echo 
    echo "     NOTE: To enable TLS profile support you have to"
    echo "     install OpenSSL developement headers. "
@@ -398,14 +446,14 @@ else
    echo "     using --enable-tls-support option."
 fi
 if test x$enable_sasl_support = xyes ; then
-   echo "   Build SASL profile support:     enabled"
+   echo "   Build SASL profile support:               enabled"
    echo "     (libvortex-sasl-1.1)"
    if test x$found_old_sasl = xyes ; then
       echo "     WARNING: found GSASL installation previous to 0.2.21 release."
       echo "              This could cause unexpected memory errors."
    fi 
 else
-   echo "   Build SASL profile support:     disabled"
+   echo "   Build SASL profile support:               disabled"
    echo 
    echo "     NOTE: To enable SASL profile support you have to"
    echo "     install GNU SASL developement files. "
@@ -413,37 +461,37 @@ else
    echo "     using --enable-sasl-support option."
 fi
 if test x$enable_xml_rpc_support = xyes ; then
-   echo "   Build XML-RPC profile support:  enabled"
+   echo "   Build XML-RPC profile support:            enabled"
    echo "     (libvortex-xml-rpc-1.1)"
 else
-   echo "   Build XML-RPC profile support:  disabled"
+   echo "   Build XML-RPC profile support:            disabled"
    echo 
    echo "     NOTE: To enable XML-RPC profile support you have to"
    echo "           use --enable-xml-rpc-support option."
 fi
 if test x$enable_xml_rpc_gen_tool = xyes ; then
-   echo "   Build xml-rpc-gen tool:         enabled"
+   echo "   Build xml-rpc-gen tool:                   enabled"
 else
-   echo "   Build xml-rpc-gen tool:         disabled"
+   echo "   Build xml-rpc-gen tool:                   disabled"
    echo 
    echo "     NOTE: To enable building the xml-rpc-gen tool"
    echo "           use the configure flag: "
    echo "              --enable-xml-rpc-gen-tool"
 fi
 if test x$enable_tunnel_support = xyes ; then
-   echo "   Build TUNNEL profile support:   enabled"
+   echo "   Build TUNNEL profile support:             enabled"
    echo "     (libvortex-tunnel-1.1)"
 else
-   echo "   Build TUNNEL profile support:   disabled"
+   echo "   Build TUNNEL profile support:             disabled"
    echo 
    echo "     NOTE: To enable TUNNEL profile support you have to"
    echo "           use --enable-tunnel-support option."
 fi
 if test x$enable_pull_support = xyes ; then
-   echo "   Build PULL API support:         enabled"
+   echo "   Build PULL API support:                   enabled"
    echo "     (libvortex-pull-1.1)"
 else
-   echo "   Build PULL API support:         disabled"
+   echo "   Build PULL API support:                   disabled"
    echo 
    echo "     NOTE: To enable PULL API you have to"
    echo "           use --enable-pull-support option."
@@ -457,10 +505,18 @@ else
    echo "     NOTE: To enable HTTP CONNECT proxy support you have to"
    echo "           use --enable-http-support option."
 fi
+if test x$enable_py_vortex_support = xyes ; then
+   echo "   Build PyVortex support:                   enabled"
+else
+   echo "   Build PyVortex support:                   disabled"
+   echo 
+   echo "     NOTE: To enable PyVortex support you have to install python development headers and "
+   echo "           use --enable-py-vortex option."
+fi
 if test x$DOXYGEN = xyes ; then
-   echo "   Build Vortex Library doc:       enabled"
+   echo "   Build Vortex Library doc:                 enabled"
 else	    
-   echo "   Build Vortex Library doc:       disabled"
+   echo "   Build Vortex Library doc:                 disabled"
    echo  
    echo "     NOTE: To enable Vortex documentation you will"
    echo "     have to install doxygen tool. Then run again"
