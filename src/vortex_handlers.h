@@ -1039,6 +1039,46 @@ typedef void (*VortexAsyncQueueForeach) (VortexAsyncQueue * queue,
 					 int                position,
 					 axlPointer         user_data);
 
+/**
+ * @brief Handler used by Vortex library to create a new thread. A custom handler
+ * can be specified using \ref vortex_thread_set_create
+ *
+ * @param thread_def A reference to the thread identifier created by
+ * the function. This parameter is not optional.
+ *
+ * @param func The function to execute.
+ *
+ * @param user_data User defined data to be passed to the function to
+ * be executed by the newly created thread.
+ *
+ * @return The function returns axl_true if the thread was created
+ * properly and the variable thread_def is defined with the particular
+ * thread reference created.
+ *
+ * @see vortex_thread_create
+ */
+typedef axl_bool (* VortexThreadCreateFunc) (VortexThread      * thread_def,
+                                             VortexThreadFunc    func,
+                                             axlPointer          user_data,
+                                             va_list             args);
+
+/**
+ * @brief Handler used by Vortex Library to release a thread's resources.
+ * A custom handler can be specified using \ref vortex_thread_set_destroy
+ *
+ * @param thread_def A reference to the thread that must be destroyed.
+ *
+ * @param free_data Boolean that set whether the thread pointer should
+ * be released or not.
+ *
+ * @return axl_true if the destroy operation was ok, otherwise axl_false is
+ * returned.
+ *
+ * @see vortex_thread_destroy
+ */
+typedef axl_bool (* VortexThreadDestroyFunc) (VortexThread      * thread_def,
+                                              axl_bool            free_data);
+
 #endif
 
 /* @} */

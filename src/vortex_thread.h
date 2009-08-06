@@ -55,6 +55,10 @@ axl_bool           vortex_thread_create   (VortexThread      * thread_def,
 axl_bool           vortex_thread_destroy  (VortexThread      * thread_def, 
 					   axl_bool            free_data);
 
+void               vortex_thread_set_create (VortexThreadCreateFunc  create_fn);
+
+void               vortex_thread_set_destroy(VortexThreadDestroyFunc destroy_fn);
+
 axl_bool           vortex_mutex_create    (VortexMutex       * mutex_def);
 
 axl_bool           vortex_mutex_destroy   (VortexMutex       * mutex_def);
