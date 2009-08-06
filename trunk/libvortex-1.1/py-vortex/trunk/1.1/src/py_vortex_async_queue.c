@@ -206,7 +206,7 @@ static PyObject * py_vortex_async_queue_timedpop (PyVortexAsyncQueue* self, PyOb
 /** 
  * @brief Direct mapping for the ref operation vortex_async_queue_ref.
  */
-static PyObject * py_vortex_async_queue_ref (PyVortexAsyncQueue* self)
+PyObject * py_vortex_async_queue_ref (PyVortexAsyncQueue* self)
 {
 	/* increase reference counting */
 	vortex_async_queue_ref (self->async_queue);
@@ -227,8 +227,8 @@ static PyMethodDef py_vortex_async_queue_methods[] = {
 	 "Allows to get the next item available on the queue (vortex.AsyncQueue). This method will block the caller. Check items attribute to know if there are pending elements."},
 	{"timedpop", (PyCFunction) py_vortex_async_queue_timedpop, METH_VARARGS,
 	 "Allows to get the next item available on the queue (vortex.AsyncQueue) limiting the wait period to the value (microseconds) provided. This method will block the caller. Check items attribute to know if there are pending elements."},
-	{"ref", (PyCFunction) py_vortex_async_queue_ref, METH_NOARGS,
-	 "Allows to increase reference counting on the provided queue reference. "},
+/*	{"ref", (PyCFunction) py_vortex_async_queue_ref, METH_NOARGS,
+	"Allows to increase reference counting on the provided queue reference. "}, */
 /*	{"unref", (PyCFunction) py_vortex_async_queue_unref, METH_NOARGS,
 	"Allows to decrease reference counting on the provided queue reference. If reached 0 the queue is finished."}, */
  	{NULL}  

@@ -576,7 +576,7 @@ void py_vortex_connection_set_on_close_handler (VortexConnection * conn,
 static PyObject * py_vortex_connection_set_on_close (PyObject * self, PyObject * args, PyObject * kwds)
 {
 	PyObject                         * on_close      = NULL;
-	PyObject                         * on_close_data = NULL;
+	PyObject                         * on_close_data = Py_None;
 	PyVortexConnectionSetOnCloseData * on_close_obj;
 	
 
@@ -584,7 +584,7 @@ static PyObject * py_vortex_connection_set_on_close (PyObject * self, PyObject *
 	static char *kwlist[] = {"on_close", "on_close_data", NULL};
 
 	/* parse and check result */
-	if (! PyArg_ParseTupleAndKeywords(args, kwds, "OO", kwlist, &on_close, &on_close_data)) 
+	if (! PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &on_close, &on_close_data)) 
 		return NULL;
 
 	/* check handler received */
