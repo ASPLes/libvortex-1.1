@@ -39,11 +39,11 @@
 
 #define LOG_DOMAIN "vortex-thread"
 
-/**
+/** 
  * \defgroup vortex_thread Vortex Thread: Portable threading API for vortex
  */
 
-/**
+/** 
  * \addtogroup vortex_thread
  * @{
  */
@@ -89,7 +89,7 @@ static unsigned __stdcall vortex_thread_proxy (axlPointer _data)
 #endif
 
 /** 
- * @brief Creates a new thread, executing the function provided,
+ * @internal Creates a new thread, executing the function provided,
  * passing the referece received to the function (user_data).
  *
  * For complete examples on how to create threads, see \ref  VortexThreadConf documentation.
@@ -108,12 +108,11 @@ static unsigned __stdcall vortex_thread_proxy (axlPointer _data)
  *
  * @see vortex_thread_destroy
  */
-axl_bool  vortex_thread_create (VortexThread      * thread_def,
-				VortexThreadFunc    func, 
-				axlPointer          user_data,
-				...)
+axl_bool  vortex_thread_create_internal (VortexThread      * thread_def,
+					 VortexThreadFunc    func, 
+					 axlPointer          user_data,
+					 va_list             args)
 {
-	va_list            args;
 	VortexThreadConf   conf;
 	/* default configuration for joinable state, axl_true */
 	axl_bool           joinable = axl_true;
@@ -129,7 +128,6 @@ axl_bool  vortex_thread_create (VortexThread      * thread_def,
 	v_return_val_if_fail (func, axl_false);
 	
 	/* open arguments to get the thread configuration */
-	va_start (args, user_data);
 	do {
 		/* get next configuration */
 		conf = va_arg (args, axl_bool);
@@ -149,8 +147,6 @@ axl_bool  vortex_thread_create (VortexThread      * thread_def,
 		
 	} while (1);
 
-	/* close the std args */
-	va_end (args);
 	
 
 #if defined(AXL_OS_WIN32)
@@ -212,18 +208,18 @@ axl_bool  vortex_thread_create (VortexThread      * thread_def,
 }
 
 /** 
- * @brief Wait for the provided thread to finish, destroy its
+ * @internal Wait for the provided thread to finish, destroy its
  * resources and optionally release its pointer.
  * 
  * @param thread_def A reference to the thread that must be destroyed.
  *
  * @param free_data Boolean that set whether the thread pointer should
- * be released ot not.
+ * be released or not.
  * 
  * @return axl_true if the destroy operation was ok, otherwise axl_false is
  * returned.
  */
-axl_bool  vortex_thread_destroy (VortexThread * thread_def, axl_bool  free_data)
+axl_bool  vortex_thread_destroy_internal (VortexThread * thread_def, axl_bool  free_data)
 {
 #if defined(AXL_OS_WIN32)
 
@@ -278,6 +274,128 @@ axl_bool  vortex_thread_destroy (VortexThread * thread_def, axl_bool  free_data)
 	return err == 0;
 	
 #endif
+}
+
+/** 
+ * @internal Variables to hold the active thread management function
+ * pointers.
+ *
+ * They are initialised to use the default Vortex functions. If the
+ * user are not interested in using external threading functions he
+ * doesn't need to do anything, or even know about this functionality.
+ */
+VortexThreadCreateFunc  __vortex_thread_create  = vortex_thread_create_internal;
+VortexThreadDestroyFunc __vortex_thread_destroy = vortex_thread_destroy_internal;
+
+/** 
+ * @brief Creates a new thread, executing the function provided,
+ * passing the referece received to the function (user_data).
+ *
+ * For complete examples on how to create threads, see \ref  VortexThreadConf documentation.
+ *
+ * @param thread_def A reference to the thread identifier created by
+ * the function. This parameter is not optional.
+ *
+ * @param func The function to execute.
+ *
+ * @param user_data User defined data to be passed to the function to
+ * be executed by the newly created thread.
+ *
+ * @return The function returns axl_true if the thread was created
+ * properly and the variable thread_def is defined with the particular
+ * thread reference created.
+ *
+ * @see vortex_thread_destroy
+ */
+axl_bool  vortex_thread_create (VortexThread      * thread_def,
+                                VortexThreadFunc    func,
+                                axlPointer          user_data,
+                                ...)
+{
+	axl_bool     result;
+	va_list      args;
+	
+	/* initialize the args value */
+	va_start (args, user_data);
+	
+	/* create the thread */
+	result = __vortex_thread_create (thread_def, func, user_data, args);
+	
+	/* end args values */
+	va_end (args);
+	
+	return result;
+}
+
+/** 
+ * @brief Wait for the provided thread to finish, destroy its
+ * resources and optionally release its pointer.
+ *
+ * @param thread_def A reference to the thread that must be destroyed.
+ *
+ * @param free_data Boolean that set whether the thread pointer should
+ * be released or not.
+ *
+ * @return axl_true if the destroy operation was ok, otherwise axl_false is
+ * returned.
+ */
+axl_bool  vortex_thread_destroy (VortexThread * thread_def, axl_bool  free_data)
+{
+	return __vortex_thread_destroy (thread_def, free_data);
+}
+
+/** 
+ * @brief Allows to specify the function Vortex library will call to create a
+ * new thread.
+ *
+ * If the user does not have reason to change the default thread
+ * creation mechanism this function can be ignored.
+ *
+ * NOTE: The thread mechanism functions (\ref vortex_thread_set_create
+ * and \ref vortex_thread_set_destroy) must be set before any other
+ * Vortex API calls are made. Changing the thread mechanism functions
+ * while Vortex is running will most likely lead to memory corruption
+ * or program crashes.
+ *
+ * @param create_fn The function to be executed to create a new
+ * thread. Passing a NULL value restores to the default create
+ * handler.
+ *
+ * @see vortex_thread_set_destroy
+ */
+void vortex_thread_set_create (VortexThreadCreateFunc create_fn)
+{
+	if (NULL != create_fn) 
+		__vortex_thread_create = create_fn;
+	else
+		__vortex_thread_create = vortex_thread_create_internal;
+}
+
+/** 
+ * @brief Allows to specify the function Vortex library will call to
+ * destroy a thread's resources.
+ *
+ * If the user does not have reason to change the default thread
+ * cleanup mechanism this function can be ignored.
+ *
+ * NOTE: The thread mechanism functions (\ref vortex_thread_set_create
+ * and \ref vortex_thread_set_destroy) must be set before any other
+ * Vortex API calls are made. Changing the thread mechanism functions
+ * while Vortex is running will most likely lead to memory corruption
+ * or program crashes.
+ *
+ * @param destroy_fn The function to be executed to clean up a
+ * thread. Passing a NULL value restores to the default destroy
+ * handler.
+ *
+ * @see vortex_thread_set_create
+ */
+void vortex_thread_set_destroy (VortexThreadDestroyFunc destroy_fn)
+{
+	if (NULL != destroy_fn) 
+		__vortex_thread_destroy = destroy_fn;
+	else 
+		__vortex_thread_destroy = vortex_thread_destroy_internal;
 }
 
 /** 
