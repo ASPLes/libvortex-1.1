@@ -389,6 +389,7 @@ py-vortex/test/Makefile
 py-vortex/py-vortex.pc
 py-vortex/py-vortex-sasl.pc
 py-vortex/py-vortex-tls.pc
+py-vortex/doc/conf.py
 doc/Makefile
 doc/vortex-doc.doxygen
 test/Makefile
