@@ -8069,7 +8069,10 @@ void                vortex_channel_init                           (VortexCtx * c
 	v_return_if_fail (ctx);
 
 	vortex_mutex_create (&ctx->channel_start_reply_cache_mutex);
-	ctx->channel_start_reply_cache = axl_hash_new (axl_hash_string, axl_hash_equal_string);
+
+	/* init hash only if it wasn't */
+	if (ctx->channel_start_reply_cache == NULL)
+		ctx->channel_start_reply_cache = axl_hash_new (axl_hash_string, axl_hash_equal_string);
 	
 	return;
 }

@@ -345,11 +345,28 @@ void     vortex_support_add_domain_search_path_ref (VortexCtx * ctx,
 						    char      * path)
 {
 	SearchPathNode * node;
+	int              iterator;
 
 	v_return_if_fail (path);
 	v_return_if_fail (ctx);
 	
 	vortex_mutex_lock (&ctx->search_path_mutex);
+
+	/* check we do not add something already added */
+	iterator = 0;
+	while (iterator < axl_list_length (ctx->support_search_path)) {
+		/* get node */
+		node = axl_list_get_nth (ctx->support_search_path, iterator);
+		
+		if (axl_cmp (node->domain, domain) && axl_cmp (node->path, path)) {
+			/* item already added, skip it */
+			vortex_mutex_unlock (&ctx->search_path_mutex);	
+			return;
+		} /* end if */
+
+		/* next iterator */
+		iterator++;
+	} /* end if */
 
 	/* create the search path node */
 	node = __search_path_node_new (domain, path);

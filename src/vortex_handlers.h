@@ -1019,7 +1019,7 @@ typedef void (*VortexLogHandler) (const char       * file,
 				  const char       * message,
 				  va_list            args);
 
-/**
+/** 
  * @brief Handler definition used by \ref vortex_async_queue_foreach
  * to implement a foreach operation over all items inside the provided
  * queue, blocking its access during its process.
@@ -1039,7 +1039,7 @@ typedef void (*VortexAsyncQueueForeach) (VortexAsyncQueue * queue,
 					 int                position,
 					 axlPointer         user_data);
 
-/**
+/** 
  * @brief Handler used by Vortex library to create a new thread. A custom handler
  * can be specified using \ref vortex_thread_set_create
  *
@@ -1062,7 +1062,7 @@ typedef axl_bool (* VortexThreadCreateFunc) (VortexThread      * thread_def,
                                              axlPointer          user_data,
                                              va_list             args);
 
-/**
+/** 
  * @brief Handler used by Vortex Library to release a thread's resources.
  * A custom handler can be specified using \ref vortex_thread_set_destroy
  *
@@ -1078,6 +1078,23 @@ typedef axl_bool (* VortexThreadCreateFunc) (VortexThread      * thread_def,
  */
 typedef axl_bool (* VortexThreadDestroyFunc) (VortexThread      * thread_def,
                                               axl_bool            free_data);
+
+/** 
+ * @brief Handler used by \ref vortex_ctx_set_on_finish which is
+ * called when the vortex reader process detects no more pending
+ * connections are available to be watched which is a signal that no
+ * more pending work is available. This handler can be used to detect
+ * and finish a process when no more work is available. For example,
+ * this handler is used by turbulence to finish processes that where
+ * created specifically to manage an incoming connection.
+ *
+ * @param ctx The context where the finish status as described is
+ * signaled. The function executes in the context of the vortex
+ * reader.
+ *
+ * @param user_data User defined pointer configured at \ref vortex_ctx_set_on_finish
+ */
+typedef void     (* VortexOnFinishHandler)   (VortexCtx * ctx, axlPointer user_data);
 
 #endif
 

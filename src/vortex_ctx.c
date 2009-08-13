@@ -43,11 +43,11 @@
 /* private include */
 #include <vortex_ctx_private.h>
 
-/**
+/** 
  * \defgroup vortex_ctx Vortex context: functions to manage vortex context, an object that represent a vortex library state.
  */
 
-/**
+/** 
  * \addtogroup vortex_ctx
  * @{
  */
@@ -100,6 +100,56 @@ VortexCtx * vortex_ctx_new (void)
 
 	/* return context created */
 	return result;
+}
+
+#if defined(AXL_OS_UNIX)
+/** 
+ * @internal Function used to reinit the VortexCtx. This function is
+ * highly unix dependant.
+ */
+void      vortex_ctx_reinit (VortexCtx * ctx)
+{
+	vortex_mutex_create (&ctx->log_mutex);
+	vortex_mutex_create (&ctx->ref_mutex);
+
+	return;
+}
+#endif
+
+/** 
+ * @brief Allows to configure a finish handler which is called once
+ * the process (vortex reader) detects no more pending connections are
+ * available.
+ * 
+ * @param ctx The context where the finish handler will be installed.
+ *
+ * @param finish_handler Finish handler to be called as described by \ref VortexOnFinishHandler. 
+ */
+void        vortex_ctx_set_on_finish        (VortexCtx              * ctx,
+					     VortexOnFinishHandler    finish_handler,
+					     axlPointer               user_data)
+{
+	if (ctx == NULL || finish_handler == NULL)
+		return;
+
+	/* set handler */
+	ctx->finish_handler      = finish_handler;
+	ctx->finish_handler_data = user_data;
+	return;
+}
+
+/** 
+ * @internal Function used by vortex reader module to check and call
+ * the finish handler defined.
+ */
+void        vortex_ctx_check_on_finish      (VortexCtx * ctx)
+{
+	/* check */
+	if (ctx == NULL || ctx->finish_handler == NULL)
+		return;
+	/* call handler */
+	ctx->finish_handler (ctx, ctx->finish_handler_data);
+	return;
 }
 
 

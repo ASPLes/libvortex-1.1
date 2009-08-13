@@ -86,6 +86,10 @@ axl_bool      vortex_dtds_init (VortexCtx * ctx)
 {
 	v_return_val_if_fail (ctx, axl_false);
 
+	/* do not load if it was loaded */
+	if (ctx->channel_dtd)
+		return axl_true;
+
 	/* load BEEP channel management DTD definition */
         if (!vortex_dtds_load_dtd (ctx, &ctx->channel_dtd, CHANNEL_DTD)) {
                 fprintf (stderr, "VORTEX_ERROR: unable to load channel.dtd file.\n");

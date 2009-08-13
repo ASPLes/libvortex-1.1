@@ -65,7 +65,7 @@
  */
 #define SERVER_NAME_FROM_CHANNEL(channel) (vortex_connection_get_server_name (vortex_channel_get_connection (channel)))
 
-/**
+/** 
  * @brief Allows to get the context associated to the provided
  * connection, logging a more verbose message if the context is null
  * or the connection provided is null.

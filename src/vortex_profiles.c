@@ -1076,6 +1076,10 @@ void    vortex_profiles_init (VortexCtx * ctx)
 {
 	v_return_if_fail (ctx);
 
+	/* return if it was initialized */
+	if (ctx->registered_profiles)
+		return;
+	
 	ctx->registered_profiles = 
 		vortex_hash_new_full (axl_hash_string, axl_hash_equal_string,
 				      NULL, /* no key destruction function */

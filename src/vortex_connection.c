@@ -96,7 +96,7 @@ void __vortex_connection_free_channel_error (VortexChannelError * error)
  * @brief Internal VortexConnection representation.
  */
 struct _VortexConnection {
-	/**
+	/** 
 	 * @brief Vortex context where the connection was created.
 	 */
 	VortexCtx  * ctx;
@@ -193,7 +193,7 @@ struct _VortexConnection {
 	 */
 	char       * localize;
 
-	/**
+	/** 
 	 * @brief The channel_mutex
 	 *
 	 * This mutex is used at vortex_connection_get_next_channel to
@@ -216,7 +216,7 @@ struct _VortexConnection {
 	 */
 	VortexMutex     channel_mutex;
 
-	/**
+	/** 
 	 * @brief The ref_count.
 	 *
 	 * This enable a vortex connection to keep track of the
@@ -227,7 +227,7 @@ struct _VortexConnection {
 	 */
 	int  ref_count;
 	
-	/**
+	/** 
 	 * @brief The ref_mutex
 	 * This mutex is used at vortex_connection_ref and
 	 * vortex_connection_unref to avoid race conditions especially
@@ -238,7 +238,7 @@ struct _VortexConnection {
 	 */
 	VortexMutex  ref_mutex;
 
-	/**
+	/** 
 	 * @brief The op_mutex
 	 * This mutex allows to avoid race condition on operating with
 	 * the same connection from different threads.
@@ -310,12 +310,12 @@ struct _VortexConnection {
 	 */
 	char    * serverName;
 
-	/**
+	/** 
 	 * @brief Stack storing pending channel errors found.
 	 */ 
 	axlStack * pending_errors;
 
-	/**
+	/** 
 	 * @brief Mutex used to open the pending errors list.
 	 */
 	VortexMutex pending_errors_mutex;
@@ -327,7 +327,7 @@ struct _VortexConnection {
 	axlList  * add_channel_handlers;
 	axlList  * remove_channel_handlers;
 
-	/**
+	/** 
 	 * @brief Mutex used to protect previous lists.
 	 */
 	VortexMutex channel_update_mutex;
@@ -5700,9 +5700,10 @@ void                vortex_connection_init                   (VortexCtx        *
 	vortex_mutex_create (&ctx->connection_actions_mutex);
 
 	/* init hashes */
-	ctx->connection_xml_cache = axl_hash_new (axl_hash_string, axl_hash_equal_string);
-	ctx->connection_hostname  = axl_hash_new (axl_hash_string, axl_hash_equal_string);
-
+	if (ctx->connection_xml_cache == NULL)
+		ctx->connection_xml_cache = axl_hash_new (axl_hash_string, axl_hash_equal_string);
+	if (ctx->connection_hostname == NULL)
+		ctx->connection_hostname  = axl_hash_new (axl_hash_string, axl_hash_equal_string);
 	return;
 }
 

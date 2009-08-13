@@ -1289,6 +1289,12 @@ axlPointer __vortex_reader_run (VortexCtx * ctx)
 		max_fds = __vortex_reader_build_set_to_watch (on_reading, con_cursor, srv_cursor);
 
 		if ((axl_list_length (con_list) == 0) && (axl_list_length (srv_list) == 0)) {
+			/* check if we have to terminate the process
+			 * in the case no more connections are
+			 * available: useful when the current instance
+			 * is running in the context of turbulence */
+			vortex_ctx_check_on_finish (ctx);
+
 			vortex_log (VORTEX_LEVEL_DEBUG, "no more connection to watch for, putting into sleep thread");
 			goto __vortex_reader_run_first_connection;
 		}
@@ -1416,7 +1422,7 @@ void vortex_reader_watch_listener   (VortexCtx        * ctx,
 	return;
 }
 
-/**
+/** 
  * @internal
  * 
  * Creates the reader thread process. It will be waiting for any
@@ -1579,7 +1585,7 @@ VortexAsyncQueue * vortex_reader_foreach                     (VortexCtx         
 	return queue;
 }
 
-/**
+/** 
  * @internal Allows to restart the vortex reader module, locking the
  * caller until the reader restart its loop.
  */

@@ -123,18 +123,46 @@ void vortex_listener_accept_connection    (VortexConnection * connection, axl_bo
 
 	/* check result */
 	if (! result) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "the server application level have dropped the provided connection");
-		/* send the error reply message */
-		vortex_channel_send_err (vortex_connection_get_channel (connection, 0), 
-					 "<error code='554'>transaction failed, peer have denied your request</error>",
-					 75, 0);
-					 
+		/* check connection status */
+		if (vortex_connection_is_ok (connection, axl_false)) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "the server application level have dropped the provided connection");
+			/* send the error reply message */
+			vortex_channel_send_err (vortex_connection_get_channel (connection, 0), 
+						 "<error code='554'>transaction failed, peer have denied your request</error>",
+						 75, 0);
+		} /* end if */
+
 		/* flag the connection to be not connected */
 		__vortex_connection_set_not_connected (connection, "connection filtered by on accept handler", VortexConnectionFiltered);
+
 		vortex_connection_unref (connection, "vortex listener");
 		return;
 
 	} /* end if */
+
+	/* call to complete incoming connection register operation */
+	vortex_listener_complete_register (connection, send_greetings);
+	
+	/* close connection and free resources */
+	vortex_log (VORTEX_LEVEL_DEBUG, "worker ended, connection registered on manager (initial accept)");
+
+	return;
+}
+
+/** 
+ * @internal Fucntion that allows to complete last parts once a
+ * connection is accepted.
+ */
+void          vortex_listener_complete_register    (VortexConnection * connection, 
+						    axl_bool           send_greetings)
+{
+	VortexCtx * ctx;
+
+	/* check connection received */
+	if (connection == NULL)
+		return;
+
+	ctx = vortex_connection_get_ctx (connection);
 
 	/* send greetings, get actual profile installation and report
 	 * it to init peer */
@@ -161,9 +189,6 @@ void vortex_listener_accept_connection    (VortexConnection * connection, axl_bo
 	 * connection get a non-blocking state
 	 */
 	vortex_reader_watch_connection      (ctx, connection);
-
-	/* close connection and free resources */
-	vortex_log (VORTEX_LEVEL_DEBUG, "worker ended, connection registered on manager (initial accept)");
 
 	return;
 }
