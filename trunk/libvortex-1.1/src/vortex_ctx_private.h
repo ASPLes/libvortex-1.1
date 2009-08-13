@@ -87,6 +87,10 @@ struct _VortexCtx {
 	VortexLogHandler     debug_handler;
 
 	/*** global handlers */
+	/* @internal Finish handler */
+	VortexOnFinishHandler             finish_handler;
+	axlPointer                        finish_handler_data;
+
 	/* @internal Handler used to implement global frame received.
 	 */
 	VortexOnFrameReceived             global_frame_received;

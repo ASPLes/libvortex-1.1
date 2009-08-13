@@ -86,4 +86,13 @@ void        vortex_ctx_unref                     (VortexCtx ** ctx);
 
 void        vortex_ctx_free                      (VortexCtx * ctx);
 
+void        vortex_ctx_set_on_finish        (VortexCtx              * ctx,
+					     VortexOnFinishHandler    finish_handler,
+					     axlPointer               user_data);
+
+void        vortex_ctx_check_on_finish      (VortexCtx * ctx);
+
+void        vortex_ctx_reinit (VortexCtx * ctx);
+
+
 #endif /* __VORTEX_CTX_H__ */

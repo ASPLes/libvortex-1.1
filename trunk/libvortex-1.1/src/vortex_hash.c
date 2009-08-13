@@ -55,11 +55,11 @@ struct _VortexHash {
 	VortexAsyncQueue * changed_queue;
 };
 
-/**
+/** 
  * \defgroup vortex_hash VortexHash: Thread Safe Hash table used inside Vortex Library.
  */
 
-/**
+/** 
  * \addtogroup vortex_hash
  * @{
  */
@@ -90,7 +90,7 @@ void __vortex_hash_notify_change (VortexHash * hash_table)
 	return;
 }
 
-/**
+/** 
  * @brief Creates a new VortexHash setting all functions.
  * 
  * Creates a new Vortex Hash Table. All vortex library is programed
@@ -134,7 +134,7 @@ VortexHash * vortex_hash_new_full (axlHashFunc    hash_func,
 	
 }
 
-/**
+/** 
  * @brief Creates a new VortexHash without providing destroy function.
  * 
  * A vortex_hash_new_full version passing in as NULL key_destroy_func and 
@@ -151,7 +151,7 @@ VortexHash * vortex_hash_new      (axlHashFunc    hash_func,
 	return vortex_hash_new_full (hash_func, key_equal_func, NULL, NULL);
 }
 
-/**
+/** 
  * @brief Allows to increase in one unit the reference counting on the
  * hash table received. A call to \ref vortex_hash_unref will be
  * required to reduce the reference counting. Reaching 0 will cause
@@ -465,7 +465,7 @@ axl_bool     vortex_hash_remove   (VortexHash *hash_table,
 	return axl_true;
 }
 
-/**
+/** 
  * @brief Destroy the given hash freeing all resources.
  * 
  * Destroy the hash table.
@@ -509,7 +509,7 @@ void         vortex_hash_destroy  (VortexHash *hash_table)
 	return;
 }
 
-/** 
+/**  
  * @brief Allows to remove the provided key and its associated data on
  * the provided hash without calling to the optionally associated
  * destroy functions.
@@ -543,7 +543,7 @@ axl_bool          vortex_hash_delete   (VortexHash   *hash_table,
 	return axl_true;
 }
 
-/**
+/** 
  * @brief Perform a foreach over all elements inside the VortexHash.
  * 
  * @param hash_table The hash table where the foreach operation will
@@ -570,7 +570,7 @@ void         vortex_hash_foreach  (VortexHash         *hash_table,
 	return;
 }
 
-/**
+/** 
  * @brief Perform a foreach over all elements inside the VortexHash,
  * allowing to provide two user defined reference at the handler.
  * 
@@ -600,7 +600,7 @@ void         vortex_hash_foreach2  (VortexHash           *hash_table,
 	return;
 }
 
-/**
+/** 
  * @brief Perform a foreach over all elements inside the VortexHash,
  * allowing to provide three user defined reference at the handler.
  * 
