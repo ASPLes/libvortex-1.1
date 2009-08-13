@@ -130,11 +130,11 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 	const char         * port = NULL;
 	PyObject           * py_vortex_ctx = NULL;
 
-	/* create the object */
-	self = (PyVortexConnection *)type->tp_alloc(type, 0);
-
 	/* now parse arguments */
 	static char *kwlist[] = {"ctx", "host", "port", NULL};
+
+	/* create the object */
+	self = (PyVortexConnection *)type->tp_alloc(type, 0);
 
 	/* check args */
 	if (args != NULL) {
