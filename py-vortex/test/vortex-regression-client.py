@@ -281,7 +281,7 @@ def test_04 ():
         error ("Expected to find proper channel creation, but error found:")
         # get first message
         err = conn.pop_channel_error ()
-        while error:
+        while err:
             error ("Found error message: " + str (err[0]) + ": " + err[1])
 
             # next message
@@ -317,7 +317,7 @@ def test_04 ():
         error ("Expected to find proper channel close operation, but error found: ")
         # get first message
         err = conn.pop_channel_error ()
-        while error:
+        while err:
             error ("Found error message: " + str (err[0]) + ": " + err[1])
 
             # next message
@@ -371,7 +371,7 @@ def test_05 ():
         error ("Expected to find proper channel creation, but error found:")
         # get first message
         err = conn.pop_channel_error ()
-        while error_data:
+        while err:
             error ("Found error message: " + str (err[0]) + ": " + err[1])
 
             # next message
