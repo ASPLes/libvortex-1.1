@@ -409,6 +409,12 @@ PyObject * py_vortex_connection_get_attr (PyObject *o, PyObject *attr_name) {
 	} else if (axl_cmp (attr, "port")) {
 		/* found port attribute */
 		return Py_BuildValue ("s", vortex_connection_get_port (self->conn));
+	} else if (axl_cmp (attr, "local_addr")) {
+		/* found local_addr attribute */
+		return Py_BuildValue ("s", vortex_connection_get_local_addr (self->conn));
+	} else if (axl_cmp (attr, "local_port")) {
+		/* found local_port attribute */
+		return Py_BuildValue ("s", vortex_connection_get_local_port (self->conn));
 	} else if (axl_cmp (attr, "num_channels")) {
 		/* found num_channels attribute */
 		return Py_BuildValue ("i", vortex_connection_channels_count (self->conn));
