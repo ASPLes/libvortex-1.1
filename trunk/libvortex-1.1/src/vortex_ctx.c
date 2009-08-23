@@ -112,6 +112,8 @@ void      vortex_ctx_reinit (VortexCtx * ctx)
 	vortex_mutex_create (&ctx->log_mutex);
 	vortex_mutex_create (&ctx->ref_mutex);
 
+	/* the rest of mutexes are initialized by vortex_init_ctx. */
+
 	return;
 }
 #endif

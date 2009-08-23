@@ -1295,7 +1295,7 @@ axlPointer __vortex_reader_run (VortexCtx * ctx)
 			 * is running in the context of turbulence */
 			vortex_ctx_check_on_finish (ctx);
 
-			vortex_log (VORTEX_LEVEL_DEBUG, "no more connection to watch for, putting into sleep thread");
+			vortex_log (VORTEX_LEVEL_DEBUG, "no more connection to watch for, putting thread to sleep");
 			goto __vortex_reader_run_first_connection;
 		}
 		

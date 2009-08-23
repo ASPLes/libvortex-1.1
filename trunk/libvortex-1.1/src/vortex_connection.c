@@ -117,6 +117,15 @@ struct _VortexConnection {
 	char       * port;
 
 	/** 
+	 * @brief Contains the local address that is used by this connection.
+	 */
+	char       * local_addr;
+	/** 
+	 * @brief Contains the local port that is used by this connection.
+	 */
+	char       * local_port;
+
+	/** 
 	 * @brief Allows to hold and report current connection status.
 	 */
 	axl_bool     is_connected;
@@ -1040,7 +1049,7 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 	} else {
 		if (conn->role == VortexRoleMasterListener) {
 			if (getsockname (socket, (struct sockaddr *) &sin, &sin_size) < -1) {
-				vortex_log (VORTEX_LEVEL_DEBUG, "unable to get remote hostname and port");
+				vortex_log (VORTEX_LEVEL_DEBUG, "unable to get local hostname and port");
 				return axl_false;
 			} /* end if */
 		} else {
@@ -1054,6 +1063,16 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 		conn->host = vortex_support_inet_ntoa (ctx, &sin);
 		conn->port = axl_strdup_printf ("%d", ntohs (sin.sin_port));	
 	} /* end if */
+
+	/* now set local address */
+	if (getsockname (socket, (struct sockaddr *) &sin, &sin_size) < -1) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "unable to get local hostname and port to resolve local address");
+		return axl_false;
+	} /* end if */
+	
+	/* set local addr and local port */
+	conn->local_addr = vortex_support_inet_ntoa (ctx, &sin);
+	conn->local_port = axl_strdup_printf ("%d", ntohs (sin.sin_port));	
 
 	return axl_true;
 }
@@ -1669,7 +1688,14 @@ axl_bool vortex_connection_do_greetings_exchange (VortexCtx * ctx, VortexConnect
  */
 axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 {
-
+	struct sockaddr_in   sin;
+#if defined(AXL_OS_WIN32)
+	/* windows flavors */
+	int                  sin_size = sizeof (sin);
+#else
+	/* unix flavors */
+	socklen_t            sin_size = sizeof (sin);
+#endif
 	/* get current context */
 	VortexConnection   * connection   = data->connection;
 	VortexCtx          * ctx          = connection->ctx;
@@ -1705,6 +1731,17 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 	 * perform the final operations so the connection becomes
 	 * usable. Later, the user app level is notified. */
 	if (connection->is_connected) {
+
+		/* configure local address used by this connection */
+		/* now set local address */
+		if (getsockname (connection->session, (struct sockaddr *) &sin, &sin_size) < -1) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "unable to get local hostname and port to resolve local address");
+			return axl_false;
+		} /* end if */
+	
+		/* set local addr and local port */
+		connection->local_addr = vortex_support_inet_ntoa (ctx, &sin);
+		connection->local_port = axl_strdup_printf ("%d", ntohs (sin.sin_port));	
 
 		/* create channel 0 (virtually always is created but,
 		 * is necessary to have a representation for channel
@@ -2880,14 +2917,18 @@ void               vortex_connection_free (VortexConnection * connection)
 	/* free host and port */
 	if (connection->host != NULL) {
 		axl_free (connection->host);
-		connection->host    = NULL;
+		axl_free (connection->local_addr);
+		connection->host       = NULL;
+		connection->local_addr = NULL;
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing connection port id=%d", connection->id);
 
 	if (connection->port != NULL) {
 		axl_free (connection->port);
-		connection->port    = NULL;
+		axl_free (connection->local_port);
+		connection->port       = NULL;
+		connection->local_port = NULL;
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing connection profiles id=%d", connection->id);
