@@ -3950,6 +3950,35 @@ const char        * vortex_connection_get_port             (VortexConnection * c
 }
 
 /** 
+ * @brief Allows to get local address used by the connection.
+ * @param connection The connection to check.
+ *
+ * @return A reference to the local address used or NULL if it fails.
+ */
+const char        * vortex_connection_get_local_addr         (VortexConnection * connection)
+{
+	/* check reference received */
+	if (connection == NULL)
+		return NULL;
+
+	return connection->local_addr;
+}
+
+/** 
+ * @brief Allows to get the local port used by the connection. 
+ * @param connection The connection to check.
+ * @return A reference to the local port used or NULL if it fails.
+ */
+const char        * vortex_connection_get_local_port         (VortexConnection * connection)
+{
+	/* check reference received */
+	if (connection == NULL)
+		return NULL;
+
+	return connection->local_port;
+}
+
+/** 
  * @internal 
  *
  * Function used to perform on close invocation

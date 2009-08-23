@@ -105,6 +105,14 @@ Module API
 
       (Read only attribute) (String) returns the port string the connection is using to connected to.
 
+   .. attribute:: local_addr
+
+      (Read only attribute) (String) returns the local address used by the connection.
+
+   .. attribute::  local_port
+
+      (Read only attribute) (String) returns the local port string used by the connection.
+
    .. attribute:: num_channels
 
       (Read only attribute) (Integer) returns the number of channels opened on the connection.
