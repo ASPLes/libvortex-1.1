@@ -108,4 +108,18 @@ int                  vortex_io_waiting_invoke_wait             (VortexCtx       
 
 void                 vortex_io_init (VortexCtx * ctx);
 
+/* internal API */
+axlPointer __vortex_io_waiting_default_create  (VortexCtx * ctx, VortexIoWaitingFor wait_to);
+void       __vortex_io_waiting_default_destroy (axlPointer fd_group);
+void       __vortex_io_waiting_default_clear   (axlPointer __fd_group);
+int        __vortex_io_waiting_default_wait_on (axlPointer __fd_group, 
+						int        max_fds, 
+						VortexIoWaitingFor wait_to);
+axl_bool   __vortex_io_waiting_default_add_to  (int                fds, 
+						VortexConnection * connection,
+						axlPointer         __fd_set);
+axl_bool   __vortex_io_waiting_default_is_set  (int        fds, 
+						axlPointer __fd_set, 
+						axlPointer user_data);
+
 #endif

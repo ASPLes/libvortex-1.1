@@ -517,7 +517,8 @@ axl_bool  test_01c (void) {
 		/* receive first the notification that the channel is now created */
 		channel = vortex_async_queue_pop (queue);
 		if (PTR_TO_INT (channel) != -4) {
-			printf ("Test 01-c: (1.-1) expected to find channel creation notification but found another value..\n");
+			printf ("Test 01-c: (1.-1) expected to find channel creation notification but found another value: (%d != %d)..\n",
+				PTR_TO_INT (channel), -4);
 			return axl_false;
 		} /* end if */
 		channel = vortex_async_queue_pop (queue);
