@@ -179,6 +179,7 @@ struct _VortexCtx {
 	/**** vortex profiles module state ****/
 	VortexHash        * registered_profiles;
 	axlList           * profiles_list;
+	VortexMutex         profiles_list_mutex;
 
 	/**** vortex io waiting module state ****/
 	VortexIoCreateFdGroup  waiting_create;
