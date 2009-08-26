@@ -1007,14 +1007,18 @@ typedef enum {
 } VortexIoWaitingType;
 
 
-/**
+/** 
  * @brief Enum definition to configure stages during the connection
- * creation.
+ * creation. 
  */
 typedef enum {
-	/**
+	/** 
 	 * @brief Actions to be executed after the connection
-	 * creation. Only connections properly created are notified.
+	 * creation. Only connections properly created are
+	 * notified. Handler associated to this stage is run just
+	 * after the BEEP session is stablished. This handler is
+	 * executed after handlers configured at \ref
+	 * vortex_listener_set_on_connection_accepted. 
 	 */
 	CONNECTION_STAGE_POST_CREATED = 1
 } VortexConnectionStage;

@@ -125,7 +125,10 @@ void      vortex_ctx_reinit (VortexCtx * ctx)
  * 
  * @param ctx The context where the finish handler will be installed.
  *
- * @param finish_handler Finish handler to be called as described by \ref VortexOnFinishHandler. 
+ * @param finish_handler Finish handler to be called as described by
+ * \ref VortexOnFinishHandler.
+ *
+ * @param user_data User defined data to be passed to the handler.
  */
 void        vortex_ctx_set_on_finish        (VortexCtx              * ctx,
 					     VortexOnFinishHandler    finish_handler,

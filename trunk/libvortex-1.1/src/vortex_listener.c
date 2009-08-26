@@ -182,7 +182,11 @@ void          vortex_listener_complete_register    (VortexConnection * connectio
 	vortex_connection_set_data (connection, "initial_accept", INT_TO_PTR (axl_true));
 
 	/* call to notify connection created */
-	vortex_connection_actions_notify (&connection, CONNECTION_STAGE_POST_CREATED);
+	if (! vortex_connection_actions_notify (&connection, CONNECTION_STAGE_POST_CREATED)) {
+		/* action reporting failure, unref the connection */
+		vortex_connection_unref (connection, "vortex listener do to action failure");
+		return;
+	} /* end if */
 
 	/*
 	 * register the connection on vortex reader from here, the
