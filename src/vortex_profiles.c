@@ -235,6 +235,10 @@ axl_bool  vortex_profiles_register (VortexCtx             * ctx,
 	if (ctx == NULL)
 		return axl_false;
 
+	/* lock this section using profile list mutex to avoid adding
+	 * the same profile configuration twice */
+	vortex_mutex_lock (&ctx->profiles_list_mutex);
+
 	/* find out if we already have registered this profile */
 	profile = vortex_hash_lookup (ctx->registered_profiles, (axlPointer) uri);
 	if (profile == NULL) {
@@ -257,8 +261,14 @@ axl_bool  vortex_profiles_register (VortexCtx             * ctx,
 		/* register in the list */
 		axl_list_append (ctx->profiles_list, profile->profile_name);
 
+		/* release */
+		vortex_mutex_unlock (&ctx->profiles_list_mutex);
+
 		return axl_true;
 	}
+
+	/* release */
+	vortex_mutex_unlock (&ctx->profiles_list_mutex);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "profile %s is already registered, updating its settings",
 		    uri);
@@ -297,15 +307,22 @@ axl_bool vortex_profiles_unregister              (VortexCtx             * ctx,
 		return axl_false;
 
 	/* find out if we already have registered this profile */
+	vortex_mutex_lock (&ctx->profiles_list_mutex);
 	profile = vortex_hash_lookup (ctx->registered_profiles, (axlPointer) uri);
-	if (profile == NULL)
+	if (profile == NULL) {
+		/* release */
+		vortex_mutex_unlock (&ctx->profiles_list_mutex);
 		return axl_false;
+	}
 
 	/* remove by pointer */
 	axl_list_remove_ptr (ctx->profiles_list, profile->profile_name);
 
 	/* unregister the profile */
 	vortex_hash_remove (ctx->registered_profiles, (axlPointer) uri);
+
+	/* release */
+	vortex_mutex_unlock (&ctx->profiles_list_mutex);
 
 	return axl_true;
 }
@@ -482,6 +499,9 @@ axl_bool vortex_profiles_register_extended_start (VortexCtx                    *
 	if (ctx == NULL)
 		return axl_false;
 
+	/* lock during check operation */
+	vortex_mutex_lock (&ctx->profiles_list_mutex);
+
 	/* find out if we already have registered this profile */
 	profile     = vortex_hash_lookup (ctx->registered_profiles, (axlPointer) uri);
 	if (profile == NULL) {
@@ -507,6 +527,9 @@ axl_bool vortex_profiles_register_extended_start (VortexCtx                    *
 	/* register extended start message */
 	profile->start_extended           = extended_start;
 	profile->start_extended_user_data = extended_start_user_data;
+
+	/* release */
+	vortex_mutex_unlock (&ctx->profiles_list_mutex);
 
 	return axl_true;
 }
@@ -1086,6 +1109,8 @@ void    vortex_profiles_init (VortexCtx * ctx)
 				      (axlDestroyFunc) __vortex_profiles_destroy_profile_item); /* value destroy function */
 
 	ctx->profiles_list = axl_list_new (axl_list_always_return_1, NULL);
+	/* init mutex associated */
+	vortex_mutex_create (&ctx->profiles_list_mutex);
 
 	return;
 }
@@ -1109,6 +1134,9 @@ void  vortex_profiles_cleanup (VortexCtx * ctx)
 	/* destroy the list */
 	axl_list_free (ctx->profiles_list);
 	ctx->profiles_list = NULL;
+
+	/* destroy mutex */
+	vortex_mutex_destroy (&ctx->profiles_list_mutex);
 
 	return;
 }
