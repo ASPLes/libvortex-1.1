@@ -4435,7 +4435,7 @@ VortexChannelFrameSize  vortex_connection_set_default_next_frame_size_handler (V
  *
  * @return An error was found during the processing.
  */
-int                 vortex_connection_actions_notify   (VortexConnection        ** caller_conn,
+axl_bool            vortex_connection_actions_notify   (VortexConnection        ** caller_conn,
 							VortexConnectionStage      stage)
 {
 	/* get current context */
@@ -4489,6 +4489,7 @@ int                 vortex_connection_actions_notify   (VortexConnection        
 				/* request to replace received connection */
 				(*caller_conn) = new_conn;
 				conn           = new_conn;
+				break;
 			default:
 				vortex_log (VORTEX_LEVEL_WARNING, "found unsupported value returned by a connection action=%d", result);
 			} /* end if */
@@ -4784,7 +4785,8 @@ void                vortex_connection_set_data_full          (VortexConnection *
  * 
  * @param ctx The context that is going to be configured.
  *
- * @param stage The stage where  the connection action will be installed. 
+ * @param stage The stage where the connection action will be
+ * installed.
  *
  * @param action_handler The handler to be executed. The function can
  * have several actions registered on a stage. All of them will be
@@ -4792,6 +4794,9 @@ void                vortex_connection_set_data_full          (VortexConnection *
  *
  * @param handler_data A user defined pointer to be passed to the
  * action function.
+ *
+ * Seet \ref VortexConnectionAction and \ref VortexConnectionStage for
+ * more information.
  */
 void                vortex_connection_set_connection_actions (VortexCtx              * ctx,
 							      VortexConnectionStage    stage,

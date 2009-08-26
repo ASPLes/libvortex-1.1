@@ -954,19 +954,20 @@ typedef void (*VortexConnectionOnChannelUpdate) (VortexChannel * channel, axlPoi
  * @return The function must return a set of codes that are used by
  * the library to handle errors. The action must return:
  *
- * - (-1) in the case an error was found during the action
- * processing. In this case, the connection is closed and a closed
- * connection is returned to the caller of \ref vortex_connection_new.
+ * - (-1) in the case an error is found during the action
+ * processing. In this case, the connection is shutted down and a non
+ * connected reference is returned to the caller.
  *
- * - (0) in the case the function want to stop action processing. This
- * is useful to block other actions.
+ * - (0) in the case no error was found and the function wants to stop
+ * action processing. This is useful to block other actions.
  *
- * - (1) in the case the function executed the action without errors.
+ * - (1) in the case no error was found and the function don't care
+ *     about other actions being executed. the function executed the
+ *     action without errors.
  *
- * - (2) in the case the function creates a new connection and it must
- * be replaced, the caller must return (2) and fill the variable
- * new_connection. In this case, the action is entirely responsible of
- * the connection received and its deallocation.
+ * - (2) in the case the function creates a new connection and updates
+ *     references (using new_conn). In this case, the action handler
+ *     is responsible of the connection received and its deallocation.
  */
 typedef int (*VortexConnectionAction)    (VortexCtx               * ctx,
 					  VortexConnection        * conn,
