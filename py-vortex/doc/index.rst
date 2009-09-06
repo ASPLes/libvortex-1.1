@@ -24,7 +24,6 @@ used while using PyVortex: http://www.aspl.es/fact/files/af-arch/vortex-1.1/html
    :maxdepth: 1
 
    license
-   quickstart
    manual
    Vortex Library 1.1 documentation center <http://www.aspl.es/fact/files/af-arch/vortex-1.1/html/index.html>
 
