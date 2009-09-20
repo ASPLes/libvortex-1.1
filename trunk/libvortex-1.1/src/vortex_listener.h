@@ -75,6 +75,8 @@ void          vortex_listener_accept_connections   (VortexCtx        * ctx,
 void          vortex_listener_accept_connection    (VortexConnection * connection, 
 						    axl_bool           send_greetings);
 
+VORTEX_SOCKET vortex_listener_accept               (VORTEX_SOCKET server_socket);
+
 void          __vortex_listener_second_step_accept (VortexFrame * frame, 
 						    VortexConnection * connection);
 

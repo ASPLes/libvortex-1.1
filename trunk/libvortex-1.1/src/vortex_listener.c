@@ -365,11 +365,14 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 	return;	
 }
 
-
-
-void vortex_listener_accept_connections (VortexCtx        * ctx,
-					 int                server_socket, 
-					 VortexConnection * listener)
+/** 
+ * @brief Public function that performs a TCP listener accept.
+ *
+ * @param server_socket The listener socket where the accept() operation will be called.
+ *
+ * @return Returns a connected socket descriptor or \ref VORTEX_SOCKET_ERROR.
+ */
+VORTEX_SOCKET vortex_listener_accept (VORTEX_SOCKET server_socket)
 {
 	struct sockaddr_in inet_addr;
 #if defined(AXL_OS_WIN32)
@@ -377,14 +380,20 @@ void vortex_listener_accept_connections (VortexCtx        * ctx,
 #else
 	socklen_t         addrlen;
 #endif
-	int               soft_limit, hard_limit;
-
-	VORTEX_SOCKET     client_socket;
-	VORTEX_SOCKET     temp;
-
 	addrlen       = sizeof(struct sockaddr_in);
+
 	/* accept the connection new connection */
-	client_socket = accept (server_socket, (struct sockaddr *)&inet_addr, &addrlen);
+	return accept (server_socket, (struct sockaddr *)&inet_addr, &addrlen);
+}
+
+void vortex_listener_accept_connections (VortexCtx        * ctx,
+					 int                server_socket, 
+					 VortexConnection * listener)
+{
+	int   soft_limit, hard_limit, client_socket, temp;
+
+	/* accept the connection new connection */
+	client_socket = vortex_listener_accept (server_socket);
 	if (client_socket == VORTEX_SOCKET_ERROR) {
 		/* get values */
 		vortex_conf_get (ctx, VORTEX_SOFT_SOCK_LIMIT, &soft_limit);
