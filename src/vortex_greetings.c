@@ -104,7 +104,6 @@ int __vortex_greetings_build_message (VortexConnection * connection, char * gree
 		next_index ++;
 	} /* end features */
 	
-
 	if (localize) {
 		memcpy (greetings_buffer + next_index, " localize='", 11);
 		next_index += 11;
@@ -392,7 +391,7 @@ axl_bool           vortex_greetings_client_send     (VortexConnection * connecti
 	registered_profiles = vortex_profiles_get_actual_list_ref (ctx);
 	if (registered_profiles == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
-			    "unable to build and send greetings message: unable to found any profile registered");
+			    "unable to build and send greetings message: unable to find any profile registered");
 		return axl_false;
 	}
 	

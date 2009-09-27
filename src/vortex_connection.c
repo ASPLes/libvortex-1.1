@@ -1888,8 +1888,8 @@ VortexConnection * vortex_connection_new (VortexCtx   * ctx,
 
 	VortexConnectionNewData * data;
 
-	/* check context */
-	if (ctx == NULL)
+	/* check context is initialized */
+	if (! vortex_init_check (ctx))
 		return NULL;
 
 	/* check parameters */

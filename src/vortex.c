@@ -946,9 +946,30 @@ axl_bool    vortex_init_ctx (VortexCtx * ctx)
 	       thread_num);
 	vortex_thread_pool_init (ctx, thread_num);
 
+	/* flag this context as initialized */
+	ctx->vortex_initialized = axl_true;
+
 	/* register the vortex exit function */
 	return axl_true;
 }
+
+/** 
+ * @brief Allows to check if the provided VortexCtx is initialized
+ * (\ref vortex_init_ctx).
+ * @param ctx The context to be checked for initialization.
+ * @return axl_true if the context was initialized, otherwise axl_false is returned.
+ */
+axl_bool vortex_init_check (VortexCtx * ctx)
+{
+#define msg "vortex context seems to be not initialized: you can't use vortex API without calling to vortex_init_ctx"
+	if (ctx == NULL || ! ctx->vortex_initialized) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, msg);
+		printf ("ERROR: %s\n", msg);
+		return axl_false;
+	}
+	return axl_true;
+}
+
 
 /** 
  * @brief Terminates the vortex library execution on the provided
@@ -985,6 +1006,9 @@ axl_bool    vortex_init_ctx (VortexCtx * ctx)
  */
 void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
 {
+	/* check context is initialized */
+	if (! vortex_init_check (ctx))
+		return;
 
 	/* check if the library is already started */
 	if (ctx == NULL || ctx->vortex_exit)

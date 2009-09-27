@@ -674,6 +674,10 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
 						  axlPointer                user_data)
 {
 	VortexListenerData * data;
+
+	/* check context is initialized */
+	if (! vortex_init_check (ctx))
+		return NULL;
 	
 	/* init listener module */
 	vortex_listener_init (ctx);
