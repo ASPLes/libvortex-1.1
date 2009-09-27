@@ -314,6 +314,8 @@ BEGIN_C_DECLS
 
 axl_bool vortex_init_ctx             (VortexCtx * ctx);
 
+axl_bool vortex_init_check           (VortexCtx * ctx);
+
 void     vortex_exit_ctx             (VortexCtx * ctx, 
 				      axl_bool    free_ctx);
 

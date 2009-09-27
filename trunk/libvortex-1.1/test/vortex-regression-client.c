@@ -1493,6 +1493,51 @@ axl_bool test_01e (void) {
 	return axl_true;
 }
 
+axl_bool test_01f (void) {
+
+	VortexConnection * listener;
+	VortexConnection * connection; 
+	VortexCtx        * vortex_ctx;
+
+	/* create a new vortex context */
+	vortex_ctx = vortex_ctx_new ();
+
+	/* now create a listener */
+	printf ("Test 01-f: expected error: ");
+	listener = vortex_listener_new (vortex_ctx, "0.0.0.0", "0", NULL, NULL);
+
+	if (vortex_connection_is_ok (listener, axl_false)) {
+		printf ("ERROR: failed to create local random listener..");
+		return axl_false;
+	} /* end if */
+
+	vortex_ctx_free (vortex_ctx);
+	vortex_ctx = vortex_ctx_new ();
+
+	/* connect to local listener without registering */
+	printf ("Test 01-f: expected error: ");
+	connection = vortex_connection_new (vortex_ctx, 
+					    vortex_connection_get_host (listener), 
+					    vortex_connection_get_port (listener),
+					    NULL, NULL);
+	if (vortex_connection_is_ok (connection, axl_false)) {
+		printf ("ERROR: failed to connect to local random listener located at: %s:%s..\n",
+			vortex_connection_get_host (listener),
+			vortex_connection_get_port (listener));
+		return axl_false;
+	}
+
+	/* exit vortex_ctx: this should not segfault...it should do
+	   anything because the context was not initialized */
+	printf ("Test 01-f: expected error: ");
+	vortex_exit_ctx (vortex_ctx, axl_true);
+
+	/* now terminate context context used */
+	vortex_ctx_free (vortex_ctx);
+	
+	return axl_true;
+}
+
 #define TEST_02_MAX_CHANNELS 24
 
 void test_02_channel_created (int                channel_num, 
@@ -7727,7 +7772,7 @@ int main (int  argc, char ** argv)
         printf ("**       valgrind or similar tools.\n");
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
-	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, \n");
+	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, test_01e, test_01f, \n");
 	printf ("**                       test_02, test_02a, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, \n");
@@ -7868,6 +7913,9 @@ int main (int  argc, char ** argv)
 
 		if (axl_cmp (run_test_name, "test_01e"))
 			run_test (test_01e, "Test 01-e", "Check listener douple port allocation", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_01f"))
+			run_test (test_01f, "Test 01-f", "Check connection with no greetings showed (or registerered)", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
@@ -8027,6 +8075,8 @@ int main (int  argc, char ** argv)
  	run_test (test_01d, "Test 01-d", "MIME support", -1, -1);
 
  	run_test (test_01e, "Test 01-e", "Check listener douple port allocation", -1, -1);
+
+ 	run_test (test_01f, "Test 01-f", "Check connection with no greetings showed (or registerered)", -1, -1);
   
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   

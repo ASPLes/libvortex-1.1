@@ -44,6 +44,7 @@
 #include <vortex.h>
 
 struct _VortexCtx {
+
 	VortexMutex          ref_mutex;
 	int                  ref_count;
 
@@ -54,6 +55,9 @@ struct _VortexCtx {
 	 * transit.
 	 */
 	axl_bool             vortex_exit;
+	/* @internal Allows to check if the provided vortex context is initialized
+	 */
+	axl_bool             vortex_initialized;
 
 	/* global mutex */
 	VortexMutex          frame_id_mutex;
