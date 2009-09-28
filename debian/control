@@ -2,7 +2,7 @@ Source: libvortex-1.1
 Priority: extra
 Maintainer: Francis Brosnan <francis@aspl.es>
 Build-Depends: debhelper (>= 5), autotools-dev, pkg-config, 
-  libaxl-dev (>= 0.5.3)), libreadline5-dev, libssl-dev,
+  libaxl-dev (>= 0.6.0)), libreadline5-dev, libssl-dev,
   libgsasl7-dev
 Standards-Version: 3.7.2
 Section: libs
@@ -10,7 +10,7 @@ Section: libs
 Package: libvortex-1.1
 Section: libs
 Architecture: any
-Depends: libc6, libaxl1 (>= 0.5.3)
+Depends: libc6, libaxl1 (>= 0.6.0)
 Description: BEEP core implemetation written in C
   Vortex Library is an implementation of the RFC 3080 / RFC 3081
   standard definitions, known as the BEEP Core protocol, implemented
@@ -22,14 +22,14 @@ Description: BEEP core implemetation written in C
 Package: libvortex-1.1-dev
 Section: libdevel
 Architecture: any
-Depends: libaxl-dev (>= 0.5.3), libvortex-1.1 (= ${Source-Version})
+Depends: libaxl-dev (>= 0.6.0), libvortex-1.1 (= ${Source-Version})
 Description: BEEP core implementation written in C 
   Development headers for the core library implementation. 
 
 Package: libvortex-tls-1.1
 Section: libs
 Architecture: any
-Depends: libc6, libaxl1 (>= 0.5.3), libvortex-1.1 (= ${Source-Version}),
+Depends: libc6, libaxl1 (>= 0.6.0), libvortex-1.1 (= ${Source-Version}),
   libssl0.9.8
 Description: BEEP TLS profile support for Vortex Library
  This package contains the extension library to add support for TLS
@@ -38,7 +38,7 @@ Description: BEEP TLS profile support for Vortex Library
 Package: libvortex-tls-1.1-dev
 Section: libdevel
 Architecture: any
-Depends: libaxl-dev (>= 0.5.3), libvortex-1.1-dev (= ${Source-Version}),
+Depends: libaxl-dev (>= 0.6.0), libvortex-1.1-dev (= ${Source-Version}),
   libssl-dev, libvortex-tls-1.1 (= ${Source-Version})
 Description: BEEP TLS profile support for Vortex Library (devel headers).
  Development headers for BEEP TLS profile.
@@ -46,7 +46,7 @@ Description: BEEP TLS profile support for Vortex Library (devel headers).
 Package: libvortex-sasl-1.1
 Section: libs
 Architecture: any
-Depends: libc6, libaxl1 (>= 0.5.3), libvortex-1.1 (= ${Source-Version}),
+Depends: libc6, libaxl1 (>= 0.6.0), libvortex-1.1 (= ${Source-Version}),
   libgsasl7
 Description: BEEP SASL profiles support for Vortex Library
  This package contains the extension library to add support for SASL
@@ -55,7 +55,7 @@ Description: BEEP SASL profiles support for Vortex Library
 Package: libvortex-sasl-1.1-dev
 Section: libdevel
 Architecture: any
-Depends: libaxl-dev (>= 0.5.3), libvortex-1.1-dev (= ${Source-Version}),
+Depends: libaxl-dev (>= 0.6.0), libvortex-1.1-dev (= ${Source-Version}),
  libgsasl7-dev, libvortex-sasl-1.1 (= ${Source-Version})
 Description: BEEP SASL profiles support for Vortex Library (devel headers).
  Development headers for BEEP SASL profiles for Vortex Library.
@@ -63,7 +63,7 @@ Description: BEEP SASL profiles support for Vortex Library (devel headers).
 Package: libvortex-tunnel-1.1
 Section: libs
 Architecture: any
-Depends: libc6, libaxl1 (>= 0.5.3), libvortex-1.1 (= ${Source-Version})
+Depends: libc6, libaxl1 (>= 0.6.0), libvortex-1.1 (= ${Source-Version})
 Description: BEEP TUNNEL profile support for Vortex Library
  This package contains the extension library to add support for TUNNEL
  profile to the core Vortex Library. TUNNEL profile is the proxy standard
@@ -72,7 +72,7 @@ Description: BEEP TUNNEL profile support for Vortex Library
 Package: libvortex-tunnel-1.1-dev
 Section: libdevel
 Architecture: any
-Depends: libaxl-dev (>= 0.5.3), libvortex-1.1-dev (= ${Source-Version}),
+Depends: libaxl-dev (>= 0.6.0), libvortex-1.1-dev (= ${Source-Version}),
  libvortex-tunnel-1.1 (= ${Source-Version})
 Description: BEEP SASL profiles support for Vortex Library (devel headers).
  Development headers for BEEP TUNNEL profile for Vortex Library.
@@ -80,7 +80,7 @@ Description: BEEP SASL profiles support for Vortex Library (devel headers).
 Package: libvortex-xml-rpc-1.1
 Section: libs
 Architecture: any
-Depends: libc6, libaxl1 (>= 0.5.3), libvortex-1.1 (= ${Source-Version})
+Depends: libc6, libaxl1 (>= 0.6.0), libvortex-1.1 (= ${Source-Version})
 Description: BEEP XML-RPC profile support for Vortex Library
  This package contains the extension library to add support for XML-RPC
  over BEEP profile to the core Vortex Library. 
@@ -88,7 +88,7 @@ Description: BEEP XML-RPC profile support for Vortex Library
 Package: libvortex-xml-rpc-1.1-dev
 Section: libdevel
 Architecture: any
-Depends: libaxl-dev (>= 0.5.3), libvortex-1.1-dev (= ${Source-Version}),
+Depends: libaxl-dev (>= 0.6.0), libvortex-1.1-dev (= ${Source-Version}),
   libvortex-xml-rpc-1.1 (= ${Source-Version})
 Description: XML-RPC over BEEP profile support for Vortex Library (devel headers).
  Development headers for XML-RPC over BEEP profile for Vortex Library.
@@ -96,7 +96,7 @@ Description: XML-RPC over BEEP profile support for Vortex Library (devel headers
 Package: libvortex-pull-1.1
 Section: libs
 Architecture: any
-Depends: libc6, libaxl1 (>= 0.5.3), libvortex-1.1 (= ${Source-Version})
+Depends: libc6, libaxl1 (>= 0.6.0), libvortex-1.1 (= ${Source-Version})
 Description: PULL API for single thread programming with Vortex Library
  Vortex PULL API is an extension library that provides a single thread 
  programming interface that marshalls all async notifications into
@@ -105,7 +105,7 @@ Description: PULL API for single thread programming with Vortex Library
 Package: libvortex-pull-1.1-dev
 Section: libdevel
 Architecture: any
-Depends: libaxl-dev (>= 0.5.3), libvortex-1.1-dev (= ${Source-Version}),
+Depends: libaxl-dev (>= 0.6.0), libvortex-1.1-dev (= ${Source-Version}),
   libvortex-pull-1.1 (= ${Source-Version})
 Description: PULL API extension development headers
  Development headers for PULL API extension.
@@ -113,7 +113,7 @@ Description: PULL API extension development headers
 Package: libvortex-http-1.1
 Section: libs
 Architecture: any
-Depends: libc6, libaxl1 (>= 0.5.3), libvortex-1.1 (= ${Source-Version})
+Depends: libc6, libaxl1 (>= 0.6.0), libvortex-1.1 (= ${Source-Version})
 Description: HTTP CONNECT extension library for Vortex Library
  Vortex HTTP CONNECT is an extension library that allows to connect to 
  BEEP listener by using a HTTP proxy server.
@@ -121,7 +121,7 @@ Description: HTTP CONNECT extension library for Vortex Library
 Package: libvortex-http-1.1-dev
 Section: libdevel
 Architecture: any
-Depends: libaxl-dev (>= 0.5.3), libvortex-1.1-dev (= ${Source-Version}),
+Depends: libaxl-dev (>= 0.6.0), libvortex-1.1-dev (= ${Source-Version}),
  libvortex-http-1.1 (= ${Source-Version})
 Description: HTTP CONNECT extension library headers
   Development headers for HTTP CONNECT extension library.
@@ -129,7 +129,7 @@ Description: HTTP CONNECT extension library headers
 Package: vortex-xml-rpc-gen-1.1
 Section: net
 Architecture: any
-Depends: libreadline5, libaxl1 (>= 0.5.3), 
+Depends: libreadline5, libaxl1 (>= 0.6.0), 
   libvortex-1.1 (= ${Source-Version})
 Description: tool to create support files to execute XML-RPC services.
   This package contains the xml-rpc-gen tool which is used to create 
@@ -145,3 +145,21 @@ Depends: libreadline5, libvortex-1.1 (= ${Source-Version}),
 Description: BEEP core implemetation client.
   This package contains vortex-client, a command line that allows
   to connect to and debug BEEP peers.
+
+Package: python-vortex
+Section: libs
+Architecture: any
+Depends: libvortex-1.1 (= ${Source-Version}), python2.4,
+  libvortex-sasl-1.1 (= ${Source-Version}),
+  libvortex-tls-1.1 (= ${Source-Version})
+Description: Python bindings for Vortex Library
+ Python bindings for Vortex Library
+
+Package: python-vortex-dev
+Section: libdevel
+Architecture: any
+Depends: libvortex-1.1-dev (= ${Source-Version}), python-vortex,
+  libvortex-sasl-1.1-dev (= ${Source-Version}),
+  libvortex-tls-1.1-dev (= ${Source-Version})
+Description: Development headers for Axl Python bindings
+  Python Axl bindings development headers.
