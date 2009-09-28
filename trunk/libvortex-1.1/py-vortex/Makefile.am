@@ -1,6 +1,6 @@
 SUBDIRS = src test doc
 
-EXTRA_DIST = VERSION \
+EXTRA_DIST =  \
 	get_install_dir.py \
 	py-vortex.pc.in \
 	py-vortex-sasl.pc.in \

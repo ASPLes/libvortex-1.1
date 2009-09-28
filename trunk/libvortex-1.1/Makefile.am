@@ -46,7 +46,7 @@ endif
 
 
 SUBDIRS = src $(PULL_SUPPORT_DIR) $(TUNNEL_SUPPORT_DIR) $(XML_RPC_SUPPORT_DIR) $(SASL_SUPPORT_DIR) $(TLS_SUPPORT_DIR) $(HTTP_SUPPORT_DIR) $(PY_VORTEX_DIR) $(VORTEX_TEST_DIR) $(VORTEX_XML_RPC_GEN_TOOL_DIR) $(VORTEX_DOC_DIR) data logo
-EXTRA_DIST = vortex-1.1.pc.in VERSION libvortex.sln
+EXTRA_DIST = vortex-1.1.pc.in VERSION libvortex.sln get-python-config
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = vortex-1.1.pc $(PULL_PKGCONFIG) $(TUNNEL_PKGCONFIG) $(XML_RPC_PKGCONFIG) $(SASL_PKGCONFIG) $(TLS_PKGCONFIG) $(HTTP_PKGCONFIG)
 

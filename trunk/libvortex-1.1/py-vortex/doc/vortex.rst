@@ -1,5 +1,5 @@
 :mod:`vortex` --- PyVortex base module: base functions (create listeners, register profiles)
-======================================================
+============================================================================================
 
 .. module:: vortex
    :synopsis: Vortex library base module
