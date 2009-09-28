@@ -1,0 +1,9 @@
+usr/include/py_vortex/
+usr/include/py_vortex/py_vortex_async_queue.h
+usr/include/py_vortex/py_vortex_channel.h
+usr/include/py_vortex/py_vortex_sasl.h
+usr/include/py_vortex/py_vortex_frame.h
+usr/include/py_vortex/py_vortex_tls.h
+usr/include/py_vortex/py_vortex_connection.h
+usr/include/py_vortex/py_vortex.h
+usr/include/py_vortex/py_vortex_ctx.h
