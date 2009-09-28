@@ -1,0 +1,561 @@
+      ###################################################
+      ##              Vortex Library 1.1.2             ##
+      ##                "Sirena Varada!"               ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce the Vortex
+  Library 1.1.2 "Sirena varada" release availability: an open source
+  "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.aspl.es/turbulence
+      [Turbulence BEEP server homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+This release in short
+~~~~~~~~~~~~~~~~~~~~~
+
+  * Added Python support for Vortex Library: PyVortex. This new
+  component provides python bindings for Vortex 1.1 API. Now it is
+  possible to write python applications (client and listeners) using
+  Vortex engine. Nice! 
+
+    http://url-to-documentation
+
+  * Added an unified SASL auth handler which will provide support, with
+  the same handler, to perform authentication for all SASL profiles
+  supported.
+
+  * Updated vortex threading API to support user defined create and
+  destroy handlers (thanks Wimpie). This was used to support the
+  creation of BeepFP a Free Pascal BEEP implementation built on top of
+  Vortex, written by Wimpie Nortje.
+
+    http://wiki.lazarus.freepascal.org/BeepFp
+
+  * Updated vortex internal implementation to support fork()
+  operations, allowing to create independent processes to handle BEEP
+  sessions, allowing to improve security.
+
+  Several bugs were fixed. Updated regression test to reproduce and
+  check them. Several API documentation updates.   
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  None
+
+Thanks to..
+~~~~~~~~~~~
+
+  <Ralf Konusch> (Reported problems with vortex debug logging).
+
+  <Wimpie Nortje> (Reported and fixed wrong user defined pointer
+  handling at vortex_channel_pool_new_full and for providing patches
+  that allows configuring create/destroy thread handlers. Also created
+  BeepFp).
+
+Changes since 1.1.1
+~~~~~~~~~~~~~~~~~~~
+
+* [fix] Fixed but at channel added handling causing to send frames
+  issued on that handler first than the channel creation reply itself,
+  making the remote BEEP peer to receive channel user space frames for
+  a channel which is still in creation transit. Updated regression
+  test to check is issued.
+
+* [fix] Fixed missing compilation flags for test/ directory causing
+  binaries to be built without TLS support (especially
+  vortex-regression-*).
+
+* [fix] Updated VortexOnStartChannelExtended, VortexTlsAcceptQuery,
+  VortexTlsCertificateFileLocator and VortexTlsPrivateKeyFileLocator
+  to make static parameters to have a const declaration. Parameters
+  that now have const are:
+
+   - serverName
+   - profile
+   - profile_content
+  
+  Applied required changes in the rest of files declaring handler of
+  these types.
+
+* [fix] Updated regression test to make it runnable by several users
+  at the same time.
+
+* [fix] Updated vortex profile tutorial to point to subversion files
+  and to note that all code developed is found inside the test/
+  directory as suggest Ralf (musifan1@web.de).
+
+
+* [new] Added new function to perform a safe queue unref operation
+  which nullify the caller's queue reference in case of queue refcount
+  is 0. API added:
+
+   - vortex_async_queue_safe_unref
+
+* [new] Added support to implement reference counting on VortexCtx
+  type. Updated vortex_ctx_new and vortex_ctx_free to implement
+  internally reference counting but providing the same function until
+  now. Added a couple of functions to handle reference counting. API
+  added:
+  
+   - vortex_ctx_ref
+   - vortex_ctx_unref
+
+* [fix] Fixed vortex_ctx_unref to properly check ctx reference after
+  unref operation without accessing memory.
+
+* [fix] Fixed vortex reader memory leak caused by connections
+  registered that are closed before the reader receives it.
+
+* [fix] Fixed documentation at the vortex listener module.
+
+* [fix] Committing changes to prepare preview 1.1.2
+
+* [fix] General change to produce a windows installer with a default
+  release and an additional build with log support.
+
+* [fix] Updated vortex_log_enable, vortex_log2_enable and
+  vortex_color_log_enable to include comments that references to
+  associated environment variables, etc. Thanks to (Ralf Konusch).
+  
+* [fix] Added -Wstrict-prototypes to compilation flags and fixed
+  errors reported.
+
+* [fix] Fixed vortex_log_enable and vortex_log2_enable to disable log
+  after it was activated. Reported by Ralf Konush.
+
+* [fix] Making vortex_connection_new_from_empty to check the socket
+  received before configuring it and to set a -1 to avoid closing std
+  socket descriptors on failure.
+
+* [fix] Updated vortex_connection_close implementation to also support
+  closing broken listeners (not started due to permissions, bind
+  problems, etc).
+
+* [fix] Fixed vortex_connection_close race condition with vortex
+  reader module in the case the close operations is done on a running
+  listener. Added regression test to reproduce the problem and check
+  the fix introduced.
+
+* [fix] General changes to make windows compilation to produce non
+  stripped dlls for debug builds.
+
+* [fix] Updated vortex_mutex_lock and vortex_async_queue_lock
+  documentation to explain Microsoft Windows limitations associated to
+  locking/unlocking from different threads.
+
+* [fix] Updated vortex-regression-client.c to properly run test_01c
+  under windows.
+
+* [fix] Removed SO_REUSEADDR socket option from vortex listener
+  module, which was causing to not properly detect listener with
+  already in use address.
+
+* [fix] Fixed vortex_connection_get_role to always return the role
+  configured without taking into consideration connection
+  status. Added regression test to check the problem and fix
+  introduced (test_01e).
+
+* [fix] Restored SO_REUSEADDR inside vortex_listener module if used
+  inside linux/unix platforms.
+
+* [fix] Moved header definitions required by tls module from base
+  library. Elements moved:
+
+   - VortexTlsActivation
+   - VortexTlsAcceptQuery
+   - VortexTlsCertificateFileLocator
+   - VortexTlsPrivateKeyFileLocator
+   - VortexTlsCtxCreation
+   - VortexTlsPostCheck
+ 
+* [new] Updated libvortex-sasl-1.1 implementation to provide an unified
+  auth handler that can be used to manage all SASL profiles supported
+  by Vortex API. This will simplify SASL integration and will provide
+  a more easy API evolution by not requiring to explicitly support a
+  mechanism through the public API. Old API remains without being
+  deprecated.  Updated regression test to check added functionality
+
+   - vortex_sasl_accept_negotiation_common (function)
+   - VortexSaslProps (type)
+   - VortexSaslCommonHandler (handler)
+
+* [fix] Reorganized internal libvortex-sasl-1.1 implementation
+  to make the code more maintainable.
+
+* [fix] Fixed bug inside vortex_channel_pool_new_full which was not
+  provided user defined pointer to on_channel_pool_created handler
+  (reported by Wimpie Nortje).
+  
+* [fix] Updated vortex_connection_close documentation.
+
+* [fix] Adding python vortex directory..
+
+* [fix] Committing first initial structure to implement the binding.
+  More work is required to understand the binding structure...
+
+* [new] Added initial structure to implement regression tests that
+  will be used to validate the product.
+
+* [fix] Changed building system to use autotools rather distutils.
+
+* [new] Added initial support for vortex.Ctx and vortex.Connection
+  types.  Added regression tests which properly run vortex
+  initialization, vortex connection and a vortex close operation.
+
+* [new] Added two new regression tests to check connection.shutdown
+  and channel open and close operations. Added initial implementation
+  to support vortex.Channel object. API added:
+  
+   - conn.open_channel
+   - channel.close
+   - channel.profile
+   - channel.number
+   - conn.shutdown
+   - conn.num_channels
+
+* [fix] Added initial implementation for vortex.AsyncQueue type. Added
+  initial regression test. Still more work required. Seems
+  vortex.AsyncQueue requires GC cyclic support....
+
+* [fix] Fixed vortex.AsyncQueue API and GC problems. Added regression
+  test which fully check the type with large add operations.
+
+* [new] Added initial support to wrap VortexFrame object, now
+  available through vortex.Frame type. Added support to get main
+  fields: content, payload, sizes, frame type, msgno, ansno
+  and. seqno, more_flag.
+
+* [new] Added new regression test with an initial working example
+  sending and receiving frames using vortex thread notification. Still
+  has some problems to be solved.
+
+* [new] Updated py_vortex_connection API to allow creating
+  PyVortexConnection objects using already created VortexConnection
+  instances. Updated PyVortexConnection initialization to check if
+  constructor received parameter or an empty initialization. API
+  added:
+
+  - py_vortex_connection_create
+
+* [fix] Added initial support to activate threading API allowing to
+  use native vortex invocation method. Just an initial experiment
+  before starting to use pull API.
+
+* [fix] Making py_vortex_async_queue_pop/timedpop to use
+  PyGILState_Ensure after returning to ensure the caller gets the data
+  and the appropriate running context.
+
+* [fix] Updated py_vortex_channel module to include two new python
+  methods:
+
+   - send_msg
+   - set_frame_received
+
+* [fix] Fixed segmentation fault just after frame received handler
+  notifies python code (using a newly created thread not registered by
+  python). Used PEP 311 to lock and acquire the GIL before getting
+  inside python space. Nice!
+
+* [fix] Committing fully fixed working version that does a simple
+  request/response test and a consistent way (memory access and memory
+  usage). Nice.
+
+* [new] Added support to configure channel serialize and added
+  regression test to check its function. API added:
+
+  - channel.set_serialize (boolean)
+
+* [fix] Fixed frame.content and frame.payload to also consider content
+  and payload size to build the string returned to the python
+  environment.  Added regression test to check binary strings with \0
+  included to be transferred and replied.
+
+* [fix] Added regression test to check several channels created over
+  the same connection.
+
+* [fix] Added initial support to allow conn.open_channel to configure
+  the frame_received and frame_recieved_data handler.
+
+* [new] Added initial implementation of vortex-regression-listener.py
+
+* [fix] Fixed several bugs and memory leaks at the AsyncQueue type.
+  Updated regression tests to check it. Removed queue.unref () method
+  since it is not required due to the nature of python.
+
+* [new] Added support for conn.pop_channel_error () to enable
+  application level to get channel creation errors. Updated regression
+  test.
+
+* [new] Added support for vortex.queue_replay and channel.get_reply to
+  implement vortex get reply method. Updated regression test.
+
+* [new] Added support to conn.open_channel to allow configuring the
+  frame received handler and its associated data. Updated regression
+  test.
+
+* [fix] Fixed support for channel deny request. Updated regression
+  test.
+
+* [new] Added support for an internal logging which is activated via
+  environment variables (PY_VORTEX_DEBUG and PY_VORTEX_DEBUG_COLOR).
+
+* [fix] Updated vortex.Connection module to close the connection in
+  the case the reference is collected. Making the module to acquire a
+  reference to vortex.Ctx to ensure it is not finished the ctx before
+  conn.
+
+* [new] Added initial implementation to create a listener:
+  vortex.create_listener.
+
+* [fix] Added PY_VORTEX_CONNECTION_CHECK_NOT_ROLE macro to check
+  services that are only available to a particular connection
+  role. Still requires some additional checking.
+
+* [fix] Removed is_listener parameter from
+  py_vortex_connection_create. The function can use VortexConnection
+  role to get this data.
+
+* [fix] Changed py_vortex_ctx_get to require a PyObject rather than
+  PyVortexCtx.
+
+* [fix] Added initial test to check BEEP listener support. Added API
+  call vortex.create_listener
+
+* [new] Added conn.role which returns an string representing the role.
+
+* [fix] Added debug comments to py-vortex-connection and py-vortex
+  modules.
+
+* [fix] Finally solved vortex.create_listener bug (what
+  nightmare!). The problem was caused by an exception triggered by the
+  PyVortexConnection constructor which was later handle only until a
+  python frame change (like calling a new function). Making
+  PyVortexConnection constructor to truly allow empty creation.
+
+* [fix] Fixed regression test to remove all occurrences of ;. Added
+  some debug comments inside several files.
+
+* [fix] More updates to check listener function..
+
+* [new] Added initial implementation vortex.profile_register. Still
+  more work required to really test its function.
+
+* [new] Added initial implementation to handle exceptions produced
+  inside the python execution domain.
+
+* [new] Added initial implementation for vortex.wait_listeners which
+  is a direct wrapper for vortex_listener_wait. However it is not
+  signal friendly so more work is required.
+
+* [new] Added initial working implementation for server side frame
+  received.
+
+* [fix] More updates to vortex-regression-listener.py to make it
+  functional to run all regression tests..
+
+* [fix] Fixed problem with vortex.wait_listeners to signal handling
+  which was causing to never stop python interpreter after receiving
+  sigterm/int/quit.
+
+* [fix] Fixed vortex.Connection deallocation to properly collect
+  master listener connections.
+
+* [fix] Fixed bug inside py_vortex_channel_create (was not acquiring a
+  reference).
+
+* [new] Added support for channel.send_rpy and channel.send_err. Now
+  we have a fully working client/listener python implementation that
+  runs first 5 reg tests. NICE!
+
+* [fix] Added exception handling to second level frame received
+  handling.
+
+* [fix] Making channel.{send_msg|send_rpy|send_err} to accept empty
+  strings (none values) as native C API allows to receive NULL values.
+
+* [new] Added support for server side channel start notification.  Now
+  all regression tests are supported with
+  vortex-regression-listener.py
+
+* [new] Added support for connection on close notification. API added:
+
+   - conn.set_on_close
+
+* [fix] Added regression test to check support for connection on close
+  notification.
+
+* [new] Added support to control vortex console log. API added:
+
+   - ctx.log (boolean)
+   - ctx.log2 (boolean)
+   - ctx.color_log (boolean)
+
+* [fix] Fixed vortex.create_listener to avoid creating several
+  listeners to and to properly report error on listener creation
+  failure. Added regression test_13.
+
+* [fix] Fixed conn.close to properly support closing listener
+  connections (either running or those that failed to start). Check
+  implementation to release all memory after termination. Updated
+  regression test.
+
+* [new] General update to include support for SASL and TLS profiles
+  through vortex.sasl and vortex.tls packages. Updated binding
+  structure to be installable into python sites package or other OS
+  destination, by following python rules.
+  
+  vortex.sasl API added:
+ 
+   - init
+   - is_authenticated
+   - start_auth
+   - method_used
+   - auth_id
+   - accept_mech
+
+  vortex.tls API added:
+ 
+   - init
+   - start_tls
+   - accept_tls
+
+* [fix] Updated py_vortex_handle_and_clear_exception to be usable from
+  other bindings to handle and implement exception reporiting. Added
+  support to configure an external handler to receive exceptions
+  found. API added:
+
+  - py_vortex_set_exception_handler
+  - PyVortexExceptionHandler
+
+* [fix] Updted vortex.Frame class to also support attributes: msg_no,
+  seq_no and ans_no (as well as msgno, seqno and asno).
+
+* [fix] Updated vortex.Connection class to include a instance method
+  find_by_uri to return all vortex.Channel found running a particular
+  profile.
+
+* [fix] Updated vortex.Channel module to include support to check
+  channel ready status and missing API to send ANS frames. API added:
+
+    - is_ready (property)
+    - send_ans
+    - finalize_ans
+
+* [fix] Making on_close_data parameter to be optional for set_on_close
+  method.
+
+* [fix] Removing queue.ref method (AsyncQueue) not needed inside the
+  context of python.
+
+* [new] Updated vortex thread handling API to allow configuring an
+  external thread creator/destructor functions making possible
+  external components to control thread startup and termination.  Bug
+  reported and patch to update the API provided by Wimpie Nortj
+  (thanks a lot!). API added:
+
+  - VortexThreadCreateFunc (handler)
+  - VortexThreadDestroyFunc (handler)
+  - vortex_thread_set_create 
+  - vortex_thread_set_destroy
+
+* [fix] General update to make vortex_init_ctx to be callable twice
+  reinitializing all mutex found but keeping the rest of structures
+  (required to complete a proper status recovering after forking
+  processes running initialized vortex).
+
+* [new] Updated vortex ctx API to allow registering a handler which is
+  called in the case the vortex reader process detects no more
+  connections were available to be watched (after having registered
+  some connections that were closed). API added:
+
+    - VortexOnFinishHandler (handler)
+    - vortex_ctx_set_on_finish
+
+* [fix] Updated vortex_support_add_domain_search_path_ref to check
+  domain/path pair added to avoid duplicating content.
+
+* [fix] Making vortex listener accept code to check connection status
+  after calling user space to avoid sending a message. Also updated
+  code to call to vortex_listener_complete_register.
+  
+* [fix] Updated web page to include BeepFp reference. Nice product.
+
+* [new] Updated vortex connection API to include two new functions
+  that returns local address and local port used. API added:
+
+  - vortex_connection_get_local_addr
+  - vortex_connection_get_local_port
+
+* [fix] Fixed problem with test_01c which was causing, under some
+  machines to not properly execute. Rewritten test to fix the issue.
+
+* [new] Updated PyVortexConnection class to incluede two new read only
+  attributes that returns local_addr and local port used. API added:
+
+  - vortex.Connection.local_addr
+  - vortex.Connection.local_port
+
+* [fix] Fixed a race condition while manipulating profile list
+  activated by channel start operation.
+
+* [fix] Making connection aceptance at listener side to drop the
+  connection if CONNECTION_STAGE_POST_CREATED event signals a failure.
+
+* [fix] Updated documentation to explain the relation between
+  CONNECTION_STAGE_POST_CREATED event with handlers configured at
+  vortex_listener_set_on_connection_accepted.
+
+* [fix] Splitted vortex_listener_accept_connections into a couple of
+  functions with a reusable public part. API added:
+
+   - vortex_listener_accept
+
+* [new] Added new function to allow checking if a particular VortexCtx
+  is initialized. Used this new API to better check some Vortex API
+  functions to properly react without giving estrange errors. Added
+  regression test to check new function (test_01-f). API added:
+   
+   - vortex_init_check
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+28th Sep 2009, Madrid (Spain)

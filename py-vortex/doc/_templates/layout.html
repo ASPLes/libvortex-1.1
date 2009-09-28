@@ -1,0 +1,29 @@
+{# Filename: .templates/layout.html #}
+{% extends "!layout.html" %}
+
+{% block header %}
+  <div class="af-arch-header">
+     <img src="main-page-logo.png" > <a href="http://www.aspl.es"><img class="aspl-logo-header" src="aspl-logo-header.png"></a>
+  </div>
+<!-- <div class="ads">
+  <iframe src="http://www.aspl.es/web-ads/index.php?hcolor=fdff4f&amp;fsize=10&amp;bg=555753&amp;fg=ffffff&amp;width=800&amp;height=90" scrolling="no" frameborder="0"></iframe>
+</div> -->
+{% endblock %}
+
+{%- block document %}
+      <div class="documentwrapper">
+      {%- if not embedded %}{% if not theme_nosidebar|tobool %}
+        <div class="bodywrapper">
+      {%- endif %}{% endif %}
+	  <div class="ads2">
+	    <iframe src="http://www.aspl.es/web-ads/index.php?hcolor=fdff4f&amp;fsize=10&amp;bg=555753&amp;fg=ffffff&amp;width=800&amp;height=90" scrolling="no" frameborder="0"></iframe>
+	  </div>
+          <div class="body">
+            {% block body %} {% endblock %}
+          </div>
+      {%- if not embedded %}{% if not theme_nosidebar|tobool %}
+        </div>
+      {%- endif %}{% endif %}
+      </div>
+{%- endblock %}
+

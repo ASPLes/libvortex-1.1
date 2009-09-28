@@ -37,6 +37,12 @@ div.body {
     padding: 0 20px 30px 20px;
 }
 
+.af-arch-header { 
+  width: 100%;
+  background: #193141;
+  margin: 0;
+}
+
 div.sphinxsidebarwrapper {
     padding: 10px 5px 0 10px;
 }
@@ -848,4 +854,28 @@ form.comment textarea {
     #top-link {
         display: none;
     }
+}
+
+.ads2 { 
+  width: 100%;
+  height: 112px;
+  background: #c9c9c9;
+}
+
+.ads2 iframe { 
+  width: 802px;
+  height: 102px;
+  position: relative;
+  top: 10px;
+  left: 120px;
+}
+
+.aspl-logo-header { 
+  padding: 0px;
+  margin: 0px;
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  float: right;
+  border: 0px;
 }
