@@ -192,6 +192,8 @@ vortex_connection_get_features
 vortex_connection_get_host
 vortex_connection_get_id
 vortex_connection_get_listener
+vortex_connection_get_local_addr
+vortex_connection_get_local_port
 vortex_connection_get_localize
 vortex_connection_get_message
 vortex_connection_get_mss
@@ -263,11 +265,13 @@ vortex_connection_timeout
 vortex_connection_uncheck_ref
 vortex_connection_unlock_channel_pool
 vortex_connection_unref
+vortex_ctx_check_on_finish
 vortex_ctx_free
 vortex_ctx_get_data
 vortex_ctx_install_cleanup
 vortex_ctx_new
 vortex_ctx_ref
+vortex_ctx_reinit
 vortex_ctx_set_channel_added_handler
 vortex_ctx_set_channel_removed_handler
 vortex_ctx_set_channel_start_handler
@@ -275,6 +279,7 @@ vortex_ctx_set_close_notify_handler
 vortex_ctx_set_data
 vortex_ctx_set_data_full
 vortex_ctx_set_frame_received
+vortex_ctx_set_on_finish
 vortex_ctx_unref
 vortex_dtds_cleanup
 vortex_dtds_get_channel_dtd
@@ -377,6 +382,7 @@ vortex_hash_replace
 vortex_hash_replace_full
 vortex_hash_size
 vortex_hash_unref
+vortex_init_check
 vortex_init_ctx
 vortex_io_init
 vortex_io_waiting_get_current
@@ -398,9 +404,11 @@ vortex_io_waiting_set_have_dispatch
 vortex_io_waiting_set_is_set_fd_group
 vortex_io_waiting_set_wait_on_fd_group
 vortex_io_waiting_use
+vortex_listener_accept
 vortex_listener_accept_connection
 vortex_listener_accept_connections
 vortex_listener_cleanup
+vortex_listener_complete_register
 vortex_listener_get_default_realm
 vortex_listener_init
 vortex_listener_new
@@ -496,7 +504,9 @@ vortex_support_setenv
 vortex_support_strtod
 vortex_support_unsetenv
 vortex_thread_create
+vortex_thread_create_internal
 vortex_thread_destroy
+vortex_thread_destroy_internal
 vortex_thread_pool_being_closed
 vortex_thread_pool_exit
 vortex_thread_pool_get_num
@@ -505,5 +515,7 @@ vortex_thread_pool_init
 vortex_thread_pool_new_task
 vortex_thread_pool_set_exclusive_pool
 vortex_thread_pool_set_num
+vortex_thread_set_create
+vortex_thread_set_destroy
 vortex_timeval_substract
 vortex_writer_data_free

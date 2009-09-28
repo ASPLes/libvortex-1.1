@@ -54,9 +54,10 @@ clean-local:
 	@rm -f vortex$(SHARED_EXTENSION) _sasl$(SHARED_EXTENSION) _tls$(SHARED_EXTENSION)
 
 install-exec-hook:
-	@echo "site installation ${pythondir}/vortex.."
+	@echo "site installation ${DESTDIR}${pythondir}/vortex.."
+	install -d ${DESTDIR}${pythondir}/vortex
 	install -m 644 \
 		sasl.py \
 		tls.py \
 		__init__.py \
-		${pythondir}/vortex
+		${DESTDIR}${pythondir}/vortex

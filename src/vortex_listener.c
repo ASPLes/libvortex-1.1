@@ -370,7 +370,7 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
  *
  * @param server_socket The listener socket where the accept() operation will be called.
  *
- * @return Returns a connected socket descriptor or \ref VORTEX_SOCKET_ERROR.
+ * @return Returns a connected socket descriptor or -1 if it fails.
  */
 VORTEX_SOCKET vortex_listener_accept (VORTEX_SOCKET server_socket)
 {

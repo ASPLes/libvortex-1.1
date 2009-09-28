@@ -291,8 +291,11 @@ AM_CONDITIONAL(ENABLE_PY_VORTEX_SUPPORT, test "x$enable_py_vortex_support" = "xy
 if test "$enable_py_vortex_support" = "yes" ; then
    AM_PATH_PYTHON([2.3])
 
+   # find python-config
+   PYTHON_CONFIG=`./get-python-config`
+
    # get python includes 
-   PYTHON_INCLUDES=`python-config --includes 2>/dev/null`
+   PYTHON_INCLUDES=`$PYTHON_CONFIG --includes 2>/dev/null`
    old_CPPFLAGS=$CPPFLAGS
    CPPFLAGS="-Wall -Werror $PYTHON_INCLUDES"
    echo "Python includes: $PYTHON_INCLUDES"
@@ -308,8 +311,8 @@ if test "$enable_py_vortex_support" = "yes" ; then
    fi
 
    # get python flags and libs
-   PYTHON_CFLAGS=`python-config --cflags 2>/dev/null`
-   PYTHON_LIBS=`python-config --ldflags 2>/dev/null`
+   PYTHON_CFLAGS=`$PYTHON_CONFIG --cflags 2>/dev/null`
+   PYTHON_LIBS=`$PYTHON_CONFIG --ldflags 2>/dev/null`
    AC_SUBST(PYTHON_CFLAGS)
    AC_SUBST(PYTHON_LIBS)
 
@@ -390,6 +393,7 @@ py-vortex/py-vortex.pc
 py-vortex/py-vortex-sasl.pc
 py-vortex/py-vortex-tls.pc
 py-vortex/doc/conf.py
+py-vortex/doc/Makefile
 doc/Makefile
 doc/vortex-doc.doxygen
 test/Makefile

@@ -1,0 +1,22 @@
+#!/bin/bash
+
+python-config --includes > /dev/null 2>&1
+if [ "$?" == "0" ]; then
+	which python-config
+	exit 0;
+fi
+
+# get python 2.4 flags
+python2.4-config --includes > /dev/null 2>&1
+if [ $? == 0 ]; then
+	which python2.4-config 
+	exit 0;
+fi
+
+# get python 2.5 flags
+python2.5-config --includes > /dev/null 2>&1
+if [ "$?" == "0" ]; then
+	which python2.5-config 
+	exit 0;
+fi
+
