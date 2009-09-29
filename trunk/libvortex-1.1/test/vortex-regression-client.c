@@ -4481,6 +4481,175 @@ axl_bool  test_03a (void) {
 	return axl_true;
 }
 
+axl_bool  test_03b (void) {
+	
+	VortexConnection   * connection;
+	VortexChannelPool  * pool;
+	VortexChannel      * channel;
+	VortexChannel      * channel2;
+	VortexAsyncQueue   * queue;
+	VortexFrame        * frame;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+
+	/* create the channel pool */
+	pool = vortex_channel_pool_new (connection,
+					REGRESSION_URI_ANS_NUL_WAIT,
+					1,
+					/* no close handling */
+					NULL, NULL,
+					/* frame receive async handling */
+					NULL, NULL,
+					/* no async channel creation */
+					NULL, NULL);
+
+	/* ask for a channel */
+	channel = vortex_channel_pool_get_next_ready (pool, axl_true);
+	
+	/* check channel is ready at this point */
+	if (! vortex_channel_is_ready (channel)) {
+		printf ("ERROR: expected to find channel to be ready, but found it isn't..\n");
+		return axl_false;
+	} /* end if */
+
+	/* set receive handler */
+	queue = vortex_async_queue_new ();
+	vortex_channel_set_received_handler (channel, vortex_channel_queue_reply, queue);
+
+	/* send a message */
+	vortex_channel_send_msg (channel, "this is a test", 14, NULL);
+	
+	/* wait for replies: first ANS */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_ANS) {
+		printf ("ERROR: expected to find ANS reply but it was found..\n");
+		return axl_false;
+	}
+	vortex_frame_unref (frame);
+
+	/* check channel is ready at this point */
+	if (vortex_channel_is_ready (channel)) {
+		printf ("ERROR: expected to find channel to be not ready, but found it is..\n");
+		return axl_false;
+	} /* end if */
+
+	/* wait for replies: second ANS */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_ANS) {
+		printf ("ERROR: expected to find ANS reply but it was found..\n");
+		return axl_false;
+	}
+	vortex_frame_unref (frame);
+
+	/* check channel is ready at this point */
+	if (vortex_channel_is_ready (channel)) {
+		printf ("ERROR(4): expected to find channel to be not ready, but found it is..\n");
+		return axl_false;
+	} /* end if */
+
+	/* wait for replies: third ANS */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_ANS) {
+		printf ("ERROR: expected to find ANS reply but it was found..\n");
+		return axl_false;
+	}
+	vortex_frame_unref (frame);
+
+	/* check channel is ready at this point */
+	if (vortex_channel_is_ready (channel)) {
+		printf ("ERROR(6): expected to find channel to be not ready, but found it is..\n");
+		return axl_false;
+	} /* end if */
+
+	/* wait for replies: fourth ANS */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_ANS) {
+		printf ("ERROR: expected to find ANS reply but it was found..\n");
+		return axl_false;
+	}
+	vortex_frame_unref (frame);
+
+	/* check channel is ready at this point */
+	if (vortex_channel_is_ready (channel)) {
+		printf ("ERROR (8): expected to find channel to be not ready, but found it is..\n");
+		return axl_false;
+	} /* end if */
+
+	/* wait for replies: last NUL frame */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_NUL) {
+		printf ("ERROR: expected to find NUL reply but it was found..\n");
+		return axl_false;
+	}
+	vortex_frame_unref (frame);
+
+	/* check channel is ready at this point */
+	if (! vortex_channel_is_ready (channel)) {
+		printf ("ERROR (10): expected to find channel to be ready, but found it isn't..\n");
+		return axl_false;
+	} /* end if */
+
+	/* second part of the test */
+	vortex_channel_pool_release_channel (pool, channel);
+
+	/* get channel from the pool */
+	channel2 = vortex_channel_pool_get_next_ready (pool, axl_true);
+	if (vortex_channel_get_number (channel2) != vortex_channel_get_number (channel)) {
+		printf ("ERROR (11): expected to find equal channels but different values were found. This means vortex_channel_pool_get_next_ready is returning a newly created channel..\n");
+		return axl_false;
+	}
+
+	/* send a new message */
+	vortex_channel_send_msg (channel, "this is another content", 23, NULL);
+
+	/* now release */
+	vortex_channel_pool_release_channel (pool, channel);
+
+	/* now get another channel from the pool */
+	channel2 = vortex_channel_pool_get_next_ready (pool, axl_true);
+
+	if (channel2 == NULL) {
+		printf ("ERROR (12): expected a newly created channel reference but found NULL value..\n");
+		return axl_false;
+	} /* end if */
+	
+	/* check channel numbers */
+	if (vortex_channel_get_number (channel2) == vortex_channel_get_number (channel)) {
+		printf ("ERROR (13): expected to find different channels but equal values were found. This means vortex_channel_pool_get_next_ready is returning the same channel..\n");
+		return axl_false;
+	}
+
+	/* first ANS frame */
+	frame = vortex_channel_get_reply (channel, queue);
+	vortex_frame_unref (frame);
+	/* second ANS frame */
+	frame = vortex_channel_get_reply (channel, queue);
+	vortex_frame_unref (frame);
+	/* third ANS frame */
+	frame = vortex_channel_get_reply (channel, queue);
+	vortex_frame_unref (frame);
+	/* fourth ANS frame */
+	frame = vortex_channel_get_reply (channel, queue);
+	vortex_frame_unref (frame);
+	/* last NUL frame */
+	frame = vortex_channel_get_reply (channel, queue);
+	vortex_frame_unref (frame);
+
+	/* ok, close the connection */
+	vortex_connection_close (connection);
+
+	/* unref queue */
+	vortex_async_queue_unref (queue);
+
+	/* return axl_true */
+	return axl_true;
+}
+
 /* constant for test_04 */
 #define MAX_NUM_CON 1000
 
@@ -7977,6 +8146,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_03a"))
 			run_test (test_03a, "Test 03-a", "vortex channel pool support", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_03b"))
+			run_test (test_03b, "Test 03-b", "vortex channel pool support (ANS/NUL reply check)", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_04"))
 			run_test (test_04, "Test 04", "Handling many connections support", -1, -1);
 
@@ -8117,6 +8289,8 @@ int main (int  argc, char ** argv)
  	run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
   
  	run_test (test_03a, "Test 03-a", "vortex channel pool support", -1, -1);
+
+ 	run_test (test_03b, "Test 03-b", "vortex channel pool support (ANS/NUL reply check)", -1, -1);
   
  	run_test (test_04, "Test 04", "Handling many connections support", -1, -1);
   

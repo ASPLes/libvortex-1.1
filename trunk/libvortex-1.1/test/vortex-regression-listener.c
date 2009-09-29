@@ -632,6 +632,50 @@ void close_in_transit_received (VortexChannel    * channel,
 	return;
 }
 
+/** 
+ * @brief Support to check channel ready for protocols using ANS/NUL reply.
+ */
+void handle_ans_nul_wait (VortexChannel    * channel,
+			  VortexConnection * conn,
+			  VortexFrame      * frame,
+			  axlPointer         user_data)
+{
+	VortexAsyncQueue * queue;
+
+	/* create a queue */
+	queue = vortex_async_queue_new ();
+
+	/* send an ANS reply and wait a bit */
+	vortex_channel_send_ans_rpy (channel, "this is a test..", 16, vortex_frame_get_msgno (frame));
+
+	/* wait 30ms */
+	vortex_async_queue_timedpop (queue, 130000);
+
+	/* send an ANS reply and wait a bit */
+	vortex_channel_send_ans_rpy (channel, "this is a test..2", 17, vortex_frame_get_msgno (frame));
+
+	/* wait 40ms */
+	vortex_async_queue_timedpop (queue, 140000);
+
+	/* send an ANS reply and wait a bit */
+	vortex_channel_send_ans_rpy (channel, "this is a test..3", 17, vortex_frame_get_msgno (frame));
+
+	/* wait 50ms */
+	vortex_async_queue_timedpop (queue, 150000);
+
+	/* send an ANS reply and wait a bit */
+	vortex_channel_send_ans_rpy (channel, "this is a test..3", 17, vortex_frame_get_msgno (frame));
+
+	/* wait 60ms */
+	vortex_async_queue_timedpop (queue, 140000);
+
+	/* finally send nul reply */
+	vortex_channel_finalize_ans_rpy (channel, vortex_frame_get_msgno (frame));
+
+	return;
+}
+			  
+
 axl_bool  check_profiles_adviced (int channel_num, VortexConnection *connection, axlPointer user_data)
 {
 	axlList    * profiles = vortex_connection_get_remote_profiles (connection);
@@ -1411,6 +1455,15 @@ int main (int  argc, char ** argv)
 				  /* just accept all channels to be closed */
 				  NULL, NULL,
 				  close_in_transit_received, NULL);
+
+	vortex_profiles_register (ctx, REGRESSION_URI_ANS_NUL_WAIT,
+				  /* accept all channels to be created */
+				  NULL, NULL,
+				  /* accept all channels to be closed */
+				  NULL, NULL,
+				  handle_ans_nul_wait, NULL);
+				  
+				  
 	
 	/* create a vortex server */
 	listener = vortex_listener_new (ctx, "0.0.0.0", "44010", NULL, NULL);
