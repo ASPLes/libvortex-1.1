@@ -790,8 +790,8 @@ void           __vortex_channel_pool_close_common (VortexChannelPool * pool,
 	return;	
 }
 
-/**
- * @brief Closes a channel pool.
+/** 
+ * @brief Closes a channel pool. 
  * 
  * You should not call this function directly because the channel pool
  * is already registered on a connection which actually will also try
@@ -1221,7 +1221,7 @@ VortexChannel     * vortex_channel_pool_get_next_ready_full (VortexChannelPool *
 	return channel;
 }
 
-/**
+/** 
  * @brief Release a channel from the channel pool.
  * 
  * Once a channel from a pool is no longer needed or you may want to

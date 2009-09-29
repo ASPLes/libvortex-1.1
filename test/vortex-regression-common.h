@@ -150,6 +150,12 @@
 #define REGRESSION_URI_MIXING_REPLIES "http://iana.org/beep/transient/vortex-regression/mixing-replies"
 
 /** 
+ * Profile to check ready state for channels having pending replies
+ * with ans/nul.
+ */
+#define REGRESSION_URI_ANS_NUL_WAIT   "http://iana.org/beep/transient/vortex-regression/ans-nul-wait"
+
+/** 
  * Profile used to identify the regression test to check connection
  * close after ans/nul reply.
  */
