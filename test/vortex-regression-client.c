@@ -5806,13 +5806,12 @@ test_06_run_test:
 	vortex_connection_close (connection);
 
 	printf ("[   OK   ]\n");
-
+#endif
 	/* check for unified api */
 	if (! use_unified_api) {
 		use_unified_api = axl_true;
 		goto test_06_run_test;
 	}
-#endif
 #else
 	printf ("--- WARNING: unable to run SASL tests, no sasl library was built\n");
 #endif	
