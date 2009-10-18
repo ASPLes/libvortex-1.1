@@ -631,7 +631,13 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 			} /* end if */
 			axl_free (host_used);
 		} /* end if */
-		
+
+		/* call to notify connection created */
+		if (! vortex_connection_actions_notify (&listener, CONNECTION_STAGE_POST_CREATED)) {
+			/* action reporting failure, unref the connection */
+			__vortex_connection_set_not_connected (listener, "vortex master listener post created action failed", VortexConnectionFiltered);
+		} /* end if */
+
 		/* the listener reference */
 		vortex_log (VORTEX_LEVEL_DEBUG, "returning listener running at %s:%s (non-threaded mode)", 
 			    vortex_connection_get_host (listener), vortex_connection_get_port (listener));
