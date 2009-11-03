@@ -429,7 +429,59 @@ typedef struct _VortexChannelPool VortexChannelPool;
  * To check if there are more instances defined for the same MIME
  * header name, use \ref vortex_frame_mime_header_next.
  */
-typedef struct _VortexMimeHeader VortexMimeHeader;
+typedef struct _VortexMimeHeader     VortexMimeHeader;
+
+/** 
+ * @brief Optional structure used to signal additional values to
+ * modify how a connection is created. This is mainly used to request
+ * features on session initialization.
+ *
+ * This type is used by \ref vortex_connection_new_full. See \ref
+ * vortex_connection_opts_new for details on how to use this function.
+ */
+typedef struct _VortexConnectionOpts VortexConnectionOpts;
+
+typedef enum {
+	/** 
+	 * @brief Signals option list termination.
+	 */
+	VORTEX_OPTS_END           = 0,
+	/** 
+	 * @brief Allows to request serverName feature (currently
+	 * implemented as x-serverName). This connection option must
+	 * be followed with a constant string having the serverName
+	 * value that must be requested.
+	 */
+	VORTEX_SERVERNAME_FEATURE = 1,
+	
+	/** 
+	 * @brief Allows to configure the serverName greetings feature
+	 * as defined in the connection host name. This is the default
+	 * behaviour starting from Vortex 1.1 (release 1.1.3). You can
+	 * disable by settings this connection option to
+	 * axl_false. This connection option is ignored in the case
+	 * \ref VORTEX_SERVERNAME_FEATURE is provided.
+	 */
+	VORTEX_SERVERNAME_ACQUIRE = 2,
+
+	/** 
+	 * @brief In general you can reuse connection options (\ref
+	 * VortexConnectionOpts) across connection creation operations
+	 * (\ref vortex_connection_new_full). 
+	 * 
+	 * However, \ref CONN_OPTS macro is provided to allow
+	 * configuring particular connection options for each
+	 * operation. Thus this connection option is used to signal
+	 * \ref vortex_connection_new_full to release memory
+	 * allocated. 
+	 * 
+	 * This option must be followed by a boolean value: axl_true
+	 * to signal release after connection creation, otherwise
+	 * axl_false must be used (default value already configured).
+	 */
+	VORTEX_OPTS_RELEASE     = 3, 
+	
+} VortexConnectionOptItem;
 
 /** 
  * @brief Vortex Operation Status.
@@ -1020,7 +1072,18 @@ typedef enum {
 	 * executed after handlers configured at \ref
 	 * vortex_listener_set_on_connection_accepted. 
 	 */
-	CONNECTION_STAGE_POST_CREATED = 1
+	CONNECTION_STAGE_POST_CREATED = 1,
+
+	/** 
+	 * @brief Action to be executed on listener side to process
+	 * greetings features received on the connection. This handler
+	 * is executed after the connection was accepted but just
+	 * before fully registered so the handler configured for this
+	 * connection stage can shutdown the reference (in such case
+	 * must returned -1) or return 0 in the case the connection
+	 * must be finally accepted.
+	 */
+	CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES = 2
 } VortexConnectionStage;
 
 #endif

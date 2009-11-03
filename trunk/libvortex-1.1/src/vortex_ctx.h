@@ -80,6 +80,9 @@ void        vortex_ctx_set_channel_start_handler (VortexCtx                     
 void        vortex_ctx_install_cleanup           (VortexCtx * ctx,
 						  axlDestroyFunc cleanup);
 
+void        vortex_ctx_server_name_acquire       (VortexCtx * ctx,
+						  axl_bool    status);
+
 void        vortex_ctx_ref                       (VortexCtx  * ctx);
 
 void        vortex_ctx_unref                     (VortexCtx ** ctx);

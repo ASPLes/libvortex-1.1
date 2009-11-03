@@ -62,8 +62,9 @@
  * @internal Configuration for the tunnel settings.
  */
 struct _VortexTunnelSettings{
-	axlDoc    * doc;
-	VortexCtx * ctx;
+	axlDoc               * doc;
+	VortexCtx            * ctx;
+	VortexConnectionOpts * options;
 };
 
 /** 
@@ -99,6 +100,22 @@ VortexTunnelSettings * vortex_tunnel_settings_new (VortexCtx * ctx)
 
 	/* return settings created */
 	return settings;
+}
+
+/** 
+ * @brief Allows to configure connection options on the provided
+ * tunnel settings object, allowing to modify connection behaviour.
+ *
+ * @param settings The tunnel settings object to configure.
+ *
+ * @param options The connection object option to be used.
+ */
+void                   vortex_tunnel_settings_set_options (VortexTunnelSettings * settings,
+							   VortexConnectionOpts * options)
+{
+	v_return_if_fail (settings && options);
+	settings->options = options;
+	return;
 }
 
 /** 
@@ -386,22 +403,23 @@ VortexConnection     * __vortex_tunnel_new_common     (VortexTunnelSettings * se
 						       VortexConnectionNew    on_connected,
 						       axlPointer             user_data)
 {
-	VortexConnection * connection;
-	VortexConnection * connection_aux;
-	VortexCtx        * ctx;
+	VortexConnection      * connection;
+	VortexConnection      * connection_aux;
+	VortexCtx             * ctx;
 
-	VortexChannel    * channel;
-	VortexAsyncQueue * queue;
-	VortexFrame      * reply;
+	VortexChannel         * channel;
+	VortexAsyncQueue      * queue;
+	VortexFrame           * reply;
 
-	const char       * host = NULL;
-	const char       * port = NULL;
-	char             * content;
-	int                size;
+	const char            * host = NULL;
+	const char            * port = NULL;
+	char                  * content;
+	int                     size;
 
-	VORTEX_SOCKET      socket;
-	axlNode          * node;
-	axlDoc           * ok;
+	VORTEX_SOCKET           socket;
+	axlNode               * node;
+	axlDoc                * ok;
+	VortexConnectionOpts  * options = settings->options;
 
 	/* check parameters */
 	v_return_val_if_fail (settings, NULL);
@@ -621,7 +639,7 @@ VortexConnection     * __vortex_tunnel_new_common     (VortexTunnelSettings * se
 	
 	/* Issue again initial greetings, greetings just like we were
 	 * creating a connection. */
-	if (!vortex_greetings_client_send (connection)) {
+	if (!vortex_greetings_client_send (connection, options)) {
 
                 vortex_log (VORTEX_LEVEL_CRITICAL, "failed while sending greetings after TUNNEL negotiation");
 
@@ -638,7 +656,7 @@ VortexConnection     * __vortex_tunnel_new_common     (VortexTunnelSettings * se
 
 	/* 6. Wait to get greetings reply (again issued because the
 	 * underlying transport reset the session state) */
-	reply = vortex_greetings_client_process (connection);
+	reply = vortex_greetings_client_process (connection, options);
 	
 	vortex_log (VORTEX_LEVEL_DEBUG, "reply received, checking content");
 

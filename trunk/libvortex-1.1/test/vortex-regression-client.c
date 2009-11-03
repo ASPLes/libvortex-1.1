@@ -1538,6 +1538,86 @@ axl_bool test_01f (void) {
 	return axl_true;
 }
 
+
+axl_bool test_01g (void) {
+
+	VortexConnection * connection; 
+	VortexChannel    * channel;
+	VortexAsyncQueue * queue;
+	VortexFrame      * frame;
+
+	/* create a connection with serverName by default */
+	connection = connection_new ();
+
+	/* check servername here */
+	if (! axl_cmp (vortex_connection_get_server_name (connection), listener_host)) {
+		printf ("ERROR: expected to find connection serverName %s but found %s\n",
+			listener_host, vortex_connection_get_server_name (connection));
+		return axl_false;
+	} /* end if */
+
+	/* now check servername configured at serverSide */
+	queue   = vortex_async_queue_new ();
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+
+	/* ask for remote serverName */
+	vortex_channel_send_msg (channel, 
+				 "GET serverName",
+				 14, 
+				 NULL);
+
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL) {
+		printf ("Failed to get the reply from the server..\n");
+		return axl_false;
+	}
+	/* check servername received from remote server */
+	if (! axl_cmp (vortex_frame_get_payload (frame), vortex_connection_get_server_name (connection))) {
+		printf ("Received a different server name configured than value received: %s..\n",
+			(char*) vortex_frame_get_payload (frame));
+		return axl_false;
+	}
+	if (! axl_cmp (vortex_frame_get_payload (frame), listener_host)) {
+		printf ("Received a different server name configured than value received: %s..\n",
+			(char*) vortex_frame_get_payload (frame));
+		return axl_false;
+	}
+	vortex_frame_unref (frame);
+	
+
+	/* unref the queue */
+	vortex_async_queue_unref (queue);
+
+	/* close the connection */
+	vortex_connection_close (connection);
+
+	/* now open connection without accepting automatic serverName
+	 * configuration */
+	vortex_ctx_server_name_acquire (ctx, axl_false);
+
+	/* do a connection */
+	connection = connection_new ();
+
+	/* check serverName feature */
+	if (vortex_connection_get_server_name (connection) != NULL) {
+		printf ("ERROR: expected to not find serverName configured, but found value: %s\n",
+			vortex_connection_get_server_name (connection));
+		return axl_false;
+	}
+
+	/* close the connection */
+	vortex_connection_close (connection);
+	
+	return axl_true;
+}
+
 #define TEST_02_MAX_CHANNELS 24
 
 void test_02_channel_created (int                channel_num, 
@@ -4748,6 +4828,14 @@ axl_bool  test_05 (void)
 		return axl_false;
 	}
 
+	/* check connection status at this point */
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		printf ("Test 05: Connection status after TLS activation is not ok, message: %s", vortex_connection_get_message (connection));
+		return axl_false;
+	}
+
+	printf ("Test 05: TLS connection activated..\n");
+
 	/* create the queue */
 	queue = vortex_async_queue_new ();
 	
@@ -4761,7 +4849,7 @@ axl_bool  test_05 (void)
 				      /* no async channel creation */
 				      NULL, NULL);
 	if (channel == NULL) {
-		printf ("Unable to create the channel..");
+		printf ("Test 05: .... Unable to create the channel..\n");
 		return axl_false;
 	}
 
@@ -7940,7 +8028,7 @@ int main (int  argc, char ** argv)
         printf ("**       valgrind or similar tools.\n");
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
-	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, test_01e, test_01f, \n");
+	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, test_01e, test_01f, test_01g\n");
 	printf ("**                       test_02, test_02a, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, \n");
@@ -8084,6 +8172,9 @@ int main (int  argc, char ** argv)
 
 		if (axl_cmp (run_test_name, "test_01f"))
 			run_test (test_01f, "Test 01-f", "Check connection with no greetings showed (or registerered)", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_01g"))
+			run_test (test_01g, "Test 01-g", "Check connection serverName feature on greetings", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
@@ -8248,6 +8339,8 @@ int main (int  argc, char ** argv)
  	run_test (test_01e, "Test 01-e", "Check listener douple port allocation", -1, -1);
 
  	run_test (test_01f, "Test 01-f", "Check connection with no greetings showed (or registerered)", -1, -1);
+
+ 	run_test (test_01g, "Test 01-g", "Check connection serverName feature on greetings", -1, -1);
   
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   

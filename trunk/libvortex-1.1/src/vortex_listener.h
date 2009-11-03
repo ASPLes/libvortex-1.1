@@ -80,8 +80,7 @@ VORTEX_SOCKET vortex_listener_accept               (VORTEX_SOCKET server_socket)
 void          __vortex_listener_second_step_accept (VortexFrame * frame, 
 						    VortexConnection * connection);
 
-void          vortex_listener_complete_register    (VortexConnection * connection,
-						    axl_bool           send_greetings);
+void          vortex_listener_complete_register    (VortexConnection     * connection);
 
 void          vortex_listener_wait                 (VortexCtx * ctx);
 

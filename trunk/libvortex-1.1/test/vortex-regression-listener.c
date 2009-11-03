@@ -672,6 +672,9 @@ void handle_ans_nul_wait (VortexChannel    * channel,
 	/* finally send nul reply */
 	vortex_channel_finalize_ans_rpy (channel, vortex_frame_get_msgno (frame));
 
+	/* release queue */
+	vortex_async_queue_unref (queue);
+
 	return;
 }
 			  
@@ -1185,6 +1188,81 @@ axl_bool  close_channel_connection (int channel_num, VortexConnection * conn, ax
 	return axl_true;
 }
 
+char * get_server_name_feature_aux (const char * features)
+{
+	int    last     = 0;
+	int    iterator = 0;
+	char * result;
+
+	/* check last position */
+	while (iterator < features[last] && features[last] != 0 && features[last] != ' ')
+		last++;
+
+	/* check for empty results */
+	if (last == iterator)
+		return NULL;
+	
+	/* check we have found last position */
+	if (features[last] == 0 || features[last] == ' ') {
+		result = axl_new (char, last - iterator + 1);
+		memcpy (result, features, last - iterator);
+		return result;
+	}
+	return NULL;
+}
+
+char * get_server_name_feature (const char * features)
+{
+	int iterator = 0;
+
+	/* check for empty features */
+	if (features == NULL)
+		return NULL;
+
+	while (iterator < strlen (features)) {
+
+		if (axl_memcmp (features + iterator, "x-serverName:", 13)) 
+			return get_server_name_feature_aux (features + iterator + 13);
+		if (axl_memcmp (features + iterator, "serverName:", 11)) 
+			return get_server_name_feature_aux (features + iterator + 11);
+		if (axl_memcmp (features + iterator, "x-serverName=", 13)) 
+			return get_server_name_feature_aux (features + iterator + 13);
+		if (axl_memcmp (features + iterator, "serverName=", 11)) 
+			return get_server_name_feature_aux (features + iterator + 11);
+
+		/* next position */
+		iterator++;
+	}
+	return NULL;
+}
+
+int process_greetings_features (VortexCtx               * ctx, 
+				VortexConnection        * conn,
+				VortexConnection       ** new_conn,
+				VortexConnectionStage     stage,
+				axlPointer                user_data)
+{
+	const char * features = vortex_connection_get_features (conn);
+	char * serverName;
+
+	/* for empty features, just accept */
+	if (features == NULL)
+		return 0;
+
+	/* check for serverName feature */
+	printf ("Found features from initiator peer: %s..\n", features);
+	serverName = get_server_name_feature (features);
+	printf ("Found serverName value found: '%s'..\n", serverName);
+
+	/* configure serverName on connection */
+	vortex_connection_set_server_name (conn, serverName);
+
+	/* free serverName */
+	axl_free (serverName);
+
+	return 0;
+}
+
 int main (int  argc, char ** argv) 
 {
 	VortexConnection * listener;
@@ -1364,6 +1442,10 @@ int main (int  argc, char ** argv)
 				  NULL, NULL,
 				  /* default frame */
 				  frame_seqno_exceeded, NULL);
+
+	/* check x-serverName on greetings support */
+	vortex_connection_set_connection_actions (ctx, CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES, 
+						  process_greetings_features, NULL);
 
 #if defined(ENABLE_TLS_SUPPORT)
 	/* enable accepting incoming tls connections, this step could

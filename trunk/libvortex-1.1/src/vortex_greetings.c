@@ -51,8 +51,14 @@
  * @{
  */
 
-/**
- * @internal
+/** 
+ * @internal Key used to track serverName (or x-serverName) requested
+ * on connection greetings.
+ */
+#define VORTEX_GREETINGS_SERVER_NAME_REQUESTED "vo:gree:x-serverName"
+
+/** 
+ * @internal 
  * 
  * Build the greetings message for the provided @connection.
  * 
@@ -61,7 +67,10 @@
  *
  * @return the number of bytes in the built message.
  **/
-int __vortex_greetings_build_message (VortexConnection * connection, char * greetings_buffer, int buffer_size)
+int __vortex_greetings_build_message (VortexConnection     * connection, 
+				      VortexConnectionOpts * options, 
+				      char                 * greetings_buffer, 
+				      int                    buffer_size)
 {
 	VortexCtx     * ctx                 = CONN_CTX (connection);
 	axlList       * registered_profiles = vortex_profiles_get_actual_list_ref (ctx);
@@ -69,8 +78,10 @@ int __vortex_greetings_build_message (VortexConnection * connection, char * gree
 	int             next_index          = 0;
 	const char    * localize            = NULL;
 	const char    * features            = NULL;
+	axl_bool        release_features    = axl_false;
 	char          * uri;
 	int             features_size, localize_size, size;
+	const char    * serverName;
 	
 
 	/* check features and localize here (including all additional
@@ -88,8 +99,28 @@ int __vortex_greetings_build_message (VortexConnection * connection, char * gree
 			    features_size, localize_size);
 		return -1;
 	} /* end if */
-	
-	
+
+	/* check support for x-serverName (serverName) */
+	serverName = vortex_connection_opts_get_serverName (connection, options);
+	if (serverName) {
+		/* update features */
+		features      = axl_strdup_printf ("%s%sx-serverName:%s",
+						   features ? features : "", 
+						   features ? " " : "",
+						   serverName);
+		features_size = strlen (features);
+
+		/* signal to release features */
+		release_features = axl_true;
+
+		/* flag that x-serverName was requested to check this
+		 * after greetins reception checking for error or not
+		 * and setting the value on the connection. */
+		vortex_log (VORTEX_LEVEL_DEBUG, "requesting greetings serverName = '%s'", serverName);
+		vortex_connection_set_data (connection, VORTEX_GREETINGS_SERVER_NAME_REQUESTED, (axlPointer) serverName);
+
+	} /* end if */
+
 	/* copy greetings */
 	memcpy (greetings_buffer, "<greeting", 9);
 	next_index += 9;
@@ -115,9 +146,11 @@ int __vortex_greetings_build_message (VortexConnection * connection, char * gree
 		next_index ++;
 	} /* end features */
 	
-	memcpy (greetings_buffer + next_index, ">\x0D\x0A", 3);
-	next_index += 3;
-	if (registered_profiles != NULL) {
+	/* if found registered profiles */
+	if (registered_profiles != NULL && axl_list_length (registered_profiles) > 0) {
+		memcpy (greetings_buffer + next_index, ">\x0D\x0A", 3);
+		next_index += 3;
+
 		iterator = 0;   
 		while (iterator < axl_list_length (registered_profiles)) {
 			/* get the uri reference */
@@ -161,16 +194,24 @@ int __vortex_greetings_build_message (VortexConnection * connection, char * gree
 			iterator++;
 			
 		} /* end if */
+
+		/* terminate greetings  */
+		memcpy (greetings_buffer + next_index, "</greeting>\x0D\x0A", 13);
+		next_index += 13;
+	} else {
+		/* no profiles to be notified */
+		memcpy (greetings_buffer + next_index, " />\x0D\x0A", 5);
+		next_index += 5;
 	} /* end if */
 	
-	/* terminate greetings  */
-	memcpy (greetings_buffer + next_index, "</greeting>\x0D\x0A", 13);
-	next_index += 13;
+	/* check to release features */
+	if (release_features)
+		axl_free ((char*) features);
     
 	return next_index;
 }
 
-/**
+/** 
  * @internal
  * 
  * Sends the BEEP init connection greeting over the channel 0 of this @connection
@@ -180,7 +221,7 @@ int __vortex_greetings_build_message (VortexConnection * connection, char * gree
  *
  * @return axl_true if greetings message was sent or axl_false if not
  **/
-axl_bool      vortex_greetings_send (VortexConnection * connection)
+axl_bool      vortex_greetings_send (VortexConnection * connection, VortexConnectionOpts * options)
 {
 	
 	axlList       * registered_profiles;
@@ -204,7 +245,7 @@ axl_bool      vortex_greetings_send (VortexConnection * connection)
 	}
 
 	/* Build the greetings message with localization features and filtered profiles*/
-	next_index = __vortex_greetings_build_message (connection, greetings_buffer, 5100);
+	next_index = __vortex_greetings_build_message (connection, options, greetings_buffer, 5100);
 	if (next_index == -1) {
 		/* log */
 		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to build greetings message, closing the connection");
@@ -228,7 +269,7 @@ axl_bool      vortex_greetings_send (VortexConnection * connection)
 	return axl_true;
 }
 
-/**
+/** 
  * @internal
  * 
  * These functions helps vortex library to parse and process greetings
@@ -244,7 +285,8 @@ axl_bool      vortex_greetings_send (VortexConnection * connection)
  * 
  * @return The frame read or NULL if it fails.
  **/
-VortexFrame *  vortex_greetings_process (VortexConnection * connection)
+VortexFrame *  vortex_greetings_process (VortexConnection     * connection,
+					 VortexConnectionOpts * options)
 {
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx          * ctx   = vortex_connection_get_ctx (connection);
@@ -293,12 +335,22 @@ VortexFrame *  vortex_greetings_process (VortexConnection * connection)
 				    VORTEX_GREETINGS_PENDING_FRAME, NULL);
 
 	/* ensure from this point to be frame not NULL  */
-	if (vortex_greetings_is_reply_ok (frame, connection))
+	if (vortex_greetings_is_reply_ok (frame, connection, options)) {
+		/* check for server name requested */
+		if (vortex_connection_get_data (connection, VORTEX_GREETINGS_SERVER_NAME_REQUESTED)) {
+			/* found server name requested and ok reply,
+			 * set this value */
+			vortex_connection_set_server_name (connection, 
+							   vortex_connection_get_data (connection, VORTEX_GREETINGS_SERVER_NAME_REQUESTED));
+			/* clear this value to avoid detecting it in the future */
+			vortex_connection_set_data (connection, VORTEX_GREETINGS_SERVER_NAME_REQUESTED, NULL);
+		} /* end if */
 		return frame;
+	}
 	return NULL;
 }
 
-/**
+/** 
  * @internal
  * 
  * This function should not be useful for vortex library
@@ -311,7 +363,9 @@ VortexFrame *  vortex_greetings_process (VortexConnection * connection)
  *
  * @return axl_true if frame greeting reply is ok or axl_false if not.
  **/
-axl_bool            vortex_greetings_is_reply_ok    (VortexFrame      * frame, VortexConnection * connection)
+axl_bool            vortex_greetings_is_reply_ok    (VortexFrame          * frame, 
+						     VortexConnection     * connection,
+						     VortexConnectionOpts * options)
 {
 	VortexChannel * channel;
 #if defined(ENABLE_VORTEX_LOG)
@@ -365,7 +419,7 @@ axl_bool            vortex_greetings_is_reply_ok    (VortexFrame      * frame, V
 	return axl_true;	
 }
 
-/**
+/** 
  * @internal
  * 
  * This function helps vortex library to be able to complete initial
@@ -378,7 +432,8 @@ axl_bool            vortex_greetings_is_reply_ok    (VortexFrame      * frame, V
  * 
  * @return axl_true greetings message was sent or axl_false if not.
  **/
-axl_bool           vortex_greetings_client_send     (VortexConnection * connection)
+axl_bool           vortex_greetings_client_send     (VortexConnection     * connection,
+						     VortexConnectionOpts * options)
 {
 	/* tecnically, the greetings initial message can't be larger
 	 * than 4096 initial window. */
@@ -396,7 +451,7 @@ axl_bool           vortex_greetings_client_send     (VortexConnection * connecti
 	}
 	
 	/* Build the greetings message with localization features and filtered profiles*/
-	next_index = __vortex_greetings_build_message (connection, greetings_buffer, 5100);
+	next_index = __vortex_greetings_build_message (connection, options, greetings_buffer, 5100);
 	if (next_index == -1) {
 		/* log */
 		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to build greetings message, closing the connection");
@@ -422,7 +477,7 @@ axl_bool           vortex_greetings_client_send     (VortexConnection * connecti
 	return axl_true;
 }
 
-/**
+/** 
  * @internal
  * 
  * This function helps vortex library to be able to process client
@@ -432,9 +487,10 @@ axl_bool           vortex_greetings_client_send     (VortexConnection * connecti
  * 
  * @return The vortex frame read or NULL if it fails..
  **/
-VortexFrame *  vortex_greetings_client_process (VortexConnection * connection)
+VortexFrame *  vortex_greetings_client_process (VortexConnection     * connection, 
+						VortexConnectionOpts * options)
 {
-	return vortex_greetings_process (connection);
+	return vortex_greetings_process (connection, options);
 }
 
 

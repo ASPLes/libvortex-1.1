@@ -42,7 +42,7 @@
 
 BEGIN_C_DECLS
 
-/**
+/** 
  * \addtogroup vortex_tunnel
  * @{
  */
@@ -172,6 +172,9 @@ typedef VortexTunnelSettings * (* VortexTunnelLocationResolver) (const char  * t
 #include <vortex.h>
 
 VortexTunnelSettings * vortex_tunnel_settings_new       (VortexCtx * ctx);
+
+void                   vortex_tunnel_settings_set_options (VortexTunnelSettings * settings,
+							   VortexConnectionOpts * options);
 
 VortexTunnelSettings * vortex_tunnel_settings_new_from_xml (VortexCtx * ctx,
 							    char      * content, 
