@@ -55,11 +55,11 @@ int  __vortex_listener_get_port (const char  * port)
 	return strtol (port, NULL, 10);
 }
 
-/**
+/** 
  * \defgroup vortex_listener Vortex Listener: Set of functions to create BEEP Listeners (server applications that accept incoming requests)
  */
 
-/**
+/** 
  * \addtogroup vortex_listener
  * @{
  */
@@ -141,7 +141,7 @@ void vortex_listener_accept_connection    (VortexConnection * connection, axl_bo
 	} /* end if */
 
 	/* call to complete incoming connection register operation */
-	vortex_listener_complete_register (connection, send_greetings);
+	vortex_listener_complete_register (connection);
 	
 	/* close connection and free resources */
 	vortex_log (VORTEX_LEVEL_DEBUG, "worker ended, connection registered on manager (initial accept)");
@@ -153,8 +153,7 @@ void vortex_listener_accept_connection    (VortexConnection * connection, axl_bo
  * @internal Fucntion that allows to complete last parts once a
  * connection is accepted.
  */
-void          vortex_listener_complete_register    (VortexConnection * connection, 
-						    axl_bool           send_greetings)
+void          vortex_listener_complete_register    (VortexConnection     * connection)
 {
 	VortexCtx * ctx;
 
@@ -164,29 +163,8 @@ void          vortex_listener_complete_register    (VortexConnection * connectio
 
 	ctx = vortex_connection_get_ctx (connection);
 
-	/* send greetings, get actual profile installation and report
-	 * it to init peer */
-	if (send_greetings && (! vortex_greetings_send (connection))) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to send initial greeting message");
-		
-		/*
-		 * This unref sentence is properly defined. Opposite
-		 * ref call done to this unref is actually done by
-		 * vortex_connection_new_empty.
-		 */ 
-		vortex_connection_unref (connection, "vortex listener");
-		return;
-	} /* end if */
-
 	/* flag the connection to be on initial step */
 	vortex_connection_set_data (connection, "initial_accept", INT_TO_PTR (axl_true));
-
-	/* call to notify connection created */
-	if (! vortex_connection_actions_notify (&connection, CONNECTION_STAGE_POST_CREATED)) {
-		/* action reporting failure, unref the connection */
-		vortex_connection_unref (connection, "vortex listener do to action failure");
-		return;
-	} /* end if */
 
 	/*
 	 * register the connection on vortex reader from here, the
@@ -291,7 +269,7 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx = vortex_connection_get_ctx (connection);
 #endif
-	vortex_log (VORTEX_LEVEL_DEBUG, "greetings sent, waiting reply");
+	vortex_log (VORTEX_LEVEL_DEBUG, "called listener second step accept..");
 
 	/* check if the connection have a pending frame (get the reference) */
 	pending = vortex_connection_get_data (connection,
@@ -325,13 +303,15 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 		vortex_log (VORTEX_LEVEL_WARNING, "failed to update MIME status for the frame, continue delivery");
 
 	/* process greetings from init peer */
-	if (!vortex_greetings_is_reply_ok (frame, connection)) {
+	if (!vortex_greetings_is_reply_ok (frame, connection, NULL)) {
 		/* previous function already unref frame object
 		 * received is something goes wrong */
 		vortex_log (VORTEX_LEVEL_CRITICAL, "wrong greeting rpy from init peer, closing session");
 		__vortex_connection_set_not_connected (connection, "wrong greeting rpy from init peer, closing session", VortexProtocolError);
 		goto unref;
 	}
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "received initiator peer greetings...checking..");
 
 	/* because the greeting is ok, parse it */
 	if (!__vortex_connection_parse_greetings (connection, frame)) {
@@ -344,6 +324,35 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 		goto unref;
 	}
 
+	/* if parse greetins ok, notify to process features and and
+	   localize */
+	if (! vortex_connection_actions_notify (&connection, CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES)) {
+		/* action reporting failure, unref the connection */
+		vortex_log (VORTEX_LEVEL_CRITICAL, "vortex listener do to action failure = CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES, connection closed id=%d",
+			    vortex_connection_get_id (connection));
+		__vortex_connection_set_not_connected (connection, "vortex listener do to action failure = CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES", 
+						       VortexConnectionFiltered);
+		goto unref;
+	} /* end if */
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "greetings ok, sending listener greetings..");
+
+	/* send greetings, get actual profile installation and report
+	 * it to init peer */
+	vortex_log (VORTEX_LEVEL_DEBUG, "sending greetings for a new connection..");
+	if ((! vortex_greetings_send (connection, NULL))) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "vortex listener: failed to send initial listener greetings reply message");
+		
+		/*
+		 * This unref sentence is properly defined. Opposite
+		 * ref call done to this unref is actually done by
+		 * vortex_connection_new_empty.
+		 */ 
+		__vortex_connection_set_not_connected (connection, "vortex listener: failed to send initial listener greetings reply message",
+						       VortexProtocolError);
+		return;
+	} /* end if */
+
 	/* frame accepted */
 	vortex_log (VORTEX_LEVEL_DEBUG, "accepting connection on vortex_reader (second accept step)");
 	
@@ -352,6 +361,15 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 	
 	/* flag the connection to be totally accepted. */
 	vortex_connection_set_data (connection, "initial_accept", NULL);
+
+	/* call to notify connection created */
+	if (! vortex_connection_actions_notify (&connection, CONNECTION_STAGE_POST_CREATED)) {
+		/* action reporting failure, unref the connection */
+		vortex_log (VORTEX_LEVEL_CRITICAL, "vortex listener do to action failure = CONNECTION_STAGE_POST_CREATED, connection closed id=%d",
+			    vortex_connection_get_id (connection));
+		__vortex_connection_set_not_connected (connection, "vortex listener do to action failure = CONNECTION_STAGE_POST_CREATED", VortexConnectionFiltered);
+		goto unref;
+	} /* end if */
 
  unref:
 	/*

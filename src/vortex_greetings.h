@@ -40,16 +40,21 @@
 
 #include <vortex.h>
 
-axl_bool       vortex_greetings_send           (VortexConnection * connection);
+axl_bool       vortex_greetings_send           (VortexConnection     * connection, 
+						VortexConnectionOpts * options);
 
-axl_bool       vortex_greetings_is_reply_ok    (VortexFrame      * frame,
-						VortexConnection * connection);
+axl_bool       vortex_greetings_is_reply_ok    (VortexFrame          * frame,
+						VortexConnection     * connection,
+						VortexConnectionOpts * options);
 
-VortexFrame *  vortex_greetings_process        (VortexConnection * connection);
+VortexFrame *  vortex_greetings_process        (VortexConnection     * connection,
+						VortexConnectionOpts * options);
 
-axl_bool       vortex_greetings_client_send    (VortexConnection * connection);
+axl_bool       vortex_greetings_client_send    (VortexConnection     * connection,
+						VortexConnectionOpts * options);
 
-VortexFrame *  vortex_greetings_client_process (VortexConnection * connection);
+VortexFrame *  vortex_greetings_client_process (VortexConnection     * connection,
+						VortexConnectionOpts * options);
 
 void           vortex_greetings_set_features   (VortexCtx        * ctx,
 						const char       * feature);

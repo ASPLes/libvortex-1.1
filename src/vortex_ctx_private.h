@@ -70,6 +70,9 @@ struct _VortexCtx {
 	VortexMutex          log_mutex;
 	axl_bool             use_log_mutex;
 
+	/* serverName acquire */
+	axl_bool             serverName_acquire;
+
 	/* external cleanup functions */
 	axlList            * cleanups;
 

@@ -98,6 +98,9 @@ VortexCtx * vortex_ctx_new (void)
 	vortex_mutex_create (&result->ref_mutex);
 	result->ref_count = 1;
 
+	/* set default serverName acquire value */
+	result->serverName_acquire = axl_true;
+
 	/* return context created */
 	return result;
 }
@@ -367,7 +370,7 @@ void        vortex_ctx_set_channel_start_handler (VortexCtx                     
 	return;
 }
 
-/**
+/** 
  * @brief Allows to install a cleanup function which will be called
  * just before the \ref VortexCtx is finished (by a call to \ref
  * vortex_exit_ctx or a manual call to \ref vortex_ctx_free).
@@ -392,6 +395,30 @@ void        vortex_ctx_install_cleanup (VortexCtx * ctx,
 	/* add the cleanup function */
 	axl_list_append (ctx->cleanups, cleanup);
 
+	return;
+}
+
+/** 
+ * @brief Allows to perform a global configuration to enable/disable
+ * serverName (or x-serverName) on greetings getting the value from
+ * the current connection host name configured. 
+ * 
+ * By default serverName feature is requested based on the current
+ * host name. This function allows to disable this feature globally on
+ * the provided context.
+ *
+ * @param ctx The context where the configuration will take place.
+ *
+ * @param status axl_true (default) to let vortex to request
+ * serverName feature based on current connection host
+ * name. Otherwise, axl_false to disable this feature.
+ */
+void        vortex_ctx_server_name_acquire       (VortexCtx * ctx,
+						  axl_bool    status)
+{
+	v_return_if_fail (ctx);
+	/* update serverName acquire */
+	ctx->serverName_acquire = status;
 	return;
 }
 

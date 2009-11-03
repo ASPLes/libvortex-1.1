@@ -39,37 +39,41 @@
 
 #define VORTEX_HTTP_ENABLED "vo:http:en"
 
-/**
+/** 
  * \defgroup vortex_http Vortex HTTP CONNECT API: support for BEEP connections through HTTP proxy
  */
 
-/**
+/** 
  * \addtogroup vortex_http
  * @{
  */
 
 struct _VortexHttpSetup {
-	/**
+	/** 
 	 * @internal Context reference.
 	 */
 	VortexCtx * ctx;
 
-	/**
+	/** 
 	 * @internal reference counting.
 	 */
 	int           ref_count;
 	VortexMutex   mutex;
 
-	/**
+	/** 
 	 * @internal Proxy location.
 	 */
 	char * proxy_host;
 	char * proxy_port;
 
-	
+	/** 
+	 * @internal Optional connection options to be used on
+	 * connection setup.
+	 */
+	VortexConnectionOpts * options;
 };
 
-/**
+/** 
  * @brief Allows to create a \ref VortexHttpSetup object which is used
  * to configure the HTTP CONNECT implementation.
  *
@@ -150,7 +154,7 @@ void               vortex_http_setup_unref    (VortexHttpSetup * setup)
 	return;
 }
 
-/**
+/** 
  * @brief Allows to configure a particular value (\ref
  * VortexHttpConfItem) on the provided setup (\ref VortexHttpSetup).
  *
@@ -162,7 +166,7 @@ void               vortex_http_setup_unref    (VortexHttpSetup * setup)
  */
 void               vortex_http_setup_conf     (VortexHttpSetup      * setup,
 					       VortexHttpConfItem     item,
-					       const char           * str_value)
+					       axlPointer             value)
 {
 	char      * str_aux;
 #if defined(ENABLE_VORTEX_LOG)
@@ -177,7 +181,7 @@ void               vortex_http_setup_conf     (VortexHttpSetup      * setup,
 		str_aux = setup->proxy_host;
 
 		/* configure new value */
-		setup->proxy_host = axl_strdup (str_value);
+		setup->proxy_host = axl_strdup (value);
 
 		/* dealloc previous value */
 		if (str_aux)
@@ -188,11 +192,16 @@ void               vortex_http_setup_conf     (VortexHttpSetup      * setup,
 		str_aux = setup->proxy_port;
 
 		/* configure new value */
-		setup->proxy_port = axl_strdup (str_value);
+		setup->proxy_port = axl_strdup (value);
 
 		/* dealloc previous value */
 		if (str_aux)
 			axl_free (str_aux);
+		break;
+	case VORTEX_HTTP_CONF_ITEM_CONN_OPTS:
+		/* configure connection options to be used on the
+		   connection setup */
+		setup->options = value;
 		break;
 	} /* end switch */
 
@@ -200,12 +209,13 @@ void               vortex_http_setup_conf     (VortexHttpSetup      * setup,
 }
 
 typedef struct _VortexHttpConnectionData {
-	VortexCtx             * ctx;
-	 char                 * host;
-	 char                 * port;
-	 VortexHttpSetup      * setup;
-	 VortexConnectionNew    on_connected;
-	 axlPointer             user_data;
+	VortexCtx            * ctx;
+	char                 * host;
+	char                 * port;
+	VortexHttpSetup      * setup;
+	VortexConnectionNew    on_connected;
+	axlPointer             user_data;
+	VortexConnectionOpts * options;
 } VortexHttpConnectionData;
 
 
@@ -239,10 +249,11 @@ axlPointer __vortex_http_connection_new (VortexHttpConnectionData * data)
 	char             * error_msg;
 
 	/* paramters */
-	VortexCtx        * ctx   = data->ctx;
-	const char       * host  = data->host;
-	const char       * port  = data->port;
-	VortexHttpSetup  * setup = data->setup;
+	VortexCtx            * ctx     = data->ctx;
+	const char           * host    = data->host;
+	const char           * port    = data->port;
+	VortexHttpSetup      * setup   = data->setup;
+	VortexConnectionOpts * options = setup->options;
 	
 	/* create an empty connection object */
 	conn = vortex_connection_new_empty (ctx, -1, VortexRoleInitiator);
@@ -325,7 +336,7 @@ axlPointer __vortex_http_connection_new (VortexHttpConnectionData * data)
 		
 	/* reached this point the remote HTTP/1.1 proxy have switched
 	 * to tunnel mode, now init greetins phase */
-	if (! vortex_connection_do_greetings_exchange (ctx, conn, timeout))
+	if (! vortex_connection_do_greetings_exchange (ctx, conn, options, timeout))
 		goto report_conn;
 
 	/* do connection notification */
@@ -347,7 +358,7 @@ axlPointer __vortex_http_connection_new (VortexHttpConnectionData * data)
 	return conn;
 }
 
-/**
+/** 
  * @brief Creates a new BEEP connection to a remote BEEP server, by
  * connecting to a HTTP server supporting HTTP CONNECT method (proxy
  * server).

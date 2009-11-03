@@ -938,6 +938,8 @@ typedef void (*VortexConnectionOnChannelUpdate) (VortexChannel * channel, axlPoi
  * during the connection creation and configured by \ref
  * vortex_connection_set_connection_actions.
  *
+ * See \ref VortexConnectionStage definition for available events.
+ *
  * @param ctx The context where the operation is taking place.
  * 
  * @param conn The connection that is notified.
@@ -946,7 +948,7 @@ typedef void (*VortexConnectionOnChannelUpdate) (VortexChannel * channel, axlPoi
  * that must replace the connection received, this variable is used to
  * notify the new reference.
  *
- * @param state The stage during the notification is taking place.
+ * @param stage The stage during the notification is taking place.
  *
  * @param user_data User defined data associated to the action. This
  * was configured at \ref vortex_connection_set_connection_actions.
@@ -972,7 +974,7 @@ typedef void (*VortexConnectionOnChannelUpdate) (VortexChannel * channel, axlPoi
 typedef int (*VortexConnectionAction)    (VortexCtx               * ctx,
 					  VortexConnection        * conn,
 					  VortexConnection       ** new_conn,
-					  VortexConnectionStage     state,
+					  VortexConnectionStage     stage,
 					  axlPointer                user_data);
 
 /** 

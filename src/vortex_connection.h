@@ -86,6 +86,13 @@ VortexConnection  * vortex_connection_new                    (VortexCtx         
 							      VortexConnectionNew    on_connected, 
 							      axlPointer             user_data);
 
+VortexConnection  * vortex_connection_new_full               (VortexCtx            * ctx,
+							      const char           * host, 
+							      const char           * port,
+							      VortexConnectionOpts * options,
+							      VortexConnectionNew    on_connected, 
+							      axlPointer             user_data);
+
 axl_bool            vortex_connection_reconnect              (VortexConnection * connection,
 							      VortexConnectionNew on_connected,
 							      axlPointer user_data);
@@ -98,9 +105,10 @@ VORTEX_SOCKET       vortex_connection_sock_connect           (VortexCtx   * ctx,
 							      int         * timeout,
 							      axlError   ** error);
 
-axl_bool            vortex_connection_do_greetings_exchange  (VortexCtx        * ctx, 
-							      VortexConnection * connection, 
-							      int                timeout);
+axl_bool            vortex_connection_do_greetings_exchange  (VortexCtx            * ctx, 
+							      VortexConnection     * connection, 
+							      VortexConnectionOpts * options,
+							      int                    timeout);
 
 axl_bool            vortex_connection_close_all_channels     (VortexConnection * connection, 
 							      axl_bool           also_channel_0);
@@ -404,5 +412,33 @@ axl_bool               vortex_connection_ref_internal                    (Vortex
 									  axl_bool           check_ref);
 
 #endif
+
+/* @} */
+
+
+/** 
+ * \addtogroup vortex_connection_opts
+ * @{
+ */
+
+/** 
+ * @brief Allows to easily signal connection features with a simple
+ * macro that already signals to finish connection option once
+ * connection is created and it also provides latest NULL value to
+ * terminate connection options.
+ *
+ * The macro receives a list of connection options, separated by (,)
+ * and returns a newly created \ref VortexConnectionOpts.
+ */
+#define CONN_OPTS(...) (vortex_connection_opts_new (VORTEX_OPTS_RELEASE, axl_true, ##__VA_ARGS__, 0))
+
+VortexConnectionOpts * vortex_connection_opts_new (VortexConnectionOptItem opt_item, ...);
+
+const char * vortex_connection_opts_get_serverName (VortexConnection     * conn,
+						    VortexConnectionOpts * conn_opts);
+
+void vortex_connection_opts_free (VortexConnectionOpts * conn_opts);
+
+void vortex_connection_opts_check_and_release (VortexConnectionOpts * conn_opts);
 
 /* @} */

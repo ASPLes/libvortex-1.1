@@ -49,6 +49,153 @@
 #define LOG_DOMAIN "vortex-connection"
 #define VORTEX_CONNECTION_BUFFER_SIZE 32768
 
+/** 
+ * \defgroup vortex_connection_opts Vortex Connection Options: connection create options
+ */
+
+/** 
+ * \addtogroup vortex_connection_opts
+ * @{
+ */
+
+struct _VortexConnectionOpts {
+	/** 
+	 * @internal serverName to be signed on connection greetings.
+	 */
+	char       * serverName;
+
+	/** 
+	 * @internal Signal to acquire the serverName value as defined
+	 * by the host parameter provided at
+	 * vortex_connection_new_full.
+	 */
+	axl_bool     serverName_acquire;
+
+	/** 
+	 * @internal Signals if the connection option must be released
+	 * on connection creation.
+	 */
+	axl_bool     release_opts;
+};
+
+/** 
+ * @brief Allows to create a connection options object.
+ *
+ * The object returned is used to signal a list of options and values
+ * to be used by \ref vortex_connection_new_full. See \ref
+ * VortexConnectionOptItem for more information.
+ */
+VortexConnectionOpts * vortex_connection_opts_new (VortexConnectionOptItem opt_item, ...)
+{
+	va_list                args;
+	VortexConnectionOpts * opts;
+
+	va_start (args, opt_item);
+
+	/* create connection options */
+	opts = axl_new (VortexConnectionOpts, 1);
+
+	/* set default values */
+	opts->serverName_acquire = axl_true;
+	
+	/* according to each opt_item, do: */
+	while (opt_item) {
+		/* check to finish option list */
+		if (opt_item == VORTEX_OPTS_END)
+			break;
+
+		/* for each option list do */
+		switch (opt_item) {
+		case VORTEX_OPTS_END:
+			/* nothing to do here */
+			break;
+		case VORTEX_SERVERNAME_FEATURE:
+			/* get serverName value */
+			opts->serverName   = (char *) va_arg (args, const char *);
+			opts->serverName   = axl_strdup (opts->serverName);
+			break;
+		case VORTEX_SERVERNAME_ACQUIRE:
+			/* get serverName acquire status */
+			opts->serverName_acquire = va_arg (args, axl_bool);
+			break;
+		case VORTEX_OPTS_RELEASE:
+			/* check release status */
+			opts->release_opts = va_arg (args, axl_bool);
+			break;
+		} /* end switch */
+
+		/* get next option */
+		opt_item = va_arg (args, VortexConnectionOptItem);
+
+	} /* end while */
+
+	va_end (args);
+
+	/* return created option */
+	return opts;
+}
+
+/** 
+ * @internal Function used to get the serverName to be used, if any,
+ * according to connection options and current VortexCtx
+ * configuration.
+ *
+ * @param conn The connection to get the serverName name from.
+ *
+ * @param conn_opts The connection options to look for serverName
+ * value.
+ */
+const char * vortex_connection_opts_get_serverName (VortexConnection     * conn,
+						    VortexConnectionOpts * conn_opts)
+{
+	/* return no serverName in case some value received is NULL */
+	if (conn == NULL || conn_opts == NULL)
+		return NULL;
+	/* return serverName configured */
+	if (conn_opts->serverName)
+		return conn_opts->serverName;
+
+	/* check for acquire serverName from current connection host */
+	if (conn_opts->serverName_acquire) 
+		return vortex_connection_get_host (conn);
+	return NULL;
+}
+						    
+
+/** 
+ * @internal Function used to check and release connection option
+ * reference provided.
+ */
+void vortex_connection_opts_check_and_release (VortexConnectionOpts * conn_opts)
+{
+	/* check for null reference */
+	if (conn_opts == NULL)
+		return;
+	/* check if connection option was signeld to be released after
+	   connection new call */
+	if (conn_opts->release_opts)
+		vortex_connection_opts_free (conn_opts);
+	return;
+}
+
+/** 
+ * @brief Finishes the provided connection option.
+ * @param conn_opts The reference to the connection option to finish.
+ */
+void vortex_connection_opts_free (VortexConnectionOpts * conn_opts)
+{
+	if (conn_opts == NULL)
+		return;
+	axl_free (conn_opts->serverName);
+	axl_free (conn_opts);
+	return;
+}
+
+
+/* @} */
+
+
+
 /**
  * @internal Type definition to hold all actions to be executed during
  * the connection creation.
@@ -487,10 +634,11 @@ int  __vortex_connection_get_next_id (VortexCtx * ctx)
 extern void __vortex_channel_set_connected (VortexChannel * channel);
 
 typedef struct _VortexConnectionNewData {
-	VortexConnection    * connection;
-	VortexConnectionNew   on_connected;
-	axlPointer            user_data;
-	axl_bool              threaded;
+	VortexConnection      * connection;
+	VortexConnectionOpts  * options;
+	VortexConnectionNew     on_connected;
+	axlPointer              user_data;
+	axl_bool                threaded;
 }VortexConnectionNewData;
 
 
@@ -1550,7 +1698,7 @@ VORTEX_SOCKET vortex_connection_sock_connect (VortexCtx   * ctx,
 }
 			
 
-/**
+/** 
  * @brief Do greetings exchange (BEEP session initialization) on the
  * provided connection.
  *
@@ -1558,6 +1706,10 @@ VORTEX_SOCKET vortex_connection_sock_connect (VortexCtx   * ctx,
  *
  * @param connection The connection where the greetings exchange will
  * take place.
+ *
+ * @param options The set of options to be applied on the connection
+ * that can be useful for greetings exchange (for example: greetings
+ * features).
  *
  * @param timeout A timeout defined by the caller under which the
  * operation should finish.
@@ -1568,19 +1720,31 @@ VORTEX_SOCKET vortex_connection_sock_connect (VortexCtx   * ctx,
  * vortex_connection_get_status) and error message (\ref
  * vortex_connection_get_message).
  */
-axl_bool vortex_connection_do_greetings_exchange (VortexCtx * ctx, VortexConnection * connection, int timeout)
+axl_bool vortex_connection_do_greetings_exchange (VortexCtx             * ctx, 
+						  VortexConnection      * connection, 
+						  VortexConnectionOpts  * options,
+						  int                     timeout)
 {
-	VortexFrame * frame;
-	int           err;
+	VortexFrame          * frame;
+	int                    err;
 
 	v_return_val_if_fail (vortex_connection_is_ok (connection, axl_false), axl_false);
+
+	/* now we have to send greetings and process them */
+	if (! vortex_greetings_client_send (connection, options)) {
+		vortex_log (VORTEX_LEVEL_DEBUG, vortex_connection_get_message (connection));
+		return axl_false;
+	}
+	
+	vortex_log (VORTEX_LEVEL_DEBUG, "greetings sent, waiting for reply");
+
 
 	/* while we did not finish */
 	while (axl_true) {
 
 		/* block thread until received remote greetings */
 		vortex_log (VORTEX_LEVEL_DEBUG, "getting initial greetings frame..");
-		frame = vortex_greetings_client_process (connection);
+		frame = vortex_greetings_client_process (connection, options);
 		vortex_log (VORTEX_LEVEL_DEBUG, "finished wait for initial greetings frame=%p timeout=%d", 
 			    frame, timeout);
 
@@ -1656,17 +1820,6 @@ axl_bool vortex_connection_do_greetings_exchange (VortexCtx * ctx, VortexConnect
 	 * greetings process (if it were not) */
 	vortex_connection_set_blocking_socket (connection);
 	
-	/* now we have to send greetings and process them */
-	if (! vortex_greetings_client_send (connection)) {
-		/* greetings have failed, unref the frame */
-		vortex_frame_unref (frame);
-		
-		vortex_log (VORTEX_LEVEL_DEBUG, vortex_connection_get_message (connection));
-		return axl_false;
-	}
-	
-	vortex_log (VORTEX_LEVEL_DEBUG, "greetings sent, waiting for reply");
-	
 	/* process frame response */
 	if (!vortex_connection_parse_greetings_and_enable (connection, frame))
 		return axl_false;
@@ -1688,20 +1841,21 @@ axl_bool vortex_connection_do_greetings_exchange (VortexCtx * ctx, VortexConnect
  */
 axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 {
-	struct sockaddr_in   sin;
+	struct sockaddr_in     sin;
 #if defined(AXL_OS_WIN32)
 	/* windows flavors */
-	int                  sin_size = sizeof (sin);
+	int                    sin_size     = sizeof (sin);
 #else
 	/* unix flavors */
-	socklen_t            sin_size = sizeof (sin);
+	socklen_t              sin_size     = sizeof (sin);
 #endif
 	/* get current context */
-	VortexConnection   * connection   = data->connection;
-	VortexCtx          * ctx          = connection->ctx;
-	VortexChannel      * channel;
-	axlError           * error        = NULL;
-	int                  d_timeout    = 0;
+	VortexConnection     * connection   = data->connection;
+	VortexConnectionOpts * options      = data->options;
+	VortexCtx            * ctx          = connection->ctx;
+	VortexChannel        * channel;
+	axlError             * error        = NULL;
+	int                    d_timeout    = 0;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "executing connection new in %s mode to %s:%s id=%d",
 	       (data->threaded == axl_true) ? "thread" : "blocking", 
@@ -1736,6 +1890,13 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 		/* now set local address */
 		if (getsockname (connection->session, (struct sockaddr *) &sin, &sin_size) < -1) {
 			vortex_log (VORTEX_LEVEL_DEBUG, "unable to get local hostname and port to resolve local address");
+
+			/* check to release options if defined */
+			vortex_connection_opts_check_and_release (options);
+
+			/* release data */
+			axl_free (data);
+
 			return axl_false;
 		} /* end if */
 	
@@ -1751,7 +1912,7 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 		vortex_connection_add_channel  (connection, channel);
 
 		/* block thread until received remote greetings */
-		if (vortex_connection_do_greetings_exchange (ctx, connection, d_timeout)) {
+		if (vortex_connection_do_greetings_exchange (ctx, connection, options, d_timeout)) {
 
 			/* call to notify CONECTION_STAGE_POST_CREATED */
 			vortex_log (VORTEX_LEVEL_DEBUG, "doing post creation notification for connection id=%d", connection->id);
@@ -1761,16 +1922,30 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 
 	/* notify on callback or simply return */
 	if (data->threaded) {
+		/* notify connection */
 		data->on_connected (connection, data->user_data);
-		axl_free (data);			
+
+		/* release data */
+		axl_free (data);		
+
+		/* check to release options if defined */
+		vortex_connection_opts_check_and_release (options);
+	
 		return NULL;
 	}
+
+	/* release data */
 	axl_free (data);
+
+	/* check to release options if defined */
+	vortex_connection_opts_check_and_release (options);
+
 	return connection;
 }
 
 /** 
- * @brief Allows to create a new BEEP session (connection) to the given <i>host:port</i>.
+ * @brief Allows to create a new BEEP session (connection) to the
+ * given <i>host:port</i> using provided options.
  *
  * While working with <b>BEEP</b> frameworks, you need to create a new
  * connection (\ref VortexConnection), and over it, create channels (\ref
@@ -1866,6 +2041,11 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
  *
  * @param port The peer's port to connect to.
  *
+ * @param options Additional connection options to be used for this
+ * particular operation. This is mainly used to provide feature
+ * notification to remote BEEP listener. See \ref
+ * vortex_connection_opts_new and \ref VortexConnectionOptItem for more details.
+ *
  * @param on_connected Optional handler to process connection new
  * status.
  *
@@ -1879,24 +2059,31 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
  * must use \ref vortex_connection_is_ok to check if you are already
  * connected.
  */
-VortexConnection * vortex_connection_new (VortexCtx   * ctx,
-					  const char  * host, 
-					  const char  * port, 
-					  VortexConnectionNew on_connected,
-					  axlPointer user_data)
+VortexConnection  * vortex_connection_new_full               (VortexCtx            * ctx,
+							      const char           * host, 
+							      const char           * port,
+							      VortexConnectionOpts * options,
+							      VortexConnectionNew    on_connected, 
+							      axlPointer             user_data)
 {
-
 	VortexConnectionNewData * data;
 
 	/* check context is initialized */
-	if (! vortex_init_check (ctx))
+	if (! vortex_init_check (ctx)) {
+		/* check to release options if defined */
+		vortex_connection_opts_check_and_release (options);
 		return NULL;
+	}
 
 	/* check parameters */
-	v_return_val_if_fail (host, NULL);
-	v_return_val_if_fail (port, NULL);
+	if (host == NULL || port == NULL) {
+		/* check to release options if defined */
+		vortex_connection_opts_check_and_release (options);
+		return NULL;
+	} /* end if */
 
 	data                                  = axl_new (VortexConnectionNewData, 1);
+	data->options                         = options;
 	data->connection                      = axl_new (VortexConnection, 1);
 	data->connection->id                  = __vortex_connection_get_next_id (ctx);
 	data->connection->ctx                 = ctx;
@@ -1954,6 +2141,51 @@ VortexConnection * vortex_connection_new (VortexCtx   * ctx,
 	}
 	vortex_log (VORTEX_LEVEL_DEBUG, "invoking connection_new non-threaded mode");
 	return __vortex_connection_new (data);
+}
+
+/** 
+ * @brief Allows to create a new BEEP session (connection) to the given <i>host:port</i>.
+ *
+ * See \ref vortex_connection_new_full for complete
+ * documentation. This function implements the same behaviour than
+ * \ref vortex_connection_new_full but without providing additional
+ * options (\ref VortexConnectionOpts).
+ *
+ * This function is implemented on top of \ref vortex_connection_new_full.
+ * 
+ * @param ctx The context where the operation will be performed.
+ *
+ * @param host The remote peer to connect to.
+ *
+ * @param port The peer's port to connect to.
+ *
+ * @param on_connected Optional handler to process connection new
+ * status.
+ *
+ * @param user_data Optional handler to process connection new status
+ * 
+ * @return A newly created \ref VortexConnection if called in a
+ * blocking manner, that is, without providing the <b>on_connected</b>
+ * handler. If you provide the <b>on_connected</b> handler, the
+ * function will return NULL, and the connection created will be
+ * notified on the handler <b>on_connected</b>. In both cases, you
+ * must use \ref vortex_connection_is_ok to check if you are already
+ * connected.
+ */
+VortexConnection * vortex_connection_new (VortexCtx   * ctx,
+					  const char  * host, 
+					  const char  * port, 
+					  VortexConnectionNew on_connected,
+					  axlPointer user_data)
+{
+	VortexConnectionOpts options;
+
+	/* clear object */
+	memset (&options, 0, sizeof (VortexConnectionOpts));
+	/* set default values */
+	options.serverName_acquire = axl_true;
+
+	return vortex_connection_new_full (ctx, host, port, &options, on_connected, user_data);
 }
 
 /** 
@@ -3882,13 +4114,14 @@ int                vortex_connection_get_id               (VortexConnection * co
 }
 
 /** 
- * @brief Allows to get the serverName under which the connection is
- * acting.
+ * @brief Allows to get the serverName under which the remote BEEP
+ * peer is working. 
  *
- * During the BEEP session, the first channel created under a provided
- * serverName attribute is meaningful for the rest of the
- * session. This means that the connection gets flaged with the
- * serverName under which is acting. 
+ * During the BEEP session, the first channel created or due to
+ * x-serverName feature configured, under a provided serverName
+ * attribute is meaningful for the rest of the session. This means
+ * that the connection gets flaged with the serverName under which is
+ * acting.
  * 
  * @param connection The connection that is required to return its
  * server name value.
@@ -5105,6 +5338,17 @@ VortexPeerRole      vortex_connection_get_role               (VortexConnection *
  * of features that will be sent to the remote peers while current
  * host creates a new session.
  *
+ * NOTE: the value returned by this function is only the advised
+ * features content sent by remote BEEP peer; in any way is a set of
+ * features accepted or implemented. The application level must get
+ * the value from this function, process it and decide to support or
+ * not each feature. See \ref
+ * CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES and \ref
+ * vortex_connection_set_connection_actions for a way to get a
+ * notification of features available. In general features are
+ * requested from initiator to listener, which means that this is only
+ * useful at server side.
+ *
  * @param connection The connection where the greetings were received,
  * signaling the features request.
  * 
@@ -5848,3 +6092,4 @@ int                vortex_connection_get_mss                (VortexConnection * 
 }
 
 /* @} */
+

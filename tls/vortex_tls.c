@@ -448,6 +448,8 @@ int  vortex_tls_ssl_write (VortexConnection * connection, const char  * buffer, 
 	
 	/* get error */
 	ssl_err = SSL_get_error(ssl, res);
+	vortex_log (VORTEX_LEVEL_DEBUG, "%d = SSL_write ( %d), error = %d",
+		    res, buffer_len, ssl_err);
 	switch (ssl_err) {
 	case SSL_ERROR_NONE:
 		/* no error, nothing to report */
@@ -943,7 +945,7 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 
 	/* 5. Issue again initial greetings, greetings just like we
 	 * were creating a connection. */
-	if (!vortex_greetings_client_send (connection)) {
+	if (!vortex_greetings_client_send (connection, NULL)) {
                 vortex_log (VORTEX_LEVEL_CRITICAL, "failed while sending greetings after TLS negotiation");
 
 		/* notify that the TLS negotiation have failed
@@ -954,14 +956,23 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 								 "Initial greetings before a TLS negotiation has failed", user_data);
 		return NULL;
 	}
-
+	
+	/* block until all replies are sent: this required because
+	   SSL_read and SSL_write are protected by a mutex that can
+	   cause the previous write (vortex_greetings_client_send) to
+	   be blocked by next write (vortex_greetings_client_process)
+	   causing the client greetings to never reach listener side,
+	   also causing listener greetings to be never sent. */
+	vortex_channel_block_until_replies_are_sent (vortex_connection_get_channel (connection, 0), 1000);
+	
 	vortex_log (VORTEX_LEVEL_DEBUG, "TLS STAGE[8]: greetings sent, waiting for reply");
 
 	/* 6. Wait to get greetings reply (again issued because the
 	 * underlying transport reset the session state) */
-	reply = vortex_greetings_client_process (connection);
+	reply = vortex_greetings_client_process (connection, NULL);
 	
-	vortex_log (VORTEX_LEVEL_DEBUG, "TLS STAGE[9]: reply received, checking content");
+	vortex_log (VORTEX_LEVEL_DEBUG, "TLS STAGE[9]: reply received, checking content: %s",
+		    (const char *) vortex_frame_get_payload (reply));
 
 	/* 7. Check received greetings reply, read again supported
 	 * profiles from remote site and register the connection into
@@ -1231,6 +1242,8 @@ void vortex_tls_initial_accept (VortexConnection * connection)
 	VortexTlsCtx         * tls_ctx;
 	int                    ssl_error;
 
+	vortex_log (VORTEX_LEVEL_DEBUG, "received tls activation data...");
+
 	/* check if the tls ctx was created */
 	tls_ctx = vortex_ctx_get_data (ctx, TLS_CTX);
 	if (tls_ctx == NULL) 
@@ -1299,18 +1312,8 @@ void vortex_tls_initial_accept (VortexConnection * connection)
 		/* install here a filtering mask to avoid reusing tls
 		 * profile again inside the greetings */
 		vortex_connection_set_profile_mask (connection, __vortex_tls_mask, NULL);
-		
-	} /* end if */
 
-	/* 5. Issue again initial greetings, greetings just like we
-	 * were creating a connection. */
-	if (!vortex_greetings_send (connection)) {
-		/* because the greeting connection have failed, we
-		 * have to close and drop the \ref VortexConnection
-		 * object. */
-		vortex_connection_unref (connection, "(vortex tls profile)");
-		
-	}
+	} /* end if */
 
 	return;
 }
