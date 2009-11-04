@@ -56,6 +56,12 @@ axl_bool       vortex_greetings_client_send    (VortexConnection     * connectio
 VortexFrame *  vortex_greetings_client_process (VortexConnection     * connection,
 						VortexConnectionOpts * options);
 
+void           vortex_greetings_error_send     (VortexConnection     * connection,
+						const char           * xml_lang,
+						const char           * code,
+						const char           * message,
+						...);
+
 void           vortex_greetings_set_features   (VortexCtx        * ctx,
 						const char       * feature);
 
