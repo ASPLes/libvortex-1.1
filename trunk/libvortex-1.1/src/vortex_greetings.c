@@ -351,6 +351,63 @@ VortexFrame *  vortex_greetings_process (VortexConnection     * connection,
 }
 
 /** 
+ * @internal Function that manages error reply for connection
+ * greetings.
+ */
+void vortex_greetings_manage_error_greetings (VortexConnection * connection, VortexFrame * frame)
+{
+	axlDoc   * doc;
+	axlNode  * node;
+	axlError * error = NULL;
+
+	/* parse message */
+	doc = axl_doc_parse (vortex_frame_get_payload (frame), 
+			     vortex_frame_get_payload_size (frame), &error);
+	if (doc == NULL) {
+		vortex_connection_push_channel_error (connection,
+						      550,
+						      axl_strdup ("Local error, unable to parse error greetings reply. Received ERR frame but content is unparseable"));
+		__vortex_connection_set_not_connected (connection,
+						       "Local error, unable to parse error greetings reply. Received ERR frame but content is unparseable",
+						       VortexConnectionError);
+		return;
+	} /* end if */
+
+	/* get root node */
+	node = axl_doc_get_root (doc);
+	if (NODE_CMP_NAME (node, "error")) {
+		/* get the error code and the content */
+		vortex_connection_push_channel_error (
+			/* the connection where to report */
+			connection, 
+			/* the code to report */
+			(int) (ATTR_VALUE (node, "code") != NULL ? vortex_support_strtod (ATTR_VALUE (node, "code"), NULL) : 0),
+			/* the content to report */
+			axl_node_get_content (node, NULL) != NULL ? axl_node_get_content_copy (node, NULL) : axl_strdup ("No error message reported by remote peer"));
+
+		/* set not connected error */
+		__vortex_connection_set_not_connected (connection,
+						       axl_node_get_content (node, NULL) ? axl_node_get_content (node, NULL) : "No error message reported by remote peer",
+						       VortexConnectionError);
+	} else {
+		/* get the error code and the content */
+		vortex_connection_push_channel_error (
+			/* the connection where to report */
+			connection, 
+			/* the code to report */
+			550,
+			/* the content to report */
+			axl_strdup ("Received ERR frame as greetings reply. Unable to connect. BEEP peer replied with XML content but unparseable"));
+
+		/* set not connected error */
+		__vortex_connection_set_not_connected (connection,
+						       "Received ERR frame as greetings reply. Unable to connect. BEEP peer replied with XML content but unparseable",
+						       VortexConnectionError);
+	} /* end if */
+	return;
+}
+
+/** 
  * @internal
  * 
  * This function should not be useful for vortex library
@@ -371,6 +428,14 @@ axl_bool            vortex_greetings_is_reply_ok    (VortexFrame          * fram
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx = vortex_connection_get_ctx (connection);
 #endif
+
+	/* check for error reply frame and get values from error */
+	if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ERR) {
+		/* manage error reply */
+		vortex_greetings_manage_error_greetings (connection, frame);
+		vortex_frame_unref (frame);
+		return axl_false;
+	}
 
 	/* check greetings reply */
 	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
@@ -491,6 +556,55 @@ VortexFrame *  vortex_greetings_client_process (VortexConnection     * connectio
 						VortexConnectionOpts * options)
 {
 	return vortex_greetings_process (connection, options);
+}
+
+/** 
+ * @brief Allows to send a greetings error reply. This is used by
+ * server implementation that wants to provide error messages under
+ * some conditions.
+ *
+ * @param connection The connection where the error message will be sent.
+ * @param xml_lang Optional string configuring the language used for the message sent.
+ * @param code The error code to report. See RFC3080 for details.
+ * @param message The message format (printf-like) to be sent.
+ * 
+ * NOTE: The function shutdown the connection (\ref
+ * vortex_connection_shutdown) since sending this kind of error
+ * message at greetings makes remote peer to also close the
+ * connection.
+ */
+void           vortex_greetings_error_send     (VortexConnection     * connection,
+						const char           * xml_lang,
+						const char           * code,
+						const char           * message,
+						...)
+{
+	char          * error_msg;
+	char          * aux;
+	VortexChannel * channel;
+	va_list         args;
+
+	if (connection == NULL || code == NULL || message == NULL)
+		return;
+	
+	/* build message to be sent */
+	va_start (args, message);
+	aux = axl_strdup_printfv (message, args);
+	va_end (args);
+
+	/* send custom error message */
+	error_msg = vortex_frame_get_error_message (code, aux, NULL);
+	channel   = vortex_connection_get_channel (connection, 0);
+	vortex_channel_send_err (channel, error_msg, strlen (error_msg), 0);
+	axl_free (error_msg);
+	
+	/* block until all replies are sent */
+	vortex_channel_block_until_replies_are_sent (channel, 1000);
+
+	/* close the connection */
+	vortex_connection_shutdown (connection);
+	
+	return;
 }
 
 

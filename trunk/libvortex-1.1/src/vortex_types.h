@@ -1083,7 +1083,7 @@ typedef enum {
 	 * must returned -1) or return 0 in the case the connection
 	 * must be finally accepted.
 	 */
-	CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES = 2
+	CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES = 2 
 } VortexConnectionStage;
 
 #endif

@@ -1242,8 +1242,8 @@ int process_greetings_features (VortexCtx               * ctx,
 				VortexConnectionStage     stage,
 				axlPointer                user_data)
 {
-	const char * features = vortex_connection_get_features (conn);
-	char * serverName;
+	const char    * features = vortex_connection_get_features (conn);
+	char          * serverName;
 
 	/* for empty features, just accept */
 	if (features == NULL)
@@ -1253,6 +1253,14 @@ int process_greetings_features (VortexCtx               * ctx,
 	printf ("Found features from initiator peer: %s..\n", features);
 	serverName = get_server_name_feature (features);
 	printf ("Found serverName value found: '%s'..\n", serverName);
+
+	/* check for not allowed serverName */
+	if (axl_cmp (serverName, "reg-test.wrong.local"))  {
+		printf ("Not accepting serverName = reg-test.wrong.local..\n");
+		/* send custom error message */
+		vortex_greetings_error_send (conn, NULL, "550", "Unable to provide services under such serverName: %s", serverName);
+		return -1;
+	} /* end if */
 
 	/* configure serverName on connection */
 	vortex_connection_set_server_name (conn, serverName);

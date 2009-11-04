@@ -148,9 +148,18 @@ VortexConnectionOpts * vortex_connection_opts_new (VortexConnectionOptItem opt_i
 const char * vortex_connection_opts_get_serverName (VortexConnection     * conn,
 						    VortexConnectionOpts * conn_opts)
 {
+	VortexCtx * ctx;
+
 	/* return no serverName in case some value received is NULL */
 	if (conn == NULL || conn_opts == NULL)
 		return NULL;
+
+	/* check if context allows acquiring serverName from
+	 * connection host */
+	ctx = vortex_connection_get_ctx (conn);
+	if (! ctx->serverName_acquire)
+		return NULL; /* do not acquire serverName */
+
 	/* return serverName configured */
 	if (conn_opts->serverName)
 		return conn_opts->serverName;
