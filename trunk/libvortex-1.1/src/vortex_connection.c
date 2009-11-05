@@ -1814,11 +1814,12 @@ axl_bool vortex_connection_do_greetings_exchange (VortexCtx             * ctx,
 			connection->session      = -1;
 
 			/* free previous message */
-			if (connection->message)
-				axl_free (connection->message);
-			connection->message      = axl_strdup_printf (
-				"Connection refused. Received null frame were it was expected initial greetings, finish connection id=%d", connection->id);
-			connection->status       = VortexConnectionError;
+			if (connection->message == NULL) {
+				connection->message      = 
+					axl_strdup_printf ("Connection refused. Received null frame were it was expected initial greetings, finish connection id=%d", 
+							   connection->id);
+				connection->status       = VortexConnectionError;
+			} /* end if */
 			connection->is_connected = axl_false;
 			return axl_false;
 		} /* end if */
