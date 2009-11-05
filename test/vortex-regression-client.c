@@ -1545,6 +1545,8 @@ axl_bool test_01g (void) {
 	VortexChannel    * channel;
 	VortexAsyncQueue * queue;
 	VortexFrame      * frame;
+	int                code;
+	char             * msg;
 
 	/* create a connection with serverName by default */
 	connection = connection_new ();
@@ -1681,12 +1683,31 @@ axl_bool test_01g (void) {
 						 NULL, NULL);
 
 	/* check connection status */
-	if (! vortex_connection_is_ok (connection, axl_false)) {
-		printf ("ERROR: expected to find proper connection status..but not found..\n");
+	if (vortex_connection_is_ok (connection, axl_false)) {
+		printf ("ERROR: expected to NOT find proper connection status..but found..\n");
 		return axl_false;
 	}
 
 	/* check here returned values */
+	vortex_connection_pop_channel_error (connection, &code, &msg);
+
+	if (code != 550 && ! axl_cmp (msg, "Unable to provide services under such serverName: reg-test.wrong.local")) {
+		printf ("ERROR: expected error code=550 and error msg='Unable to provide services under such serverName: reg-test.wrong.local' after connection denied but found code='%d' and msg='%s'..\n", code, msg);
+		return axl_false;
+	} /* end if */
+	axl_free (msg);
+
+	/* check general error on connection */
+	if (vortex_connection_get_status (connection) != VortexGreetingsFailure) {
+		printf ("ERROR: expected to find VortexGreetingsFailure error code but found: %d..\n",
+			vortex_connection_get_status (connection));
+		return axl_false;
+	}
+
+	if (! axl_cmp ("Unable to provide services under such serverName: reg-test.wrong.local", vortex_connection_get_message (connection))) {
+		printf ("ERROR: expected to find message 'Unable to provide services under such serverName: reg-test.wrong.local' at connection error message..\n");
+		return axl_false;
+	} /* end if */
 	
 	/* close connection */
 	vortex_connection_close (connection);
@@ -6224,6 +6245,9 @@ axl_bool  test_08 (void)
 	VortexAsyncQueue * queue;
 	VortexFrame      * frame;
 
+	/* disable automatic serverName acquire */
+	vortex_ctx_server_name_acquire (ctx, axl_false);
+
 	/* create the queue */
 	queue      = vortex_async_queue_new ();
 
@@ -6331,6 +6355,10 @@ axl_bool  test_08 (void)
 
 	/* close the connection */
 	vortex_connection_close (connection);
+
+	/* reenable */
+	vortex_ctx_server_name_acquire (ctx, axl_true);
+
 	return axl_true;
 }
 

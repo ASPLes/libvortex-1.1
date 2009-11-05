@@ -388,7 +388,7 @@ void vortex_greetings_manage_error_greetings (VortexConnection * connection, Vor
 		/* set not connected error */
 		__vortex_connection_set_not_connected (connection,
 						       axl_node_get_content (node, NULL) ? axl_node_get_content (node, NULL) : "No error message reported by remote peer",
-						       VortexConnectionError);
+						       VortexGreetingsFailure);
 	} else {
 		/* get the error code and the content */
 		vortex_connection_push_channel_error (
@@ -402,8 +402,12 @@ void vortex_greetings_manage_error_greetings (VortexConnection * connection, Vor
 		/* set not connected error */
 		__vortex_connection_set_not_connected (connection,
 						       "Received ERR frame as greetings reply. Unable to connect. BEEP peer replied with XML content but unparseable",
-						       VortexConnectionError);
+						       VortexGreetingsFailure);
 	} /* end if */
+
+	/* free document */
+	axl_doc_free (doc);
+
 	return;
 }
 
@@ -597,6 +601,7 @@ void           vortex_greetings_error_send     (VortexConnection     * connectio
 	channel   = vortex_connection_get_channel (connection, 0);
 	vortex_channel_send_err (channel, error_msg, strlen (error_msg), 0);
 	axl_free (error_msg);
+	axl_free (aux);
 	
 	/* block until all replies are sent */
 	vortex_channel_block_until_replies_are_sent (channel, 1000);

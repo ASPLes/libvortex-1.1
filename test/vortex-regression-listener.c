@@ -1259,6 +1259,9 @@ int process_greetings_features (VortexCtx               * ctx,
 		printf ("Not accepting serverName = reg-test.wrong.local..\n");
 		/* send custom error message */
 		vortex_greetings_error_send (conn, NULL, "550", "Unable to provide services under such serverName: %s", serverName);
+
+		axl_free (serverName);
+
 		return -1;
 	} /* end if */
 
