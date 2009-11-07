@@ -172,6 +172,14 @@ void          vortex_listener_complete_register    (VortexConnection     * conne
 	 */
 	vortex_reader_watch_connection      (ctx, connection);
 
+	/*
+	 * Because this is a listener, we don't want to pay attention
+	 * to free connection on errors. connection already have 1
+	 * reference (reader), so let's reference counting to the job
+	 * of free connection resources.
+	 */
+	vortex_connection_unref (connection, "vortex listener (initial accept)");
+
 	return;
 }
 
@@ -308,7 +316,7 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 		 * received is something goes wrong */
 		vortex_log (VORTEX_LEVEL_CRITICAL, "wrong greeting rpy from init peer, closing session");
 		__vortex_connection_set_not_connected (connection, "wrong greeting rpy from init peer, closing session", VortexProtocolError);
-		goto unref;
+		return;
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "received initiator peer greetings...checking..");
@@ -321,7 +329,7 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 		
 		vortex_log (VORTEX_LEVEL_CRITICAL, "wrong greetings received, closing session");
 		__vortex_connection_set_not_connected (connection, "wrong greetings received, closing session", VortexProtocolError);
-		goto unref;
+		return;
 	}
 
 	/* if parse greetins ok, notify to process features and and
@@ -335,7 +343,7 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 			    vortex_connection_get_id (connection));
 		__vortex_connection_set_not_connected (connection, "vortex listener do to action failure = CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES", 
 						       VortexConnectionFiltered);
-		goto unref;
+		return;
 	} /* end if */
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "greetings ok, sending listener greetings..");
@@ -356,7 +364,7 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 		 */ 
 		__vortex_connection_set_not_connected (connection, "vortex listener: failed to send initial listener greetings reply message",
 						       VortexProtocolError);
-		goto unref;
+		return;
 	} /* end if */
 
 	/* frame accepted */
@@ -374,17 +382,8 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 		vortex_log (VORTEX_LEVEL_CRITICAL, "vortex listener do to action failure = CONNECTION_STAGE_POST_CREATED, connection closed id=%d",
 			    vortex_connection_get_id (connection));
 		__vortex_connection_set_not_connected (connection, "vortex listener do to action failure = CONNECTION_STAGE_POST_CREATED", VortexConnectionFiltered);
-		goto unref;
+		return;
 	} /* end if */
-
- unref:
-	/*
-	 * Because this is a listener, we don't want to pay attention
-	 * to free connection on errors. connection already have 1
-	 * reference (reader), so let's reference counting to the job
-	 * of free connection resources.
-	 */
-	vortex_connection_unref (connection, "vortex listener (initial accept)");
 
 	return;	
 }

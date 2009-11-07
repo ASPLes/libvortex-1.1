@@ -1251,6 +1251,7 @@ unsigned int  get_unsigned_int_value (char  * string, int  * position)
 {
 	int          iterator = 0;
 	unsigned int result;
+	
 	while ((string[iterator] != ' ')    &&
 	       (string[iterator] != '\x0A') && 
 	       (string[iterator] != '\x0D'))
@@ -1268,12 +1269,24 @@ unsigned int  get_unsigned_int_value (char  * string, int  * position)
 	return result;
 }
 
+/** 
+ * @internal check that last value returned is not -2 and position
+ * never overflows beep header length received.
+ */
+#define CHECK_INDEX_AND_RETURN(value) do{               \
+   if (value == -2 || position > (header_length -1)) {	\
+	   return -2;                                   \
+   }                                                    \
+} while(0)
 
 /** 
  * @internal
  *
  * Internal function which reads the frame hacer received, and place
  * that data into the the frame reference received.
+ *
+ * @param connection The connection where the BEEP header is being
+ * read.
  * 
  * @param beep_header An string representing the beep frame header.
  *
@@ -1281,13 +1294,21 @@ unsigned int  get_unsigned_int_value (char  * string, int  * position)
  * 
  * @return Returns the number of bytes read from the beep header line.
  */
-int  vortex_frame_get_header_data (char  * beep_header, VortexFrame * frame)
+int  vortex_frame_get_header_data (VortexCtx * ctx, VortexConnection * connection, char  * beep_header, VortexFrame * frame)
 {
-	int  position = 0;
+	int  position      = 0;
+	int  header_length;
 
 	/* check for null frame reader */
 	if (beep_header == NULL)
 		return 0;
+	
+	/* check for empty header */
+	header_length = strlen (beep_header);
+	if (header_length == 0)
+		return -2;
+	vortex_log (VORTEX_LEVEL_DEBUG, "processing beep header: '%s' (length: %d)..",
+		    beep_header, header_length);
 
 	/* according to the frame type, read the content */
 	switch (frame->type) {
@@ -1295,14 +1316,22 @@ int  vortex_frame_get_header_data (char  * beep_header, VortexFrame * frame)
 		/* SEQ frame format: "%d %d %d\x0D\x0A"
 		   channel seqno size */
 		frame->channel    = get_int_value          (beep_header, &position);
+		CHECK_INDEX_AND_RETURN (frame->channel);
+
 		frame->seqno      = get_unsigned_int_value (beep_header + position, &position);
+		CHECK_INDEX_AND_RETURN (frame->seqno);
+
 		frame->size       = get_int_value          (beep_header + position, &position);
+		CHECK_INDEX_AND_RETURN (frame->size);
 		break;
 	default:
 		/* where all cases matches: "%d %d %c %d %d\x0D\x0A"
 		   channel msgno more_char seqno size */
 		frame->channel    = get_int_value (beep_header, &position);
+		CHECK_INDEX_AND_RETURN (frame->channel);
+
 		frame->msgno      = get_int_value (beep_header + position, &position);
+		CHECK_INDEX_AND_RETURN (frame->msgno);
 
 		/* get more char */
 		frame->more_char  = beep_header [position];
@@ -1426,7 +1455,6 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 			 * the negotiation (just before the initial
 			 * step, but after the second step) */
 			vortex_log (VORTEX_LEVEL_WARNING, "found connection closed before finishing negotiation, dropping..");
-			vortex_connection_unref (connection, "vortex listener (initial accept not finished)");
 			__vortex_connection_set_not_connected (connection, "connection closed during session connection", 
 							       VortexProtocolError);
 			return NULL;
@@ -1446,7 +1474,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 		return NULL;
 	}
 
-	if ((line[bytes_read - 1] != '\x0A') || (line[bytes_read - 2] != '\x0D')) {
+	if (bytes_read == 1 || (line[bytes_read - 1] != '\x0A') || (line[bytes_read - 2] != '\x0D')) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
 			    "no line definition found for frame, over connection id=%d, bytes read: %d, line: '%s' errno=%d, closing session",
 			    vortex_connection_get_id (connection),
@@ -1492,7 +1520,15 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	}
 
 	/* get the next frame according to the expected values */
-	bytes_read = vortex_frame_get_header_data (&(line[4]), frame);
+	bytes_read = vortex_frame_get_header_data (ctx, connection, &(line[4]), frame);
+	if (bytes_read == -2) {
+		/* free frame no longer needed */
+		axl_free (frame);
+
+		vortex_log (VORTEX_LEVEL_CRITICAL, "wrong BEEP header found, closing connection..");
+		__vortex_connection_set_not_connected (connection, "wrong BEEP header found, closing connection..", VortexProtocolError);
+		return NULL;
+	}
 
 	/* configure the channel where the frame was received */
 	frame->channel_ref = vortex_connection_get_channel (connection, frame->channel);
