@@ -327,6 +327,9 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 	/* if parse greetins ok, notify to process features and and
 	   localize */
 	if (! vortex_connection_actions_notify (&connection, CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES)) {
+		/* release_frame */
+		vortex_frame_unref (frame);
+
 		/* action reporting failure, unref the connection */
 		vortex_log (VORTEX_LEVEL_CRITICAL, "vortex listener do to action failure = CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES, connection closed id=%d",
 			    vortex_connection_get_id (connection));
@@ -341,6 +344,9 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 	 * it to init peer */
 	vortex_log (VORTEX_LEVEL_DEBUG, "sending greetings for a new connection..");
 	if ((! vortex_greetings_send (connection, NULL))) {
+		/* release frame */
+		vortex_frame_unref (frame);
+
 		vortex_log (VORTEX_LEVEL_CRITICAL, "vortex listener: failed to send initial listener greetings reply message");
 		
 		/*
@@ -350,7 +356,7 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 		 */ 
 		__vortex_connection_set_not_connected (connection, "vortex listener: failed to send initial listener greetings reply message",
 						       VortexProtocolError);
-		return;
+		goto unref;
 	} /* end if */
 
 	/* frame accepted */
