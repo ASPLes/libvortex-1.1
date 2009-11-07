@@ -1584,9 +1584,9 @@ int __vortex_connection_wait_on (VortexCtx           * ctx,
 	return err;
 }
 
-/**
+/** 
  * @brief Allows to create a plain socket connection against the host
- * and port provided.
+ * and port provided. 
  *
  * @param ctx The context where the connection happens.
  *

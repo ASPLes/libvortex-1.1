@@ -1719,6 +1719,43 @@ axl_bool test_01g (void) {
 	return axl_true;
 }
 
+#define TEST_01H_CHECK(string) do {                             \
+                                                                \
+	/* do a socket connect with wrong header content */     \
+	socket = vortex_connection_sock_connect (ctx,           \
+						 listener_host, \
+						 LISTENER_PORT, \
+						 NULL, NULL);   \
+	if (socket == -1)                                       \
+		return axl_false;                               \
+	                                                        \
+	/* send wrong content */                                \
+	write (socket, string, strlen (string));                \
+	                                                        \
+	vortex_close_socket (socket);                           \
+} while (0);
+
+
+axl_bool test_01h (void) {
+
+	VORTEX_SOCKET socket;
+
+	/* check different wrong headers */
+	TEST_01H_CHECK ("RPY\n");
+
+	TEST_01H_CHECK ("RPY\r\n");
+
+	TEST_01H_CHECK ("RPY \0 \0 \r\n");
+
+	TEST_01H_CHECK ("\n");
+
+	TEST_01H_CHECK ("\0");
+
+	TEST_01H_CHECK ("RPY 1234123\0\r\n");
+
+	return axl_true;
+}
+
 #define TEST_02_MAX_CHANNELS 24
 
 void test_02_channel_created (int                channel_num, 
@@ -8136,7 +8173,8 @@ int main (int  argc, char ** argv)
         printf ("**       valgrind or similar tools.\n");
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
-	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, test_01e, test_01f, test_01g\n");
+	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
+	printf ("**                       test_01f, test_01g, test_01h, \n");
 	printf ("**                       test_02, test_02a, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, \n");
@@ -8283,6 +8321,9 @@ int main (int  argc, char ** argv)
 
 		if (axl_cmp (run_test_name, "test_01g"))
 			run_test (test_01g, "Test 01-g", "Check connection serverName feature on greetings", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_01h"))
+			run_test (test_01h, "Test 01-h", "BEEP wrong header attack..", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
@@ -8449,6 +8490,8 @@ int main (int  argc, char ** argv)
  	run_test (test_01f, "Test 01-f", "Check connection with no greetings showed (or registerered)", -1, -1);
 
  	run_test (test_01g, "Test 01-g", "Check connection serverName feature on greetings", -1, -1);
+
+	run_test (test_01h, "Test 01-h", "BEEP wrong header attack..", -1, -1);
   
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   
