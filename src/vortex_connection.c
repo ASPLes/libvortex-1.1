@@ -135,6 +135,9 @@ VortexConnectionOpts * vortex_connection_opts_new (VortexConnectionOptItem opt_i
 	return opts;
 }
 
+#define CONN_OPTS_SERVERNAME         "vo:opts:serverName"
+#define CONN_OPTS_SERVERNAME_ACQUIRE "vo:opts:serverNameAcquire"
+
 /** 
  * @internal Function used to get the serverName to be used, if any,
  * according to connection options and current VortexCtx
@@ -142,16 +145,13 @@ VortexConnectionOpts * vortex_connection_opts_new (VortexConnectionOptItem opt_i
  *
  * @param conn The connection to get the serverName name from.
  *
- * @param conn_opts The connection options to look for serverName
- * value.
  */
-const char * vortex_connection_opts_get_serverName (VortexConnection     * conn,
-						    VortexConnectionOpts * conn_opts)
+const char * vortex_connection_opts_get_serverName (VortexConnection     * conn)
 {
 	VortexCtx * ctx;
 
 	/* return no serverName in case some value received is NULL */
-	if (conn == NULL || conn_opts == NULL)
+	if (conn == NULL)
 		return NULL;
 
 	/* check if context allows acquiring serverName from
@@ -161,11 +161,11 @@ const char * vortex_connection_opts_get_serverName (VortexConnection     * conn,
 		return NULL; /* do not acquire serverName */
 
 	/* return serverName configured */
-	if (conn_opts->serverName)
-		return conn_opts->serverName;
+	if (vortex_connection_get_data (conn, CONN_OPTS_SERVERNAME))
+		return vortex_connection_get_data (conn, CONN_OPTS_SERVERNAME);
 
 	/* check for acquire serverName from current connection host */
-	if (conn_opts->serverName_acquire) 
+	if (vortex_connection_get_data (conn, CONN_OPTS_SERVERNAME_ACQUIRE))
 		return vortex_connection_get_host (conn);
 	return NULL;
 }
@@ -1835,6 +1835,15 @@ axl_bool vortex_connection_do_greetings_exchange (VortexCtx             * ctx,
 		return axl_false;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "greetings exchange ok");
+
+	/* check here connection options like CONN_OPTS_SERVERNAME OR
+	   CONN_OPTS_SERVERNAME_ACQUIRE */
+	if (options) {
+		if (options->serverName_acquire) 
+			vortex_connection_set_data (connection, CONN_OPTS_SERVERNAME_ACQUIRE, INT_TO_PTR (axl_true));
+		if (options->serverName) 
+			vortex_connection_set_data_full (connection, CONN_OPTS_SERVERNAME, axl_strdup (options->serverName), NULL, axl_free);
+	} /* end if */
 	return axl_true;
 } 
 

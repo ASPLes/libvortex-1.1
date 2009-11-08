@@ -1551,13 +1551,6 @@ axl_bool test_01g (void) {
 	/* create a connection with serverName by default */
 	connection = connection_new ();
 
-	/* check servername here */
-	if (! axl_cmp (vortex_connection_get_server_name (connection), listener_host)) {
-		printf ("ERROR: expected to find connection serverName %s but found %s\n",
-			listener_host, vortex_connection_get_server_name (connection));
-		return axl_false;
-	} /* end if */
-
 	/* now check servername configured at serverSide */
 	queue   = vortex_async_queue_new ();
 	channel = vortex_channel_new (connection, 0,
@@ -1569,6 +1562,18 @@ axl_bool test_01g (void) {
 				      /* no async channel creation */
 				      NULL, NULL);
 
+	if (channel == NULL) {
+		printf ("ERROR (1): expected to find proper channel creation but a NULL reference was found..\n");
+		return axl_false;
+	} /* end if */
+
+	/* check servername here */
+	if (! axl_cmp (vortex_connection_get_server_name (connection), listener_host)) {
+		printf ("ERROR (2): expected to find connection serverName %s but found %s\n",
+			listener_host, vortex_connection_get_server_name (connection));
+		return axl_false;
+	} /* end if */
+
 	/* ask for remote serverName */
 	vortex_channel_send_msg (channel, 
 				 "GET serverName",
@@ -1577,17 +1582,17 @@ axl_bool test_01g (void) {
 
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame == NULL) {
-		printf ("Failed to get the reply from the server..\n");
+		printf ("ERROR (3): Failed to get the reply from the server..\n");
 		return axl_false;
 	}
 	/* check servername received from remote server */
 	if (! axl_cmp (vortex_frame_get_payload (frame), vortex_connection_get_server_name (connection))) {
-		printf ("Received a different server name configured than value received: %s..\n",
+		printf ("ERROR (4): Received a different server name configured than value received: %s..\n",
 			(char*) vortex_frame_get_payload (frame));
 		return axl_false;
 	}
 	if (! axl_cmp (vortex_frame_get_payload (frame), listener_host)) {
-		printf ("Received a different server name configured than value received: %s..\n",
+		printf ("ERROR (5): Received a different server name configured than value received: %s..\n",
 			(char*) vortex_frame_get_payload (frame));
 		return axl_false;
 	}
@@ -1605,14 +1610,14 @@ axl_bool test_01g (void) {
 
 	/* check serverName feature */
 	if (vortex_connection_get_server_name (connection) != NULL) {
-		printf ("ERROR: expected to not find serverName configured, but found value: %s\n",
+		printf ("ERROR (6): expected to not find serverName configured, but found value: %s\n",
 			vortex_connection_get_server_name (connection));
 		return axl_false;
 	}
 
 	/* check connection status */
 	if (! vortex_connection_is_ok (connection, axl_false)) {
-		printf ("ERROR: expected to find proper connection status..but not found..\n");
+		printf ("ERROR (7): expected to find proper connection status..but not found..\n");
 		return axl_false;
 	}
 
@@ -1629,16 +1634,9 @@ axl_bool test_01g (void) {
 	
 	/* check connection status */
 	if (! vortex_connection_is_ok (connection, axl_false)) {
-		printf ("ERROR: expected to find proper connection status..but not found..\n");
+		printf ("ERROR (8): expected to find proper connection status..but not found..\n");
 		return axl_false;
 	}
-
-	/* check servername here */
-	if (! axl_cmp (vortex_connection_get_server_name (connection), "reg-test.local")) {
-		printf ("ERROR: expected to find connection serverName %s but found %s\n",
-			"reg-test.local", vortex_connection_get_server_name (connection));
-		return axl_false;
-	} /* end if */
 
 	/* now check servername configured at serverSide */
 	channel = vortex_channel_new (connection, 0,
@@ -1650,6 +1648,13 @@ axl_bool test_01g (void) {
 				      /* no async channel creation */
 				      NULL, NULL);
 
+	/* check servername here */
+	if (! axl_cmp (vortex_connection_get_server_name (connection), "reg-test.local")) {
+		printf ("ERROR (9): expected to find connection serverName %s but found %s\n",
+			"reg-test.local", vortex_connection_get_server_name (connection));
+		return axl_false;
+	} /* end if */
+
 	/* ask for remote serverName */
 	vortex_channel_send_msg (channel, 
 				 "GET serverName",
@@ -1658,17 +1663,17 @@ axl_bool test_01g (void) {
 
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame == NULL) {
-		printf ("Failed to get the reply from the server..\n");
+		printf ("ERROR (10): Failed to get the reply from the server..\n");
 		return axl_false;
 	}
 	/* check servername received from remote server */
 	if (! axl_cmp (vortex_frame_get_payload (frame), vortex_connection_get_server_name (connection))) {
-		printf ("Received a different server name configured than value received: %s..\n",
+		printf ("ERROR (11): Received a different server name configured than value received: %s..\n",
 			(char*) vortex_frame_get_payload (frame));
 		return axl_false;
 	}
 	if (! axl_cmp (vortex_frame_get_payload (frame), "reg-test.local")) {
-		printf ("Received a different server name configured than value received: %s..\n",
+		printf ("ERROR (12): Received a different server name configured than value received: %s..\n",
 			(char*) vortex_frame_get_payload (frame));
 		return axl_false;
 	}
@@ -1680,35 +1685,33 @@ axl_bool test_01g (void) {
 	/* now connect asking for a particular servername not allowed */
 	connection = vortex_connection_new_full (ctx, listener_host, LISTENER_PORT, 
 						 CONN_OPTS (VORTEX_SERVERNAME_FEATURE, "reg-test.wrong.local"),
-						 NULL, NULL);
+						 NULL, NULL); 
+
+	/* now check servername configured at serverSide */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
 
 	/* check connection status */
-	if (vortex_connection_is_ok (connection, axl_false)) {
-		printf ("ERROR: expected to NOT find proper connection status..but found..\n");
+	if (channel != NULL) {
+		printf ("ERROR (13): expected to NOT find proper connection status..but found..\n");
 		return axl_false;
 	}
 
 	/* check here returned values */
 	vortex_connection_pop_channel_error (connection, &code, &msg);
 
-	if (code != 550 && ! axl_cmp (msg, "Unable to provide services under such serverName: reg-test.wrong.local")) {
-		printf ("ERROR: expected error code=550 and error msg='Unable to provide services under such serverName: reg-test.wrong.local' after connection denied but found code='%d' and msg='%s'..\n", code, msg);
+	if (code != 554 && ! axl_cmp (msg, "Unable to provide services under such serverName: reg-test.wrong.local")) {
+		printf ("ERROR (14): expected error code=554 and error msg='Unable to provide services under such serverName: reg-test.wrong.local' after connection denied but found code='%d' and msg='%s'..\n", code, msg);
 		return axl_false;
 	} /* end if */
 	axl_free (msg);
 
-	/* check general error on connection */
-	if (vortex_connection_get_status (connection) != VortexGreetingsFailure) {
-		printf ("ERROR: expected to find VortexGreetingsFailure error code but found: %d..\n",
-			vortex_connection_get_status (connection));
-		return axl_false;
-	}
-
-	if (! axl_cmp ("Unable to provide services under such serverName: reg-test.wrong.local", vortex_connection_get_message (connection))) {
-		printf ("ERROR: expected to find message 'Unable to provide services under such serverName: reg-test.wrong.local' at connection error message..\n");
-		return axl_false;
-	} /* end if */
-	
 	/* close connection */
 	vortex_connection_close (connection);
 

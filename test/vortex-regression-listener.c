@@ -376,11 +376,34 @@ axl_bool      close_channel (int                channel_num,
 	return axl_true;
 }
 
+axl_bool      filter_server_names (VortexConnection * connection,
+				   int                channel_num,
+				   const char       * uri,
+				   const char       * profile_content, 
+				   const char       * serverName, 
+				   char            ** error_msg, 
+				   axlPointer         user_data)
+{
+	if (channel_num == -1)
+		return axl_false; /* do not filter at greetings phase */
+
+	if (axl_cmp (serverName, "reg-test.wrong.local")) {
+		(*error_msg) = axl_strdup ("Unable to provide services under such serverName: reg-test.wrong.local");
+		return axl_true; /* filter this serverName */
+	}
+
+	/* do no filter other serverNames */
+	return axl_false;
+}
+
 axl_bool      on_accepted (VortexConnection * connection, axlPointer data)
 {
 	printf ("New connection accepted from: %s:%s\n", 
 		vortex_connection_get_host (connection),
 		vortex_connection_get_port (connection));
+
+	/* configure profile mask */
+	vortex_connection_set_profile_mask (connection, filter_server_names, NULL);
 
 	/* return axl_true to accept the connection to be created */
 	return axl_true;
@@ -1188,89 +1211,13 @@ axl_bool  close_channel_connection (int channel_num, VortexConnection * conn, ax
 	return axl_true;
 }
 
-char * get_server_name_feature_aux (const char * features)
-{
-	int    last     = 0;
-	int    iterator = 0;
-	char * result;
-
-	/* check last position */
-	while (iterator < features[last] && features[last] != 0 && features[last] != ' ')
-		last++;
-
-	/* check for empty results */
-	if (last == iterator)
-		return NULL;
-	
-	/* check we have found last position */
-	if (features[last] == 0 || features[last] == ' ') {
-		result = axl_new (char, last - iterator + 1);
-		memcpy (result, features, last - iterator);
-		return result;
-	}
-	return NULL;
-}
-
-char * get_server_name_feature (const char * features)
-{
-	int iterator = 0;
-
-	/* check for empty features */
-	if (features == NULL)
-		return NULL;
-
-	while (iterator < strlen (features)) {
-
-		if (axl_memcmp (features + iterator, "x-serverName:", 13)) 
-			return get_server_name_feature_aux (features + iterator + 13);
-		if (axl_memcmp (features + iterator, "serverName:", 11)) 
-			return get_server_name_feature_aux (features + iterator + 11);
-		if (axl_memcmp (features + iterator, "x-serverName=", 13)) 
-			return get_server_name_feature_aux (features + iterator + 13);
-		if (axl_memcmp (features + iterator, "serverName=", 11)) 
-			return get_server_name_feature_aux (features + iterator + 11);
-
-		/* next position */
-		iterator++;
-	}
-	return NULL;
-}
-
 int process_greetings_features (VortexCtx               * ctx, 
 				VortexConnection        * conn,
 				VortexConnection       ** new_conn,
 				VortexConnectionStage     stage,
 				axlPointer                user_data)
 {
-	const char    * features = vortex_connection_get_features (conn);
-	char          * serverName;
-
-	/* for empty features, just accept */
-	if (features == NULL)
-		return 0;
-
-	/* check for serverName feature */
-	printf ("Found features from initiator peer: %s..\n", features);
-	serverName = get_server_name_feature (features);
-	printf ("Found serverName value found: '%s'..\n", serverName);
-
-	/* check for not allowed serverName */
-	if (axl_cmp (serverName, "reg-test.wrong.local"))  {
-		printf ("Not accepting serverName = reg-test.wrong.local..\n");
-		/* send custom error message */
-		vortex_greetings_error_send (conn, NULL, "550", "Unable to provide services under such serverName: %s", serverName);
-
-		axl_free (serverName);
-
-		return -1;
-	} /* end if */
-
-	/* configure serverName on connection */
-	vortex_connection_set_server_name (conn, serverName);
-
-	/* free serverName */
-	axl_free (serverName);
-
+	/* still unused */
 	return 0;
 }
 

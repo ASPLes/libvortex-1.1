@@ -90,6 +90,7 @@ void __vortex_sequencer_unref_and_clear (VortexConnection    * connection,
 
 		/* unref channel */
 		vortex_channel_unref (data->channel);
+		data->channel = NULL;
 	
 		/* free node */
 		axl_free (data);
@@ -396,7 +397,7 @@ axl_bool vortex_sequencer_previous_pending_messages (VortexCtx            * ctx,
 }
 
 
-/**
+/** 
  * @internal Function that checks the connection and channel
  * status. It also checks status for the data reference. If everything
  * is ok, connection and channel references are updated.
@@ -418,7 +419,7 @@ axl_bool vortex_sequencer_check_status_and_get_references (VortexCtx            
 		return axl_false;
 	} /* end if */
 
-	/**
+	/** 
 	 * Increase reference counting for the connection holding the channel 
 	 * to avoid race deallocation condition during the message fragmentation
 	 * on the channel queue. connection ref must be performed before any other
@@ -428,7 +429,7 @@ axl_bool vortex_sequencer_check_status_and_get_references (VortexCtx            
 	(*connection) = vortex_channel_get_connection ((*channel));
 	if ((*connection) != NULL && ! vortex_connection_ref ((*connection), "(vortex sequencer)")) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
-			    "detect message to be sequenced over a channel installed on a non connected session, dropping message");
+			    "detectd message to be sequenced over a channel installed on a non connected session, dropping message");
 		
 		/* clear data without unrefering the connection */
 		__vortex_sequencer_unref_and_clear (NULL, data, axl_false);
@@ -505,7 +506,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
  		if (! vortex_sequencer_check_status_and_get_references (ctx, data, &connection, &channel))
   			continue;
 
-		/**
+ 		/** 
 		 * Check if we have received a resequenced signal from
 		 * vortex reader, that is, to try to re-sequence
 		 * previous pending messages because we have received
@@ -662,7 +663,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 	return NULL;
 }
 
-/**
+/** 
  * @internal
  * 
  * Starts the vortex sequencer process. This process with the vortex
