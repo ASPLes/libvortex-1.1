@@ -40,11 +40,11 @@
 
 #include <vortex.h>
 
-/**
+/** 
  * \defgroup vortex_handlers Vortex Handlers: Handlers used across Vortex Library for async notifications.
  */
 
-/**
+/** 
  * \addtogroup vortex_handlers
  * @{
  */
@@ -780,7 +780,8 @@ typedef void     (* VortexIoDispatch)             (axlPointer             fd_gro
 
 
 /** 
- * @brief Profile mask handler to perform profile filtering functions.
+ * @brief Profile mask handler used to perform profile filtering
+ * functions.
  *
  * This handler definition is used by:
  *  - \ref vortex_connection_set_profile_mask
@@ -851,7 +852,7 @@ typedef axl_bool      (* VortexProfileMaskFunc)       (VortexConnection      * c
 						       char                 ** error_msg,
 						       axlPointer              user_data);
 
-/**
+/** 
  * @brief Handler definition for the set of functions that allow the
  * users space to control how frames are splited by the vortex
  * sequencer process.

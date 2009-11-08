@@ -1269,7 +1269,10 @@ VortexChannel * vortex_channel_new_full (VortexConnection      * connection,
 	data->received_user_data    = received_user_data;
 
 	/* server name data */
-	data->serverName            = axl_strdup (serverName);
+	if (serverName == NULL)
+		data->serverName    = axl_strdup (vortex_connection_opts_get_serverName (connection));
+	else
+		data->serverName    = axl_strdup (serverName);
 
 	/* profile stuff */
 	data->profile               = axl_strdup(profile);

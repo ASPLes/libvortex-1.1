@@ -434,8 +434,7 @@ axl_bool               vortex_connection_ref_internal                    (Vortex
 
 VortexConnectionOpts * vortex_connection_opts_new (VortexConnectionOptItem opt_item, ...);
 
-const char * vortex_connection_opts_get_serverName (VortexConnection     * conn,
-						    VortexConnectionOpts * conn_opts);
+const char * vortex_connection_opts_get_serverName (VortexConnection     * conn);
 
 void vortex_connection_opts_free (VortexConnectionOpts * conn_opts);
 

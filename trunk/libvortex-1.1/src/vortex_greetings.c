@@ -52,12 +52,6 @@
  */
 
 /** 
- * @internal Key used to track serverName (or x-serverName) requested
- * on connection greetings.
- */
-#define VORTEX_GREETINGS_SERVER_NAME_REQUESTED "vo:gree:x-serverName"
-
-/** 
  * @internal 
  * 
  * Build the greetings message for the provided @connection.
@@ -78,11 +72,8 @@ int __vortex_greetings_build_message (VortexConnection     * connection,
 	int             next_index          = 0;
 	const char    * localize            = NULL;
 	const char    * features            = NULL;
-	axl_bool        release_features    = axl_false;
 	char          * uri;
 	int             features_size, localize_size, size;
-	const char    * serverName;
-	
 
 	/* check features and localize here (including all additional
 	 * size required to build the greetings header) */
@@ -98,27 +89,6 @@ int __vortex_greetings_build_message (VortexConnection     * connection,
 			    "found buffer to build greetings to be not enough to hold current features (%d bytes)/localize (%d bytes) configuration",
 			    features_size, localize_size);
 		return -1;
-	} /* end if */
-
-	/* check support for x-serverName (serverName) */
-	serverName = vortex_connection_opts_get_serverName (connection, options);
-	if (serverName) {
-		/* update features */
-		features      = axl_strdup_printf ("%s%sx-serverName:%s",
-						   features ? features : "", 
-						   features ? " " : "",
-						   serverName);
-		features_size = strlen (features);
-
-		/* signal to release features */
-		release_features = axl_true;
-
-		/* flag that x-serverName was requested to check this
-		 * after greetins reception checking for error or not
-		 * and setting the value on the connection. */
-		vortex_log (VORTEX_LEVEL_DEBUG, "requesting greetings serverName = '%s'", serverName);
-		vortex_connection_set_data (connection, VORTEX_GREETINGS_SERVER_NAME_REQUESTED, (axlPointer) serverName);
-
 	} /* end if */
 
 	/* copy greetings */
@@ -204,10 +174,6 @@ int __vortex_greetings_build_message (VortexConnection     * connection,
 		next_index += 5;
 	} /* end if */
 	
-	/* check to release features */
-	if (release_features)
-		axl_free ((char*) features);
-    
 	return next_index;
 }
 
@@ -336,15 +302,6 @@ VortexFrame *  vortex_greetings_process (VortexConnection     * connection,
 
 	/* ensure from this point to be frame not NULL  */
 	if (vortex_greetings_is_reply_ok (frame, connection, options)) {
-		/* check for server name requested */
-		if (vortex_connection_get_data (connection, VORTEX_GREETINGS_SERVER_NAME_REQUESTED)) {
-			/* found server name requested and ok reply,
-			 * set this value */
-			vortex_connection_set_server_name (connection, 
-							   vortex_connection_get_data (connection, VORTEX_GREETINGS_SERVER_NAME_REQUESTED));
-			/* clear this value to avoid detecting it in the future */
-			vortex_connection_set_data (connection, VORTEX_GREETINGS_SERVER_NAME_REQUESTED, NULL);
-		} /* end if */
 		return frame;
 	}
 	return NULL;

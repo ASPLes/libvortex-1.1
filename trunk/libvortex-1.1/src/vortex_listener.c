@@ -126,10 +126,11 @@ void vortex_listener_accept_connection    (VortexConnection * connection, axl_bo
 		/* check connection status */
 		if (vortex_connection_is_ok (connection, axl_false)) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "the server application level have dropped the provided connection");
-			/* send the error reply message */
-			vortex_channel_send_err (vortex_connection_get_channel (connection, 0), 
-						 "<error code='554'>transaction failed, peer have denied your request</error>",
-						 75, 0);
+
+			/* send greeints error */
+			vortex_greetings_error_send (connection, 
+						     NULL, "554",
+						     "Transaction failed, peer have denied your request");
 		} /* end if */
 
 		/* flag the connection to be not connected */
