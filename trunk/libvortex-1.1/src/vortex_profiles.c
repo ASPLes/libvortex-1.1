@@ -556,11 +556,11 @@ axl_bool vortex_profiles_register_extended_start (VortexCtx                    *
  * 
  * @return axl_true if the channel was allowed to be created or axl_false if it fails.
  */
-axl_bool      vortex_profiles_invoke_start (char             * uri, 
+axl_bool      vortex_profiles_invoke_start (const char       * uri, 
 					    int                channel_num, 
 					    VortexConnection * connection,
-					    char             * serverName, 
-					    char             * profile_content, 
+					    const char       * serverName, 
+					    const char       * profile_content, 
 					    char            ** profile_content_reply, 
 					    VortexEncoding     encoding)
 {
@@ -573,7 +573,7 @@ axl_bool      vortex_profiles_invoke_start (char             * uri,
 	v_return_val_if_fail (ctx && ctx->registered_profiles, axl_false);
 
 	/* look up for the profile definition */
-	profile = vortex_hash_lookup (ctx->registered_profiles, uri);
+	profile = vortex_hash_lookup (ctx->registered_profiles, (axlPointer) uri);
 	if (profile == NULL) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "requiring to invoke start handler on a not registered profile");
 		return axl_false;

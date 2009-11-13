@@ -69,9 +69,13 @@ axl_bool  vortex_profiles_register_extended_start (VortexCtx                    
 						   VortexOnStartChannelExtended   extended_start,
 						   axlPointer                     extended_start_user_data);
 
-axl_bool  vortex_profiles_invoke_start            (char  * uri, int  channel_num, VortexConnection * connection,
-						   char  * serverName, char  * profile_content, 
-						   char  ** profile_content_reply, VortexEncoding encoding);
+axl_bool  vortex_profiles_invoke_start            (const char         * uri, 
+						   int                  channel_num, 
+						   VortexConnection   * connection,
+						   const char         * serverName, 
+						   const char         * profile_content, 
+						   char              ** profile_content_reply, 
+						   VortexEncoding       encoding);
 
 axl_bool  vortex_profiles_is_defined_start        (VortexCtx   * ctx,
 						   const char  * uri);
