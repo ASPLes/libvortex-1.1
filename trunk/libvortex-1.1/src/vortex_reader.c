@@ -42,6 +42,7 @@
 
 #define LOG_DOMAIN "vortex-reader"
 
+#define VORTEX_READER_UNWATCH "vo:re:un-watch"
 
 /**
  * \defgroup vortex_reader Vortex Reader: The module that reads you frames. 
@@ -301,6 +302,10 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 
 	/* before doing anything, check if the connection is broken */
 	if (! vortex_connection_is_ok (connection, axl_false))
+		return;
+
+	/* check for unwatch requests */
+	if (PTR_TO_INT (vortex_connection_get_data (connection, VORTEX_READER_UNWATCH)))
 		return;
 
 	/* read all frames received from remote site */
@@ -998,6 +1003,19 @@ VORTEX_SOCKET __vortex_reader_build_set_to_watch_aux (axlPointer      on_reading
 			continue;
 		} /* end if */
 
+		/* check if the connection must be unwatched */
+		if (PTR_TO_INT (vortex_connection_get_data (connection, VORTEX_READER_UNWATCH))) {
+			/* remove the unwatch flag from the connection */
+			vortex_connection_set_data (connection, VORTEX_READER_UNWATCH, NULL);
+
+			/* connection isn't ok, unref it */
+			vortex_connection_unref (connection, "vortex reader (process: unwatch)");
+
+			/* and remove current cursor */
+			axl_list_cursor_unlink (cursor);
+			continue;
+		} /* end if */
+
 		/* check if the connection is blocked (no I/O read to
 		 * perform on it) */
 		if (vortex_connection_is_blocked (connection)) {
@@ -1362,7 +1380,24 @@ axlPointer __vortex_reader_run (VortexCtx * ctx)
 	return NULL;
 }
 
-/**
+
+/** 
+ * @internal Function used to unwatch the provided connection from the
+ * vortex reader loop.
+ *
+ * @param ctx The context where the unread operation will take place.
+ * @param connection The connection where to be unwatched from the reader...
+ */
+void vortex_reader_unwatch_connection          (VortexCtx        * ctx,
+						VortexConnection * connection)
+{
+	v_return_if_fail (ctx && connection);
+	/* flag connection vortex reader unwatch */
+	vortex_connection_set_data (connection, VORTEX_READER_UNWATCH, INT_TO_PTR (axl_true));
+	return;
+}
+
+/** 
  * @internal
  * 
  * Adds a new connection to be watched on vortex reader process. This
@@ -1387,7 +1422,7 @@ void vortex_reader_watch_connection (VortexCtx        * ctx,
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to increase connection reference count, dropping connection");
 		return;
 	}
-       
+
 	/* prepare data to be queued */
 	data             = axl_new (VortexReaderData, 1);
 	data->type       = CONNECTION;
@@ -1399,7 +1434,7 @@ void vortex_reader_watch_connection (VortexCtx        * ctx,
 	return;
 }
 
-/**
+/** 
  * @internal
  *
  * Install a new listener to watch for new incoming connections.
