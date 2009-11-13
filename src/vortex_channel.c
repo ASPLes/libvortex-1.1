@@ -6018,46 +6018,6 @@ axl_bool      __vortex_channel_0_frame_received_get_start_param (VortexFrame    
 }
 
 /** 
- * @internal
- * @brief Support function for \ref __vortex_channel_0_frame_received_start_msg. 
- * 
- * It allows to invoke current start channel handler providing
- * additional data needed for the process, that is, the serverName, the
- * profile content and its encoding.
- * 
- * @param profile         The profile notified for its creation
- * @param channel_num     The channel number requested to be created.
- * @param connection      The connection where the channel will be created.
- * @param serverName      The optional serverName start message attribute content
- * @param profile_content The optional profile content.
- * @param encoding        The optional profile content encoding.
- * 
- * @return axl_true if the channel is accepted to be created, or axl_false if channel couldn't be created.
- */
-axl_bool      __vortex_channel_0_frame_received_start_msg_support_invoke (char             * profile, 
-									  int                channel_num, 
-									  VortexConnection * connection,
-									  char             * serverName,
-									  char             * profile_content,
-									  char            ** profile_content_reply,
-									  VortexEncoding     encoding)
-{
-	int          result;
-
-	/* invoke the start channel handler */
-	result = vortex_profiles_invoke_start (profile, channel_num, connection,
-					       serverName, profile_content, 
-					       profile_content_reply, encoding);
-
-	/* deallocate unused memory (do not remove profile, it is used on
-	 * the next steps) */
-	axl_free (profile_content);
-
-	return result;
-	
-}
-
-/** 
  * @internal Implementation for the vortex_channel_notify_start that
  * do not use a hash value to know the msg_no value.
  */
@@ -6219,6 +6179,127 @@ void               vortex_channel_defer_start                    (VortexChannel 
 	return;
 }
 
+void __vortex_channel_0_handle_start_msg_reply (VortexCtx        * ctx,
+						VortexConnection * connection, 
+						VortexChannel    * channel0,
+						int                channel_num,
+						const char       * profile,
+						VortexEncoding     encoding,
+						const char       * profile_content,
+						const char       * serverName,
+						VortexFrame      * frame)
+{
+	char            * error_msg;
+	VortexChannel   * new_channel;
+	axl_bool          status;
+	char            * profile_content_reply = NULL;
+
+	/* check if profile already exists */
+	if (!vortex_profiles_is_registered (ctx, profile)) {
+		vortex_log (VORTEX_LEVEL_WARNING, "received request for an unsupported profile=%s, denying request",  profile);
+
+		/* send an error reply */
+		error_msg = vortex_frame_get_error_message ("554", "transaction failed: channel profile requested not supported", NULL);
+		vortex_channel_send_err (channel0, error_msg, strlen (error_msg), vortex_frame_get_msgno (frame));
+
+		/* deallocate unused memory */
+		axl_free (error_msg);
+		return;
+	}
+
+	/* ask if we have an start handler defined */
+	if (!vortex_profiles_is_defined_start (ctx, profile)) {
+		/* send an error reply */
+		error_msg = vortex_frame_get_error_message ("421", "service not available: channel can not be created, no start handler defined", NULL);
+		vortex_channel_send_err (channel0, error_msg, strlen (error_msg), vortex_frame_get_msgno (frame));
+
+		/* deallocate unused memory */
+		axl_free (error_msg);
+		return;
+	}
+
+	/* create the channel reference and set it to the connection
+	 * to allow the start handler implementation to handle channel
+	 * reference. If start handler fails, the channel is
+	 * deallocated. Flag the channel to be not connected.*/
+	new_channel = vortex_channel_empty_new (channel_num, profile, connection);
+	if (new_channel == NULL) {
+		/* drop a warning */
+		vortex_log (VORTEX_LEVEL_WARNING, 
+			    "unable to complete incoming start channel request, vortex_channel_empty_new returned empty reference (maybe broken connection)");
+		return;
+	} /* end if */
+
+	/* add channel to the connection but without notification */
+	vortex_connection_add_channel_common (connection, new_channel, axl_false);
+
+	/* configure msg_no to reply and the serverName value, this
+	 * will be used by vortex_channel_notify_start before doing
+	 * the notification to avoid race conditions */
+	vortex_channel_set_data      (new_channel, "_vo:ch:msg_no", INT_TO_PTR (vortex_frame_get_msgno (frame)));
+	/* configure the serverName */
+	if (serverName)
+		vortex_channel_set_data_full (new_channel, "_vo:ch:srvnm", axl_strdup (serverName), NULL, axl_free);
+
+	/* ask if channel can be created, (before this function it is
+	 * not needed to call any deallocation code for profile,
+	 * profile_content and serverName. This is already done by the
+	 * following function. profile variable is still needed to be
+	 * deallocated. */
+	status = vortex_profiles_invoke_start (profile, channel_num, connection,
+					       serverName, profile_content, 
+					       &profile_content_reply, encoding);
+
+	/* if the channel start is deferred, flag the msgno and do not
+	 * reply */
+	if (PTR_TO_INT (vortex_channel_get_data (new_channel, "_vo:ch:defer"))) {
+		axl_free (profile_content_reply);
+		return;
+	} /* end if */
+	
+	/* after checking status replied, check if the channel start
+	 * reply has been deferred */
+
+	/* if the application level denies the channel creation reply error */
+	if (! status) {
+
+		/* build and report error message */
+		if (profile_content_reply == NULL) {
+			/* no profile content created, create one */
+			error_msg = vortex_frame_get_error_message ("421", 
+								    "service not available: channel can not be created because application level have denied it, unable to start channel requested", 
+								    NULL);
+		}else {
+			/* use as error message the one provided by
+			 * the profile implementation */
+			error_msg = profile_content_reply;
+			profile_content_reply = NULL;
+		} /* end if */
+
+		/* send the error message */
+		vortex_channel_send_err (channel0, error_msg, strlen (error_msg), vortex_frame_get_msgno (frame));
+
+		/* deallocate memory requested */
+		axl_free (error_msg);
+
+		/* deallocate the channel created */
+		vortex_connection_remove_channel_common (connection, new_channel, axl_false);
+		return;
+	} /* end if */
+	
+	/* call to notify that the channel must be started */
+	vortex_channel_notify_start_internal (serverName, 
+					      connection, 
+					      channel0, 
+					      new_channel, 
+					      profile_content_reply,  
+					      vortex_frame_get_msgno (frame), axl_true);
+
+	/* deallocate memory deallocated */
+	axl_free (profile_content_reply);
+	return;
+}
+
 /** 
  * @internal
  *
@@ -6233,15 +6314,11 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 	int                channel_num           = -1;
 	char             * profile               = NULL;
 	char             * profile_content       = NULL;
-	char             * profile_content_reply = NULL;
 	char             * serverName            = NULL;
 	char             * error_msg             = NULL;
 	char             * aux                   = NULL;
-	char             * start_rpy             = NULL;
 	VortexEncoding     encoding;       
-	VortexChannel    * new_channel           = NULL;
 	VortexConnection * connection            = channel0->connection;
-	axl_bool           status;
 	VortexCtx        * ctx                   = vortex_channel_get_ctx (channel0);
 	
 	/* get and check channel num and profile */
@@ -6277,6 +6354,10 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 
 	/* check if the connection have masked the profile recevied */
 	if (vortex_connection_is_profile_filtered (connection, channel_num, profile, profile_content, serverName, &aux)) {
+		/* check for silent skip */
+		if (vortex_connection_get_data (connection, VORTEX_CONNECTION_SKIP_HANDLING))
+			return;
+
 		/* send an error reply */
 		if (aux == NULL)
 			error_msg = vortex_frame_get_error_message ("554", "transaction failed: requested profile is not available on the connection", NULL);
@@ -6293,123 +6374,16 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 				     aux,             axl_free);
 		return;
 	} /* end if */
-
-	/* check if profile already exists */
-	if (!vortex_profiles_is_registered (ctx, profile)) {
-		vortex_log (VORTEX_LEVEL_WARNING, "received request for an unsupported profile=%s, denying request",  profile);
-
-		/* send an error reply */
-		error_msg = vortex_frame_get_error_message ("554", "transaction failed: channel profile requested not supported", NULL);
-		vortex_channel_send_err (channel0, error_msg, strlen (error_msg), vortex_frame_get_msgno (frame));
-
-		/* deallocate unused memory */
-		vortex_support_free (4, error_msg,    axl_free, 
-				     profile,         axl_free, 
-				     serverName,      axl_free, 
-				     profile_content, axl_free);
-		return;
-	}
-
-	/* ask if we have an start handler defined */
-	if (!vortex_profiles_is_defined_start (ctx, profile)) {
-		/* send an error reply */
-		error_msg = vortex_frame_get_error_message ("421", "service not available: channel can not be created, no start handler defined", NULL);
-		vortex_channel_send_err (channel0, error_msg, strlen (error_msg), vortex_frame_get_msgno (frame));
-
-		/* deallocate unused memory */
-		vortex_support_free (4, error_msg,    axl_free, 
-				     profile,         axl_free, 
-				     serverName,      axl_free, 
-				     profile_content, axl_free);
-		return;
-	}
-
-	/* create the channel reference and set it to the connection
-	 * to allow the start handler implementation to handle channel
-	 * reference. If start handler fails, the channel is
-	 * deallocated. Flag the channel to be not connected.*/
-	new_channel = vortex_channel_empty_new (channel_num, profile, connection);
-	if (new_channel == NULL) {
-		/* drop a warning */
-		vortex_log (VORTEX_LEVEL_WARNING, 
-			    "unable to complete incoming start channel request, vortex_channel_empty_new returned empty reference (maybe broken connection)");
-
-		/* deallocate unsued memory */
-		vortex_support_free (3, profile,      axl_free,
-				     serverName,      axl_free,
-				     profile_content, axl_free);
-		return;
-	} /* end if */
-
-	/* add channel to the connection but without notification */
-	vortex_connection_add_channel_common (connection, new_channel, axl_false);
-
-	/* configure msg_no to reply and the serverName value, this
-	 * will be used by vortex_channel_notify_start before doing
-	 * the notification to avoid race conditions */
-	vortex_channel_set_data      (new_channel, "_vo:ch:msg_no", INT_TO_PTR (vortex_frame_get_msgno (frame)));
-	/* configure the serverName */
-	if (serverName)
-		vortex_channel_set_data_full (new_channel, "_vo:ch:srvnm", axl_strdup (serverName), NULL, axl_free);
-
-	/* ask if channel can be created, (before this function it is
-	 * not needed to call any deallocation code for profile,
-	 * profile_content and serverName. This is already done by the
-	 * following function. profile variable is still needed to be
-	 * deallocated. */
-	status = __vortex_channel_0_frame_received_start_msg_support_invoke (profile, channel_num, connection,
-									     serverName, profile_content, 
-									     &profile_content_reply, encoding);
-	/* if the channel start is deferred, flag the msgno and do not
-	 * reply */
-	if (PTR_TO_INT (vortex_channel_get_data (new_channel, "_vo:ch:defer"))) {
-		goto free_channel_start_data;
-	}
 	
-	/* after checking status replied, check if the channel start
-	 * reply has been deferred */
-
-	/* if the application level denies the channel creation reply error */
-	if (! status) {
-
-		/* build and report error message */
-		if (profile_content_reply == NULL) {
-			/* no profile content created, create one */
-			error_msg = vortex_frame_get_error_message ("421", 
-								    "service not available: channel can not be created because application level have denied it, unable to start channel requested", 
-								    NULL);
-		}else {
-			/* use as error message the one provided by
-			 * the profile implementation */
-			error_msg = profile_content_reply;
-		} /* end if */
-
-		/* send the error message */
-		vortex_channel_send_err (channel0, error_msg, strlen (error_msg), vortex_frame_get_msgno (frame));
-
-		/* deallocate memory requested */
-		vortex_support_free (3, serverName, axl_free, error_msg, axl_free, profile, axl_free);
-
-		/* deallocate the channel created */
-		vortex_connection_remove_channel_common (connection, new_channel, axl_false);
-
-		return;
-	}
-	
-	/* call to notify that the channel must be started */
-	vortex_channel_notify_start_internal (serverName, 
-					      connection, 
-					      channel0, 
-					      new_channel, 
-					      profile_content_reply,  
-					      vortex_frame_get_msgno (frame), axl_true);
-
-	/* deallocate memory deallocated */
- free_channel_start_data:
-	vortex_support_free (4, serverName, axl_free, start_rpy, axl_free, profile, axl_free, profile_content_reply, axl_free);
+	/* handle channel start replied as defined by user handlers */
+	__vortex_channel_0_handle_start_msg_reply (ctx, connection, channel0, 
+						   channel_num, profile, encoding, profile_content, serverName, 
+						   frame);
+	axl_free (serverName);
+	axl_free (profile_content);
+	axl_free (profile);
 	return;
 }
-
 
 /** 
  * @internal

@@ -46,11 +46,11 @@
 #include <unistd.h> /* gethostname */
 #endif
 
-/**
+/** 
  * \defgroup vortex_sasl Vortex SASL: SASL profile support and related functions
  */
 
-/**
+/** 
  * \addtogroup vortex_sasl
  * @{
  */

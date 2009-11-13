@@ -410,6 +410,10 @@ int                 vortex_connection_get_mss                (VortexConnection *
 axl_bool               vortex_connection_ref_internal                    (VortexConnection * connection, 
 									  const char       * who,
 									  axl_bool           check_ref);
+/** 
+ * @internal Flag used to flag a connection to skip futher handling.
+ */
+#define VORTEX_CONNECTION_SKIP_HANDLING "vo:co:sk:ha"
 
 #endif
 
