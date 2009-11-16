@@ -223,7 +223,7 @@ struct _VortexCtx {
 
 	/**** vortex sequender module state ****/
 	VortexAsyncQueue        * sequencer_queue;
-	VortexAsyncQueue        * sequencer_stoped;
+	VortexAsyncQueue        * sequencer_stopped;
 	/* @internal Definition for the thread created for the sequencer.
 	 */
 	VortexThread              sequencer_thread;
@@ -239,7 +239,7 @@ struct _VortexCtx {
 	 */
 	axl_bool                  thread_pool_exclusive;
 	VortexThreadPool *        thread_pool;
-	axl_bool                  thread_pool_being_stoped;
+	axl_bool                  thread_pool_being_stopped;
 
 	/**** vortex greetings module state ****/
 	char                    * greetings_features;

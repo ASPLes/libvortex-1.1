@@ -53,6 +53,11 @@ axl_bool vortex_profiles_register                (VortexCtx             * ctx,
 axl_bool vortex_profiles_unregister              (VortexCtx             * ctx,
 						  const char            * uri);
 
+axl_bool vortex_profiles_set_received_handler    (VortexCtx             * ctx,
+						  const char            * uri,
+						  VortexOnFrameReceived   received,
+						  axlPointer              user_data);
+	
 axl_bool vortex_profiles_set_mime_type           (VortexCtx             * ctx,
 						  const char            * uri,
 						  const char            * mime_type,

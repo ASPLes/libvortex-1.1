@@ -493,7 +493,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 
 			/* signal the stop function that the vortex
 			 * sequencer was stoped */
-			QUEUE_PUSH (ctx->sequencer_stoped, INT_TO_PTR (1));
+			QUEUE_PUSH (ctx->sequencer_stopped, INT_TO_PTR (1));
 			return NULL;
 		}
 		
@@ -693,15 +693,20 @@ axl_bool  vortex_sequencer_run (VortexCtx * ctx)
 	v_return_val_if_fail (ctx, axl_false);
 
 	/* sequencer queue where all data is received */
+	if (ctx->sequencer_queue != NULL)
+		vortex_async_queue_unref (ctx->sequencer_queue);
 	ctx->sequencer_queue  = vortex_async_queue_new ();
 
 	/* auxiliar queue used to synchronize the vortex sequencing
 	 * shutting down process */
-	ctx->sequencer_stoped      = vortex_async_queue_new ();
+	if (ctx->sequencer_stopped != NULL)
+		vortex_async_queue_unref (ctx->sequencer_stopped);
+	ctx->sequencer_stopped      = vortex_async_queue_new ();
 
 	/* init sequencer buffer */
 	ctx->sequencer_send_buffer_size = 4096 + 100;
-	ctx->sequencer_send_buffer      = axl_new (char, ctx->sequencer_send_buffer_size);
+	if (ctx->sequencer_send_buffer == NULL)
+		ctx->sequencer_send_buffer = axl_new (char, ctx->sequencer_send_buffer_size);
 
 	/* starts the vortex sequencer */
 	if (! vortex_thread_create (&ctx->sequencer_thread,
@@ -735,14 +740,14 @@ void vortex_sequencer_stop (VortexCtx * ctx)
 	QUEUE_PUSH  (ctx->sequencer_queue, INT_TO_PTR (1));
 
 	/* wait until the sequencer stops */
-	vortex_async_queue_pop   (ctx->sequencer_stoped);
-	vortex_async_queue_unref (ctx->sequencer_stoped);
+	vortex_async_queue_pop   (ctx->sequencer_stopped);
+	vortex_async_queue_unref (ctx->sequencer_stopped);
 	vortex_thread_destroy    (&ctx->sequencer_thread, axl_false);
 	
 	/* free sequencer buffer */
 	axl_free (ctx->sequencer_send_buffer);
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "vortex sequencer completely stoped");
+	vortex_log (VORTEX_LEVEL_DEBUG, "vortex sequencer completely stopped");
 
 	return; 
 }
@@ -886,4 +891,5 @@ void	vortex_sequencer_drop_connection_messages (VortexConnection * conn)
 	vortex_async_queue_foreach (ctx->sequencer_queue,
 				    vortex_sequencer_drop_connections_foreach,
 				    conn);
+	return;
 }

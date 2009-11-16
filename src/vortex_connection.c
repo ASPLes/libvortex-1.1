@@ -3336,7 +3336,7 @@ axlList            * vortex_connection_get_remote_profiles (VortexConnection * c
 		/* check if the profile is filtered providing as
 		 * channel num -1, serverName NULL, and profile
 		 * content NULL */
-		if (! vortex_connection_is_profile_filtered (connection, -1, uri, NULL, NULL, NULL)) {
+		if (! vortex_connection_is_profile_filtered (connection, -1, uri, NULL, 0, NULL, 0, NULL)) {
 			/* profile is not filtered, add to the result */
 			axl_list_append (result, axl_strdup (uri));
 		} /* end if */
@@ -3437,6 +3437,9 @@ int                 vortex_connection_set_profile_mask       (VortexConnection  
  * provided at the start channel stage. You can safely provide a NULL
  * value if you are only checking if a particular profile is being
  * filtered on the particular connection.
+ *
+ * @param frame Optional parameter that defines the frame received
+ * containing the start channel request (channel_num > 0).
  * 
  * @param error_msg Optional reference where the error message to be
  * returned can be configured.
@@ -3448,7 +3451,9 @@ axl_bool            vortex_connection_is_profile_filtered    (VortexConnection  
 							      int                     channel_num,
 							      const char            * uri,
 							      const char            * profile_content,
+							      VortexEncoding          encoding,
 							      const char            * serverName,
+							      VortexFrame           * frame,
 							      char                 ** error_msg)
 {
 	int              iterator = 0;
@@ -3465,7 +3470,7 @@ axl_bool            vortex_connection_is_profile_filtered    (VortexConnection  
 		node = axl_list_get_nth (connection->profile_masks, iterator);
 
 		/* check if the mask filter the provided profile */
-		if (node->mask (connection, channel_num, uri, profile_content, serverName, error_msg, node->user_data)) {
+		if (node->mask (connection, channel_num, uri, profile_content, encoding, serverName, frame, error_msg, node->user_data)) {
 			/* uri filtered, report */
 			return axl_true;
 		}
@@ -4804,7 +4809,8 @@ void           __vortex_connection_set_not_connected (VortexConnection * connect
 		   connections and the vortex reader loop */
 		vortex_connection_ref_internal (connection, "set-not-connected", axl_false);
 
-		vortex_log (VORTEX_LEVEL_DEBUG, "flagging the connection as non-connected: %s", message ? message : "");
+		vortex_log (VORTEX_LEVEL_DEBUG, "flagging the connection as non-connected: %s (close-session?: %d)", message ? message : "",
+			    connection->close_session);
 		connection->is_connected = axl_false;
 
 		/* renew the message */

@@ -1213,7 +1213,9 @@ int  __vortex_tls_mask (VortexConnection  * connection,
 			int                 channel_num,
 			const char        * uri,
 			const char        * profile_content,
+			VortexEncoding      encoding,
 			const char        * serverName,
+			VortexFrame       * frame,
 			char             ** error_msg,
 			axlPointer         user_data)
 {

@@ -445,7 +445,15 @@ axl_bool            vortex_channel_remove_first_outstanding_msg_no (VortexChanne
  								    int             msg_no_rpy);
 
 void               __vortex_channel_nullify_conn                   (VortexChannel  * channel);
-								   
+
+axl_bool           vortex_channel_0_handle_start_msg_reply         (VortexCtx        * ctx, 
+								    VortexConnection * connection,
+								    int                channel_num,
+								    const char       * profile,
+								    const char       * profile_content,
+								    VortexEncoding     encoding,
+								    const char       * serverName,
+								    int                msg_no);
 #endif
 
 /* @} */
