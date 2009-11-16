@@ -47,6 +47,10 @@
 
 void     vortex_support_free                       (int  params, ...);
 
+axl_bool vortex_support_check_search_path          (VortexCtx  * ctx,
+						    const char * domain,
+						    const char * path);
+
 void     vortex_support_add_search_path            (VortexCtx  * ctx,
 						    const char * path);
 
