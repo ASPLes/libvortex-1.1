@@ -273,6 +273,60 @@ void     vortex_support_add_search_path (VortexCtx   * ctx,
 }
 
 /** 
+ * @brief Allows to check if the provided path is alredy foudn in the
+ * provided domain.
+ *
+ * @param ctx The context where the operation will take place.
+ *
+ * @param domain The domain where the path will be checked to be
+ * already added or not. This value cannot be NULL. Use "default" for
+ * default path.
+ *
+ * @param path The path to be check to be already added or not. This
+ * value cannot be NULL.
+ *
+ * @return axl_true in the case the search path is already added under
+ * the domain provided, otherwise axl_false is returned. Keep in mind
+ * the function will also return axl_false in the case path or domain
+ * reference provided is NULL.
+ */
+axl_bool vortex_support_check_search_path          (VortexCtx  * ctx,
+						    const char * domain,
+						    const char * path)
+{
+	SearchPathNode * node;
+	int              iterator;
+
+	v_return_val_if_fail (ctx,    axl_false);
+	v_return_val_if_fail (path,   axl_false);
+	v_return_val_if_fail (domain, axl_false);
+	
+	vortex_mutex_lock (&ctx->search_path_mutex);
+
+	/* check we do not add something already added */
+	iterator = 0;
+	while (iterator < axl_list_length (ctx->support_search_path)) {
+		/* get node */
+		node = axl_list_get_nth (ctx->support_search_path, iterator);
+		
+		if (axl_cmp (node->domain, domain) && axl_cmp (node->path, path)) {
+			/* item already added, skip it */
+			vortex_mutex_unlock (&ctx->search_path_mutex);	
+			return axl_true;
+		} /* end if */
+
+		/* next iterator */
+		iterator++;
+	} /* end if */
+
+	/* unlock */
+	vortex_mutex_unlock (&ctx->search_path_mutex);	
+
+	/* path do not exists */
+	return axl_false;
+}
+
+/** 
  * @brief Adds a new path to be used while looking for files without
  * making a local copy.
  *
@@ -294,6 +348,12 @@ void     vortex_support_add_search_path (VortexCtx   * ctx,
 void     vortex_support_add_search_path_ref (VortexCtx * ctx,
 					     char      * path)
 {
+
+	/* check if the path already exists */
+	if (vortex_support_check_search_path (ctx, "default", path)) {
+		axl_free (path); /* free path since we own the ref but it won't be used */
+		return; /* do not added it, already added */
+	}
 
 	/* call to default implementation with default domain */
 	vortex_support_add_domain_search_path_ref (ctx, axl_strdup ("default"), path);
@@ -324,6 +384,10 @@ void     vortex_support_add_domain_search_path     (VortexCtx  * ctx,
 						    const char * path)
 {
 
+	/* check if the path already exists */
+	if (vortex_support_check_search_path (ctx, domain, path))
+		return; /* do not added it, already added */
+
 	/* call to default implementation */
 	vortex_support_add_domain_search_path_ref (ctx, 
 						   axl_strdup (domain),
@@ -349,6 +413,10 @@ void     vortex_support_add_domain_search_path_ref (VortexCtx * ctx,
 
 	v_return_if_fail (path);
 	v_return_if_fail (ctx);
+
+	/* check if the path already exists */
+	if (vortex_support_check_search_path (ctx, "default", path))
+		return; /* do not added it, already added */
 	
 	vortex_mutex_lock (&ctx->search_path_mutex);
 
