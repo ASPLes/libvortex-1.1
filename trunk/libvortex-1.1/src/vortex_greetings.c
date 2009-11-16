@@ -128,7 +128,7 @@ int __vortex_greetings_build_message (VortexConnection     * connection,
 			
 			/* check if the profile is masked for this particular
 			 * connection. */
-			if (vortex_connection_is_profile_filtered (connection, -1, uri, NULL, NULL, NULL)) {
+			if (vortex_connection_is_profile_filtered (connection, -1, uri, NULL, 0, NULL, 0, NULL)) {
 				vortex_log (VORTEX_LEVEL_DEBUG, "profile is filtered: %s", uri);
 				
 				/* update the iterator */

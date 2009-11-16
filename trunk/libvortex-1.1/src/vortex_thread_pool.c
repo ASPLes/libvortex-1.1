@@ -85,7 +85,7 @@ axlPointer __vortex_thread_pool_dispatcher (axlPointer data)
 		task = vortex_async_queue_pop (queue);
 
 		/* check stop in progress signal */
-		if ((PTR_TO_INT (task) == 1) && ctx->thread_pool_being_stoped) {
+		if ((PTR_TO_INT (task) == 1) && ctx->thread_pool_being_stopped) {
 			vortex_log (VORTEX_LEVEL_DEBUG, "--> thread from pool stoping, found finish beacon");
 
 			/* unref the queue and return */
@@ -97,7 +97,7 @@ axlPointer __vortex_thread_pool_dispatcher (axlPointer data)
 		vortex_log (VORTEX_LEVEL_DEBUG, "--> thread from pool processing new job");
 
 		/* at this point we already are executing inside a thread */
-		if (! ctx->thread_pool_being_stoped)
+		if (! ctx->thread_pool_being_stopped)
 			task->func (task->data);
 
 		/* free the task */
@@ -161,10 +161,34 @@ void vortex_thread_pool_init     (VortexCtx * ctx,
 	vortex_log (VORTEX_LEVEL_DEBUG, "creating thread pool threads=%d", max_threads);
 
 	/* create the thread pool and its internal values */
-	ctx->thread_pool              = axl_new (VortexThreadPool, 1);
-	ctx->thread_pool->queue       = vortex_async_queue_new ();
+	if (ctx->thread_pool == NULL)
+		ctx->thread_pool      = axl_new (VortexThreadPool, 1);
+
+	if (ctx->thread_pool->threads != NULL) {
+		/* clear list */
+		while (axl_list_length (ctx->thread_pool->threads) > 0) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "releasing previous thread object allocated, length: %d", axl_list_length (ctx->thread_pool->threads));
+
+			/* get thread object */
+			thread = axl_list_get_first (ctx->thread_pool->threads);
+			/* remove from the list */
+			axl_list_unlink_first (ctx->thread_pool->threads);
+			/* release */
+			axl_free (thread);
+
+			/* unref the queue */
+			vortex_async_queue_unref (ctx->thread_pool->queue);
+		} /* end while */
+		axl_list_free (ctx->thread_pool->threads);
+		
+	} /* end if */
 	ctx->thread_pool->threads     = axl_list_new (axl_list_always_return_1, __vortex_thread_pool_terminate_thread);
 	ctx->thread_pool->ctx         = ctx;
+
+	/* init the queue */
+	if (ctx->thread_pool->queue != NULL)
+		vortex_async_queue_unref (ctx->thread_pool->queue);
+	ctx->thread_pool->queue       = vortex_async_queue_new ();
 	
 	/* init all threads required */
 	iterator = 0;
@@ -217,7 +241,7 @@ void vortex_thread_pool_exit (VortexCtx * ctx)
 	vortex_log (VORTEX_LEVEL_DEBUG, "stopping thread pool..");
 
 	/* flag the queue to be stoping */
-	ctx->thread_pool_being_stoped = axl_true;
+	ctx->thread_pool_being_stopped = axl_true;
 
 	/* push beacons to notify eacy thread created to stop */
 	iterator = 0;
@@ -253,7 +277,7 @@ void vortex_thread_pool_being_closed        (VortexCtx * ctx)
 		return;
 
 	/* flag the queue to be stoping */
-	ctx->thread_pool_being_stoped = axl_true;
+	ctx->thread_pool_being_stopped = axl_true;
 	
 	return;
 }
@@ -278,7 +302,7 @@ void vortex_thread_pool_new_task (VortexCtx * ctx, VortexThreadFunc func, axlPoi
 	VortexThreadPoolTask * task;
 
 	/* check parameters */
-	if (func == NULL || ctx == NULL || ctx->thread_pool == NULL || ctx->thread_pool_being_stoped)
+	if (func == NULL || ctx == NULL || ctx->thread_pool == NULL || ctx->thread_pool_being_stopped)
 		return;
 
 	/* create the task data */

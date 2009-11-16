@@ -172,7 +172,9 @@ axl_bool            vortex_connection_is_profile_filtered    (VortexConnection  
 							      int                     channel_num,
 							      const char            * uri,
 							      const char            * profile_content,
+							      VortexEncoding          encoding,
 							      const char            * serverName,
+							      VortexFrame           * frame,
 							      char                 ** error_msg);
 
 axl_bool            vortex_connection_is_profile_supported   (VortexConnection * connection, 

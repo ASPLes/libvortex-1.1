@@ -1471,9 +1471,15 @@ axl_bool  vortex_reader_run (VortexCtx * ctx)
 {
 	v_return_val_if_fail (ctx, axl_false);
 
-	ctx->reader_queue                       = vortex_async_queue_new ();
-	ctx->reader_stopped                     = vortex_async_queue_new ();
+	/* reader_queue */
+	if (ctx->reader_queue != NULL)
+		vortex_async_queue_unref (ctx->reader_queue);
+	ctx->reader_queue   = vortex_async_queue_new ();
 
+	/* reader stopped */
+	if (ctx->reader_stopped != NULL) 
+		vortex_async_queue_unref (ctx->reader_stopped);
+	ctx->reader_stopped = vortex_async_queue_new ();
 
 	/* create the vortex reader main thread */
 	if (! vortex_thread_create (&ctx->reader_thread, 

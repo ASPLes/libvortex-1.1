@@ -819,8 +819,13 @@ typedef void     (* VortexIoDispatch)             (axlPointer             fd_gro
  * @param profile_content The piggyback provided at the start channel
  * request along with the profile.
  *
+ * @param encoding Profile content encoding.
+ *
  * @param serverName A request for the connection to act as
  * serverName.
+ *
+ * @param frame The frame that contains the channel start request
+ * (when defined: channel_num > 0).
  *
  * @param error_msg Optional variable to configure an error message to
  * be returned to the remote peer extending the 554 error used by
@@ -848,7 +853,9 @@ typedef axl_bool      (* VortexProfileMaskFunc)       (VortexConnection      * c
 						       int                     channel_num,
 						       const char            * uri,
 						       const char            * profile_content,
+						       VortexEncoding          encoding,
 						       const char            * serverName,
+						       VortexFrame           * frame,
 						       char                 ** error_msg,
 						       axlPointer              user_data);
 

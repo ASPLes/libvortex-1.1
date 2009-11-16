@@ -285,6 +285,64 @@ axl_bool  vortex_profiles_register (VortexCtx             * ctx,
 }
 
 /** 
+ * @brief Allows to configure the frame received for a particular
+ * profile.
+ *
+ * NOTE: In the case the profile to be configured was not defined
+ * (\ref vortex_profiles_register) the function will make no effect.
+ *
+ * @param ctx The vortex context where the profile will be configured
+ * with a frame received handler.
+ *
+ * @param profile The profile to be configured.
+ *
+ * @param received The handler to be called for each frame received. 
+ *
+ * @param user_data User defined pointer to be passed to the received
+ * handler.
+ *
+ * @return axl_true if the handler was configured, otherwise axl_false
+ * is returned.
+ */
+axl_bool           vortex_profiles_set_received_handler         (VortexCtx             * ctx,
+								 const char            * uri,
+								 VortexOnFrameReceived   received,
+								 axlPointer              user_data)
+{
+	/* get current context */
+	VortexProfile * profile;
+
+	v_return_val_if_fail (ctx && uri, axl_false);
+
+	/* lock this section using profile list mutex to avoid adding
+	 * the same profile configuration twice */
+	vortex_mutex_lock (&ctx->profiles_list_mutex);
+
+	/* find out if we already have registered this profile */
+	profile = vortex_hash_lookup (ctx->registered_profiles, (axlPointer) uri);
+	if (profile == NULL) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "profile %s is not registered, doing nothing..",
+			    uri);
+		/* release */
+		vortex_mutex_unlock (&ctx->profiles_list_mutex);
+
+		return axl_false;
+	}
+
+	/* release */
+	vortex_mutex_unlock (&ctx->profiles_list_mutex);
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "profile %s is already registered, updating its settings",
+		    uri);
+	
+	/* set new data for the given profile */
+	profile->received           = received;
+	profile->received_user_data = user_data;
+
+	return axl_true;
+}
+
+/** 
  * @brief Allows to unregister a profile already registered with \ref
  * vortex_profiles_register.
  *
