@@ -1,0 +1,81 @@
+
+       #####################################
+       ####     Change notification     ####
+       #####################################
+
+    Change Id: vortex-profile-filter-01
+ Project name: Vortex Library
+  Included in: already included and to be shipped with next stable release
+               1.1.3
+       Status: NOTIFY
+       Author: Francis Brosnan Blázquez
+
+Motivation
+~~~~~~~~~~
+
+The function vortex_connection_is_profile_filtered is used to
+implement greetings and channel start filtering at connection
+level. Currently the API do not provide all data that may be required
+to filter profile content and other details inside the frame received
+carrying the channel start.
+
+This change notification updates this API to also provide these
+details.
+
+Change Description
+~~~~~~~~~~~~~~~~~~
+
+The function vortex_connection_is_profile_filtered is updated to
+include encoding parameter (which signals which encoding is being used
+at profile content) and a frame parameter which includes the frame
+that holds the channel start request.
+
+axl_bool          
+    vortex_connection_is_profile_filtered    
+                (VortexConnection      * connection,
+		 int                     channel_num,
+		 const char            * uri,
+		 const char            * profile_content,
+		 VortexEncoding          encoding,
+		 const char            * serverName,
+		 VortexFrame           * frame,
+		 char                 ** error_msg);
+
+In the same direction, VortexProfileMaskFunc, which has a direct
+relation with previous since it contains the same set of parameters,
+is now updated to the following:
+
+axl_bool
+    (* VortexProfileMaskFunc)       
+                (VortexConnection      * connection,
+		 int                     channel_num,
+		 const char            * uri,
+		 const char            * profile_content,
+		 VortexEncoding          encoding,
+		 const char            * serverName,
+		 VortexFrame           * frame,
+		 char                 ** error_msg,
+		 axlPointer              user_data);
+
+In both cases, parameters added are:
+
+  - VortexEncoding    encoding
+  - VortexFrame     * frame
+
+Solution to incompatibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This change notifications creates an API incompatibility with previous
+releases. The only solution is to update all references to the handler
+and function updated.
+
+References
+~~~~~~~~~~
+[1] Project link: 
+    http://vortex.aspl.es
+
+[2] Change notification published by the project:
+    http://vortex.aspl.es/doc.html
+
+[3] Change notification definition
+    http://www.aspl.es/change/change-notification.txt
