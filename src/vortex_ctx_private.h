@@ -206,6 +206,12 @@ struct _VortexCtx {
 	/**** vortex reader module state ****/
 	VortexAsyncQueue        * reader_queue;
 	VortexAsyncQueue        * reader_stopped;
+	axlPointer                on_reading;
+	axlList                 * con_list;
+	axlList                 * srv_list;
+	axlListCursor           * con_cursor;
+	axlListCursor           * srv_cursor;
+	
 	/** 
 	 * @internal Reference to the thread created for the reader loop.
 	 */
