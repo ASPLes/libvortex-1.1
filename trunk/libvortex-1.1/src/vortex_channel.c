@@ -6346,15 +6346,16 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 	if (vortex_connection_is_profile_filtered (connection, channel_num, profile, profile_content, encoding, serverName, frame, &aux)) {
 
 		/* free no longer used data */
-		vortex_support_free (4, 
+		vortex_support_free (3, 
 				     profile,         axl_free, 
 				     serverName,      axl_free, 
-				     profile_content, axl_free,
-				     aux,             axl_free);
+				     profile_content, axl_free);
 
 		/* check for silent skip */
-		if (vortex_connection_get_data (connection, VORTEX_CONNECTION_SKIP_HANDLING))
+		if (vortex_connection_get_data (connection, VORTEX_CONNECTION_SKIP_HANDLING)) {
+			axl_free (aux);
 			return;
+		} /* end if */
 
 		/* send an error reply */
 		if (aux == NULL)
@@ -6364,6 +6365,7 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 		vortex_channel_send_err (channel0, error_msg, strlen (error_msg), vortex_frame_get_msgno (frame));
 
 		/* deallocate unused memory */
+		axl_free (aux);
 		axl_free (error_msg);
 		return;
 	} /* end if */
