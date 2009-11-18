@@ -4246,37 +4246,38 @@ const char        * vortex_connection_get_local_port         (VortexConnection *
 void __vortex_connection_invoke_on_close (VortexConnection * connection, 
 					  axl_bool           is_full)
 {
-	int                            iterator = 0;
 	VortexConnectionOnClose        on_close_handler;
 	VortexConnectionOnCloseData  * handler;
 
 	/* invoke full */
 	if (is_full) {
 		/* iterate over all full handlers and invoke them */
-		while (iterator < axl_list_length (connection->on_close_full)) {
+		while (axl_list_length (connection->on_close_full) > 0) {
 			/* get a reference to the handler */
-			handler = axl_list_get_nth (connection->on_close_full, iterator);
+			handler = axl_list_get_first (connection->on_close_full);
+
+			/* remove the handler from the list */
+			axl_list_unlink_first (connection->on_close_full);
 
 			/* invoke */
 			handler->handler (connection, handler->data);
 			
-			/* get next iterator */
-			iterator++;
+			/* free handler node */
+			axl_free (handler);
 		} /* end if */
 
 	} else {
 
 		/* iterate over all full handlers and invoke them */
-		while (iterator < axl_list_length (connection->on_close)) {
-
+		while (axl_list_length (connection->on_close) > 0) {
 			/* get a reference to the handler */
-			on_close_handler = axl_list_get_nth (connection->on_close, iterator);
+			on_close_handler = axl_list_get_first (connection->on_close);
+
+			/* remove the handler from the list */
+			axl_list_unlink_first (connection->on_close);
 
 			/* invoke */
 			on_close_handler (connection);
-
-			/* get next iterator */
-			iterator++;
 		} /* end if */
 
 	} /* if */
@@ -5740,7 +5741,8 @@ axl_bool   vortex_connection_remove_on_close_full (VortexConnection             
 		/* get a reference to the handler */
 		handler = axl_list_get_nth (connection->on_close_full, iterator);
 		
-		if (on_close_handler == handler->handler && data == handler->data) {
+		if ((on_close_handler == handler->handler) && (data == handler->data)) {
+
 			/* remove by pointer */
 			axl_list_remove_ptr (connection->on_close_full, handler);
 

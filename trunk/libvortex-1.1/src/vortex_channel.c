@@ -4659,7 +4659,7 @@ axl_bool      vortex_channel_block_until_replies_are_sent (VortexChannel * chann
 	vortex_mutex_unlock (&channel->pending_mutex);
 	
 	vortex_log (VORTEX_LEVEL_DEBUG, 
-		    "we have sent the last reply we can now close the channel %d (RPY %d = MSG %d), pending messages: %d", 
+		    "we have sent the last reply over the the channel %d (RPY %d = MSG %d), pending messages: %d", 
 		    channel->channel_num, 
 		    channel->last_reply_written,
 		    channel->last_message_received,
@@ -6395,23 +6395,40 @@ axl_bool vortex_channel_0_handle_start_msg_reply (VortexCtx        * ctx,
 						  const char       * profile_content,
 						  VortexEncoding     encoding,
 						  const char       * serverName,
-						  int                msg_no)
+						  VortexFrame      * frame)
 {
-	char          * error_msg;
-	VortexChannel * channel0;
+	char          * error_msg = NULL;
+	char          * aux       = NULL;
+	VortexChannel * channel0  = NULL;
 	
 	/* check for incoming parameters */
-	v_return_val_if_fail (ctx && connection && channel_num > 0 && profile && msg_no >= 0, axl_false);
+	v_return_val_if_fail (ctx && connection && channel_num > 0 && profile && frame, axl_false);
+
+	/* check to filter again profile */
+	if (vortex_connection_is_profile_filtered (connection, channel_num, 
+						   profile, profile_content, encoding, 
+						   serverName, frame, &error_msg)) {
+		/* build error reply */
+		aux = vortex_frame_get_error_message ("554", error_msg, NULL);
+		
+		/* send message */
+		vortex_channel_send_err (channel0, aux, strlen (aux), vortex_frame_get_msgno (frame));
+		
+		axl_free (aux);
+		axl_free (error_msg);
+
+		return axl_false; /* send channel error reply */
+	} /* end if */
 
 	/* handle channel start replied as defined by user handlers */
 	error_msg = __vortex_channel_0_handle_start_msg_reply (ctx, connection, 
 							       channel_num, profile, encoding, profile_content, serverName, 
-							       msg_no);
+							       vortex_frame_get_msgno (frame));
 
 	/* send error reply in the case error_msg is defined */
 	if (error_msg) {
 		channel0 = vortex_connection_get_channel (connection, 0);
-		vortex_channel_send_err (channel0, error_msg, strlen (error_msg), msg_no);
+		vortex_channel_send_err (channel0, error_msg, strlen (error_msg), vortex_frame_get_msgno (frame));
 		return axl_false; /* send channel error reply */
 	} /* end if */
 
