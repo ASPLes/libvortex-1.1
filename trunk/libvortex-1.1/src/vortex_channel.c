@@ -6410,8 +6410,9 @@ axl_bool vortex_channel_0_handle_start_msg_reply (VortexCtx        * ctx,
 						   serverName, frame, &error_msg)) {
 		/* build error reply */
 		aux = vortex_frame_get_error_message ("554", error_msg, NULL);
-		
+
 		/* send message */
+		channel0 = vortex_connection_get_channel (connection, 0);
 		vortex_channel_send_err (channel0, aux, strlen (aux), vortex_frame_get_msgno (frame));
 		
 		axl_free (aux);
