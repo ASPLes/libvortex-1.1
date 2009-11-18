@@ -453,7 +453,7 @@ axl_bool           vortex_channel_0_handle_start_msg_reply         (VortexCtx   
 								    const char       * profile_content,
 								    VortexEncoding     encoding,
 								    const char       * serverName,
-								    int                msg_no);
+								    VortexFrame      * frame);
 #endif
 
 /* @} */

@@ -2543,6 +2543,59 @@ axl_bool  test_02a (void) {
 	return axl_true;
 }
 
+void test_02a1_remove (VortexConnection * conn, axlPointer data)
+{
+	/* remove my handler */
+	vortex_connection_remove_on_close_full (conn, test_02a1_remove, data);
+	return;
+}
+
+void test_02a1_data (VortexConnection * conn, axlPointer data)
+{
+	/* install a value */
+	vortex_async_queue_push ((VortexAsyncQueue *) data, INT_TO_PTR (37));
+	return;
+}
+
+axl_bool  test_02a1 (void) {
+	VortexConnection * connection;
+	VortexAsyncQueue * queue;
+	int                value;
+
+	/* create a queue to store data from handlers */
+	queue = vortex_async_queue_new ();
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		vortex_connection_close (connection);
+		return axl_false;
+		
+	} /* end if */
+
+	/* install on close handlers */
+	vortex_connection_set_on_close_full (connection, test_02a1_remove, queue);
+
+	/* install on close handlers */
+	vortex_connection_set_on_close_full (connection, test_02a1_data, queue);
+
+	/* close the connection */
+	vortex_connection_close (connection);
+
+	/* wait for all handlers */
+	value = PTR_TO_INT (vortex_async_queue_pop (queue));
+
+	if (value != 37) {
+		printf ("ERROR: expected to find 37 but found: %d..\n", value);
+		return axl_false;
+	}
+
+	/* unref the queue */
+	vortex_async_queue_unref (queue);
+
+	return axl_true;
+}
+
 axl_bool  test_02b (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
@@ -8178,7 +8231,7 @@ int main (int  argc, char ** argv)
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
 	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
 	printf ("**                       test_01f, test_01g, test_01h, \n");
-	printf ("**                       test_02, test_02a, test_02b, test_02c, test_02d, test_02e, \n"); 
+	printf ("**                       test_02, test_02a, test_02a1, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, \n");
  	printf ("**                       test_03, test_03a, test_04, test_04a, test_04b, test_04c, \n");
@@ -8333,6 +8386,9 @@ int main (int  argc, char ** argv)
 
 		if (axl_cmp (run_test_name, "test_02a"))
 			run_test (test_02a, "Test 02-a", "connection close notification", -1, -1);
+		
+		if (axl_cmp (run_test_name, "test_02a1"))
+			run_test (test_02a1, "Test 02-a1", "connection close notification with handlers removed", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02b"))
 			run_test (test_02b, "Test 02-b", "small message followed by close", -1, -1);
@@ -8499,6 +8555,8 @@ int main (int  argc, char ** argv)
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   
  	run_test (test_02a, "Test 02-a", "connection close notification", -1, -1);
+
+	run_test (test_02a1, "Test 02-a1", "connection close notification with handlers removed", -1, -1);
  
  	run_test (test_02b, "Test 02-b", "small message followed by close", -1, -1);
   	
