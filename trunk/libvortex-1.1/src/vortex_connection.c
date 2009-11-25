@@ -1638,6 +1638,9 @@ VORTEX_SOCKET vortex_connection_sock_connect (VortexCtx   * ctx,
 
 	/* do a sanity check on socket created */
 	if (!vortex_connection_do_sanity_check (ctx, session)) {
+		/* close the socket */
+		vortex_close_socket (session);
+
 		/* report error */
 		axl_error_report (error, VortexSocketSanityError, 
 				  "created socket descriptor using a reserved socket descriptor (%d), this is likely to cause troubles");
@@ -1672,6 +1675,7 @@ VORTEX_SOCKET vortex_connection_sock_connect (VortexCtx   * ctx,
         if (connect (session, (struct sockaddr *)&saddr, sizeof(saddr)) < 0) {
 		if(timeout == 0 || (errno != VORTEX_EINPROGRESS && errno != VORTEX_EWOULDBLOCK)) { 
 			shutdown (session, SHUT_RDWR);
+			vortex_close_socket (session);
 			vortex_log (VORTEX_LEVEL_WARNING, "unable to connect to remote host errno=%d, timeout=%d",
 				    errno, timeout);
 			axl_error_report (error, VortexConnectionError, "unable to connect to remote host");
@@ -1696,6 +1700,7 @@ VORTEX_SOCKET vortex_connection_sock_connect (VortexCtx   * ctx,
 		if(err <= 0){
 			/* timeout reached while waiting for the connection to terminate */
 			shutdown (session, SHUT_RDWR);
+			vortex_close_socket (session);
 			vortex_log (VORTEX_LEVEL_WARNING, "unable to connect to remote host (timeout)");
 			axl_error_report (error, VortexNameResolvFailure, "unable to connect to remote host (timeout)");
 			return -1;
@@ -1779,6 +1784,7 @@ axl_bool vortex_connection_do_greetings_exchange (VortexCtx             * ctx,
 				
 				/* close the connection */
 				shutdown (connection->session, SHUT_RDWR);
+				vortex_close_socket (connection->session);
 				connection->session      = -1;
 
 				/* free previous message */
@@ -1811,6 +1817,7 @@ axl_bool vortex_connection_do_greetings_exchange (VortexCtx             * ctx,
 			
 			/* timeout reached while waiting for the connection to terminate */
 			shutdown (connection->session, SHUT_RDWR);
+			vortex_close_socket (connection->session);
 			connection->session      = -1;
 
 			/* free previous message */
