@@ -441,6 +441,11 @@ typedef struct _VortexMimeHeader     VortexMimeHeader;
  */
 typedef struct _VortexConnectionOpts VortexConnectionOpts;
 
+/** 
+ * @brief Connection options. This options are used to modify default
+ * connection behaviour like default serverName notification on first
+ * channel.
+ */
 typedef enum {
 	/** 
 	 * @brief Signals option list termination.

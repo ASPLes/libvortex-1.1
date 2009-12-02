@@ -294,7 +294,7 @@ axl_bool  vortex_profiles_register (VortexCtx             * ctx,
  * @param ctx The vortex context where the profile will be configured
  * with a frame received handler.
  *
- * @param profile The profile to be configured.
+ * @param uri The profile to be configured.
  *
  * @param received The handler to be called for each frame received. 
  *
