@@ -3692,138 +3692,35 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * default provided by Vortex Library. See next section.
  *
  * 
- * \section vortex_manual_creating_certificates 5.2 How to create a certificate and a private key to be used by the TLS profile
+ * \section vortex_manual_creating_certificates 5.2 How to create a test certificate and a private key to be used by the TLS profile
  *
  * Now we have successfully configured the TLS profile for listener
  * side we need to create a certificate/private key pair. Currently
  * Vortex Library TLS support is built using <b>OpenSSL</b>
  * (http://www.openssl.org). This SSL toolkit comes with some tools to
- * create such files.  Here is an example:
+ * create such files.  Here is an example to create a test certificate
+ * and a private key that can be used for testing purposes:
  * 
  * <ol>
- * <li>Use <b>CA.pl</b> utility to create a certificate with a private key as follows:
+ * <li>Create the private key using:
  * 
  * \code
- *  $ /usr/lib/ssl/misc/CA.pl -newcert
- *  Generating a 1024 bit RSA private key
- *  ............++++++
- *  ....++++++
- *  writing new private key to 'newreq.pem'
- *  Enter PEM pass phrase:
- *  Verifying - Enter PEM pass phrase:
- *  -----
- *  You are about to be asked to enter information that will be incorporated
- *  into your certificate request.
- *  What you are about to enter is what is called a Distinguished Name or a DN.
- *  There are quite a few fields but you can leave some blank
- *  For some fields there will be a default value,
- *  If you enter '.', the field will be left blank.
- *  -----
- *  Country Name (2 letter code) [AU]:ES
- *  State or Province Name (full name) [Some-State]:Spain
- *  Locality Name (eg, city) []:Coslada
- *  Organization Name (eg, company) [Internet Widgits Pty Ltd]:Advanced Software Production Line, S.L.
- *  Organizational Unit Name (eg, section) []:Software Development
- *  Common Name (eg, YOUR name) []:Francis Brosnan Blázquez
- *  Email Address []:francis@aspl.es
- *  Certificate (and private key) is in newreq.pem
- * \endcode
- *
- * Now you have a certificate file at <b>newreq.pem</b> having both items: the certificate
- * and the private key inside it. The content of the file should look like this:
- * \code
- * -----BEGIN RSA PRIVATE KEY-----
- *  Proc-Type: 4,ENCRYPTED
- *  DEK-Info: DES-EDE3-CBC,91635CC2D1C00C1F
- *  
- *  3Ufod8GGhMuGJIliIRDaZ8RPcoYfPayXWDFGQlE4nIOjudi80a+bt7XUl2L8E/2G
- *  DgzZ4YAeeIVJMv4BtlQUGX5dbKT38aUWmwfHkQBv4+xAlfiwzDdOWPS1fIahgoZR
- *  W3dU0i2Xa62ZFVZLrS18c1a8wyUIdmNX9dVV1XsncDDyZ2JQ26wQihvvwiuQYg/c
- *  Dgugs9f5SfvFVetjg3SdgRRyQWqOc+g43sReXRiuWkKPIBR0RCLpN8pivbUQxO7h
- *  TrlAQIH3KG4xcHsYVSVE5J0s9vN2j440M4oCF5NEufLQyNzEdGqEhhsYvEkCLunc
- *  XeUtxekWn6/hTjhO450G/VXWy+o/+UPOuArEBaiR3sjnaL9FvHrUg0xUoSR1TC+O
- *  wbvr0ORHoaTWpfzbKGnyeZHQ7sy7rfxnQxXYyXjPqK80gJ2n3aBLxmfJcD0FNK6/
- *  H0zhbR6/gtJnLaaL3DfHAI3xw5x7IhRQxXXPo2vLHNhJVS/wPHRAtSCub+Tb5BJ/
- *  41IdpiDQVWxUNQ1mp6hvQxhO6ZXJHK86swk7mFd01wIl+ik426uHsmg8SPmS9+ZQ
- *  FyLbQybyBQvUK9K+GIGojrPEpTloR9pFaE+xumExeVb1y38Stw9TeGu8EQsCdu5p
- *  TYQ13e37KrJVB1CuYy+EA0DdlErChhmOKNIrFqUt4hTcZDDEK7UotcAqP0mZzDvP
- *  ZLPeh3vuMQECkzFbbDg8s2RDi+WC7xobh3HksJSJba2H41WYLqQyV1bMBGArvmmX
- *  7Y+xhqYQKFo1WxJ0dLArdlnj2+OTy6m6hYR43GxMj2oXJ/ZO8wiKdA==
- *  -----END RSA PRIVATE KEY-----
- *  -----BEGIN CERTIFICATE-----
- *  MIIENzCCA6CgAwIBAgIJALXMknfgqNogMA0GCSqGSIb3DQEBBAUAMIHEMQswCQYD
- *  VQQGEwJFUzEOMAwGA1UECBMFU3BhaW4xEDAOBgNVBAcTB0Nvc2xhZGExMDAuBgNV
- *  BAoTJ0FkdmFuY2VkIFNvZnR3YXJlIFByb2R1Y3Rpb24gTGluZSwgUy5MLjEeMBwG
- *  A1UECxMVU29mdHdhcmUgRGV2ZWxvcGVtZW50MSEwHwYDVQQDFBhGcmFuY2lzIEJy
- *  b3NuYW4gQmzhenF1ZXoxHjAcBgkqhkiG9w0BCQEWD2ZyYW5jaXNAYXNwbC5lczAe
- *  Fw0wNTEyMDQxODMyMDRaFw0wNjEyMDQxODMyMDRaMIHEMQswCQYDVQQGEwJFUzEO
- *  MAwGA1UECBMFU3BhaW4xEDAOBgNVBAcTB0Nvc2xhZGExMDAuBgNVBAoTJ0FkdmFu
- *  Y2VkIFNvZnR3YXJlIFByb2R1Y3Rpb24gTGluZSwgUy5MLjEeMBwGA1UECxMVU29m
- *  dHdhcmUgRGV2ZWxvcGVtZW50MSEwHwYDVQQDFBhGcmFuY2lzIEJyb3NuYW4gQmzh
- *  enF1ZXoxHjAcBgkqhkiG9w0BCQEWD2ZyYW5jaXNAYXNwbC5lczCBnzANBgkqhkiG
- *  9w0BAQEFAAOBjQAwgYkCgYEA4i4/XJ5us6YJHt1OmKZBlaGXztXXSkuTtsnazSwv
- *  zYgPa8Ctd0KnDGp8WEEcjmsG8vzjJ+0/UmdxL7N2WCycq9qIeutOU/oXKp5u5eDO
- *  UmQ1v/ehqvxAzkvziQPlbR6QBmWcd+MIJjswGmZwX2JLB6/EZmtloDuCsTP1BLWH
- *  OckCAwEAAaOCAS0wggEpMB0GA1UdDgQWBBQCTZrh3SA3Hm59A6bR2iz2Jzz1YTCB
- *  +QYDVR0jBIHxMIHugBQCTZrh3SA3Hm59A6bR2iz2Jzz1YaGByqSBxzCBxDELMAkG
- *  A1UEBhMCRVMxDjAMBgNVBAgTBVNwYWluMRAwDgYDVQQHEwdDb3NsYWRhMTAwLgYD
- *  VQQKEydBZHZhbmNlZCBTb2Z0d2FyZSBQcm9kdWN0aW9uIExpbmUsIFMuTC4xHjAc
- *  BgNVBAsTFVNvZnR3YXJlIERldmVsb3BlbWVudDEhMB8GA1UEAxQYRnJhbmNpcyBC
- *  cm9zbmFuIEJs4XpxdWV6MR4wHAYJKoZIhvcNAQkBFg9mcmFuY2lzQGFzcGwuZXOC
- *  CQC1zJJ34KjaIDAMBgNVHRMEBTADAQH/MA0GCSqGSIb3DQEBBAUAA4GBALEEf7Z8
- *  zqJApYw3OyhLZBd1NfIeKOwkyHUIVzvvGnpyNq5T+metNDtu9D4XW8aM9x66glMq
- *  H3bTM6Wq3dGv5Hi5ZrGEjISkEgn6TnndIlHVqyS4D/EDPVj1lOiujSptowmdLieQ
- *  JXRwm/Hmf7mCCJEYAsMR9KfhctrvnwYiVW6a
- *  -----END CERTIFICATE-----
- * \endcode
- *
- * You can split the content of the file generated into two files: the
- * private key and the public certificate part. The private key file
- * is the piece which is enclosed by <b>BEGIN/END-"RSA PRIVATE KEY"</b>. The
- * public certificate is the piece enclosed by <b>BEGIN/END-"CERTIFICATE"</b>. 
- * 
- * Splitting the certificate produced into two files is not required
- * because openssl lookup for the appropriate part while providing the
- * same file for the certificate or the private key.
- * </li>
- * 
- * <li>Now it is required to remove the pass phrase because Vortex
- * Library already doesn't support providing a callback to configure
- * it. This is done by doing the following:
- * \code
- * openssl rsa -in newreq.pem -out private-key-file.pem
- * Enter pass phrase for newreq.pem:
- * writing RSA key
- * \endcode
- * 
- * As a result for the previous operation, the resulting file should look like:
- * \code
- * $ less private-key-file.pem 
- * -----BEGIN RSA PRIVATE KEY-----
- * MIICXgIBAAKBgQDiLj9cnm6zpgke3U6YpkGVoZfO1ddKS5O2ydrNLC/NiA9rwK13
- * QqcManxYQRyOawby/OMn7T9SZ3Evs3ZYLJyr2oh6605T+hcqnm7l4M5SZDW/96Gq
- * /EDOS/OJA+VtHpAGZZx34wgmOzAaZnBfYksHr8Rma2WgO4KxM/UEtYc5yQIDAQAB
- * AoGAPSl4ZNlK4jWR3dDGgizjK01JOdtFnoeVaCZpjnXWb2PNl7vArLFPbuIUweDJ
- * khGLDYYo/xD+wI/MYbPL2sgljSj7LzMd1bcO70vzbcoZGug+a1Clc8j3xbz75lGZ
- * +IW0QhkQr7T7iDCj6Ay+1AdAknxO0h/7/yq0ShWHLvEK+4kCQQD9CgIA3NkQ/AMk
- * v20ChILgz/Ne86Aokx9FtoE25l9e+sDwpoPL+8uxBvM2pWDAd8GoW+a1GWDsVe6H
- * /PWKyhx/AkEA5NPIpk3f9QdNG2ef9tUbVOweQT7kzPtydWoyVcKro/PN6stbhfhu
- * Wy7kcJxiA8jn1S1pSAU/EWoc3vi3idGltwJBAJMH+qwHp/XPigATX0NEPkxlaRP2
- * WkzZWCWI68I70JT+/ZeYGiMwN2axFCffpr2PmK68X+1BRuls8UKBgSfZUv8CQQCX
- * AOs4U8um9tp7aza0vIz8zZRpmgeC/avar+nnjj+WQh1xBCGxlu+8XIWDiq9jsADN
- * PNptHIkyBMRon9j+qcqhAkEAtDD9wo0gJETs4qzauQ+UCtAyzY65ZHSyJVf0bC1v
- * +4GxygDp0nEgM16lFqw1zMdFvmTjPuZrtViCI2WPWtB2CA==
- * -----END RSA PRIVATE KEY-----
+ *  >> openssl genrsa 1024 > test-private.key
  * \endcode
  * </li>
  *
- * <li>Now, you can remove the private key part from the initial
- * certificate generated and put it into a file to store the private
- * key with pass phrase. However, this is not required because the
- * openssl provides a way to configure the pass phrase to private key
- * without it.
+ * <li>Now create the public certificate reusing previously created key as follows:
+ *
+ * \code
+ *  >> openssl req -new -x509 -nodes -sha1 -days 3650 -key test-private.key > test-certificate.crt
+ * \endcode
  * </li>
  *
+ * <li>Once finished, you can check certificate data using:
+ * \code
+ *  >> openssl x509 -noout -fingerprint -text < test-certificate.crt
+ * \endcode
+ * </li>
  *</ol>
  *   
  * \section vortex_manual_using_sasl 5.3 Authenticating BEEP peers (or How to use SASL profiles family)

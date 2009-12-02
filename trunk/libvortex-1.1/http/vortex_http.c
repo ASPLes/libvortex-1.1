@@ -162,7 +162,7 @@ void               vortex_http_setup_unref    (VortexHttpSetup * setup)
  *
  * @param item The configuration that will be modified.
  *
- * @param str_value The string value to configure.
+ * @param value The value to configure.
  */
 void               vortex_http_setup_conf     (VortexHttpSetup      * setup,
 					       VortexHttpConfItem     item,

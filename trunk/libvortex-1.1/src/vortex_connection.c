@@ -3440,6 +3440,8 @@ int                 vortex_connection_set_profile_mask       (VortexConnection  
  * provide a NULL value if you are only checking if a particular
  * profile is being filtered on the particular connection.
  *
+ * @param encoding Signals the encoding used for profile_content received.
+ *
  * @param serverName Optional parameter used to notify the serverName
  * provided at the start channel stage. You can safely provide a NULL
  * value if you are only checking if a particular profile is being
