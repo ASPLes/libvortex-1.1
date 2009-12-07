@@ -791,7 +791,7 @@ char    * __vortex_sasl_get_base64_blob (const char            * frame_content,
 	/* get channel management DTD */
 	if ((sasl_dtd = vortex_ctx_get_data (ctx, SASL_DTD_KEY)) == NULL) {
 		__vortex_sasl_notify (process_status, connection, VortexError,
-				      "unable to load dtd file (sasl.dtd), cannot validate incoming message, returning error frame",
+				      "unable to load dtd file (sasl.dtd), cannot validate incoming message, returning error frame (did you initilize SASL vortex_sasl_init?)",
 				      user_data);
 		return NULL;
 	}

@@ -528,6 +528,12 @@ axlPointer  common_auth_handler  (VortexConnection * conn,
 {
 	printf ("Received request to handle profile %s (common sasl handler)\n", props->mech);
 
+	/* check to validate for serverName=test_06a.server */
+	if (axl_cmp (props->serverName, "test_06a.server")) {
+		/* check user and password */
+		return INT_TO_PTR (axl_cmp (props->auth_id, "12345") && axl_cmp (props->password, "12345"));
+	} /* end if */
+
 	/* check anonymous support */
 	if (axl_cmp (props->mech, VORTEX_SASL_ANONYMOUS)) {
 
