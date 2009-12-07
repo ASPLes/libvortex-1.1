@@ -556,6 +556,13 @@ typedef struct _VortexSaslProps {
 	 * taking place. This is used by \ref VORTEX_SASL_DIGEST_MD5.
 	 */
 	const char * realm;
+
+	/** 
+	 * @brief In the case serverName is still not defined on the
+	 * connection, this field provides a reference to the
+	 * serverName requested along with the SASL request.
+	 */
+	const char * serverName;
 	
 	/** 
 	 * @brief Allows to signal the handler is returning a

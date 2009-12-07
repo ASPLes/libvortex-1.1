@@ -522,6 +522,10 @@ typedef struct _VortexGsaslData {
 	
 	/* session used for a particular connection */
 	Gsasl_session    * session;
+
+	/* in case serverName is not defined, the following defines
+	   the serverName requested along with SASL request */
+	char             * serverName;
 	
 } VortexGsaslData;
 
@@ -540,6 +544,9 @@ void __vortex_sasl_destroy_context (axlPointer _data)
 
 	/* dealloc sasl context */
 	gsasl_done (data->ctx);
+
+	/* free serverName if defined */
+	axl_free (data->serverName);
 
 	/* free gsasl holder (verified axl_free) */
 	axl_free (data);
@@ -1761,6 +1768,7 @@ int vortex_sasl_handle_generic_request (VortexCtx               * ctx,
 	axlPointer             user_data;
 	axlPointer             result;
 	char                 * user_data_str;
+	VortexGsaslData      * data;
 
 	/* create the properties object */
 	props = axl_new (VortexSaslProps, 1);
@@ -1774,6 +1782,10 @@ int vortex_sasl_handle_generic_request (VortexCtx               * ctx,
 	props->authorization_id = gsasl_property_fast (sctx, GSASL_AUTHZID);
 	props->password         = gsasl_property_fast (sctx, GSASL_PASSWORD);
 	props->realm            = gsasl_property_fast (sctx, GSASL_REALM);
+	/* get gsasl data to get requested serverName defined on start
+	   channel received */
+	data = vortex_connection_get_data (connection, SASL_DATA);
+	props->serverName       = (data ? data->serverName : NULL);
 
 	/* Do not set props->return_password. By default it is bound
 	 * to axl_false. In the case the handler implementor returns a
@@ -2162,6 +2174,13 @@ axl_bool      __vortex_sasl_accept_negotiation_start (const char        * profil
 		&(profile[26]), 
 		/* the session object */
 		&data->session);
+
+	/* in the case connection serverName is not defined, check for
+	   requested serverName */
+	if (vortex_connection_get_server_name (connection) == NULL && serverName != NULL) {
+		/* set serverName */
+		data->serverName = axl_strdup (serverName);
+	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "getting error code (%d): %s", rc, gsasl_strerror (rc));
 
