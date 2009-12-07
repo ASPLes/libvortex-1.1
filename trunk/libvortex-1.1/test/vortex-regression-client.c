@@ -6098,7 +6098,56 @@ test_06_run_test:
 	printf ("--- WARNING: unable to run SASL tests, no sasl library was built\n");
 #endif	
 	return axl_true;
-	
+}
+
+axl_bool test_06a (void) {
+
+#if defined(ENABLE_SASL_SUPPORT)
+
+	VortexStatus       status;
+	char             * status_message = NULL;
+	VortexConnection * connection;
+
+	/* check and initialize  SASL support */
+	if (! vortex_sasl_init (ctx)) {
+		printf ("--- WARNING: Unable to begin SASL negotiation. Current Vortex Library doesn't support SASL");
+		return axl_true;
+	}
+
+	/* do a connection */
+	printf ("Test 06-a: Testing SASL serverName on auth request..\n");
+	connection = vortex_connection_new_full (ctx, listener_host, LISTENER_UNIFIED_SASL_PORT, 
+						 CONN_OPTS (VORTEX_SERVERNAME_FEATURE, "test_06a.server"),
+						 NULL, NULL);
+	/* check connection created */
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		return axl_false;
+	}	
+
+	/*** request plain validation ***/
+	/* set plain properties */
+	vortex_sasl_set_propertie (connection, VORTEX_SASL_AUTH_ID,
+				   "12345", NULL);
+
+	/* set plain properties (GOOD password) */
+	vortex_sasl_set_propertie (connection,  VORTEX_SASL_PASSWORD,
+				   "12345", NULL);
+
+	/* begin plain auth */
+	vortex_sasl_start_auth_sync (connection, VORTEX_SASL_PLAIN, &status, &status_message);
+
+	if (status != VortexOk) {
+		printf ("Expected to find a success PLAIN mechanism but it wasn't found.\n");
+		return axl_false;
+	} /* end if */
+
+	/* close the connection */
+	vortex_connection_close (connection);
+
+#endif /* ENABLE_SASL_SUPPORT */
+
+
+	return axl_true;
 }
 
 /** 
@@ -8235,7 +8284,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, \n");
  	printf ("**                       test_03, test_03a, test_04, test_04a, test_04b, test_04c, \n");
- 	printf ("**                       test_05, test_05a, test_06, test_07, test_08, test_09, test_10, \n");
+ 	printf ("**                       test_05, test_05a, test_06, test_06a, test_07, test_08, test_09, test_10, \n");
  	printf ("**                       test_11, test_12, test_13, test_14, test_14a, test_14b, test_14c\n");
  	printf ("**                       test_14d, test_15, test_15a\n");
 	printf ("**\n");
@@ -8468,6 +8517,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_06"))
 			run_test (test_06, "Test 06", "SASL profile support", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_06a"))
+			run_test (test_06a, "Test 06-a", "SASL profile support (common handler)", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_07"))
 			run_test (test_07, "Test 07", "XML-RPC profile support", -1, -1);
 
@@ -8609,6 +8661,8 @@ int main (int  argc, char ** argv)
  	run_test (test_05_a, "Test 05-a", "Check auto-tls on fail fix (24/03/2008)", -1, -1);
   
  	run_test (test_06, "Test 06", "SASL profile support", -1, -1);
+
+	run_test (test_06a, "Test 06-a", "SASL profile support (common handler)", -1, -1);
   
  	run_test (test_07, "Test 07", "XML-RPC profile support", -1, -1);
   
