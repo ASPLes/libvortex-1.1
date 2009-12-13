@@ -6080,6 +6080,11 @@ axl_bool  vortex_channel_notify_start_internal (const char       * serverName,
 	/* flag the channel to be connected */
 	new_channel->is_opened = axl_true;
 
+	/* increase reference counting to avoid receiving a close
+	   during channel added notification causing the channel
+	   reference to be invalid */
+	vortex_channel_ref (new_channel);
+
 	/* build start reply here using the optional content profile
 	 * reply */
 	start_rpy = vortex_frame_get_start_rpy_message (profile, profile_content_reply);
@@ -6096,6 +6101,9 @@ axl_bool  vortex_channel_notify_start_internal (const char       * serverName,
 
 	/* notify here channel added */
 	__vortex_connection_check_and_notify (conn, new_channel, axl_true);
+
+	/* decrease reference */
+	vortex_channel_unref (new_channel);
 
 	return result;
 }
