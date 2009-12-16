@@ -6798,7 +6798,7 @@ axl_bool  test_12 (void) {
 	fflush (stdout);
 	stamp      = time (NULL);
 	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, axl_false)) {
+	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 12 (3): failed to connect to: %s:%s...reason: %s\n",
 			listener_host, LISTENER_PORT, vortex_connection_get_message (connection));
 		vortex_connection_close (connection);
@@ -8319,7 +8319,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_02, test_02a, test_02a1, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, \n");
- 	printf ("**                       test_03, test_03a, test_04, test_04a, test_04b, test_04c, \n");
+ 	printf ("**                       test_03, test_03a, test_03b, test_04, test_04a, test_04b, test_04c, \n");
  	printf ("**                       test_05, test_05a, test_05b, test_06, test_06a, test_07, test_08, test_09, test_10, \n");
  	printf ("**                       test_11, test_12, test_13, test_14, test_14a, test_14b, test_14c\n");
  	printf ("**                       test_14d, test_15, test_15a\n");
