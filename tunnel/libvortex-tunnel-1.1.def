@@ -6,3 +6,4 @@ vortex_tunnel_settings_add_hop
 vortex_tunnel_settings_free
 vortex_tunnel_settings_new
 vortex_tunnel_settings_new_from_xml
+vortex_tunnel_settings_set_options
