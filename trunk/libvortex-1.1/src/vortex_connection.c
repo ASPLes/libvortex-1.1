@@ -1538,9 +1538,9 @@ int __vortex_connection_wait_on (VortexCtx           * ctx,
 		} /* end if */
 				
 		/* perform wait operation */
-		err = vortex_io_waiting_invoke_wait (ctx, wait_set, session + 1, wait_for);
-		vortex_log (VORTEX_LEVEL_DEBUG, "__vortex_connection_wait_on (sock=%d) operation finished, err=%d, errno=%d (%s) (ellapsed: %d)",
-			    session, err, errno, vortex_errno_get_error (errno) ? vortex_errno_get_error (errno) : "", time (NULL) - start_time);
+		err = vortex_io_waiting_invoke_wait (ctx, wait_set, session, wait_for);
+		vortex_log (VORTEX_LEVEL_DEBUG, "__vortex_connection_wait_on (sock=%d) operation finished, err=%d, errno=%d (%s), wait_for=%d (ellapsed: %d)",
+			    session, err, errno, vortex_errno_get_error (errno) ? vortex_errno_get_error (errno) : "", wait_for, time (NULL) - start_time);
 
 		if(err == -1 /* EINTR */ || err == -2 /* SSL */)
 			continue;
@@ -1691,9 +1691,18 @@ VORTEX_SOCKET vortex_connection_sock_connect (VortexCtx   * ctx,
 
 #if defined(AXL_OS_WIN32)
 		/* under windows we have to also we to be readable */
-		if (err > 0) { 
-			vortex_log (VORTEX_LEVEL_DEBUG, "connect ok, but need to check readable state for socket %d..", session);
-			err = __vortex_connection_wait_on (ctx, READ_OPERATIONS, session, timeout);
+
+		/* NOTE: the following code was commented because
+		 * starting from 1.1.3 BEEP listener do send content
+		 * inmmediately (greetings) but waits for client
+		 * greetings to reply with the proper values. The
+		 * following waiting code causes select(2) call to not
+		 * report TCP proper connection until some data is
+		 * received, which is obviously a windows winsock
+		 * bug. */
+		if (err > 0) {  
+/*			vortex_log (VORTEX_LEVEL_DEBUG, "connect ok, but need to check readable state for socket %d..", session); */
+/*			err = __vortex_connection_wait_on (ctx, READ_OPERATIONS, session, timeout); */
 		} /* end if */
 #endif
 		
