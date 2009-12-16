@@ -1762,21 +1762,37 @@ axl_bool test_01h (void) {
 axl_bool test_01i (void) {
 	VortexConnection * conn;
 	int                stamp;
+	long int           cur_timeout;
+
+#if defined(AXL_OS_WIN32)
+	/* check it with a timeout */
+	cur_timeout = vortex_connection_get_connect_timeout (ctx);
+	vortex_connection_connect_timeout (ctx, 500000);
+#endif
 
 	/* check connection to unreachable address */
-	stamp      = time (NULL);
-	conn = vortex_connection_new (ctx,
-				      "172.26.7.3", "3200", NULL, NULL);
+	stamp = time (NULL);
+	conn  = vortex_connection_new (ctx,
+				          "172.26.7.3", "3200", NULL, NULL);
 	if (vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Test 01-i (1): found connection ok where it was expected a failure..\n");
 		return axl_false;
-	}
+	} /* end if */
 
 	/* check stamp before continue */
 	if ((time (NULL) - stamp) > 2) {
-		printf ("Test 01-i (1): expected to find faster error reporting for an unreachable address..\n");
+		printf ("Test 01-i (2): expected to find faster error reporting for an unreachable address, but delayed %d seconds!!..\n",
+			(int) (time (NULL) - stamp));
 		return axl_false;
 	}
 	vortex_connection_close (conn);
+
+#if defined(AXL_OS_WIN32)
+	/* define again connect timeout */
+	printf ("Test 01-i (3): restoring default timeout %ld\n", cur_timeout);
+	vortex_connection_connect_timeout (ctx, cur_timeout);
+	printf ("Test 01-i (4): after configuring it: %ld\n", vortex_connection_get_connect_timeout (ctx));
+#endif
 
 	return axl_true;
 }
