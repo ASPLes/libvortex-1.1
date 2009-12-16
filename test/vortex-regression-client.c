@@ -5393,6 +5393,42 @@ axl_bool  test_05_a (void)
 	return axl_true;
 }
 
+axl_bool test_05_b (void)
+{
+	/* TLS status notification */
+	VortexStatus       status;
+	char             * status_message = NULL;
+
+	/* vortex connection */
+	VortexConnection * connection;
+
+#if defined(ENABLE_TLS_SUPPORT)
+	/* initialize and check if current vortex library supports TLS */
+	if (! vortex_tls_init (ctx)) {
+		printf ("--- WARNING: Unable to activate TLS, current vortex library has not TLS support activated. \n");
+		return axl_true;
+	}
+#else
+	printf ("--- WARNING: Current build does not have TLS support.\n");
+	return axl_true;
+#endif
+
+	
+	/* create a new connection */
+	connection = connection_new ();
+
+	/* then close */
+	vortex_connection_shutdown (connection);
+	
+	/* now start tls */
+	connection = vortex_tls_start_negotiation_sync (connection, "test", &status, &status_message);
+
+	vortex_connection_close (connection);
+
+	return axl_true;
+}
+
+
 /* message size: 4096 */
 #define TEST_REGRESION_URI_4_MESSAGE "This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary ."
 
@@ -8284,7 +8320,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, \n");
  	printf ("**                       test_03, test_03a, test_04, test_04a, test_04b, test_04c, \n");
- 	printf ("**                       test_05, test_05a, test_06, test_06a, test_07, test_08, test_09, test_10, \n");
+ 	printf ("**                       test_05, test_05a, test_05b, test_06, test_06a, test_07, test_08, test_09, test_10, \n");
  	printf ("**                       test_11, test_12, test_13, test_14, test_14a, test_14b, test_14c\n");
  	printf ("**                       test_14d, test_15, test_15a\n");
 	printf ("**\n");
@@ -8514,6 +8550,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_05a"))
 			run_test (test_05_a, "Test 05-a", "Check auto-tls on fail fix (24/03/2008)", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_05b"))
+			run_test (test_05_b, "Test 05-b", "TLS client blocked during connection close (14/12/2009)", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_06"))
 			run_test (test_06, "Test 06", "SASL profile support", -1, -1);
 
@@ -8659,6 +8698,8 @@ int main (int  argc, char ** argv)
  	run_test (test_05, "Test 05", "TLS profile support", -1, -1);
   	
  	run_test (test_05_a, "Test 05-a", "Check auto-tls on fail fix (24/03/2008)", -1, -1);
+
+	run_test (test_05_b, "Test 05-b", "TLS client blocked during connection close (14/12/2009)", -1, -1);
   
  	run_test (test_06, "Test 06", "SASL profile support", -1, -1);
 

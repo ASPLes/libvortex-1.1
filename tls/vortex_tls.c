@@ -1157,9 +1157,19 @@ void vortex_tls_start_negotiation (VortexConnection     * connection,
 	VortexCtx          * ctx = vortex_connection_get_ctx (connection);
 
 	/* check environment conditions */
-	v_return_if_fail (connection);
-	v_return_if_fail (vortex_connection_is_ok (connection, axl_false));
-	v_return_if_fail (process_status);
+	if ((connection == NULL) || (! vortex_connection_is_ok (connection, axl_false)) || (process_status == NULL)) {
+		vortex_log (VORTEX_LEVEL_WARNING, "Received a connection reference undefined or unconnected or you didn't provide a notification handler");
+		if (process_status != NULL) {
+			process_status (connection, VortexError, 
+					"Received a connection reference undefined or unconnected or you didn't provide a notification handler",
+					user_data);
+			return;
+		} /* end if */
+
+		/* no handler defined */
+		vortex_log (VORTEX_LEVEL_CRITICAL, "no process status found, you should define this handler.");
+		return;
+	}
 
 
 	/* check for already TLS-fication */
@@ -1717,6 +1727,17 @@ VortexConnection * vortex_tls_start_negotiation_sync     (VortexConnection  * co
 	VortexConnection    * _connection;
 	VortexTlsSyncResult * result;
 	VortexAsyncQueue    * queue;
+
+	/* check connection status */
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		/* seems timeout have happen while waiting for SASL to
+		 * end */
+		if (status != NULL)
+			(* status)         = VortexError;
+		if (status_message != NULL)
+			(* status_message) = "Received a connection not connected, unable to start TLS";
+		return connection;
+	}
 
 	/* create an async queue and increase queue reference so the
 	 * function could unref it without worry about race conditions
