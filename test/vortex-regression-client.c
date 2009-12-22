@@ -1762,9 +1762,10 @@ axl_bool test_01h (void) {
 axl_bool test_01i (void) {
 	VortexConnection * conn;
 	int                stamp;
-	long int           cur_timeout;
 
 #if defined(AXL_OS_WIN32)
+	long int           cur_timeout;
+
 	/* check it with a timeout */
 	cur_timeout = vortex_connection_get_connect_timeout (ctx);
 	vortex_connection_connect_timeout (ctx, 500000);
