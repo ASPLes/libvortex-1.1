@@ -89,6 +89,14 @@ Module API
    
       Allows to close the connection by shutting down the transport layer supporting it. This causes the connection to be closed without taking place BEEP close negotiation. 
 
+   .. method:: incref ()
+   
+      Allows to increment python reference count.  This is used in cases where the connection reference is automatically collected by python GC but the VortexConnection reference that it was representing is still working (and may receive notifications, like frame received). Note that a call to this method, requires a call to :meth:`decref`.
+
+   .. method:: decref ()
+   
+      Allows to decrement python reference count.  See :meth:`incref` for more information.
+
    .. attribute:: error_msg
 
       (Read only attribute) (String) returns the last error message found while using the connection.

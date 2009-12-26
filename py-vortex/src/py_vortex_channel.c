@@ -87,12 +87,16 @@ static void py_vortex_channel_dealloc (PyVortexChannel* self)
 	self->channel = NULL; 
 
 	/* decrement reference counting on py_conn */
+	py_vortex_log (PY_VORTEX_DEBUG, "  Finishing reference to connection..");
 	Py_XDECREF (__PY_OBJECT (self->py_conn));
 	self->py_conn = NULL;
 
 	/* finish frame received and associated data */
+	py_vortex_log (PY_VORTEX_DEBUG, "  Finishing reference to frame received handler and associated data..");
 	Py_CLEAR (self->frame_received);
+	self->frame_received = NULL;
 	Py_CLEAR (self->frame_received_data);
+	self->frame_received_data = NULL;
 
 	/* free the node it self */
 	self->ob_type->tp_free ((PyObject*)self);
@@ -114,6 +118,28 @@ static PyObject * py_vortex_channel_close (PyVortexChannel* self)
 	_result = Py_BuildValue ("i", result);
 	
 	return _result;
+}
+
+/** 
+ * @brief Increment reference counting
+ */
+static PyObject * py_vortex_channel_incref (PyVortexChannel* self)
+{
+	/* close the channel */
+	Py_INCREF (__PY_OBJECT (self));
+	Py_INCREF (Py_None);
+	return Py_None;
+}
+
+/** 
+ * @brief Decrement reference counting.
+ */
+static PyObject * py_vortex_channel_decref (PyVortexChannel* self)
+{
+	/* close the channel */
+	Py_DECREF (__PY_OBJECT (self));
+	Py_INCREF (Py_None);
+	return Py_None;
 }
 
 
@@ -215,20 +241,30 @@ void     py_vortex_channel_received     (VortexChannel    * channel,
  */
 axl_bool  py_vortex_channel_configure_frame_received  (PyVortexChannel * self, PyObject * handler, PyObject * data)
 {
+	PyObject * old_handler;
+	PyObject * old_data;
+
 	/* check values received */
 	if (! PyCallable_Check (handler) || self == NULL) 
 		return axl_false;
+	
+	/* store previous references */
+	old_handler = self->frame_received;
+	old_data    = self->frame_received_data;
 
-	/* unref prevous handler and data associated if defined */
-	Py_XDECREF (self->frame_received);
+	/* set new references */
 	self->frame_received = handler;
-
-	Py_XDECREF (self->frame_received_data);
 	self->frame_received_data = data ? data : Py_None;
 
 	/* increment reference counting */
 	Py_XINCREF (self->frame_received);
 	Py_INCREF  (self->frame_received_data);
+
+	/* now unref previous references (if defined) */
+	if (old_handler || old_data) {
+		Py_CLEAR (old_handler);
+		Py_CLEAR (old_data);
+	}
 
 	/* reconfigure the frame received for used for all channels */
 	if (self->channel)
@@ -518,6 +554,12 @@ static PyMethodDef py_vortex_channel_methods[] = {
 	/* close */
 	{"close", (PyCFunction) py_vortex_channel_close, METH_NOARGS,
 	 "Allows to close the selected channel and to remove it from the BEEP session."},
+	/* incref */
+	{"incref", (PyCFunction) py_vortex_channel_incref, METH_NOARGS,
+	 "Allows to increment reference counting of the python object (vortex.Channel) holding the channel."},
+	/* decref */
+	{"decref", (PyCFunction) py_vortex_channel_decref, METH_NOARGS,
+	 "Allows to decrement reference counting of the python object (vortex.Channel) holding the channel."},
  	{NULL}  
 }; 
 

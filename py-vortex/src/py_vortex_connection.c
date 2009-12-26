@@ -335,6 +335,28 @@ PyObject * py_vortex_connection_shutdown (PyVortexConnection* self)
 }
 
 /** 
+ * @brief Increment reference counting
+ */
+static PyObject * py_vortex_connection_incref (PyVortexConnection* self)
+{
+	/* close the connection */
+	Py_INCREF (__PY_OBJECT (self));
+	Py_INCREF (Py_None);
+	return Py_None;
+}
+
+/** 
+ * @brief Decrement reference counting.
+ */
+static PyObject * py_vortex_connection_decref (PyVortexConnection* self)
+{
+	/* close the connection */
+	Py_DECREF (__PY_OBJECT (self));
+	Py_INCREF (Py_None);
+	return Py_None;
+}
+
+/** 
  * @brief Allows to nullify the internal reference to the
  * VortexConnection object.
  */ 
@@ -721,6 +743,12 @@ static PyMethodDef py_vortex_connection_methods[] = {
 	/* shutdown */
 	{"shutdown", (PyCFunction) py_vortex_connection_shutdown, METH_NOARGS,
 	 "Allows to shutdown the BEEP session. This operation closes the underlaying transport without going into the full BEEP close process. It is still required to call to .close method to fully finish the connection. After the shutdown the caller can still use the reference and check its status. After a close operation the connection cannot be used again."},
+	/* incref */
+	{"incref", (PyCFunction) py_vortex_connection_incref, METH_NOARGS,
+	 "Allows to increment reference counting of the python object (vortex.Connection) holding the connection."},
+	/* decref */
+	{"decref", (PyCFunction) py_vortex_connection_decref, METH_NOARGS,
+	 "Allows to decrement reference counting of the python object (vortex.Connection) holding the connection."},
  	{NULL}  
 }; 
 

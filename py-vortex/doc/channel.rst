@@ -131,6 +131,14 @@ Module API
 
       :rtype: Returns True if the channel was closed, otherwise False is returned. In the case false is returned you can use :meth:`Connection.pop_channel_error`.
 
+   .. method:: incref ()
+   
+      Allows to increment python reference count.  This is used in cases where the channel reference is automatically collected by python GC but the VortexChannel reference that it was representing is still working (and may receive notifications, like frame received). Note that a call to this method, requires a call to :meth:`decref`.
+
+   .. method:: decref ()
+   
+      Allows to decrement python reference count.  See :meth:`incref` for more information.
+
    .. attribute:: number
 
       (Read only attribute) (Number) returns the channel number.
