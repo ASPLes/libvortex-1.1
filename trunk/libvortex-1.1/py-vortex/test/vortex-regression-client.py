@@ -831,6 +831,83 @@ def test_10_a ():
 
     return True
 
+def test_10_b_received (conn, channel, frame, data):
+    # queue connection and frame
+    data.push (conn)
+    data.push (frame)
+    data.push (channel)
+    return
+
+def test_10_b_create_connection_and_send_content (ctx, queue):
+
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    channel = conn.open_channel (0, REGRESSION_URI)
+    if not channel: 
+        error ("Expected to find channel error but found a proper channel reference")
+        return False
+
+    # now setup received handler
+    channel.set_frame_received (test_10_b_received, queue)
+
+    # send content
+    channel.send_msg ("This is a test", 14)
+
+    channel.incref ()
+
+    info ("Content sent, now wait for replies..")
+    return True
+
+def test_10_b ():
+    # create a context
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    info ("Creating queue, connection, channel and sending content..")
+    queue = vortex.AsyncQueue ()
+
+    # PART 1: check channel.incref
+    info ("PART 1: check channel.incref ()")
+    if not test_10_b_create_connection_and_send_content (ctx, queue):
+        error ("Failed to initialize connection, channel or content to be sent")
+        return False
+
+    # now get reply
+    info ("Waiting for replies....")
+    conn    = queue.pop ()
+    frame   = queue.pop ()
+    channel = queue.pop ()
+
+    info ("Received content.....")
+
+    # check connection status
+    if not conn.is_ok ():
+        error ("Expected to find connection status ok, but found a failure: " + conn.status_msg)
+        return False
+
+    # check frame type and content
+    if not frame.type == "RPY":
+        error ("Expected to find frame type RPY but found: " + frame.type)
+        return False
+
+    if not frame.payload == "This is a test":
+        error ("Expected to find frame content 'This is a test' but found: " + frame.payload)
+
+    # decrement reference counting
+    channel.decref ()
+    conn.close ()
+
+    return True
+
 def test_11 ():
     # create a context
     ctx = vortex.Ctx ()
@@ -1567,7 +1644,8 @@ tests = [
     (test_08,   "Check BEEP transfer zeroed binaries frames"),
     (test_09,   "Check BEEP channel support"),
     (test_10,   "Check BEEP channel creation deny"),
-    (test_10_a,   "Check BEEP channel creation deny"),
+    (test_10_a, "Check BEEP channel creation deny"),
+    (test_10_b, "Check reference counting on async notifications"),
     (test_11,   "Check BEEP listener support"),
     (test_12,   "Check connection on close notification"),
     (test_13,   "Check wrong listener allocation"),
@@ -1577,7 +1655,7 @@ tests = [
     (test_17,   "Check SASL CRAM-MD5 support"),
     (test_18,   "Check TLS support"),
     (test_19,   "Check TLS support (async notification)"),
-    (test_20,   "Check SASL PLAIN support (async notification)"),
+    (test_20,   "Check SASL PLAIN support (async notification)")
 ]
 
 # declare default host and port
