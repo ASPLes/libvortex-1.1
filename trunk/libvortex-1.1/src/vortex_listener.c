@@ -239,8 +239,8 @@ void __vortex_listener_initial_accept (VortexCtx        * ctx,
 	/* before doing anything, we have to create a connection */
 	connection = vortex_connection_new_empty (ctx, client_socket, VortexRoleListener);
 	vortex_log (VORTEX_LEVEL_DEBUG, "received connection from: %s:%s", 
-	       vortex_connection_get_host (connection),
-	       vortex_connection_get_port (connection));
+		    vortex_connection_get_host (connection),
+		    vortex_connection_get_port (connection));
 
 	/* configure the relation between this connection and the
 	 * master listener connection */
