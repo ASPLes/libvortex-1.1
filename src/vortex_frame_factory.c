@@ -109,9 +109,22 @@ VortexMimeStatus * vortex_frame_mime_status_new (void)
 
 	/* create initial node */
 	status                       = axl_new (VortexMimeStatus, 1);
+	VORTEX_CHECK_REF (status, NULL);
+
 	status->mime_headers_name    = axl_string_factory_create ();
 	status->mime_headers_content = axl_string_factory_create ();
 	status->header_factory       = axl_factory_create (sizeof (VortexMimeHeader));
+
+	/* check memory allocation status */
+	if (status->mime_headers_name    == NULL  ||
+	    status->mime_headers_content == NULL ||
+	    status->header_factory       == NULL) {
+		axl_string_factory_free (status->mime_headers_name);
+		axl_string_factory_free (status->mime_headers_content);
+		axl_factory_free        (status->header_factory);
+		axl_free (status);
+		return NULL;
+	} /* end if */
 
 	/* init reference counting */
 	vortex_mutex_create (&status->ref_mutex);
@@ -683,6 +696,7 @@ char  * vortex_frame_build_up_from_params_s_buffer (VortexFrameType   type,
 		 * entity headers) and "size" is the payload size. 
 		 */
 		value = axl_realloc (value, header_length + size + 6);
+		VORTEX_CHECK_REF (value, NULL);
 	} /* end if */
 	
 	/* copy BEEP frame payload */
@@ -854,7 +868,9 @@ VortexFrame * vortex_frame_create               (VortexCtx       * ctx,
  * @param payload The payload the frame hold.
  * 
  * @return A newly created \ref VortexFrame object that must be
- * unrefered using \ref vortex_frame_free when no longer needed. 
+ * unrefered using \ref vortex_frame_free when no longer
+ * needed. Function may return NULL reference if allow fails or ctx
+ * received is NULL.
  */
 VortexFrame * vortex_frame_create_full          (VortexCtx       * ctx,
 						 VortexFrameType   type,
@@ -876,6 +892,7 @@ VortexFrame * vortex_frame_create_full          (VortexCtx       * ctx,
 
 	/* build base object */
 	result = axl_new (VortexFrame, 1);
+	VORTEX_CHECK_REF (result, NULL);
 	
 	result->id           = __vortex_frame_get_next_id (ctx, "create-full");
 	result->ctx          = ctx;
@@ -890,6 +907,7 @@ VortexFrame * vortex_frame_create_full          (VortexCtx       * ctx,
 	/* copy the payload */
 	if (size > 0 && payload != NULL) {
 		result->payload           = axl_new (char , size + 1);
+		VORTEX_CHECK_REF2 (result->payload, NULL, result, axl_free);
 		memcpy (result->payload, payload, size);
 	}
 
@@ -970,6 +988,7 @@ VortexFrame * vortex_frame_create_full_ref      (VortexCtx       * ctx,
 
 	/* create base object */
 	result = axl_new (VortexFrame, 1);
+	VORTEX_CHECK_REF (result, NULL);
 	
 	result->id           = __vortex_frame_get_next_id (ctx, "create-full");
 	result->ctx          = ctx;
@@ -1486,6 +1505,10 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 
 	/* create a frame */
 	frame       = axl_new (VortexFrame, 1);
+	if (frame == NULL) {
+		__vortex_connection_set_not_connected (connection, "Failed to allocate memory for frame", VortexMemoryFail);
+		return NULL;
+	} /* end if */
 
 	/* set initial ref count */
 	frame->ref_count = 1;
@@ -1579,6 +1602,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 
 	/* allocate exactly frame->size + 5 bytes */
 	buffer = axl_new (char , frame->size + 6);
+	VORTEX_CHECK_REF2 (buffer, NULL, frame, axl_free);
 	
 	/* read the next frame content */
 	bytes_read = vortex_frame_receive_raw (connection, buffer, frame->size + 5);
@@ -1937,6 +1961,7 @@ VortexFrame * __vortex_frame_join_common (VortexFrame * a, VortexFrame * b, axl_
 
 	/* copy current frame values */
 	result                    = axl_new (VortexFrame, 1);
+	VORTEX_CHECK_REF (result, NULL);
 
 	/* set initial ref counting */
 	result->ref_count         = 1;
@@ -1958,10 +1983,12 @@ VortexFrame * __vortex_frame_join_common (VortexFrame * a, VortexFrame * b, axl_
 	if (reuse) {
 		/* allocates memory only for the rest of b */
 		result->payload  = axl_realloc (a->payload, a->size + b->size + 1);
+		VORTEX_CHECK_REF2 (result->payload, NULL, result, axl_free);
 		a->payload       = NULL;
 	} else {
 		/* allocates memory to hold both elements a and b */
 		result->payload  = axl_new (char , a->size + b->size + 1);
+		VORTEX_CHECK_REF2 (result->payload, NULL, result, axl_free);
 
 		/* mem copy a over result */
 		memcpy (result->payload, a->payload, a->size);

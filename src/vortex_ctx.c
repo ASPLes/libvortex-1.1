@@ -73,7 +73,9 @@
  * for more information.
  *
  * @return A newly allocated reference to the \ref VortexCtx. You must
- * finish it with \ref vortex_ctx_free.
+ * finish it with \ref vortex_ctx_free. Reference returned must be
+ * checked to be not NULL (in which case, memory allocation have
+ * failed).
  */
 VortexCtx * vortex_ctx_new (void)
 {
@@ -81,9 +83,11 @@ VortexCtx * vortex_ctx_new (void)
 
 	/* create a new context */
 	result           = axl_new (VortexCtx, 1);
+	VORTEX_CHECK_REF (result, NULL);
 
 	/* create the hash to store data */
 	result->data     = vortex_hash_new (axl_hash_string, axl_hash_equal_string);
+	VORTEX_CHECK_REF2 (result->data, NULL, result, axl_free);
 
 	/**** vortex_frame_factory.c: init module ****/
 	result->frame_id = 1;

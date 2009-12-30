@@ -196,12 +196,40 @@
 # define S_ISREG(m) (((m) & _S_IFMT) == _S_IFREG)
 #endif 
 
-/**
+/** 
  * @brief Returns the minimum from two values.
  * @param a First value to compare.
  * @param b Second value to compare.
  */
 #define VORTEX_MIN(a,b) ((a) > (b) ? b : a)
+
+/** 
+ * @brief Allows to check the reference provided, and returning the
+ * return value provided.
+ * @param ref The reference to be checke for NULL.
+ * @param return_value The return value to return in case of NULL reference.
+ */
+#define VORTEX_CHECK_REF(ref, return_value) do { \
+	if (ref == NULL) {   		         \
+             return return_value;                \
+	}                                        \
+} while (0)
+
+/** 
+ * @brief Allows to check the reference provided, returning the return
+ * value provided, also releasing a second reference with a custom
+ * free function.
+ * @param ref The reference to be checke for NULL.
+ * @param return_value The return value to return in case of NULL reference.
+ * @param ref2 Second reference to be released
+ * @param free2_func Function to be used to release the second reference.
+ */
+#define VORTEX_CHECK_REF2(ref, return_value, ref2, free2_func) do { \
+        if (ref == NULL) {                                          \
+               free2_func (ref);                                    \
+	       return return_value;                                 \
+	}                                                           \
+} while (0)
 
 BEGIN_C_DECLS
 

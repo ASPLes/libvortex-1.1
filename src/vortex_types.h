@@ -587,7 +587,11 @@ typedef enum {
 	/** 
 	 * @brief  The connection was closed or not accepted due to a filter installed. 
 	 */
-	VortexConnectionFiltered     = 15
+	VortexConnectionFiltered     = 15,
+	/** 
+	 * @brief Memory allocation failed.
+	 */
+	VortexMemoryFail             = 16
 } VortexStatus;
 
 

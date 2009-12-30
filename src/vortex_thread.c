@@ -153,6 +153,8 @@ axl_bool  vortex_thread_create_internal (VortexThread      * thread_def,
 	/* windows implementation */
 	/* create the thread data to pass it to the proxy function */
 	data                 = axl_new(VortexThreadData, 1);
+	VORTEX_CHECK_REF (data, axl_false);
+
 	data->func           = func;
 	data->user_data      = user_data;
 	thread_def->data     = data;
@@ -933,7 +935,8 @@ struct _VortexAsyncQueue {
  * 
  * @return A newly created async queue, with a reference count equal
  * to 1. To dealloc it when no longer needed, use \ref
- * vortex_async_queue_unref.
+ * vortex_async_queue_unref. Note reference returned must be checked
+ * to be not NULL (caused by memory allocation error).
  */
 VortexAsyncQueue * vortex_async_queue_new       (void)
 {
@@ -941,13 +944,15 @@ VortexAsyncQueue * vortex_async_queue_new       (void)
 
 	/* create the node */
 	result            = axl_new (VortexAsyncQueue, 1);
+	VORTEX_CHECK_REF (result, NULL);
+
+	/* init list of stored items */
+	result->data      = axl_list_new (axl_list_always_return_1, NULL);
+	VORTEX_CHECK_REF2 (result->data, NULL, result, axl_free);
 
 	/* init mutex and conditional variable */
 	vortex_mutex_create (&result->mutex);
 	vortex_cond_create  (&result->cond);
-	
-	/* init list of stored items */
-	result->data      = axl_list_new (axl_list_always_return_1, NULL);
 	
 	/* reference counting support initialized to 1 */
 	result->reference = 1;

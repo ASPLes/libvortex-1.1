@@ -7216,6 +7216,7 @@ axl_bool         vortex_channel_is_ready                       (VortexChannel * 
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx     = vortex_channel_get_ctx (channel);
 #endif
+	axl_bool result;
 
 	if (channel == NULL)
 		return axl_false;
@@ -7225,7 +7226,12 @@ axl_bool         vortex_channel_is_ready                       (VortexChannel * 
  		    (channel->last_reply_received), 
  		    channel->reply_processed);
 	
- 	return ((channel->last_message_sent == channel->last_reply_received) && channel->reply_processed);
+ 	/* return ((channel->last_message_sent == channel->last_reply_received) && channel->reply_processed); */
+	vortex_mutex_lock (&(channel->outstanding_msg_mutex));
+	result = axl_list_length (channel->outstanding_msg) == 0;
+	vortex_mutex_unlock (&(channel->outstanding_msg_mutex));
+
+	return result; /* return now many pending messages are on the list */
 }
 
 /** 
