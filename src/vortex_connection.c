@@ -320,6 +320,10 @@ struct _VortexConnection {
 	 * A list of installed masks.
 	 */ 
 	axlList      * profile_masks;
+	/** 
+	 * Mutex used to protect profile mask mutex.
+	 */
+	VortexMutex    profile_masks_mutex;
 
 	/** 
 	 * Channels already created inside the given VortexConnection.
@@ -530,6 +534,7 @@ void __vortex_connection_init_mutex (VortexConnection * connection)
 	vortex_mutex_create (&connection->channel_pool_mutex);
 	vortex_mutex_create (&connection->pending_errors_mutex);
 	vortex_mutex_create (&connection->channel_update_mutex);
+	vortex_mutex_create (&connection->profile_masks_mutex);
 
 	return;
 }
@@ -3212,6 +3217,7 @@ void               vortex_connection_free (VortexConnection * connection)
 	/* profile masks */
 	axl_list_free (connection->profile_masks);
 	connection->profile_masks = NULL;
+	vortex_mutex_destroy (&connection->profile_masks_mutex);
 
 	/* do not free features and localize because they are handled
 	 * thourgh the cache */
@@ -3427,13 +3433,13 @@ int                 vortex_connection_set_profile_mask       (VortexConnection  
 	node->user_data = user_data;
 
 	/* lock during operation */
-	vortex_mutex_lock (&connection->handlers_mutex);
+	vortex_mutex_lock (&connection->profile_masks_mutex);
 
 	/* create list on demand */
 	if (connection->profile_masks == NULL) {
 		connection->profile_masks = axl_list_new (axl_list_always_return_1, axl_free);
 		if (connection->profile_masks == NULL) {
-			vortex_mutex_unlock (&connection->handlers_mutex);
+			vortex_mutex_unlock (&connection->profile_masks_mutex);
 			return -1;
 		} /* end if */
 	}
@@ -3442,7 +3448,7 @@ int                 vortex_connection_set_profile_mask       (VortexConnection  
 	axl_list_append (connection->profile_masks, node);
 
 	/* unlock now the item is removed */
-	vortex_mutex_unlock (&connection->handlers_mutex);
+	vortex_mutex_unlock (&connection->profile_masks_mutex);
 
 	/* mask created and installed. return the unique id */
 	return node->mask_id;
@@ -3505,10 +3511,10 @@ axl_bool            vortex_connection_is_profile_filtered    (VortexConnection  
 		return axl_false;
 
 	/* look during the operation */
-	vortex_mutex_lock (&connection->handlers_mutex);
+	vortex_mutex_lock (&connection->profile_masks_mutex);
 	if (connection->profile_masks == NULL) {
 		/* check finished */
-		vortex_mutex_unlock (&connection->handlers_mutex);
+		vortex_mutex_unlock (&connection->profile_masks_mutex);
 		return axl_false;
 	} /* end if */
 
@@ -3519,13 +3525,13 @@ axl_bool            vortex_connection_is_profile_filtered    (VortexConnection  
 		node = axl_list_get_nth (connection->profile_masks, iterator);
 
 		/* check if the mask filter the provided profile */
+		vortex_mutex_unlock (&connection->profile_masks_mutex);
 		if (node->mask (connection, channel_num, uri, profile_content, encoding, serverName, frame, error_msg, node->user_data)) {
-			/* check finished */
-			vortex_mutex_unlock (&connection->handlers_mutex);
 
 			/* uri filtered, report */
 			return axl_true;
 		}
+		vortex_mutex_lock (&connection->profile_masks_mutex);
 
 		/* update the iterator */
 		iterator++;
@@ -3533,7 +3539,7 @@ axl_bool            vortex_connection_is_profile_filtered    (VortexConnection  
 	} /* end while */
 
 	/* check finished */
-	vortex_mutex_unlock (&connection->handlers_mutex);
+	vortex_mutex_unlock (&connection->profile_masks_mutex);
 
 	/* no mask have filtered the uri */
 	return axl_false;
