@@ -42,6 +42,7 @@ help:
 clean:
 	-rm -rf .build/*
 
+build_doc: html
 html:
 	mkdir -p .build/html .build/doctrees
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) .build/html

@@ -147,8 +147,13 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 			py_vortex_log (PY_VORTEX_DEBUG, "found empty request to create a PyVortexConnection ref..");
 			return (PyObject *) self;
 		}
-			
-		
+
+		/* check that py_vortex_ctx is indeed a vortex ctx */
+		if (! py_vortex_ctx_check (py_vortex_ctx)) {
+			PyErr_Format (PyExc_ValueError, "Expected to receive a vortex.Ctx object but received something different");
+			return NULL;
+		}
+
 		/* create the vortex connection in a blocking manner */
 		self->conn = vortex_connection_new (py_vortex_ctx_get (py_vortex_ctx), host, port, NULL, NULL);
 
@@ -425,6 +430,9 @@ PyObject * py_vortex_connection_get_attr (PyObject *o, PyObject *attr_name) {
 	} else if (axl_cmp (attr, "status")) {
 		/* found status attribute */
 		return Py_BuildValue ("i", vortex_connection_get_status (self->conn));
+	} else if (axl_cmp (attr, "server_name")) {
+		/* found server_name */
+		return Py_BuildValue ("s", vortex_connection_get_server_name (self->conn));
 	} else if (axl_cmp (attr, "host")) {
 		/* found host attribute */
 		return Py_BuildValue ("s", vortex_connection_get_host (self->conn));
