@@ -113,6 +113,10 @@ Module API
 
       (Read only attribute) (String) returns the port string the connection is using to connected to.
 
+   .. attribute:: server_name
+
+      (Read only attribute) (String) returns connection's configured serverName (BEEP serverName value set by the first channel accepted).
+
    .. attribute:: local_addr
 
       (Read only attribute) (String) returns the local address used by the connection.
