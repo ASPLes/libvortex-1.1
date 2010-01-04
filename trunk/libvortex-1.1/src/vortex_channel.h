@@ -454,6 +454,12 @@ axl_bool           vortex_channel_0_handle_start_msg_reply         (VortexCtx   
 								    VortexEncoding     encoding,
 								    const char       * serverName,
 								    VortexFrame      * frame);
+
+void              __vortex_channel_set_state                       (VortexChannel    * channel,
+					                            int                next_reply_no,
+								    int                last_seq_no,
+								    int                last_seq_no_expected,
+								    int                last_reply_received);
 #endif
 
 /* @} */
