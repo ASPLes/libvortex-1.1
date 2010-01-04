@@ -4532,7 +4532,7 @@ axl_bool      __vortex_channel_block_until_replies_are_received (VortexChannel *
 		
 		/* drop a log */
 		vortex_log (VORTEX_LEVEL_WARNING, 
- 			    "we still didn't received all replies for connection=%d channel=%d (MSG %d != RPY %d), %s",
+ 			    "we still didn't receive all replies for connection=%d channel=%d (MSG %d != RPY %d), %s",
  			    vortex_connection_get_id (channel->connection),
  			    channel->channel_num,
  			    channel->last_message_sent, channel->last_reply_received,
@@ -8346,5 +8346,27 @@ void               __vortex_channel_nullify_conn                  (VortexChannel
 	}
 	return;
 }
+
+/** 
+ * @internal Function used to modify channel status artificially.
+ */
+void              __vortex_channel_set_state (VortexChannel * channel,
+					      int             next_reply_no,
+					      int             last_seq_no,
+					      int             last_seq_no_expected,
+					      int             last_reply_received)
+{
+ 	vortex_mutex_lock (&channel->incoming_msg_mutex);
+	axl_list_append (channel->incoming_msg, INT_TO_PTR (next_reply_no));
+	vortex_mutex_unlock (&channel->incoming_msg_mutex);
+
+	/* update seq no */
+	channel->last_seq_no          = last_seq_no;
+	channel->last_seq_no_expected = last_seq_no_expected;
+	channel->last_reply_received  = last_reply_received;
+
+	return;
+}
+					      
 
 /* @} */
