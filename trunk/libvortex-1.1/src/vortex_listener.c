@@ -414,7 +414,7 @@ void vortex_listener_accept_connections (VortexCtx        * ctx,
 					 int                server_socket, 
 					 VortexConnection * listener)
 {
-	int   soft_limit, hard_limit, client_socket, temp;
+	int   soft_limit, hard_limit, client_socket;
 
 	/* accept the connection new connection */
 	client_socket = vortex_listener_accept (server_socket);
@@ -423,35 +423,16 @@ void vortex_listener_accept_connections (VortexCtx        * ctx,
 		vortex_conf_get (ctx, VORTEX_SOFT_SOCK_LIMIT, &soft_limit);
 		vortex_conf_get (ctx, VORTEX_HARD_SOCK_LIMIT, &hard_limit);
 
-		vortex_log (VORTEX_LEVEL_CRITICAL, "accept () failed, server_socket=%d, soft-limit=%d, hard-limit=%d: %s\n",
-			    server_socket, soft_limit, hard_limit, vortex_errno_get_last_error ());
+		vortex_log (VORTEX_LEVEL_CRITICAL, "accept () failed, server_socket=%d, soft-limit=%d, hard-limit=%d: (errno=%d) %s\n",
+			    server_socket, soft_limit, hard_limit, errno, vortex_errno_get_last_error ());
 		return;
 	}
 
 	/* check we can support more sockets, if not close current
-	 * connection */
-	temp = socket (AF_INET, SOCK_STREAM, 0);
-	if (temp == VORTEX_INVALID_SOCKET) {
-		/* uhmmn.. seems we reached our socket limit, we have
-		 * to close the connection to avoid keep on iterating
-		 * over the listener connection because its backlog
-		 * could be filled with sockets we can't accept */
-		shutdown (client_socket, SHUT_RDWR);
-		vortex_close_socket (client_socket);
-
-		/* get values */
-		vortex_conf_get (ctx, VORTEX_SOFT_SOCK_LIMIT, &soft_limit);
-		vortex_conf_get (ctx, VORTEX_HARD_SOCK_LIMIT, &hard_limit);
-		
-		vortex_log (VORTEX_LEVEL_CRITICAL, 
-			    "droping incoming client connection, reached process limit: soft-limit=%d, hard-limit=%d\n",
-			    soft_limit, hard_limit);
+	 * connection: function already closes client socket in the
+	 * case of failure */
+	if (! vortex_connection_check_socket_limit (ctx, client_socket))
 		return;
-
-	} /* end if */
-	
-	/* close temporal socket */
-	vortex_close_socket (temp);
 
 	/* instead of negotiate the connection at this point simply
 	 * accept it to negotiate it inside vortex_reader loop.  */

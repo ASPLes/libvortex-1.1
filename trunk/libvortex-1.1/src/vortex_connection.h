@@ -408,6 +408,9 @@ void                __vortex_connection_check_and_notify     (VortexConnection *
 
 int                 vortex_connection_get_mss                (VortexConnection * connection);
 
+axl_bool            vortex_connection_check_socket_limit     (VortexCtx        * ctx, 
+							      VORTEX_SOCKET      socket);
+
 /** private API **/
 axl_bool               vortex_connection_ref_internal                    (VortexConnection * connection, 
 									  const char       * who,

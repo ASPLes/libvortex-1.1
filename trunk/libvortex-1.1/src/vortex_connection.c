@@ -1645,6 +1645,12 @@ VORTEX_SOCKET vortex_connection_sock_connect (VortexCtx   * ctx,
 		return -1;
 	} /* end if */
 
+	/* check socket limit */
+	if (! vortex_connection_check_socket_limit (ctx, session)) {
+		axl_error_report (error, VortexSocketSanityError, "Unable to create more connections, socket limit reached");
+		return -1;
+	}
+
 	/* do a sanity check on socket created */
 	if (!vortex_connection_do_sanity_check (ctx, session)) {
 		/* close the socket */
@@ -6195,6 +6201,45 @@ int                vortex_connection_get_mss                (VortexConnection * 
 	/* return value found */
 	return -1;
 #endif
+}
+
+/** 
+ * @internal Function used to check if we have reached our socket
+ * creation limit to avoid exhausting it. The idea is that we need to
+ * have at least one bucket free before limit is reached so we can
+ * still empty the listeners backlog to close them (accept ()).
+ *
+ * @return axl_true in the case the limit is not reached, otherwise
+ * axl_false is returned.
+ */
+axl_bool vortex_connection_check_socket_limit (VortexCtx * ctx, VORTEX_SOCKET socket_to_check)
+{
+	int   soft_limit, hard_limit;
+	VORTEX_SOCKET temp = socket (AF_INET, SOCK_STREAM, 0);
+
+	if (temp == VORTEX_INVALID_SOCKET) {
+		/* uhmmn.. seems we reached our socket limit, we have
+		 * to close the connection to avoid keep on iterating
+		 * over the listener connection because its backlog
+		 * could be filled with sockets we can't accept */
+		shutdown (socket_to_check, SHUT_RDWR);
+		vortex_close_socket (socket_to_check);
+
+		/* get values */
+		vortex_conf_get (ctx, VORTEX_SOFT_SOCK_LIMIT, &soft_limit);
+		vortex_conf_get (ctx, VORTEX_HARD_SOCK_LIMIT, &hard_limit);
+		
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
+			    "droping socket connection, reached process limit: soft-limit=%d, hard-limit=%d\n",
+			    soft_limit, hard_limit);
+		return axl_false; /* limit reached */
+
+	} /* end if */
+	
+	/* close temporal socket */
+	vortex_close_socket (temp);
+
+	return axl_true; /* connection check ok */
 }
 
 /* @} */
