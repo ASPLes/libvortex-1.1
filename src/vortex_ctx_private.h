@@ -69,6 +69,7 @@ struct _VortexCtx {
 	VortexMutex          inet_ntoa_mutex;
 	VortexMutex          log_mutex;
 	axl_bool             use_log_mutex;
+	axl_bool             prepare_log_string;
 
 	/* serverName acquire */
 	axl_bool             serverName_acquire;

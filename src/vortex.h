@@ -370,6 +370,9 @@ void     vortex_log_acquire_mutex            (VortexCtx * ctx,
 void     vortex_log_set_handler      (VortexCtx         * ctx,
 				      VortexLogHandler    handler);
 
+void     vortex_log_set_prepare_log  (VortexCtx         * ctx,
+				      axl_bool            prepare_string);
+
 VortexLogHandler vortex_log_get_handler (VortexCtx      * ctx);
 
 void     vortex_writer_data_free     (VortexWriterData * writer_data);

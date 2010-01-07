@@ -1774,7 +1774,7 @@ axl_bool test_01i (void) {
 	/* check connection to unreachable address */
 	stamp = time (NULL);
 	conn  = vortex_connection_new (ctx,
-				          "172.26.7.3", "3200", NULL, NULL);
+				       "172.26.7.3", "3200", NULL, NULL);
 	if (vortex_connection_is_ok (conn, axl_false)) {
 		printf ("Test 01-i (1): found connection ok where it was expected a failure..\n");
 		return axl_false;
@@ -1796,6 +1796,59 @@ axl_bool test_01i (void) {
 #endif
 
 	return axl_true;
+}
+
+axl_bool test_01j_handler_value = axl_true;
+
+void test_01j_handler (const char        * file,
+		       int                 line,
+		       VortexDebugLevel    log_level,
+		       const char        * log_string,
+		       va_list             args)
+{
+	int iterator = 0;
+
+	/* check for % values */
+	while (log_string[iterator] != 0) {
+		if (log_string[iterator] == '%') {
+			printf ("Found %% inside message (iterator=%d): %s\n",
+				iterator, log_string);
+			test_01j_handler_value = axl_false;
+		}
+		iterator++;
+	}
+
+	/* printf ("%s\n", log_string); */
+	return;
+}
+
+/** 
+ * @brief Check log handling with string preparation works.
+ */
+axl_bool test_01j (void) {
+
+	VortexCtx * ctx = vortex_ctx_new ();
+
+	/* enable log */
+	vortex_log_enable (ctx, axl_true);
+	test_01j_handler_value = axl_true;
+
+	/* set log handler */
+	vortex_log_set_handler (ctx, test_01j_handler);
+	vortex_log_set_prepare_log (ctx, axl_true);
+	
+	/* init vortex library */
+	if (! vortex_init_ctx (ctx)) {
+		/* unable to init context */
+		vortex_ctx_free (ctx);
+		return axl_false;
+	} /* end if */
+
+	/* free context */
+	vortex_exit_ctx (ctx, axl_true);
+
+	/* return current handler status */
+	return test_01j_handler_value;
 }
 
 #define TEST_02_MAX_CHANNELS 24
@@ -8354,7 +8407,7 @@ int main (int  argc, char ** argv)
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
 	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
-	printf ("**                       test_01f, test_01g, test_01h, test_01i\n");
+	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, \n");
@@ -8507,6 +8560,9 @@ int main (int  argc, char ** argv)
 
 		if (axl_cmp (run_test_name, "test_01i"))
 			run_test (test_01i, "Test 01-i", "BEEP connect to (usually) unreachable address..", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_01j"))
+			run_test (test_01j, "Test 01-j", "Log handling with prepared strings", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
@@ -8686,6 +8742,8 @@ int main (int  argc, char ** argv)
 	run_test (test_01h, "Test 01-h", "BEEP wrong header attack..", -1, -1);
 
 	run_test (test_01i, "Test 01-i", "BEEP connect to (usually) unreachable address..", -1, -1);
+
+	run_test (test_01j, "Test 01-j", "Log handling with prepared strings", -1, -1);
   
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   
