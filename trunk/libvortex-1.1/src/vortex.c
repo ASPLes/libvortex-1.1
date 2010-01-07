@@ -831,6 +831,11 @@ void _vortex_log2 (VortexCtx        * ctx,
  * 
  * @return axl_true if the context was initialized, otherwise axl_false is
  * returned.
+ *
+ * NOTE: This function is not thread safe, that is, calling twice from
+ * different threads on the same object will cause improper
+ * results. You can use \ref vortex_init_check to ensure if you
+ * already initialized the context.
  */
 axl_bool    vortex_init_ctx (VortexCtx * ctx)
 {

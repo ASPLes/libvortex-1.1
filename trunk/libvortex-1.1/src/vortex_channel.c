@@ -6996,13 +6996,17 @@ void vortex_channel_free (VortexChannel * channel)
 	/* ensure no wait reply is running remaining to unlock the
 	 * channel receive_mutex. Lock on it and unlock it
 	 * immediately. */
-	vortex_mutex_lock    (&channel->receive_mutex);
-	vortex_mutex_unlock  (&channel->receive_mutex);
+	if (! ctx->reader_cleanup) {
+		vortex_mutex_lock    (&channel->receive_mutex);
+		vortex_mutex_unlock  (&channel->receive_mutex);
+	} /* end if */
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing receive_mutex");
 	vortex_mutex_destroy (&channel->receive_mutex);
 
-	vortex_mutex_lock    (&channel->send_mutex);
-	vortex_mutex_unlock  (&channel->send_mutex);
+	if (! ctx->reader_cleanup) {
+		vortex_mutex_lock    (&channel->send_mutex);
+		vortex_mutex_unlock  (&channel->send_mutex);
+	}
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing send_mutex channel=%d", channel->channel_num);
 	vortex_mutex_destroy (&channel->send_mutex);
 

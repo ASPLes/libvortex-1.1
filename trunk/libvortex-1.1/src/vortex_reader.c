@@ -1480,6 +1480,7 @@ axl_bool  vortex_reader_run (VortexCtx * ctx)
 	/* check connection list to be previously created to terminate
 	   it without closing sockets associated to each connection */
 	if (ctx->con_list != NULL) {
+		ctx->reader_cleanup = axl_true;
 		axl_list_lookup (ctx->con_list, __vortex_reader_configure_conn, NULL);
 		axl_list_cursor_free (ctx->con_cursor);
 		axl_list_free (ctx->con_list);
@@ -1487,12 +1488,16 @@ axl_bool  vortex_reader_run (VortexCtx * ctx)
 		ctx->con_cursor = NULL;
 	} /* end if */
 	if (ctx->srv_list != NULL) {
+		ctx->reader_cleanup = axl_true;
 		axl_list_lookup (ctx->srv_list, __vortex_reader_configure_conn, NULL);
 		axl_list_cursor_free (ctx->srv_cursor);
 		axl_list_free (ctx->srv_list);
 		ctx->srv_list   = NULL;
 		ctx->con_cursor = NULL;
 	} /* end if */
+
+	/* clear reader cleanup flag */
+	ctx->reader_cleanup = axl_false;
 
 	/* reader_queue */
 	if (ctx->reader_queue != NULL)

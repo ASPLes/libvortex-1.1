@@ -533,21 +533,21 @@ VORTEX_SOCKET     vortex_listener_sock_listen      (VortexCtx   * ctx,
 	memset(&saddr, 0, sizeof(struct sockaddr_in));
 	saddr.sin_family          = AF_INET;
 	saddr.sin_port            = htons(int_port);
-       memcpy(&saddr.sin_addr, haddr, sizeof(struct in_addr));
+	memcpy(&saddr.sin_addr, haddr, sizeof(struct in_addr));
 
-       /* call to bind */
-       bind_res = bind(fd, (struct sockaddr *)&saddr,  sizeof (struct sockaddr_in));
-       vortex_log (VORTEX_LEVEL_DEBUG, "bind(2) call returned: %d", bind_res);
-       if (bind_res == VORTEX_SOCKET_ERROR) {
-	       vortex_log (VORTEX_LEVEL_DEBUG, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
+	/* call to bind */
+	bind_res = bind(fd, (struct sockaddr *)&saddr,  sizeof (struct sockaddr_in));
+	vortex_log (VORTEX_LEVEL_DEBUG, "bind(2) call returned: %d", bind_res);
+	if (bind_res == VORTEX_SOCKET_ERROR) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
 		axl_error_report (error, VortexBindError, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
 		vortex_close_socket (fd);
 		return -1;
-       }
-
+	}
+	
 	/* get current backlog configuration */
 	vortex_conf_get (ctx, VORTEX_LISTENER_BACKLOG, &backlog);
-
+	
 	if (listen(fd, backlog) == VORTEX_SOCKET_ERROR) {
 		axl_error_report (error, VortexSocketCreationError, "an error have occur while executing listen");
 		return -1;

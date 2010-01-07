@@ -211,6 +211,11 @@ struct _VortexCtx {
 	axlList                 * srv_list;
 	axlListCursor           * con_cursor;
 	axlListCursor           * srv_cursor;
+	/* the following flag is used to detecte vortex
+	   reinitialization escenarios where it is required to release
+	   memory but without perform all release operatios like mutex
+	   locks */
+	axl_bool                  reader_cleanup;
 	
 	/** 
 	 * @internal Reference to the thread created for the reader loop.
