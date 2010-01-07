@@ -579,6 +579,28 @@ void     vortex_log_set_handler      (VortexCtx        * ctx,
 }
 
 /** 
+ * @brief Allows to instruct vortex to send log strings already
+ * formated to log handler configured (vortex_log_set_handler).
+ *
+ * This will make vortex to expand string arguments (message and
+ * args), causing the argument \ref VortexLogHandler message argument
+ * to receive full content. In this case, args argument will be
+ * received as NULL.
+ *
+ * @param ctx The vortex context to configure.
+ *
+ * @param prepare_string axl_true to prepare string received by debug
+ * handler, otherwise use axl_false to leave configured default
+ * behaviour.
+ */
+void     vortex_log_set_prepare_log  (VortexCtx         * ctx,
+				      axl_bool            prepare_string)
+{
+	v_return_if_fail (ctx);
+	ctx->prepare_log_string = prepare_string;
+}
+
+/** 
  * @brief Allows to get current log handler configured. By default no
  * handler is configured so log produced by the vortex execution is
  * dropped to the console.
@@ -622,7 +644,8 @@ void _vortex_log_common (VortexCtx        * ctx,
 	return;
 #else
 	/* log with mutex */
-	int  use_log_mutex = axl_false;
+	int    use_log_mutex = axl_false;
+	char * log_string;
 
 	if (ctx == NULL) {
 #if defined (__GNUC__)
@@ -644,9 +667,16 @@ void _vortex_log_common (VortexCtx        * ctx,
 	if (use_log_mutex) 
 		vortex_mutex_lock (&ctx->log_mutex);
 
-	if( ctx->debug_handler ) {
-		/* call a custom debug handler if one has been set */
-		ctx->debug_handler (file, line, log_level, message, args);
+	if( ctx->debug_handler) {
+		if (ctx->prepare_log_string) {
+			/* pass the string already prepared */
+			log_string = axl_strdup_printfv (message, args);
+			ctx->debug_handler (file, line, log_level, log_string, NULL);
+			axl_free (log_string);
+		} else {
+			/* call a custom debug handler if one has been set */
+			ctx->debug_handler (file, line, log_level, message, args);
+		} /* end if */
 	} else {
 		/* printout the process pid */
 	ctx_not_defined:
@@ -948,7 +978,7 @@ axl_bool    vortex_init_ctx (VortexCtx * ctx)
 	/* init thread pool (for query receiving) */
 	thread_num = vortex_thread_pool_get_num ();
 	vortex_log (VORTEX_LEVEL_DEBUG, "starting vortex thread pool: (%d threads the pool have)..",
-	       thread_num);
+		    thread_num);
 	vortex_thread_pool_init (ctx, thread_num);
 
 	/* flag this context as initialized */

@@ -168,6 +168,7 @@ vortex_connection_add_channel_pool
 vortex_connection_block
 vortex_connection_channel_exists
 vortex_connection_channels_count
+vortex_connection_check_socket_limit
 vortex_connection_cleanup
 vortex_connection_close
 vortex_connection_close_all_channels
@@ -438,6 +439,7 @@ vortex_log_get_handler
 vortex_log_is_enabled
 vortex_log_is_enabled_acquire_mutex
 vortex_log_set_handler
+vortex_log_set_prepare_log
 vortex_mutex_create
 vortex_mutex_destroy
 vortex_mutex_lock
