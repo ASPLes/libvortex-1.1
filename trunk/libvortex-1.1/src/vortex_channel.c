@@ -940,9 +940,9 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 	frame      = vortex_channel_wait_reply (channel0, msg_no, wait_reply);
 	if (frame == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
-		       "something have failed while received start message response for channel %d under profile %s",
-		       vortex_channel_get_number (channel), 
-		       vortex_channel_get_profile (channel));
+			    "something have failed while receiving start message reply for channel %d under profile %s",
+			    vortex_channel_get_number (channel), 
+			    vortex_channel_get_profile (channel));
 		/* free wait reply */
 		vortex_channel_free_wait_reply (wait_reply);
 
