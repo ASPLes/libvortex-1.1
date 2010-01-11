@@ -137,6 +137,8 @@ void               vortex_async_queue_ref       (VortexAsyncQueue * queue);
 
 void               vortex_async_queue_unref      (VortexAsyncQueue * queue);
 
+void               vortex_async_queue_release    (VortexAsyncQueue * queue);
+
 void               vortex_async_queue_safe_unref (VortexAsyncQueue ** queue);
 
 void               vortex_async_queue_foreach   (VortexAsyncQueue         * queue,

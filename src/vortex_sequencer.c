@@ -694,13 +694,13 @@ axl_bool  vortex_sequencer_run (VortexCtx * ctx)
 
 	/* sequencer queue where all data is received */
 	if (ctx->sequencer_queue != NULL)
-		vortex_async_queue_unref (ctx->sequencer_queue);
+		vortex_async_queue_release (ctx->sequencer_queue);
 	ctx->sequencer_queue  = vortex_async_queue_new ();
 
 	/* auxiliar queue used to synchronize the vortex sequencing
 	 * shutting down process */
 	if (ctx->sequencer_stopped != NULL)
-		vortex_async_queue_unref (ctx->sequencer_stopped);
+		vortex_async_queue_release (ctx->sequencer_stopped);
 	ctx->sequencer_stopped      = vortex_async_queue_new ();
 
 	/* init sequencer buffer */
@@ -880,8 +880,10 @@ void	vortex_sequencer_drop_connection_messages (VortexConnection * conn)
 	/* get current context */
 	VortexCtx * ctx = vortex_connection_get_ctx (conn);
 
-	/* check context and queue */
-	if (ctx == NULL || ctx->sequencer_queue == NULL)
+	/* check context and queue. Also check if the reader is
+	   re-initializing which means we are in the middle of some
+	   sort of process creation (fork ()) */
+	if (ctx == NULL || ctx->sequencer_queue == NULL || ctx->reader_cleanup)
 		return;
 
 	/* call to discard pending messages */

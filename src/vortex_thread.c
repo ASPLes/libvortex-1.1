@@ -1334,6 +1334,21 @@ void               vortex_async_queue_unref     (VortexAsyncQueue * queue)
 }
 
 /** 
+ * @internal Release memory used by queue without acquiring mutexes or
+ * checking queue references. This is currently used by vortex
+ * reinitialization after fork operations.
+ */
+void             vortex_async_queue_release (VortexAsyncQueue * queue)
+{
+	if (queue == NULL)
+		return;
+	axl_list_free (queue->data);
+	queue->data = NULL;
+	axl_free (queue);
+	return;
+}
+
+/** 
  * @brief Allows to perform a safe unref operation (nullifying the
  * caller's queue reference).
  *

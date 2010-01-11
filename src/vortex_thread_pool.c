@@ -175,9 +175,6 @@ void vortex_thread_pool_init     (VortexCtx * ctx,
 			axl_list_unlink_first (ctx->thread_pool->threads);
 			/* release */
 			axl_free (thread);
-
-			/* unref the queue */
-			vortex_async_queue_unref (ctx->thread_pool->queue);
 		} /* end while */
 		axl_list_free (ctx->thread_pool->threads);
 		
@@ -187,7 +184,7 @@ void vortex_thread_pool_init     (VortexCtx * ctx,
 
 	/* init the queue */
 	if (ctx->thread_pool->queue != NULL)
-		vortex_async_queue_unref (ctx->thread_pool->queue);
+		vortex_async_queue_release (ctx->thread_pool->queue);
 	ctx->thread_pool->queue       = vortex_async_queue_new ();
 	
 	/* init all threads required */
