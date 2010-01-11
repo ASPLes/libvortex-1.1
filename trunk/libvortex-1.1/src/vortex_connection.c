@@ -6215,8 +6215,10 @@ int                vortex_connection_get_mss                (VortexConnection * 
 axl_bool vortex_connection_check_socket_limit (VortexCtx * ctx, VORTEX_SOCKET socket_to_check)
 {
 	int   soft_limit, hard_limit;
-	VORTEX_SOCKET temp = socket (AF_INET, SOCK_STREAM, 0);
+	VORTEX_SOCKET temp;
 
+	/* create a temporal socket */
+	temp = socket (AF_INET, SOCK_STREAM, 0);
 	if (temp == VORTEX_INVALID_SOCKET) {
 		/* uhmmn.. seems we reached our socket limit, we have
 		 * to close the connection to avoid keep on iterating

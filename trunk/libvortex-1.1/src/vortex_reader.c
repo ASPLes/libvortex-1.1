@@ -1209,10 +1209,12 @@ void __vortex_reader_stop_process (VortexCtx     * ctx,
 	vortex_async_queue_unref (ctx->reader_queue);
 
 	/* unref listener connections */
+	ctx->srv_list = NULL;
 	axl_list_free (axl_list_cursor_list (srv_cursor));
 	axl_list_cursor_free (srv_cursor);
 
 	/* unref initiators connections */
+	ctx->con_list = NULL;
 	axl_list_free (axl_list_cursor_list (con_cursor));
 	axl_list_cursor_free (con_cursor);
 
@@ -1374,6 +1376,19 @@ axlPointer __vortex_reader_run (VortexCtx * ctx)
 	return NULL;
 }
 
+/** 
+ * @internal Function that returns the number of connections that are
+ * currently watched by the reader.
+ * @param ctx The context where the reader loop is located.
+ * @return Number of connections watched. 
+ */
+int  vortex_reader_connections_watched         (VortexCtx        * ctx)
+{
+	if (ctx == NULL || ctx->con_list == NULL || ctx->srv_list == NULL)
+		return 0;
+	/* return list */
+	return axl_list_length (ctx->con_list) + axl_list_length (ctx->srv_list);
+}
 
 /** 
  * @internal Function used to unwatch the provided connection from the
@@ -1501,12 +1516,12 @@ axl_bool  vortex_reader_run (VortexCtx * ctx)
 
 	/* reader_queue */
 	if (ctx->reader_queue != NULL)
-		vortex_async_queue_unref (ctx->reader_queue);
+		vortex_async_queue_release (ctx->reader_queue);
 	ctx->reader_queue   = vortex_async_queue_new ();
 
 	/* reader stopped */
 	if (ctx->reader_stopped != NULL) 
-		vortex_async_queue_unref (ctx->reader_stopped);
+		vortex_async_queue_release (ctx->reader_stopped);
 	ctx->reader_stopped = vortex_async_queue_new ();
 
 	/* create the vortex reader main thread */

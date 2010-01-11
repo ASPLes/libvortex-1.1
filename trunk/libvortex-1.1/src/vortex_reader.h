@@ -49,6 +49,8 @@ void vortex_reader_watch_connection            (VortexCtx        * ctx,
 void vortex_reader_unwatch_connection          (VortexCtx        * ctx,
 						VortexConnection * connection);
 
+int  vortex_reader_connections_watched         (VortexCtx        * ctx);
+
 int  vortex_reader_run                         (VortexCtx * ctx);
 
 void vortex_reader_stop                        (VortexCtx * ctx);
