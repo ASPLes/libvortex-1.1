@@ -470,6 +470,9 @@ PyObject * py_vortex_connection_get_attr (PyObject *o, PyObject *attr_name) {
 			return Py_None;
 		} /* end if */
 		return py_vortex_ctx_create (ctx);
+	} else if (axl_cmp (attr, "id")) {
+		/* return integer value */
+		return Py_BuildValue ("i", vortex_connection_get_id (self->conn));
 	} /* end if */
 
 	/* printf ("Attribute not found: '%s'..\n", attr); */
