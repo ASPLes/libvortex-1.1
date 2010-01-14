@@ -97,6 +97,10 @@ Module API
    
       Allows to decrement python reference count.  See :meth:`incref` for more information.
 
+   .. attribute:: ctx
+
+      (Read only attribute) (vortex.Ctx) returns the context where the connection was created.
+
    .. attribute:: error_msg
 
       (Read only attribute) (String) returns the last error message found while using the connection.
