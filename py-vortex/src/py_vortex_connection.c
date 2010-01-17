@@ -417,7 +417,6 @@ PyObject * py_vortex_connection_get_attr (PyObject *o, PyObject *attr_name) {
 	const char         * attr = NULL;
 	PyObject           * result;
 	PyVortexConnection * self = (PyVortexConnection *) o;
-	VortexCtx          * ctx;
 
 	/* now implement other attributes */
 	if (! PyArg_Parse (attr_name, "s", &attr))
@@ -464,12 +463,8 @@ PyObject * py_vortex_connection_get_attr (PyObject *o, PyObject *attr_name) {
 		return Py_BuildValue ("s", "unknown");
 	} else if (axl_cmp (attr, "ctx")) {
 		/* found ctx attribute */
-		ctx = CONN_CTX (self->conn);
-		if (ctx == NULL) {
-			Py_INCREF (Py_None);
-			return Py_None;
-		} /* end if */
-		return py_vortex_ctx_create (ctx);
+		Py_XINCREF (self->py_vortex_ctx);
+		return self->py_vortex_ctx;
 	} else if (axl_cmp (attr, "id")) {
 		/* return integer value */
 		return Py_BuildValue ("i", vortex_connection_get_id (self->conn));

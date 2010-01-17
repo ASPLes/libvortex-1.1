@@ -45,6 +45,8 @@ struct _PyVortexCtx {
 
 	/* pointer to the vortex context */
 	VortexCtx * ctx;
+	/* pointer to the hash table to store content */
+	axlHash   * data;
 	/* flags if the PyVortexCtx is pending to exit */
 	axl_bool    exit_pending;
 };
@@ -83,7 +85,10 @@ static PyObject * py_vortex_ctx_new (PyTypeObject *type, PyObject *args, PyObjec
 	self = (PyVortexCtx *)type->tp_alloc(type, 0);
 
 	/* create the context */
-	self-> ctx = vortex_ctx_new ();
+	self->ctx = vortex_ctx_new ();
+
+	/* create the hash table to store content */
+	self->data = axl_hash_new (axl_hash_string, axl_hash_equal_string);
 
 	return (PyObject *)self;
 }
@@ -100,6 +105,10 @@ static void py_vortex_ctx_dealloc (PyVortexCtx* self)
 		py_vortex_log (PY_VORTEX_DEBUG, "found vortex.Ctx () exiting pending flag enabled, finishing context..");
 		Py_DECREF ( py_vortex_ctx_exit (self) );
 	} /* end if */
+
+	/* collect hash data */
+	axl_hash_free (self->data);
+	self->data = NULL;
 
 	/* free ctx */
 	vortex_ctx_free (self->ctx);
@@ -330,6 +339,68 @@ PyObject * py_vortex_ctx_create (VortexCtx * ctx)
 
 	/* failed to create object */
 	return NULL;
+}
+
+/** 
+ * @brief Allows to store a python object into the provided vortex.Ctx
+ * object, incrementing the reference count. The object is
+ * automatically removed when the vortex.Ctx reference is collected.
+ */
+void        py_vortex_ctx_register (PyObject   * py_vortex_ctx, 
+				    PyObject   * data,
+				    const char * key,
+				    ...)
+{
+	va_list    args;
+	char     * full_key;
+
+	/* check data received */
+	if (key == NULL || data == NULL || py_vortex_ctx == NULL)
+		return;
+
+	va_start (args, key);
+	full_key = axl_strdup_printfv (key, args);
+	va_end   (args);
+	
+	/* now register the data received into the key created */
+	py_vortex_log (PY_VORTEX_DEBUG, "registering key %s = %p on vortex.Ctx %p",
+		       key, data, py_vortex_ctx);
+	Py_INCREF (data);
+	axl_hash_insert_full (((PyVortexCtx *) py_vortex_ctx)->data, full_key, axl_free, data, (axlDestroyFunc) py_vortex_decref);
+	return;
+}
+
+
+/** 
+ * @brief Allows to get the object associated to the key provided. The
+ * reference returned is still owned by the internal hash. Use
+ * Py_INCREF in the case a new reference must owned by the caller.
+ */
+PyObject  * py_vortex_ctx_register_get (PyObject * py_vortex_ctx,
+					const char * key,
+					...)
+{
+	va_list    args;
+	char     * full_key;
+	PyObject * data;
+
+	/* check data received */
+	if (key == NULL || py_vortex_ctx == NULL) {
+		py_vortex_log (PY_VORTEX_CRITICAL, "Failed to register data, key %p or vortex.Ctx %p reference is null",
+			       key, py_vortex_ctx);
+		return NULL;
+	} /* end if */
+
+	va_start (args, key);
+	full_key = axl_strdup_printfv (key, args);
+	va_end   (args);
+	
+	/* now register the data received into the key created */
+	py_vortex_log (PY_VORTEX_DEBUG, "returning key %s on vortex.Ctx %p",
+		       key, py_vortex_ctx);
+	data = __PY_OBJECT (axl_hash_get (((PyVortexCtx *)py_vortex_ctx)->data, full_key));
+	axl_free (full_key);
+	return data;
 }
 
 /** 
