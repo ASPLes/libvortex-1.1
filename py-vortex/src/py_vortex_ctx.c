@@ -364,7 +364,7 @@ void        py_vortex_ctx_register (PyObject   * py_vortex_ctx,
 	
 	/* now register the data received into the key created */
 	py_vortex_log (PY_VORTEX_DEBUG, "registering key %s = %p on vortex.Ctx %p",
-		       key, data, py_vortex_ctx);
+		       full_key, data, py_vortex_ctx);
 	Py_INCREF (data);
 	axl_hash_insert_full (((PyVortexCtx *) py_vortex_ctx)->data, full_key, axl_free, data, (axlDestroyFunc) py_vortex_decref);
 	return;
@@ -396,9 +396,9 @@ PyObject  * py_vortex_ctx_register_get (PyObject * py_vortex_ctx,
 	va_end   (args);
 	
 	/* now register the data received into the key created */
-	py_vortex_log (PY_VORTEX_DEBUG, "returning key %s on vortex.Ctx %p",
-		       key, py_vortex_ctx);
 	data = __PY_OBJECT (axl_hash_get (((PyVortexCtx *)py_vortex_ctx)->data, full_key));
+	py_vortex_log (PY_VORTEX_DEBUG, "returning key %s = %p on vortex.Ctx %p",
+		       full_key, data, py_vortex_ctx);
 	axl_free (full_key);
 	return data;
 }

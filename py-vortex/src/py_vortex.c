@@ -348,6 +348,7 @@ void py_vortex_profile_frame_received (VortexChannel    * channel,
 	/* get references to handlers */
 	frame_received      = py_vortex_ctx_register_get (py_ctx, "%s_frame_received", vortex_channel_get_profile (channel));
 	frame_received_data = py_vortex_ctx_register_get (py_ctx, "%s_frame_received_data", vortex_channel_get_profile (channel));
+	py_vortex_log (PY_VORTEX_DEBUG, "frame received handler %p, data %p", frame_received, frame_received_data);
 
 	/* set to none rather than NULL */
 	if (frame_received_data == NULL)
@@ -449,6 +450,16 @@ static PyObject * py_vortex_register_profile (PyObject * self, PyObject * args, 
 
 	py_vortex_log (PY_VORTEX_DEBUG, "calling to register %s, frame_received=%p, frame_received_data=%p", uri,
 		       frame_received, frame_received_data);
+
+	/* acquire a reference to the register content */
+	py_vortex_ctx_register (py_vortex_ctx, start, "%s_start", uri);
+	py_vortex_ctx_register (py_vortex_ctx, start_data, "%s_start_data", uri);
+
+	py_vortex_ctx_register (py_vortex_ctx, close, "%s_close", uri);
+	py_vortex_ctx_register (py_vortex_ctx, close_data, "%s_close_data", uri);
+
+	py_vortex_ctx_register (py_vortex_ctx, frame_received, "%s_frame_received", uri);
+	py_vortex_ctx_register (py_vortex_ctx, frame_received_data, "%s_frame_received_data", uri);
 	
 	/* call to register */
 	if (! vortex_profiles_register (py_vortex_ctx_get (py_vortex_ctx),
@@ -467,16 +478,6 @@ static PyObject * py_vortex_register_profile (PyObject * self, PyObject * args, 
 	} /* end if */
 
 	py_vortex_log (PY_VORTEX_DEBUG, "acquiring references to handlers and objects..");
-
-	/* acquire a reference to the register content */
-	py_vortex_ctx_register (py_vortex_ctx, start, "%s_start", uri);
-	py_vortex_ctx_register (py_vortex_ctx, start_data, "%s_start_data", uri);
-
-	py_vortex_ctx_register (py_vortex_ctx, close, "%s_close", uri);
-	py_vortex_ctx_register (py_vortex_ctx, close_data, "%s_close_data", uri);
-
-	py_vortex_ctx_register (py_vortex_ctx, frame_received, "%s_frame_received", uri);
-	py_vortex_ctx_register (py_vortex_ctx, frame_received_data, "%s_frame_received_data", uri);
 
 	/* reply work done */
 	py_vortex_log (PY_VORTEX_DEBUG, "registered beep uri: %s", uri);
