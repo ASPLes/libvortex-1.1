@@ -89,7 +89,7 @@ void py_vortex_tls_do_notify           (VortexConnection * connection,
 	state = PyGILState_Ensure();
 
 	/* create the connection wrapper */
-	py_ctx  = py_vortex_ctx_create (vortex_connection_get_ctx (connection));
+	py_ctx  = py_vortex_connection_get_ctx (data->py_conn);
 	py_conn = py_vortex_connection_create (
 		/* connection */
 		connection,
@@ -99,12 +99,10 @@ void py_vortex_tls_do_notify           (VortexConnection * connection,
 		axl_true,
 		/* close the connection when finished */
 		axl_true);
+
 	/* remove reference added by previous call because the
 	 * connection is already owned by py_conn */
 	vortex_connection_unref (connection, "py_vortex_tls_do_notify");
-	/* remove reference added by previous call because the py_ctx
-	 * object is already owned by py_conn */
-	Py_DECREF (py_ctx);
 
 	/* nullify internal reference of the old connection */
 	py_vortex_connection_nullify (data->py_conn);

@@ -115,6 +115,8 @@ typedef void (*PyVortexExceptionHandler) (const char * exception_msg);
 
 void     py_vortex_set_exception_handler (PyVortexExceptionHandler handler);
 
+void     py_vortex_decref                (PyObject * obj);
+
 PyMODINIT_FUNC  initlibpy_vortex_11 (void);
 
 /* include other modules */
