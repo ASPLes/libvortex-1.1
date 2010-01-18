@@ -11,7 +11,12 @@ session.
 Module API
 ==========
 
-.. class:: Connection
+.. class:: Connection (ctx, host, port [, serverName])
+
+   :param ctx: (vortex.Ctx) Vortex context where the connection will be created.
+   :param host: (String) Host to connect to.
+   :param port: (String) Port to connect to.
+   :param serverName: (String) Optional serverName value to ask for this channel. This value will change automatic behaviour notifying the provided serverName on next channel start request. 
 
    .. method:: is_ok ()
 
