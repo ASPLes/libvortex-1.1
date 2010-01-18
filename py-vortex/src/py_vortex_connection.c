@@ -126,12 +126,13 @@ static int py_vortex_connection_init_type (PyVortexConnection *self, PyObject *a
 static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
 	PyVortexConnection * self;
-	const char         * host = NULL;
-	const char         * port = NULL;
+	const char         * host       = NULL;
+	const char         * port       = NULL;
+	const char         * serverName = NULL;
 	PyObject           * py_vortex_ctx = NULL;
 
 	/* now parse arguments */
-	static char *kwlist[] = {"ctx", "host", "port", NULL};
+	static char *kwlist[] = {"ctx", "host", "port", "serverName", NULL};
 
 	/* create the object */
 	self = (PyVortexConnection *)type->tp_alloc(type, 0);
@@ -139,7 +140,7 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 	/* check args */
 	if (args != NULL) {
 		/* parse and check result */
-		if (! PyArg_ParseTupleAndKeywords(args, kwds, "|Oss", kwlist, &py_vortex_ctx, &host, &port)) 
+		if (! PyArg_ParseTupleAndKeywords(args, kwds, "|Ossz", kwlist, &py_vortex_ctx, &host, &port, &serverName)) 
 			return NULL;
 
 		/* check for empty creation */
@@ -155,7 +156,13 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 		}
 
 		/* create the vortex connection in a blocking manner */
-		self->conn = vortex_connection_new (py_vortex_ctx_get (py_vortex_ctx), host, port, NULL, NULL);
+		if (serverName)
+			self->conn = vortex_connection_new_full (py_vortex_ctx_get (py_vortex_ctx),
+								 host, port,
+								 CONN_OPTS (VORTEX_SERVERNAME_FEATURE, serverName),
+								 NULL, NULL);
+		else
+			self->conn = vortex_connection_new (py_vortex_ctx_get (py_vortex_ctx), host, port, NULL, NULL);
 
 		/* own a copy of py_vortex_ctx */
 		self->py_vortex_ctx = py_vortex_ctx;
