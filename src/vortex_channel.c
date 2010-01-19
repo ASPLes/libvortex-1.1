@@ -6975,9 +6975,7 @@ void vortex_channel_free (VortexChannel * channel)
 {
 	VortexWriterData * writer_data;
 	WaitReplyData    * wait_reply;
-#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx     = vortex_channel_get_ctx (channel);
-#endif
 
 	/* get channel profile */
 	if (channel == NULL)

@@ -119,7 +119,7 @@
 #define VORTEX_SOCKET          SOCKET
 #define VORTEX_INVALID_SOCKET  INVALID_SOCKET
 #define VORTEX_SOCKET_ERROR    SOCKET_ERROR
-#define vortex_close_socket    do {if ( s >= 0) {closesocket (s);}} while (0)
+#define vortex_close_socket(s) do {if ( s >= 0) {closesocket (s);}} while (0)
 #define vortex_getpid          _getpid
 #define vortex_sscanf          sscanf
 #define uint16_t               u_short
