@@ -3084,7 +3084,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * No other compatibility issue is reported.
  *
- * \section vortex_manual_implementing_request_response_pattern Implementing the request-response pattern
+ * \section vortex_manual_implementing_request_response_pattern 3.2 Implementing the request-response pattern
  *
  * When it comes to implement the request/response interaction
  * pattern, BEEP is a great choice. On this section, it is provided
