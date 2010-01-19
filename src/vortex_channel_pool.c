@@ -117,7 +117,7 @@ axl_bool      __vortex_channel_pool_is_ready (VortexChannel * channel)
 
 	return (vortex_channel_is_opened (channel)          && 
 		(!vortex_channel_is_being_closed (channel)) && 
-		vortex_channel_is_up_to_date (channel)      &&
+		vortex_channel_is_ready (channel)      &&
 		(vortex_channel_get_data (channel, "status_busy") == NULL));
 }
 
