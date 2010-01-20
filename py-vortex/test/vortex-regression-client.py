@@ -1056,6 +1056,52 @@ def test_12():
 
     return True
 
+def test_12_a_closed (conn, queue):
+    queue.push (3)
+
+def test_12_a ():
+    # create a context
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    iterator = 10
+    while iterator > 0:
+        # call to create a connection
+        conn = vortex.Connection (ctx, host, port)
+
+        # check connection status after if 
+        if not conn.is_ok ():
+            error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+            return False
+
+        # create a queue
+        queue = vortex.AsyncQueue ()
+
+        # configure on close 
+        conn.set_on_close (test_12_a_closed, queue)
+
+        # start a channel that will be closed by listener
+        channel = conn.open_channel (0, REGRESSION_URI_START_CLOSE)
+        if channel:
+            error ("Expected to find channel error creation, but found proper reference")
+            return False
+
+        # check value from queue 
+        value = queue.pop ()
+        if value != 3:
+            error ("Expected to find 3 but found" + str (value))
+            return False
+
+        # reduce iterator
+        iterator -= 1
+
+
+    return True
+
 def test_13():
     # create a context
     ctx = vortex.Ctx ()
@@ -1648,6 +1694,7 @@ tests = [
     (test_10_b, "Check reference counting on async notifications"),
     (test_11,   "Check BEEP listener support"),
     (test_12,   "Check connection on close notification"),
+    (test_12_a, "Check connection on close notification (during channel start)"),
     (test_13,   "Check wrong listener allocation"),
     (test_14,   "Check SASL PLAIN support"),
     (test_15,   "Check SASL ANONYMOUS support"),

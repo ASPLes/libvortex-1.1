@@ -5750,6 +5750,36 @@ void vortex_connection_set_on_close_full  (VortexConnection * connection,
 					   VortexConnectionOnCloseFull on_close_handler,
 					   axlPointer data)
 {
+	/* insert the connection */
+	vortex_connection_set_on_close_full2 (connection, on_close_handler, axl_true, data);
+	return;
+}
+
+/** 
+ * @brief Extended version for \ref vortex_connection_set_on_close
+ * handler which also support receiving a user data pointer.
+ *
+ * See \ref vortex_connection_set_on_close for more details. This
+ * function could be called several times to install several handlers.
+ *
+ * Once a handler is installed, you can use \ref
+ * vortex_connection_remove_on_close_full to uninstall the handler if
+ * it is required to avoid getting more notifications.
+ * 
+ * @param connection The connection that is required to get close
+ * notifications.
+ *
+ * @param on_close_handler The handler to be executed once the event
+ * is produced.
+ *
+ * @param data User defined data to be passed to the handler.
+ * 
+ */
+void                    vortex_connection_set_on_close_full2  (VortexConnection             * connection,
+							       VortexConnectionOnCloseFull    on_close_handler,
+							       axl_bool                       insert_last,
+							       axlPointer                     data)
+{
 	VortexConnectionOnCloseData * handler;
 
 	/* check reference received */
@@ -5774,7 +5804,10 @@ void vortex_connection_set_on_close_full  (VortexConnection * connection,
 	handler->data    = data;
 
 	/* store the handler */
-	axl_list_append (connection->on_close_full, handler);
+	if (insert_last)
+		axl_list_append (connection->on_close_full, handler);
+	else
+		axl_list_prepend (connection->on_close_full, handler);
 
 	/* unlock now it is done */
 	vortex_mutex_unlock (&connection->handlers_mutex);

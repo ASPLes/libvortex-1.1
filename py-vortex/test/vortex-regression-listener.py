@@ -89,6 +89,11 @@ def deny_supported (channel_num, conn, data):
     # always deny 
     return False
 
+def close_conn (channel_num, conn, data):
+    # close the connection in the middle of the start transaction
+    conn.shutdown ()
+    return False
+
 def sasl_auth_handler (conn, auth_props, user_data):
     
     print ("Received request to complete auth process using profile: " + auth_props["mech"])
@@ -157,6 +162,8 @@ if __name__ == '__main__':
                              start=deny_supported)
     vortex.register_profile (ctx, REGRESSION_URI_ANS,
                              frame_received=frame_replies_ans)
+    vortex.register_profile (ctx, REGRESSION_URI_START_CLOSE,
+                             start=close_conn)
     
     # enable sasl listener support
     vortex.sasl.accept_mech (ctx, "plain", sasl_auth_handler)

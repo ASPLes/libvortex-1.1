@@ -7679,7 +7679,10 @@ VortexFrame   * vortex_channel_wait_reply              (VortexChannel * channel,
 	 * locked for an event that will never come */
 	queue = wait_reply->queue;
 	vortex_async_queue_ref (queue);
-	vortex_connection_set_on_close_full (channel->connection, __vortex_channel_wait_reply_connection_broken, queue);
+	/* insert the on close notification first to avoid calling
+	   user defined on close handlers and execute our handler as
+	   soon as possible */
+	vortex_connection_set_on_close_full2 (channel->connection, __vortex_channel_wait_reply_connection_broken, axl_false, queue);
 	
 	/* wait for the message to be replied */
 	vortex_log (VORTEX_LEVEL_DEBUG, "getting reply at wait reply from the queue");

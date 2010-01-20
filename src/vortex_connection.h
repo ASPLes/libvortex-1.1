@@ -309,6 +309,11 @@ void                    vortex_connection_set_on_close_full  (VortexConnection *
 							      VortexConnectionOnCloseFull on_close_handler,
 							      axlPointer data);
 
+void                    vortex_connection_set_on_close_full2  (VortexConnection * connection,
+							       VortexConnectionOnCloseFull on_close_handler,
+							       axl_bool                    insert_last,
+							       axlPointer data);
+
 axl_bool            vortex_connection_remove_on_close_full    (VortexConnection              * connection, 
 							       VortexConnectionOnCloseFull     on_close_handler,
 							       axlPointer                      data);
