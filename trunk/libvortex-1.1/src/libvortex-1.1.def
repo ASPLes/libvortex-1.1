@@ -11,6 +11,7 @@ vortex_async_queue_pop
 vortex_async_queue_priority_push
 vortex_async_queue_push
 vortex_async_queue_ref
+vortex_async_queue_release
 vortex_async_queue_safe_unref
 vortex_async_queue_timedpop
 vortex_async_queue_unlock
@@ -474,6 +475,7 @@ vortex_queue_peek
 vortex_queue_pop
 vortex_queue_push
 vortex_reader_check_incoming_msgno
+vortex_reader_connections_watched
 vortex_reader_foreach
 vortex_reader_foreach_impl
 vortex_reader_invoke_frame_received

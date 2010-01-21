@@ -54,6 +54,11 @@ void vortex_thread_pool_new_task            (VortexCtx        * ctx,
 					     VortexThreadFunc   func, 
 					     axlPointer         data);
 
+void vortex_thread_pool_stats               (VortexCtx        * ctx,
+					     int              * started_threads,
+					     int              * waiting_threads,
+					     int              * pending_tasks);
+
 int  vortex_thread_pool_get_running_threads (VortexCtx        * ctx);
 
 void vortex_thread_pool_set_num             (int  number);

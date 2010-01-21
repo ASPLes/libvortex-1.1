@@ -1192,8 +1192,6 @@ VortexChannel     * vortex_channel_pool_get_next_ready_full (VortexChannelPool *
 
 	if (channel == NULL) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "it seems there is no channel ready to use, check auto_inc flag");
-
-
 		/* it seems there is no channel available so check auto_inc
 		 * var to create a new channel or simply return */
 		if (auto_inc) {
@@ -1263,7 +1261,6 @@ void                vortex_channel_pool_release_channel   (VortexChannelPool * p
 
 	/* unflag channel to be choosable */
 	vortex_channel_set_data (channel, "status_busy", NULL);
-
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "channel id=%d for pool id=%d connection id=%d was released", 
 	       vortex_channel_get_number (channel), pool->id, vortex_connection_get_id (pool->connection));

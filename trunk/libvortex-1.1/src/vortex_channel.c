@@ -7223,13 +7223,14 @@ axl_bool         vortex_channel_is_ready                       (VortexChannel * 
 	if (channel == NULL)
 		return axl_false;
 
+ 	/* return ((channel->last_message_sent == channel->last_reply_received) && channel->reply_processed); */
+	vortex_mutex_lock (&(channel->outstanding_msg_mutex));
+
 	vortex_log (VORTEX_LEVEL_DEBUG, "checking channel to be ready (%d == %d) && reply_processed=%d",
  		    channel->last_message_sent, 
  		    (channel->last_reply_received), 
  		    channel->reply_processed);
-	
- 	/* return ((channel->last_message_sent == channel->last_reply_received) && channel->reply_processed); */
-	vortex_mutex_lock (&(channel->outstanding_msg_mutex));
+
 	result = axl_list_length (channel->outstanding_msg) == 0;
 	vortex_mutex_unlock (&(channel->outstanding_msg_mutex));
 

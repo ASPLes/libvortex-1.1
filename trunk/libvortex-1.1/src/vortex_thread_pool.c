@@ -313,6 +313,50 @@ void vortex_thread_pool_new_task (VortexCtx * ctx, VortexThreadFunc func, axlPoi
 	return;
 }
 
+/** 
+ * @brief Allows to get current stats of the vortex thread pool. The
+ * function returns the number of started threads (threads initialized
+ * at \ref vortex_ctx_init), waiting threads (threads that aren't
+ * processing any job) and pending tasks (the amount of pending tasks
+ * to be processed by the pool (this includes frame notifications,
+ * connection close notifications and so on).
+ *
+ * @param ctx The vortex context. If NULL is received, the function do not return any stat. 
+ *
+ * @param started_threads The number of threads started. Optional
+ * argument. -1 in case of NULL ctx.
+ *
+ * @param waiting_threads The number of waiting threads. Optional
+ * argument. -1 in case of NULL ctx.
+ *
+ * @param pending_tasks The number of pending tasks found in the pool
+ * (jobs still not processed). Optional argument. -1 in case of NULL
+ * ctx.
+ */
+void vortex_thread_pool_stats               (VortexCtx        * ctx,
+					     int              * started_threads,
+					     int              * waiting_threads,
+					     int              * pending_tasks)
+{
+	/* clear variables received */
+	if (started_threads)
+		*started_threads = 0;
+	if (waiting_threads)
+		*waiting_threads = 0;
+	if (pending_tasks)
+		*pending_tasks = 0;
+	/* check ctx reference */
+	if (ctx == NULL)
+		return;
+	/* update values */
+	if (started_threads)
+		*started_threads = axl_list_length (ctx->thread_pool->threads);
+	if (waiting_threads)
+		*waiting_threads = vortex_async_queue_waiters (ctx->thread_pool->queue);
+	if (pending_tasks)
+		*pending_tasks = vortex_async_queue_items (ctx->thread_pool->queue);
+	return;
+}
 
 /**
  * @brief Returns the running threads the given pool have.
