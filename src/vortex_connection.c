@@ -4315,13 +4315,18 @@ void __vortex_connection_invoke_on_close (VortexConnection * connection,
 {
 	VortexConnectionOnClose        on_close_handler;
 	VortexConnectionOnCloseData  * handler;
+	VortexCtx                    * ctx = connection->ctx;
 
 	/* invoke full */
 	if (is_full) {
 		/* iterate over all full handlers and invoke them */
 		while (axl_list_length (connection->on_close_full) > 0) {
+
 			/* get a reference to the handler */
 			handler = axl_list_get_first (connection->on_close_full);
+
+			vortex_log (VORTEX_LEVEL_DEBUG, "running on close full handler %p conn-id=%d, remaining handlers: %d",
+				    handler, connection->id, axl_list_length (connection->on_close_full));
 
 			/* remove the handler from the list */
 			axl_list_unlink_first (connection->on_close_full);
@@ -5781,6 +5786,7 @@ void                    vortex_connection_set_on_close_full2  (VortexConnection 
 							       axlPointer                     data)
 {
 	VortexConnectionOnCloseData * handler;
+	VortexCtx                   * ctx;
 
 	/* check reference received */
 	if (connection == NULL || on_close_handler == NULL)
@@ -5808,6 +5814,9 @@ void                    vortex_connection_set_on_close_full2  (VortexConnection 
 		axl_list_append (connection->on_close_full, handler);
 	else
 		axl_list_prepend (connection->on_close_full, handler);
+	ctx = connection->ctx;
+	vortex_log (VORTEX_LEVEL_DEBUG, "on close full handlers %d on conn-id=%d, handler added %p (added %s)",
+		    axl_list_length (connection->on_close_full), connection->id, handler, insert_last ? "last" : "first");
 
 	/* unlock now it is done */
 	vortex_mutex_unlock (&connection->handlers_mutex);
