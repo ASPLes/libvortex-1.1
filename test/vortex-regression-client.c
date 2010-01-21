@@ -220,6 +220,135 @@ axl_bool  test_00 (void)
 	return axl_true;
 }
 
+void test_00a_block (VortexAsyncQueue * queue)
+{
+	/* wait master thread */
+	printf ("Test 00-a: blocking on queue: %p\n", queue);
+	vortex_async_queue_pop (queue);
+	printf ("Test 00-a: unblocked on queue: %p\n", queue);
+	return;
+}
+
+/** 
+ * @brief Checks current implementation for async queues.
+ *
+ * @return axl_true if checks runs ok, otherwise axl_false is returned.
+ */
+axl_bool  test_00a (void) 
+{
+	int                started_threads;
+	int                waiting_threads;
+	int                pending_tasks;
+	VortexAsyncQueue * queue;
+	VortexAsyncQueue * temp;
+	int                iterator;
+
+	/* get stats from the master ctx */
+	vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+	printf ("Test 00-a: values started_threads=%d, waiting_threads=%d, pending_tasks=%d\n",
+		started_threads, waiting_threads, pending_tasks);
+
+	/* check at this point that the pool is available */
+	if (started_threads != 5 || waiting_threads != 5 || pending_tasks != 0) {
+		printf ("ERROR(1): expected to find different values at pool on init...\n");
+		return axl_false;
+	}
+
+	/* create a queue */
+	queue      = vortex_async_queue_new ();
+
+	/* TASK */
+	vortex_thread_pool_new_task (ctx, (VortexThreadFunc) test_00a_block, queue);
+
+	vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+	printf ("Test 00-a: values started_threads=%d, waiting_threads=%d, pending_tasks=%d\n",
+		started_threads, waiting_threads, pending_tasks);
+
+	/* TASK */
+	vortex_thread_pool_new_task (ctx, (VortexThreadFunc) test_00a_block, queue);
+
+	vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+	printf ("Test 00-a: values started_threads=%d, waiting_threads=%d, pending_tasks=%d\n",
+		started_threads, waiting_threads, pending_tasks);
+
+	/* TASK */
+	vortex_thread_pool_new_task (ctx, (VortexThreadFunc) test_00a_block, queue);
+
+	vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+	printf ("Test 00-a: values started_threads=%d, waiting_threads=%d, pending_tasks=%d\n",
+		started_threads, waiting_threads, pending_tasks);
+
+	/* TASK */
+	vortex_thread_pool_new_task (ctx, (VortexThreadFunc) test_00a_block, queue);
+
+	vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+	printf ("Test 00-a: values started_threads=%d, waiting_threads=%d, pending_tasks=%d\n",
+		started_threads, waiting_threads, pending_tasks);
+
+	/* TASK */
+	vortex_thread_pool_new_task (ctx, (VortexThreadFunc) test_00a_block, queue);
+
+	vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+	printf ("Test 00-a: values started_threads=%d, waiting_threads=%d, pending_tasks=%d\n",
+		started_threads, waiting_threads, pending_tasks);
+
+	/* wait until there are 5 thread running a blocked (simulating
+	 * they are doing jobs) */
+	iterator = 0;
+	while (iterator < 10) {
+		if (vortex_async_queue_waiters (queue) == 5)
+			break;
+		printf ("Test 00-a waiting for all threads, still not enough waiters: %d\n", 
+			vortex_async_queue_waiters (queue));
+		/* get stats from the master ctx */
+		vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+		printf ("Test 00-a:   values started_threads=%d, waiting_threads=%d, pending_tasks=%d\n",
+			started_threads, waiting_threads, pending_tasks);
+		vortex_async_queue_timedpop (queue, 1000);
+		iterator++;
+	}
+
+	vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+	printf ("Test 00-a: all threads working started_threads=%d, waiting_threads=%d, pending_tasks=%d\n",
+		started_threads, waiting_threads, pending_tasks);
+
+	/* now synchronize with threads */
+	printf ("Test 00-a: sending stop signals..\n");
+	vortex_async_queue_push (queue, INT_TO_PTR (1));
+	vortex_async_queue_push (queue, INT_TO_PTR (1));
+	vortex_async_queue_push (queue, INT_TO_PTR (1));
+	vortex_async_queue_push (queue, INT_TO_PTR (1));
+	vortex_async_queue_push (queue, INT_TO_PTR (1));
+
+	temp = vortex_async_queue_new ();
+
+	/* wait until there are 5 waitiers */
+	iterator = 0;
+	while (iterator < 10) {
+		if (vortex_async_queue_waiters (queue) == 0)
+			break;
+		printf ("Test 00-a waiting, still not enough waiters: %d\n", 
+			vortex_async_queue_waiters (queue));
+		/* get stats from the master ctx */
+		vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+		printf ("Test 00-a:   values started_threads=%d, waiting_threads=%d, pending_tasks=%d\n",
+			started_threads, waiting_threads, pending_tasks);
+		vortex_async_queue_timedpop (temp, 1000);
+		iterator++;
+	}
+
+	vortex_async_queue_unref (temp);
+
+	vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+	printf ("Test 00-a: all threads stopped started_threads=%d, waiting_threads=%d, pending_tasks=%d\n",
+		started_threads, waiting_threads, pending_tasks);
+
+	/* lock until no waiter is reading */
+	vortex_async_queue_unref (queue);
+
+	return axl_true;
+}
+
 axl_bool  test_01 (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
@@ -8406,7 +8535,7 @@ int main (int  argc, char ** argv)
         printf ("**       valgrind or similar tools.\n");
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
-	printf ("**       Test available: test_00, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
+	printf ("**       Test available: test_00, test_00a, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
 	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
@@ -8530,6 +8659,9 @@ int main (int  argc, char ** argv)
 
 		if (axl_cmp (run_test_name, "test_00"))
 			run_test (test_00, "Test 00", "Async Queue support", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_00a"))
+			run_test (test_00a, "Test 00-a", "Thread pool stats", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_01"))
 			run_test (test_01, "Test 01", "basic BEEP support", -1, -1);
@@ -8722,6 +8854,8 @@ int main (int  argc, char ** argv)
 	printf ("**\n");
 
  	run_test (test_00, "Test 00", "Async Queue support", -1, -1);
+
+ 	run_test (test_00a, "Test 00-a", "Thread pool stats", -1, -1);
   
  	run_test (test_01, "Test 01", "basic BEEP support", -1, -1);
   
