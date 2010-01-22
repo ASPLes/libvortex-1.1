@@ -475,30 +475,14 @@ void vortex_thread_pool_set_num             (int  number)
  **/
 int  vortex_thread_pool_get_num             (void)
 {
-#if defined(AXL_OS_WIN32) && ! defined(__GNUC__)
-	char * temp;
-	int    requiredSize;
-#endif
 	int  value;
 
 	/* get the number of threads to start */
 	value = vortex_support_getenv_int ("VORTEX_THREADS");
 
-	if (value == 0)
+	/* set as default value 5 if 0 or lower threads are returned */
+	if (value <= 0)
 		return 5;
-#if defined(AXL_OS_WIN32) && ! defined(__GNUC__)
-	getenv_s( &requiredSize, NULL, 0, "HOME");
-	temp = axl_new (char, requiredSize + 1);
-	getenv_s( &requiredSize, temp, requiredSize, "HOME" );
-	value = atoi (temp);
-	axl_free (temp);
-#else
-	value = atoi (getenv ("VORTEX_THREADS"));
-#endif
-	if (value <= 0) {
-		exit (-1);
-	} /* end if */
-	
 	return value;
 }
 
