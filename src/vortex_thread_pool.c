@@ -46,6 +46,7 @@
 struct _VortexThreadPool {
 	/* new tasks to be procesed */
 	VortexAsyncQueue * queue;
+	VortexMutex        mutex;
 	
 	/* list of threads */
 	axlList          * threads;
@@ -78,7 +79,7 @@ axlPointer __vortex_thread_pool_dispatcher (axlPointer data)
 	vortex_log (VORTEX_LEVEL_DEBUG, "thread from pool started");
 
 	/* get a reference to the queue, waiting for the next work */
-	while (1) {
+	while (axl_true) {
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "--> thread from pool waiting for jobs");
 		/* get next task to process */
@@ -157,7 +158,6 @@ void vortex_thread_pool_init     (VortexCtx * ctx,
 {
 	/* get current context */
 	VortexThread * thread;
-	int          iterator;
 	vortex_log (VORTEX_LEVEL_DEBUG, "creating thread pool threads=%d", max_threads);
 
 	/* create the thread pool and its internal values */
@@ -186,10 +186,37 @@ void vortex_thread_pool_init     (VortexCtx * ctx,
 	if (ctx->thread_pool->queue != NULL)
 		vortex_async_queue_release (ctx->thread_pool->queue);
 	ctx->thread_pool->queue       = vortex_async_queue_new ();
+
+	/* init mutex */
+	vortex_mutex_create (&(ctx->thread_pool->mutex));
 	
 	/* init all threads required */
+	vortex_thread_pool_add (ctx, max_threads);
+	return;
+}
+
+/** 
+ * @brief Allows to increase the thread pool running on the provided
+ * context with the provided amount of threads.
+ *
+ * @param ctx The context where the thread pool to modify will be increased.
+ * @param threads The amount of threads to add into the pool.
+ *
+ */
+void vortex_thread_pool_add                 (VortexCtx        * ctx, 
+					     int                threads)
+{
+	int            iterator;
+	VortexThread * thread;
+
+	v_return_if_fail (ctx);
+	v_return_if_fail (threads > 0);
+
+	/* lock the thread pool */
+	vortex_mutex_lock (&(ctx->thread_pool->mutex));
+
 	iterator = 0;
-	while (iterator < max_threads) {
+	while (iterator < threads) {
 		/* create the thread */
 		thread = axl_new (VortexThread, 1);
 		if (! vortex_thread_create (thread,
@@ -201,9 +228,9 @@ void vortex_thread_pool_init     (VortexCtx * ctx,
 					    VORTEX_THREAD_CONF_END)) {
 			/* free the reference */
 			vortex_thread_destroy (thread, axl_true);
-			
-			/* call to stop the thread pool */
-			vortex_thread_pool_exit (ctx);
+
+			/* (un)lock the thread pool */
+			vortex_mutex_unlock (&(ctx->thread_pool->mutex));
 			
 			vortex_log (VORTEX_LEVEL_CRITICAL, "unable to create a thread required for the pool");
 			return;
@@ -219,7 +246,10 @@ void vortex_thread_pool_init     (VortexCtx * ctx,
 		/* update the iterator */
 		iterator++;
 
-	} /* end if */
+	} /* end if */	
+
+	/* (un)lock the thread pool */
+	vortex_mutex_unlock (&(ctx->thread_pool->mutex));
 	return;
 }
 
@@ -256,6 +286,9 @@ void vortex_thread_pool_exit (VortexCtx * ctx)
 
 	/* unref the queue */
 	vortex_async_queue_unref (ctx->thread_pool->queue);
+
+	/* terminate mutex */
+	vortex_mutex_destroy (&ctx->thread_pool->mutex);
 
 	/* free the node itself */
 	axl_free (ctx->thread_pool);
@@ -348,6 +381,10 @@ void vortex_thread_pool_stats               (VortexCtx        * ctx,
 	/* check ctx reference */
 	if (ctx == NULL)
 		return;
+
+	/* lock the thread pool */
+	vortex_mutex_lock (&(ctx->thread_pool->mutex));
+
 	/* update values */
 	if (started_threads)
 		*started_threads = axl_list_length (ctx->thread_pool->threads);
@@ -355,6 +392,10 @@ void vortex_thread_pool_stats               (VortexCtx        * ctx,
 		*waiting_threads = vortex_async_queue_waiters (ctx->thread_pool->queue);
 	if (pending_tasks)
 		*pending_tasks = vortex_async_queue_items (ctx->thread_pool->queue);
+
+	/* lock the thread pool */
+	vortex_mutex_unlock (&(ctx->thread_pool->mutex));
+
 	return;
 }
 

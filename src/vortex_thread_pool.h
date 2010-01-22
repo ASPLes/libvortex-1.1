@@ -46,6 +46,8 @@ typedef struct _VortexThreadPool VortexThreadPool;
 
 void vortex_thread_pool_init                (VortexCtx * ctx, int  max_threads);
 
+void vortex_thread_pool_add                 (VortexCtx        * ctx, int threads);
+
 void vortex_thread_pool_exit                (VortexCtx * ctx);
 
 void vortex_thread_pool_being_closed        (VortexCtx * ctx);
