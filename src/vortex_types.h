@@ -660,15 +660,15 @@ typedef enum {
 	/** 
 	 * @brief Default value used to report that the encoding information should be ignored.
 	 */
-	EncodingUnknown,
+	EncodingUnknown = 1,
 	/** 
 	 * @brief No encoding was performed to the profile content data. 
 	 */
-	EncodingNone,
+	EncodingNone    = 2,
 	/** 
 	 * @brief The profile content data was encoded with Base64.
 	 */
-	EncodingBase64
+	EncodingBase64  = 3
 } VortexEncoding;
 
 

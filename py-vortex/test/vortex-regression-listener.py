@@ -94,6 +94,24 @@ def close_conn (channel_num, conn, data):
     conn.shutdown ()
     return False
 
+recorded_conn = None
+
+def record_conn (channel_num, conn, data):
+    # save connection
+    global recorded_conn
+    recorded_conn = conn
+    return True
+
+def close_recorded_conn (channel_num, conn, data):
+    # close previously recorded conn
+    global recorded_conn
+    if recorded_conn:
+        recorded_conn.shutdown ()
+        recorded_conn = None
+
+    # and return false for channel creation
+    return False
+
 def sasl_auth_handler (conn, auth_props, user_data):
     
     print ("Received request to complete auth process using profile: " + auth_props["mech"])
@@ -164,6 +182,10 @@ if __name__ == '__main__':
                              frame_received=frame_replies_ans)
     vortex.register_profile (ctx, REGRESSION_URI_START_CLOSE,
                              start=close_conn)
+    vortex.register_profile (ctx, REGRESSION_URI_RECORD_CONN,
+                             start=record_conn)
+    vortex.register_profile (ctx, REGRESSION_URI_CLOSE_RECORDED_CONN,
+                             start=close_recorded_conn)
     
     # enable sasl listener support
     vortex.sasl.accept_mech (ctx, "plain", sasl_auth_handler)
