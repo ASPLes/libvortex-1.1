@@ -163,18 +163,8 @@ void     vortex_log_enable       (VortexCtx * ctx, axl_bool      status)
 	if (ctx == NULL)
 		return;
 
-	if (status) {
-		/* enable the environment variable */
-		vortex_support_setenv ("VORTEX_DEBUG", "1");
-
-		/* flag the new value */
-		ctx->debug = axl_true;
-		
-	} else {
-		/* log disabled */
-		ctx->debug = axl_false;
-		vortex_support_unsetenv ("VORTEX_DEBUG");
-	}
+	ctx->debug         = status;
+	ctx->debug_checked = axl_true;
 	return;
 #else
 	/* just return */
@@ -204,16 +194,7 @@ void     vortex_log2_enable       (VortexCtx * ctx, axl_bool      status)
 	if (ctx == NULL)
 		return;
 
-	if (status) {
-		/* set the variable */
-		vortex_support_setenv ("VORTEX_DEBUG2", "1");
-		
-		/* flag the new value */
-		ctx->debug2 = axl_true;
-	} else {
-		ctx->debug2 = axl_false;
-		vortex_support_unsetenv ("VORTEX_DEBUG2");
-	}
+	ctx->debug2 = status;
 	return;
 #else
 	/* just return */
@@ -276,14 +257,7 @@ void     vortex_color_log_enable (VortexCtx * ctx, axl_bool      status)
 	if (ctx == NULL)
 		return;
 
-	if (status) {
-		/* set the new value */
-		vortex_support_setenv ("VORTEX_DEBUG_COLOR", "1");
-
-		/* flag the new value */
-		ctx->debug_color = axl_true;
-	} else
-		vortex_support_unsetenv ("VORTEX_DEBUG_COLOR");
+	ctx->debug_color = status;
 	return;
 #else
 	return;
@@ -657,7 +631,7 @@ void _vortex_log_common (VortexCtx        * ctx,
 	}
 
 	/* if not VORTEX_DEBUG FLAG, do not output anything */
-	if (!vortex_log_is_enabled (ctx)) {
+	if (! vortex_log_is_enabled (ctx)) {
 		return;
 	} /* end if */
 
