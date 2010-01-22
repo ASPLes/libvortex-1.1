@@ -421,12 +421,16 @@ axl_bool test_00b (void) {
 	test_ctx = vortex_ctx_new ();
 
 	/* set thread pool */
+	printf ("Test 00-b: Calling to set thread pool num..\n");
 	vortex_thread_pool_set_num (10);
-	
+	printf ("Test 00-b: configured thread pool initial num..\n");
+
 	/* call to init vortex */
 	if (! vortex_init_ctx (test_ctx)) {
 		return axl_false;
 	}
+
+	printf ("Test 00-b: vortex ctx started..doing test..\n");
 
 	queue = vortex_async_queue_new ();
 	while (tries > 0) {
