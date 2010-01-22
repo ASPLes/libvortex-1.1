@@ -114,7 +114,13 @@ static PyObject * py_vortex_channel_close (PyVortexChannel* self)
 
 	/* close the channel */
 	py_vortex_log (PY_VORTEX_DEBUG, "closing channel %d..", vortex_channel_get_number (self->channel));
+
+	/* allow threads */
+	Py_BEGIN_ALLOW_THREADS
 	result  = vortex_channel_close (self->channel, NULL);
+	/* end threads */
+	Py_END_ALLOW_THREADS
+
 	_result = Py_BuildValue ("i", result);
 	
 	return _result;
