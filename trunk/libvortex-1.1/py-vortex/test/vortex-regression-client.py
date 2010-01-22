@@ -1112,9 +1112,10 @@ def test_12_b ():
         error ("Failed to init Vortex context")
         return False
 
-    iterator = 10
+    iterator = 3
     while iterator > 0:
         # call to create a connection
+        info ("Test 12-b: registering connection to be closed...")
         conn = vortex.Connection (ctx, host, port)
 
         # check connection status after if 
@@ -1126,15 +1127,32 @@ def test_12_b ():
         queue = vortex.AsyncQueue ()
 
         # configure on close 
-        conn.set_on_close (test_12_a_closed, queue)
+        conn.set_on_close (test_12_b_closed, queue)
+
+        # start a channel to notify the connection to shutdown on next start
+        channel = conn.open_channel (0, REGRESSION_URI_RECORD_CONN)
+        if not channel:
+            error ("Test 12-b: (1) Expected proper channel creation..")
+            return False
+
+        # ok, now create a second different content and start a
+        # channel that will fail and will also close previous
+        # connection
+        info ("Test 12-b: creating second connection...")
+        conn2 = vortex.Connection (ctx, host, port)
+        if not conn2.is_ok ():
+            error ("Expected proper second connection creation..")
+            return False
 
         # start a channel that will be closed by listener
-        channel = conn.open_channel (0, REGRESSION_URI_START_CLOSE)
+        info ("Test 12-b: opening second channel......")
+        channel = conn2.open_channel (0, REGRESSION_URI_CLOSE_RECORDED_CONN)
         if channel:
             error ("Expected to find channel error creation, but found proper reference")
             return False
 
-        # check value from queue 
+        # check value from queue
+        info ("test 12-b: checking value from the queue..")
         value = queue.pop ()
         if value != 3:
             error ("Expected to find 3 but found" + str (value))
@@ -1738,7 +1756,7 @@ tests = [
     (test_11,   "Check BEEP listener support"),
     (test_12,   "Check connection on close notification"),
     (test_12_a, "Check connection on close notification (during channel start)"),
-    (test_12_b, "Check channel start after connection close"),
+    (test_12_b, "Check channel start during connection close notify"),
     (test_13,   "Check wrong listener allocation"),
     (test_14,   "Check SASL PLAIN support"),
     (test_15,   "Check SASL ANONYMOUS support"),

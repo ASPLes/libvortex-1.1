@@ -493,21 +493,27 @@ static PyObject * py_vortex_connection_open_channel (PyObject * self, PyObject *
 	PyObject           * py_channel;
 	VortexChannel      * channel;
 	int                  number;
-	const char         * profile;
-	PyObject           * frame_received      = NULL;
-	PyObject           * frame_received_data = NULL;
-
+	const char         * profile              = NULL;
+	PyObject           * frame_received       = NULL;
+	PyObject           * frame_received_data  = NULL;
+	const char         * profile_content      = NULL;
+	int                  profile_content_size = 0;
+	const char         * serverName           = NULL;
+	VortexEncoding       encoding             = EncodingUnknown;
+	
 	/* now parse arguments */
-	static char *kwlist[] = {"number", "profile", "frame_received", "frame_received_data", NULL};
+	static char *kwlist[] = {"number", "profile", "serverName", "frame_received", "frame_received_data", "encoding", "profile_content", NULL};
 
 	/* check if this is a listener connection that cannot provide
 	   this service */
 	PY_VORTEX_CONNECTION_CHECK_NOT_ROLE(self, VortexRoleMasterListener, "open_channel");
 
 	/* parse and check result */
-	if (! PyArg_ParseTupleAndKeywords(args, kwds, "is|OO", kwlist, &number, &profile, 
+	if (! PyArg_ParseTupleAndKeywords(args, kwds, "is|sOOis", kwlist, &number, &profile, 
 					  /* optional parameters */
-					  &frame_received, &frame_received_data)) {
+					  &serverName, 
+					  &frame_received, &frame_received_data, 
+					  &encoding, &profile_content)) {
 		return NULL;
 	}
 
@@ -530,18 +536,30 @@ static PyObject * py_vortex_connection_open_channel (PyObject * self, PyObject *
 		}
 	} /* end if */
 
+	/* update profile content size if provided by the user */
+	if (profile_content != NULL)
+		profile_content_size = strlen (profile_content);
+
+	/* allow threads */
+	Py_BEGIN_ALLOW_THREADS
+
 	/* now try to create the channel */
-	channel = vortex_channel_new (
+	channel = vortex_channel_new_full (
 		/* pass the BEEP connection */
-		PY_CONN_GET(self), 
-		/* channel number and profile */
-		number, profile,
+		((PyVortexConnection *)self)->conn, 
+		/* channel number, serverName and profile */
+		number, serverName, profile,
+		/* profile content to be send on first request */
+		encoding, profile_content, profile_content_size,
 		/* close handler */
 		NULL, NULL, 
 		/* frame received handler */
 		frame_received ? py_vortex_channel_received : NULL, py_channel,
 		/* on channel created */
 		NULL, NULL);
+
+	/* reacquire again thread execution */
+	Py_END_ALLOW_THREADS
 
 	/* check for error found */
 	if (channel == NULL) {

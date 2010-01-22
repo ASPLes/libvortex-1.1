@@ -15,6 +15,9 @@ status_CONNECTION_FORCED_CLOSE     = 13
 status_PROTOCOL_ERROR              = 14
 status_CONNECTION_FILTERED         = 15
 
+# profile encoding
+encoding_NONE = 2
+encoding_BASE = 3
 
 # only import base library
 from libpy_vortex_11 import *
