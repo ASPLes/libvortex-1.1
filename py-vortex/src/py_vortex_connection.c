@@ -155,6 +155,9 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 			return NULL;
 		}
 
+		/* allow threads */
+		Py_BEGIN_ALLOW_THREADS
+
 		/* create the vortex connection in a blocking manner */
 		if (serverName)
 			self->conn = vortex_connection_new_full (py_vortex_ctx_get (py_vortex_ctx),
@@ -163,6 +166,9 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 								 NULL, NULL);
 		else
 			self->conn = vortex_connection_new (py_vortex_ctx_get (py_vortex_ctx), host, port, NULL, NULL);
+
+		/* end threads */
+		Py_END_ALLOW_THREADS
 
 		/* own a copy of py_vortex_ctx */
 		self->py_vortex_ctx = py_vortex_ctx;
@@ -205,7 +211,12 @@ static void py_vortex_connection_dealloc (PyVortexConnection* self)
 		py_vortex_log (PY_VORTEX_DEBUG, "shutting down BEEP session associated at connection finalize id: %d (connection is ok, and close_ref is activated, refs: %d)", 
 			       vortex_connection_get_id (self->conn),
 			       vortex_connection_ref_count (self->conn));
+		/* allow threads */
+		Py_BEGIN_ALLOW_THREADS
 		vortex_connection_shutdown (self->conn);
+		/* end threads */
+		Py_END_ALLOW_THREADS
+
 		ref_count = vortex_connection_ref_count (self->conn);
 		vortex_connection_unref (self->conn, "py_vortex_connection_dealloc when is ok");
 		py_vortex_log (PY_VORTEX_DEBUG, "ref count after close: %d", ref_count - 1);
@@ -308,11 +319,19 @@ static PyObject * py_vortex_connection_close (PyVortexConnection* self)
 		py_vortex_log (PY_VORTEX_DEBUG, "shutting down working master listener connection id=%d", 
 			       vortex_connection_get_id (self->conn));
 		result = axl_true;
+		/* allow threads */
+		Py_BEGIN_ALLOW_THREADS
 		vortex_connection_shutdown (self->conn);
+		/* end threads */
+		Py_END_ALLOW_THREADS
 	} else  {
 		py_vortex_log (PY_VORTEX_DEBUG, "closing connection id=%d (role: %s)", 
 			       vortex_connection_get_id (self->conn), str_role);
+		/* allow threads */
+		Py_BEGIN_ALLOW_THREADS
 		result  = vortex_connection_close (self->conn);
+		/* end threads */
+		Py_END_ALLOW_THREADS
 	} /* end if */
 	_result = Py_BuildValue ("i", result);
 
@@ -338,8 +357,12 @@ PyObject * py_vortex_connection_shutdown (PyVortexConnection* self)
 	py_vortex_log (PY_VORTEX_DEBUG, "calling to shutdown connection id: %d, self: %p",
 		       vortex_connection_get_id (self->conn), self);
 
+	/* allow threads */
+	Py_BEGIN_ALLOW_THREADS
 	/* shut down the connection */
 	vortex_connection_shutdown (self->conn);
+	/* end threads */
+	Py_END_ALLOW_THREADS
 
 	/* return none */
 	Py_INCREF (Py_None);
