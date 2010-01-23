@@ -13,10 +13,17 @@ Module API
 
 .. class:: Connection (ctx, host, port [, serverName])
 
-   :param ctx: (vortex.Ctx) Vortex context where the connection will be created.
-   :param host: (String) Host to connect to.
-   :param port: (String) Port to connect to.
-   :param serverName: (String) Optional serverName value to ask for this channel. This value will change automatic behaviour notifying the provided serverName on next channel start request. 
+   :param ctx: Vortex context where the connection will be created.
+   :param type: vortex.Ctx
+
+   :param host: Host to connect to.
+   :type host: String
+
+   :param port: Port to connect to.
+   :type port: String
+
+   :param serverName: Optional serverName value to ask for this channel. This value will change automatic behaviour notifying the provided serverName on next channel start request. 
+   :type serverName: String
 
    .. method:: is_ok ()
 
@@ -24,7 +31,7 @@ Module API
 
       :rtype: True if the connection is ready, otherwise False is returned.
 
-   .. method:: open_channel (number, profile, [frame_received], [frame_received_data])
+   .. method:: open_channel (number, profile, [frame_received], [frame_received_data], [encoding], [profile_content])
    
       Allows to create a new BEEP channel under the provided connection. The method receives two mandatory arguments channel number and profile.       
 
@@ -36,6 +43,15 @@ Module API
 
       :param frame_received: The handler to be configured on this channel to handle frame reception. 
       :type  frame_received: :ref:`frame-received-handler`.
+
+      :param frame_received: The handler to be configured on this channel to handle frame reception. 
+      :type  frame_received: :ref:`frame-received-handler`.
+
+      :param encoding: The type of encoding used for profile_content. This is optional and if not provided, encoding_NONE will be assumed. 
+      :type  encoding: Integer. Valid values are vortex.encoding_NONE and vortex.encoding_BASE64
+
+      :param profile_content: The profile channel start connect to be sent.
+      :type  profile_content: String. Content codified as signaled by encoding param.
 
       The following is an code example of a frame_received handler::
 

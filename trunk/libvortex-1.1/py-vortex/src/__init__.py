@@ -17,7 +17,7 @@ status_CONNECTION_FILTERED         = 15
 
 # profile encoding
 encoding_NONE = 2
-encoding_BASE = 3
+encoding_BASE64 = 3
 
 # only import base library
 from libpy_vortex_11 import *
