@@ -256,7 +256,7 @@ void     vortex_color_log_enable (VortexCtx * ctx, axl_bool      status)
 	/* no context, no log */
 	if (ctx == NULL)
 		return;
-
+	ctx->debug_color_checked = status;
 	ctx->debug_color = status;
 	return;
 #else
