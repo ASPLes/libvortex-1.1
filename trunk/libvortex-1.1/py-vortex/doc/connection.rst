@@ -100,6 +100,25 @@ Module API
 
       :rtype: Returns a list of channels running the provided profile.
 
+   .. method:: set_data (key, object)
+   
+      Allows to store arbitrary references associated to the connection. See also get_data.
+
+      :param key: The key index to which the data gets associated.
+      :type  key: String
+
+      :param object: The object to store associated on the connection index by the given key.
+      :type  object: Object
+
+   .. method:: get_data (key)
+   
+      Allows to retreive a previously stored object using set_data
+
+      :param key: The index for the object looked up
+      :type  key: String
+
+      :rtype: Returns the object stored or None if fails. 
+
    .. method:: close ()
    
       Allows to close the connection using full BEEP close negotation procotol. Keep in mind that using full BEEP close procedure may suffer from BNRA (see http://www.aspl.es/vortex/draft-brosnan-beep-limit-close.txt). It is recommended to use shutdown method.

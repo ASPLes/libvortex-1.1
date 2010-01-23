@@ -250,6 +250,58 @@ def test_03 ():
 
     return True
 
+# test connection shutdown before close.
+def test_03_a ():
+    # call to initialize a context 
+    ctx = vortex.Ctx ()
+    
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # call to create a connection
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # set some data
+    conn.set_data ('value', 1)
+    conn.set_data ('value2', 2)
+    conn.set_data ('boolean', True)
+
+    # now set a connection to also check it is released
+    conn2 = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn2.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    conn.set_data ('conn', conn2)
+
+    # recover data
+    if conn.get_data ('value') != 1:
+        error ("Expected to find value == 1 but found: " + str (conn.get_data ('value')))
+        return False
+    if conn.get_data ('value2') != 2:
+        error ("Expected to find value2 == 2 but found: " + str (conn.get_data ('value2')))
+        return False
+    if not conn.get_data ('boolean'):
+        error ("Expected to find boolean == True but found: " + str (conn.get_data ('boolean')))
+        return False
+
+    conn3 = conn.get_data ('conn')
+
+    # check conn references
+    if conn2.id != conn3.id:
+        error ("Expected to find same connection references but found they differs: " + str (conn2.id) + " != " + str (conn3.id))
+
+    return True
+
 # create a channel
 def test_04 ():
     # call to initialize a context 
@@ -1744,6 +1796,7 @@ tests = [
     (test_01,   "Check PyVortex context initialization"),
     (test_02,   "Check PyVortex basic BEEP connection"),
     (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
+    (test_03_a, "Check PyVortex connection set data"),
     (test_04,   "Check PyVortex basic BEEP channel creation"),
     (test_05,   "Check BEEP basic data exchange"),
     (test_06,   "Check BEEP check several send operations (serialize)"),

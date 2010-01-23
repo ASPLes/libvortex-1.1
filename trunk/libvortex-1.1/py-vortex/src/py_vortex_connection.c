@@ -784,6 +784,57 @@ static PyObject * py_vortex_connection_find_by_uri (PyObject * self, PyObject * 
 	return result;
 }
 
+static PyObject * py_vortex_connection_set_data (PyVortexConnection * self, PyObject * args)
+{
+	const char  * key = NULL; 
+	PyObject    * obj = NULL;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "sO", &key, &obj)) 
+		return NULL;
+	
+	/* check key to not be NULL or empty */
+	if (key == NULL || strlen (key) == 0) {
+		PyErr_Format (PyExc_ValueError, "Key data index is NULL or empty, this is not allowed.");
+		return NULL;
+	} /* end if */
+	
+	/* increment object ref count */
+	Py_INCREF (obj);
+
+	/* store in the connection */
+	vortex_connection_set_data_full (self->conn, axl_strdup (key), obj, axl_free, (axlDestroyFunc) py_vortex_decref);
+
+	/* done, return ok */
+	Py_INCREF (Py_None);
+	return Py_None;
+}
+
+static PyObject * py_vortex_connection_get_data (PyVortexConnection * self, PyObject * args)
+{
+	const char  * key = NULL; 
+	PyObject    * obj = NULL;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "s", &key)) 
+		return NULL;
+	
+	/* check key to not be NULL or empty */
+	if (key == NULL || strlen (key) == 0) {
+		PyErr_Format (PyExc_ValueError, "Key data index is NULL or empty, this is not allowed.");
+		return NULL;
+	} /* end if */
+	
+	/* get the reference */
+	obj = vortex_connection_get_data (self->conn, key);
+	if (obj == NULL)
+		obj = Py_None;
+
+	/* return the object reference */
+	Py_INCREF (obj);
+	return obj;
+}
+
 static PyMethodDef py_vortex_connection_methods[] = { 
 	/* is_ok */
 	{"is_ok", (PyCFunction) py_vortex_connection_is_ok, METH_NOARGS,
@@ -812,6 +863,10 @@ static PyMethodDef py_vortex_connection_methods[] = {
 	/* decref */
 	{"decref", (PyCFunction) py_vortex_connection_decref, METH_NOARGS,
 	 "Allows to decrement reference counting of the python object (vortex.Connection) holding the connection."},
+	{"set_data", (PyCFunction) py_vortex_connection_set_data, METH_VARARGS,
+	 "Allows to sent arbitary object references index by a name associated to the connection. This API is set on top vortex_connection_set_data_full."},
+	{"get_data", (PyCFunction) py_vortex_connection_get_data, METH_VARARGS,
+	 "Allows to retrieve arbitary object references index by a name associated to the connection that were configured with Connection.set_data. This API is set on top vortex_connection_set_data_full."},
  	{NULL}  
 }; 
 
