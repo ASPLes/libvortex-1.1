@@ -260,15 +260,11 @@ axl_bool  py_vortex_profile_start  (int                channel_num,
 		start_data = Py_None;
 
 	/* create a PyVortexConnection instance */
-	py_conn  = py_vortex_connection_create (
+	py_conn  = py_vortex_connection_find_reference (
 		/* connection to wrap */
 		conn, 
 		/* context: create a copy */
-		py_ctx,
-		/* acquire a reference to the connection */
-		axl_true,  
-		/* do not close the connection when the reference is collected, close_ref=axl_false */
-		axl_false);
+		py_ctx);
 
 	/* create a tuple to contain arguments */
 	args = PyTuple_New (3);
@@ -354,15 +350,11 @@ void py_vortex_profile_frame_received (VortexChannel    * channel,
 	if (frame_received_data == NULL)
 		frame_received_data = Py_None;
 
-	py_conn  = py_vortex_connection_create (
+	py_conn  = py_vortex_connection_find_reference (
 		/* connection to wrap */
 		conn, 
 		/* context: create a copy */
-		py_ctx,
-		/* acquire a reference to the connection */
-		axl_true,  
-		/* do not close the connection when the reference is collected, close_ref=axl_false */
-		axl_false);
+		py_ctx);
 
 	/* create the channel */
 	py_channel = py_vortex_channel_create (channel, py_conn);

@@ -960,6 +960,128 @@ def test_10_b ():
 
     return True
 
+def test_10_c_on_channel (number, channel, conn,  queue):
+
+    info ("Received async channel notification, number: " + str (number) )
+    queue.push (channel)
+    return
+
+def test_10_c ():
+    # create a context
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    queue = vortex.AsyncQueue ()
+
+    # create connection
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status
+    if not conn.is_ok ():
+        error ("Expected to find connection status ok, but found a failure: " + conn.status_msg)
+        return False
+
+    # ok now create channel without waiting
+    conn.open_channel (0, REGRESSION_URI, on_channel=test_10_c_on_channel, on_channel_data=queue)
+
+    # wait for response
+    channel = queue.pop ()
+
+    # check channel value here and send some content
+    info ("Channel received in main thread: " + str (channel.number))
+
+    # send the message
+    message = "This is a test message after async channel notification"
+    iterator = 0
+    channel.set_frame_received (vortex.queue_reply, queue)
+    while iterator < 10:
+        channel.send_msg (message, len (message))
+
+        # now get a frame
+        frame = channel.get_reply (queue)
+        if not frame:
+            error ("Expected to find frame reply but found None reference")
+            return False
+        
+        if frame.payload != message:
+            error ("Expected to receive different message but found: " + frame.payload + ", rather: " + message)
+            return False
+
+        # next position
+        iterator += 1
+
+    # NOTE: the test do not close conn or channe (this is intentional)
+
+    return True
+
+def test_10_d ():
+    # create a context
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    queue = vortex.AsyncQueue ()
+
+    # create connection
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status
+    if not conn.is_ok ():
+        error ("Expected to find connection status ok, but found a failure: " + conn.status_msg)
+        return False
+
+    # ok now create channel without waiting
+    conn.open_channel (0, REGRESSION_URI_DENY_SUPPORTED, on_channel=test_10_c_on_channel, on_channel_data=queue)
+
+    # wait for response
+    channel = queue.pop ()
+
+    # check channel value here and send some content
+    if channel:
+        error ("Expected to find None value at channel reference..")
+        return False
+
+    # ok check again connection and create a channel
+    if not conn.is_ok ():
+        error ("Expected to find connection properly created..")
+        return False
+
+    channel = conn.open_channel (0, REGRESSION_URI)
+    if not channel:
+        error ("Expected to find proper channel..")
+        return False
+
+    # send some data
+    iterator = 0
+    channel.set_frame_received (vortex.queue_reply, queue)
+    message = "This is a test at channel error expected.."
+    while iterator < 10:
+        channel.send_msg (message, len (message))
+
+        # now get a frame
+        frame = channel.get_reply (queue)
+        if not frame:
+            error ("Expected to find frame reply but found None reference")
+            return False
+        
+        if frame.payload != message:
+            error ("Expected to receive different message but found: " + frame.payload + ", rather: " + message)
+            return False
+
+        # next position
+        iterator += 1
+
+    # NOTE: the test do not close conn or channe (this is intentional)
+
+    return True
+
 def test_11 ():
     # create a context
     ctx = vortex.Ctx ()
@@ -1214,6 +1336,119 @@ def test_12_b ():
         iterator -= 1
 
     return True
+
+def test_12_c_conn_closed (conn, queue):
+    info ("Received connection close, pushing reference to main thread")
+    queue.push (conn)
+    return
+
+def test_12_c_on_channel (number, channel, conn, data):
+    info ("Received expected channel start failure..")
+    return
+
+def test_12_c_create_conn (ctx, queue):
+    conn = vortex.Connection (ctx, host, port)
+    if not conn.is_ok ():
+        error ("Expected proper connection created..")
+        return False
+
+    # set connection close
+    conn.set_on_close (test_12_c_conn_closed, queue)
+
+    # now create a channel
+    conn.open_channel (0, REGRESSION_URI_START_CLOSE, on_channel=test_12_c_on_channel)
+    info ("Finished connection and channel start requests..")
+    return
+
+def test_12_c ():
+    # create a context
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    queue = vortex.AsyncQueue ()
+    
+    # now create a connection inside a function that finishes
+    test_12_c_create_conn (ctx, queue)
+
+    info ("receiving connection from connection close..")
+    conn = queue.pop ()
+
+    info ("Waiting two seconds..")
+    time.sleep (2)
+
+    # check internal references
+    if conn.id == -1:
+        error ("Error, expected to find valid connection id identifier")
+        return False
+
+    info ("Ok, received connection reference with id: " + str (conn.id))
+    return True
+
+def test_12_d_on_close (conn, queue):
+    info ("Received connection close with id: " + str (conn.id))
+    queue.push (conn)
+    return
+    
+
+def test_12_d_frame_received (conn, channel, frame, queue):
+    # ok, set on close handler
+    info ("Received frame received, setting on close notification..")
+    conn.set_on_close (test_12_d_on_close, queue)
+    return
+
+def test_12_d ():
+    # create a context
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # create a listener
+    listener = vortex.create_listener (ctx, "127.0.0.1", "0")
+    if not listener.is_ok ():
+        error ("Expected to find proper listener creation but found a failure..")
+        return False
+
+    queue = vortex.AsyncQueue ()
+    vortex.register_profile (ctx, "urn:beep:aspl.es:profiles:test_12_d",
+                             frame_received=test_12_d_frame_received,
+                             frame_received_data=queue)
+
+    # ok, now create a connection to this listener
+    conn = vortex.Connection (ctx, "127.0.0.1", listener.port)
+    if not conn.is_ok ():
+        error ("Expected proper connection create but failure found..")
+        return False
+
+    # ok, now create a channel and send a message
+    channel = conn.open_channel (0, "urn:beep:aspl.es:profiles:test_12_d")
+    if not channel:
+        error ("Expected proper channel creation..")
+        return False
+
+    # send a message to record the channel
+    channel.send_msg ("this is a test", 14)
+
+    info ("Waiting 2 seconds to close connection..")
+    time.sleep (1);
+    conn.shutdown ()
+
+    info ("Waiting connection from queue")
+    conn2 = queue.pop ()
+
+    if conn2.id == -1 or conn.id == -1:
+        error ("Expected to connection id values different from -1 but found: " + str (conn.id) + " != " + str (conn2.id))
+        return False
+
+    info ("connection matches..")
+    return True
+    
 
 def test_13():
     # create a context
@@ -1806,10 +2041,14 @@ tests = [
     (test_10,   "Check BEEP channel creation deny"),
     (test_10_a, "Check BEEP channel creation deny"),
     (test_10_b, "Check reference counting on async notifications"),
+    (test_10_c, "Check async channel start notification"),
+    (test_10_d, "Check async channel start notification (failure expected)"),
     (test_11,   "Check BEEP listener support"),
     (test_12,   "Check connection on close notification"),
     (test_12_a, "Check connection on close notification (during channel start)"),
     (test_12_b, "Check channel start during connection close notify"),
+    (test_12_c, "Check close notification for conn refs not owned by caller"),
+    (test_12_d, "Check close notification for conn refs at listener"),
     (test_13,   "Check wrong listener allocation"),
     (test_14,   "Check SASL PLAIN support"),
     (test_15,   "Check SASL ANONYMOUS support"),

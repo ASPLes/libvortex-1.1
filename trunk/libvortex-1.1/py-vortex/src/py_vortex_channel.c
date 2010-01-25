@@ -52,6 +52,10 @@ struct _PyVortexChannel {
 	/* frame received handler and data */
 	PyObject           * frame_received;
 	PyObject           * frame_received_data;
+
+	/* @internal Reference to on channel created notify handler. */
+	PyObject       * on_channel;
+	PyObject       * on_channel_data;
 };
 
 static int py_vortex_channel_init_type (PyVortexChannel *self, PyObject *args, PyObject *kwds)
@@ -257,6 +261,86 @@ axl_bool  py_vortex_channel_configure_frame_received  (PyVortexChannel * self, P
 		vortex_channel_set_received_handler (self->channel, py_vortex_channel_received, self);
 
 	return axl_true;
+}
+
+/** 
+ * @internal Allows to configure async channel creation notification
+ * on the provided PyVortexChannel reference.
+ */
+axl_bool        py_vortex_channel_set_on_channel (PyObject * _channel,
+						  PyObject * handler,
+						  PyObject * data)
+{
+	PyVortexChannel * py_channel = (PyVortexChannel *) _channel;
+	if (handler == NULL)
+		return axl_true;
+
+	py_channel->on_channel = handler;
+	Py_INCREF (handler);
+	
+	py_channel->on_channel_data = data;
+	if (data == NULL) 
+		py_channel->on_channel_data = Py_None;
+	Py_INCREF (py_channel->on_channel_data);
+
+	return axl_true;
+}
+
+
+/** 
+ * @internal Support function used to implement async channel create
+ * notification.
+ */
+void            py_vortex_channel_create_notify  (int                channel_num,
+						  VortexChannel    * channel,
+						  VortexConnection * conn,
+						  axlPointer         user_data)
+{
+	PyVortexChannel    * py_channel = user_data;
+	PyGILState_STATE     state;
+	PyObject           * args;
+	PyObject           * result;
+
+	/* acquire the GIL */
+	state = PyGILState_Ensure();
+
+	/* create a tuple to contain arguments */
+	args = PyTuple_New (4);
+
+	/* set parameters */
+	PyTuple_SetItem (args, 0, Py_BuildValue ("i", channel_num));
+	if (channel == NULL) {
+		Py_INCREF (Py_None);
+		PyTuple_SetItem (args, 1, Py_None);
+	} else {
+		/* set the channel into the refernce */
+		py_vortex_channel_set (py_channel, channel);
+		PyTuple_SetItem (args, 1, __PY_OBJECT (py_channel));
+	} /* end if */
+
+	Py_INCREF (py_channel->py_conn);
+	PyTuple_SetItem (args, 2, py_channel->py_conn);
+
+	/* now setup user defined on channel data */
+	PyTuple_SetItem (args, 3, py_channel->on_channel_data);
+	py_channel->on_channel_data = NULL;
+	
+	/* now invoke */
+	result = PyObject_Call (py_channel->on_channel, args, NULL);
+	Py_DECREF (py_channel->on_channel);
+
+	/* release tuple and result returned (which may be null) */
+	Py_DECREF (args);
+	Py_XDECREF (result);
+
+	/* check check to finish py channel ref in case of failure */
+	if (channel == NULL) {
+		Py_DECREF (py_channel);
+	}
+
+	/* release the GIL */
+	PyGILState_Release(state);
+	return;
 }
 
 static PyObject * py_vortex_channel_set_frame_received (PyVortexChannel * self, PyObject * args, PyObject * kwds)
