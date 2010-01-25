@@ -31,7 +31,7 @@ Module API
 
       :rtype: True if the connection is ready, otherwise False is returned.
 
-   .. method:: open_channel (number, profile, [frame_received], [frame_received_data], [encoding], [profile_content])
+   .. method:: open_channel (number, profile, [frame_received], [frame_received_data], [encoding], [profile_content], [on_channel], [on_channel_data])
    
       Allows to create a new BEEP channel under the provided connection. The method receives two mandatory arguments channel number and profile.       
 
@@ -44,15 +44,6 @@ Module API
       :param frame_received: The handler to be configured on this channel to handle frame reception. 
       :type  frame_received: :ref:`frame-received-handler`.
 
-      :param frame_received: The handler to be configured on this channel to handle frame reception. 
-      :type  frame_received: :ref:`frame-received-handler`.
-
-      :param encoding: The type of encoding used for profile_content. This is optional and if not provided, encoding_NONE will be assumed. 
-      :type  encoding: Integer. Valid values are vortex.encoding_NONE and vortex.encoding_BASE64
-
-      :param profile_content: The profile channel start connect to be sent.
-      :type  profile_content: String. Content codified as signaled by encoding param.
-
       The following is an code example of a frame_received handler::
 
           def received_content (conn, channel, frame, data):
@@ -61,6 +52,18 @@ Module API
 
       :param frame_received_data: User defined data to be passed to frame_received handler along with corresponding handler parameters.
       :type  frame_received_data: Object
+
+      :param encoding: The type of encoding used for profile_content. This is optional and if not provided, encoding_NONE will be assumed. 
+      :type  encoding: Integer. Valid values are vortex.encoding_NONE and vortex.encoding_BASE64
+
+      :param profile_content: The profile channel start connect to be sent.
+      :type  profile_content: String. Content codified as signaled by encoding param.
+
+      :param on_channel: Optional handler that activates async channel create. If this handler is defined the method will return inmediately and channel creation will continue in background. Once finished the process (no matter the result) the channel will be notified on this handler (on_channel).
+      :type  on_channel: :ref:`on-channel-handler`.
+
+      :param on_channel_data: User defined data to be passed to on_channel handler along with corresponding handler parameters.
+      :type  on_channel_data: Object
 
       :rtype: Returns a new reference to vortex.Channel or None if the method fails. 
 
