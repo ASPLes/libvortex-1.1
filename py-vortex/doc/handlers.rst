@@ -40,6 +40,23 @@ to cancel close operation. Its signature is the following::
 
 .. _frame-received-handler:
 
+==================
+On channel handler
+==================
+
+This handler is executed when an async channel creation was requested
+(at vortex.Connection.open_channel). The handler receives the channel
+created or None reference if a failure was found. Here is an example::
+
+    def on_channel (number, channel, conn, data):
+    	# number: of the channel number that was created. In case of failure -1 is received.
+	# channel: is the vortex.Channel reference created or None if it failed.
+	# conn: the connection where the channel was created
+	# data: user defined data (set at open_channel)
+	return
+
+.. _on-channel-handler:
+
 ======================
 Frame received handler
 ======================
