@@ -69,4 +69,13 @@ axl_bool        py_vortex_channel_configure_frame_received (PyVortexChannel * se
 							    PyObject        * handler, 
 							    PyObject        * data);
 
+void            py_vortex_channel_create_notify  (int                channel_num,
+						  VortexChannel    * channel,
+						  VortexConnection * conn,
+						  axlPointer         user_data);
+
+axl_bool        py_vortex_channel_set_on_channel (PyObject * _channel,
+						  PyObject * handler,
+						  PyObject * data);
+
 #endif
