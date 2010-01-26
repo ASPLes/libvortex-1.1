@@ -171,6 +171,23 @@ void frame_received (VortexChannel    * channel,
 	return;
 }
 
+void simple_ans_nul_reply (VortexChannel    * channel,
+			   VortexConnection * connection,
+			   VortexFrame      * frame,
+			   axlPointer         user_data)
+{
+	int iterator = 0;
+
+	while (iterator < 10) {
+		
+		
+		/* next reply */
+		iterator++;
+	}
+
+	return;
+}
+
 /** 
  * @internal Frame received handler used to check wrong reply order
  * support.
@@ -1276,6 +1293,12 @@ int main (int  argc, char ** argv)
 				  NULL, NULL, 
 				  NULL, NULL,
 				  frame_received_replies, NULL);
+
+	/* register profile to test ANS/NUL replies */
+	vortex_profiles_register (ctx, REGRESSION_URI_SIMPLE_ANS_NUL,
+				  NULL, NULL,
+				  NULL, NULL,
+				  simple_ans_nul_reply, NULL);
 
 	/* register the profile used to test ANS/NUL replies */
 	vortex_profiles_register (ctx, REGRESSION_URI_4,

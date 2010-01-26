@@ -5256,6 +5256,22 @@ axl_bool  test_03b (void) {
 	return axl_true;
 }
 
+axl_bool  test_03c (void) {
+	
+	VortexConnection   * connection;
+	VortexChannel      * channel;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+	
+	vortex_connection_close (connection);
+	return axl_true;
+}
+
 /* constant for test_04 */
 #define MAX_NUM_CON 1000
 
@@ -8651,7 +8667,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_02, test_02a, test_02a1, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, \n");
- 	printf ("**                       test_03, test_03a, test_03b, test_04, test_04a, test_04b, test_04c, \n");
+ 	printf ("**                       test_03, test_03a, test_03b, test_03c, test_04, test_04a, test_04b, test_04c, \n");
  	printf ("**                       test_05, test_05a, test_05b, test_06, test_06a, test_07, test_08, test_09, test_10, \n");
  	printf ("**                       test_11, test_12, test_13, test_14, test_14a, test_14b, test_14c\n");
  	printf ("**                       test_14d, test_15, test_15a\n");
@@ -8876,6 +8892,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_03b"))
 			run_test (test_03b, "Test 03-b", "vortex channel pool support (ANS/NUL reply check)", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_03c"))
+			run_test (test_03c, "Test 03-c", "vortex ANS/NUL replies with serialize not attended", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_04"))
 			run_test (test_04, "Test 04", "Handling many connections support", -1, -1);
 
@@ -9038,6 +9057,8 @@ int main (int  argc, char ** argv)
  	run_test (test_03a, "Test 03-a", "vortex channel pool support", -1, -1);
 
  	run_test (test_03b, "Test 03-b", "vortex channel pool support (ANS/NUL reply check)", -1, -1);
+
+ 	run_test (test_03c, "Test 03-c", "vortex ANS/NUL replies with serialize not attended", -1, -1);
   
  	run_test (test_04, "Test 04", "Handling many connections support", -1, -1);
   
