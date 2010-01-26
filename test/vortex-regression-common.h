@@ -150,6 +150,12 @@
 #define REGRESSION_URI_MIXING_REPLIES "http://iana.org/beep/transient/vortex-regression/mixing-replies"
 
 /** 
+ * Simple profile that replies with 10 ANS messages ended by NUL frame
+ * echoing the content received.
+ */
+#define REGRESSION_URI_SIMPLE_ANS_NUL "http://iana.org/beep/transient/vortex-regression/simple-ans-nul"
+
+/** 
  * Profile to check ready state for channels having pending replies
  * with ans/nul.
  */
