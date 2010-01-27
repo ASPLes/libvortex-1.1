@@ -356,19 +356,10 @@ struct _VortexChannel {
 	 * enforce a serial deliver order when frames are acknoledge
 	 * on second level handlers.
 	 */
-	VortexMutex            serialize_msg_mutex;
-	VortexMutex            serialize_rpy_mutex;
-	VortexMutex            serialize_ans_mutex;
+	VortexMutex            serialize_mutex;
 	axl_bool               serialize;
-
-	/**
-	 * @internal Hashes used to store temporaly messages and
-	 * replies that must be hold until the proper message or reply
-	 * is received.
-	 */
-	axlHash              * serialize_msg;
-	axlHash              * serialize_rpy;
-	axlHash              * serialize_ans;
+	axlHash              * serialize_hash;
+	unsigned int           serialize_next_seqno;
 
 	/* the pool
 	 *
@@ -1510,10 +1501,9 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 	vortex_cond_create  (&channel->pending_cond);
 	vortex_mutex_create (&channel->ref_mutex);
 	channel->ref_count                      = 1; /* one reference */
-	vortex_mutex_create (&channel->serialize_msg_mutex);
-	vortex_mutex_create (&channel->serialize_rpy_mutex);
-	vortex_mutex_create (&channel->serialize_ans_mutex);
+	vortex_mutex_create (&channel->serialize_mutex);
 	channel->serialize                      = axl_false;
+	channel->serialize_next_seqno           = 0;
 	channel->waiting_replies                = axl_false;
 	channel->reply_processed                = axl_true;
 	channel->data                           = vortex_hash_new_full (axl_hash_string, axl_hash_equal_string, NULL, NULL);
@@ -3850,18 +3840,20 @@ void               vortex_channel_set_serialize                   (VortexChannel
 	/* check reference */
 	if (channel == NULL)
 		return;
-
+	
+	/* lock the mutex */
+	vortex_mutex_lock (&channel->serialize_mutex);
+	
 	/* configure serialize */
-	vortex_mutex_lock (&channel->serialize_msg_mutex);
 	channel->serialize = serialize;
-	if (serialize) {
-		/* init hashes */
-		channel->serialize_rpy = axl_hash_new (axl_hash_int, axl_hash_equal_int);
-		channel->serialize_msg = axl_hash_new (axl_hash_int, axl_hash_equal_int);
-		channel->serialize_ans = axl_hash_new (axl_hash_int, axl_hash_equal_int);
+	if (channel->serialize && channel->serialize_hash == NULL) {
+		/* create the hash to store pending frames */
+		channel->serialize_hash = axl_hash_new (axl_hash_int, axl_hash_equal_int);
 	} /* end if */
 
-	vortex_mutex_unlock (&channel->serialize_msg_mutex);
+	/* lock the mutex */
+	vortex_mutex_unlock (&channel->serialize_mutex);
+	
 
 	/* nothing more */
 	return;
@@ -5240,125 +5232,6 @@ typedef struct _ReceivedInvokeData {
 }ReceivedInvokeData;
 
 /** 
- * @internal Macro that allows to check next message to be delivered
- * using the frame in the context, storing the frame in the provided
- * hash if it is not the next to be delivered.
- */
-#define CHECK_AND_STORE_FRAME(mutex, last_msgno_delivered, hash) do{                    \
-    /* lock the section with the mutex provided */                                      \
-    vortex_mutex_lock (&mutex);                                                         \
-                                                                                        \
-    /* check store status */                                                            \
-    status = axl_false;                                                                 \
-    switch (vortex_frame_get_type (frame)) {                                            \
-    case VORTEX_FRAME_TYPE_RPY:                                                         \
-    case VORTEX_FRAME_TYPE_ERR:                                                         \
-    case VORTEX_FRAME_TYPE_MSG:                                                         \
-	/* status */                                                                    \
-	status = last_msgno_delivered != vortex_frame_get_msgno (frame);                \
-        index  = vortex_frame_get_msgno (frame);                                        \
-        break;                                                                          \
-    case VORTEX_FRAME_TYPE_ANS:                                                         \
-        status = last_msgno_delivered != vortex_frame_get_ansno (frame);                \
-        index  = vortex_frame_get_ansno (frame);                                        \
-        break;                                                                          \
-    case VORTEX_FRAME_TYPE_NUL:                                                         \
-        /* always store */                                                              \
-        status = vortex_frame_get_seqno (frame) != channel->last_ans_seqno_delivered;   \
-        if (status) {                                                                   \
-              vortex_log (VORTEX_LEVEL_DEBUG,                                           \
-			  "storing NUL frame, seqno (%d) != delivered (%d)",            \
-			  vortex_frame_get_seqno (frame),                               \
-			  channel->last_ans_seqno_delivered);                           \
-        }                                                                               \
-        index  = -1;                                                                    \
-        break;                                                                          \
-    default:                                                                            \
-        /* default case, do not store anything */                                       \
-        status = axl_false;                                                             \
-        index = -1;                                                                     \
-    } /* end switch */                                                                  \
-                                                                                        \
-    /* now according to the status, store or keep woring */                             \
-    if (status) {                                                                       \
-        /* received frame is not the one expected, store and return */                  \
-        axl_hash_insert_full (hash, INT_TO_PTR (index),                                 \
-                              NULL, frame,                                              \
-                              (axlDestroyFunc) vortex_frame_unref);                     \
-        vortex_mutex_unlock (&mutex);                                                   \
-        vortex_channel_unref (channel);                                                 \
-        vortex_connection_unref (connection, "second level handler (frame received)");  \
-        vortex_log (VORTEX_LEVEL_WARNING,                                               \
-                   "store frame because previous one is expected (last delivered: %d != received: %d, ansno: %d)",  \
-		    last_msgno_delivered, vortex_frame_get_msgno (frame), vortex_frame_get_ansno (frame));          \
-                                                                                        \
-        /* signal that the message was stored */                                        \
-        return axl_true;                                                                \
-    }                                                                                   \
-    vortex_mutex_unlock (&mutex);                                                       \
-}while(0);
-
-
-#define CHECK_PENDING_FRAME(mutex, hash, last_msgno_delivered) do{                                                   \
-   /* lock */                                                                                                        \
-   vortex_mutex_lock (&mutex);                                                                                       \
-                                                                                                                     \
-   /* check that the reply delivered is not in the hash */                                                           \
-   is_ans_frame = (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ANS);                                          \
-   /* update last ans seqno delivered */                                                                             \
-   if (is_ans_frame) {                                                                                               \
-         channel->last_ans_seqno_delivered = vortex_frame_get_seqno (frame) + vortex_frame_get_content_size (frame); \
-   }                                                                                                                 \
-                                                                                                                     \
-   /* remove according to the frame type */                                                                          \
-   status = axl_false;                                                                                               \
-   if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {                                                     \
-         status = axl_hash_remove (hash, INT_TO_PTR (-1));                                                           \
-   } else {                                                                                                          \
-         status = axl_hash_remove (hash, INT_TO_PTR (last_msgno_delivered));                                         \
-   }                                                                                                                 \
-                                                                                                                     \
-   /* update the last reply received and check if the next */                                                        \
-   /* reply is found in the hash  */                                                                                 \
-   last_msgno_delivered++;                                                                                           \
-                                                                                                                     \
-   /* check, unref and nullify the frame */                                                                          \
-   if (! status) {                                                                                                   \
-       vortex_frame_unref (frame);                                                                                   \
-   }                                                                                                                 \
-   /* nullify caller frame */                                                                                        \
-   (*caller_frame) = NULL;                                                                                           \
-   frame           = NULL;                                                                                           \
-                                                                                                                     \
-   /* check if the next reply is stored in the hash */                                                               \
-   frame = axl_hash_get (hash, INT_TO_PTR(last_msgno_delivered));                                                    \
-                                                                                                                     \
-   /* check if the frame is null and the previous was an ans frame, to check */                                      \
-   /* for the null frame */                                                                                          \
-   if (frame == NULL && is_ans_frame) {                                                                              \
-	 frame = axl_hash_get (hash, INT_TO_PTR (-1));                                                               \
-         if (frame == NULL || (channel->last_ans_seqno_delivered != vortex_frame_get_seqno (frame))) {               \
-		 frame = NULL;                                                                                       \
-	 } /* end if */                                                                                              \
-   } /* end if */                                                                                                    \
-                                                                                                                     \
-   if (frame != NULL) {                                                                                              \
-       vortex_log (VORTEX_LEVEL_WARNING, "restored frame that can now be delivered");                                \
-       /* deliver the frame as received */                                                                           \
-       (*caller_frame) = frame;                                                                                      \
-                                                                                                                     \
-       /* unlock */                                                                                                  \
-       vortex_mutex_unlock   (&mutex);                                                                               \
-       return axl_true;                                                                                              \
-   } /* end if */                                                                                                    \
-                                                                                                                     \
-   /* unlock */                                                                                                      \
-   vortex_mutex_unlock   (&mutex);                                                                                   \
-}while(0);
-
-
-
-/** 
  * @internal Function used to check for previously stored frames. If
  * the function returns a reference, the caller must continue with the
  * delivery.
@@ -5369,56 +5242,71 @@ typedef struct _ReceivedInvokeData {
  * was configured on the reference to continue with the delivery. If
  * axl_false is returned the frame is left untouched.
  */
-axl_bool  vortex_channel_check_serialize_pending (VortexCtx      * ctx,
-						  VortexChannel  * channel, 
-						  VortexFrame   ** caller_frame)
+axl_bool  vortex_channel_check_serialize_pending (VortexCtx          * ctx,
+						  VortexConnection   * conn,
+						  VortexChannel      * channel, 
+						  VortexFrame       ** caller_frame)
 {
-	int           is_ans_frame;
-	int           is_nul_frame;
-	int           status;
 	VortexFrame * frame = (*caller_frame);
 
 	if (channel->serialize) {
 
+		/* get mutex */
+		vortex_mutex_lock (&channel->serialize_mutex);
+
+		/* frame points to delivered frame, update next seqno
+		 * to get next frame */
+		vortex_log (VORTEX_LEVEL_WARNING, "Channel serialize frame delivered seqno: %d, updating next...",
+			    vortex_frame_get_seqno (frame));
+		channel->serialize_next_seqno = vortex_frame_get_seqno (frame) + vortex_frame_get_content_size (frame);
+
+		/* check if there are pending frames */
+		(*caller_frame) = axl_hash_get (channel->serialize_hash, (axlPointer) channel->serialize_next_seqno);
+		vortex_log (VORTEX_LEVEL_WARNING, "Channel serialize next frame to deliver is: %d (ref: %p)...",
+			    channel->serialize_next_seqno, *caller_frame);
+
+		/* remove from the hash without dealloc */
+		axl_hash_delete (channel->serialize_hash, (axlPointer) channel->serialize_next_seqno);
+
+		/* check to reduce refence counting on connection due
+		 * to frame deliver */
+		if ((*caller_frame) != NULL) {
+			vortex_connection_unref (conn, "second level handler (check serialize pending)");
+			vortex_channel_unref (channel);
+		}
+
 		if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_RPY ||
 		    vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ERR) {
 
-			/* check frames stored pending to be delivered */
-			CHECK_PENDING_FRAME(channel->serialize_rpy_mutex,
-					    channel->serialize_rpy,
-					    channel->last_reply_delivered);
+			channel->last_reply_delivered++;
 
 		} else if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_MSG) {
 
-			/* check frames stored pending to be delivered */
-			CHECK_PENDING_FRAME(channel->serialize_msg_mutex,
-					    channel->serialize_msg,
-					    channel->last_msg_delivered);
+			channel->last_msg_delivered++;
 
-		} else if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ANS ||
-			   vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
+		} else if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ANS) {
 
-			/* record nul type frame status */
-			is_nul_frame = (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL);
+			channel->last_ans_delivered++;
 
-			/* check frames stored pending to be delivered */
-			CHECK_PENDING_FRAME(channel->serialize_ans_mutex,
-					    channel->serialize_ans,
-					    channel->last_ans_delivered);
+		} else if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
 
-			if (is_nul_frame) {
-				/* reset ANS/NUL delivery status */
-				channel->last_ans_delivered = 0;
+			/* reset ANS/NUL delivery status */
+			channel->last_ans_delivered = 0;
 				
-				/* also update last_reply_delivered since ANS..NUL series also
-				 * represent a single delivered RPY that will be checked in the future,
-				 * that is, if the following reply receved to an ANS..NUL series is an
-				 * RPY, the code will check if the previous reply (no mather if it was
-				 * ANS..NUL or RPY) was received */
-				channel->last_reply_delivered++; 
-			}
-			
+			/* also update last_reply_delivered since ANS..NUL series also
+			 * represent a single delivered RPY that will be checked in the future,
+			 * that is, if the following reply receved to an ANS..NUL series is an
+			 * RPY, the code will check if the previous reply (no mather if it was
+			 * ANS..NUL or RPY) was received */
+			channel->last_reply_delivered++; 
 		} /* end if */
+
+		/* remove previous frame */
+		vortex_frame_unref (frame);
+
+		/* unlock mutex */
+		vortex_mutex_unlock (&channel->serialize_mutex);
+		return (*caller_frame) ? axl_true : axl_false;
 	}
 
 	/* if reached this point, no frame to deliver */
@@ -5441,34 +5329,41 @@ axl_bool  vortex_channel_check_serialize (VortexCtx        * ctx,
 					  VortexChannel    * channel, 
 					  VortexFrame      * frame)
 {
-	axl_bool           status;
-	int                index;
-
 	if (channel->serialize) {
-		if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_RPY ||
-		    vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ERR) {
-			/* check that the frame to deliver is the one next
-			 * expected */
-			CHECK_AND_STORE_FRAME(channel->serialize_rpy_mutex, 
-					      channel->last_reply_delivered,
-					      channel->serialize_rpy);
-		} else if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_MSG) {
-			/* check that the frame to deliver is the one
-			 * expected */
-			CHECK_AND_STORE_FRAME(channel->serialize_msg_mutex,
-					      channel->last_msg_delivered,
-					      channel->serialize_msg);
-		} else if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ANS ||
-			   vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
-			/* check that the frame to deliver is the one
-			 * expected */
-			CHECK_AND_STORE_FRAME(channel->serialize_ans_mutex,
-					      channel->last_ans_delivered,
-					      channel->serialize_ans);
-		} /* end if */
+		/* lock the mutex */
+		vortex_mutex_lock (&channel->serialize_mutex);
+
+		/* check for the first frame on the channel to
+		 * initialize next seqno to deliver */
+		if (vortex_frame_get_seqno (frame) == channel->serialize_next_seqno) {
+			/* next seqno expected */
+			vortex_log (VORTEX_LEVEL_WARNING, "Channel serialize for channel %d activated due to frame seqno %d == next serialize seqno %d (pending frames: %d)",
+				    channel->channel_num, vortex_frame_get_seqno (frame), channel->serialize_next_seqno, axl_hash_items (channel->serialize_hash));
+			vortex_log (VORTEX_LEVEL_WARNING, "Channel serialize for channel %d activated, next frame with seqno to deliver is: %d (skip store)", 
+				    channel->channel_num, channel->serialize_next_seqno);
+			/* first frame is not queued */
+			vortex_mutex_unlock (&channel->serialize_mutex);
+			return axl_false;
+		}
+
+		/* ok, reached this point, the frame can't be
+		 * delivered at this moment, store for future
+		 * delivery */
+		vortex_log (VORTEX_LEVEL_WARNING, "Channel serialize for channel %d, storing frame %p with seqno %d (expected %d) for later deliver (pending frames: %d)",
+			    channel->channel_num, frame,  vortex_frame_get_seqno (frame), channel->serialize_next_seqno, axl_hash_items (channel->serialize_hash));
+		axl_hash_insert_full (channel->serialize_hash,
+				      /* key */
+				      (axlPointer) vortex_frame_get_seqno (frame), NULL, 
+				      /* value */
+				      frame, (axlDestroyFunc) vortex_frame_unref);
+
+		/* unlock and retun frame stored */
+		vortex_mutex_unlock (&channel->serialize_mutex);
+		/* hold delivery (axl_true -> stop delivery) */
+		return axl_true;
 	} /* end if */
 
-	/* continue delivery (axl_true -> stop delivery) */
+	/* continue delivery (axl_false -> continue with delivery) */
 	return axl_false;
 }
 
@@ -5586,7 +5481,7 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 	}
 
 	/* check serialize to broadcast other waiting threads */
-	if (vortex_channel_check_serialize_pending (ctx, channel, &frame)) {
+	if (vortex_channel_check_serialize_pending (ctx, connection, channel, &frame)) {
 		/* if previous function returns axl_true, a new frame
 		 * reference we have to deliver */
 		goto deliver_frame;
@@ -5615,7 +5510,7 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 
 	/* log a message */
 	vortex_log (VORTEX_LEVEL_DEBUG, 
-	       "invocation frame received handler for channel %d finished (second level: channel), ref count: channel=%d connection=%d", 
+		    "invocation frame received handler for channel %d finished (second level: channel), ref count: channel=%d connection=%d", 
 		    channel_num, channel->ref_count, vortex_connection_ref_count (connection));
 	
 	/* update channel reference */
@@ -7015,12 +6910,8 @@ void vortex_channel_free (VortexChannel * channel)
 	vortex_mutex_destroy (&channel->pending_mutex);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing serialize_mutex");
-	vortex_mutex_destroy (&channel->serialize_msg_mutex);
-	vortex_mutex_destroy (&channel->serialize_rpy_mutex);
-	vortex_mutex_destroy (&channel->serialize_ans_mutex);
-	axl_hash_free (channel->serialize_rpy);
-	axl_hash_free (channel->serialize_msg);
-	axl_hash_free (channel->serialize_ans);
+	vortex_mutex_destroy (&channel->serialize_mutex);
+	axl_hash_free (channel->serialize_hash);
 	axl_hash_free (channel->stored_replies);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing ref_mutex");

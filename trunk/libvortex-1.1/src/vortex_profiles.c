@@ -815,7 +815,7 @@ axlPointer __vortex_profiles_invoke_frame_received (axlPointer __data)
 	profile->received (channel, connection, frame, profile->received_user_data);
 
 	/* check serialize to broadcast other waiting threads */
-	if (vortex_channel_check_serialize_pending (CONN_CTX(connection), channel, &frame)) {
+	if (vortex_channel_check_serialize_pending (CONN_CTX(connection), connection, channel, &frame)) {
 		/* if previous function returns axl_true, a new frame
 		 * reference we have to deliver */
 		goto deliver_frame;

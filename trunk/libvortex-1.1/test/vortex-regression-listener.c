@@ -179,11 +179,17 @@ void simple_ans_nul_reply (VortexChannel    * channel,
 	int iterator = 0;
 
 	while (iterator < 10) {
-		
-		
+		/* send ANS reply */
+		vortex_channel_send_ans_rpy (channel, 
+					     vortex_frame_get_payload (frame),
+					     vortex_frame_get_payload_size (frame),
+					     vortex_frame_get_msgno (frame));
 		/* next reply */
 		iterator++;
-	}
+	} /* end if */
+	
+	/* now send nul reply */
+	vortex_channel_finalize_ans_rpy (channel, vortex_frame_get_msgno (frame));
 
 	return;
 }
