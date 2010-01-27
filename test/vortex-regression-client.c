@@ -5256,10 +5256,36 @@ axl_bool  test_03b (void) {
 	return axl_true;
 }
 
+void test_03c_received (VortexChannel    * channel,
+			VortexConnection * conn,
+			VortexFrame      * frame,
+			axlPointer         user_data)
+{
+	VortexAsyncQueue * queue   = vortex_connection_get_data (conn, "test_03c_queue");
+	VortexAsyncQueue * replies = vortex_connection_get_data (conn, "test_03c_replies");
+
+	/* wait 2 second */
+	if (queue != NULL) {
+		vortex_connection_set_data (conn, "test_03c_queue", NULL);
+		printf ("Test 03-c: Waiting 2 seconds to accumulate ANS/NUL replies..\n");
+		vortex_async_queue_timedpop (queue, 2000000);
+	}
+
+	/* ok, now queue replies */
+	vortex_frame_ref (frame);
+	vortex_async_queue_push (replies, frame);
+
+	return;
+}
+
 axl_bool  test_03c (void) {
 	
 	VortexConnection   * connection;
 	VortexChannel      * channel;
+	VortexAsyncQueue   * replies;
+	VortexAsyncQueue   * queue;
+	VortexFrame        * frame;
+	int                  iterator;
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
@@ -5267,6 +5293,52 @@ axl_bool  test_03c (void) {
 		vortex_connection_close (connection);
 		return axl_false;
 	}
+
+	/* ok, now create a channel */
+	queue   = vortex_async_queue_new ();
+	replies = vortex_async_queue_new ();
+	vortex_connection_set_data (connection, "test_03c_queue",   queue);
+	vortex_connection_set_data (connection, "test_03c_replies", replies);
+				    
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_SIMPLE_ANS_NUL,
+				      /* no close handling */
+				      NULL, NULL,
+				      test_03c_received, NULL,
+				      NULL, NULL);
+
+	/* check channel reference */
+	if (channel == NULL) {
+		printf ("ERROR (1): expected to find proper channel reference..\n");
+		return axl_false;
+	} /* end if */
+
+	/* set serialize */
+	vortex_channel_set_serialize (channel, axl_true);
+
+	/* send a couple of messages and wait for replies */
+	vortex_channel_send_msg (channel, "this is a test message 1", 24, NULL);
+	vortex_channel_send_msg (channel, "this is a test message 2", 24, NULL);
+	
+	/* now get frames .. */
+	iterator = 0;
+	while (iterator < 22) {
+		frame = vortex_async_queue_pop (replies);
+
+		/* printf ("Received reply: %d (type: %s)\n",
+		   iterator, vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ANS ? "ANS" : "NUL"); */
+		if ((iterator == 10 || iterator == 21) && 
+		    vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_NUL) {
+			printf ("\n\n**** ERROR: expected to find NUL frame but found ANS iterator=%d..\n", iterator);
+			return axl_false;
+		}
+
+		vortex_frame_unref (frame);
+		iterator++;
+	} /* end if */
+
+	vortex_async_queue_unref (queue);
+	vortex_async_queue_unref (replies);
 	
 	vortex_connection_close (connection);
 	return axl_true;

@@ -2559,7 +2559,7 @@ axl_bool                    vortex_connection_close                  (VortexConn
  	 * not a listener connection, which is already owned by the
  	 * vortex engine */
  	if (connection->role == VortexRoleInitiator) {
- 		vortex_log (VORTEX_LEVEL_DEBUG, "connection close finished, now unrefering (refcount=%d..", 
+ 		vortex_log (VORTEX_LEVEL_DEBUG, "connection close finished, now unrefering (refcount=%d)..", 
  			    connection->ref_count);
  		vortex_connection_unref (connection, "vortex_connection_close");
  	} /* end if */
@@ -2590,8 +2590,8 @@ axl_bool               vortex_connection_ref_internal                    (Vortex
 	connection->ref_count++;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "increased connection id=%d reference to %d by %s",
-	       connection->id,
-	       connection->ref_count, who ? who : "??" );
+		    connection->id,
+		    connection->ref_count, who ? who : "??" );
 
 	/* unlock ref/unref options over this connection */
 	vortex_mutex_unlock (&connection->ref_mutex);

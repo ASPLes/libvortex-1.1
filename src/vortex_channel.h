@@ -431,9 +431,10 @@ axl_bool            vortex_channel_check_serialize                (VortexCtx    
 								   VortexChannel    * channel, 
 								   VortexFrame      * frame);
 
-axl_bool            vortex_channel_check_serialize_pending         (VortexCtx      * ctx,
-								    VortexChannel  * channel, 
-								    VortexFrame   ** caller_frame);
+axl_bool            vortex_channel_check_serialize_pending         (VortexCtx          * ctx,
+								    VortexConnection   * conn,
+								    VortexChannel      * channel, 
+								    VortexFrame       ** caller_frame);
 
 axl_bool            vortex_channel_check_msg_no                    (VortexChannel  * channel, 
  								    VortexFrame    * frame);
