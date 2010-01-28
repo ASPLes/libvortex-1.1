@@ -5286,6 +5286,8 @@ axl_bool  test_03c (void) {
 	VortexAsyncQueue   * queue;
 	VortexFrame        * frame;
 	int                  iterator;
+	int                  msgno;
+	int                  ansno;
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
@@ -5322,19 +5324,43 @@ axl_bool  test_03c (void) {
 	
 	/* now get frames .. */
 	iterator = 0;
-	while (iterator < 22) {
+	msgno    = 0;
+	ansno    = 0;
+	while (iterator < 62) {
 		frame = vortex_async_queue_pop (replies);
 
-		/* printf ("Received reply: %d (type: %s)\n",
-		   iterator, vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ANS ? "ANS" : "NUL"); */
-		if ((iterator == 10 || iterator == 21) && 
+		printf ("Received reply: %d (type: %s) msgno:%d, ansno:%d\n",
+			iterator, vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ANS ? "ANS" : "NUL",
+			vortex_frame_get_msgno (frame), vortex_frame_get_ansno (frame));
+		if ((iterator == 30 || iterator == 61) && 
 		    vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_NUL) {
 			printf ("\n\n**** ERROR: expected to find NUL frame but found ANS iterator=%d..\n", iterator);
 			return axl_false;
 		}
 
+		if (vortex_frame_get_msgno (frame) != msgno) {
+			printf ("\n\n**** ERROR: expected to find msgno %d but found %d (iterator=%d)\n", 
+				msgno, vortex_frame_get_msgno (frame), iterator);
+			return axl_false;
+		}
+
+		if ((vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ANS) && vortex_frame_get_ansno (frame) != ansno) {
+			printf ("\n\n**** ERROR: expected to find ansno %d but found %d (iterator=%d)\n", 
+				ansno, vortex_frame_get_ansno (frame), iterator);
+			return axl_false;
+		} 
+
+		/* update msgno */
+		if (iterator == 30) {
+			msgno++;
+			ansno = 0;
+		} else {
+			ansno++;
+		} /* end if */
+
 		vortex_frame_unref (frame);
 		iterator++;
+
 	} /* end if */
 
 	vortex_async_queue_unref (queue);

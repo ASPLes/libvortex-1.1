@@ -2467,6 +2467,7 @@ void __vortex_channel_free_sequencer_data (VortexSequencerData * data)
 {
 	if (data == NULL)
 		return;
+	axl_list_free (data->ans_nul_list); 
 	axl_free (data->message);
 	axl_free (data);
 	return;
@@ -2492,6 +2493,7 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
 				       int                msg_no_rpy)
 {
 	VortexSequencerData * data;
+	VortexSequencerData * data2;
 	int                   mime_header_size;
 	VortexCtx           * ctx     = vortex_channel_get_ctx (channel);
 
@@ -2557,14 +2559,72 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
 			channel->being_sending = axl_false;	
 			vortex_mutex_unlock (&channel->send_mutex);
 			return axl_false;
+		} /* end if */
+
+		if (type == VORTEX_FRAME_TYPE_NUL || type == VORTEX_FRAME_TYPE_ANS) {
+			/* ok, so we have to store a lot of frames
+			 * (ANS/NUL) associated to a signel
+			 * msg_no_rpy. We should do this using seqno
+			 * to unify all the message pending handling
+			 * but this is not possible because at this
+			 * moment the right seqno sequence is still
+			 * not defined */
+			data2 = axl_hash_get (channel->stored_replies, INT_TO_PTR (msg_no_rpy));
+			if (data2 == NULL)  {
+				/* create an empty node */
+				data2 = axl_new (VortexSequencerData, 1);
+				/* hash still not defined, create one and store */
+				data2->ans_nul_list = axl_list_new (axl_list_equal_int, (axlDestroyFunc) __vortex_channel_free_sequencer_data);
+			} else if (data2 != NULL && data2->ans_nul_list == NULL) {
+				vortex_log (VORTEX_LEVEL_CRITICAL, "Found ANS/NUL frame reply where a previous RPY/ERR reply is stored (type: %d), discarding message (type: %d)..",
+					    data2->type, data->type);
+
+				/* free, unlock and return failure */
+				__vortex_channel_free_sequencer_data (data);
+				vortex_mutex_unlock (&channel->send_mutex);
+				return axl_false;
+			} /* end if */
+
+			vortex_log (VORTEX_LEVEL_WARNING, 
+				    "Received a ANS/NUL request for message %d while already waiting to reply to %d on channel=%d, storing and unlocking caller for later deliver",
+				    msg_no_rpy,
+				    vortex_channel_get_next_reply_no (channel),
+				    channel->channel_num);
+			/* additional check: see if we have a
+			 * previously stored NUL frame to discard
+			 * currently received */
+			if (type == VORTEX_FRAME_TYPE_NUL && 
+			    (axl_list_length (data2->ans_nul_list) > 0) && 
+			    ((VortexSequencerData *)axl_list_get_last (data2->ans_nul_list))->type == VORTEX_FRAME_TYPE_NUL) {
+				/* found NUL frame stored twice */
+				vortex_log (VORTEX_LEVEL_WARNING, "Found NUL frame termination twice replying to message %d on channel %d at connection id=%d, dropping frame",
+					    msg_no_rpy, channel->channel_num, vortex_connection_get_id (channel->connection));
+				/* free, unlock and return failure */
+				__vortex_channel_free_sequencer_data (data);
+				vortex_mutex_unlock (&channel->send_mutex);
+				return axl_false;
+			} /* end if */
+
+			/* store (and the end) */
+			axl_list_append (data2->ans_nul_list, data);
+
+			/* check if the list is already stored */
+			if (axl_hash_get (channel->stored_replies, INT_TO_PTR (msg_no_rpy)) != NULL) {
+				/* list already created and inserted into the stored replies hash */
+				vortex_mutex_unlock (&channel->send_mutex);
+				return axl_true;
+			} /* end if */
+
+			/* update reference so next hash insert will work */
+			data = data2;
+		} else  {
+			vortex_log (VORTEX_LEVEL_WARNING, 
+				    "Received a rpy request for message %d while already waiting to reply to %d on channel=%d, storing and unlocking caller for later deliver",
+				    msg_no_rpy,
+				    vortex_channel_get_next_reply_no (channel),
+				    channel->channel_num);
 		}
 
-		vortex_log (VORTEX_LEVEL_WARNING, 
-			    "Received a rpy request for message %d while already waiting to reply to %d on channel=%d, storing and unlocking caller for later deliver",
-			    msg_no_rpy,
-			    vortex_channel_get_next_reply_no (channel),
-			    channel->channel_num);
-		
 		/* store */
 		axl_hash_insert_full (channel->stored_replies, 
 				      /* store the reply (key and destroy function) */
@@ -2616,7 +2676,11 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
 	}
 
 	/* remove from the pending stored hash */
-	axl_hash_delete (channel->stored_replies, INT_TO_PTR (msg_no_rpy));
+	if (data->type != VORTEX_FRAME_TYPE_NUL &&
+	    data->type != VORTEX_FRAME_TYPE_ANS) {
+		/* remove previous */
+		axl_hash_delete (channel->stored_replies, INT_TO_PTR (msg_no_rpy));
+	} /* end if */
 
 	/* send data to sequencer */
 	vortex_sequencer_queue_data (ctx, data);
@@ -2628,6 +2692,19 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
 	 * to be sent */
 	data = axl_hash_get (channel->stored_replies, INT_TO_PTR (msg_no_rpy));
 	if (data != NULL) {
+		/* check if we have a list of ans_nul_replies */
+		if (data->ans_nul_list) {
+			/* get first reference */
+			data2 = data;
+			data  = axl_list_get_first (data2->ans_nul_list);
+			axl_list_unlink_first (data2->ans_nul_list);
+
+			/* check to finish the list in case no more
+			 * content in the list is found */
+			if (axl_list_length (data2->ans_nul_list) == 0)
+				axl_hash_remove (channel->stored_replies, INT_TO_PTR (msg_no_rpy));
+		} /* end if */
+
 		/* update the type */
 		type = data->type;
 
@@ -5261,13 +5338,12 @@ axl_bool  vortex_channel_check_serialize_pending (VortexCtx          * ctx,
 		channel->serialize_next_seqno = vortex_frame_get_seqno (frame) + vortex_frame_get_content_size (frame);
 
 		/* check if there are pending frames */
-		(*caller_frame) = axl_hash_get (channel->serialize_hash, (axlPointer) channel->serialize_next_seqno);
+		(*caller_frame) = (VortexFrame *) axl_hash_get (channel->serialize_hash, INT_TO_PTR (channel->serialize_next_seqno));
 		vortex_log (VORTEX_LEVEL_WARNING, "Channel serialize next frame to deliver is: %d (ref: %p)...",
 			    channel->serialize_next_seqno, *caller_frame);
 
 		/* remove from the hash without dealloc */
-		axl_hash_delete (channel->serialize_hash, (axlPointer) channel->serialize_next_seqno);
-
+		axl_hash_delete (channel->serialize_hash, INT_TO_PTR (channel->serialize_next_seqno));
 		/* check to reduce refence counting on connection due
 		 * to frame deliver */
 		if ((*caller_frame) != NULL) {
@@ -5353,7 +5429,7 @@ axl_bool  vortex_channel_check_serialize (VortexCtx        * ctx,
 			    channel->channel_num, frame,  vortex_frame_get_seqno (frame), channel->serialize_next_seqno, axl_hash_items (channel->serialize_hash));
 		axl_hash_insert_full (channel->serialize_hash,
 				      /* key */
-				      (axlPointer) vortex_frame_get_seqno (frame), NULL, 
+				      INT_TO_PTR (vortex_frame_get_seqno (frame)), NULL, 
 				      /* value */
 				      frame, (axlDestroyFunc) vortex_frame_unref);
 
