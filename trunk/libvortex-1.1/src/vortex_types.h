@@ -757,7 +757,14 @@ typedef struct _VortexSequencerData {
 	 * @brief Discard flag used internally to drop packages that
 	 * were queued to be sent.
 	 */
-	int              discard;
+	axl_bool         discard;
+
+	/** 
+	 * @brief Used to signal that the data contains a list of
+	 * ANS/NUL pending replies that must be sent.
+	 */
+	axlList        * ans_nul_list;
+	
 
 } VortexSequencerData;
 

@@ -177,13 +177,32 @@ void simple_ans_nul_reply (VortexChannel    * channel,
 			   axlPointer         user_data)
 {
 	int iterator = 0;
+	VortexAsyncQueue * queue;
 
-	while (iterator < 10) {
+	printf ("%d: Replying with 30 ANS messages with a final NUL..\n", vortex_frame_get_msgno (frame));
+
+	if (vortex_frame_get_msgno (frame) == 0) {
+		/* introduce a micro delay */
+		queue = vortex_async_queue_new ();
+		vortex_async_queue_timedpop (queue, 10000);
+		vortex_async_queue_unref (queue);
+	}
+
+	while (iterator < 30) {
+
+		if (vortex_frame_get_msgno (frame) == 1 && iterator == 17) {
+			/* introduce a micro delay */
+			queue = vortex_async_queue_new ();
+			vortex_async_queue_timedpop (queue, 10000);
+			vortex_async_queue_unref (queue);
+		}
+
 		/* send ANS reply */
 		vortex_channel_send_ans_rpy (channel, 
 					     vortex_frame_get_payload (frame),
 					     vortex_frame_get_payload_size (frame),
 					     vortex_frame_get_msgno (frame));
+		printf ("   %d: Sending ANS reply: %d\n", vortex_frame_get_msgno (frame), iterator);
 		/* next reply */
 		iterator++;
 	} /* end if */
