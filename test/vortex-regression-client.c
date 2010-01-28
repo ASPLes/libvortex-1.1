@@ -5329,9 +5329,10 @@ axl_bool  test_03c (void) {
 	while (iterator < 62) {
 		frame = vortex_async_queue_pop (replies);
 
-		printf ("Received reply: %d (type: %s) msgno:%d, ansno:%d\n",
+		/* printf ("Received reply: %d (type: %s) msgno:%d, ansno:%d, frame id:%d\n",
 			iterator, vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ANS ? "ANS" : "NUL",
-			vortex_frame_get_msgno (frame), vortex_frame_get_ansno (frame));
+			vortex_frame_get_msgno (frame), vortex_frame_get_ansno (frame),
+			vortex_frame_get_id (frame)); */
 		if ((iterator == 30 || iterator == 61) && 
 		    vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_NUL) {
 			printf ("\n\n**** ERROR: expected to find NUL frame but found ANS iterator=%d..\n", iterator);
