@@ -2623,7 +2623,7 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
 				    msg_no_rpy,
 				    vortex_channel_get_next_reply_no (channel),
 				    channel->channel_num);
-		}
+		} /* end if */
 
 		/* store */
 		axl_hash_insert_full (channel->stored_replies, 
@@ -2703,6 +2703,9 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
 			 * content in the list is found */
 			if (axl_list_length (data2->ans_nul_list) == 0)
 				axl_hash_remove (channel->stored_replies, INT_TO_PTR (msg_no_rpy));
+			
+			/* update last ansno */
+			data->ansno  = channel->last_ansno_sent;
 		} /* end if */
 
 		/* update the type */
@@ -5534,7 +5537,7 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
  		if (vortex_log_is_enabled (ctx)) {
  			/* get type */
  			type = vortex_frame_get_type (frame);
- 			vortex_log (VORTEX_LEVEL_DEBUG, "frame received invocation for second level FINISHED (new task): %s%s%s%s%s %d %d %s %d %d",
+ 			vortex_log (VORTEX_LEVEL_DEBUG, "frame received invocation for second level FINISHED (new task): %s%s%s%s%s %d %d %s %d %d (ansno: %d)",
  				    (type == VORTEX_FRAME_TYPE_MSG) ? "MSG" : "",
  				    (type == VORTEX_FRAME_TYPE_RPY) ? "RPY" : "",
  				    (type == VORTEX_FRAME_TYPE_ERR) ? "ERR" : "",
@@ -5549,7 +5552,8 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
  				    /* seq no */
  				    vortex_frame_get_seqno   (frame),
  				    /* message size */
- 				    vortex_frame_get_content_size (frame));
+ 				    vortex_frame_get_content_size (frame),
+				    vortex_frame_get_ansno (frame));
  		} /* end if */
 	}else {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "invoking frame received on channel %d with not handler defined",
