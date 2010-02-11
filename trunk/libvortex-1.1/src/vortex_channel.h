@@ -366,6 +366,13 @@ axl_bool           vortex_channel_have_piggyback                 (VortexChannel 
 void               vortex_channel_set_piggyback                  (VortexChannel    * channel,
 								  const char       * profile_content);
 
+void               vortex_channel_set_outstanding_limit          (VortexChannel    * channel, 
+								  int                pending_messages,
+								  axl_bool           fail_on_limit);
+
+int                vortex_channel_get_outstanding_messages       (VortexChannel    * channel,
+								  int              * outstanding_limit);
+
 void               vortex_channel_defer_start                    (VortexChannel    * channel);
 
 axl_bool           vortex_channel_notify_start                   (VortexChannel    * new_channel,
