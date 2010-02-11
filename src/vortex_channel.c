@@ -248,6 +248,26 @@ struct _VortexChannel {
 	 * message types. */
 	VortexMutex             send_mutex;
 
+	/** 
+	 * Internal variable that tracks outstanding message
+	 * limits. See vortex_channel_set_outstanding_limit.
+	 */
+	int                     outstanding_limit;
+	/** 
+	 * Internal variable that tracks how to fail in the case the
+	 * limit is reached. See vortex_channel_set_outstanding_limit.
+	 */
+	axl_bool                fail_on_limit;
+
+	/** 
+	 * the send_cond:
+	 *
+	 * Conditional mutex used to implement send operation limits
+	 * (to avoid acquiring lot of memory to hold pending messages
+	 * to be sent). See vortex_channel_set_outstanding_limit.
+	 */
+	VortexCond              send_cond;
+
 
 	/* the receive_mutex:
 	 *
@@ -1494,6 +1514,7 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 	channel->queue_msgs                     = vortex_queue_new ();
 	channel->queue_seqs                     = vortex_queue_new ();
 	vortex_mutex_create (&channel->send_mutex);
+	vortex_cond_create  (&channel->send_cond);
 	vortex_mutex_create (&channel->receive_mutex);
 	vortex_cond_create  (&channel->close_cond);
 	vortex_mutex_create (&channel->close_mutex);
@@ -2135,6 +2156,27 @@ axl_bool    vortex_channel_send_msg_common (VortexChannel   * channel,
 
 	/* lock send mutex */
 	vortex_mutex_lock (&channel->send_mutex);
+
+	/* check outstanding limit to be enabled */
+check_limit:
+	if (channel->outstanding_limit > 0) {
+		/* now check limit */
+		if (vortex_channel_get_outstanding_messages (channel, NULL) >= channel->outstanding_limit) {
+			/* check if we have to fail or wait */
+			if (channel->fail_on_limit) {
+				vortex_log (VORTEX_LEVEL_WARNING, "unable to send MSG request, channel outstanding limit reached (%d)",
+					    channel->outstanding_limit);
+				vortex_mutex_unlock (&channel->send_mutex);
+				return axl_false;
+			} /* end if */
+
+			/* wait until condition satisfies */
+			vortex_log (VORTEX_LEVEL_WARNING, "Blocking send MSG request, channel outstanding limit reached (%d)",
+				    channel->outstanding_limit);
+			VORTEX_COND_WAIT (&channel->send_cond, &channel->send_mutex);
+			goto check_limit;
+		}
+	}
 
 	/* flag the channel to be awaiting to process message */
 	channel->being_sending = axl_true;
@@ -4337,6 +4379,13 @@ axl_bool vortex_channel_remove_first_outstanding_msg_no (VortexChannel * channel
 
 	/* unlock mutex */
 	vortex_mutex_unlock (&channel->outstanding_msg_mutex);
+
+	if (result) {
+		/* notify oustanding list reduced */
+		vortex_mutex_lock   (&channel->send_mutex);
+		vortex_cond_signal  (&channel->send_cond);
+		vortex_mutex_unlock (&channel->send_mutex);
+	}
 	
 	return result;
 }
@@ -6982,6 +7031,7 @@ void vortex_channel_free (VortexChannel * channel)
 	}
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing send_mutex channel=%d", channel->channel_num);
 	vortex_mutex_destroy (&channel->send_mutex);
+	vortex_cond_destroy  (&channel->send_cond);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing close_mutex");
 	vortex_mutex_destroy (&channel->close_mutex);
@@ -7536,6 +7586,59 @@ void               vortex_channel_set_piggyback                  (VortexChannel 
 	vortex_channel_set_data (channel, "piggyback", piggyback_frame);
 	
 	return;
+}
+
+/** 
+ * @brief Allows to configure an outstanding send limit, causing all
+ * send operations (MSG) to be blocked (or to fail)
+ * if such limit is reached. By default this limit is disabled (0).
+ *
+ * @param channel The channel to be configured.
+ *
+ * @param pending_messages The amount of pending messages (unreplied
+ * MSG frames). To disable a limit previously configured, use 0.
+ *
+ * @param fail_on_limit How to fail if the limit is reached while
+ * doing a send operation. In this case, passing axl_false will cause
+ * the send operation to lock the caller until some reply is
+ * answred. In the case axl_true is passed, the send operation will
+ * fail and the message won't be send.
+ */
+void               vortex_channel_set_outstanding_limit          (VortexChannel    * channel, 
+								  int                pending_messages,
+								  axl_bool           fail_on_limit)
+{
+	if (channel == NULL || pending_messages < 0)
+		return;
+	/* set limit passed and how to fail. */
+	channel->outstanding_limit = pending_messages;
+	channel->fail_on_limit     = fail_on_limit;
+	return;
+}
+
+/** 
+ * @brief Allows to get number of unreplied message (MSG) that are
+ * waiting on the provided channel, and optionally, also returns the
+ * outstanding limit (if any).
+ *
+ * @param channel           The channel where the number of pending unreplied message will be returned.
+ * @param outstanding_limit Optional reference that, if provided, will hold the current outstanding limit.
+ *
+ * @return The number of unreplied message frames (MSG).
+ */
+int                vortex_channel_get_outstanding_messages       (VortexChannel    * channel,
+								  int              * outstanding_limit)
+{
+	int result;
+
+	vortex_mutex_lock (&channel->outstanding_msg_mutex);
+	/* get list result */
+	result = axl_list_length (channel->outstanding_msg);
+	/* return limit if it is found definied user variable */
+	if (outstanding_limit)
+		*outstanding_limit = channel->outstanding_limit;
+	vortex_mutex_unlock (&channel->outstanding_msg_mutex);
+	return result;
 }
 
 /** 

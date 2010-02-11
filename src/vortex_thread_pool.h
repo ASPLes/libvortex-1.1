@@ -46,7 +46,9 @@ typedef struct _VortexThreadPool VortexThreadPool;
 
 void vortex_thread_pool_init                (VortexCtx * ctx, int  max_threads);
 
-void vortex_thread_pool_add                 (VortexCtx        * ctx, int threads);
+void vortex_thread_pool_add                 (VortexCtx * ctx, int threads);
+
+void vortex_thread_pool_remove              (VortexCtx * ctx, int threads);
 
 void vortex_thread_pool_exit                (VortexCtx * ctx);
 
@@ -57,7 +59,7 @@ void vortex_thread_pool_new_task            (VortexCtx        * ctx,
 					     axlPointer         data);
 
 void vortex_thread_pool_stats               (VortexCtx        * ctx,
-					     int              * started_threads,
+					     int              * runnin_threads,
 					     int              * waiting_threads,
 					     int              * pending_tasks);
 

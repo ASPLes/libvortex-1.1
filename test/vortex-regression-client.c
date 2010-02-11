@@ -231,11 +231,11 @@ void test_00a_block (VortexAsyncQueue * queue)
 
 void test_00a_new_task (int * value_to_update)
 {
-	printf ("Test 00-a: running blocked task\n");
+	/* printf ("Test 00-a: running blocked task\n"); */
 	/* sending data */
 	*value_to_update = 17;
 	
-	printf ("Test 00-a: finished blocked task\n");
+	/* printf ("Test 00-a: finished blocked task\n"); */
 	return;
 }
 
@@ -396,14 +396,122 @@ axl_bool  test_00a (void)
 		iterator++;
 	}
 
-	vortex_async_queue_unref (temp);
-
 	vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
 	printf ("Test 00-a: all threads stopped started_threads=%d, waiting_threads=%d, pending_tasks=%d\n",
 		started_threads, waiting_threads, pending_tasks);
 
+	/* call to stop 5 threads check results */
+	vortex_thread_pool_remove (ctx, 4);
+	iterator = 0;
+	while (iterator < 10) {
+		/* get started threads */
+		vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+
+		if (started_threads == 2) {
+			printf ("Test 00-a: stoped 2 threads from the pool.., current status is..\n");
+			printf ("Test 00-a: all threads stopped started_threads=%d, waiting_threads=%d, pending_tasks=%d\n",
+				started_threads, waiting_threads, pending_tasks);
+			break;
+		} /* end if */
+		
+		/* wait for some time */
+		vortex_async_queue_timedpop (temp, 10000);
+		iterator++;
+	}
+
+	/* get started threads */
+	vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+
+	if (started_threads != 2) {
+		printf ("ERROR: expected to find only 2 running threads on the pool, but found %d..\n",
+			started_threads);
+		return axl_false;
+	} /* end if */
+
+	/* now create 50 threads and send some tasks */
+	vortex_thread_pool_add (ctx, 50);
+
+	printf ("Test 00-a: added 50 threads to the pool..\n");
+
+	/* now tasks some content */
+	iterator = 0;
+	while (iterator < 29) {
+		vortex_thread_pool_new_task (ctx, (VortexThreadFunc) test_00a_new_task, &value_to_update);
+		iterator++;
+	} /* end if */
+
+	/* now request to stop 17 threads */
+	vortex_thread_pool_remove (ctx, 17);
+
+	/* now tasks some content */
+	iterator = 0;
+	while (iterator < 29) {
+		vortex_thread_pool_new_task (ctx, (VortexThreadFunc) test_00a_new_task, &value_to_update);
+
+		vortex_thread_pool_remove (ctx, 1);
+		iterator++;
+	} /* end if */
+
+	iterator = 0;
+	while (iterator < 900) {
+		vortex_thread_pool_new_task (ctx, (VortexThreadFunc) test_00a_new_task, &value_to_update);
+		iterator++;
+	} /* end if */
+
+	iterator = 0;
+	while (iterator < 10) {
+		/* get started threads */
+		vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+
+		if (started_threads == 6) 
+			break;
+
+		/* wait for some time */
+		vortex_async_queue_timedpop (temp, 10000);
+		iterator++;
+	}
+
+	vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+	printf ("Test 00-a: 29 threads stopped started_threads=%d, waiting_threads=%d, pending_tasks=%d\n",
+		started_threads, waiting_threads, pending_tasks);
+
+	/* get started threads */
+	vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+	if (started_threads != 6) {
+		printf ("ERROR (2): expected to find 26 thread running but found: %d..\n", 
+			started_threads);
+		return axl_false;
+	} /* end if */
+
+	/* remove more threads */
+	vortex_thread_pool_remove (ctx, 6);
+
+	iterator = 0;
+	while (iterator < 10) {
+		/* get started threads */
+		vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+
+		if (started_threads == 1) 
+			break;
+
+		/* wait for some time */
+		vortex_async_queue_timedpop (temp, 10000);
+		iterator++;
+	}
+
+	vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+	printf ("Test 00-a: after stopping all threads started_threads=%d, waiting_threads=%d, pending_tasks=%d\n",
+		started_threads, waiting_threads, pending_tasks);
+
+	/* check that there is at least one thread running */
+	if (started_threads != 1) {
+		printf ("ERROR (3): expected to find one thread running but found %d..\n", started_threads);
+		return axl_false;
+	} /* end if */
+
 	/* lock until no waiter is reading */
 	vortex_async_queue_unref (queue);
+	vortex_async_queue_unref (temp);
 
 	/* finish context */
 	vortex_exit_ctx (ctx, axl_true);
@@ -2090,6 +2198,81 @@ axl_bool test_01j (void) {
 	/* return current handler status */
 	return test_01j_handler_value;
 }
+
+/** 
+ * @brief Checks memory consuption while sending a huge amount of
+ * messages without wanting for replies.
+ */
+axl_bool test_01k (void) {
+	VortexConnection * conn;
+	int                iterator;
+	VortexChannel    * channel;
+	VortexAsyncQueue * queue;
+	VortexFrame      * frame;
+
+	/* do a connection */
+	conn = connection_new ();
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR (1): expected proper connection..\n");
+		return axl_false;
+	}
+
+	/* create the queue */
+	queue   = vortex_async_queue_new ();
+
+	/* create a channel */
+	channel = vortex_channel_new (conn, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return axl_false;
+	}
+
+	/* set channel serialize */
+	vortex_channel_set_serialize (channel, axl_true);
+
+	/* set a pending outstanding message limit */
+	vortex_channel_set_outstanding_limit (channel, 10, axl_false);  
+
+	/* now send 10000 messages */
+	iterator = 0;
+	while (iterator < 10000) {
+		/* send message */
+		if (! vortex_channel_send_msg (channel, "This is a test", 14, NULL)) {
+			printf ("ERROR (2): expected proper channel send operation for iterator=%d..\n", iterator);
+			return axl_false;
+		} /* end if */
+		
+		/* next position */
+		iterator++;
+	}
+
+	/* now get all replies */
+	iterator = 0;
+	while (iterator < 10000) {
+		/* next frame */
+		frame = vortex_channel_get_reply (channel, queue);
+
+		/* unref frame */
+		vortex_frame_unref (frame);
+
+		/* next iterator */
+		iterator++;
+	}
+
+	/* remove queue */
+	vortex_async_queue_unref (queue);
+
+	vortex_connection_close (conn);
+	return axl_true;
+}
+
 
 #define TEST_02_MAX_CHANNELS 24
 
@@ -8762,7 +8945,7 @@ int main (int  argc, char ** argv)
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
 	printf ("**       Test available: test_00, test_00a, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
-	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j\n");
+	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, \n");
@@ -8924,6 +9107,9 @@ int main (int  argc, char ** argv)
 
 		if (axl_cmp (run_test_name, "test_01j"))
 			run_test (test_01j, "Test 01-j", "Log handling with prepared strings", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_01k"))
+			run_test (test_01k, "Test 01-k", "Limitting channel send operations (memory consuption)", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
@@ -9112,6 +9298,8 @@ int main (int  argc, char ** argv)
 	run_test (test_01i, "Test 01-i", "BEEP connect to (usually) unreachable address..", -1, -1);
 
 	run_test (test_01j, "Test 01-j", "Log handling with prepared strings", -1, -1);
+
+	run_test (test_01k, "Test 01-k", "Limitting channel send operations (memory consuption)", -1, -1);
   
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   
