@@ -2273,6 +2273,162 @@ axl_bool test_01k (void) {
 	return axl_true;
 }
 
+/** 
+ * @brief Checks memory consuption for channel serialize replies and
+ * with ANS/NUL.
+ */
+axl_bool test_01l (void) {
+	VortexConnection * conn;
+	int                iterator;
+	int                iterator2;
+	VortexChannel    * channel;
+	VortexAsyncQueue * queue;
+	VortexFrame      * frame;
+
+	/* do a connection */
+	conn = connection_new ();
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR (1): expected proper connection..\n");
+		return axl_false;
+	}
+
+	/* create the queue */
+	queue   = vortex_async_queue_new ();
+
+	/* create a channel */
+	channel = vortex_channel_new (conn, 0,
+				      REGRESSION_URI_SIMPLE_ANS_NUL,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return axl_false;
+	}
+
+	/* set channel serialize */
+	vortex_channel_set_serialize (channel, axl_true);
+
+	/* now send 10 messages */
+	iterator = 0;
+	while (iterator < 10) {
+		/* send message */
+		if (! vortex_channel_send_msg (channel, "This is a test", 14, NULL)) {
+			printf ("ERROR (2): expected proper channel send operation for iterator=%d..\n", iterator);
+			return axl_false;
+		} /* end if */
+
+		/* wait for reply */
+		iterator2 = 0;
+		while (iterator2 < 30) {
+			/* next frame */
+			frame = vortex_channel_get_reply (channel, queue);
+
+			if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_ANS) {
+				printf ("ERROR (3): expected to find ANS frame but found frame type: %d..\n",
+					vortex_frame_get_type (frame));
+				return axl_false;
+			} /* end if */
+
+			/* unref frame */
+			vortex_frame_unref (frame);
+			
+			/* next iterator */
+			iterator2++;
+		} /* end if */
+
+		/* next frame */
+		frame = vortex_channel_get_reply (channel, queue);
+		if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_NUL) {
+			printf ("ERROR (4): expected to find NUL frame but found frame type: %d..\n",
+				vortex_frame_get_type (frame));
+			return axl_false;
+		} /* end if */
+
+		/* get the frame */
+		vortex_frame_unref (frame);
+		
+		/* next position */
+		iterator++;
+	}
+
+	/* remove queue */
+	vortex_async_queue_unref (queue);
+
+	vortex_connection_close (conn);
+	return axl_true;
+}
+
+/** 
+ * @brief Checks memory consuption for channel pool
+ */
+axl_bool test_01o (void) {
+
+	VortexConnection   * conn;
+	int                  iterator;
+	VortexChannel      * channel;
+	VortexChannelPool  * pool;
+	int                  channel_num = -1;
+
+	/* do a connection */
+	conn = connection_new ();
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR (1): expected proper connection..\n");
+		return axl_false;
+	}
+
+	/* create the channel pool */
+	pool = vortex_channel_pool_new (conn,
+					REGRESSION_URI,
+					1,
+					/* no close handling */
+					NULL, NULL,
+					/* frame receive async handling */
+					NULL, NULL,
+					/* no async channel creation */
+					NULL, NULL);
+	
+	iterator = 0;
+	while (iterator < 100000) {
+		/* get a channel from the pool */
+		channel = vortex_channel_pool_get_next_ready (pool, axl_true);
+		if (channel == NULL) {
+			printf ("ERROR (3): expected to find proper channel reference but found NULL..\n");
+			return axl_false;
+		} /* end if */
+
+		if (channel_num == -1) 
+			channel_num = vortex_channel_get_number (channel);
+		else {
+			if (channel_num != vortex_channel_get_number (channel)) {
+				printf ("ERROR (4): expected to find different channel number (%d != %d)\n",
+					channel_num, vortex_channel_get_number (channel));
+				return axl_false; 
+			} /* end if */
+		}
+
+		vortex_channel_pool_release_channel (pool, channel);
+
+		/* check reference after releasing it */
+
+		/* check connections channel */
+		if (vortex_connection_channels_count (conn) != 2) {
+			printf ("ERROR (2): expected to find 2 channels on the connection but found %d..\n", 
+				vortex_connection_channels_count (conn));
+			return axl_false;
+		} /* end if */
+		
+		/* next iterator */
+		iterator++;
+	} /* end while */
+
+	vortex_connection_close (conn);
+	return axl_true;
+}
+
 
 #define TEST_02_MAX_CHANNELS 24
 
@@ -8945,7 +9101,7 @@ int main (int  argc, char ** argv)
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
 	printf ("**       Test available: test_00, test_00a, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
-	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k\n");
+	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, \n");
@@ -9110,6 +9266,12 @@ int main (int  argc, char ** argv)
 
 		if (axl_cmp (run_test_name, "test_01k"))
 			run_test (test_01k, "Test 01-k", "Limitting channel send operations (memory consuption)", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_01l"))
+			run_test (test_01l, "Test 01-l", "Memory consuption with channel serialize", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_01o"))
+			run_test (test_01o, "Test 01-o", "Memory consuption with channel pool acquire/release API", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
@@ -9300,6 +9462,10 @@ int main (int  argc, char ** argv)
 	run_test (test_01j, "Test 01-j", "Log handling with prepared strings", -1, -1);
 
 	run_test (test_01k, "Test 01-k", "Limitting channel send operations (memory consuption)", -1, -1);
+
+	run_test (test_01l, "Test 01-l", "Memory consuption with channel serialize", -1, -1);
+
+	run_test (test_01o, "Test 01-o", "Memory consuption with channel pool acquire/release API", -1, -1);
   
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   
