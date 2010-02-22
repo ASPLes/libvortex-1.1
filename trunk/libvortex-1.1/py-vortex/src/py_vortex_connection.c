@@ -1004,6 +1004,16 @@ void py_vortex_connection_find_reference_close_conn (VortexConnection * conn, ax
  * @internal Function used to reuse PyVortexConnection references
  * rather creating and finishing them especially at server side async
  * notification.
+ *
+ * This function is designed to avoid using
+ * py_vortex_connection_create providing a way to reuse references
+ * that, not only saves memory, but are available after finishing the
+ * python context that created the particular connection reference.
+ *
+ * @param conn The connection for which its reference will be looked up.
+ *
+ * @param py_ctx The vortex.Ctx object where to lookup for an already
+ * created vortex.Connection reference.
  */
 PyObject * py_vortex_connection_find_reference (VortexConnection * conn,
 						PyObject         * py_ctx)
