@@ -510,11 +510,12 @@ PyMODINIT_FUNC  initlibpy_vortex_11 (void)
 		return;
 
 	/* call to register all vortex modules and types */
-	init_vortex_ctx         (module);
-	init_vortex_connection  (module);
-	init_vortex_channel     (module);
-	init_vortex_async_queue (module);
-	init_vortex_frame       (module);
+	init_vortex_ctx          (module);
+	init_vortex_connection   (module);
+	init_vortex_channel      (module);
+	init_vortex_async_queue  (module);
+	init_vortex_frame        (module);
+	init_vortex_channel_pool (module);
 
 	return;
 }

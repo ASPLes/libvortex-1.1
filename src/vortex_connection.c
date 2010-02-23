@@ -5203,14 +5203,15 @@ VortexHash        * vortex_connection_get_channels_hash      (VortexConnection *
  * @brief Returns the channel pool identified by <i>pool_id</i>.
  *
  * If the connection has only one channel pool created, you can
- * provided as pool_id = 1.
+ * access to it using pool_id = 1.
  * 
  * @param connection the connection where the channel pool is found.
  *
- * @param pool_id the channel pool id to look up. Remember that the
+ * @param pool_id The channel pool id to look up. Remember that the
  * first pool is always have the pool id 1.
  * 
  * @return the channel pool or NULL if fails.
+ *
  */
 VortexChannelPool * vortex_connection_get_channel_pool       (VortexConnection * connection,
 							      int                pool_id)

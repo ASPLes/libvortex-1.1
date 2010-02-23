@@ -125,5 +125,6 @@ PyMODINIT_FUNC  initlibpy_vortex_11 (void);
 #include <py_vortex_channel.h>
 #include <py_vortex_async_queue.h>
 #include <py_vortex_frame.h>
+#include <py_vortex_channel_pool.h>
 
 #endif
