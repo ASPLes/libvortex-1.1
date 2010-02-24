@@ -17,14 +17,16 @@ libpy_vortex_11_la_include_HEADERS  = \
 	py_vortex_connection.h \
 	py_vortex_channel.h  \
 	py_vortex_async_queue.h \
-	py_vortex_frame.h 
+	py_vortex_frame.h \
+	py_vortex_channel_pool.h
 libpy_vortex_11_la_SOURCES  = \
 	py_vortex.c \
 	py_vortex_ctx.c \
 	py_vortex_connection.c \
 	py_vortex_channel.c \
 	py_vortex_async_queue.c \
-	py_vortex_frame.c
+	py_vortex_frame.c \
+	py_vortex_channel_pool.c
 libpy_vortex_11_la_LDFLAGS  = $(PYTHON_LIBS) $(top_srcdir)/src/libvortex-1.1.la $(AXL_LIBS)
 libpy_vortex_11_la_includedir = $(includedir)/py_vortex
 
