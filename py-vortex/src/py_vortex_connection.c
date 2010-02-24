@@ -1060,6 +1060,79 @@ PyObject * py_vortex_connection_find_reference (VortexConnection * conn,
 }
 
 /** 
+ * @brief Function used to allocate memory required by the object vortex.ChannelPool
+ */
+static PyObject * py_vortex_connection_pool_new (PyObject * self, PyObject *args, PyObject *kwds)
+{
+	PyVortexChannelPool * pool;
+	const char          * profile                   = NULL;
+	int                   init_num                  = -1;
+	PyObject            * create_channel            = NULL;
+	PyObject            * create_channel_user_data  = NULL;
+	PyObject            * close                     = NULL;
+	PyObject            * close_user_data           = NULL;
+	PyObject            * received                  = NULL;
+	PyObject            * received_user_data        = NULL;
+	PyObject            * on_channel_pool_created   = NULL;
+	PyObject            * user_data                 = NULL;
+
+	/* now parse arguments */
+	static char *kwlist[] = {"profile", "init_num", 
+				 "create_channel", "create_channel_user_data", 
+				 "close", "close_user_data", 
+				 "received", "received_user_data",
+				 "on_channel_pool_created", "user_data",
+				 NULL};
+
+	/* parse and check result */
+	if (! PyArg_ParseTupleAndKeywords(args, kwds, "si|OOOOOOOO", kwlist, 
+					  &profile, &init_num,
+					  &create_channel, &create_channel_user_data,
+					  &close, &close_user_data,
+					  &received, &received_user_data,
+					  &on_channel_pool_created, &user_data))
+		return NULL;
+
+	/* check init num value received */
+	if (init_num <= 0) {
+		PyErr_Format (PyExc_ValueError, "Expected to receive a init_num > 0 but found 0 or a lower value");
+		return NULL;
+	} /* end if */
+	
+	
+	/* create an empty pool */
+	pool = py_vortex_channel_pool_empty (self, py_vortex_connection_get_ctx (self));
+
+	/* record all handlers received */
+
+	/* allow threads */
+	Py_BEGIN_ALLOW_THREADS;
+
+		
+	/* create the pool */
+	self->pool = vortex_channel_pool_new_full (py_vortex_connection_get (py_conn),
+						   profile,
+						   init_num,
+						   py_vortex_channel_pool_create_channel,
+						   self,
+						   py_vortex_channel_pool_close_channel,
+						   self,
+						   py_vortex_channel_pool_received,
+						   self,
+						   py_vortex_channel_pool_on_pool_created,
+						   self);
+	/* end threads */
+	Py_END_ALLOW_THREADS;
+
+	py_vortex_log (PY_VORTEX_DEBUG, "created channel pool id %d, with %s:%s",
+		       vortex_channel_pool_get_id (self->conn), 
+		       vortex_channel_pool_get_host (self->conn),
+		       vortex_channel_pool_get_port (self->conn));
+
+	return (PyObject *)self;
+}
+
+/** 
  * @brief Allows to get a reference to the PyVortexCtx reference used
  * by the provided PyVortexConnection.
  * 

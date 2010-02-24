@@ -56,10 +56,12 @@ void                  init_vortex_channel_pool        (PyObject           * modu
 
 VortexChannelPool   * py_vortex_channel_pool_get      (PyObject           * py_pool);
 
-PyObject            * py_vortex_channel_pool_create   (VortexChannelPool   * pool, 
-						       PyObject            * ctx,
-						       axl_bool              acquire_ref,
-						       axl_bool              close_ref);
+PyObject            * py_vortex_channel_pool_create   (VortexChannelPool  * pool, 
+						       PyObject           * py_conn,
+						       PyObject           * ctx);
+
+PyObject            * py_vortex_channel_pool_empty    (PyObject           * py_conn,
+						       PyObject           * ctx);
 
 axl_bool              py_vortex_channel_pool_check    (PyObject           * py_pool);
 
