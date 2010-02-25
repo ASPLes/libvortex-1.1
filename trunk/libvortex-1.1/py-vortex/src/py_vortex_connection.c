@@ -630,6 +630,57 @@ static PyObject * py_vortex_connection_open_channel (PyObject * self, PyObject *
 }
 
 /** 
+ * @internal Function that implements vortex.Connection.channel_pool_new
+ */
+static PyObject * py_vortex_connection_channel_pool_new (PyObject * self, PyObject *args, PyObject *kwds)
+{
+	const char          * profile                   = NULL;
+	int                   init_num                  = -1;
+	PyObject            * create_channel            = NULL;
+	PyObject            * create_channel_user_data  = NULL;
+	PyObject            * close                     = NULL;
+	PyObject            * close_user_data           = NULL;
+	PyObject            * received                  = NULL;
+	PyObject            * received_user_data        = NULL;
+	PyObject            * on_channel_pool_created   = NULL;
+	PyObject            * user_data                 = NULL;
+
+	/* now parse arguments */
+	static char *kwlist[] = {"profile", "init_num", 
+				 "create_channel", "create_channel_user_data", 
+				 "close", "close_user_data", 
+				 "received", "received_user_data",
+				 "on_channel_pool_created", "user_data",
+				 NULL};
+
+	/* check if this is a listener connection that cannot provide
+	   this service */
+	PY_VORTEX_CONNECTION_CHECK_NOT_ROLE(self, VortexRoleMasterListener, "open_channel");
+
+	/* parse and check result */
+	if (! PyArg_ParseTupleAndKeywords(args, kwds, "si|OOOOOOOO", kwlist, 
+					  &profile, &init_num,
+					  &create_channel, &create_channel_user_data,
+					  &close, &close_user_data,
+					  &received, &received_user_data,
+					  &on_channel_pool_created, &user_data))
+		return NULL;
+
+	
+	/* create an empty pool */
+	return py_vortex_channel_pool_create (self, py_vortex_connection_get_ctx (self),
+					      profile,
+					      init_num,
+					      create_channel,
+					      create_channel_user_data,
+					      close, close_user_data,
+					      received,
+					      received_user_data,
+					      on_channel_pool_created,
+					      user_data);
+}
+
+/** 
  * @internal The following is an auxiliar structure used to bridge
  * set_on_close_full call into python. Because Vortex version allows
  * configuring several handlers at the same time, it is required to
@@ -864,6 +915,9 @@ static PyMethodDef py_vortex_connection_methods[] = {
 	/* find_by_uri */
 	{"find_by_uri", (PyCFunction) py_vortex_connection_find_by_uri, METH_VARARGS,
 	 "Allows to get a reference to all channels opened on the conection using a particular profile."},
+	/* channel_pool_new */
+	{"channel_pool_new", (PyCFunction) py_vortex_connection_channel_pool_new, METH_VARARGS | METH_KEYWORDS,
+	 "Allows to create a new channel pool (vortex.ChannelPool) on the provided connection. Channel pools are a Vortex abstraction that allows managing, grouping and reusing channel references in an efficient manner."},
 	/* close */
 	{"close", (PyCFunction) py_vortex_connection_close, METH_NOARGS,
 	 "Allows to close a the BEEP session (vortex.Connection) following all BEEP close negotation phase. The method returns True in the case the connection was cleanly closed, otherwise False is returned. If this operation finishes properly, the reference should not be used."},
@@ -1057,79 +1111,6 @@ PyObject * py_vortex_connection_find_reference (VortexConnection * conn,
 	/* now increase to return it */
 	Py_INCREF (py_conn);
 	return py_conn;
-}
-
-/** 
- * @brief Function used to allocate memory required by the object vortex.ChannelPool
- */
-static PyObject * py_vortex_connection_pool_new (PyObject * self, PyObject *args, PyObject *kwds)
-{
-	PyVortexChannelPool * pool;
-	const char          * profile                   = NULL;
-	int                   init_num                  = -1;
-	PyObject            * create_channel            = NULL;
-	PyObject            * create_channel_user_data  = NULL;
-	PyObject            * close                     = NULL;
-	PyObject            * close_user_data           = NULL;
-	PyObject            * received                  = NULL;
-	PyObject            * received_user_data        = NULL;
-	PyObject            * on_channel_pool_created   = NULL;
-	PyObject            * user_data                 = NULL;
-
-	/* now parse arguments */
-	static char *kwlist[] = {"profile", "init_num", 
-				 "create_channel", "create_channel_user_data", 
-				 "close", "close_user_data", 
-				 "received", "received_user_data",
-				 "on_channel_pool_created", "user_data",
-				 NULL};
-
-	/* parse and check result */
-	if (! PyArg_ParseTupleAndKeywords(args, kwds, "si|OOOOOOOO", kwlist, 
-					  &profile, &init_num,
-					  &create_channel, &create_channel_user_data,
-					  &close, &close_user_data,
-					  &received, &received_user_data,
-					  &on_channel_pool_created, &user_data))
-		return NULL;
-
-	/* check init num value received */
-	if (init_num <= 0) {
-		PyErr_Format (PyExc_ValueError, "Expected to receive a init_num > 0 but found 0 or a lower value");
-		return NULL;
-	} /* end if */
-	
-	
-	/* create an empty pool */
-	pool = py_vortex_channel_pool_empty (self, py_vortex_connection_get_ctx (self));
-
-	/* record all handlers received */
-
-	/* allow threads */
-	Py_BEGIN_ALLOW_THREADS;
-
-		
-	/* create the pool */
-	self->pool = vortex_channel_pool_new_full (py_vortex_connection_get (py_conn),
-						   profile,
-						   init_num,
-						   py_vortex_channel_pool_create_channel,
-						   self,
-						   py_vortex_channel_pool_close_channel,
-						   self,
-						   py_vortex_channel_pool_received,
-						   self,
-						   py_vortex_channel_pool_on_pool_created,
-						   self);
-	/* end threads */
-	Py_END_ALLOW_THREADS;
-
-	py_vortex_log (PY_VORTEX_DEBUG, "created channel pool id %d, with %s:%s",
-		       vortex_channel_pool_get_id (self->conn), 
-		       vortex_channel_pool_get_host (self->conn),
-		       vortex_channel_pool_get_port (self->conn));
-
-	return (PyObject *)self;
 }
 
 /** 
