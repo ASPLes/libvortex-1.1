@@ -128,6 +128,22 @@ PyMODINIT_FUNC  initlibpy_vortex_11 (void);
 #include <py_vortex_channel_pool.h>
 
 /** 
+ * @brief Macro that records a python object into the first reference,
+ * checking if it is null, setting Py_None in the case null reference
+ * is found.
+ *
+ * @param first_ref The reference that will receive the configuration.
+ * @param value The value reference to configure.
+ */
+#define PY_VORTEX_SET_REF(first_ref, value) do{ \
+	first_ref = value;                      \
+        if (first_ref == NULL) {                \
+	       first_ref = Py_None;             \
+        }                                       \
+        Py_INCREF (first_ref);                  \
+}while(0)
+
+/** 
  * @brief Macro that allows to check if the provided handler is
  * callable, producing an exception that notifies it is not, returning
  * the particular error message.

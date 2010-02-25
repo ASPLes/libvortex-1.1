@@ -879,12 +879,13 @@ void __vortex_xml_rpc_destroy_channel_data (XmlRpcCreateChannelData * data)
  */
 VortexChannel * __vortex_xml_rpc_create_channel (VortexConnection     * connection,
 						 int                    channel_num,
-						 char                 * profile,
+						 const char           * profile,
 						 VortexOnCloseChannel   on_close, 
 						 axlPointer             on_close_user_data,
 						 VortexOnFrameReceived  on_received, 
 						 axlPointer             on_received_user_data,
-						 axlPointer             create_channel_user_data)
+						 axlPointer             create_channel_user_data,
+						 axlPointer             user_data)
 {
 	/* reference to the creation data */
 	XmlRpcCreateChannelData * data = create_channel_user_data;

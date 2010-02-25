@@ -76,6 +76,7 @@ struct _VortexChannelPool {
 
 	/* create channel handler */
 	VortexChannelPoolCreate  create_channel;
+	axlPointer               user_data;
 };
 
 
@@ -158,8 +159,9 @@ VortexChannel * __vortex_channel_pool_add_channels (VortexChannelPool * pool, in
 							pool->close, pool->close_user_data,
 							/* received handler stuff */
 							pool->received, pool->received_user_data,
-							/* pointer defined at the channel pool creation 
-							   or at the get next available */
+							/* the following the user data pointer defined at vortex_channel_pool_new_full */
+							pool->user_data,
+							/* the following is an optional pointer defined at vortex_channel_pool_get_next_ready_full */
 							user_data);
 							
 
@@ -231,11 +233,10 @@ axlPointer __vortex_channel_pool_new (VortexChannelPoolData * data)
 	
 	/* on pool created */
 	VortexOnChannelPoolCreated    on_channel_pool_created = data->on_channel_pool_created;
-	axlPointer                    user_data               = data->user_data;
 
 	/* channel creation variables */
 	VortexChannelPoolCreate       create_channel          = data->create_channel;
-	axlPointer                    create_ch_user_data     = data->create_channel_user_data;
+	axlPointer                    user_data               = data->user_data;
 
 	/* function local parameters */
 	VortexChannelPool           * channel_pool;
@@ -260,10 +261,11 @@ axlPointer __vortex_channel_pool_new (VortexChannelPoolData * data)
 	channel_pool->received           = received;
 	channel_pool->received_user_data = received_user_data;
 	channel_pool->create_channel     = create_channel;
+	channel_pool->user_data          = user_data;
 	channel_pool->channels           = axl_list_new (axl_list_always_return_1, NULL);
 
 	/* init: create channels for the pool */
-	__vortex_channel_pool_add_channels (channel_pool, init_num, create_ch_user_data);
+	__vortex_channel_pool_add_channels (channel_pool, init_num, data->user_data);
 
 	/* now have have created the channel pool install it inside the connection */
 	channel_pool->connection = connection;
