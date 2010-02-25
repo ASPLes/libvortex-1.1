@@ -403,19 +403,23 @@ typedef void      (*VortexOnChannelPoolCreated) (VortexChannelPool * pool,
  *
  * @param on_received_user_data User defined data to be passed to the handler.
  *
- * @param create_channel_user_data User defined data provided at the channel pool creation function.
+ * @param create_channel_user_data User defined data provided at the
+ * channel pool creation function (\ref vortex_channel_pool_new_full).
+ *
+ * @param get_next_data Optional user reference defined at \ref vortex_channel_pool_get_next_ready_full.
  *
  * @return A newly created \ref VortexChannel reference or NULL if it
  * fails.
  */
 typedef VortexChannel * (* VortexChannelPoolCreate) (VortexConnection     * connection,
 						     int                    channel_num,
-						     char                 * profile,
+						     const char           * profile,
 						     VortexOnCloseChannel   on_close, 
 						     axlPointer             on_close_user_data,
 						     VortexOnFrameReceived  on_received, 
 						     axlPointer             on_received_user_data,
-						     axlPointer             create_channel_user_data);
+						     axlPointer             create_channel_user_data,
+						     axlPointer             get_next_data);
 
 /** 
  * @brief Async notifier for the channel close process, with support

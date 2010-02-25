@@ -3695,7 +3695,7 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 		return axl_true;
 	}
 	vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: not updating current max seq values: new max seq no: %u < max seq no: %u",
-	       new_max_seq_no_accepted, channel->max_seq_no_accepted);
+		    new_max_seq_no_accepted, channel->max_seq_no_accepted);
  not_update:
 	(* ackno  )  = -1;
 	(* window ) = -1;
