@@ -127,4 +127,19 @@ PyMODINIT_FUNC  initlibpy_vortex_11 (void);
 #include <py_vortex_frame.h>
 #include <py_vortex_channel_pool.h>
 
+/** 
+ * @brief Macro that allows to check if the provided handler is
+ * callable, producing an exception that notifies it is not, returning
+ * the particular error message.
+ *
+ * @param handler The python object to be check if it is callable.
+ * @param message The error message to raise for exception details.
+ */
+#define PY_VORTEX_IS_CALLABLE(handler, message) do{		     \
+	if (handler && ! PyCallable_Check (handler)) {               \
+		PyErr_Format (PyExc_ValueError, message);            \
+		return NULL;                                         \
+	}                                                            \
+	}while(0);
+
 #endif

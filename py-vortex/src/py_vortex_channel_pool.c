@@ -229,18 +229,65 @@ static PyTypeObject PyVortexChannelPoolType = {
  * @brief Creates an empty channel pool instance and set the internal
  * reference it represents.
  */
-PyObject * py_vortex_channel_pool_create   (VortexChannelPool  * pool, 
-					    PyObject           * py_conn,
-					    PyObject           * ctx)
+PyObject * py_vortex_channel_pool_create   (PyObject           * py_conn,
+					    PyObject           * ctx,
+					    const char         * profile,
+					    int                  init_num,
+					    PyObject           * create_channel,
+					    PyObject           * create_channel_user_data,
+					    PyObject           * close,
+					    PyObject           * close_user_data,
+					    PyObject           * received,
+					    PyObject           * received_user_data,
+					    PyObject           * on_channel_pool_created,
+					    PyObject           * user_data)
 {
 	/* return a new instance */
-	PyVortexChannelPool * obj = (PyVortexChannelPool *) py_vortex_channel_pool_empty (py_conn, ctx);
+	PyVortexChannelPool * obj;
 
-	/* set channel reference received */
-	if (obj && pool) {
-		/* configure the reference */
-		obj->pool = pool;
+	/* check callable handlers */
+	PY_VORTEX_IS_CALLABLE (create_channel, "create_channel handler is not a callable reference, unable to create channel pool");
+	PY_VORTEX_IS_CALLABLE (close, "close handler is not a callable reference, unable to create channel pool");
+	PY_VORTEX_IS_CALLABLE (received, "received handler is not a callable reference, unable to create channel pool");
+	PY_VORTEX_IS_CALLABLE (on_channel_pool_created, "create_channel handler is not a callable reference, unable to create channel pool");
+
+	/* check init num value received */
+	if (init_num <= 0) {
+		PyErr_Format (PyExc_ValueError, "Expected to receive a init_num > 0 but found 0 or a lower value");
+		return NULL;
 	} /* end if */
+
+	/* create the empty object here */
+	obj = (PyVortexChannelPool *) py_vortex_channel_pool_empty (py_conn, ctx);
+
+	/* allow threads */
+	Py_BEGIN_ALLOW_THREADS;
+	
+	/* record references */
+	obj->py_conn       = py_conn;
+	obj->py_vortex_ctx = py_vortex_ctx;
+
+	/* create the pool */
+	obj->pool = vortex_channel_pool_new_full (py_vortex_connection_get (py_conn),
+						  profile,
+						  init_num,
+						  /* create channel */
+						  create_channel ? py_vortex_channel_pool_create_channel : NULL,
+						  create_channel ? create_channel_user_data : NULL,
+						  /* close channel handler */
+						  close ? py_vortex_channel_pool_close_channel : NULL,
+						  close ? close_user_data : NULL,
+						  /* received handler */
+						  received ? py_vortex_channel_pool_received : NULL,
+						  received ? received_user_data : NULL,
+						  /* on created pool */
+						  on_channel_pool_created ? py_vortex_channel_pool_on_created : NULL,
+						  on_channel_pool_created ? user_data);
+	/* end threads */
+	Py_END_ALLOW_THREADS;
+
+	py_vortex_log (PY_VORTEX_DEBUG, "created channel pool id %d",
+		       vortex_channel_pool_get_id (obj->pool));
 	
 	/* return object */
 	return (PyObject *) obj;
