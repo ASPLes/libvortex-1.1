@@ -151,6 +151,10 @@ PyObject * py_vortex_channel_pool_get_attr (PyObject *o, PyObject *attr_name) {
 		/* found ctx attribute */
 		Py_XINCREF (self->py_vortex_ctx);
 		return self->py_vortex_ctx;
+	} else if (axl_cmp (attr, "channel_count")) {
+		return Py_BuildValue ("i", vortex_channel_pool_get_num (self->pool));
+	} else if (axl_cmp (attr, "channel_available")) {
+		return Py_BuildValue ("i", vortex_channel_pool_get_available_num (self->pool));
 	} /* end if */
 
 	/* first implement generic attr already defined */
@@ -171,7 +175,7 @@ static PyObject * py_vortex_channel_pool_next_ready (PyVortexChannelPool * self,
 	static char *kwlist[] = {"auto_inc", "user_data", NULL};
 
 	/* parse and check result */
-	if (! PyArg_ParseTupleAndKeywords(args, kwds, "|iO", kwlist, &auto_inc, user_data))
+	if (! PyArg_ParseTupleAndKeywords(args, kwds, "|iO", kwlist, &auto_inc, &user_data)) 
 		return NULL;
 
 	/* allow threads */
@@ -192,10 +196,32 @@ static PyObject * py_vortex_channel_pool_next_ready (PyVortexChannelPool * self,
 	return py_vortex_channel_create (channel, self->py_conn);
 }
 
+static PyObject * py_vortex_channel_pool_release (PyVortexChannelPool * self, PyObject * args, PyObject * kwds)
+{
+	PyObject      * channel = NULL;
+	
+	/* now parse arguments */
+	static char *kwlist[] = {"channel", NULL};
+
+	/* parse and check result */
+	if (! PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &channel))
+		return NULL;
+
+	/* call to release the channel */
+	vortex_channel_pool_release_channel (self->pool, py_vortex_channel_get (channel));
+
+	/* create the python channel reference */
+	Py_INCREF (Py_None);
+	return Py_None;
+}
+
 static PyMethodDef py_vortex_channel_pool_methods[] = { 
-	/* is_ok */
-	{"next_ready", (PyCFunction) py_vortex_channel_pool_next_ready, METH_NOARGS,
+	/* next_ready */
+	{"next_ready", (PyCFunction) py_vortex_channel_pool_next_ready, METH_VARARGS | METH_KEYWORDS,
 	 "Allows to get next channel ready on the pool. "},
+	/* release */
+	{"release", (PyCFunction) py_vortex_channel_pool_release, METH_VARARGS | METH_KEYWORDS,
+	 "Allows release a channel used from the pool that was obtained via .next_ready() method. "},
  	{NULL}  
 }; 
 
@@ -254,12 +280,13 @@ VortexChannel * py_vortex_channel_pool_create_channel (VortexConnection      * c
 						       axlPointer              get_next_data)
 {
 	/* reference to the python channel */
-	PyVortexChannelPool * pool    = user_data;
-	PyObject            * py_conn = pool->py_conn;
+	PyVortexChannelPool * pool       = user_data;
+	PyObject            * _next_data = get_next_data;
+	PyObject            * py_conn    = pool->py_conn;
 	PyObject            * args;
 	PyGILState_STATE      state;
 	PyObject            * result;
-	VortexChannel       * channel = NULL;
+	VortexChannel       * channel    = NULL;
 
 	/* acquire the GIL */
 	state = PyGILState_Ensure();
@@ -268,7 +295,7 @@ VortexChannel * py_vortex_channel_pool_create_channel (VortexConnection      * c
 	Py_INCREF (py_conn);
 
 	/* create a tuple to contain arguments */
-	args = PyTuple_New (4);
+	args = PyTuple_New (9);
 
 	/* the following function PyTuple_SetItem "steals" a reference
 	 * which is the python way to say that we are transfering the
@@ -292,6 +319,11 @@ VortexChannel * py_vortex_channel_pool_create_channel (VortexConnection      * c
 
 	Py_INCREF (pool->user_data);
 	PyTuple_SetItem (args, 7, pool->user_data);
+
+	if (_next_data == NULL)
+		_next_data = Py_None;
+	Py_INCREF (_next_data);
+	PyTuple_SetItem (args, 8, _next_data);
 
 	/* now invoke */
 	result = PyObject_Call (pool->create_channel, args, NULL);

@@ -560,6 +560,9 @@ VortexChannelPool * vortex_channel_pool_new_full       (VortexConnection        
  * @param pool the vortex channel pool to operate on.
  * 
  * @return the channel number or -1 if fail
+ *
+ * See also \ref vortex_channel_pool_get_available_num which returns the total
+ * amount of channels that are available (excluding busy channels).
  */
 int                 vortex_channel_pool_get_num        (VortexChannelPool * pool)
 {
@@ -570,6 +573,44 @@ int                 vortex_channel_pool_get_num        (VortexChannelPool * pool
 	vortex_connection_lock_channel_pool   (pool->connection);
 
 	num = axl_list_length (pool->channels);
+
+	vortex_connection_unlock_channel_pool (pool->connection);
+
+	return num;
+}
+
+axl_bool  __count_ready (axlPointer channel, int * _count)
+{
+	if (__vortex_channel_pool_is_ready (channel)) {
+		/* channel ready, increase count */
+		(*_count)++;
+	}
+	return axl_false;
+	
+} /* end __find_ready */
+
+/** 
+ * @brief Allows to get the number of channels that are available to
+ * be used on the pool (channels that can be selected by
+ * vortex_channel_pool_get_next_ready).
+ *
+ * @param pool The channel pool to check for available number of channels.
+ *
+ * @return The number of channel available or -1 if it fails. 
+ *
+ * See also \ref vortex_channel_pool_get_num which returns the total
+ * amount of channels available no matter if they are busy or ready.
+ */
+int                 vortex_channel_pool_get_available_num (VortexChannelPool * pool)
+{
+	int  num = 0;
+	if (pool == NULL)
+		return -1;
+
+	vortex_connection_lock_channel_pool   (pool->connection);
+
+	/* count all ready channels at this moment */
+	axl_list_lookup (pool->channels, (axlLookupFunc) __count_ready, &num);
 
 	vortex_connection_unlock_channel_pool (pool->connection);
 
