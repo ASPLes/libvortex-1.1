@@ -1994,6 +1994,62 @@ def test_20():
     
     return True
 
+def test_21():
+    # create a context
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # connect
+    conn = vortex.Connection (ctx, host, port)
+
+    # create channel pool
+    pool = conn.channel_pool_new (REGRESSION_URI, 1)
+
+    # check number of channels in the pool
+    if pool.channel_count != 1:
+        error ("Expected to find channel count equal to 1 but found: " + str (pool.channel_count))
+        return False
+
+    # check channel pool id
+    if pool.id != 1:
+        error ("Expected to find channel pool id equal to 1 but found: " + str (pool.id))
+        return False
+
+    iterator = 0
+    while iterator < 10:
+        # get a channel from the pool
+        channel = pool.next_ready ()
+
+        if not channel:
+            error ("Expected to find a channel reference available in the pool..but not found")
+            return False
+
+        if channel.number != 3:
+            error ("Expected to find channel number 3 but found: " + str (channel.number))
+            return False
+
+        # check number of channels that are available at this moment
+        if pool.channel_available != 0:
+            error ("Expected to not find any channel available but found: " + str (pool.channel_available))
+            return False
+
+        # ok, now release channel
+        pool.release (channel)
+
+        # check number of channels that are available at this moment
+        if pool.channel_available != 1:
+            error ("Expected to find 1 channel available but found: " + str (pool.channel_available))
+            return False
+
+        # next position
+        iterator += 1
+
+    return True
+
 ###########################
 # intraestructure support #
 ###########################
@@ -2027,36 +2083,37 @@ def run_all_tests ():
 
 # declare list of tests available
 tests = [
-    (test_00_a, "Check PyVortex async queue wrapper"),
-    (test_01,   "Check PyVortex context initialization"),
-    (test_02,   "Check PyVortex basic BEEP connection"),
-    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
-    (test_03_a, "Check PyVortex connection set data"),
-    (test_04,   "Check PyVortex basic BEEP channel creation"),
-    (test_05,   "Check BEEP basic data exchange"),
-    (test_06,   "Check BEEP check several send operations (serialize)"),
-    (test_07,   "Check BEEP check several send operations (one send, one receive)"),
-    (test_08,   "Check BEEP transfer zeroed binaries frames"),
-    (test_09,   "Check BEEP channel support"),
-    (test_10,   "Check BEEP channel creation deny"),
-    (test_10_a, "Check BEEP channel creation deny"),
-    (test_10_b, "Check reference counting on async notifications"),
-    (test_10_c, "Check async channel start notification"),
-    (test_10_d, "Check async channel start notification (failure expected)"),
-    (test_11,   "Check BEEP listener support"),
-    (test_12,   "Check connection on close notification"),
-    (test_12_a, "Check connection on close notification (during channel start)"),
-    (test_12_b, "Check channel start during connection close notify"),
-    (test_12_c, "Check close notification for conn refs not owned by caller"),
-    (test_12_d, "Check close notification for conn refs at listener"),
-    (test_13,   "Check wrong listener allocation"),
-    (test_14,   "Check SASL PLAIN support"),
-    (test_15,   "Check SASL ANONYMOUS support"),
-    (test_16,   "Check SASL DIGEST-MD5 support"),
-    (test_17,   "Check SASL CRAM-MD5 support"),
-    (test_18,   "Check TLS support"),
-    (test_19,   "Check TLS support (async notification)"),
-    (test_20,   "Check SASL PLAIN support (async notification)")
+#    (test_00_a, "Check PyVortex async queue wrapper"),
+#    (test_01,   "Check PyVortex context initialization"),
+#    (test_02,   "Check PyVortex basic BEEP connection"),
+#    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
+#    (test_03_a, "Check PyVortex connection set data"),
+#    (test_04,   "Check PyVortex basic BEEP channel creation"),
+#    (test_05,   "Check BEEP basic data exchange"),
+#    (test_06,   "Check BEEP check several send operations (serialize)"),
+#    (test_07,   "Check BEEP check several send operations (one send, one receive)"),
+#    (test_08,   "Check BEEP transfer zeroed binaries frames"),
+#    (test_09,   "Check BEEP channel support"),
+#    (test_10,   "Check BEEP channel creation deny"),
+#    (test_10_a, "Check BEEP channel creation deny"),
+#    (test_10_b, "Check reference counting on async notifications"),
+#    (test_10_c, "Check async channel start notification"),
+#    (test_10_d, "Check async channel start notification (failure expected)"),
+#    (test_11,   "Check BEEP listener support"),
+#    (test_12,   "Check connection on close notification"),
+#    (test_12_a, "Check connection on close notification (during channel start)"),
+#    (test_12_b, "Check channel start during connection close notify"),
+#    (test_12_c, "Check close notification for conn refs not owned by caller"),
+#    (test_12_d, "Check close notification for conn refs at listener"),
+#    (test_13,   "Check wrong listener allocation"),
+#    (test_14,   "Check SASL PLAIN support"),
+#    (test_15,   "Check SASL ANONYMOUS support"),
+#    (test_16,   "Check SASL DIGEST-MD5 support"),
+#    (test_17,   "Check SASL CRAM-MD5 support"),
+#    (test_18,   "Check TLS support"),
+#    (test_19,   "Check TLS support (async notification)"),
+#    (test_20,   "Check SASL PLAIN support (async notification)")
+    (test_21,   "Check channel pool support")
 ]
 
 # declare default host and port

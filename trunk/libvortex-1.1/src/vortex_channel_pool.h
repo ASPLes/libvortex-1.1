@@ -65,6 +65,8 @@ VortexChannelPool * vortex_channel_pool_new_full          (VortexConnection     
 
 int                 vortex_channel_pool_get_num           (VortexChannelPool * pool);
 
+int                 vortex_channel_pool_get_available_num (VortexChannelPool * pool);
+
 void                vortex_channel_pool_add               (VortexChannelPool * pool,
 							   int  num);
 
