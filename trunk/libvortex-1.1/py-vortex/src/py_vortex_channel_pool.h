@@ -77,6 +77,7 @@ axl_bool              py_vortex_channel_pool_check    (PyObject           * py_p
 PyObject            * py_vortex_channel_pool_get_ctx  (PyObject           * py_pool);
 
 PyObject            * py_vortex_channel_pool_find_reference (VortexChannelPool * pool,
+							     PyObject          * _py_conn,
 							     PyObject          * py_ctx);
 
 #define PY_CHANNEL_POOL_GET(py_obj) (((PyVortexChannelPool*)self)->pool)

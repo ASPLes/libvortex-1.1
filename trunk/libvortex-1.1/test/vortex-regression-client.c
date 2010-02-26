@@ -5710,6 +5710,76 @@ axl_bool  test_03c (void) {
 	return axl_true;
 }
 
+VortexChannel * test_03d_create_handler (VortexConnection     * conn,
+					 int                    channel_num,
+					 const char           * profile,
+					 VortexOnCloseChannel   on_close, 
+					 axlPointer             on_close_user_data,
+					 VortexOnFrameReceived  on_received, 
+					 axlPointer             on_received_user_data,
+					 /* additional pointers */
+					 axlPointer             create_channel_user_data,
+					 axlPointer             get_next_data)
+{
+	/* check references received */
+	printf ("Test 03-d: beacons received: %d - %d\n", 
+		PTR_TO_INT (create_channel_user_data), PTR_TO_INT (get_next_data));
+	if (PTR_TO_INT (create_channel_user_data) != 3 || PTR_TO_INT (get_next_data) != 4)
+		return NULL;
+
+	/* create a channel */
+	return vortex_channel_new (conn, channel_num, REGRESSION_URI, NULL, NULL, NULL, NULL, NULL, NULL);
+}
+
+axl_bool  test_03d (void) {
+	
+	VortexConnection   * connection;
+	VortexChannelPool  * pool;
+	VortexChannel      * channel;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+
+	/* create the channel pool */
+	pool = vortex_channel_pool_new_full (connection,
+					     REGRESSION_URI,
+					     1,
+					     /* create handler */
+					     test_03d_create_handler, 
+					     /* pointer */
+					     INT_TO_PTR (3),
+					     /* no close handling */
+					     NULL, NULL,
+					     /* frame receive async handling */
+					     NULL, NULL,
+					     /* no async channel creation */
+					     NULL, NULL);
+
+	/* ask for a channel */
+	channel = vortex_channel_pool_get_next_ready_full (pool, axl_true, INT_TO_PTR (4));
+
+	if (channel == NULL) {
+		printf ("ERROR: expected to find proper references..\n");
+		return axl_false;
+	} /* end if */
+	
+	/* check channel is ready at this point */
+	if (! vortex_channel_is_ready (channel)) {
+		printf ("ERROR: expected to find channel to be ready, but found it isn't..\n");
+		return axl_false;
+	} /* end if */
+
+	/* ok, close the connection */
+	vortex_connection_close (connection);
+
+	/* return axl_true */
+	return axl_true;
+}
+
 /* constant for test_04 */
 #define MAX_NUM_CON 1000
 
@@ -9105,10 +9175,10 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_02, test_02a, test_02a1, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, \n");
- 	printf ("**                       test_03, test_03a, test_03b, test_03c, test_04, test_04a, test_04b, test_04c, \n");
- 	printf ("**                       test_05, test_05a, test_05b, test_06, test_06a, test_07, test_08, test_09, test_10, \n");
- 	printf ("**                       test_11, test_12, test_13, test_14, test_14a, test_14b, test_14c\n");
- 	printf ("**                       test_14d, test_15, test_15a\n");
+ 	printf ("**                       test_03, test_03a, test_03b, test_03d, test_03c, test_04, test_04a, \n");
+ 	printf ("**                       test_04b, test_04c, test_05, test_05a, test_05b, test_06, test_06a, \n");
+ 	printf ("**                       test_07, test_08, test_09, test_10, test_11, test_12, test_13, test_14, \n");
+ 	printf ("**                       test_14a, test_14b, test_14ctest_14d, test_15, test_15a\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -9342,6 +9412,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_03c"))
 			run_test (test_03c, "Test 03-c", "vortex ANS/NUL replies with serialize not attended", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_03d"))
+			run_test (test_03d, "Test 03-d", "vortex channel pool support (auxiliar pointers)", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_04"))
 			run_test (test_04, "Test 04", "Handling many connections support", -1, -1);
 
@@ -9512,6 +9585,8 @@ int main (int  argc, char ** argv)
  	run_test (test_03b, "Test 03-b", "vortex channel pool support (ANS/NUL reply check)", -1, -1);
 
  	run_test (test_03c, "Test 03-c", "vortex ANS/NUL replies with serialize not attended", -1, -1);
+
+ 	run_test (test_03d, "Test 03-d", "vortex channel pool support (auxiliar pointers)", -1, -1);
   
  	run_test (test_04, "Test 04", "Handling many connections support", -1, -1);
   

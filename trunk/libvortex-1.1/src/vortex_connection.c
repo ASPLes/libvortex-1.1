@@ -5778,6 +5778,8 @@ void vortex_connection_set_on_close_full  (VortexConnection * connection,
  * @param on_close_handler The handler to be executed once the event
  * is produced.
  *
+ * @param insert_last Allows to configure if the handler should be inserted at the last position.
+ *
  * @param data User defined data to be passed to the handler.
  * 
  */
