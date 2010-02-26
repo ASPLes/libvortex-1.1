@@ -647,9 +647,9 @@ static PyObject * py_vortex_connection_channel_pool_new (PyObject * self, PyObje
 
 	/* now parse arguments */
 	static char *kwlist[] = {"profile", "init_num", 
-				 "create_channel", "create_channel_user_data", 
-				 "close", "close_user_data", 
-				 "received", "received_user_data",
+				 "create_channel", "create_channel_data", 
+				 "frame_received", "frame_received_data",
+				 "close", "close_data", 
 				 "on_channel_pool_created", "user_data",
 				 NULL};
 
@@ -661,8 +661,8 @@ static PyObject * py_vortex_connection_channel_pool_new (PyObject * self, PyObje
 	if (! PyArg_ParseTupleAndKeywords(args, kwds, "si|OOOOOOOO", kwlist, 
 					  &profile, &init_num,
 					  &create_channel, &create_channel_user_data,
-					  &close, &close_user_data,
 					  &received, &received_user_data,
+					  &close, &close_user_data,
 					  &on_channel_pool_created, &user_data))
 		return NULL;
 
@@ -678,6 +678,37 @@ static PyObject * py_vortex_connection_channel_pool_new (PyObject * self, PyObje
 					      received_user_data,
 					      on_channel_pool_created,
 					      user_data);
+}
+
+/** 
+ * @internal Function that implements vortex.Connection.pool
+ */
+static PyObject * py_vortex_connection_get_pool (PyObject * self, PyObject *args, PyObject *kwds)
+{
+	int                   pool_id                   = 1;
+	VortexChannelPool   * pool;
+
+	/* now parse arguments */
+	static char *kwlist[] = {"pool_id", NULL};
+
+	/* check if this is a listener connection that cannot provide
+	   this service */
+	PY_VORTEX_CONNECTION_CHECK_NOT_ROLE(self, VortexRoleMasterListener, "pool");
+
+	/* parse and check result */
+	if (! PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &pool_id))
+		return NULL;
+
+	/* get the pool with the provided id */
+	pool = vortex_connection_get_channel_pool (py_vortex_connection_get (self), pool_id);
+	if (pool == NULL) {
+		/* no pool found */
+		Py_INCREF (Py_None);
+		return Py_None;
+	} /* end if */
+	
+	/* return wrapped reference */
+	return py_vortex_channel_pool_find_reference (pool, self, ((PyVortexConnection *) self)->py_vortex_ctx);
 }
 
 /** 
@@ -918,6 +949,9 @@ static PyMethodDef py_vortex_connection_methods[] = {
 	/* channel_pool_new */
 	{"channel_pool_new", (PyCFunction) py_vortex_connection_channel_pool_new, METH_VARARGS | METH_KEYWORDS,
 	 "Allows to create a new channel pool (vortex.ChannelPool) on the provided connection. Channel pools are a Vortex abstraction that allows managing, grouping and reusing channel references in an efficient manner."},
+	/* pool */
+	{"pool", (PyCFunction) py_vortex_connection_get_pool, METH_VARARGS | METH_KEYWORDS,
+	 "Allows to get a reference to the default pool (no parameters) or to a selected pool with a particular id."},
 	/* close */
 	{"close", (PyCFunction) py_vortex_connection_close, METH_NOARGS,
 	 "Allows to close a the BEEP session (vortex.Connection) following all BEEP close negotation phase. The method returns True in the case the connection was cleanly closed, otherwise False is returned. If this operation finishes properly, the reference should not be used."},

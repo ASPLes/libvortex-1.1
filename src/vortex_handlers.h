@@ -418,6 +418,7 @@ typedef VortexChannel * (* VortexChannelPoolCreate) (VortexConnection     * conn
 						     axlPointer             on_close_user_data,
 						     VortexOnFrameReceived  on_received, 
 						     axlPointer             on_received_user_data,
+						     /* additional pointers */
 						     axlPointer             create_channel_user_data,
 						     axlPointer             get_next_data);
 

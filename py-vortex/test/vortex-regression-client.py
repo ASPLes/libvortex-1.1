@@ -1994,6 +1994,11 @@ def test_20():
     
     return True
 
+def test_21_create_channel (conn, channel_num, profile, received, received_data, close, close_data, user_data, next_data):
+    info ("Called to create channel with profile: " + profile)
+    channel = conn.open_channel (channel_num, profile)
+    return channel
+
 def test_21():
     # create a context
     ctx = vortex.Ctx ()
@@ -2047,6 +2052,169 @@ def test_21():
 
         # next position
         iterator += 1
+
+    # get a channel from the default pool
+    channel = conn.pool().next_ready ()
+
+    if not channel:
+        error ("Expected to find a channel reference available in the pool..but not found")
+        return False
+
+    if channel.number != 3:
+        error ("Expected to find channel number 3 but found: " + str (channel.number))
+        return False
+
+    # check number of channels that are available at this moment
+    if conn.pool().channel_available != 0:
+        error ("Expected to not find any channel available but found: " + str (conn.pool().channel_available))
+        return False
+
+    # ok, now release channel
+    conn.pool().release (channel)
+
+    # check number of channels that are available at this moment
+    if conn.pool().channel_available != 1:
+        error ("Expected to find 1 channel available but found: " + str (conn.pool().channel_available))
+        return False
+
+    # get a channel from a particular pool
+    channel = conn.pool(1).next_ready ()
+
+    if not channel:
+        error ("Expected to find a channel reference available in the pool..but not found")
+        return False
+
+    if channel.number != 3:
+        error ("Expected to find channel number 3 but found: " + str (channel.number))
+        return False
+
+    # check number of channels that are available at this moment
+    if conn.pool(1).channel_available != 0:
+        error ("Expected to not find any channel available but found: " + str (conn.pool(1).channel_available))
+        return False
+
+    # ok, now release channel
+    conn.pool(1).release (channel)
+
+    # check number of channels that are available at this moment
+    if conn.pool(1).channel_available != 1:
+        error ("Expected to find 1 channel available but found: " + str (conn.pool(1).channel_available))
+        return False
+
+    # create channel pool
+    pool = conn.channel_pool_new (REGRESSION_URI, 1,
+                                  create_channel=test_21_create_channel, create_channel_user_data=17)
+    
+    # check number of channels in the pool
+    if pool.channel_count != 1:
+        error ("Expected to find channel count equal to 1 but found: " + str (pool.channel_count))
+        return False
+
+    # check channel pool id
+    if pool.id != 2:
+        error ("Expected to find channel pool id equal to 2 but found: " + str (pool.id))
+        return False
+
+    # get a channel from a particular pool
+    channel = conn.pool(2).next_ready ()
+
+    if not channel:
+        error ("Expected to find a channel reference available in the pool..but not found")
+        return False
+
+    if channel.number != 5:
+        error ("Expected to find channel number 5 but found: " + str (channel.number))
+        return False
+
+    # release channel
+    conn.pool(2).release (channel)
+
+    # get a channel from a particular pool
+    channel = conn.pool(1).next_ready ()
+
+    if not channel:
+        error ("Expected to find a channel reference available in the pool..but not found")
+        return False
+
+    if channel.number != 3:
+        error ("Expected to find channel number 3 but found: " + str (channel.number))
+        return False
+
+    # release channel
+    conn.pool(1).release (channel)
+
+    return True
+
+def test_22_create_channel(conn, channel_num, profile, received, received_data, close, close_data, user_data, next_data):
+    info ("Called to create channel with profile: " + profile + ", and channel num: " + str (channel_num))
+
+    # check beacon
+    if user_data != 20:
+        error ("Expected to find create beacon equal to 20, but found: " + str (user_data))
+        return None
+
+    # update beacon
+    user_data = 21
+    
+    return conn.open_channel (channel_num, profile)
+
+def test_22_pool_created (pool, data):
+
+    info ("Called pool on created: ")
+    if pool.id != 1:
+        error ("Expected to find pool id equal to 1 but found: " + str (pool.id))
+        return
+
+    # now push the pool
+    data.push (pool)
+    info ("Pushed pool created")
+    return
+
+def test_22_received (conn, channel, frame, queue):
+    # push frame received
+    queue.push (frame)
+    return
+
+def test_22 ():
+    # create a context
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # connect
+    conn = vortex.Connection (ctx, host, port)
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # create channel pool
+    info ("Creating channel pool..")
+    close_beacon  = 10
+    create_beacon = 20
+    queue         = vortex.AsyncQueue ()
+    conn.channel_pool_new (REGRESSION_URI, 1,
+                           create_channel=test_22_create_channel, create_channel_data=create_beacon,
+                           frame_received=test_22_received, frame_received_data=queue,
+                           on_channel_pool_created=test_22_pool_created, user_data=queue)
+    info ("Getting channel pool reference..")
+    pool = queue.pop ()
+    info ("Received pool reference..")
+
+    # check channel pool
+    value = pool.id
+    if value != 1:
+        error ("Expected to find channel pool id equal to 1 but found: " + str (value))
+        return False
+
+    # now check connection
+    if pool.conn.id != conn.id:
+        error ("Expected to find connection id: " + str (conn.id) + ", but found: " + str (pool.conn.id))
+        return False
+
+    info ("Checking rest of the API..")
 
     return True
 
@@ -2113,7 +2281,8 @@ tests = [
 #    (test_18,   "Check TLS support"),
 #    (test_19,   "Check TLS support (async notification)"),
 #    (test_20,   "Check SASL PLAIN support (async notification)")
-    (test_21,   "Check channel pool support")
+#    (test_21,   "Check channel pool support"),
+    (test_22,   "Check channel pool support (handlers)")
 ]
 
 # declare default host and port

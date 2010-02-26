@@ -76,7 +76,7 @@ struct _VortexChannelPool {
 
 	/* create channel handler */
 	VortexChannelPoolCreate  create_channel;
-	axlPointer               user_data;
+	axlPointer               create_channel_user_data;
 };
 
 
@@ -160,7 +160,7 @@ VortexChannel * __vortex_channel_pool_add_channels (VortexChannelPool * pool, in
 							/* received handler stuff */
 							pool->received, pool->received_user_data,
 							/* the following the user data pointer defined at vortex_channel_pool_new_full */
-							pool->user_data,
+							pool->create_channel_user_data,
 							/* the following is an optional pointer defined at vortex_channel_pool_get_next_ready_full */
 							user_data);
 							
@@ -232,11 +232,12 @@ axlPointer __vortex_channel_pool_new (VortexChannelPoolData * data)
 	axlPointer                    received_user_data      = data->received_user_data;
 	
 	/* on pool created */
-	VortexOnChannelPoolCreated    on_channel_pool_created = data->on_channel_pool_created;
+	VortexOnChannelPoolCreated    on_channel_pool_created   = data->on_channel_pool_created;
+	axlPointer                    user_data                 = data->user_data;
 
 	/* channel creation variables */
-	VortexChannelPoolCreate       create_channel          = data->create_channel;
-	axlPointer                    user_data               = data->user_data;
+	VortexChannelPoolCreate       create_channel            = data->create_channel;
+	axlPointer                    create_channel_user_data  = data->create_channel_user_data;
 
 	/* function local parameters */
 	VortexChannelPool           * channel_pool;
@@ -252,20 +253,20 @@ axlPointer __vortex_channel_pool_new (VortexChannelPoolData * data)
 	vortex_connection_lock_channel_pool (connection);
 
 	/* init channel pool type */
-	channel_pool                     = axl_new (VortexChannelPool, 1);
-	channel_pool->id                 = vortex_connection_next_channel_pool_id (connection);
-	channel_pool->connection         = connection;
-	channel_pool->profile            = axl_strdup (profile);
-	channel_pool->close              = close;
-	channel_pool->close_user_data    = close_user_data;
-	channel_pool->received           = received;
-	channel_pool->received_user_data = received_user_data;
-	channel_pool->create_channel     = create_channel;
-	channel_pool->user_data          = user_data;
-	channel_pool->channels           = axl_list_new (axl_list_always_return_1, NULL);
+	channel_pool                           = axl_new (VortexChannelPool, 1);
+	channel_pool->id                       = vortex_connection_next_channel_pool_id (connection);
+	channel_pool->connection               = connection;
+	channel_pool->profile                  = axl_strdup (profile);
+	channel_pool->close                    = close;
+	channel_pool->close_user_data          = close_user_data;
+	channel_pool->received                 = received;
+	channel_pool->received_user_data       = received_user_data;
+	channel_pool->create_channel           = create_channel;
+	channel_pool->create_channel_user_data = create_channel_user_data;
+	channel_pool->channels                 = axl_list_new (axl_list_always_return_1, NULL);
 
 	/* init: create channels for the pool */
-	__vortex_channel_pool_add_channels (channel_pool, init_num, data->user_data);
+	__vortex_channel_pool_add_channels (channel_pool, init_num, NULL);
 
 	/* now have have created the channel pool install it inside the connection */
 	channel_pool->connection = connection;
@@ -518,7 +519,7 @@ VortexChannelPool * vortex_channel_pool_new_full       (VortexConnection        
 							VortexOnFrameReceived       received,
 							axlPointer                  received_user_data,
 							VortexOnChannelPoolCreated  on_channel_pool_created,
-							axlPointer user_data)
+							axlPointer                  user_data)
 {
 	VortexChannelPoolData * data;
 	VortexCtx             * ctx = vortex_connection_get_ctx (connection);

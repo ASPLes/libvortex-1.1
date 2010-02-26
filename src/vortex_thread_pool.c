@@ -426,7 +426,7 @@ void vortex_thread_pool_new_task (VortexCtx * ctx, VortexThreadFunc func, axlPoi
 /** 
  * @brief Allows to get current stats of the vortex thread pool. The
  * function returns the number of started threads (threads initialized
- * at \ref vortex_ctx_init), waiting threads (threads that aren't
+ * at \ref vortex_init_ctx), waiting threads (threads that aren't
  * processing any job) and pending tasks (the amount of pending tasks
  * to be processed by the pool (this includes frame notifications,
  * connection close notifications and so on).
