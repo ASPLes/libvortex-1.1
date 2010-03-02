@@ -763,7 +763,7 @@ def test_10 ():
     # open a channel
     channel = conn.open_channel (0, REGRESSION_URI_DENY)
     if channel: 
-        error ("Expected to find channel error but found a proper channel reference")
+        error ("Expected to find channel error but found a proper channel reference (1)")
         return False
 
     # check errors here 
@@ -781,7 +781,7 @@ def test_10 ():
     # open a channel (DENY with a supported profile) 
     channel = conn.open_channel (0, REGRESSION_URI_DENY_SUPPORTED)
     if channel: 
-        error ("Expected to find channel error but found a proper channel reference")
+        error ("Expected to find channel error but found a proper channel reference (2)")
         return False
 
     # check errors here 
@@ -2024,6 +2024,7 @@ def test_21():
         error ("Expected to find channel pool id equal to 1 but found: " + str (pool.id))
         return False
 
+    info ("Checking to acquire and release channel..")
     iterator = 0
     while iterator < 10:
         # get a channel from the pool
@@ -2053,6 +2054,8 @@ def test_21():
         # next position
         iterator += 1
 
+    info ("Checking to acquire and release channel through conn.pool() method")
+
     # get a channel from the default pool
     channel = conn.pool().next_ready ()
 
@@ -2076,6 +2079,8 @@ def test_21():
     if conn.pool().channel_available != 1:
         error ("Expected to find 1 channel available but found: " + str (conn.pool().channel_available))
         return False
+
+    info ("Checking to acquire and release channel through conn.pool(1) method")
 
     # get a channel from a particular pool
     channel = conn.pool(1).next_ready ()
@@ -2101,9 +2106,11 @@ def test_21():
         error ("Expected to find 1 channel available but found: " + str (conn.pool(1).channel_available))
         return False
 
+    info ("Creating a new pool (using same variables)")
+
     # create channel pool
     pool = conn.channel_pool_new (REGRESSION_URI, 1,
-                                  create_channel=test_21_create_channel, create_channel_user_data=17)
+                                  create_channel=test_21_create_channel, create_channel_data=17)
     
     # check number of channels in the pool
     if pool.channel_count != 1:
@@ -2129,6 +2136,8 @@ def test_21():
     # release channel
     conn.pool(2).release (channel)
 
+    info ("Now checking to access to channels from first pool..");
+
     # get a channel from a particular pool
     channel = conn.pool(1).next_ready ()
 
@@ -2143,26 +2152,30 @@ def test_21():
     # release channel
     conn.pool(1).release (channel)
 
+    info ("Finished release channel from first pool")
+
     return True
 
 def test_22_create_channel(conn, channel_num, profile, received, received_data, close, close_data, user_data, next_data):
     info ("Called to create channel with profile: " + profile + ", and channel num: " + str (channel_num))
+    info ("User data received: " + str (user_data))
+    info ("Next data received: " + str (next_data))
 
     # check beacon
-    if user_data != 20:
-        error ("Expected to find create beacon equal to 20, but found: " + str (user_data))
+    if user_data[0] != 20:
+        error ("Expected to find create beacon equal to 20, but found: " + str (user_data[0]))
         return None
 
     # update beacon
-    user_data = 21
+    user_data[0] = 21
     
     return conn.open_channel (channel_num, profile)
 
 def test_22_pool_created (pool, data):
 
-    info ("Called pool on created: ")
+    info ("Called pool on created: " + str (pool))
     if pool.id != 1:
-        error ("Expected to find pool id equal to 1 but found: " + str (pool.id))
+        error ("ON HANDLER: Expected to find pool id equal to 1 but found: " + str (pool.id))
         return
 
     # now push the pool
@@ -2193,7 +2206,7 @@ def test_22 ():
     # create channel pool
     info ("Creating channel pool..")
     close_beacon  = 10
-    create_beacon = 20
+    create_beacon = [20]
     queue         = vortex.AsyncQueue ()
     conn.channel_pool_new (REGRESSION_URI, 1,
                            create_channel=test_22_create_channel, create_channel_data=create_beacon,
@@ -2215,6 +2228,28 @@ def test_22 ():
         return False
 
     info ("Checking rest of the API..")
+    if create_beacon[0] != 21:
+        error ("Expected to find value 21 but found: " + str (create_beacon[0]))
+        return False
+
+    # now check frame received
+    channel = conn.pool().next_ready ()
+    if not channel:
+        error ("Expected to find channel reference but found None..");
+        return False
+
+    # send message
+    channel.send_msg ("This is a test..", 16)
+    info ("Getting reply result..")
+    frame = queue.pop ()
+
+    if not frame:
+        error ("Expected to find frame reference but found None..")
+        return False
+
+    if frame.payload != "This is a test..":
+        error ("Expected to find frame payload content: 'This is a test..' but found: " + frame.payload)
+        return False
 
     return True
 
@@ -2251,37 +2286,37 @@ def run_all_tests ():
 
 # declare list of tests available
 tests = [
-#    (test_00_a, "Check PyVortex async queue wrapper"),
-#    (test_01,   "Check PyVortex context initialization"),
-#    (test_02,   "Check PyVortex basic BEEP connection"),
-#    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
-#    (test_03_a, "Check PyVortex connection set data"),
-#    (test_04,   "Check PyVortex basic BEEP channel creation"),
-#    (test_05,   "Check BEEP basic data exchange"),
-#    (test_06,   "Check BEEP check several send operations (serialize)"),
-#    (test_07,   "Check BEEP check several send operations (one send, one receive)"),
-#    (test_08,   "Check BEEP transfer zeroed binaries frames"),
-#    (test_09,   "Check BEEP channel support"),
-#    (test_10,   "Check BEEP channel creation deny"),
-#    (test_10_a, "Check BEEP channel creation deny"),
-#    (test_10_b, "Check reference counting on async notifications"),
-#    (test_10_c, "Check async channel start notification"),
-#    (test_10_d, "Check async channel start notification (failure expected)"),
-#    (test_11,   "Check BEEP listener support"),
-#    (test_12,   "Check connection on close notification"),
-#    (test_12_a, "Check connection on close notification (during channel start)"),
-#    (test_12_b, "Check channel start during connection close notify"),
-#    (test_12_c, "Check close notification for conn refs not owned by caller"),
-#    (test_12_d, "Check close notification for conn refs at listener"),
-#    (test_13,   "Check wrong listener allocation"),
-#    (test_14,   "Check SASL PLAIN support"),
-#    (test_15,   "Check SASL ANONYMOUS support"),
-#    (test_16,   "Check SASL DIGEST-MD5 support"),
-#    (test_17,   "Check SASL CRAM-MD5 support"),
-#    (test_18,   "Check TLS support"),
-#    (test_19,   "Check TLS support (async notification)"),
-#    (test_20,   "Check SASL PLAIN support (async notification)")
-#    (test_21,   "Check channel pool support"),
+    (test_00_a, "Check PyVortex async queue wrapper"),
+    (test_01,   "Check PyVortex context initialization"),
+    (test_02,   "Check PyVortex basic BEEP connection"),
+    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
+    (test_03_a, "Check PyVortex connection set data"),
+    (test_04,   "Check PyVortex basic BEEP channel creation"),
+    (test_05,   "Check BEEP basic data exchange"),
+    (test_06,   "Check BEEP check several send operations (serialize)"),
+    (test_07,   "Check BEEP check several send operations (one send, one receive)"),
+    (test_08,   "Check BEEP transfer zeroed binaries frames"),
+    (test_09,   "Check BEEP channel support"),
+    (test_10,   "Check BEEP channel creation deny"),
+    (test_10_a, "Check BEEP channel creation deny (a)"),
+    (test_10_b, "Check reference counting on async notifications"),
+    (test_10_c, "Check async channel start notification"),
+    (test_10_d, "Check async channel start notification (failure expected)"),
+    (test_11,   "Check BEEP listener support"),
+    (test_12,   "Check connection on close notification"),
+    (test_12_a, "Check connection on close notification (during channel start)"),
+    (test_12_b, "Check channel start during connection close notify"),
+    (test_12_c, "Check close notification for conn refs not owned by caller"),
+    (test_12_d, "Check close notification for conn refs at listener"),
+    (test_13,   "Check wrong listener allocation"),
+    (test_14,   "Check SASL PLAIN support"),
+    (test_15,   "Check SASL ANONYMOUS support"),
+    (test_16,   "Check SASL DIGEST-MD5 support"),
+    (test_17,   "Check SASL CRAM-MD5 support"),
+    (test_18,   "Check TLS support"),
+    (test_19,   "Check TLS support (async notification)"),
+    (test_20,   "Check SASL PLAIN support (async notification)"),
+    (test_21,   "Check channel pool support"),
     (test_22,   "Check channel pool support (handlers)")
 ]
 

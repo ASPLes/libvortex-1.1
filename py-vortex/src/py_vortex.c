@@ -787,11 +787,15 @@ void py_vortex_handle_and_clear_exception (PyObject * py_conn)
 		}
 
 		/* drop a log */
-		py_vortex_log (PY_VORTEX_CRITICAL, str);
 		if (py_vortex_exception_handler) {
 			/* remove trailing \n */
 			str[strlen (str) - 1] = 0;
 			py_vortex_exception_handler (str);
+		} else if (_py_vortex_log_enabled) {
+			str[strlen (str) - 1] = 0;
+			py_vortex_log (PY_VORTEX_CRITICAL, str);
+		} else {
+			fprintf (stdout, str);
 		}
 		/* free message */
 		axl_free (str);
