@@ -1165,6 +1165,76 @@ PyObject           * py_vortex_connection_get_ctx  (PyObject         * py_conn)
 }
 
 /** 
+ * @brief Allows to store a python object into the provided
+ * vortex.Connection object, incrementing the reference count. The
+ * object is automatically removed when the vortex.Connection
+ * reference is collected.
+ */
+void        py_vortex_connection_register (PyObject   * py_conn, 
+					   PyObject   * data,
+					   const char * key,
+					   ...)
+{
+	va_list    args;
+	char     * full_key;
+
+	/* check data received */
+	if (key == NULL || py_conn == NULL)
+		return;
+
+	va_start (args, key);
+	full_key = axl_strdup_printfv (key, args);
+	va_end   (args);
+
+	/* check to remove */
+	if (data == NULL) {
+		vortex_connection_set_data (((PyVortexConnection *)py_conn)->conn, full_key, NULL);
+		axl_free (full_key);
+		return;
+	} /* end if */
+	
+	/* now register the data received into the key created */
+	py_vortex_log (PY_VORTEX_DEBUG, "registering key %s = %p on vortex.Connection %p",
+		       full_key, data, py_conn);
+	Py_INCREF (data);
+	vortex_connection_set_data_full (((PyVortexConnection *)py_conn)->conn, full_key, data, axl_free, (axlDestroyFunc) py_vortex_decref);
+	return;
+}
+
+
+/** 
+ * @brief Allows to get the object associated to the key provided. The
+ * reference returned is still owned by the internal hash. Use
+ * Py_INCREF in the case a new reference must owned by the caller.
+ */
+PyObject  * py_vortex_connection_register_get (PyObject * py_conn,
+					       const char * key,
+					       ...)
+{
+	va_list    args;
+	char     * full_key;
+	PyObject * data;
+
+	/* check data received */
+	if (key == NULL || py_conn == NULL) {
+		py_vortex_log (PY_VORTEX_CRITICAL, "Failed to register data, key %p or vortex.Connection %p reference is null",
+			       key, py_conn);
+		return NULL;
+	} /* end if */
+
+	va_start (args, key);
+	full_key = axl_strdup_printfv (key, args);
+	va_end   (args);
+	
+	/* now register the data received into the key created */
+	data = __PY_OBJECT (vortex_connection_get_data (((PyVortexConnection *)py_conn)->conn, full_key));
+	py_vortex_log (PY_VORTEX_DEBUG, "returning key %s = %p on vortex.Connection %p",
+		       full_key, data, py_conn);
+	axl_free (full_key);
+	return data;
+}
+
+/** 
  * @brief Allows to check if the PyObject received represents a
  * PyVortexConnection reference.
  */

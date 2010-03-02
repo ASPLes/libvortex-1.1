@@ -347,12 +347,19 @@ void        py_vortex_ctx_register (PyObject   * py_vortex_ctx,
 	char     * full_key;
 
 	/* check data received */
-	if (key == NULL || data == NULL || py_vortex_ctx == NULL)
+	if (key == NULL || py_vortex_ctx == NULL)
 		return;
 
 	va_start (args, key);
 	full_key = axl_strdup_printfv (key, args);
 	va_end   (args);
+
+	/* check to remove */
+	if (data == NULL) {
+		vortex_ctx_set_data (((PyVortexCtx *)py_vortex_ctx)->ctx, full_key, NULL);
+		axl_free (full_key);
+		return;
+	} /* end if */
 	
 	/* now register the data received into the key created */
 	py_vortex_log (PY_VORTEX_DEBUG, "registering key %s = %p on vortex.Ctx %p",

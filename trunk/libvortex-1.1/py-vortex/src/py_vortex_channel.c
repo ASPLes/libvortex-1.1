@@ -85,8 +85,8 @@ static void py_vortex_channel_dealloc (PyVortexChannel* self)
 {
 
 	/* release reference associated */
-	py_vortex_log  (PY_VORTEX_DEBUG, "Calling to unref the channel: %d (self: %p, self->channel: %p)..", 
-			vortex_channel_get_number (self->channel), self, self->channel);
+	py_vortex_log  (PY_VORTEX_DEBUG, "Calling to unref the channel: %d (self: %p, self->channel: %p, refs: %d)..", 
+			vortex_channel_get_number (self->channel), self, self->channel, vortex_channel_ref_count (self->channel));
 	vortex_channel_unref (self->channel);
 	self->channel = NULL; 
 
@@ -702,9 +702,9 @@ PyObject * py_vortex_channel_create (VortexChannel * channel, PyObject * py_conn
 	obj->py_conn = py_conn;
 	Py_XINCREF (obj->py_conn);
 
-	py_vortex_log (PY_VORTEX_DEBUG, "created PyChannel reference with number=%d (connection: %d, self: %p, channel: %p)",
+	py_vortex_log (PY_VORTEX_DEBUG, "created PyChannel reference with number=%d (connection: %d, self: %p, channel: %p, refs: %d)",
 		       vortex_channel_get_number (channel), vortex_connection_get_id (py_vortex_connection_get (py_conn)), 
-		       obj, obj->channel);
+		       obj, obj->channel, vortex_channel_ref_count (channel));
 
 	/* return object */
 	return (PyObject *) obj;

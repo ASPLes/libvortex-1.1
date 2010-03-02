@@ -195,7 +195,7 @@ void        vortex_ctx_set_data (VortexCtx       * ctx,
  * 
  * @param ctx The ctx where the data will be stored.
  * @param key The key to index the value stored.
- * @param value The value to be stored. 
+ * @param value The value to be stored. If the value to be stored is NULL, the function calls to remove previous content stored on the same key.
  * @param key_destroy Optional key destroy function (use NULL to set no destroy function).
  * @param value_destroy Optional value destroy function (use NULL to set no destroy function).
  */
@@ -206,6 +206,13 @@ void        vortex_ctx_set_data_full (VortexCtx       * ctx,
 				      axlDestroyFunc    value_destroy)
 {
 	v_return_if_fail (ctx && key);
+
+	/* check if the value is not null. It it is null, remove the
+	 * value. */
+	if (value == NULL) {
+		vortex_hash_remove (ctx->data, key);
+		return;
+	} /* end if */
 
 	/* store the data */
 	vortex_hash_replace_full (ctx->data, 

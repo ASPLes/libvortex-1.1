@@ -69,6 +69,15 @@ void                 py_vortex_connection_nullify  (PyObject           * py_conn
 
 axl_bool             py_vortex_connection_check    (PyObject           * obj);
 
+void                 py_vortex_connection_register (PyObject   * py_conn, 
+						    PyObject   * data,
+						    const char * key,
+						    ...);
+
+PyObject           * py_vortex_connection_register_get (PyObject * py_conn,
+							const char * key,
+							...);
+
 PyObject           * py_vortex_connection_find_reference (VortexConnection * conn,
 							  PyObject         * py_ctx);
 
