@@ -3669,9 +3669,9 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 	 * data received is the already not advertised window is
 	 * configured to be smaller. */
 	if (new_max_seq_no_accepted > channel->max_seq_no_accepted) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: nothing seq frame update, current values consumed_seqno=%u, window_size=%u",
+		vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: notifying seq frame update, current values consumed_seqno=%u, window_size=%u",
 			    consumed_seqno, window_size);
-		vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME:                                          new_max_seq_no_accepted=%u, channel->max_seq_no_accepted=%u",
+		vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: new_max_seq_no_accepted=%u, channel->max_seq_no_accepted=%u",
 			    new_max_seq_no_accepted, channel->max_seq_no_accepted);
  	send_seq_frame:
  		/* if the client wants to change the channel window
@@ -3679,8 +3679,18 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
  		if (window_size != channel->desired_window_size) {
  			vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: Changing window size from %u to %u",
  				    window_size,channel->desired_window_size);
+			/* update window size for future SEQ frame updates */
  			window_size             = channel->desired_window_size;
  			channel->window_size    = window_size;
+
+			/* check if, as a consequence of window size
+			   reduction, we are now inside the already
+			   adviced window */
+			if ((consumed_seqno + window_size - 1) < channel->max_seq_no_accepted) {
+				vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: not updating because current advised max seqno %u is bigger than consumed seqno (%u) + new window size (%u)",
+					    channel->max_seq_no_accepted, consumed_seqno, window_size);
+				goto not_update;
+			}
  			new_max_seq_no_accepted = (consumed_seqno + window_size - 1) % (MAX_SEQ_NO);
  		}
 
