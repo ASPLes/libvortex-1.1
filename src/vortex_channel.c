@@ -3669,7 +3669,10 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 	 * data received is the already not advertised window is
 	 * configured to be smaller. */
 	if (new_max_seq_no_accepted > channel->max_seq_no_accepted) {
-
+		vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: nothing seq frame update, current values consumed_seqno=%u, window_size=%u",
+			    consumed_seqno, window_size);
+		vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME:                                          new_max_seq_no_accepted=%u, channel->max_seq_no_accepted=%u",
+			    new_max_seq_no_accepted, channel->max_seq_no_accepted);
  	send_seq_frame:
  		/* if the client wants to change the channel window
  		 * size, do so now */
@@ -7780,8 +7783,8 @@ VortexFrame   * vortex_channel_wait_reply              (VortexChannel * channel,
 		frame = NULL;
 	} else if (frame == NULL) {
 		vortex_log (
-			    VORTEX_LEVEL_CRITICAL, 
-			    "received a timeout while waiting performing a 'wait reply'");
+			VORTEX_LEVEL_CRITICAL, 
+			"received a timeout while waiting performing a 'wait reply'");
 	}else {
 		vortex_log (VORTEX_LEVEL_DEBUG, "received reply, freeing wait reply object");
 
