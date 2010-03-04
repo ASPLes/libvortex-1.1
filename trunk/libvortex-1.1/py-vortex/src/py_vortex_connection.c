@@ -648,9 +648,9 @@ static PyObject * py_vortex_connection_channel_pool_new (PyObject * self, PyObje
 	/* now parse arguments */
 	static char *kwlist[] = {"profile", "init_num", 
 				 "create_channel", "create_channel_data", 
-				 "frame_received", "frame_received_data",
+				 "received", "received_data",
 				 "close", "close_data", 
-				 "on_channel_pool_created", "user_data",
+				 "on_created", "user_data",
 				 NULL};
 
 	/* check if this is a listener connection that cannot provide

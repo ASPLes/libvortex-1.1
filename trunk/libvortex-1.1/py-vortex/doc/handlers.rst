@@ -193,6 +193,29 @@ during the activation of the TLS profile. The handler signature is::
         return "test.key"
 
 
+.. _create-channel-handler:
 
+===============================================
+Channel create handler (for vortex.ChannelPool)
+===============================================
 
+This handler is executed when a vortex.ChannelPool requires to add a
+new channel into the pool. Its signature is the following::
 
+    def create_channel (conn, channel_num, profile, received, received_data, close, close_data, user_data, next_data):
+    	# create a channel
+        return conn.open_channel (channel_num, profile)
+
+.. _on-channel-pool-created:
+
+=========================================================
+Channel pool create notification (for vortex.ChannelPool)
+=========================================================
+
+This handler is executed when a vortex.ChannelPool was created and the
+on_created handler was configured at
+vortex.Connection.channel_pool_new. Its signature is the following::
+
+    def on_pool_created (pool, data):
+    	print ("Pool created: " + str (pool))
+        return 

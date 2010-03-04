@@ -78,6 +78,42 @@ Module API
 		  # next error found
 		  (err_code, err_msg) = conn.pop_channel_error ()
 
+   .. method:: channel_pool_new (profile, init_num, [create_channel],[create_channel_data],[received],[received_data],[close],[close_data],[on_created],[user_data])
+   
+      Allows to create a new channel pool on the provided connection. 
+
+      :param profile: The profile that will run channel on the pool created.
+      :type  profile: String
+
+      :param init_num: Initial number of channels to be created. At least 1 must be provided.
+      :type  init_num: Integer (> 0)
+
+      :param create_channel: Optional handler used to create a channel to be added to the pool. 
+      :type  create_channel: :ref:`create-channel-handler`.
+
+      :param create_channel_data: User defined data to be passed to create_channel handler along with corresponding handler parameters.
+      :type  create_channel_data: Object
+
+      :param received: Optional frame received handler to be configured on all channels created or handled by the pool.
+      :type  received: :ref:`frame-received-handler`.
+
+      :param received_data: User defined data to be passed to received handler along with corresponding handler parameters.
+      :type  received_data: Object
+
+      :param close: Optional channel on close handler to be configured on all channels handled by the channel pool.
+      :type  close: Still not implemented.
+
+      :param close_data: User defined data to be passed to close handler along with corresponding handler parameters.
+      :type  close_data: Object
+
+      :param on_created: Optional handler that is used to notify the pool created in an async manner. If this handler is provided, the method returns None and the pool reference is notified at this handler. 
+      :type  on_created: :ref:`on-channel-pool-created`.
+
+      :param user_data: User defined data to be passed to on_created handler along with corresponding handler parameters.
+      :type  user_data: Object
+
+      :return: Returns a new reference to vortex.ChannelPool or None if the on_created handler is defined.
+
    .. method:: pop_channel_error ()
    
       Allows to get the set of errors that happend on the connection instance. Each call to the method pops (and removes) the next error message tuple. Each tuple (Integer, String) contains an error code and an error string.
@@ -121,6 +157,15 @@ Module API
       :type  key: String
 
       :rtype: Returns the object stored or None if fails. 
+
+   .. method:: pool ([pool_id])
+   
+      Allows to return a reference to the vortex.ChannelPool already created on the connection with the provided pool id.
+
+      :param pool_id: Optional vortex.ChannelPool id. If no value is provided, channel pool id takes 1, which returns the default/first channel pool created.
+      :type  pool_id: Integer (> 0)
+
+      :rtype: Returns the vortex.ChannelPool associated or None if no channel pool exists with the provided id.
 
    .. method:: close ()
    
