@@ -2210,8 +2210,8 @@ def test_22 ():
     queue         = vortex.AsyncQueue ()
     conn.channel_pool_new (REGRESSION_URI, 1,
                            create_channel=test_22_create_channel, create_channel_data=create_beacon,
-                           frame_received=test_22_received, frame_received_data=queue,
-                           on_channel_pool_created=test_22_pool_created, user_data=queue)
+                           received=test_22_received, received_data=queue,
+                           on_created=test_22_pool_created, user_data=queue)
     info ("Getting channel pool reference..")
     pool = queue.pop ()
     info ("Received pool reference..")

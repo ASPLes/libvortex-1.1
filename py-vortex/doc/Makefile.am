@@ -23,7 +23,8 @@ EXTRA_DIST = py-vortex-doc.css conf.py conf.py.in \
 	frame.rst  \
 	license.rst  \
 	ctx.rst  \
-	asyncqueue.rst
+	asyncqueue.rst \
+	channelpool.rst
 
 .PHONY: help clean html web pickle htmlhelp latex changes linkcheck
 

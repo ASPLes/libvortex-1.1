@@ -37,6 +37,7 @@ used while using PyVortex: http://www.aspl.es/fact/files/af-arch/vortex-1.1/html
    connection
    channel
    frame
+   channelpool
    asyncqueue
    handlers
    vortexsasl
