@@ -1,0 +1,578 @@
+      ###################################################
+      ##              Vortex Library 1.1.3             ##
+      ##                  "Hurricane"                  ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce Vortex
+  Library 1.1.3 "Hurricane" release availability: an open source "BEEP
+  Core" protocol implementation written in C, mapped onto TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.aspl.es/vortex/py-vortex/html
+      [PyVortex homepage]
+
+    - http://www.aspl.es/turbulence
+      [Turbulence BEEP server homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+This release in short
+~~~~~~~~~~~~~~~~~~~~~
+
+  * Starting this release, now every vortex connection created will
+    notify serverName attribute on first channel either using value
+    provided by application caller or acquiring it from the host we
+    are connecting to. 
+
+  * Improved/rewritten greetings handling reply to allow listener side
+    to hook on that event deciding what to reply rather replying
+    directly.
+
+  * Many improvements to better integrate vortex when it is used in
+    conjunction with fork() call. Added support to receive channel
+    start in one process, and handle its reply in another
+    process...powerful! Used this new support by Turbulence to handle
+    connection reuse by childs created.
+
+  * General update to thread pool API to allow increasing and
+    decreasing workers (threads) dynamically.
+
+  * General updates to PyVortex to include new methods to existing
+    classes and support for channel pools (vortex.ChannelPool). 
+
+  * Applied many, many improvements, API updates, bug fixes and
+    documentation updates.
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  - vortex-profile-filter-01
+    http://lists.aspl.es/pipermail/vortex/2009-November/000877.html
+
+Thanks to..
+~~~~~~~~~~~
+
+  <Dhiraj Prasad> (Reported missing TLS activate notification on
+  vortex_tls_start_notification_sync).
+
+  <Ralf Konush> (Helped and reported bugs on reply handling using
+  channel pools. Helped on spotting memory consumption problems with
+  axlHash structure used by vortex to store internal state. Provided
+  many comments and suggestions that were useful to improve thread
+  pool API. Reported bug on channel serialization code when handling
+  replies using ANS/NUL series, when they are interleaved, or issued
+  in an out of order manner, on the same channel).
+
+
+Changes since 1.1.2
+~~~~~~~~~~~~~~~~~~~
+
+* [fix] Added new regression test to check channel pool ready
+  indication for ANS/NUL interactions... No bug was found.
+
+* [fix] Fixed post creation notification for master listener
+  connections.
+
+* [new] General update to support connection options through
+  VortexConnectionOpts. Used this new support to implement greetings
+  serverName feature. API added:
+  
+   - VortexConnectionOpts (type)
+   - VortexConnectionOptItem (enum)
+   - vortex_connection_opts_new (function)
+   - vortex_connection_opts_free (function)
+   - CONN_OPTS (macro) 
+
+* [new] Updated vortex connection API to include a new function to
+  create a BEEP connection with extended options. Updated
+  vortex_connection_new to be built on top of this new function.  API
+  added:
+  
+   - vortex_connection_new_full
+
+* [new] Added support for a new action stage:
+  CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES which allows getting
+  notifications after client greetings received.
+
+* [fix] Updated vortex engine to make listener peer to not reply with
+  initial greetings until client greetings are received, allowing to
+  react according to client greetings received (especially for
+  greetings features).
+
+* [new] Updated vortex ctx module to include a function to control if
+  automatic serverName feature must be implemented. Now by default
+  vortex will notify serverName used on connection options or, if not
+  provided, the host name used to connect, on the first channel
+  created. API added:
+
+   - vortex_ctx_server_name_acquire
+
+* [new] Updated vortex tunnel API to include a new function that
+  allows configuring connections options to be used. API added:
+
+  - vortex_tunnel_settings_set_options
+
+* [new] Updated greetings module to include support to send back a
+  error greetings with a code and a message denying the service when
+  required.  Updated API to include a function to implement this
+  behavior:
+
+   - vortex_greetings_error_send
+
+* [fix] More updates on regression test (test_01g) to check serverName
+  on greetings feature implemented. Still more work is required.
+
+* [fix] Finished regression test work (test_01g) to check serverName
+  feature on greetings. Nice!
+
+* [fix] Fixed frame deallocation (memory leak) in case listener
+  greetings send fails or client greetings is not accepted at listener
+  side.
+
+* [fix] Improved wrong BEEP header detection. Added reg test
+  (test_01h).
+
+* [fix] More updates for serverName automatic configuration..
+
+* [fix] Added new internal function that allows unwatching a
+  connection from the vortex reader loop. API added:
+
+   - vortex_reader_unwatch_connection
+
+* [fix] General internal modifications to split channel start handling
+  to allow stopping it and later handle reply at a different process.
+
+* [fix] Cleanup start handling code..
+
+* [new] Updated vortex profiles API to include a new function that
+  allows configuring the frame received handler for a registered
+  profile. API added:
+
+  - vortex_profiles_set_received_handler
+
+* [fix] Making vortex sequencer reinitilization to check and dealloc
+  internal structures that may be defined in a fork operation so this
+  memory isn't lost.
+
+* [fix] CHANGE-NOTIFICATION: Updated 
+  vortex_connection_is_profile_filtered and VortexProfileMaskFunc to 
+  include the profile content encoding, and the frame received (in 
+  the case of channel start notification) according to 
+  vortex-profile-filter-01.
+
+* [fix] Making vortex thread pool reinitialization to check and
+  dealloc internal structures that may be defined in a fork operation
+  so this memory isn't lost.
+
+* [fix] Making internal changes to channel start reply handling so it
+  can be decoupled and implemented later in another thread or
+  process...Nice!
+
+* [new] Updated vortex support API to include a function to check if a
+  search path is already added. Updated search path initialization to
+  check paths before adding them (to avoid leaking via paths allocated
+  but not added). Bug exposed by turbulence reg test.
+
+   - vortex_support_check_search_path
+
+* [fix] More updates to cleanup resources at vortex reader after fork
+  operation. Added code to release all connection that were handled by
+  the parent process..
+
+* [fix] Fixed wrong memory deallocation for error message returned by
+  vortex_connection_is_profile_filtered.
+
+* [fix] Fixed on close notification causing some handlers to be not
+  called in the case several are installed and some of them removes
+  themselves during the call. Added regression test to reproduce the
+  problem and fix the issue (test_02a1).
+
+* [fix] Fixed missing error message reply for channel start filtered.
+
+* [fix] Added missing socket close calls during connect failure.
+
+* [fix] Updated test certificates used by regression test.
+
+* [fix] Fixed documentation and updated section about TLS test
+  certificate generation section.
+
+* [fix] Updated sasl extension to provide serverName requested to
+  common auth handler in the case SASL channel is the first setting
+  serverName. Still required reg test.
+
+* [fix] Added regression test to check serverName notification for
+  SASL auth on first channel.
+
+* [fix] Added channel reference handling to avoid races at
+  vortex_channel_notify_start_internal.
+
+* [fix] Fixed bug at TLS implementation causing a caller to
+  vortex_tls_start_negotiation/vortex_tls_start_negotiation_sync to be
+  never notified for the first case and blocked during 60 seconds for
+  the second case. Added reg test (test_05b) to reproduce the problem
+  and check the fix introduced. Bug reported by Dhiraj Prasad.
+
+* [fix] Added regression test to check vortex_connection_new fast
+  error reporting in case of unreachable address.
+
+* [fix] Fixed compilation error at vortex-regression-client caused by
+  code only activated on windows.
+
+* [new] Updated PyVortex Channel and Connection classes to include a
+  couple of methods that allows python's reference count manipulation.
+  Added regression test to check how they work (test_10_b). API added:
+
+   - vortex.Channel.incref
+   - vortex.Channel.decref
+   - vortex.Connection.incref
+   - vortex.Connection.decref
+ 
+  Updated API documentation. 
+
+* [fix] General memory allocation improvements to make connection
+  internal structures to be not allocated until they are required.
+
+* [fix] Added memory allocation checks to avoid accessing NULL memory.
+  Still more work is required. 
+
+* [fix] Making vortex_connection_set_profile_mask and
+  vortex_connection_is_profile_filtered to be thread safe.
+
+* [fix] Fixed bug inside vortex_channel_is_ready which wasn't checking
+  for pending outstanding MSG.
+
+* [fix] Making vortex_frame_get_next to close the connection in the
+  case there is no memory to allocate the frame received.
+
+* [fix] Fixed lock caused by calling
+  vortex_connection_is_profile_filtered recursively.
+
+* [fix] Added check at vortex.Connection python constructor to ensure
+  first argument received is indeed a vortex.Ctx.
+
+* [new] Updated vortex.Connection to include an attribute to return
+  current serverName configured. Updated documentation. API added:
+
+   - server_name
+
+* [fix] Adding internal function __vortex_channel_set_state to help
+  turbulence to restore channel 0 status after transfer socket between
+  processes.
+
+* [fix] Refactored socket limit reached code to also place it at the
+  client initiator (vortex_connection_sock_connect). Fixes server side
+  listener limit reached handling for sockets not created by accept(2)
+  call.
+
+* [fix] Making vortex reader process to flag its own reinitialization
+  so channels that are released under that process do not lock
+  internal mutexes.
+
+* [fix] Added new function that allows to configure that logs sent to
+  user debug handler are first prepared so the handler do not requires
+  to handle printf format conversion. Added regression test to check
+  its function. API added:
+
+   - vortex_log_set_prepare_log
+
+* [fix] Updated vortex_socket_close macro to avoid calling socket
+  close if socket descriptor is not valid.
+
+* [fix] Added initial call vortex_async_queue_release to release
+  queues in the case of a reinitialization after a fork operation.
+
+* [new] Updated PyVortex. Added ctx attribute to vortex.Connection to
+  return connection context. API added:
+
+    - vortex.Connection.ctx (read only attribute)
+
+* [new] Updated PyVortex API to include access to connection unique
+  identification. API added:
+
+   - vortex.Connection.id (read only attribute).
+
+* [fix] Updated PyVortex internals to bind objects life time to
+  vortex.Ctx created rather to C VortexCtx reference. This solves
+  memory deallocation issues especially when python code install
+  references to modules that are later unloaded but VortexCtx C
+  reference is still working. This shows problems when turbulence
+  unloads mod-python but its structures still reference to python
+  objects stored..This is now solved binding/storing python objects
+  into vortex.Ctx via internal API:
+
+    - py_vortex_ctx_register
+    - py_vortex_ctx_register_get
+
+* [fix] Updated internal code to reuse as much as possible already
+  created references. Check regression test.
+
+* [fix] Moved data registration code at
+  py_vortex_profile_frame_received to avoid races between the data is
+  configured and the frame handler is called.
+
+* [fix] Updated PyVortex vortex.Connection API to allow providing the
+  serverName to be used on next channel start request. Updated
+  documentation.
+
+* [fix] Updated vortex channel pool internals to detect if a channel
+  is ready by using vortex_channel_is_ready rather
+  vortex_channel_is_up_to_date.
+
+* [new] Updated vortex connection API to include a new function that
+  allows to install on close handlers configuring when they are
+  executed. Updated previous close handlers to use this implementation
+  providing same behavior. Updated vortex channel start code to use
+  this new handler to avoid executing user on close code first rather
+  system handlers. API added:
+
+   - vortex_connection_set_on_close_full2
+
+* [fix] Added PyVortex reg test (test_12_a) to reproduce and check fix
+  introduced to detect on close connection during start channel
+  operation. Previous close was deadlocking if the user configured an
+  on close handler and then started a channel for which its connection
+  is closed in the middle of the operation.
+
+* [fix] Added some debug log to on close notification. Added initial
+  test to PyVortex to check async notifications during channel start
+  (test_12_b).
+
+* [fix] Added initial code to check thread pool tasks
+  handling. Updated thread pool API to return some stats about pending
+  jobs, free threads and started threads. Still more work is
+  required. API added:
+
+   - vortex_thread_pool_stats
+
+* [fix] Defining fixed values for VortexEncoding type to make it easy
+  to other languages binding vortex to assume those values.
+
+* [new] Updated PyVortex to include encoding values for channel start
+  profile content notification:
+  
+   - encoding_NONE
+   - encoding_BASE64
+
+* [new] Updated PyVortex conn.open_channel to support serverName, and
+  profile_content attributes.
+
+* [fix] Fixed PyVortex conn.open_channel to allow other threads to
+  enter into python context during channel creation allowing other
+  async notifications to be completed. Added regression test test_12_b
+  to check bug and fix introduced.
+
+* [fix] Updated vortex_log_enable, vortex_log2_enable and
+  vortex_color_log_enable to not modify environment variable and flag
+  setting as checked.
+
+* [new] Updated thread pool module to allow adding new threads at run
+  time. Used this new code to initialize vortex. API added:
+  
+   - vortex_thread_pool_add
+
+  Updated test_00-a reg test to check now a pool with no available
+  threads handles pending jobs when new threads are added.
+
+* [fix] Fixed vortex_thread_pool_get_num which was causing to fail on
+  windows.
+
+* [fix] Added some being/end threads macros to PyVortex functions.
+
+* [fix] Fixed missing checked flag at vortex_color_log_enable.
+
+
+* [fix] Added more PyVortex documentation. Renamed
+  vortex.encoding_BASE to vortex.encoding_BASE64
+
+* [new] Updated PyVortex connection API to include two new methods to
+  store and retrieve user references. API added:
+
+   - Connection.get_data
+   - Connection.set_data
+  
+  Added regression test to check function (test_03_a).
+
+* [fix] Added debug log to vortex_channel_get_reply to notify that a
+  NULL reference queue was received.
+
+* [fix] Fixed PyVortex conn.set_on_close notification which was not
+  properly notifying the conn reference at listener side when the
+  handler was configured as a consequence of another handler
+  activation.
+
+* [fix] Updated PyVortex connection reference allocation at listener
+  side to reuse references rather creating and finishing them for each
+  handler notification. Solves memory/performance issue and also fixes
+  missing references problem experienced at listener side.
+
+* [new] Updated PyVortex conn.open_channel to also support async
+  channel creation and notification through on_channel
+  handler. Updated documentation.  Added regression test to check
+  function (test_10_c and test_10_d for failure notification).
+
+* [fix] Adding more PyVortex documentation..
+
+* [fix] Added initial code to implement ans/nul replies to reproduce
+  missing nul frames bug...
+
+* [fix] Rewritten channel serialize code to be seqno based rather
+  msgno and frame type. This solves some issues with heavily loaded
+  frame handlers that causes some NUL frames (stored as -1) to be
+  missed. Also fixed connection dealloc failures when channel
+  serialize is enabled and ANS/NUL frames are received. Added reg test
+  test_03c to reproduce the problem and check fix introduced.
+
+* [fix] Finally finished out of order reply handling for
+  different/parallel ANS/NUL replies over the same channel. Updated
+  regtest test_03-c to reproduce and check fix introduced. Still more
+  work required to better test current function.
+
+* [fix] Fixed bug at new reply sending code for ANS/NUL series which
+  wasn't restoring next ansno to be used. Updated test_03c reg test to
+  reproduce the bug and check the issue.
+
+* [fix] Updated vortex channel send MSG support to allow limiting how
+  many outstanding messages can be hold until the caller is locked
+  until some replies come in. This allow to limit memory consumption by
+  avoiding storing messages until they can be sent. Updated vortex
+  channel API to include a couple of functions that allows to
+  configure such limit and to get current outstanding message queue
+  length:
+  
+   - vortex_channel_set_outstanding_limit
+   - vortex_channel_get_outstanding_messages
+
+  Added regression test (test_01-k) to check function introduced.
+
+* [new] Updated vortex thread pool API to include a function to remove
+  threads from the pool. API added:
+
+   - vortex_thread_pool_remove
+
+  Updated regression test (test_00-a) to check API introduced.
+
+* [fix] Added a couple of regression tests to check memory consumption
+  while using channel pool and channel serialize (test_01-l and
+  test_01-o).  Reg tests showed bugs on axl hash implementation and
+  its capacity to properly retain internal nodes (causing linear
+  memory consumption in long running applications).
+
+* [fix] Updated py_vortex_connection_find_reference documentation.
+
+* [new] General update to PyVortex to support channel pools. Still
+  more work required.
+
+* [fix] More updates to complete vortex.ChannelPool python API. Still
+  more work required.
+
+* [fix] More updates on PyVortex channel pools. Added macro to easily
+  check and throw non callable object exception. API added:
+
+  - PY_VORTEX_IS_CALLABLE
+
+* [fix] More updates on vortex.ChannelPool API. Still more work
+  required.
+
+* [new] Updated vortex channel pool module to include a new function
+  that returns number of channels that are available. API added:
+
+   - vortex_channel_pool_get_available_num
+
+* [new] Updated PyVortex ChannelPool API to include attributes to
+  return channel pool count and channel pool available count. Added
+  implementation to release channels. Checked next_ready () and
+  release() method with reg test test_21 (pyvortex).
+
+   - vortex.ChannelPool.channel_count
+   - vortex.ChannelPool.channel_available
+   - vortex.ChannelPool.release ()
+
+* [fix] Fixed some documentation warnings.
+
+* [fix] Fixed wrong user pointer notification at channel pool create
+  handler when a pointer is defined at
+  vortex_channel_pool_get_next_ready_full.  Added reg test test_03d to
+  check the problem and the fix introduced.
+
+* [fix] Updated PyVortex channel pool code to support channel pool
+  create notification and channel pool create user land handler. Still
+  working with frame received channel pool. Added reg test to check
+  function (test_22).
+
+* [new] Updated PyVortex Connection API to allow getting the default
+  pool and a particular pool. Updated PyVortex ChannelPool API to
+  allow returning the connection associated to a pool. Updated
+  ChannelPool internals to allow other modules to find and reuse
+  channel pool references already created. API added:
+
+   - vortex.Connection.pool() (method)
+   - vortex.ChannelPool.conn  (attr)
+
+* [fix] Fixed wrong null handling at vortex_ctx_set_full_data which
+  was causing to not properly handle remove cases triggered by
+  receiving a NULL value associated to a previously stored key.
+
+* [fix] General updates to PyVortexChannelPool to properly implement
+  current API without leaking memory. Completed py vortex reg tests
+  test_21 and test_22 without exceptions and memory problems. NICE!!
+
+* [new] Added new regression test to check channel window size
+  reduction Test 04-d.
+
+* [fix] Updated SEQ frame log debug to fix test_04-d
+
+* [fix] Fixed wrong channel window SEQ frame notification when it is
+  produced a shrink. Now this is detected, reusing currently advised
+  max seqno accepted, applying same rules for future SEQ frame
+  updates. Added regression test to reproduce the problem and check
+  the fix introduced (test 04-d).
+
+* [fix] Updated PyVortex connection.channel_pool_new to change
+  parameter naming:
+
+    frame_received -> received
+    frame_received_data -> received_data
+    on_created_channel_pool -> on_created
+
+  Updated documentation and regression test to check the change
+  introduced.
+
+* [fix] Updated documentation to include new methods and attributes.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+5th Mar 2010, Madrid (Spain)
