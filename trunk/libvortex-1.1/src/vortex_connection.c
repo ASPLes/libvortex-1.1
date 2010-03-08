@@ -2108,6 +2108,43 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
  * notified on the handler <b>on_connected</b>. In both cases, you
  * must use \ref vortex_connection_is_ok to check if you are already
  * connected.
+ *
+ * <b>Note about reference returned by this function</b>
+ *
+ * \ref VortexConnection and \ref VortexChannel objects implements a reference
+ * counting that tries to be as much automatic as possible.
+ *
+ * In this context, when you actively create a connection, via
+ * \ref vortex_connection_new (or this one), you are acquiring a reference that must be
+ * terminated either with \ref vortex_connection_close, or if you know that
+ * you are doing, with \ref vortex_connection_unref.
+ *
+ * At the same time, the connection you create is also used by vortex
+ * internals (specially vortex reader) which also acquires a reference
+ * to the connection, to ensure he can access to those connections
+ * even if the user has closed it.
+ *
+ * Having said that, let's take a look at the listener side.
+ *
+ * What happens when you receive a server side notification, that
+ * involves a connection you didn't create and your code has no
+ * reference to it? How do you release that memory when server stops,
+ * or a connection is closed?
+ *
+ * As you are guessing, those connections has references that are only
+ * owned by your vortex engine at the listener side, and temporally,
+ * those references are incremented to implement handler
+ * notifications, but, again, those references will be removed when
+ * those listener side handler finishes.
+ * 
+ * Now, assuming this context, you now know that a \ref
+ * vortex_connection_close is not required at the listener side,
+ * because you didn't create that connection, and that those
+ * connections will be eventually collected, and that you must do a
+ * \ref vortex_connection_close at client side because you did create
+ * the connection, not only to initiate the BEEP close protocol, but
+ * to also release the reference you acquired previously.
+ *
  */
 VortexConnection  * vortex_connection_new_full               (VortexCtx            * ctx,
 							      const char           * host, 
