@@ -195,6 +195,7 @@ void     vortex_log2_enable       (VortexCtx * ctx, axl_bool      status)
 		return;
 
 	ctx->debug2 = status;
+	ctx->debug2_checked = axl_true;
 	return;
 #else
 	/* just return */
