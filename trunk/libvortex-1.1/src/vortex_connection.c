@@ -4363,7 +4363,9 @@ void __vortex_connection_invoke_on_close (VortexConnection * connection,
 {
 	VortexConnectionOnClose        on_close_handler;
 	VortexConnectionOnCloseData  * handler;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx                    * ctx = connection->ctx;
+#endif
 
 	/* invoke full */
 	if (is_full) {
