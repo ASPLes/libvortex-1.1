@@ -177,7 +177,20 @@ void simple_ans_nul_reply (VortexChannel    * channel,
 			   axlPointer         user_data)
 {
 	int iterator = 0;
+	int window_size; 
 	VortexAsyncQueue * queue;
+
+	if (axl_memcmp (vortex_frame_get_payload (frame), "window_size=", 12)) {
+		printf ("Received request to change window size to: %s..\n", 
+			(char *) vortex_frame_get_payload (frame) + 12);
+		window_size = atoi ((char *) vortex_frame_get_payload (frame) + 12);
+		/* changing window size */
+		vortex_channel_set_window_size (channel, window_size);
+
+		/* ok reply to the peer client   */
+		vortex_channel_send_rpy (channel, "ok", 2, vortex_frame_get_msgno (frame));
+		return;
+	}
 
 	printf ("%d: Replying with 30 ANS messages with a final NUL..\n", vortex_frame_get_msgno (frame));
 
