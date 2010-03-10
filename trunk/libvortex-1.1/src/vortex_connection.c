@@ -2014,9 +2014,13 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
  * \ref profile_example "how they interact" with Vortex Library.
  *
  * This function will block you until the connection is created with
- * remote site or until timeout mechanism is reached. You can define
- * vortex timeout for connections creation by using
- * \ref vortex_connection_timeout.
+ * remote site or until timeout mechanism is reached (if
+ * configured). You can define the connect timeout by using \ref
+ * vortex_connection_connect_timeout. Note that if nothing is
+ * configured, no timeout is implemented. There is also a separate
+ * timeout that is used for general receive operations: \ref
+ * vortex_connection_timeout (though this timeout is not used for this
+ * connect operation).
  *
  * Optionally you can define an \ref VortexConnectionNew "on_connected handler" 
  * to process response, avoiding getting blocked on \ref vortex_connection_new call.
@@ -2831,13 +2835,20 @@ void               vortex_connection_timeout (VortexCtx * ctx,
 /** 
  * @brief Allows to configure vortex connect timeout.
  * 
- * This function allows to set the timeout to use on a TCP connect.
- * Default timeout is TCP timeout.
+ * This function allows to set the TCP connect timeout used by \ref
+ * vortex_connection_new_full and \ref vortex_connection_new. 
  *
  * If you call to create a new connection with \ref vortex_connection_new
  * and connect does not succeed within the period
  * \ref vortex_connection_new will return with a non-connected vortex
  * connection.
+ *
+ * Value configured on this function, will be returned by \ref
+ * vortex_connection_get_connect_timeout. By default, if not
+ * configured, no timeout is implemented.
+ *
+ * See also \ref vortex_connection_timeout which implements the
+ * general timeout used by vortex engine for I/O operations.
  *
  * @param ctx The context where the operation will be performed.
  *
