@@ -3669,11 +3669,11 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 	 * data received is the already not advertised window is
 	 * configured to be smaller. */
 	if (new_max_seq_no_accepted > channel->max_seq_no_accepted) {
+ 	send_seq_frame:
 		vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: notifying seq frame update, current values consumed_seqno=%u, window_size=%u",
 			    consumed_seqno, window_size);
 		vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: new_max_seq_no_accepted=%u, channel->max_seq_no_accepted=%u",
 			    new_max_seq_no_accepted, channel->max_seq_no_accepted);
- 	send_seq_frame:
  		/* if the client wants to change the channel window
  		 * size, do so now */
  		if (window_size != channel->desired_window_size) {
