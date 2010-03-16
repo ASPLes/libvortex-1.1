@@ -40,7 +40,7 @@ VortexConnection * connection_new (void)
 void __pause (char * message, int seconds)
 {
 	struct timeval      time;
-	printf (message);
+	printf ("%s",message);
 	time.tv_sec  = seconds;
 	time.tv_usec = 0;
 	select (0, NULL, NULL, NULL, &time);

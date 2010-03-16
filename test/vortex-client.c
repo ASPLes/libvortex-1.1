@@ -133,7 +133,7 @@ int  get_number_int (char  * ans, int limit) {
 	char  * response;
 	int    num;
  label:
-	printf (ans);
+	printf ("%s", ans);
         response  = readline ("you chose: ");
         num       = atoi (response);
 	if (num < 0 || num > limit ) {
@@ -151,7 +151,7 @@ unsigned int get_number_long (char  * ans, long limit) {
 	unsigned int   num;
 
  label:
-	printf (ans);
+	printf ("%s", ans);
 	response  = readline ("you chose: ");
 	num       = strtod (response, NULL);
 	if (num < 0 || num > limit ) {

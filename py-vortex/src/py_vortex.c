@@ -795,7 +795,7 @@ void py_vortex_handle_and_clear_exception (PyObject * py_conn)
 			str[strlen (str) - 1] = 0;
 			py_vortex_log (PY_VORTEX_CRITICAL, str);
 		} else {
-			fprintf (stdout, str);
+			fprintf (stdout, "%s", str);
 		}
 		/* free message */
 		axl_free (str);

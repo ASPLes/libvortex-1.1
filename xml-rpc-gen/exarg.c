@@ -895,7 +895,7 @@ void exarg_show_usage (int show_header)
 	ExArgNodeOption * node;
 	
 	if (show_header && (__exarg_usage_header && (* __exarg_usage_header)))
-		printf (__exarg_usage_header);
+		printf ("%s",__exarg_usage_header);
 
 	printf ("Usage: %s ", exarg_exec_name);
 	
@@ -917,7 +917,7 @@ void exarg_show_usage (int show_header)
 	exarg_free (string_aux);
 
 	if (show_header && (__exarg_post_usage_header && (* __exarg_post_usage_header)))
-		printf (__exarg_post_usage_header);
+		printf ("%s",__exarg_post_usage_header);
 	
 	return;
 }
@@ -1012,7 +1012,7 @@ void   exarg_show_help ()
 	ExArgNodeOption * node;
 
 	if (__exarg_help_header && (* __exarg_help_header))
-		printf (__exarg_help_header);
+		printf ("%s",__exarg_help_header);
 
 	exarg_show_usage (0);
 
@@ -1033,7 +1033,7 @@ void   exarg_show_help ()
 	printf ("  --usage                       Display brief usage message.\n");
 
 	if (__exarg_post_help_header && (* __exarg_post_help_header))
-		printf (__exarg_post_help_header);
+		printf ("%s",__exarg_post_help_header);
 
 	return;
 }
