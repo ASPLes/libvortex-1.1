@@ -272,6 +272,7 @@ char * next_line (FILE * file)
 {
 	long   current;
 	int    desp = 0;
+	int    size;
 	char   value;
 	char * result;
 	char   temp[1024];
@@ -324,7 +325,7 @@ char * next_line (FILE * file)
 
 		if (feof (file) == 0) {
 			/* consume the latest \n */
-			fread (&value, 1, 1, file);
+			size = fread (&value, 1, 1, file);
 		} /* end if */
 	} else {
 		memset (temp, 0, 1024);

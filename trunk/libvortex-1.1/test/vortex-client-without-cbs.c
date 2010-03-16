@@ -228,6 +228,7 @@ void  queue_reply                    (VortexChannel    * channel,
 {
 	VortexAsyncQueue * queue      = user_data;
 	VortexFrame      * frame_copy = NULL;
+	int                result;
 
 	/* copy the frame because the first level invocation handler
 	 * will deallocate the frame once terminated this handler */
@@ -237,7 +238,7 @@ void  queue_reply                    (VortexChannel    * channel,
 	vortex_async_queue_push (queue, frame_copy);
 
 	/* write to the frame pipe */
-	write (frame_pipe[1], "f", 1);
+	result = write (frame_pipe[1], "f", 1);
 
 	/* nothing more */
 	return;
@@ -316,6 +317,7 @@ void close_request_received (VortexChannel * channel,
 {
 	/* get the queue */
 	VortexAsyncQueue * queue      = user_data;
+	int                result;
 
 	/* queue the frame reference */
 	vortex_async_queue_push (queue, channel);
@@ -324,7 +326,7 @@ void close_request_received (VortexChannel * channel,
 	vortex_async_queue_push (queue, INT_TO_PTR (msg_no));
 
 	/* notify the main loop */
-	write (close_pipe[1], "c", 1);
+	result = write (close_pipe[1], "c", 1);
 	
 	printf ("Received a close notify!\n");
 

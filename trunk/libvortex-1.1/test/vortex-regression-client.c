@@ -2081,7 +2081,7 @@ axl_bool test_01g (void) {
 		return axl_false;                               \
 	                                                        \
 	/* send wrong content */                                \
-	write (socket, string, strlen (string));                \
+	result = write (socket, string, strlen (string));       \
 	                                                        \
 	vortex_close_socket (socket);                           \
 } while (0);
@@ -2090,6 +2090,7 @@ axl_bool test_01g (void) {
 axl_bool test_01h (void) {
 
 	VORTEX_SOCKET socket;
+	int result;
 
 	/* check different wrong headers */
 	TEST_01H_CHECK ("RPY\n");
