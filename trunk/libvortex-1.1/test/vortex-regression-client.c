@@ -6743,6 +6743,56 @@ axl_bool test_04_d_send_content (VortexConnection * connection, VortexChannel * 
 	return axl_true;
 }
 
+axl_bool test_04_d_send_content_2 (VortexConnection * connection, VortexChannel * channel, VortexAsyncQueue * queue)
+{
+	int           iterator;
+	VortexFrame * frame;
+
+	printf ("Test 04-d: ok, now check again transfer..\n");
+	iterator = 0;
+	while (iterator < 10) {
+		/* send message */
+		if (! vortex_channel_send_msg (channel,
+					       TEST_REGRESION_URI_4_MESSAGE, 243, NULL)) {
+			printf ("ERROR (6): failed to send message: %s..\n", vortex_connection_get_message (connection));
+			return axl_false;
+		}
+
+		/* receive both messages */
+		frame = vortex_channel_get_reply (channel, queue);
+		
+		if (frame == NULL) {
+			printf ("ERROR (6.1): expected to find frame reply but found NULL frame..\n");
+			return axl_false;
+		} /* end if */
+
+		/* check connection status */
+		if (! vortex_connection_is_ok (connection, axl_false)) {
+			printf ("ERROR (6.2): expected to find proper connection status but found failure..\n");
+			return axl_false;
+		}
+
+		/* check message size and payload */
+		if (! axl_memcmp (vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE, 243)) {
+			printf ("ERROR (7): expected to find a message, but found something different...\n");
+			return axl_false;
+		} /* end if */
+
+		if (vortex_frame_get_payload_size (frame) != 243) {
+			printf ("ERROR (8): expected to find different payload size..\n");
+			return axl_false;
+		}
+
+		/* unref frame */
+		vortex_frame_unref (frame);
+
+		/* next position */
+		iterator++;
+	} /* end while */
+
+	return axl_true;
+}
+
 axl_bool test_04_d_send_content_ans (VortexConnection * connection, VortexChannel * channel, VortexAsyncQueue * queue)
 {
 	int           iterator;
@@ -6803,6 +6853,68 @@ axl_bool test_04_d_send_content_ans (VortexConnection * connection, VortexChanne
 
 	return axl_true;
 }
+
+axl_bool test_04_d_send_content_ans_2 (VortexConnection * connection, VortexChannel * channel, VortexAsyncQueue * queue, int check_size)
+{
+	int           iterator;
+	VortexFrame * frame;
+
+	/* send message */
+	if (! vortex_channel_send_msg (channel,
+				       TEST_REGRESION_URI_4_MESSAGE, check_size, NULL)) {
+		printf ("ERROR (6): failed to send message: %s..\n", vortex_connection_get_message (connection));
+		return axl_false;
+	}
+
+	printf ("Test 04-d: ok, now check for replies..\n");
+	iterator = 0;
+	while (iterator < 30) {
+
+		/* receive both messages */
+		frame = vortex_channel_get_reply (channel, queue);
+
+		if (frame == NULL) {
+			printf ("ERROR (6.1): expected to find frame reply but found NULL frame..\n");
+			return axl_false;
+		} /* end if */
+
+		/* check connection status */
+		if (! vortex_connection_is_ok (connection, axl_false)) {
+			printf ("ERROR (6.2): expected to find proper connection status but found failure..\n");
+			return axl_false;
+		}
+
+		/* check message size and payload */
+		if (! axl_memcmp (vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE, check_size)) {
+			printf ("ERROR (7): expected to find a message, but found something different...\n");
+			return axl_false;
+		} /* end if */
+
+		if (vortex_frame_get_payload_size (frame) != check_size) {
+			printf ("ERROR (8): expected to find different payload size..\n");
+			return axl_false;
+		}
+
+		/* unref frame */
+		vortex_frame_unref (frame);
+
+		/* next position */
+		iterator++;
+	} /* end while */
+
+	/* now check for nul frame */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_NUL) {
+		printf ("ERROR (9): expected to find NUL frame but found: %d type\n", 
+			vortex_frame_get_type (frame));
+		return axl_false;
+	} /* end if */
+
+	vortex_frame_unref (frame);
+
+	return axl_true;
+}
+
 
 axl_bool test_04_d (void)
 {
@@ -6926,6 +7038,72 @@ axl_bool test_04_d (void)
 	/* send 10 large messages */
 	printf ("Test 04-d: fourth send operation..\n");
 	if (! test_04_d_send_content_ans (connection, channel, queue))
+		return axl_false;
+
+	/* now try something similar with ANS/NUL frames.. */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("ERROR (10): Unable to create the channel..");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 04-d: requesting to change remote buffer (5)..\n");
+	vortex_channel_set_window_size (channel, 1024);
+
+	/* send 10 large messages */
+	printf ("Test 04-d: fifth send operation..\n");
+	if (! test_04_d_send_content_2 (connection, channel, queue))
+		return axl_false;
+
+	/* now try something similar with ANS/NUL frames.. */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_SIMPLE_ANS_NUL,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("ERROR (11): Unable to create the channel..");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 04-d: requesting to change remote buffer (5)..\n");
+	vortex_channel_set_window_size (channel, 1024);
+
+	/* send 10 large messages */
+	printf ("Test 04-d: sixth send operation..\n");
+	if (! test_04_d_send_content_ans_2 (connection, channel, queue, 517))
+		return axl_false;
+
+	/* now try something similar with ANS/NUL frames.. */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_SIMPLE_ANS_NUL,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("ERROR (11): Unable to create the channel..");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 04-d: requesting to change remote buffer (5)..\n");
+	vortex_channel_set_window_size (channel, 1024);
+
+	/* send 10 large messages */
+	printf ("Test 04-d: seven send operation (%d)..\n", 1020);
+	if (! test_04_d_send_content_ans_2 (connection, channel, queue, 1020))
 		return axl_false;
 
 	/* close connection */
