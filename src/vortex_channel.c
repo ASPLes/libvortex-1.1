@@ -3638,10 +3638,10 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 	 * bytes on the current window size, causing the next frame to
 	 * be sent without 2 bytes (in the case it is bigger than
 	 * window size) */
-	if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
+/*	if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: updating due to NUL frame found");
 		goto send_seq_frame;
-	}
+		} */
 
 	/* check we have filled half window size advertised */
 /*	if ((new_max_seq_no_accepted - channel->max_seq_no_accepted) < (window_size / 2)) { */
@@ -3669,7 +3669,7 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 	 * data received is the already not advertised window is
 	 * configured to be smaller. */
 	if (new_max_seq_no_accepted > channel->max_seq_no_accepted) {
- 	send_seq_frame:
+/* 	send_seq_frame: */
 		vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: notifying seq frame update, current values consumed_seqno=%u, window_size=%u",
 			    consumed_seqno, window_size);
 		vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: new_max_seq_no_accepted=%u, channel->max_seq_no_accepted=%u",
