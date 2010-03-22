@@ -78,6 +78,7 @@ void vortex_listener_accept_connection    (VortexConnection * connection, axl_bo
 	axl_bool                     result;
 	int                          iterator;
 	VortexListenerOnAcceptData * data;
+	VortexConnection           * listener;
 
 	/* check received reference */
 	if (connection == NULL)
@@ -139,6 +140,17 @@ void vortex_listener_accept_connection    (VortexConnection * connection, axl_bo
 		vortex_connection_unref (connection, "vortex listener");
 		return;
 
+	} /* end if */
+
+	/* check to send greetings but only if prered is not defined */
+	if (! vortex_connection_is_defined_preread_handler (connection)) {
+		/* get master listener (the connection that created this
+		 * incoming connection) to check if we have to send greetings */
+		listener = vortex_connection_get_data (connection, "_vo:li:master");
+		if (vortex_connection_get_data (listener, "vo:li:send-greetings")) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "Sending BEEP greetings to client without waiting for theirs..");
+			vortex_greetings_send (connection, NULL);
+		} /* end if */
 	} /* end if */
 
 	/* call to complete incoming connection register operation */
@@ -374,8 +386,11 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 	/* free the last frame and watch connection on changes */
 	vortex_frame_unref (frame);
 	
+	/*** CONNECTION COMPLETELY ACCEPTED ***/
 	/* flag the connection to be totally accepted. */
 	vortex_connection_set_data (connection, "initial_accept", NULL);
+	/* flag that the greetings message was already sent */
+	vortex_connection_set_data (connection, "vo:greetings-sent", NULL);
 
 	/* call to notify connection created */
 	if (! vortex_connection_actions_notify (&connection, CONNECTION_STAGE_POST_CREATED)) {
@@ -883,6 +898,30 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
  * started (because \ref vortex_connection_is_ok returned axl_false),
  * you must use \ref vortex_connection_close to terminate the
  * reference (NOT vortex_connection_shutdown).
+ *
+ * <b>Note about old connecting clients, previous to 1.1.3</b>
+ *
+ * Until Vortex Library 1.1.3, listener accepting incoming connections
+ * were sending the BEEP greetings reply just after the remote peer
+ * connects. However, this was changed to allow listener side
+ * developers to react, modify or deny greetings at such phase (\ref CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES),
+ * hooking into that event, waiting first for the client BEEP greetings
+ * (especially to check which features it is providing).
+ *
+ * This behaviour causes problems with clients from previous releases
+ * which are waiting for the listener to issue its BEEP peer greetings
+ * (where the listener is also waiting) to issue theirs. That is, old
+ * client never connects because he never receives greetings from
+ * BEEP listener, and BEEP listener never sends its greetings because
+ * the client never sent its greetings (circular problem).
+ *
+ * To solve this issue you can either update the connecting client
+ * software or configure your listener to don't wait for client
+ * greetings to send its greetings:
+ *
+ * - \ref vortex_listener_send_greetings_on_connect
+ *
+ * This problem do not affect to new clients connecting to old servers.
  */
 VortexConnection * vortex_listener_new (VortexCtx           * ctx,
 					const char          * host, 
@@ -1127,6 +1166,40 @@ void vortex_listener_init (VortexCtx * ctx)
 }
 
 /** 
+ * @brief Allows to configure a master listener connection (created
+ * via \ref vortex_listener_new and similar) to not wait for client
+ * BEEP peer greetings to issue listener BEEP greetings.
+ *
+ * See also \ref vortex_listener_new for more information. By default
+ * BEEP listener waits for connecting client to send its BEEP
+ * greetings and, once received and processed (usually using \ref
+ * CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES), the listener sends back its BEEP
+ * greetings.
+ *
+ * This function allows to control such behavior. 
+ *
+ * @param listener The listener connection to configure.
+ *
+ * @param send_on_connect By default axl_false. axl_true to issue the
+ * BEEP greetings on client connect without waiting for client BEEP
+ * greetings.
+ *
+ */
+void          vortex_listener_send_greetings_on_connect (VortexConnection * listener, 
+							 axl_bool           send_on_connect)
+{
+	VortexCtx * ctx;
+
+	if (listener == NULL)
+		return;
+
+	ctx = CONN_CTX (listener);
+	vortex_log (VORTEX_LEVEL_DEBUG, "Setting BEEP listener greetings reply: %d", send_on_connect);
+	vortex_connection_set_data (listener, "vo:li:send-greetings", INT_TO_PTR (send_on_connect));
+	return;
+}
+
+/** 
  * @internal Allows to cleanup the vortex listener state.
  * 
  * @param ctx The vortex context to cleanup.
@@ -1183,6 +1256,7 @@ void vortex_listener_cleanup (VortexCtx * ctx)
  * once the connection is fully registered with the BEEP session
  * established, see \ref vortex_connection_set_connection_actions with
  * \ref CONNECTION_STAGE_POST_CREATED.
+ *
  */
 void          vortex_listener_set_on_connection_accepted (VortexCtx                  * ctx,
 							  VortexOnAcceptedConnection   on_accepted, 

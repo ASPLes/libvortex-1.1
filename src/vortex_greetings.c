@@ -178,12 +178,17 @@ int __vortex_greetings_build_message (VortexConnection     * connection,
 }
 
 /** 
- * @internal
+ * @brief Allows to send BEEP greetings message on the provided
+ * connection. This function is usually not required.
  * 
- * Sends the BEEP init connection greeting over the channel 0 of this @connection
- * This initial greetings message reply is sent by actual listener role to remote beep client peer.
+ * Sends the BEEP init connection greeting over the channel 0 of this
+ * connection. This initial greetings message reply is sent by
+ * connection acting in listener role to remote BEEP client peer.
  * 
  * @param connection The connection where the greeting will be sent.
+ *
+ * @param options Optional options to modify default greetings
+ * behavior.
  *
  * @return axl_true if greetings message was sent or axl_false if not
  **/
@@ -197,6 +202,13 @@ axl_bool      vortex_greetings_send (VortexConnection * connection, VortexConnec
 	 * than 4096 initial window. */
 	char            greetings_buffer[5100];
 	int             next_index = 0;
+
+
+	/* check if greetins was already sent */
+	if (PTR_TO_INT (vortex_connection_get_data (connection, "vo:greetings-sent"))) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "greetings already sent, not sending greetings this time..");
+		return axl_true;
+	}
 
 	/* get registered profiles */
 	registered_profiles = vortex_profiles_get_actual_list_ref (ctx);
@@ -231,6 +243,9 @@ axl_bool      vortex_greetings_send (VortexConnection * connection, VortexConnec
 						       VortexError);
 		return axl_false;
 	} /* end if */
+
+	/* flag that the greetings message was already sent */
+	vortex_connection_set_data (connection, "vo:greetings-sent", INT_TO_PTR (1));
 	
 	return axl_true;
 }
