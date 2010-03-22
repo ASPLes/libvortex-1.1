@@ -90,6 +90,9 @@ void          vortex_listener_init                 (VortexCtx * ctx);
 
 void          vortex_listener_cleanup              (VortexCtx * ctx);
 
+void          vortex_listener_send_greetings_on_connect (VortexConnection * listener, 
+							 axl_bool           send_on_connect);
+
 axl_bool      vortex_listener_parse_conf_and_start (VortexCtx * ctx);
 
 void          vortex_listener_set_default_realm    (VortexCtx   * ctx,

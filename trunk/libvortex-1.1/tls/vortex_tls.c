@@ -1271,7 +1271,7 @@ void vortex_tls_initial_accept (VortexConnection * connection)
  		/* dump error stack */
  		vortex_tls_log_ssl (ctx);
  
-		switch (SSL_get_error (ssl, -1)) {
+		switch (ssl_error) {
 		case SSL_ERROR_WANT_READ:
 			vortex_log (VORTEX_LEVEL_WARNING, "still not prepared to continue because read wanted");
 			return;
