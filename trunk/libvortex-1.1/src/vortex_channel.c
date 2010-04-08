@@ -4728,7 +4728,7 @@ axl_bool      __vortex_channel_block_until_replies_are_received (VortexChannel *
  * reached.
  */
 axl_bool      vortex_channel_block_until_replies_are_sent (VortexChannel * channel, 
-							   long int        microseconds_to_wait)
+							   long            microseconds_to_wait)
 {
 	VortexCtx     * ctx     = vortex_channel_get_ctx (channel);
 	int             result  = axl_true;

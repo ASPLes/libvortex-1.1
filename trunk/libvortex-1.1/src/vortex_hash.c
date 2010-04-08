@@ -397,7 +397,7 @@ axlPointer   vortex_hash_lookup_and_clear   (VortexHash   *hash_table,
  * already taken place.
  */
 int          vortex_hash_lock_until_changed (VortexHash   *hash_table,
-					     long int      wait_microseconds)
+					     long          wait_microseconds)
 {
 	int result;
 

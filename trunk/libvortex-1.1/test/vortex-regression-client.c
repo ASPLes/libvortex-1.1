@@ -84,7 +84,7 @@ char   * http_proxy_port = NULL;
 /* substract */
 void subs (struct timeval stop, struct timeval start, struct timeval * _result)
 {
-	long int result;
+	long result;
 
 	result = stop.tv_usec - start.tv_usec;
 	if (result < 0) {
@@ -2113,7 +2113,7 @@ axl_bool test_01i (void) {
 	int                stamp;
 
 #if defined(AXL_OS_WIN32)
-	long int           cur_timeout;
+	long               cur_timeout;
 
 	/* check it with a timeout */
 	cur_timeout = vortex_connection_get_connect_timeout (ctx);
@@ -3727,7 +3727,7 @@ axl_bool  test_02f (void) {
 	VortexConnection * connection;
 	VortexChannel    * channel;
 	int                iterator;
-	long int           mss;
+	long               mss;
 	char             * message;
 	VortexAsyncQueue * queue;
 
@@ -9515,7 +9515,7 @@ typedef int  (*VortexRegressionTest) (void);
   
  
 void run_test (VortexRegressionTest test, const char * test_name, const char * message, 
- 	       long int limit_seconds, long int limit_microseconds) {
+ 	       long  limit_seconds, long  limit_microseconds) {
 
  	struct timeval      start;
  	struct timeval      stop;

@@ -58,6 +58,12 @@ void vortex_thread_pool_new_task            (VortexCtx        * ctx,
 					     VortexThreadFunc   func, 
 					     axlPointer         data);
 
+int  vortex_thread_pool_new_event           (VortexCtx              * ctx,
+					     long                     microseconds,
+					     VortexThreadAsyncEvent   event,
+					     axlPointer               user_data,
+					     axlPointer               user_data2);
+
 void vortex_thread_pool_stats               (VortexCtx        * ctx,
 					     int              * runnin_threads,
 					     int              * waiting_threads,

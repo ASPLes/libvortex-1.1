@@ -795,7 +795,7 @@ axl_bool  vortex_cond_wait      (VortexCond        * cond,
  */
 axl_bool  vortex_cond_timedwait (VortexCond        * cond, 
 				 VortexMutex       * mutex,
-				 long int            microseconds)
+				 long                microseconds)
 {
 #if defined(AXL_OS_UNIX)
 	/* variables for the unix case */
@@ -825,7 +825,6 @@ axl_bool  vortex_cond_timedwait (VortexCond        * cond,
 		/* microseconds configuration contains seconds */
 		timeout.tv_sec += ((microseconds + now.tv_usec) / 1000000);
 	}
-
 
 	timeout.tv_nsec = ((microseconds + now.tv_usec) % 1000000) * 1000;
 	/* vortex_log (VORTEX_LEVEL_DEBUG, "to (microseconds=%ld): %d.%d", 
@@ -1108,7 +1107,7 @@ axlPointer         vortex_async_queue_pop       (VortexAsyncQueue * queue)
  * reached.
  */
 axlPointer         vortex_async_queue_timedpop  (VortexAsyncQueue * queue,
-						 long int           microseconds)
+						 long               microseconds)
 {
 	axlPointer _result;
 	axl_bool   r;

@@ -51,7 +51,7 @@ void __pause (char * message, int seconds)
 /* substract */
 void subs (struct timeval stop, struct timeval start, struct timeval * _result)
 {
-	long int result;
+	long  result;
 
 	result = stop.tv_usec - start.tv_usec;
 	if (result < 0) {
