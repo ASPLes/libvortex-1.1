@@ -2805,7 +2805,7 @@ int                 vortex_connection_ref_count              (VortexConnection *
  * value of 0, will reset the timeout to the default value.
  */
 void               vortex_connection_timeout (VortexCtx * ctx,
-					      long int    microseconds_to_wait)
+					      long        microseconds_to_wait)
 {
 	/* get current context */
 	char      * value;
@@ -2857,7 +2857,7 @@ void               vortex_connection_timeout (VortexCtx * ctx,
  * timeout to the default value.
  */
 void               vortex_connection_connect_timeout (VortexCtx * ctx,
-						      long int    microseconds_to_wait)
+						      long        microseconds_to_wait)
 {
 	/* get current context */
 	char      * value;
@@ -2893,10 +2893,10 @@ void               vortex_connection_connect_timeout (VortexCtx * ctx,
  * @return Current timeout configured. Returned value is measured in
  * microseconds (1 second = 1000000 microseconds).
  */
-long int             vortex_connection_get_timeout (VortexCtx * ctx)
+long                vortex_connection_get_timeout (VortexCtx * ctx)
 {
 	/* get current context */
-	long int      d_timeout   = ctx->connection_std_timeout;
+	long       d_timeout   = ctx->connection_std_timeout;
 	
 	/* check reference */
 	if (ctx == NULL) {
@@ -2934,7 +2934,7 @@ long int             vortex_connection_get_timeout (VortexCtx * ctx)
  * microseconds (1 second = 1000000 microseconds). If a null value is
  * received, 0 is return and no timeout is implemented.
  */
-long int             vortex_connection_get_connect_timeout (VortexCtx * ctx)
+long              vortex_connection_get_connect_timeout (VortexCtx * ctx)
 {
 	/* check context recevied */
 	if (ctx == NULL) {
@@ -6280,12 +6280,12 @@ int                vortex_connection_get_mss                (VortexConnection * 
 #else
 	/* unix flavors */
 	socklen_t            optlen;
-	long int             max_seg_size;
+	long              max_seg_size;
 
 	v_return_val_if_fail (connection, -1);
 
 	/* clear values */
-	optlen       = sizeof (long int);
+	optlen       = sizeof (long);
 	max_seg_size = 0;
 	
 	/* call to get socket option */

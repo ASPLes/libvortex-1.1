@@ -63,6 +63,10 @@ struct _VortexThreadPool {
 typedef struct _VortexThreadPoolTask {
 	VortexThreadFunc   func;
 	axlPointer         data;
+	axlPointer         data2;
+	axl_bool           is_event;
+	long               delay;
+	struct timeval     next_step;
 } VortexThreadPoolTask;
 
 typedef struct _VortexThreadPoolStarter {
@@ -421,6 +425,65 @@ void vortex_thread_pool_new_task (VortexCtx * ctx, VortexThreadFunc func, axlPoi
 	vortex_async_queue_push (ctx->thread_pool->queue, task);
 
 	return;
+}
+
+/** 
+ * @brief Allows to install a new async event represented by the event
+ * handler provided. This async event represents a handler called at
+ * the interval defined by microseconds, optionally refreshing that
+ * period if the event handler returns axl_false.
+ *
+ * The event handler will be called after microseconds provided has
+ * expired. And if the handler returns axl_true (remove) the event
+ * will be cleared and called no more.
+ *
+ * @param ctx The VortexCtx context where the event will be
+ * installed. This is provided because event handlers are handled by
+ * the vortex thread pool. This parameter can't be NULL.
+ *
+ * @param microseconds The amount of time to wait before calling to
+ * event handler. This value must be > 0.
+ *
+ * @param event The handler to be called after microseconds value has
+ * expired. This parameter can't be NULL.
+ *
+ * @param user_data User defined pointer to data to be passed to the
+ * event handler.
+ *
+ * @param user_data2 Second user defined pointer to data to be passed
+ * to the event handler.
+ *
+ * @return The method returns the event identifier. Currently it is
+ * not used. The function returns -1 in case of failure.
+ */
+int  vortex_thread_pool_new_event           (VortexCtx              * ctx,
+					     long                     microseconds,
+					     VortexThreadAsyncEvent   event,
+					     axlPointer               user_data,
+					     axlPointer               user_data2)
+{
+	/* get current context */
+	VortexThreadPoolTask * task;
+
+	/* check parameters */
+	if (event == NULL || ctx == NULL || ctx->thread_pool == NULL || ctx->thread_pool_being_stopped)
+		return -1;
+
+	/* create the task data */
+	task            = axl_new (VortexThreadPoolTask, 1);
+	task->is_event  = axl_true;
+	task->func      = (VortexThreadFunc) event;
+	task->data      = user_data;
+	task->data2     = user_data2;
+	task->delay     = microseconds;
+	gettimeofday (&task->next_step, NULL);
+
+	/* recalculate minimum delay */
+
+	/* queue the task for the next available thread */
+	vortex_async_queue_push (ctx->thread_pool->queue, task);
+
+	return -1;
 }
 
 /** 

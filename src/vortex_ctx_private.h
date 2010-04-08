@@ -138,7 +138,7 @@ struct _VortexCtx {
 	 * @internal
 	 * @brief A connection identifier (for internal vortex use).
 	 */
-	long int             connection_id;
+	long                 connection_id;
 	axl_bool             connection_enable_sanity_check;
 
 	/**
@@ -158,10 +158,10 @@ struct _VortexCtx {
 	/** 
 	 * @internal Default timeout used by vortex connection operations.
 	 */
-	long int             connection_std_timeout;
+	long                 connection_std_timeout;
 	axl_bool             connection_timeout_checked;
 	char              *  connection_timeout_str;
-	long int             connection_connect_std_timeout;
+	long                 connection_connect_std_timeout;
 	axl_bool             connection_connect_timeout_checked;
 	char              *  connection_connect_timeout_str;
 
@@ -182,7 +182,7 @@ struct _VortexCtx {
 	 * every frame created while the running process is alive have a
 	 * different frame unique identifier. 
 	 */
-	long int             frame_id;
+	long                frame_id;
 
 	/**** vortex profiles module state ****/
 	VortexHash        * registered_profiles;

@@ -138,12 +138,12 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 								 const char       * real_port);
 
 void                vortex_connection_timeout                (VortexCtx        * ctx,
-							      long int           microseconds_to_wait);
+							      long               microseconds_to_wait);
 void                vortex_connection_connect_timeout        (VortexCtx        * ctx,
-							      long int           microseconds_to_wait);
+							      long               microseconds_to_wait);
 
-long int            vortex_connection_get_timeout            (VortexCtx        * ctx);
-long int            vortex_connection_get_connect_timeout    (VortexCtx        * ctx);
+long                vortex_connection_get_timeout            (VortexCtx        * ctx);
+long                vortex_connection_get_connect_timeout    (VortexCtx        * ctx);
 
 axl_bool            vortex_connection_is_ok                  (VortexConnection * connection, 
 							      axl_bool           free_on_fail);

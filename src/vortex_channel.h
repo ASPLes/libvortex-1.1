@@ -431,7 +431,7 @@ void                vortex_channel_init                           (VortexCtx * c
 void                vortex_channel_cleanup                        (VortexCtx * ctx);
 
 axl_bool            vortex_channel_block_until_replies_are_sent   (VortexChannel * channel, 
-								   long int        microseconds_to_wait);
+								   long            microseconds_to_wait);
 
 axl_bool            vortex_channel_check_serialize                (VortexCtx        * ctx,
 								   VortexConnection * connection, 

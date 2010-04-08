@@ -105,7 +105,7 @@ r = vortex_cond_timedwait (c, mutex, m);\
 
 axl_bool           vortex_cond_timedwait  (VortexCond        * cond, 
 					   VortexMutex       * mutex,
-					   long int            microseconds);
+					   long                microseconds);
 
 void               vortex_cond_destroy    (VortexCond        * cond);
 
@@ -125,7 +125,7 @@ axlPointer         vortex_async_queue_pop          (VortexAsyncQueue * queue);
 axlPointer         vortex_async_queue_unlocked_pop (VortexAsyncQueue * queue);
 
 axlPointer         vortex_async_queue_timedpop  (VortexAsyncQueue * queue,
-						 long int           microseconds);
+						 long               microseconds);
 
 int                vortex_async_queue_length    (VortexAsyncQueue * queue);
 

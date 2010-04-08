@@ -1112,6 +1112,23 @@ typedef axl_bool (* VortexThreadDestroyFunc) (VortexThread      * thread_def,
  */
 typedef void     (* VortexOnFinishHandler)   (VortexCtx * ctx, axlPointer user_data);
 
+/** 
+ * @brief Handler used by async event handlers activated via \ref
+ * vortex_thread_pool_new_event, which causes the handler definition
+ * to be called at the provided milliseconds period.
+ *
+ * @param ctx The vortex context where the async event will be fired.
+ * @param user_data User defined pointer that was defined at \ref vortex_thread_pool_new_event function.
+ * @param user_data2 Second User defined pointer that was defined at \ref vortex_thread_pool_new_event function.
+ *
+ * @return The function returns axl_true to signal the system to
+ * remove the handler. Otherwise, axl_false must be returned to cause
+ * the event to be fired again in the future at the provided period.
+ */
+typedef axl_bool (* VortexThreadAsyncEvent)        (VortexCtx  * ctx, 
+						    axlPointer   user_data,
+						    axlPointer   user_data2);
+
 #endif
 
 /* @} */
