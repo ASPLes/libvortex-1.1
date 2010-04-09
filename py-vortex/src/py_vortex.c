@@ -477,6 +477,7 @@ static PyObject * py_vortex_register_profile (PyObject * self, PyObject * args, 
 	return Py_None;
 }
 
+
 static PyMethodDef py_vortex_methods[] = { 
 	/* queue reply */
 	{"queue_reply", (PyCFunction) py_vortex_queue_reply, METH_VARARGS,

@@ -243,12 +243,155 @@ int py_vortex_ctx_set_attr (PyObject *o, PyObject *attr_name, PyObject *v)
 	return PyObject_GenericSetAttr (o, attr_name, v);
 }
 
+typedef struct _PyVortexEventData {
+	int        id;
+	PyObject * user_data;
+	PyObject * user_data2;
+	PyObject * handler;
+	PyObject * ctx;
+} PyVortexEventData;
+
+void py_vortex_ctx_event_free (PyVortexEventData * data)
+{
+	Py_DECREF (data->user_data);
+	Py_DECREF (data->user_data2);
+	Py_DECREF (data->handler);
+	Py_DECREF (data->ctx);
+	axl_free (data);
+	return;
+}
+
+axl_bool py_vortex_ctx_bridge_event (VortexCtx * ctx, axlPointer user_data, axlPointer user_data2)
+{
+	/* reference to the python channel */
+	PyObject           * args;
+	PyGILState_STATE     state;
+	PyObject           * result;
+	axl_bool             _result;
+	PyVortexEventData  * data       = user_data;
+	char               * str;
+
+	/* acquire the GIL */
+	state = PyGILState_Ensure();
+
+	/* create a tuple to contain arguments */
+	args = PyTuple_New (3);
+
+	/* increase reference counting */
+	Py_INCREF (data->ctx);
+	PyTuple_SetItem (args, 0, data->ctx);
+
+	Py_INCREF (data->user_data);
+	PyTuple_SetItem (args, 1, data->user_data);
+
+	Py_INCREF (data->user_data2);
+	PyTuple_SetItem (args, 2, data->user_data2);
+
+	/* now invoke */
+	result = PyObject_Call (data->handler, args, NULL);
+
+	py_vortex_log (PY_VORTEX_DEBUG, "event notification finished, checking for exceptions and result..");
+	py_vortex_handle_and_clear_exception (NULL);
+
+	/* now get result value */
+	_result = axl_false;
+	if (! PyArg_Parse (result, "i", &_result)) {
+		py_vortex_log (PY_VORTEX_CRITICAL, "failed to parse result from python event handler, requesting to remove handler");
+		return axl_true;
+	} /* end if */
+
+	/* release tuple and result returned (which may be null) */
+	Py_DECREF (args);
+	Py_XDECREF (result);
+
+	/* in the case the python code signaled to finish the event,
+	 * terminate content inside ctx */
+	if (_result) {
+		/* we have to remove the event, finish all data */
+		str = axl_strdup_printf ("py:vo:event:%d", data->id);
+		vortex_ctx_set_data (ctx, str, NULL);
+		axl_free (str);
+	} /* end if */
+
+	/* release the GIL */
+	PyGILState_Release(state);
+
+	/* return value from python handler */
+	return _result;
+}
+
+/** 
+ * @brief Allows to register a new callable event.
+ */
+static PyObject * py_vortex_ctx_new_event (PyObject * self, PyObject * args, PyObject * kwds)
+{
+	PyObject           * handler      = NULL;
+	PyObject           * user_data    = NULL;
+	PyObject           * user_data2   = NULL;
+	long                 microseconds = 0;         
+	PyVortexEventData  * data;
+	
+
+	/* now parse arguments */
+	static char *kwlist[] = {"microseconds", "handler", "user_data", "user_data2", NULL};
+
+	/* parse and check result */
+	if (! PyArg_ParseTupleAndKeywords (args, kwds, "iO|OO", kwlist, 
+					   &microseconds,
+					   &handler, 
+					   &user_data,
+					   &user_data2))
+		return NULL;
+
+	py_vortex_log (PY_VORTEX_DEBUG, "received request to register new event");
+
+	/* check handlers defined */
+	if (handler != NULL && ! PyCallable_Check (handler)) {
+		py_vortex_log (PY_VORTEX_CRITICAL, "called to define a new event but provided a handler which is not callable");
+		return NULL;
+	} /* end if */
+
+	if (microseconds <= 0) {
+		py_vortex_log (PY_VORTEX_CRITICAL, "called to define a new event but provided a microseconds value which is less or equal to 0");
+		return NULL;
+	} /* end if */
+
+	/* create data to hold all objects */
+	data = axl_new (PyVortexEventData, 1);
+	if (data == NULL) {
+		py_vortex_log (PY_VORTEX_CRITICAL, "failed to allocate memory for vortex event..");
+		return NULL;
+	} /* end if */
+
+	/* set references */
+	PY_VORTEX_SET_REF (data->user_data,  user_data);
+	PY_VORTEX_SET_REF (data->user_data2, user_data2);
+	PY_VORTEX_SET_REF (data->handler,    handler);
+	PY_VORTEX_SET_REF (data->ctx,        self);
+
+	/* register the handler and get the id */
+	data->id = vortex_thread_pool_new_event (py_vortex_ctx_get (self),
+						 microseconds,
+						 py_vortex_ctx_bridge_event,
+						 data, NULL);
+	vortex_ctx_set_data_full (py_vortex_ctx_get (self), axl_strdup_printf ("py:vo:event:%d", data->id), data, axl_free, (axlDestroyFunc) py_vortex_ctx_event_free);
+
+	/* reply work done */
+	py_vortex_log (PY_VORTEX_DEBUG, "event registered with id %d", data->id);
+	Py_INCREF (Py_None);
+	return Py_None;
+}
 
 static PyMethodDef py_vortex_ctx_methods[] = { 
+	/* init */
 	{"init", (PyCFunction) py_vortex_ctx_init, METH_NOARGS,
 	 "Inits the Vortex context starting all vortex functions associated. This API call is required before using the rest of the Vortex API."},
+	/* exit */
 	{"exit", (PyCFunction) py_vortex_ctx_exit, METH_NOARGS,
 	 "Finish the Vortex context. This call must be the last one Vortex API usage (for this context)."},
+	/* new_event */
+	{"new_event", (PyCFunction) py_vortex_ctx_new_event, METH_VARARGS | METH_KEYWORDS,
+	 "Function that allows to configure an asynchronous event calling to the handler defined, between the intervals defined. This function is the interface to vortex_thread_pool_event_new."},
  	{NULL}  
 }; 
 
