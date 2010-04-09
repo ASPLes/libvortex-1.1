@@ -60,7 +60,7 @@ void vortex_thread_pool_new_task            (VortexCtx        * ctx,
 
 int  vortex_thread_pool_new_event           (VortexCtx              * ctx,
 					     long                     microseconds,
-					     VortexThreadAsyncEvent   event,
+					     VortexThreadAsyncEvent   event_handler,
 					     axlPointer               user_data,
 					     axlPointer               user_data2);
 
@@ -68,6 +68,9 @@ void vortex_thread_pool_stats               (VortexCtx        * ctx,
 					     int              * runnin_threads,
 					     int              * waiting_threads,
 					     int              * pending_tasks);
+
+void vortex_thread_pool_event_stats         (VortexCtx        * ctx,
+					     int              * events_installed);
 
 int  vortex_thread_pool_get_running_threads (VortexCtx        * ctx);
 

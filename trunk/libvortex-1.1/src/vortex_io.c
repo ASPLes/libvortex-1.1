@@ -267,6 +267,10 @@ axlPointer __vortex_io_waiting_poll_create (VortexCtx * ctx, VortexIoWaitingFor 
 		return NULL;
 	} /* end if */
 
+	/* check if max points to something not useful */
+	if (max <= 0)
+		max = 4096;
+
 	poll              = axl_new (VortexPoll, 1);
 	poll->ctx         = ctx;
 	poll->max         = max;
@@ -513,6 +517,10 @@ axlPointer __vortex_io_waiting_epoll_create (VortexCtx * ctx, VortexIoWaitingFor
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get current max hard sock limit");
 		return NULL;
 	} /* end if */
+
+	/* check if max points to something not useful */
+	if (max <= 0)
+		max = 4096;
 
 	set = epoll_create (max);
 	if (set == -1) {
