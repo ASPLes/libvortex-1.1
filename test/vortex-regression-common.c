@@ -54,7 +54,7 @@ char * vortex_regression_common_read_file (const char * file, int * size)
 	char * result;
 	FILE * handle;
 	struct stat status;
-	long   requested;
+	int    requested;
 
 	/* check parameter received */
 	if (file == NULL)
@@ -85,8 +85,8 @@ char * vortex_regression_common_read_file (const char * file, int * size)
 	 * reported that the actual size !!!!! */
 	if (status.st_size != requested) {
 		/* failed to read content */
-		fprintf (stdout, "Unable to properly read the file, size expected to read %ld (but found %ld), wasn't fulfilled\n",
-			 status.st_size, requested);
+		fprintf (stdout, "Unable to properly read the file, size expected to read %d (but found %d), wasn't fulfilled\n",
+			 (int) status.st_size, requested);
 		axl_free (result);
 		fclose (handle);
 		return NULL;

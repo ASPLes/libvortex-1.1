@@ -3002,8 +3002,8 @@ char * test_04_ab_gen_md5 (const char * file)
 	result = axl_new (char, status.st_size + 1);
 	if (fread (result, 1, status.st_size, handle) != status.st_size) {
 		/* failed to read content */
-		fprintf (stdout, "Unable to properly read the file, size expected to read %ld, wasn't fulfilled",
-			 status.st_size);
+		fprintf (stdout, "Unable to properly read the file, size expected to read %d, wasn't fulfilled",
+			 (int) status.st_size);
 		axl_free (result);
 		fclose (handle);
 		return NULL;
