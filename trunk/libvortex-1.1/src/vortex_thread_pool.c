@@ -590,7 +590,7 @@ int  vortex_thread_pool_new_event           (VortexCtx              * ctx,
 	/* (un)lock the thread pool */
 	vortex_mutex_unlock (&(ctx->thread_pool->mutex));
 
-	return -1;
+	return PTR_TO_INT (event);
 }
 
 /** 
