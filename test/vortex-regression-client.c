@@ -568,6 +568,160 @@ axl_bool test_00b (void) {
 	return axl_true;
 }
 
+axl_bool test_00c_event (VortexCtx * ctx, axlPointer data, axlPointer data2)
+{
+	int              * count = (int *) data;
+	VortexAsyncQueue * queue = data2;
+	struct timeval     now;
+
+	/* get timeofday value */
+	gettimeofday (&now, NULL);
+	(*count)++;
+	printf ("Test 00-c: Time now (%p): %ld.%ld, count=%d\n", data, now.tv_sec, now.tv_usec, *count); 
+	if ((*count) == 10)  {
+		/* notify waiting thread we have finished */
+		vortex_async_queue_push (queue, INT_TO_PTR (1723123));
+		/* notify to remove event */
+		return axl_true;
+	}
+		
+	/* notify to update keep event */
+	return axl_false;
+}
+
+axl_bool test_00c_event_2 (VortexCtx * ctx, axlPointer data, axlPointer data2)
+{
+	int              * count = (int *) data;
+	VortexAsyncQueue * queue = data2;
+	struct timeval     now;
+
+	/* get timeofday value */
+	gettimeofday (&now, NULL);
+	(*count)++;
+	printf ("Test 00-c: Time now (%p): %ld.%ld, count=%d\n", data, now.tv_sec, now.tv_usec, *count); 
+	if ((*count) == 3)  {
+		/* notify waiting thread we have finished */
+		vortex_async_queue_push (queue, INT_TO_PTR (5231412));
+		/* notify to remove event */
+		return axl_true;
+	}
+		
+	/* notify to update keep event */
+	return axl_false;
+}
+
+axl_bool test_00c (void) {
+	VortexCtx        * test_ctx;
+	VortexAsyncQueue * queue;
+	int                count, count2, count3;
+	int                iterator;
+
+	/* create a test context */
+	test_ctx = vortex_ctx_new ();
+
+	/* call to init vortex */
+	if (! vortex_init_ctx (test_ctx)) {
+		return axl_false;
+	}
+
+	printf ("Test 00-c: vortex ctx started..doing test..\n");
+
+	queue = vortex_async_queue_new ();
+	
+	/* queue one event */
+	count = 0;
+	vortex_thread_pool_new_event (test_ctx, 30000, 
+				      test_00c_event, &count, queue);
+	/* wait for the event to finish */
+	if (PTR_TO_INT (vortex_async_queue_pop (queue)) != 1723123) {
+		printf ("Test 00-c: Value returned by queue pop, differs from value expected..\n");
+		return axl_false;
+	} /* end if */
+
+	/* now check ount */
+	if (count != 10) {
+		printf ("Test 00-c: Value expected from event execute differs from exepcted: %d != 10\n", count);
+		return axl_false;
+	} /* end if */
+
+	/* wait a bit and check that the event is finished */
+	vortex_async_queue_timedpop (queue, 30000);
+	
+	/* get events installed */
+	vortex_thread_pool_event_stats (test_ctx, &count);
+	if (count != 0) {
+		printf ("Test 00-c: expected to find 0 events installed, but found: %d\n", count);
+		return axl_false;
+	}
+
+	/* now queue tree events */
+	printf ("Test 00-c: activating tree events at the same time...\n");
+	count = 0;
+	vortex_thread_pool_new_event (test_ctx, 30000, test_00c_event, &count, queue);
+	count2 = 0;
+	vortex_thread_pool_new_event (test_ctx, 30000, test_00c_event, &count2, queue);
+	count3 = 0;
+	vortex_thread_pool_new_event (test_ctx, 30000, test_00c_event, &count3, queue);
+
+	iterator = 0;
+	while (iterator < 3) {
+		/* wait for the event to finish */
+		if (PTR_TO_INT (vortex_async_queue_pop (queue)) != 1723123) {
+			printf ("Test 00-c: Value returned by queue pop, differs from value expected..\n");
+			return axl_false;
+		} /* end if */
+
+		/* next iterator */
+		iterator++;
+	} /* end while */
+
+	/* wait a bit and check that the event is finished */
+	vortex_async_queue_timedpop (queue, 30000);
+	
+	/* get events installed */
+	vortex_thread_pool_event_stats (test_ctx, &count);
+	if (count != 0) {
+		printf ("Test 00-c: expected to find 0 events installed, but found: %d\n", count);
+		return axl_false;
+	}
+
+	/* check timeout for more than seconds period */
+	printf ("Test 00-c: activating tree events at the same time (activation beyond 1 second, wait 6 seconds)\n");
+	count = 0;
+	vortex_thread_pool_new_event (test_ctx, 2000000, test_00c_event_2, &count, queue);
+	count2 = 0;
+	vortex_thread_pool_new_event (test_ctx, 300000,   test_00c_event_2, &count2, queue);
+	count3 = 0;
+	vortex_thread_pool_new_event (test_ctx, 1600000, test_00c_event_2, &count3, queue);
+
+	iterator = 0;
+	while (iterator < 3) {
+		/* wait for the event to finish */
+		if (PTR_TO_INT (vortex_async_queue_pop (queue)) != 5231412) {
+			printf ("Test 00-c: Value returned by queue pop, differs from value expected..\n");
+			return axl_false;
+		} /* end if */
+
+		/* next iterator */
+		iterator++;
+	} /* end while */
+
+	/* wait a bit and check that the event is finished */
+	vortex_async_queue_timedpop (queue, 30000);
+	
+	/* get events installed */
+	vortex_thread_pool_event_stats (test_ctx, &count);
+	if (count != 0) {
+		printf ("Test 00-c: expected to find 0 events installed, but found: %d\n", count);
+		return axl_false;
+	}
+	
+	/* terminate context */
+	vortex_async_queue_unref (queue);
+	vortex_exit_ctx (test_ctx, axl_true);
+	return axl_true;
+}
+
 axl_bool  test_01 (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
@@ -9593,7 +9747,7 @@ int main (int  argc, char ** argv)
         printf ("**       valgrind or similar tools.\n");
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
-	printf ("**       Test available: test_00, test_00a, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
+	printf ("**       Test available: test_00, test_00a, test_00b, test_00c, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
 	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
@@ -9723,6 +9877,9 @@ int main (int  argc, char ** argv)
 
 		if (axl_cmp (run_test_name, "test_00b"))
 			run_test (test_00b, "Test 00-b", "Thread pool stats (change number)", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_00c"))
+			run_test (test_00c, "Test 00-c", "Thread pool events", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_01"))
 			run_test (test_01, "Test 01", "basic BEEP support", -1, -1);
@@ -9937,6 +10094,8 @@ int main (int  argc, char ** argv)
  	run_test (test_00a, "Test 00-a", "Thread pool stats", -1, -1);
 
 	run_test (test_00b, "Test 00-b", "Thread pool stats (change number)", -1, -1);
+
+	run_test (test_00c, "Test 00-c", "Thread pool events", -1, -1);
   
  	run_test (test_01, "Test 01", "basic BEEP support", -1, -1);
   

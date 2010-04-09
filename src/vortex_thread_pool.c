@@ -53,6 +53,10 @@ struct _VortexThreadPool {
 	axlList          * stopped;
 	VortexMutex        stopped_mutex;
 
+	/* list of events */
+	axlList          * events;
+	axl_bool           processing_events;
+
 	/* context */
 	VortexCtx        * ctx;
 
@@ -63,16 +67,100 @@ struct _VortexThreadPool {
 typedef struct _VortexThreadPoolTask {
 	VortexThreadFunc   func;
 	axlPointer         data;
-	axlPointer         data2;
-	axl_bool           is_event;
-	long               delay;
-	struct timeval     next_step;
 } VortexThreadPoolTask;
+
+/* struct used to represent async events */
+typedef struct _VortexThreadPoolEvent {
+	VortexThreadAsyncEvent   func;
+	axlPointer               data;
+	axlPointer               data2;
+	long                     delay;
+	struct timeval           next_step;
+} VortexThreadPoolEvent;
 
 typedef struct _VortexThreadPoolStarter {
 	VortexThreadPool * pool;
 	VortexThread     * thread;
 } VortexThreadPoolStarter;
+
+/* update next step to the appropiate value */
+void __vortex_thread_pool_increase_stamp (VortexThreadPoolEvent * event)
+{
+	/* increase seconds part */
+	if ((event->next_step.tv_usec + event->delay) > 1000000) {
+		/* update seconds part */
+		event->next_step.tv_sec += ((event->next_step.tv_usec + event->delay) / 1000000);
+	} /* end if */
+
+	/* now increase microseconds part */
+	event->next_step.tv_usec = ((event->next_step.tv_usec + event->delay) % 1000000);
+
+	return;
+}
+
+void __vortex_thread_pool_process_events (VortexCtx * ctx, VortexThreadPool * pool)
+{
+	int                     length;
+	int                     iterator;
+	struct timeval          now;
+	VortexThreadPoolEvent * event;
+
+	/* ensure only one thread is processing */
+	if (pool->processing_events || axl_list_length (pool->events) == 0)
+		return;
+	/* acquire lock */
+	vortex_mutex_lock (&pool->mutex);
+	/* ensure again we can continue */
+	if (pool->processing_events || axl_list_length (pool->events) == 0) {
+		vortex_mutex_unlock (&pool->mutex);
+		return;
+	} /* end if */
+
+	/* flag we are processing */
+	pool->processing_events = axl_true;
+	length = axl_list_length (pool->events);
+	vortex_mutex_unlock (&pool->mutex);
+	
+	/* get current stamp */
+	gettimeofday (&now, NULL);
+	iterator = 0;
+	while (iterator < length) {
+		/* get event reference */
+		vortex_mutex_lock (&pool->mutex);
+		event = axl_list_get_nth (pool->events, iterator);
+		vortex_mutex_unlock (&pool->mutex);
+		if (event == NULL)
+			break;
+
+		/* get stamp */
+		if ((now.tv_sec >= event->next_step.tv_sec) && 
+		    (now.tv_usec >= event->next_step.tv_usec)) {
+			/* call to notify event */
+			if (event->func (ctx, event->data, event->data2)) {
+				vortex_mutex_lock (&pool->mutex);
+				/* remove event */
+				axl_list_remove_at (pool->events, iterator);
+				vortex_mutex_unlock (&pool->mutex);
+
+				/* don't update iterator to manage next position */
+				continue;
+			}
+
+			/* now recalculate event to be executed in the
+			 * future (because the user did selected to
+			 * keep it) */
+			__vortex_thread_pool_increase_stamp (event);
+			
+		} /* end if */
+
+		/* next position */
+		iterator++;
+	}
+
+	/* flag that no more processing events */
+	pool->processing_events = axl_false;
+	return;
+}
 
 /**
  * @internal
@@ -96,8 +184,15 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * data)
 	while (axl_true) {
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "--> thread from pool waiting for jobs");
-		/* get next task to process */
-		task = vortex_async_queue_pop (queue);
+		/* get next task to process: precision=100ms */
+		task = vortex_async_queue_timedpop (queue, 100000);
+
+		
+		if (task == NULL) {
+			/* call to process events */
+			__vortex_thread_pool_process_events (ctx, pool);
+			continue;
+		}
 
 		if (PTR_TO_INT (task) == 3) {
 			/* collect thread data terminated */
@@ -143,6 +238,9 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * data)
 
 		/* free the task */
 		axl_free (task);
+
+		/* call to process events after finishing tasks */
+		__vortex_thread_pool_process_events (ctx, pool);
 
 	} /* end if */
 		
@@ -217,10 +315,12 @@ void vortex_thread_pool_init     (VortexCtx * ctx,
 			axl_free (thread);
 		} /* end while */
 		axl_list_free (ctx->thread_pool->threads);
+		axl_list_free (ctx->thread_pool->events);
 		axl_list_free (ctx->thread_pool->stopped);
 	} /* end if */
 	ctx->thread_pool->threads     = axl_list_new (axl_list_always_return_1, __vortex_thread_pool_terminate_thread);
 	ctx->thread_pool->stopped     = axl_list_new (axl_list_always_return_1, __vortex_thread_pool_terminate_thread);
+	ctx->thread_pool->events      = axl_list_new (axl_list_always_return_1, axl_free);
 	ctx->thread_pool->ctx         = ctx;
 
 	/* init the queue */
@@ -362,6 +462,7 @@ void vortex_thread_pool_exit (VortexCtx * ctx)
 
 	/* stop all threads */
 	axl_list_free (ctx->thread_pool->threads);
+	axl_list_free (ctx->thread_pool->events);
 	axl_list_free (ctx->thread_pool->stopped);
 
 	/* unref the queue */
@@ -393,7 +494,7 @@ void vortex_thread_pool_being_closed        (VortexCtx * ctx)
 	return;
 }
 
-/**
+/** 
  * @brief Queue a new task inside the VortexThreadPool.
  *
  * 
@@ -458,30 +559,36 @@ void vortex_thread_pool_new_task (VortexCtx * ctx, VortexThreadFunc func, axlPoi
  */
 int  vortex_thread_pool_new_event           (VortexCtx              * ctx,
 					     long                     microseconds,
-					     VortexThreadAsyncEvent   event,
+					     VortexThreadAsyncEvent   event_handler,
 					     axlPointer               user_data,
 					     axlPointer               user_data2)
 {
 	/* get current context */
-	VortexThreadPoolTask * task;
+	VortexThreadPoolEvent * event;
 
 	/* check parameters */
-	if (event == NULL || ctx == NULL || ctx->thread_pool == NULL || ctx->thread_pool_being_stopped)
+	if (event_handler == NULL || ctx == NULL || ctx->thread_pool == NULL || ctx->thread_pool_being_stopped)
 		return -1;
 
-	/* create the task data */
-	task            = axl_new (VortexThreadPoolTask, 1);
-	task->is_event  = axl_true;
-	task->func      = (VortexThreadFunc) event;
-	task->data      = user_data;
-	task->data2     = user_data2;
-	task->delay     = microseconds;
-	gettimeofday (&task->next_step, NULL);
+	/* lock the thread pool */
+	vortex_mutex_lock (&(ctx->thread_pool->mutex));
 
-	/* recalculate minimum delay */
+	/* create the event data */
+	event            = axl_new (VortexThreadPoolEvent, 1);
+	event->func      = event_handler;
+	event->data      = user_data;
+	event->data2     = user_data2;
+	event->delay     = microseconds;
+	gettimeofday (&event->next_step, NULL);
 
-	/* queue the task for the next available thread */
-	vortex_async_queue_push (ctx->thread_pool->queue, task);
+	/* update next step to the appropiate value */
+	__vortex_thread_pool_increase_stamp (event);
+
+	/* add into the event event */
+	axl_list_add (ctx->thread_pool->events, event);
+
+	/* (un)lock the thread pool */
+	vortex_mutex_unlock (&(ctx->thread_pool->mutex));
 
 	return -1;
 }
@@ -536,6 +643,33 @@ void vortex_thread_pool_stats               (VortexCtx        * ctx,
 	/* lock the thread pool */
 	vortex_mutex_unlock (&(ctx->thread_pool->mutex));
 
+	return;
+}
+
+/** 
+ * @brief Allows to get various stats from events installed.
+ */
+void vortex_thread_pool_event_stats         (VortexCtx        * ctx,
+					     int              * events_installed)
+{
+	/* clear variables received */
+	if (events_installed)
+		*events_installed = 0;
+
+	/* check ctx reference */
+	if (ctx == NULL)
+		return;
+
+	/* lock the thread pool */
+	vortex_mutex_lock (&(ctx->thread_pool->mutex));
+
+	/* update values */
+	if (events_installed)
+		*events_installed = axl_list_length (ctx->thread_pool->events);
+
+	/* lock the thread pool */
+	vortex_mutex_unlock (&(ctx->thread_pool->mutex));
+	
 	return;
 }
 
