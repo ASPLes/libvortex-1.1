@@ -133,8 +133,9 @@ void __vortex_thread_pool_process_events (VortexCtx * ctx, VortexThreadPool * po
 			break;
 
 		/* get stamp */
-		if ((now.tv_sec >= event->next_step.tv_sec) && 
-		    (now.tv_usec >= event->next_step.tv_usec)) {
+		if ((now.tv_sec > event->next_step.tv_sec) ||
+		    ((now.tv_sec == event->next_step.tv_sec) &&
+		     (now.tv_usec >= event->next_step.tv_usec))) {
 			/* call to notify event */
 			if (event->func (ctx, event->data, event->data2)) {
 				vortex_mutex_lock (&pool->mutex);
@@ -183,7 +184,6 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * data)
 	/* get a reference to the queue, waiting for the next work */
 	while (axl_true) {
 
-		vortex_log (VORTEX_LEVEL_DEBUG, "--> thread from pool waiting for jobs");
 		/* get next task to process: precision=100ms */
 		task = vortex_async_queue_timedpop (queue, 100000);
 
@@ -241,6 +241,8 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * data)
 
 		/* call to process events after finishing tasks */
 		__vortex_thread_pool_process_events (ctx, pool);
+
+		vortex_log (VORTEX_LEVEL_DEBUG, "--> thread from pool waiting for jobs");
 
 	} /* end if */
 		
