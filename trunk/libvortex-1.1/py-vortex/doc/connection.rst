@@ -1,11 +1,31 @@
-:mod:`vortex` --- PyVortexConnection class: BEEP session creation and management
-================================================================================
+:mod:`vortex.Connection` --- PyVortexConnection class: BEEP session creation and management
+===========================================================================================
 
 .. currentmodule:: vortex
 
 
 API documentation for vortex.Connection object representing a BEEP
-session. 
+session. vortex.Connection represents a single BEEP session which
+holds a set of channels that are in charge of sending and receiving
+useful user content, implement user authentication, and so on.
+
+To create a connection, you need a context where to create it. See
+vortex.Ctx documenation to know about it: :class:`vortex.Ctx`
+
+A connection is created as follows::
+
+   conn = vortex.Connection (ctx, "localhost", "602")
+   if not conn.is_ok ():
+       print ("ERROR: connection failed, error was: " + conn.error_msg)
+       return
+
+Note that after creating a connection, you must check if it is ok
+using :meth:`vortex.Connection.is_ok` method.
+
+Once a connection is created, you have to create channels to actually
+send and receive data (and do any other useful work). This is done
+using :class:`vortex.Channel`.
+
 
 ==========
 Module API

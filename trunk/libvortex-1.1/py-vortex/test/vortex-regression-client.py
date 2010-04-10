@@ -2253,6 +2253,96 @@ def test_22 ():
 
     return True
 
+def test_23_execute (ctx, queue, count):
+
+    count[0] += 1
+    info ("Count updated (1): " + str (count[0]))
+
+    if count[0] == 10:
+        # unlock caller
+        queue.push (1)
+
+        # request to finish event
+        return True
+    
+    return False
+
+def test_23_execute_2 (ctx, queue, count):
+
+    count[0] += 1
+    info ("Count updated (2): " + str (count[0]))
+
+    if count[0] == 4:
+        # unlock caller
+        queue.push (1)
+
+        # request to finish event
+        return True
+    
+    return False
+
+def test_23_execute_3 (ctx, queue, count):
+
+    count[0] += 1
+    info ("Count updated (3): " + str (count[0]))
+
+    if count[0] == 7:
+        # unlock caller
+        queue.push (1)
+
+        # request to finish event
+        return True
+    
+    return False
+
+def test_23 ():
+
+    # all to register events
+    ctx = vortex.Ctx ()
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # register event
+    info ("Installing event..")
+    queue = vortex.AsyncQueue ()
+    count = [0]
+    ctx.new_event (30000, test_23_execute, queue, count)
+
+    # get value
+    info ("Waiting for event to finish")
+    queue.pop ()
+
+    # register event
+    info ("Installing event 6..")
+    count = [0]
+    ctx.new_event (30000, test_23_execute, queue, count)
+    count2 = [0]
+    ctx.new_event (230000, test_23_execute_2, queue, count2)
+    count3 = [0]
+    ctx.new_event (830000, test_23_execute_3, queue, count3)
+
+    count4 = [0]
+    ctx.new_event (1130000, test_23_execute, queue,   count4)
+    count5 = [0]
+    ctx.new_event (1230000, test_23_execute_2, queue, count5)
+    count6 = [0]
+    ctx.new_event (1830000, test_23_execute_3, queue, count6)
+
+    # get value
+    info ("Waiting for events to finish")
+    iterator = 0
+    while iterator < 6:
+        info (" ...one finished")
+        queue.pop ()
+
+        # next iterator
+        iterator += 1
+    
+    
+    
+    return True
+
 ###########################
 # intraestructure support #
 ###########################
@@ -2317,7 +2407,8 @@ tests = [
     (test_19,   "Check TLS support (async notification)"),
     (test_20,   "Check SASL PLAIN support (async notification)"),
     (test_21,   "Check channel pool support"),
-    (test_22,   "Check channel pool support (handlers)")
+    (test_22,   "Check channel pool support (handlers)"),
+    (test_23,   "Check event tasks")
 ]
 
 # declare default host and port
