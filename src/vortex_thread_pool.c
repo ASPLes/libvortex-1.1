@@ -540,6 +540,14 @@ void vortex_thread_pool_new_task (VortexCtx * ctx, VortexThreadFunc func, axlPoi
  * expired. And if the handler returns axl_true (remove) the event
  * will be cleared and called no more.
  *
+ * Note that events installed on this function must be tasks that
+ * aren't loops or takes too long to complete. This is because the
+ * thread pool asigns one thread to check and execute pending events,
+ * so, if one of those events delays, the rest won't be executed until
+ * the former finishes. In the case you want to install a loop handler
+ * or some handler that executes a long running code, then use \ref
+ * vortex_thread_pool_new_task.
+ *
  * @param ctx The VortexCtx context where the event will be
  * installed. This is provided because event handlers are handled by
  * the vortex thread pool. This parameter can't be NULL.

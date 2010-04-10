@@ -1,5 +1,5 @@
-:mod:`vortex` --- PyVortexChannel class: BEEP channel creation and management
-=============================================================================
+:mod:`vortex.Channel` --- PyVortexChannel class: BEEP channel creation and management
+=====================================================================================
 
 .. currentmodule:: vortex
 
@@ -27,7 +27,15 @@ Module API
       :param size: The content size
       :type  size: Integer > 0
 
-      :rtype: Returns the msg_no used for the send operation.
+      :rtype: Returns the msg_no used for the send operation or None if the send operation fails. 
+
+      Note the proper manner to detect if the send operation was done
+      is to use::
+
+      	   msg_no = channel.send_msg (content, size)
+	   if msg_no is None:
+      	      print ("ERROR: failed to send message")
+	      # return or appropriate error recover
 
    .. method:: send_rpy (content, size, msg_no)
    

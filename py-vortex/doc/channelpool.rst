@@ -1,5 +1,5 @@
-:mod:`vortex` --- PyVortexChannelPool class: channel pools
-==========================================================
+:mod:`vortex.ChannelPool` --- PyVortexChannelPool class: channel pools
+======================================================================
 
 .. currentmodule:: vortex
 
