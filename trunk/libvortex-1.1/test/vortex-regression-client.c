@@ -2265,14 +2265,11 @@ axl_bool test_01h (void) {
 axl_bool test_01i (void) {
 	VortexConnection * conn;
 	int                stamp;
-
-#if defined(AXL_OS_WIN32)
 	long               cur_timeout;
 
 	/* check it with a timeout */
 	cur_timeout = vortex_connection_get_connect_timeout (ctx);
 	vortex_connection_connect_timeout (ctx, 500000);
-#endif
 
 	/* check connection to unreachable address */
 	stamp = time (NULL);
@@ -2291,12 +2288,10 @@ axl_bool test_01i (void) {
 	}
 	vortex_connection_close (conn);
 
-#if defined(AXL_OS_WIN32)
 	/* define again connect timeout */
 	printf ("Test 01-i (3): restoring default timeout %ld\n", cur_timeout);
 	vortex_connection_connect_timeout (ctx, cur_timeout);
 	printf ("Test 01-i (4): after configuring it: %ld\n", vortex_connection_get_connect_timeout (ctx));
-#endif
 
 	return axl_true;
 }
