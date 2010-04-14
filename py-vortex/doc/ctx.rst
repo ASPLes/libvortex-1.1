@@ -1,5 +1,5 @@
 :mod:`vortex.Ctx` --- PyVortexCtx class: context handling
-=====================================================
+=========================================================
 
 .. currentmodule:: vortex
 

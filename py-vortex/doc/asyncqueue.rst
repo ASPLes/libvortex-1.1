@@ -1,5 +1,5 @@
 :mod:`vortex.AsyncQueue` --- PyVortexAsyncQueue class: Vortex library thread safe queue
-============================================================================
+=======================================================================================
 
 .. currentmodule:: vortex
 
