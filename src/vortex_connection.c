@@ -6217,7 +6217,13 @@ void                vortex_connection_init                   (VortexCtx        *
 	v_return_if_fail (ctx);
 
 	/**** vortex_connection.c: init connection module */
-	ctx->connection_id                        = 1;
+	if (ctx->connection_id == 0) {
+		/* only init connection id in case it is 0 (clean
+		 * start) leaving the value as is if we are in a fork
+		 * operation, so child must keep connection ids as
+		 * they were created at the parent before forking */
+		ctx->connection_id                = 1;
+	}
 	ctx->connection_enable_sanity_check       = axl_true;
 	ctx->connection_std_timeout               = 60000000;
 
