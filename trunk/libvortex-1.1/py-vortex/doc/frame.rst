@@ -1,5 +1,5 @@
 :mod:`vortex.Frame` --- PyVortexFrame class: BEEP frame representation
-================================================================
+======================================================================
 
 .. currentmodule:: vortex
 
