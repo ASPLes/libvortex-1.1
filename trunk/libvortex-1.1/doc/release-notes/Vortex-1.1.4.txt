@@ -1,0 +1,149 @@
+      ###################################################
+      ##              Vortex Library 1.1.4             ##
+      ##                  "Plug In Baby"               ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce Vortex
+  Library 1.1.4 "Plug In Baby" release availability: an open source
+  "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.aspl.es/vortex/py-vortex/html
+      [PyVortex homepage]
+
+    - http://www.aspl.es/turbulence
+      [Turbulence BEEP server homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+This release in short
+~~~~~~~~~~~~~~~~~~~~~
+
+  This release adds an API that allows backward compatibility with old
+  Vortex clients (see
+  vortex_listener_send_greetings_on_connect). Affects old clients
+  connecting to new servers.
+
+  Added support to install portable asynchronous events which allows
+  executing code periodically, handled by vortex thread pool
+  (i.e. useful for reconnect operations, rather implementing such
+  tasks inside close notification).
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  None
+
+Thanks to..
+~~~~~~~~~~~
+
+  <Adam Cox> (Reported some compilation warnings and provided useful
+  information to track MacOS/X problems).
+
+Changes since 1.1.3
+~~~~~~~~~~~~~~~~~~~
+
+* [fix] Disabled seq frame update when NUL frame is received.
+
+* [fix] Resolved compilation error with gcc 4.4.1. printf cant now
+  receive directly a char * string it must be passed by argument
+
+* [fix] Resolved compilation warning with gcc 4.4.1. Functions results
+  must be always used.
+
+* [new] Updated vortex listener API to include a function that allows
+  controlling if the BEEP peer greeting is issued before or after
+  receiving client BEEP greetings. Fixes issue with old clients
+  connecting to new listeners (reported by Dhiraj Prasad). API added:
+   
+   - vortex_listener_send_greetings_on_connect
+  
+  Updated documentation to reflect why this API is required and how to
+  use it.
+
+* [fix] Removed all long int declarations, replaced by long. Checked
+  change with regression test and all warnings enabled. Still more
+  tests in other processors and platforms required.
+
+* [new] Added initial new API to execute asynchronous events from
+  current thread pool. Still more work is required. API added:
+
+   - VortexThreadAsyncEvent (handler def)
+   - vortex_thread_pool_new_event
+
+* [fix] Finished initial working version for event task API at thread
+  pool. Added regression test to check function (test_00c).  API
+  added:
+
+    - vortex_thread_pool_event_stats.
+
+* [fix] Added additional check to VORTEX_HARD_SOCK_LIMIT at
+  vortex_io module to avoid such cases where system returns -1.
+  Added for poll and epoll methods.
+
+* [fix] Fixed some printf compilation errors at vortex regression test
+  files reported by Adam Cox.
+
+* [fix] Added initial code to transport asynchronous event API into
+  PyVortex. Added initial ctx.Vortex.new_event method. Still more work
+  required to check code introduced.
+
+* [fix] Fixed test01-i to support all platforms that delay when
+  connecting to broken addresses.
+
+* [fix] Fixed internal event tasks activation (inside thread
+  pool). Under some circumstances event is never activated if tv_usec
+  was too low. Updated test_00-c to check this issue.
+
+* [fix] Updated vortex_thread_pool_new_event documentation.
+
+* [fix] Updated PyVortex regression test to check async events support
+  introduced (vortex.Ctx.new_event).
+
+* [fix] Several PyVortex documentation updates. Added clarifications
+  to better check error codes returned by PyVortex API.
+
+* [fix] Fixed PyVortex documentation issues.
+
+* [fix] Making vortex connection module init to detect reinit operations
+  (especially when fork is used) to avoid initializing connection ids.
+  Bug exposed by turbulence reg test (test_21).
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+16th apr 2010, Madrid (Spain)
