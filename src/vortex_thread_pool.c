@@ -555,7 +555,7 @@ void vortex_thread_pool_new_task (VortexCtx * ctx, VortexThreadFunc func, axlPoi
  * @param microseconds The amount of time to wait before calling to
  * event handler. This value must be > 0.
  *
- * @param event The handler to be called after microseconds value has
+ * @param event_handler The handler to be called after microseconds value has
  * expired. This parameter can't be NULL.
  *
  * @param user_data User defined pointer to data to be passed to the
