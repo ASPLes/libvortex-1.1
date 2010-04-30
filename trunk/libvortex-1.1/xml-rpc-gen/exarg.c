@@ -1,4 +1,4 @@
-/**
+/** 
  *  LibExploreArguments: a library to parse command line options
  *  Copyright (C) 2005 Advanced Software Production Line, S.L.
  * 
@@ -450,10 +450,14 @@ char     ** exarg_split           (const char * chunk, int separator_num, ...)
 	return result;
 }
 
-/** 
- * @internal Proto-type declaration to avoid gcc complaining.
- */
-int vsnprintf(char *str, size_t size, const char *format, va_list ap);
+/* import definition from axl if found */
+#if defined(AXL_HAVE_VASPRINTF)
+#define HAVE_VASPRINTF 1
+#endif
+#if defined(AXL_OS_WIN32)
+#define OS_WIN32 1
+#endif
+
 
 /** 
  * @internal Allows to calculate the amount of memory required to
@@ -513,7 +517,7 @@ int exarg_vprintf_len (const char * format, va_list args)
  */
 char  * exarg_strdup_printfv    (char * chunk, va_list args)
 {
-	/** IMPLEMENTATION NOTE: place update axl_stream_printf_buffer
+	/** IMPLEMENTATION NOTE: place update axl_stream_strdup_printfv
 	 * code in the case this code is updated **/
 
 #ifndef HAVE_VASPRINTF
@@ -895,7 +899,7 @@ void exarg_show_usage (int show_header)
 	ExArgNodeOption * node;
 	
 	if (show_header && (__exarg_usage_header && (* __exarg_usage_header)))
-		printf ("%s",__exarg_usage_header);
+		printf ("%s", __exarg_usage_header);
 
 	printf ("Usage: %s ", exarg_exec_name);
 	
@@ -917,7 +921,7 @@ void exarg_show_usage (int show_header)
 	exarg_free (string_aux);
 
 	if (show_header && (__exarg_post_usage_header && (* __exarg_post_usage_header)))
-		printf ("%s",__exarg_post_usage_header);
+		printf ("%s", __exarg_post_usage_header);
 	
 	return;
 }
@@ -1007,12 +1011,12 @@ void __exarg_show_help_foreach (epointer key, epointer value, epointer user_data
 	return;
 }
 
-void   exarg_show_help () 
+void   exarg_show_help (void) 
 {
 	ExArgNodeOption * node;
 
 	if (__exarg_help_header && (* __exarg_help_header))
-		printf ("%s",__exarg_help_header);
+		printf ("%s", __exarg_help_header);
 
 	exarg_show_usage (0);
 
@@ -1033,7 +1037,7 @@ void   exarg_show_help ()
 	printf ("  --usage                       Display brief usage message.\n");
 
 	if (__exarg_post_help_header && (* __exarg_post_help_header))
-		printf ("%s",__exarg_post_help_header);
+		printf ("%s", __exarg_post_help_header);
 
 	return;
 }
@@ -1060,7 +1064,7 @@ void exarg_check_argument_value (char ** argv, int iterator)
 }
 
 
-void __exarg_parse_check_non_optional ()
+void __exarg_parse_check_non_optional (void)
 {
 	ExArgNodeOption * node = argument_options;
 
@@ -1080,7 +1084,7 @@ void __exarg_parse_check_non_optional ()
 	return;
 }
 
-void __exarg_parse_check_depends ()
+void __exarg_parse_check_depends (void)
 {
 	/* first argument */
 	ExArgNodeOption * node = argument_options;
@@ -1848,8 +1852,48 @@ void       exarg_define           (char * arg_name,
 			/* string value */
 			node->string_value = value;
 			break;
-		}
+		} /* end switch */
 	} /* end if */
+
+	/* nothing to do over here */
+	return;
+}
+
+/**
+ * @brief Allows to undef the value associated and the definition
+ * itself of the option provided (arg_name).
+ *
+ * @param arg_name The argument to undef.
+ */
+void         exarg_undef            (char * arg_name)
+{
+	ExArgNodeOption * node;
+
+	/* perform some environment checks */
+	if (arg_name == NULL)
+		return;
+
+	node = exarg_lookup_node (arg_name);
+	if (node == NULL) 
+		return;
+
+	/* undef the value */
+	node->is_defined = 0;
+
+	/* check argument value */
+	switch (node->type) {
+	case EXARG_NONE:
+		/* nothing to set */
+		break;
+	case EXARG_INT:
+		/* integer value */
+		node->int_value = 0;
+		break;
+	case EXARG_STRING:
+			/* string value */
+		node->string_value = NULL;
+		break;
+	} /* end switch */
 
 	/* nothing to do over here */
 	return;
