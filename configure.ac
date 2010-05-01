@@ -351,11 +351,13 @@ esac
 AC_SUBST(ADDITIONAL_LIBS)
 
 # check additional flags for exarg
-AC_TRY_LINK([#include <stdio.h>], 
+AC_TRY_LINK([#define _GNU_SOURCE
+#include <stdio.h>], 
 [
-  char * result = NULL;
-  vasprintf (&result, "This is a test: %d", 10);
+  char * result;
+  return vasprintf (&result, "This is a test: %d", NULL);
 ], [have_vasprintf=yes],[have_vasprintf=no])
+echo "Checking vasprintf support: $have_vasprintf"
 
 dnl support for vasprintf
 case $have_vasprintf in
