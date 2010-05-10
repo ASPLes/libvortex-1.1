@@ -38,7 +38,7 @@ to cancel close operation. Its signature is the following::
 	# accept the channel to be closed
 	return True 
 
-.. _frame-received-handler:
+.. _on-channel-handler:
 
 ==================
 On channel handler
@@ -55,7 +55,7 @@ created or None reference if a failure was found. Here is an example::
 	# data: user defined data (set at open_channel)
 	return
 
-.. _on-channel-handler:
+.. _frame-received-handler:
 
 ======================
 Frame received handler
