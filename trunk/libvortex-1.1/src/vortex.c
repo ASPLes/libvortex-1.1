@@ -1224,7 +1224,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * 
  * \section contact_aspl Contact Us
  *
- * You can reach us at the <b>Vortex mailing list:</b> at <a href="http://www.aspl.es/fact/index.php?id=26">vortex users</a>
+ * You can reach us at the <b>Vortex mailing list:</b> at <a href="http://lists.aspl.es/cgi-bin/mailman/listinfo/vortex">vortex users</a>
  * for any question you may find. 
  *
  * If you are interested on getting commercial support, you can also
