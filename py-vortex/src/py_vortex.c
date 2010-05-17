@@ -501,6 +501,20 @@ PyMODINIT_FUNC  initlibpy_vortex_11 (void)
 {
 	PyObject * module;
 
+	/** 
+	 * NOTE: it seems the previous call is not the appropriate way
+	 * but there are relevant people that do not think so:
+	 *
+	 * http://fedoraproject.org/wiki/Features/PythonEncodingUsesSystemLocale
+	 *
+	 * Our appreciation is that python should take care of the
+	 * current system locale to translate unicode content into
+	 * const char strings, for those Py_ParseTuple and Py_BuildArg
+	 * using s and z, rather forcing people to get into these
+	 * hacks which are problematic. 
+	 */
+	PyUnicode_SetDefaultEncoding ("UTF-8");
+
 	/* call to initilize threading API and to acquire the lock */
 	PyEval_InitThreads();
 
