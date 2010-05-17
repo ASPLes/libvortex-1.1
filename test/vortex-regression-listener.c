@@ -137,7 +137,9 @@ void frame_received (VortexChannel    * channel,
 		     VortexFrame      * frame,
 		     axlPointer           user_data)
 {
-	int window_size;
+	int    window_size;
+	int    bytes;
+	char * content;
 
 	/* check some commands */
 	if (axl_cmp (vortex_frame_get_payload (frame), "GET serverName")) {
@@ -159,7 +161,12 @@ void frame_received (VortexChannel    * channel,
 		/* ok reply to the peer client   */
 		vortex_channel_send_rpy (channel, "ok", 2, vortex_frame_get_msgno (frame));
 		return;
-		
+	} else if (axl_memcmp (vortex_frame_get_payload (frame), "count bytes: ", 13)) {
+		bytes = strlen (vortex_frame_get_payload (frame) + 12);
+		printf ("Content received: %s (bytes: %d)\n", (char *) (vortex_frame_get_payload (frame) + 12), bytes);
+		content = axl_strdup_printf ("%d", bytes);
+		vortex_channel_send_rpy (channel, content, strlen (content), vortex_frame_get_msgno (frame));
+		return;
 	} /* end if */
 
 	/* DEFAULT REPLY, JUST ECHO */
