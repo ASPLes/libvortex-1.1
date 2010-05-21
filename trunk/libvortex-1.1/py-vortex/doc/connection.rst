@@ -205,6 +205,14 @@ Module API
    
       Allows to decrement python reference count.  See :meth:`incref` for more information.
 
+   .. method:: skip_conn_close ([skip])
+   
+      Allows to configure this connection reference to not call to shutdown its associated reference when the python connection is collected. This method is really useful when it is required to keep working a connection that was created inside a function but that has finished.
+
+      By default, any :class:`vortex.Connection` object created will be finished when its environment finishes. This means that when the function that created the connection finished, then the connection will be finished automatically.
+
+      In many situations this is a desirable behaviour because your python application finishes automatically all the stuff opened. However, when the connection is created inside a handler or some method that implements connection startup but do not waits for the reply (asynchronous replies), then the connection must be still running until reply arrives. For these scenarios you have to use :meth:`skip_conn_close`.
+      
    .. attribute:: id
 
       (Read only attribute) (Integer) returns the connection unique identifier.

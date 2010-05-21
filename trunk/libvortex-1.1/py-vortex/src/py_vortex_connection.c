@@ -61,6 +61,12 @@ struct _PyVortexConnection {
 	 * reference. See \ref py_vortex_connection_create.
 	 */ 
 	PyObject       * py_vortex_ctx;
+	
+	/** 
+	 * @brief Allows to skip the automatic connection close when
+	 * python object is collected.
+	 */
+	axl_bool         skip_conn_close;
 };
 
 #define PY_VORTEX_CONNECTION_CHECK_NOT_ROLE(py_conn, role, method)                                                \
@@ -211,11 +217,15 @@ static void py_vortex_connection_dealloc (PyVortexConnection* self)
 		py_vortex_log (PY_VORTEX_DEBUG, "shutting down BEEP session associated at connection finalize id: %d (connection is ok, and close_ref is activated, refs: %d)", 
 			       vortex_connection_get_id (self->conn),
 			       vortex_connection_ref_count (self->conn));
-		/* allow threads */
-		Py_BEGIN_ALLOW_THREADS
-		vortex_connection_shutdown (self->conn);
-		/* end threads */
-		Py_END_ALLOW_THREADS
+
+		/* shutdown connection if itsn't flagged that way */
+		if (! self->skip_conn_close) {
+			/* allow threads */
+			Py_BEGIN_ALLOW_THREADS
+			vortex_connection_shutdown (self->conn);
+			/* end threads */
+			Py_END_ALLOW_THREADS
+		}
 
 		ref_count = vortex_connection_ref_count (self->conn);
 		vortex_connection_unref (self->conn, "py_vortex_connection_dealloc when is ok");
@@ -905,6 +915,22 @@ static PyObject * py_vortex_connection_set_data (PyVortexConnection * self, PyOb
 	return Py_None;
 }
 
+static PyObject * py_vortex_connection_skip_conn_close (PyVortexConnection * self, PyObject * args)
+{
+	axl_bool skip_conn_close = axl_true;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "|i", &skip_conn_close))
+		return NULL;
+
+	/* set value received */
+	self->skip_conn_close = skip_conn_close;
+	
+	/* done, return ok */
+	Py_INCREF (Py_None);
+	return Py_None;
+}
+
 static PyObject * py_vortex_connection_get_data (PyVortexConnection * self, PyObject * args)
 {
 	const char  * key = NULL; 
@@ -964,10 +990,15 @@ static PyMethodDef py_vortex_connection_methods[] = {
 	/* decref */
 	{"decref", (PyCFunction) py_vortex_connection_decref, METH_NOARGS,
 	 "Allows to decrement reference counting of the python object (vortex.Connection) holding the connection."},
+	/* set_data */
 	{"set_data", (PyCFunction) py_vortex_connection_set_data, METH_VARARGS,
 	 "Allows to sent arbitary object references index by a name associated to the connection. This API is set on top vortex_connection_set_data_full."},
+	/* get_data */
 	{"get_data", (PyCFunction) py_vortex_connection_get_data, METH_VARARGS,
 	 "Allows to retrieve arbitary object references index by a name associated to the connection that were configured with Connection.set_data. This API is set on top vortex_connection_set_data_full."},
+	/* skip_conn_close */
+	{"skip_conn_close", (PyCFunction) py_vortex_connection_skip_conn_close, METH_VARARGS,
+	 "Allows to configure this vortex.Connection object to not close automatically its associated reference when the object is collected. Calling without arguments activates skip connection close on dealloction, otherwise pass skip=False to leave default behaviour."},
  	{NULL}  
 }; 
 
