@@ -133,7 +133,9 @@ void      vortex_ctx_reinit (VortexCtx * ctx)
  * @param ctx The context where the finish handler will be installed.
  *
  * @param finish_handler Finish handler to be called as described by
- * \ref VortexOnFinishHandler.
+ * \ref VortexOnFinishHandler. If the value passed is NULL, then the
+ * handler will be unconfigured. Calling again with a handler will
+ * unconfigure previous one and set the value passed.
  *
  * @param user_data User defined data to be passed to the handler.
  */
@@ -141,8 +143,15 @@ void        vortex_ctx_set_on_finish        (VortexCtx              * ctx,
 					     VortexOnFinishHandler    finish_handler,
 					     axlPointer               user_data)
 {
-	if (ctx == NULL || finish_handler == NULL)
+	if (ctx == NULL)
 		return;
+
+	/* removes previous configured handler */
+	if (finish_handler == NULL) {
+		ctx->finish_handler = NULL;
+		ctx->finish_handler_data = NULL;
+		return;
+	} /* end if */
 
 	/* set handler */
 	ctx->finish_handler      = finish_handler;
