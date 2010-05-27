@@ -1,3 +1,15 @@
+libvortex-1.1 (1.1.4-lenny2) unstable; urgency=low
+
+  * New upstream release (Plug in baby++)
+
+ -- Francis Brosnan <francis@aspl.es>  Wed, 26 May 2010 09:39:19 +0200
+
+libvortex-1.1 (1.1.4-lenny1) unstable; urgency=low
+
+  * New upstream release (Plug in baby+)
+
+ -- Francis Brosnan <francis@aspl.es>  Fri, 21 May 2010 17:09:25 +0200
+
 libvortex-1.1 (1.1.4-0) unstable; urgency=low
 
   * New upstream release (Plug in baby)
