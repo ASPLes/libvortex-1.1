@@ -771,7 +771,7 @@ void __vortex_tunnel_pass_octets (VortexConnection * connection)
 
 	/* read data from the connection, and write it directly on the
 	 * connection partner */
-	read = vortex_frame_receive_raw (connection, buffer, MAX_BUFFER_SIZE - 2);
+	read = vortex_frame_receive_raw (connection, buffer, VORTEX_MAX_BUFFER_SIZE - 2);
 
 	/* check data read */
 	if (read == 0) {
@@ -985,10 +985,10 @@ axl_bool  __vortex_tunnel_start_request (const char       * profile,
 		vortex_connection_set_data (new_connection, VORTEX_TUNNEL_PARTNER_CONNECTION, connection);
 		
 		/* allocate buffers */
-		buffer = axl_new (char, MAX_BUFFER_SIZE);
+		buffer = axl_new (char, VORTEX_MAX_BUFFER_SIZE);
 		vortex_connection_set_data_full (connection,     VORTEX_TUNNEL_BUFFER, buffer, NULL, axl_free);
 
-		buffer = axl_new (char, MAX_BUFFER_SIZE);
+		buffer = axl_new (char, VORTEX_MAX_BUFFER_SIZE);
 		vortex_connection_set_data_full (new_connection, VORTEX_TUNNEL_BUFFER, buffer, NULL, axl_free);
 		
 		/* configure the pre read handlers */
