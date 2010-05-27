@@ -210,7 +210,7 @@ typedef enum {
  * @brief Maximum buffer value to be read from the network in a
  * single operation.
  */
-#define MAX_BUFFER_SIZE 65536
+#define VORTEX_MAX_BUFFER_SIZE 131072
 
 /** 
  * @brief Maximum sequence number allowed to be used for a channel created.

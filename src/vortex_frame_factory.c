@@ -1375,7 +1375,7 @@ int  vortex_frame_get_header_data (VortexCtx * ctx, VortexConnection * connectio
 	
 }
 
-/**
+/** 
  * @internal
  * 
  * Tries to get the next incomming frame inside the given connection. If
@@ -1402,9 +1402,10 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	/* before reading anything else, we have to check if previous
 	 * read was complete if not, we are in a frame fragment case */
 	buffer = vortex_connection_get_data (connection, "buffer");
+	
 	if (buffer) {
 		vortex_log (VORTEX_LEVEL_DEBUG, 
-		       "received more data after a frame fragment, previous read isn't still complete");
+			    "received more data after a frame fragment, previous read isn't still complete");
 		/* get previous frame */
 		frame        = vortex_connection_get_data (connection, "frame");
 		v_return_val_if_fail (frame, NULL);
@@ -1419,7 +1420,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 		vortex_log (VORTEX_LEVEL_DEBUG, "bytes already read: %d", bytes_read);
 
 		bytes_read = vortex_frame_receive_raw (connection, buffer + bytes_read, remaining);
-		if (bytes_read == 0 && errno != VORTEX_EAGAIN && errno != VORTEX_EWOULDBLOCK) {
+		if (bytes_read == 0) {
 			vortex_frame_free (frame);
 			axl_free (buffer);
 			vortex_connection_set_data (connection, "buffer", NULL);
@@ -1588,10 +1589,11 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 		frame->more = axl_false;
 	else
 		frame->more = axl_true;
-	
-	/* check incoming frame size */
-	if (frame->size >= MAX_BUFFER_SIZE) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "received an excessive sized frame, closing session");
+
+	/* check incoming frame size fits expected window size - seqno  */
+	if ((frame->seqno + frame->size) > vortex_channel_get_max_seq_no_accepted (frame->channel_ref)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "received an excessive sized frame (max seqno expected: %d, but received: %d), closing session",
+			    vortex_channel_get_max_seq_no_accepted (frame->channel_ref), frame->seqno + frame->size);
 		__vortex_connection_set_not_connected (connection, "received an excessive sized frame, closing session",
 						       VortexProtocolError);
 
@@ -1599,6 +1601,8 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 		axl_free (frame);
 		return NULL;
 	}
+
+	
 
 	/* allocate exactly frame->size + 5 bytes */
 	buffer = axl_new (char , frame->size + 6);

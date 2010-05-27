@@ -2579,6 +2579,172 @@ axl_bool test_01o (void) {
 	return axl_true;
 }
 
+/** 
+ * @brief Checks window sizes upper limits.
+ */
+axl_bool test_01p (void) {
+
+	VortexConnection   * conn;
+	int                  iterator;
+	VORTEX_SOCKET        socket;
+	VortexChannel      * channel;
+	char               * content;
+	int                  bytes_written;
+	VortexAsyncQueue   * wait_queue = NULL;
+
+	goto init;
+
+	printf ("Test 01-p: Checking first part, ensuring remote size don't close by connection after notifying a bigger SEQ frame..");
+	/* do a connection */
+	conn = connection_new ();
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR (1): expected proper connection..\n");
+		return axl_false;
+	}
+
+	/* create a channel */
+	channel = vortex_channel_new (conn, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+
+	/* set window size for next exchanges = 256k to allow remote
+	 * side to send without limits until consuming that window
+	 * size */
+	vortex_channel_set_window_size (channel, 262144);
+
+	/* send content to check fix introduced */
+	iterator = 0;
+	while (iterator < 10) {
+		/* send content */
+		if (! vortex_channel_send_msg (channel, TEST_REGRESION_URI_4_MESSAGE, 4096, NULL)) {
+			printf ("ERROR: found error at send_msg operation when that error was not expected..\n");
+			return axl_false;
+		} /* end if */
+
+		/* next iterator */
+		iterator++;
+	} /* end while */
+
+	/* check connection status */
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: expected proper connection status, but found error..\n");
+		return axl_false;
+	} /* end if */
+
+	vortex_connection_close (conn);
+
+	printf ("Test 01-p: OK");
+
+
+	/* socket close after incomplete frame */
+	printf ("Test 01-p: Now check close after incomplete frame..");
+	wait_queue = vortex_async_queue_new ();
+	socket = vortex_connection_sock_connect (ctx, listener_host, LISTENER_PORT, NULL, NULL);
+	printf ("Test 01-p: Socket created: %d\n", socket);
+
+	/* injet content */
+	if (send (socket, "RPY 0 0 . 0 20\r\n", 16, 0) != 16) {
+		printf ("ERROR: expected to be able to send 16 bytes..\n");
+		return axl_false;
+	} /* end if */
+	printf ("Test 01-p: injected wrong header..sending content\n");
+	content = axl_new (char, 20);
+	bytes_written = send (socket, content, 20, 0);
+	vortex_async_queue_timedpop (wait_queue, 200000);
+
+	shutdown (socket, SHUT_WR);
+	vortex_close_socket (socket);
+
+	/* wait */
+	axl_free (content);
+	printf ("Test 01-p: OK, (is alive server ;-) ??\n");
+
+	/* window size under flow */
+	printf ("Test 01-p: Now check sending frame fragments..");
+	socket = vortex_connection_sock_connect (ctx, listener_host, LISTENER_PORT, NULL, NULL);
+	printf ("Test 01-p: Socket created: %d\n", socket);
+
+	/* injet content */
+	if (send (socket, "RPY 0 0 . 0 10\r\n", 16, 0) != 16) {
+		printf ("ERROR: expected to be able to send 16 bytes..\n");
+		return axl_false;
+	} /* end if */
+
+	iterator = 0;
+	content = axl_new (char, 20);
+	while (iterator < 100) {
+		bytes_written = send (socket, content, 20, 0);
+		if (bytes_written == -1)
+			break;
+
+		/* next position */
+		iterator++;
+	} /* end while */
+
+	/* wait */
+	recv (socket, content, 20, 0);
+	axl_free (content);
+
+	shutdown (socket, SHUT_WR);
+	vortex_close_socket (socket);	
+
+	/* window size overflow */
+	printf ("Test 01-p: Now checking I can't push more content that the window size expected at the remote BEEP peer");
+	socket = vortex_connection_sock_connect (ctx, listener_host, LISTENER_PORT, NULL, NULL);
+	printf ("Test 01-p: Socket created: %d\n", socket);
+
+	/* injet content */
+	if (send (socket, "RPY 0 0 . 0 65535\r\n", 19, 0) != 19) {
+		printf ("ERROR: expected to be able to send 19 bytes..\n");
+		return axl_false;
+	} /* end if */
+	printf ("Test 01-p: injected wrong header..sending content\n");
+	content = axl_new (char, 65536);
+	bytes_written = send (socket, content, 65536, 0);
+
+	/* wait */
+	recv (socket, content, 65536, 0);
+	axl_free (content);
+
+	vortex_close_socket (socket);
+
+init:
+
+	/* window size overflow with frame fragmentation */
+	printf ("Test 01-p: Now check if we can keep a half opened connection...");
+	socket = vortex_connection_sock_connect (ctx, listener_host, LISTENER_PORT, NULL, NULL);
+	printf ("Test 01-p: Socket created: %d\n", socket);
+
+	/* injet content */
+	if (send (socket, "RPY 0 0 . 0 353\r\n", 19, 0) != 19) {
+		printf ("ERROR: expected to be able to send 19 bytes..\n");
+		return axl_false;
+	} /* end if */
+	printf ("Test 01-p: injected wrong header..sending content\n");
+	content = axl_new (char, 353);
+	bytes_written = send (socket, content, 100, 0);
+
+	/* but not send more content, check if the remote side closes our connection */
+
+	/* wait */
+	recv (socket, content, 65536, 0);
+	axl_free (content);
+
+	vortex_close_socket (socket);
+
+	/* finish wait queue */
+	vortex_async_queue_unref (wait_queue);
+
+	return axl_true;
+}
+
+
+
 
 #define TEST_02_MAX_CHANNELS 24
 
@@ -9743,7 +9909,7 @@ int main (int  argc, char ** argv)
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
 	printf ("**       Test available: test_00, test_00a, test_00b, test_00c, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
-	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o\n");
+	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o, test_01p\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, \n");
@@ -9917,6 +10083,9 @@ int main (int  argc, char ** argv)
 
 		if (axl_cmp (run_test_name, "test_01o"))
 			run_test (test_01o, "Test 01-o", "Memory consuption with channel pool acquire/release API", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_01p"))
+			run_test (test_01p, "Test 01-p", "Check upper limits for window sizes (bug fix)", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
@@ -10119,6 +10288,8 @@ int main (int  argc, char ** argv)
 	run_test (test_01l, "Test 01-l", "Memory consuption with channel serialize", -1, -1);
 
 	run_test (test_01o, "Test 01-o", "Memory consuption with channel pool acquire/release API", -1, -1);
+
+	run_test (test_01p, "Test 01-p", "Check upper limits for window sizes (bug fix)", -1, -1);
   
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   
