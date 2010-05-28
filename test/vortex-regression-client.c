@@ -2714,6 +2714,8 @@ axl_bool test_01p (void) {
 	vortex_close_socket (socket);
 
 init:
+	
+
 
 	/* window size overflow with frame fragmentation */
 	printf ("Test 01-p: Now check if we can keep a half opened connection...");

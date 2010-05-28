@@ -1564,8 +1564,8 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	/* check bytes read */
 	if (bytes_read < 5) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
-		       "poorly-formed frame: message values are wrong  (%d < 9)", bytes_read);
-		__vortex_connection_set_not_connected (connection, "poorly-formed frame: message values are wrong (%d < 9)",
+		       "poorly-formed frame: message values are wrong  (%d < 5)", bytes_read);
+		__vortex_connection_set_not_connected (connection, "poorly-formed frame: message values are wrong (%d < 5)",
 						       VortexProtocolError);
 
 		/* unref frame node allocated */
