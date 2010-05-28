@@ -41,6 +41,8 @@
 
 #include <vortex.h>
 
+BEGIN_C_DECLS
+
 VortexCtx * vortex_ctx_new                       (void);
 
 void        vortex_ctx_set_data                  (VortexCtx       * ctx, 
@@ -97,5 +99,6 @@ void        vortex_ctx_check_on_finish      (VortexCtx * ctx);
 
 void        vortex_ctx_reinit (VortexCtx * ctx);
 
+END_C_DECLS
 
 #endif /* __VORTEX_CTX_H__ */
