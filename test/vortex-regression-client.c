@@ -2734,7 +2734,7 @@ init:
 	/* but not send more content, check if the remote side closes our connection */
 
 	/* wait */
-	recv (socket, content, 65536, 0);
+	/* recv (socket, content, 65536, 0); */
 	axl_free (content);
 
 	vortex_close_socket (socket);
@@ -5317,7 +5317,11 @@ axl_bool  test_02o (void) {
 	/* wait for the reply */
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame == NULL || vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY || ! axl_cmp (vortex_frame_get_payload (frame), "first message")) {
-		printf ("Expected to find a particular reply for first message but received something different..\n");
+		printf (" (0) Expected to find a particular reply for first message but received something different..\n");
+		printf (" frame == NULL: %d\n", frame == NULL);
+		printf (" vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY: %d\n", vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY);
+		printf (" ! axl_cmp (vortex_frame_get_payload (frame), \"first message\"): %d\n", ! axl_cmp (vortex_frame_get_payload (frame), "first message"));
+
 		return axl_false;
 	}
 	vortex_frame_unref (frame);
@@ -5373,7 +5377,10 @@ axl_bool  test_02o (void) {
 	printf ("Test 02-o: getting first reply..\n");
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame == NULL || vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY || ! axl_cmp (vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE)) {
-		printf ("Expected to find a particular reply for first message but received something different..\n");
+		printf (" (1) Expected to find a particular reply for first message but received something different..\n");
+		printf (" frame == NULL: %d\n", frame == NULL);
+		printf (" vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY: %d\n", vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY);
+		printf (" ! axl_cmp (vortex_frame_get_payload (frame), TEST_REGRESSION_URI_4_MESSAGE): %d\n", ! axl_cmp (vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE));
 		return axl_false;
 	}
 	vortex_frame_unref (frame);
@@ -5382,7 +5389,10 @@ axl_bool  test_02o (void) {
 	printf ("Test 02-o: second reply..\n");
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame == NULL || vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY || ! axl_cmp (vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE)) {
-		printf ("Expected to find a particular reply for first message but received something different..\n");
+		printf (" (2) Expected to find a particular reply for first message but received something different..\n");
+		printf (" frame == NULL: %d\n", frame == NULL);
+		printf (" vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY: %d\n", vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY);
+		printf (" ! axl_cmp (vortex_frame_get_payload (frame), TEST_REGRESSION_URI_4_MESSAGE): %d\n", ! axl_cmp (vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE));
 		return axl_false;
 	}
 	vortex_frame_unref (frame);
