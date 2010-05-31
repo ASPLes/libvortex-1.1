@@ -266,6 +266,73 @@ void     vortex_color_log_enable (VortexCtx * ctx, axl_bool      status)
 }
 
 /** 
+ * @brief Allows to configure which levels will be filtered from log
+ * output. This can be useful to only show debug, warning or critical
+ * messages (or any mix).
+ *
+ * For example, to only show critical, pass filter_string = "debug,
+ * warning". To show warnings and criticals, pass filter_string =
+ * "debug".
+ *
+ * To disable any filtering, use filter_string = NULL.
+ *
+ * @param ctx The vortex context that will be configured with a log filter.
+ *
+ * @param filter_string The filter string to be used. You can separate
+ * allowed values as you wish. Allowed filter items are: debug,
+ * warning, critical.
+ *
+ */
+void     vortex_log_filter_level (VortexCtx * ctx, const char * filter_string)
+{
+	v_return_if_fail (ctx);
+
+	/* set that debug filter was configured */
+	ctx->debug_filter_checked = axl_true;
+
+	/* enable all levels */
+	if (filter_string == NULL) {
+		ctx->debug_filter_is_enabled = axl_false;
+		return;
+	} /* end if */
+
+	/* add each filter bit */
+	if (strstr (filter_string, "debug"))
+		ctx->debug_filter |= VORTEX_LEVEL_DEBUG;
+	if (strstr (filter_string, "warning"))
+		ctx->debug_filter |= VORTEX_LEVEL_WARNING;
+	if (strstr (filter_string, "critical"))
+		ctx->debug_filter |= VORTEX_LEVEL_CRITICAL;
+
+	/* set as enabled */
+	ctx->debug_filter_is_enabled = axl_true;
+	return;
+}
+
+/** 
+ * @brief Allows to check if current VORTEX_DEBUG_FILTER is enabled. 
+ * @param ctx The context where the check will be implemented.
+ *
+ * @return axl_true if log filtering is enabled, otherwise axl_false
+ * is returned.
+ */ 
+axl_bool    vortex_log_filter_is_enabled (VortexCtx * ctx)
+{
+	char * value;
+	v_return_val_if_fail (ctx, axl_false);
+	if (! ctx->debug_filter_checked) {
+		/* set as checked */
+		ctx->debug_filter_checked = axl_true;
+		value = vortex_support_getenv ("VORTEX_DEBUG_FILTER");
+		vortex_log_filter_level (ctx, value);
+		axl_free (value);
+	}
+
+	/* return current status */
+	return ctx->debug_filter_is_enabled;
+}
+
+/** 
  * @brief Allows to get a vortex configuration, providing a valid
  * vortex item.
  * 
@@ -634,6 +701,13 @@ void _vortex_log_common (VortexCtx        * ctx,
 	/* if not VORTEX_DEBUG FLAG, do not output anything */
 	if (! vortex_log_is_enabled (ctx)) {
 		return;
+	} /* end if */
+
+	/* check if debug is filtered */
+	if (vortex_log_filter_is_enabled (ctx)) {
+		/* if the filter removed the current log level, return */
+		if ((ctx->debug_filter & log_level) == log_level)
+			return;
 	} /* end if */
 
 	/* acquire the mutex so multiple threads will not mix their

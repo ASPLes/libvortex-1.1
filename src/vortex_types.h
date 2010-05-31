@@ -86,15 +86,15 @@ typedef enum {
 	/** 
 	 * @internal Log a message as a debug message.
 	 */
-	VORTEX_LEVEL_DEBUG,
+	VORTEX_LEVEL_DEBUG    = 1 << 0,
 	/** 
 	 * @internal Log a warning message.
 	 */
-	VORTEX_LEVEL_WARNING,
+	VORTEX_LEVEL_WARNING  = 1 << 1,
 	/** 
 	 * @internal Log a critical message.
 	 */
-	VORTEX_LEVEL_CRITICAL 
+	VORTEX_LEVEL_CRITICAL = 1 << 2,
 } VortexDebugLevel;
 
 /**
