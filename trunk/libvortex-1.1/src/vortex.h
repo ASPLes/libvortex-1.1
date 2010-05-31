@@ -376,6 +376,10 @@ void     vortex_log_set_prepare_log  (VortexCtx         * ctx,
 
 VortexLogHandler vortex_log_get_handler (VortexCtx      * ctx);
 
+void     vortex_log_filter_level     (VortexCtx * ctx, const char * filter_string);
+
+axl_bool    vortex_log_filter_is_enabled (VortexCtx * ctx);
+
 void     vortex_writer_data_free     (VortexWriterData * writer_data);
 
 /**

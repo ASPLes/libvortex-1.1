@@ -78,6 +78,8 @@ void     vortex_support_cleanup                    (VortexCtx * ctx);
 
 int      vortex_support_getenv_int                 (const char * env_name);
 
+char *   vortex_support_getenv                     (const char * env_name);
+
 axl_bool vortex_support_setenv                     (const char * env_name, 
 						    const char * env_value);
 

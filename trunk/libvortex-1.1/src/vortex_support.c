@@ -616,6 +616,49 @@ int      vortex_support_getenv_int                 (const char * env_name)
 #endif	
 }
 
+/** 
+ * @brief Allows to get the string variable found at the provided
+ * env_name.
+ *
+ * The function tries to get the content from the environment
+ * variable, and return the string content that it is
+ * representing. 
+ * 
+ * @return The variable value or NULL if it fails. The caller must
+ * dealloc the string returned when no longer needed by calling to
+ * axl_free.
+ */
+char *   vortex_support_getenv                 (const char * env_name)
+{
+#if defined (AXL_OS_UNIX)
+	/* get the variable value */
+	char * variable = getenv (env_name);
+
+	if (variable == NULL)
+		return NULL;
+	
+	/* just return the content translated */
+	return axl_strdup (variable);
+
+#elif defined(AXL_OS_WIN32)
+
+	char  variable[1024];
+	int   size_returned = 0;
+	int   value         = 0;
+
+	/* get the content of the variable */
+	memset (variable, 0, sizeof (char) * 1024);
+	size_returned = GetEnvironmentVariable (env_name, variable, 1023);
+
+	if (size_returned > 1023) {
+		return 0;
+	}
+	
+	/* return the content translated */
+	return axl_strdup (variable);
+#endif	
+}
+
 /**
  * @brief Allows to configure the environment value identified by
  * env_name, with the value provided env_value.

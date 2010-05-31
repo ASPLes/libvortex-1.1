@@ -227,7 +227,7 @@ axl_bool  vortex_sequencer_if_channel_stalled_queue_message (VortexCtx          
 			    data->first_seq_no, 
 			    vortex_channel_get_max_seq_no_remote_accepted (data->channel), 
 			    vortex_channel_get_number (data->channel));
-		/**
+		/** 
 		 * seems that this channel is stale, we can't
 		 * do nothing more than queue the message and
 		 * skip over to manage next message to

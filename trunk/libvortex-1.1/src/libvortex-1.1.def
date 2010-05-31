@@ -445,6 +445,8 @@ vortex_log2_enable
 vortex_log2_is_enabled
 vortex_log_acquire_mutex
 vortex_log_enable
+vortex_log_filter_is_enabled
+vortex_log_filter_level
 vortex_log_get_handler
 vortex_log_is_enabled
 vortex_log_is_enabled_acquire_mutex
@@ -522,6 +524,7 @@ vortex_support_domain_find_data_file
 vortex_support_file_test
 vortex_support_find_data_file
 vortex_support_free
+vortex_support_getenv
 vortex_support_getenv_int
 vortex_support_inet_ntoa
 vortex_support_init

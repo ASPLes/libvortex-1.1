@@ -94,6 +94,10 @@ struct _VortexCtx {
 
 	VortexLogHandler     debug_handler;
 
+	int                  debug_filter;
+	axl_bool             debug_filter_checked;
+	axl_bool             debug_filter_is_enabled;
+
 	/*** global handlers */
 	/* @internal Finish handler */
 	VortexOnFinishHandler             finish_handler;
