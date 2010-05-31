@@ -172,6 +172,7 @@ vortex_connection_add_channel_pool
 vortex_connection_block
 vortex_connection_channel_exists
 vortex_connection_channels_count
+vortex_connection_check_idle_status
 vortex_connection_check_socket_limit
 vortex_connection_cleanup
 vortex_connection_close
@@ -265,6 +266,7 @@ vortex_connection_set_on_close_full2
 vortex_connection_set_preread_handler
 vortex_connection_set_profile_mask
 vortex_connection_set_receive_handler
+vortex_connection_set_receive_stamp
 vortex_connection_set_send_handler
 vortex_connection_set_server_name
 vortex_connection_set_sock_block
@@ -282,6 +284,7 @@ vortex_ctx_free
 vortex_ctx_get_data
 vortex_ctx_install_cleanup
 vortex_ctx_new
+vortex_ctx_notify_idle
 vortex_ctx_ref
 vortex_ctx_reinit
 vortex_ctx_server_name_acquire
@@ -292,6 +295,7 @@ vortex_ctx_set_close_notify_handler
 vortex_ctx_set_data
 vortex_ctx_set_data_full
 vortex_ctx_set_frame_received
+vortex_ctx_set_idle_handler
 vortex_ctx_set_on_finish
 vortex_ctx_unref
 vortex_dtds_cleanup
