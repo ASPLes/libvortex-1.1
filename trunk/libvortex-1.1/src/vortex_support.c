@@ -644,7 +644,6 @@ char *   vortex_support_getenv                 (const char * env_name)
 
 	char  variable[1024];
 	int   size_returned = 0;
-	int   value         = 0;
 
 	/* get the content of the variable */
 	memset (variable, 0, sizeof (char) * 1024);
