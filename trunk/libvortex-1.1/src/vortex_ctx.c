@@ -109,7 +109,6 @@ VortexCtx * vortex_ctx_new (void)
 	return result;
 }
 
-#if defined(AXL_OS_UNIX)
 /** 
  * @internal Function used to reinit the VortexCtx. This function is
  * highly unix dependant.
@@ -123,7 +122,6 @@ void      vortex_ctx_reinit (VortexCtx * ctx)
 
 	return;
 }
-#endif
 
 /** 
  * @brief Allows to configure a finish handler which is called once
