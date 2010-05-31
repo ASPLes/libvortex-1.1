@@ -132,6 +132,39 @@ void frame_received_fake_listeners  (VortexChannel    * channel,
 	return;
 }
 
+void test_01p_idle_handler (VortexCtx * ctx, VortexConnection * conn, axlPointer user_data, axlPointer user_data2)
+{
+	int   value = PTR_TO_INT (user_data2);
+	int * count;
+	if (value != 10) {
+		printf ("ERROR: expected to find user_data2 = 10 but found %d, unable to complete test\n", value);
+		return;
+	} /* end if */
+	count = (int *) user_data;
+	
+	/* update count */
+	(*count)++;
+	printf ("Test 01-p: idle handler called for connection id=%d, count=%d\n", vortex_connection_get_id (conn), *count);
+
+	/* check initial state */
+	if (PTR_TO_INT (vortex_connection_get_data (conn, "initial_accept"))) {
+		printf ("Test 01-p: found idle connection at connection stage, killing..\n");
+		vortex_connection_shutdown (conn);
+		return;
+	}
+
+	/* check to close connection */
+	/*	if ((*count) == 2)
+		vortex_connection_shutdow (conn); */
+	return;
+}
+
+void test_01p_remove_idle_handler (VortexConnection * connection)
+{
+	vortex_ctx_set_idle_handler (CONN_CTX (connection), NULL, 0, NULL, NULL);
+	return;
+}
+
 void frame_received (VortexChannel    * channel,
 		     VortexConnection * connection,
 		     VortexFrame      * frame,
@@ -167,6 +200,12 @@ void frame_received (VortexChannel    * channel,
 		content = axl_strdup_printf ("%d", bytes);
 		vortex_channel_send_rpy (channel, content, strlen (content), vortex_frame_get_msgno (frame));
 		return;
+	} else if (axl_memcmp (vortex_frame_get_payload (frame), "enable-idle-handling", 20)) {
+		/* but not send more content, check if the remote side closes our connection */
+		vortex_ctx_set_idle_handler (CONN_CTX (connection), test_01p_idle_handler, 1, axl_new (int, 1), INT_TO_PTR (10));
+
+		/* uninstall idle handler when connection is removed */
+		vortex_connection_set_on_close (connection, test_01p_remove_idle_handler);
 	} /* end if */
 
 	/* DEFAULT REPLY, JUST ECHO */

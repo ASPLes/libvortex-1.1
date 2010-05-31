@@ -41,7 +41,7 @@
 
 #include <vortex.h>
 
-/**
+/** 
  * \addtogroup vortex_connection
  * @{
  */
@@ -352,6 +352,10 @@ void                vortex_connection_set_channel_added_handler   (VortexConnect
 void                vortex_connection_set_channel_removed_handler  (VortexConnection                * connection,
 								    VortexConnectionOnChannelUpdate   removed_handler,
 								    axlPointer                        user_data);
+
+void                vortex_connection_set_receive_stamp            (VortexConnection * conn);
+
+void                vortex_connection_check_idle_status            (VortexConnection * conn, VortexCtx * ctx, long time_stamp);
 
 void                vortex_connection_block                        (VortexConnection * conn,
 								    axl_bool           enable);

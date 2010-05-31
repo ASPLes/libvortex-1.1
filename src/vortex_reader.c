@@ -979,22 +979,32 @@ axl_bool      vortex_reader_read_pending (VortexCtx  * ctx,
  * @internal Auxiliar function that populates the reading set of file
  * descriptors (on_reading), returning the max fds.
  */
-VORTEX_SOCKET __vortex_reader_build_set_to_watch_aux (axlPointer      on_reading, 
+VORTEX_SOCKET __vortex_reader_build_set_to_watch_aux (VortexCtx     * ctx,
+						      axlPointer      on_reading, 
 						      axlListCursor * cursor, 
 						      VORTEX_SOCKET   current_max)
 {
 	VORTEX_SOCKET      max_fds     = current_max;
 	VORTEX_SOCKET      fds         = 0;
 	VortexConnection * connection;
-	VortexCtx        * ctx;
+	long               time_stamp  = 0;
+
+	/* get current time stamp if idle handler is defined */
+	if (ctx->global_idle_handler)
+		time_stamp = (long) time (NULL);
 	
 	axl_list_cursor_first (cursor);
 	while (axl_list_cursor_has_item (cursor)) {
 
 		/* get current connection */
 		connection = axl_list_cursor_get (cursor);
-		ctx        = vortex_connection_get_ctx (connection);
-		if (!vortex_connection_is_ok (connection, axl_false)) {
+
+		/* check for idle status */
+		if (ctx->global_idle_handler)
+			vortex_connection_check_idle_status (connection, ctx, time_stamp);
+
+		/* check ok status */
+		if (! vortex_connection_is_ok (connection, axl_false)) {
 
 			/* connection isn't ok, unref it */
 			vortex_connection_unref (connection, "vortex reader (process)");
@@ -1032,9 +1042,6 @@ VORTEX_SOCKET __vortex_reader_build_set_to_watch_aux (axlPointer      on_reading
 		fds        = vortex_connection_get_socket (connection);
 		max_fds    = fds > max_fds ? fds: max_fds;
 
-		/* get the context */
-		ctx        = vortex_connection_get_ctx (connection);
-
 		/* add the socket descriptor into the given on reading
 		 * group */
 		if (! vortex_io_waiting_invoke_add_to_fd_group (ctx, fds, connection, on_reading)) {
@@ -1062,7 +1069,8 @@ VORTEX_SOCKET __vortex_reader_build_set_to_watch_aux (axlPointer      on_reading
 	
 } /* end __vortex_reader_build_set_to_watch_aux */
 
-VORTEX_SOCKET   __vortex_reader_build_set_to_watch (axlPointer      on_reading, 
+VORTEX_SOCKET   __vortex_reader_build_set_to_watch (VortexCtx     * ctx,
+						    axlPointer      on_reading, 
 						    axlListCursor * con_cursor, 
 						    axlListCursor * srv_cursor)
 {
@@ -1070,10 +1078,10 @@ VORTEX_SOCKET   __vortex_reader_build_set_to_watch (axlPointer      on_reading,
 	VORTEX_SOCKET       max_fds     = 0;
 
 	/* read server connections */
-	max_fds = __vortex_reader_build_set_to_watch_aux (on_reading, srv_cursor, max_fds);
+	max_fds = __vortex_reader_build_set_to_watch_aux (ctx, on_reading, srv_cursor, max_fds);
 
 	/* read client connection list */
-	max_fds = __vortex_reader_build_set_to_watch_aux (on_reading, con_cursor, max_fds);
+	max_fds = __vortex_reader_build_set_to_watch_aux (ctx, on_reading, con_cursor, max_fds);
 
 	/* return maximum number for file descriptors */
 	return max_fds;
@@ -1301,7 +1309,7 @@ axlPointer __vortex_reader_run (VortexCtx * ctx)
 		vortex_io_waiting_invoke_clear_fd_group (ctx, ctx->on_reading);
 
 		/* build socket descriptor to be read */
-		max_fds = __vortex_reader_build_set_to_watch (ctx->on_reading, ctx->con_cursor, ctx->srv_cursor);
+		max_fds = __vortex_reader_build_set_to_watch (ctx, ctx->on_reading, ctx->con_cursor, ctx->srv_cursor);
 
 		if ((axl_list_length (ctx->con_list) == 0) && (axl_list_length (ctx->srv_list) == 0)) {
 			/* check if we have to terminate the process

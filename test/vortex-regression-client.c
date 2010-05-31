@@ -2585,16 +2585,19 @@ axl_bool test_01o (void) {
 axl_bool test_01p (void) {
 
 	VortexConnection   * conn;
+	VortexConnection   * conn2;
 	int                  iterator;
 	VORTEX_SOCKET        socket;
 	VortexChannel      * channel;
 	char               * content;
 	int                  bytes_written;
 	VortexAsyncQueue   * wait_queue = NULL;
+	VortexFrame        * frame;
 
-	goto init;
+	/* init queue */
+	wait_queue = vortex_async_queue_new ();
 
-	printf ("Test 01-p: Checking first part, ensuring remote size don't close by connection after notifying a bigger SEQ frame..");
+	printf ("Test 01-p: Checking first part, ensuring remote size don't close by connection after notifying a bigger SEQ frame..\n");
 	/* do a connection */
 	conn = connection_new ();
 	if (! vortex_connection_is_ok (conn, axl_false)) {
@@ -2642,8 +2645,7 @@ axl_bool test_01p (void) {
 
 
 	/* socket close after incomplete frame */
-	printf ("Test 01-p: Now check close after incomplete frame..");
-	wait_queue = vortex_async_queue_new ();
+	printf ("Test 01-p: Now check close after incomplete frame..\n");
 	socket = vortex_connection_sock_connect (ctx, listener_host, LISTENER_PORT, NULL, NULL);
 	printf ("Test 01-p: Socket created: %d\n", socket);
 
@@ -2665,7 +2667,7 @@ axl_bool test_01p (void) {
 	printf ("Test 01-p: OK, (is alive server ;-) ??\n");
 
 	/* window size under flow */
-	printf ("Test 01-p: Now check sending frame fragments..");
+	printf ("Test 01-p: Now check sending frame fragments..\n");
 	socket = vortex_connection_sock_connect (ctx, listener_host, LISTENER_PORT, NULL, NULL);
 	printf ("Test 01-p: Socket created: %d\n", socket);
 
@@ -2694,7 +2696,7 @@ axl_bool test_01p (void) {
 	vortex_close_socket (socket);	
 
 	/* window size overflow */
-	printf ("Test 01-p: Now checking I can't push more content that the window size expected at the remote BEEP peer");
+	printf ("Test 01-p: Now checking I can't push more content that the window size expected at the remote BEEP peer\n");
 	socket = vortex_connection_sock_connect (ctx, listener_host, LISTENER_PORT, NULL, NULL);
 	printf ("Test 01-p: Socket created: %d\n", socket);
 
@@ -2713,12 +2715,36 @@ axl_bool test_01p (void) {
 
 	vortex_close_socket (socket);
 
-init:
-	
+	/* request remote server to install idle handling */
+	conn = connection_new ();
+	if (!vortex_connection_is_ok (conn, axl_false)) {
+		vortex_connection_close (conn);
+		return axl_false;
+	} /* end if */
 
+	/* create a channel */
+	channel = vortex_channel_new (conn, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, wait_queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("ERROR: expected to be able to create a connection to set idle handler but channel creation failed\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 01-p: Requesting to activate idle handling..\n");
+	vortex_channel_send_msg (channel, "enable-idle-handling", 20, NULL);
+
+	/* wait for reply */
+	frame = vortex_channel_get_reply (channel, wait_queue);
+	vortex_frame_unref (frame);
 
 	/* window size overflow with frame fragmentation */
-	printf ("Test 01-p: Now check if we can keep a half opened connection...");
+	printf ("Test 01-p: Now check if we can keep a half opened connection...\n");
 	socket = vortex_connection_sock_connect (ctx, listener_host, LISTENER_PORT, NULL, NULL);
 	printf ("Test 01-p: Socket created: %d\n", socket);
 
@@ -2731,13 +2757,21 @@ init:
 	content = axl_new (char, 353);
 	bytes_written = send (socket, content, 100, 0);
 
-	/* but not send more content, check if the remote side closes our connection */
-
 	/* wait */
-	/* recv (socket, content, 65536, 0); */
+	printf ("Test 01-p: configured idle handler, waiting to unlock..\n");
+	recv (socket, content, 100, 0); 
 	axl_free (content);
 
-	vortex_close_socket (socket);
+	/* before closing, check again the idle handling do not avoid creating new connections */
+	conn2 = connection_new ();
+	if (! vortex_connection_is_ok (conn2, axl_false)) {
+		printf ("Test 01-p: expected to be able to create second connection having idle handler installed..\n");
+		return axl_false;
+	} /* end if */
+	vortex_connection_close (conn2);
+
+	/* close connection */
+	vortex_connection_close (conn);
 
 	/* finish wait queue */
 	vortex_async_queue_unref (wait_queue);
@@ -9670,11 +9704,11 @@ axl_bool test_14_d (void)
 
 	printf ("Test 14-d: channel created ok..\n");
 	
-	/* ok, close the connection */
-	vortex_connection_close (conn);
-
 	/* terminate thread */
 	vortex_thread_destroy (&thread, axl_false);
+
+	/* ok, close the connection */
+	vortex_connection_close (conn);
 
 	/* check no pending event is waiting to be read */
 	if (vortex_pull_pending_events (client_ctx)) {
@@ -10097,7 +10131,7 @@ int main (int  argc, char ** argv)
 			run_test (test_01o, "Test 01-o", "Memory consuption with channel pool acquire/release API", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_01p"))
-			run_test (test_01p, "Test 01-p", "Check upper limits for window sizes (bug fix)", -1, -1);
+			run_test (test_01p, "Test 01-p", "Check upper limits for window sizes and idle handling (bug fix)", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
@@ -10301,7 +10335,7 @@ int main (int  argc, char ** argv)
 
 	run_test (test_01o, "Test 01-o", "Memory consuption with channel pool acquire/release API", -1, -1);
 
-	run_test (test_01p, "Test 01-p", "Check upper limits for window sizes (bug fix)", -1, -1);
+	run_test (test_01p, "Test 01-p", "Check upper limits for window sizes and idle handling (bug fix)", -1, -1);
   
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   

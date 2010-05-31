@@ -391,6 +391,97 @@ void        vortex_ctx_set_channel_start_handler (VortexCtx                     
 }
 
 /** 
+ * @brief Allows to configure idle handler at context level. This
+ * handler will be called when no traffic was produced/received on a
+ * particular connection during the max idle period. This is
+ * configured when the handler is passed. 
+ *
+ * @param ctx The context where the idle period and the handler will be configured.
+ *
+ * @param idle_handler The handler to be called in case a connection
+ * have no activity within max_idle_period. The handler will be called
+ * each max_idle_period.
+ *
+ * @param max_idle_period Amount of seconds to wait until considering
+ * a connection was idle because no activity was registered within
+ * that period.
+ *
+ * @param user_data Optional user defined pointer to be passed to the idle_handler when activated.
+ *
+ * @param user_data Second optional user defined pointer to be passed
+ * to the idle_handler when activated.
+ */
+void        vortex_ctx_set_idle_handler          (VortexCtx                       * ctx,
+						  VortexIdleHandler                 idle_handler,
+						  long                              max_idle_period,
+						  axlPointer                        user_data,
+						  axlPointer                        user_data2)
+{
+	v_return_if_fail (ctx);
+
+	/* set handlers */
+	ctx->global_idle_handler       = idle_handler;
+	ctx->max_idle_period           = max_idle_period;
+	ctx->global_idle_handler_data  = user_data;
+	ctx->global_idle_handler_data2 = user_data2;
+
+	/* do nothing more for now */
+	return;
+}
+
+axlPointer __vortex_ctx_notify_idle (VortexConnection * conn)
+{
+	VortexCtx          * ctx     = CONN_CTX (conn);
+	VortexIdleHandler    handler = ctx->global_idle_handler;
+
+	/* check null handler */
+	if (handler == NULL)
+		return NULL;
+
+	/* call to notify idle */
+	vortex_log (VORTEX_LEVEL_DEBUG, "notifying idle connection on id=%d because %ld was exceeded", 
+		    vortex_connection_get_id (conn), ctx->max_idle_period);
+	handler (ctx, conn, ctx->global_idle_handler_data, ctx->global_idle_handler_data2);
+	
+	/* reduce reference acquired */
+	vortex_log (VORTEX_LEVEL_DEBUG, "Calling to reduce reference counting now finished idle handler for id=%d",
+		    vortex_connection_get_id (conn));
+
+	/* reset idle state to current time and notify idle notification finished */
+	vortex_connection_set_receive_stamp (conn);
+	vortex_connection_set_data (conn, "vo:co:idle", NULL);
+
+	vortex_connection_unref (conn, "notify-idle");
+
+	return NULL;
+}
+
+/** 
+ * @internal Function used to implement idle notify on a connection.
+ */
+void        vortex_ctx_notify_idle               (VortexCtx                       * ctx,
+						  VortexConnection                * conn)
+{
+	/* do nothing if handler or context aren't defined */
+	if (ctx == NULL || ctx->global_idle_handler == NULL)
+		return;
+
+	/* check if the connection was already notified */
+	if (PTR_TO_INT (vortex_connection_get_data (conn, "vo:co:idle")))
+		return;
+	/* notify idle notification is in progress */
+	vortex_connection_set_data (conn, "vo:co:idle", INT_TO_PTR (axl_true));
+
+	/* check unchecked reference (always acquire reference) */
+	vortex_connection_ref_internal (conn, "notify-idle", axl_false);
+
+	/* call to notify */
+	vortex_thread_pool_new_task (ctx, (VortexThreadFunc) __vortex_ctx_notify_idle, conn);
+
+	return;
+}
+
+/** 
  * @brief Allows to install a cleanup function which will be called
  * just before the \ref VortexCtx is finished (by a call to \ref
  * vortex_exit_ctx or a manual call to \ref vortex_ctx_free).

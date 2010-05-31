@@ -1129,6 +1129,19 @@ typedef axl_bool (* VortexThreadAsyncEvent)        (VortexCtx  * ctx,
 						    axlPointer   user_data,
 						    axlPointer   user_data2);
 
+/** 
+ * @brief Handler called to notify idle state reached for a particular
+ * connection. The handler is configured a vortex context level,
+ * applying to all connections created under this context. This
+ * handler is configured by:
+ *
+ * - \ref vortex_ctx_set_idle_handler
+ */
+typedef void (* VortexIdleHandler) (VortexCtx        * ctx, 
+				    VortexConnection * conn,
+				    axlPointer         user_data,
+				    axlPointer         user_data2);
+
 #endif
 
 /* @} */

@@ -79,6 +79,15 @@ void        vortex_ctx_set_channel_start_handler (VortexCtx                     
 						  VortexOnStartChannelExtended      start_handler,
 						  axlPointer                        start_handler_data);
 
+void        vortex_ctx_set_idle_handler          (VortexCtx                       * ctx,
+						  VortexIdleHandler                 idle_handler,
+						  long                              max_idle_period,
+						  axlPointer                        user_data,
+						  axlPointer                        user_data2);
+
+void        vortex_ctx_notify_idle               (VortexCtx                       * ctx,
+						  VortexConnection                * conn);
+
 void        vortex_ctx_install_cleanup           (VortexCtx * ctx,
 						  axlDestroyFunc cleanup);
 
