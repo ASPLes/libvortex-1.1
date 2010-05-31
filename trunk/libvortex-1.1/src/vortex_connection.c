@@ -517,6 +517,11 @@ struct _VortexConnection {
 	 * @internal Reference to implement connection I/O block.
 	 */
 	axl_bool                is_blocked;
+
+	/** 
+	 * @internal Value to track connection activity.
+	 */
+	long                    last_idle_stamp;
 };
 
 
@@ -4206,6 +4211,49 @@ void                vortex_connection_remove_channel_common  (VortexConnection *
 	/* remove the channel */
 	vortex_hash_remove (connection->channels, INT_TO_PTR (channel_num));
 	
+	return;
+}
+
+/** 
+ * @internal Function used by vortex to notify that this connection
+ * either writen or received content, setting a timestamp, which
+ * allows checking if the connection was idle.
+ *
+ * @param conn The connection that received or produced content.
+ */
+void                vortex_connection_set_receive_stamp            (VortexConnection * conn)
+{
+	/* set that content was received */
+	conn->last_idle_stamp = (long) time (NULL);
+
+	return;
+}
+
+/** 
+ * @internal Function used to check idle status, calling the handler
+ * defined if the idle status is reached. The function also resets the
+ * idle status, so it can be called in the future. 
+ */
+void                vortex_connection_check_idle_status            (VortexConnection * conn, VortexCtx * ctx, long time_stamp)
+{
+	/* do not notify master listeners activity (they don't have) */
+	if (conn->role == VortexRoleMasterListener)
+		return;
+
+	/* check if the connection was never checked */
+	if (conn->last_idle_stamp == 0) {
+		vortex_connection_set_receive_stamp (conn);
+		return;
+	} /* end if */
+
+	/* check idle status */
+	if ((time_stamp - conn->last_idle_stamp) > ctx->max_idle_period) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "Found idle connection id=%d, notifying..", vortex_connection_get_id (conn));
+		/* notify idle ref */
+		vortex_ctx_notify_idle (ctx, conn);
+
+		return;
+	} /* end if */
 	return;
 }
 

@@ -1689,6 +1689,9 @@ process_buffer:
  			    frame->size, frame->mime_headers_size);
 	} /* end if */
 
+	/* notify here frame received (content receieved) */
+	vortex_connection_set_receive_stamp (connection);
+
 	return frame;
 
 }

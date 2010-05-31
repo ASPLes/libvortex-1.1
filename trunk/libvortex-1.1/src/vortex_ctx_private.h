@@ -124,6 +124,13 @@ struct _VortexCtx {
 	VortexOnStartChannelExtended      global_channel_start_extended;
 	axlPointer                        global_channel_start_extended_data;
 
+	/* @internal Handler used to implement global idle
+	   notification */
+	VortexIdleHandler                 global_idle_handler;
+	long                              max_idle_period;
+	axlPointer                        global_idle_handler_data;
+	axlPointer                        global_idle_handler_data2;
+
 #if defined(AXL_OS_WIN32)
 	/**
 	 * Temporal hack to support sock limits under windows until we
