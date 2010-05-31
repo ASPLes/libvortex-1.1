@@ -5,12 +5,12 @@ else
    vortex_dll = -lvortex-1.1
 endif
 
-CC       = gcc.exe -g -Wall
+CC       = gcc.exe -g -Wall  -Werror
 OBJ      = exarg.o xml-rpc-support.o xml-rpc-gen-translate.o xml-rpc-gen.o xml-rpc-autoconf.o xml-rpc-c-server.o xml-rpc-c-stub.o
 
 PROGRAMS = xml-rpc-gen.exe 
 
-LIBS     = -Wall -g \
+LIBS     = -Wall  -Werror -g \
 	-L../../libaxl/src -L$(DEPEND_DIR)/bin -laxl  \
 	-L../src/ $(vortex_dll)
 

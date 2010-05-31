@@ -34,12 +34,12 @@ STATIC_LIB     = $(vortex_1_1_dll).a
 #	--add-stdcall-alias \
 #	-lws2_32 \
 #	-lintl  -liconv  -lm 
-LIBS = -Wall $(enable_gcc_debug) -L"../../libaxl/src/" -laxl -lws2_32 $(OPENSSL_LIBS) $(GSASL_LIBS) $(search_lib_path) 
+LIBS = -Wall -Werror $(enable_gcc_debug) -L"../../libaxl/src/" -laxl -lws2_32 $(OPENSSL_LIBS) $(GSASL_LIBS) $(search_lib_path) 
 
 #INCS       =  -I"$(BASE_DIR)/include" \
 
 # build vortex with log support
-INCS = -Wall $(enable_gcc_debug) -I"." -I"../../libaxl/src" -DENABLE_XML_RPC_SUPPORT $(enable_vortex_log)
+INCS = -Wall -Werror $(enable_gcc_debug) -I"." -I"../../libaxl/src" -DENABLE_XML_RPC_SUPPORT $(enable_vortex_log)
 
 CFLAGS = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" -D__axl_disable_broken_bool_def__   \
 	-DPACKAGE_DTD_DIR=\""$(datadir)"\" -DPACKAGE_TOP_DIR=\""$(top_srcdir)"\" -Wall $(enable_gcc_debug) $(OPENSSL_FLAGS) $(GSASL_FLAGS)

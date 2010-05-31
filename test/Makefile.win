@@ -35,7 +35,7 @@ else
    vortex_file_http_dll    = libvortex-http-1.1.dll
 endif
 
-CC       = gcc.exe -g -Wall
+CC       = gcc.exe -g -Wall  -Werror
 OBJ      = vortex-listener.o \
            vortex-client.o \
 	   vortex-omr-server.o \
@@ -63,7 +63,7 @@ PROGRAMS = vortex-listener.exe \
 	   vortex-file-transfer-server.exe \
 	   vortex-client-connections.exe
 
-LIBS     = -Wall -g \
+LIBS     = -Wall  -Werror -g \
 	-lws2_32 $(search_lib_path) \
 	-L../src -L../../libaxl/src -L$(DEPEND_DIR)/bin -laxl $(vortex_dll) \
 	-L../tunnel $(vortex_tunnel_dll) \
