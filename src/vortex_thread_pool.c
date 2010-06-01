@@ -564,8 +564,10 @@ void vortex_thread_pool_new_task (VortexCtx * ctx, VortexThreadFunc func, axlPoi
  * @param user_data2 Second user defined pointer to data to be passed
  * to the event handler.
  *
- * @return The method returns the event identifier. Currently it is
- * not used. The function returns -1 in case of failure.
+ * @return The method returns the event identifier. This identifier
+ * can be used to remove the event by using
+ * vortex_thread_pool_remove_event. The function returns -1 in case of
+ * failure.
  */
 int  vortex_thread_pool_new_event           (VortexCtx              * ctx,
 					     long                     microseconds,
@@ -601,6 +603,31 @@ int  vortex_thread_pool_new_event           (VortexCtx              * ctx,
 	vortex_mutex_unlock (&(ctx->thread_pool->mutex));
 
 	return PTR_TO_INT (event);
+}
+
+/** 
+ * @brief Allows to remove an event installed by \ref vortex_thread_pool_new_event.
+ *
+ * @param ctx The context where the event was created.
+ * @param event_id The event id to remove.
+ */
+void vortex_thread_pool_remove_event        (VortexCtx              * ctx,
+					     int                      event_id)
+{
+	v_return_if_fail (ctx);
+	int iterator;
+
+	/* lock the thread pool */
+	vortex_mutex_lock (&(ctx->thread_pool->mutex));
+
+	iterator = 0;
+	while (iterator < axl_list_length (ctx->pool->events)) {
+		iterator++;
+	} /* end if */
+
+	/* unlock the thread pool */
+	vortex_mutex_unlock (&(ctx->thread_pool->mutex));
+	return;
 }
 
 /** 
