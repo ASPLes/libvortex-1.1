@@ -9872,6 +9872,31 @@ axl_bool  test_15a (void)
 }
 
 
+/** 
+ * @brief Check alive profile support 
+ */
+axl_bool  test_16 (void)
+{
+	VortexConnection * conn;
+
+	/* create connection */
+	conn = connection_new ();
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: failed to create connection under HTTP CONNECT..\n");
+		return axl_false;
+	} /* end if */
+
+	/* enable alive check on this connection every 20ms */
+	vortex_alive_enable_check (conn, 20000, 0, NULL);
+
+	/* close connection */
+	vortex_connection_close (conn);
+
+	return axl_true;
+
+}
+
+
 typedef int  (*VortexRegressionTest) (void);
   
  
@@ -9962,7 +9987,7 @@ int main (int  argc, char ** argv)
  	printf ("**                       test_03, test_03a, test_03b, test_03d, test_03c, test_04, test_04a, \n");
  	printf ("**                       test_04b, test_04c, test_05, test_05a, test_05b, test_06, test_06a, \n");
  	printf ("**                       test_07, test_08, test_09, test_10, test_11, test_12, test_13, test_14, \n");
- 	printf ("**                       test_14a, test_14b, test_14ctest_14d, test_15, test_15a\n");
+ 	printf ("**                       test_14a, test_14b, test_14ctest_14d, test_15, test_15a, test_16\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -10277,6 +10302,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_15a"))
 			run_test (test_15a, "Test 15-a", "Check HTTP CONNECT implementation (run tests under HTTP CONNECT)", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_16"))
+			run_test (test_16, "Test 16", "Check ALIVE profile", -1, -1);
+
 		goto finish;
 	}
 
@@ -10429,9 +10457,11 @@ int main (int  argc, char ** argv)
 
 	run_test (test_14_d, "Test 14-d", "Check PULL API implementation (channel start handling)", -1, -1);
 
-	run_test (test_15, "Test 15", "Check HTTP CONNECT implementation", -1, -1);
+	run_test (test_16, "Test 15", "Check ALIVE profile", -1, -1);
 
-	run_test (test_15a, "Test 15-a", "Check HTTP CONNECT implementation (run tests under HTTP CONNECT)", -1, -1);
+	run_test (test_15, "Test 16", "Check HTTP CONNECT implementation", -1, -1);
+
+	run_test (test_15a, "Test 16-a", "Check HTTP CONNECT implementation (run tests under HTTP CONNECT)", -1, -1);
 
 #if defined(AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/**

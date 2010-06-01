@@ -64,6 +64,9 @@ int  vortex_thread_pool_new_event           (VortexCtx              * ctx,
 					     axlPointer               user_data,
 					     axlPointer               user_data2);
 
+void vortex_thread_pool_remove_event        (VortexCtx              * ctx,
+					     int                      event_id);
+
 void vortex_thread_pool_stats               (VortexCtx        * ctx,
 					     int              * runnin_threads,
 					     int              * waiting_threads,

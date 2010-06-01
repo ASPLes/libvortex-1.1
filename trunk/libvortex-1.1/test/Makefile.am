@@ -101,7 +101,7 @@ noinst_PROGRAMS = \
 	vortex-file-transfer-server vortex-file-transfer-client \
 	vortex-pull-listener
 
-INCLUDES = -I$(top_srcdir)/src -I$(top_srcdir)/tunnel -I$(top_srcdir)/pull \
+INCLUDES = -I$(top_srcdir)/src -I$(top_srcdir)/tunnel -I$(top_srcdir)/pull -I$(top_srcdir)/alive \
 	-I$(top_srcdir)/xml-rpc -I$(top_srcdir)/sasl -I$(top_srcdir)/tls -I$(top_srcdir)/http $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
 	-I$(READLINE_PATH)/include -Wall  -Wstrict-prototypes -g -ansi -D__axl_disable_broken_bool_def__   \
         -DVERSION=\""$(VORTEX_VERSION)"\" -I$(top_srcdir)/src $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_VORTEX_LOG) $(INCLUDE_TUNNEL_SUPPORT) $(INCLUDE_PULL_SUPPORT)  $(INCLUDE_XML_RPC_SUPPORT) $(INCLUDE_SASL_SUPPORT) $(INCLUDE_HTTP_SUPPORT) $(INCLUDE_TLS_SUPPORT)
@@ -150,6 +150,7 @@ vortex_regression_client_LDADD     = \
 	$(LIBS) $(top_builddir)/src/libvortex-1.1.la  \
 	$(top_builddir)/tunnel/libvortex-tunnel-1.1.la \
 	$(top_builddir)/http/libvortex-http-1.1.la \
+	$(top_builddir)/alive/libvortex-alive-1.1.la \
 	$(top_builddir)/pull/libvortex-pull-1.1.la  $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS) 
 
 vortex_regression_listener_SOURCES   = \
@@ -159,6 +160,7 @@ vortex_regression_listener_LDADD     = \
 	$(LIBS) $(top_builddir)/src/libvortex-1.1.la \
 	$(top_builddir)/tunnel/libvortex-tunnel-1.1.la \
 	$(top_builddir)/pull/libvortex-pull-1.1.la \
+	$(top_builddir)/alive/libvortex-alive-1.1.la \
 	 $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS)
 
 vortex_server_without_cbs_SOURCES   = vortex-server-without-cbs.c

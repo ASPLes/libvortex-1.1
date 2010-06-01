@@ -283,6 +283,12 @@ AC_ARG_ENABLE(http-support, [  --disable-http-support    Makes Vortex Library to
 	      enable_http_support=yes)
 AM_CONDITIONAL(ENABLE_HTTP_SUPPORT, test "x$enable_http_support" = "xyes")
 
+dnl check for ALIVE API support (BEEP connection check)
+AC_ARG_ENABLE(alive-support, [  --disable-alive-support    Makes Vortex Library to be built without ALIVE profile support], 
+	      enable_alive_support="$enableval", 
+	      enable_alive_support=yes)
+AM_CONDITIONAL(ENABLE_ALIVE_SUPPORT, test "x$enable_alive_support" = "xyes")
+
 dnl check for py-vortex support
 AC_ARG_ENABLE(py-vortex,   [   --disable-py-vortex       Makes Vortex Library to be build without PyVortex: python bindings support],
               enable_py_vortex_support="$enableval",
@@ -396,6 +402,7 @@ py-vortex/py-vortex-sasl.pc
 py-vortex/py-vortex-tls.pc
 py-vortex/doc/conf.py
 py-vortex/doc/Makefile
+alive/Makefile
 doc/Makefile
 doc/vortex-doc.doxygen
 test/Makefile
@@ -409,6 +416,7 @@ vortex-pull-1.1.pc
 vortex-sasl-1.1.pc
 vortex-tls-1.1.pc
 vortex-http-1.1.pc
+vortex-alive-1.1.pc
 ])
 
 echo "------------------------------------------"
@@ -511,6 +519,15 @@ else
    echo 
    echo "     NOTE: To enable HTTP CONNECT proxy support you have to"
    echo "           use --enable-http-support option."
+fi
+if test x$enable_alive_support = xyes ; then
+   echo "   Build ALIVE check profile:                enabled"
+   echo "     (libvortex-alive-1.1)"
+else
+   echo "   Build ALIVE check profile:                disabled"
+   echo 
+   echo "     NOTE: To enable ALIVE profile check you have to"
+   echo "           use --enable-alive-support option."
 fi
 if test x$enable_py_vortex_support = xyes ; then
    echo "   Build PyVortex support:                   enabled"
