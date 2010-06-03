@@ -2193,8 +2193,7 @@ check_limit:
  		data->msg_no   = proposed_msg_no;
  	else
  		data->msg_no   = vortex_channel_get_next_msg_no (channel);
-	data->first_seq_no     = vortex_channel_get_next_seq_no (channel);
-	
+		
 	/* update message size */
 	data->message_size     = message_size + mime_header_size;
 		
@@ -2235,7 +2234,7 @@ check_limit:
 	}
 
 	/* update channel status */
- 	vortex_channel_update_status (channel, data->message_size, data->msg_no, UPDATE_SEQ_NO | UPDATE_MSG_NO);
+ 	vortex_channel_update_status (channel, data->message_size, data->msg_no, UPDATE_MSG_NO);
   
  	/* update pending messages to be replied */
  	vortex_mutex_lock (&channel->outstanding_msg_mutex);
@@ -2567,7 +2566,6 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
 	data->type            = type;
 	data->channel_num     = vortex_channel_get_number (channel);
 	data->msg_no          = msg_no_rpy;
-	data->first_seq_no    = vortex_channel_get_next_seq_no (channel);
 
 	/* get current mime header configuration */
 	mime_header_size      = __vortex_channel_get_mime_headers_size (ctx, channel);
@@ -2687,11 +2685,6 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
 
 	switch (type) {
 	case VORTEX_FRAME_TYPE_NUL:
-		/* because tne NUL reply ends a series of ANS reply,
-		 * we update the seqno and the next expected reply
-		 * number. */
-		vortex_channel_update_status (channel, data->message_size, 0, UPDATE_SEQ_NO);
-
 		/* reset last ansno message sent. */
 		channel->last_ansno_sent = 0;
 
@@ -2701,13 +2694,10 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
 		break;
 	case VORTEX_FRAME_TYPE_ANS:
 		/* due to the ANS reply, we only update the seqno number.  */
-		vortex_channel_update_status (channel, data->message_size, 0, UPDATE_SEQ_NO | UPDATE_ANS_NO);
+		vortex_channel_update_status (channel, data->message_size, 0, UPDATE_ANS_NO);
 		break;
 	case VORTEX_FRAME_TYPE_RPY:
 	case VORTEX_FRAME_TYPE_ERR:
-		/* update channel status. */
-		vortex_channel_update_status (channel, data->message_size, 0, UPDATE_SEQ_NO);
-
 		/* remove first pending message from incoming messages */
 		vortex_channel_remove_first_pending_msg_no (channel, msg_no_rpy);
 		break;
@@ -2752,10 +2742,6 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
 
 		/* update the type */
 		type = data->type;
-
-		/* and update new first seq no to use while building
-		 * the frame */
-		data->first_seq_no    = vortex_channel_get_next_seq_no (channel); 
 
 		vortex_log (VORTEX_LEVEL_WARNING, "found pending reply=%d to be sent on channel=%d", 
 			    msg_no_rpy, channel->channel_num);
@@ -5398,9 +5384,11 @@ axl_bool  vortex_channel_check_serialize_pending (VortexCtx          * ctx,
 
 		/* frame points to delivered frame, update next seqno
 		 * to get next frame */
-		vortex_log (VORTEX_LEVEL_WARNING, "Channel serialize frame delivered seqno: %d, updating next...",
+		vortex_log (VORTEX_LEVEL_WARNING, "Channel serialize frame delivered seqno: %u, updating next...",
 			    vortex_frame_get_seqno (frame));
 		channel->serialize_next_seqno = vortex_frame_get_seqno (frame) + vortex_frame_get_content_size (frame);
+		vortex_log (VORTEX_LEVEL_WARNING, "        next seqno serialize is: %u ",
+			    vortex_frame_get_seqno (frame));
 
 		/* check if there are pending frames */
 		(*caller_frame) = (VortexFrame *) axl_hash_get (channel->serialize_hash, INT_TO_PTR (channel->serialize_next_seqno));
@@ -5478,9 +5466,9 @@ axl_bool  vortex_channel_check_serialize (VortexCtx        * ctx,
 		 * initialize next seqno to deliver */
 		if (vortex_frame_get_seqno (frame) == channel->serialize_next_seqno) {
 			/* next seqno expected */
-			vortex_log (VORTEX_LEVEL_WARNING, "Channel serialize for channel %d activated due to frame seqno %d == next serialize seqno %d (pending frames: %d)",
+			vortex_log (VORTEX_LEVEL_WARNING, "Channel serialize for channel %u activated due to frame seqno %u == next serialize seqno %u (pending frames: %d)",
 				    channel->channel_num, vortex_frame_get_seqno (frame), channel->serialize_next_seqno, axl_hash_items (channel->serialize_hash));
-			vortex_log (VORTEX_LEVEL_WARNING, "Channel serialize for channel %d activated, next frame with seqno to deliver is: %d (skip store)", 
+			vortex_log (VORTEX_LEVEL_WARNING, "Channel serialize for channel %u activated, next frame with seqno to deliver is: %u (skip store)", 
 				    channel->channel_num, channel->serialize_next_seqno);
 			/* first frame is not queued */
 			vortex_mutex_unlock (&channel->serialize_mutex);
@@ -5490,7 +5478,7 @@ axl_bool  vortex_channel_check_serialize (VortexCtx        * ctx,
 		/* ok, reached this point, the frame can't be
 		 * delivered at this moment, store for future
 		 * delivery */
-		vortex_log (VORTEX_LEVEL_WARNING, "Channel serialize for channel %d, storing frame %p with seqno %d (expected %d) for later deliver (pending frames: %d)",
+		vortex_log (VORTEX_LEVEL_WARNING, "Channel serialize for channel %d, storing frame %p with seqno %u (expected %u) for later deliver (pending frames: %d)",
 			    channel->channel_num, frame,  vortex_frame_get_seqno (frame), channel->serialize_next_seqno, axl_hash_items (channel->serialize_hash));
 		axl_hash_insert_full (channel->serialize_hash,
 				      /* key */

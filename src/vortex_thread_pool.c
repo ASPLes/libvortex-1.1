@@ -55,6 +55,7 @@ struct _VortexThreadPool {
 
 	/* list of events */
 	axlList          * events;
+	axlListCursor    * events_cursor;
 	axl_bool           processing_events;
 
 	/* context */
@@ -318,12 +319,14 @@ void vortex_thread_pool_init     (VortexCtx * ctx,
 		} /* end while */
 		axl_list_free (ctx->thread_pool->threads);
 		axl_list_free (ctx->thread_pool->events);
+		axl_list_cursor_free (ctx->thread_pool->events_cursor);
 		axl_list_free (ctx->thread_pool->stopped);
 	} /* end if */
-	ctx->thread_pool->threads     = axl_list_new (axl_list_always_return_1, __vortex_thread_pool_terminate_thread);
-	ctx->thread_pool->stopped     = axl_list_new (axl_list_always_return_1, __vortex_thread_pool_terminate_thread);
-	ctx->thread_pool->events      = axl_list_new (axl_list_always_return_1, axl_free);
-	ctx->thread_pool->ctx         = ctx;
+	ctx->thread_pool->threads       = axl_list_new (axl_list_always_return_1, __vortex_thread_pool_terminate_thread);
+	ctx->thread_pool->stopped       = axl_list_new (axl_list_always_return_1, __vortex_thread_pool_terminate_thread);
+	ctx->thread_pool->events        = axl_list_new (axl_list_always_return_1, axl_free);
+	ctx->thread_pool->events_cursor = axl_list_cursor_new (ctx->thread_pool->events);
+	ctx->thread_pool->ctx           = ctx;
 
 	/* init the queue */
 	if (ctx->thread_pool->queue != NULL)
@@ -465,6 +468,7 @@ void vortex_thread_pool_exit (VortexCtx * ctx)
 	/* stop all threads */
 	axl_list_free (ctx->thread_pool->threads);
 	axl_list_free (ctx->thread_pool->events);
+	axl_list_cursor_free (ctx->thread_pool->events_cursor);
 	axl_list_free (ctx->thread_pool->stopped);
 
 	/* unref the queue */
@@ -614,15 +618,27 @@ int  vortex_thread_pool_new_event           (VortexCtx              * ctx,
 void vortex_thread_pool_remove_event        (VortexCtx              * ctx,
 					     int                      event_id)
 {
+	VortexThreadPoolEvent * event;
 	v_return_if_fail (ctx);
-	int iterator;
 
 	/* lock the thread pool */
 	vortex_mutex_lock (&(ctx->thread_pool->mutex));
 
-	iterator = 0;
-	while (iterator < axl_list_length (ctx->pool->events)) {
-		iterator++;
+	/* reset cursor list */
+	axl_list_cursor_first (ctx->thread_pool->events_cursor);
+	while (axl_list_cursor_has_item (ctx->thread_pool->events_cursor)) {
+
+		/* get event at the current position */
+		event = axl_list_cursor_get (ctx->thread_pool->events_cursor);
+
+		if (PTR_TO_INT (event) == event_id) {
+			/* found event to remove */
+			axl_list_cursor_remove (ctx->thread_pool->events_cursor);
+			break;
+		} /* end if */
+		
+		/* next position */
+		axl_list_cursor_next (ctx->thread_pool->events_cursor);
 	} /* end if */
 
 	/* unlock the thread pool */

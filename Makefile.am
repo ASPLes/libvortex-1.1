@@ -62,3 +62,4 @@ update-defs:
 	cd tunnel; make update-def; cd ..
 	cd xml-rpc; make update-def; cd ..
 	cd pull; make update-def; cd ..
+	cd alive; make update-def; cd ..

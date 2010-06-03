@@ -390,13 +390,15 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		 * ackno value is inside the seqno range for bytes
 		 * already sent. */
 		vortex_log (VORTEX_LEVEL_DEBUG, "received a SEQ frame: SEQ %d %u %d",
-		       vortex_frame_get_channel (frame), vortex_frame_get_seqno (frame),
-		       vortex_frame_get_payload_size (frame));
+			    vortex_frame_get_channel (frame), vortex_frame_get_seqno (frame),
+			    vortex_frame_get_payload_size (frame));
 
 		if (vortex_frame_get_seqno (frame) > vortex_channel_get_next_seq_no (channel)) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
-				    "received a SEQ frame specifying a seqno reference value that wasn't used (ackno: %u > max seq no sent: %u)",
-				    vortex_frame_get_seqno (frame), vortex_channel_get_next_seq_no (channel));
+				    "received a SEQ frame specifying a seqno reference value that wasn't used (ackno: %u > max seq no sent: %u): SEQ %d %u %d",
+				    vortex_frame_get_seqno (frame), vortex_channel_get_next_seq_no (channel),
+				    vortex_frame_get_channel (frame), vortex_frame_get_seqno (frame),
+				    vortex_frame_get_payload_size (frame));
 			
 			__vortex_connection_set_not_connected (connection, 
 							       "received a SEQ frame specifying a seqno reference value that wasn't used",

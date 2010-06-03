@@ -66,6 +66,7 @@ void vortex_alive_frame_received (VortexChannel    * channel,
  *
  * @param ctx The context where the alive profile will be enabled. 
  *
+ * @param accept_monitoring Allows to control if 
  */
 axl_bool           vortex_alive_init                       (VortexCtx * ctx)
 {
@@ -118,6 +119,7 @@ void               vortex_alive_enable_check               (VortexConnection * c
 							    int                max_unreply_count,
 							    VortexAliveFailure failure_handler)
 {
+	
 	return;
 }
 

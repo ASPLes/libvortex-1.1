@@ -24,11 +24,11 @@
 /* profile that sends the big file using a single MSG */
 #define FILE_TRANSFER_URI_WITH_MSG "http://www.aspl.es/vortex/profiles/file-transfer/bigmessage"
 
-/* the file to send: 43378171 bytes = 42M */
-#define FILE_TO_TRANSFER "/usr/src/linux-2.6.20.1.tar.bz2"
+/* the file to send: 50355835  bytes = 49M */
+#define FILE_TO_TRANSFER "/usr/src/linux-2.6.27.tar.bz2"
 
 /* file size, in bytes */
-#define FILE_SIZE (43378171)
+#define FILE_SIZE (50355835)
 
 /* listener context */
 VortexCtx * ctx = NULL;
@@ -77,6 +77,11 @@ void frame_received (VortexChannel    * channel,
 		}
 
 	} while (axl_true);
+
+	if (vortex_frame_get_msgno (frame) == 84) {
+		vortex_log_enable (ctx, axl_true);
+		vortex_color_log_enable (ctx, axl_true);
+	} 
 	
 	/* send the last reply. */
 	if (!vortex_channel_finalize_ans_rpy (channel, vortex_frame_get_msgno (frame))) {
@@ -135,7 +140,6 @@ void frame_received_with_msg (VortexChannel    * channel,
 				
 	printf ("VORTEX_LISTENER: end task (pid: %d), bytes transferred: %ld (one big message)\n", getpid (), total_bytes);
 	fclose (file);
-
 
 	return;
 }

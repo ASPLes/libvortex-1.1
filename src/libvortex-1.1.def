@@ -545,6 +545,7 @@ vortex_thread_pool_init
 vortex_thread_pool_new_event
 vortex_thread_pool_new_task
 vortex_thread_pool_remove
+vortex_thread_pool_remove_event
 vortex_thread_pool_set_exclusive_pool
 vortex_thread_pool_set_num
 vortex_thread_pool_stats

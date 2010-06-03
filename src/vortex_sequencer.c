@@ -469,7 +469,6 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 	VortexWriterData      packet;
 	VortexChannel       * channel                = NULL;
 	VortexConnection    * connection             = NULL;
-	int                   next_seq_no;
 	int                   message_size;
 	int                   max_seq_no            = 0;
 	int                   size_to_copy;
@@ -548,13 +547,13 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		/* create the frame (or frames to send) (splitter
 		 * process) */
 	keep_sending:
-		next_seq_no     = data->first_seq_no;
-		message_size    = data->message_size;
-		max_seq_no      = vortex_channel_get_max_seq_no_remote_accepted (channel);
-		keep_on_sending = axl_false;
+		data->first_seq_no     = vortex_channel_get_next_seq_no (channel);
+		message_size           = data->message_size;
+		max_seq_no             = vortex_channel_get_max_seq_no_remote_accepted (channel);
+		keep_on_sending        = axl_false;
 
  		vortex_log (VORTEX_LEVEL_DEBUG, "sequence operation (%p): type=%d, msgno=%d, next seq no=%u message size=%d max seq no=%u step=%u",
- 			    data, data->type, data->msg_no, next_seq_no, message_size, max_seq_no, data->step);
+ 			    data, data->type, data->msg_no, data->first_seq_no, message_size, max_seq_no, data->step);
   		
  		/* check if the channel is stalled and queue the
  		 * message if it is found stalled */
@@ -593,6 +592,9 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
  			 * later... */
 
 		} /* end if */
+
+		/* because we have sent the message, update remote seqno buffer used */
+		vortex_channel_update_status (channel, size_to_copy, 0, UPDATE_SEQ_NO);
 		
 		/* STEP 2: now, send the package built, queueing it at
 		 * the channel queue. At this point, we have prepared
@@ -620,7 +622,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 			__vortex_sequencer_unref_and_clear (connection, data, axl_true);
 			continue;
 		}
-		
+
 		/* check for keep on sending flag activated */
 		if (keep_on_sending)
 			goto keep_sending;
