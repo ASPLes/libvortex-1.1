@@ -108,6 +108,7 @@ int  main (int  argc, char ** argv)
 	VortexConnection * connection;
 	VortexChannel    * channel;
 	VortexAsyncQueue * queue;
+	int                transfer_count = 1;
 
 
 
@@ -164,10 +165,16 @@ int  main (int  argc, char ** argv)
 		goto end;
 	}
 
+	if (argv != NULL && argv[2] != NULL) {
+		transfer_count = atoi (argv[2]);
+		printf ("Requested to download %s, %d times..\n", FILE_TO_TRANSFER, transfer_count);
+	}
+
 	/* serialize channel */
 	vortex_channel_set_serialize (channel, axl_true);
 	
 	/* open the file */
+transfer_again:
 #if defined(AXL_OS_UNIX)
 	file = fopen (FILE_TO_TRANSFER, "w");
 #elif defined(AXL_OS_WIN32)
@@ -189,6 +196,16 @@ int  main (int  argc, char ** argv)
 
 	/* wait for the file */
 	vortex_async_queue_pop (queue);
+	transfer_count--;
+	if (transfer_count > 0) {
+		if (transfer_count == 15) {
+			vortex_log_enable (ctx, axl_true);
+			vortex_color_log_enable (ctx, axl_true);
+		} 
+		printf ("Transfer done, pending count: %d\n", transfer_count);
+		goto transfer_again;
+	}
+
 	vortex_async_queue_unref (queue);
 
 	printf ("closing file...\n");

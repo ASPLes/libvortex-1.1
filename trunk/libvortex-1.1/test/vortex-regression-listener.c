@@ -209,6 +209,9 @@ void frame_received (VortexChannel    * channel,
 
 		/* uninstall idle handler when connection is removed */
 		vortex_connection_set_on_close (connection, test_01p_remove_idle_handler);
+	} else if (axl_memcmp (vortex_frame_get_payload (frame), "block-connection", 16)) {
+		/* lock the connection */
+		vortex_connection_block (connection, axl_true);
 	} /* end if */
 
 	/* DEFAULT REPLY, JUST ECHO */

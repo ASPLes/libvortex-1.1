@@ -58,6 +58,9 @@
 /* include http connect header */
 #include <vortex_http.h>
 
+/* include alive header */
+#include <vortex_alive.h>
+
 /* include local support */
 #include <vortex-regression-common.h>
 
@@ -5377,29 +5380,6 @@ axl_bool  test_02o (void) {
 		return axl_false;
 	} /* end if */
 
-	/* check next_seq_no */
-	/* NOTE: 4096 + 2 (due to MIME headers) */
-	if (vortex_channel_get_next_seq_no (channel) != ((unsigned int) 2147479552 + 4096 + 2)) {
-		printf ("(1) Expected to find next sequence number to use, but something different was found: %u != %u\n",
-			vortex_channel_get_next_seq_no (channel) , ((unsigned int) 2147479552 + 4096 + 2));
-		return axl_false;
-	}
-
-	/* ...and the second one  */
-	printf ("Test 02-o: sending 4k additional content..\n");
-	if (! vortex_channel_send_msg (channel, TEST_REGRESION_URI_4_MESSAGE, 4096, NULL)) {
-		printf ("Failed to send 4k message after first message..\n");
-		return axl_false;
-	} /* end if */
-
-	/* check next_seq_no */
-	/* NOTE: 4096 + 4 (due to MIME headers) */
-	if (vortex_channel_get_next_seq_no (channel) != ((unsigned int) 2147479552 + 4096 + 4096 + 4)) {
-		printf ("(2) Expected to find next sequence number to use, but something different was found: %u != %u\n",
-			vortex_channel_get_next_seq_no (channel) , ((unsigned int) 2147479552 + 4096 + 4096 + 4));
-		return axl_false;
-	}
-
 	/* check connection */
 	printf ("Test 02-o: checking connection status..\n");
 	if (! vortex_connection_is_ok (connection, axl_false)) {
@@ -5419,6 +5399,21 @@ axl_bool  test_02o (void) {
 	}
 	vortex_frame_unref (frame);
 
+	/* check next_seq_no */
+	/* NOTE: 4096 + 2 (due to MIME headers) */
+	if (vortex_channel_get_next_seq_no (channel) != ((unsigned int) 2147479552 + 4096 + 2)) {
+		printf ("(1) Expected to find next sequence number to use, but something different was found: %u != %u\n",
+			vortex_channel_get_next_seq_no (channel) , ((unsigned int) 2147479552 + 4096 + 2));
+		return axl_false;
+	}
+
+	/* ...and the second one  */
+	printf ("Test 02-o: sending 4k additional content..\n");
+	if (! vortex_channel_send_msg (channel, TEST_REGRESION_URI_4_MESSAGE, 4096, NULL)) {
+		printf ("Failed to send 4k message after first message..\n");
+		return axl_false;
+	} /* end if */
+
 	/* wait for the reply */
 	printf ("Test 02-o: second reply..\n");
 	frame = vortex_channel_get_reply (channel, queue);
@@ -5430,6 +5425,14 @@ axl_bool  test_02o (void) {
 		return axl_false;
 	}
 	vortex_frame_unref (frame);
+
+	/* check next_seq_no */
+	/* NOTE: 4096 + 4 (due to MIME headers) */
+	if (vortex_channel_get_next_seq_no (channel) != ((unsigned int) 2147479552 + 4096 + 4096 + 4)) {
+		printf ("(2) Expected to find next sequence number to use, but something different was found: %u != %u\n",
+			vortex_channel_get_next_seq_no (channel) , ((unsigned int) 2147479552 + 4096 + 4096 + 4));
+		return axl_false;
+	}
 
 	/* check connection */
 	printf ("Test 02-o: checking connection status..\n");
@@ -9872,12 +9875,26 @@ axl_bool  test_15a (void)
 }
 
 
+void test_16_on_close_full (VortexConnection * conn,
+			    axlPointer         _queue)
+{
+	/* close connection */
+	printf ("Test 16: Connection closed conn id=%d..\n", vortex_connection_get_id (conn));
+
+	/* push on the queue to unlock main thread */
+	vortex_async_queue_push ((VortexAsyncQueue *) _queue, INT_TO_PTR (1));
+
+	return;
+}
+
 /** 
  * @brief Check alive profile support 
  */
 axl_bool  test_16 (void)
 {
 	VortexConnection * conn;
+	VortexChannel    * channel;
+	VortexAsyncQueue * queue;
 
 	/* create connection */
 	conn = connection_new ();
@@ -9888,6 +9905,37 @@ axl_bool  test_16 (void)
 
 	/* enable alive check on this connection every 20ms */
 	vortex_alive_enable_check (conn, 20000, 0, NULL);
+
+	/* now ask remote server to block the connection during 30 ms */
+	channel = vortex_channel_new (conn, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* no frame received, it is disabled */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+
+	/* check channel */
+	if (channel == NULL) {
+		printf ("Test 16: expected proper channel creation while checking alive profile..\n");
+		return axl_false;
+	} /* end if */
+
+	/* configure close connection to be triggered by the alive check */
+	queue = vortex_async_queue_new ();
+	vortex_connection_set_on_close_full (conn, test_16_on_close_full, queue);
+
+	if (! vortex_channel_send_msg (channel, "block-connection", 16, NULL)) {
+		printf ("Test 16: failed to send block connection message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* lock until connection is closed */
+	printf ("Test 16: waiting connection to be detected to be closed..\n");
+	vortex_async_queue_pop (queue);
+
+	printf ("Test 16: ok, connection close detected..\n");
 
 	/* close connection */
 	vortex_connection_close (conn);
