@@ -193,12 +193,11 @@ void               vortex_channel_update_remote_incoming_buffer (VortexChannel *
 								 unsigned        ackno,
 								 unsigned        window);
 
-axl_bool           vortex_channel_seq_no_exceeded_after_update  (VortexChannel * channel);
-
 unsigned int       vortex_channel_get_max_seq_no_accepted       (VortexChannel * channel);
 
 void               vortex_channel_set_max_seq_no_accepted       (VortexChannel * channel, 
-								 unsigned int    seq_no);
+								 unsigned int    seq_no,
+								 int             window_size);
 
 axl_bool           vortex_channel_are_equal                     (VortexChannel * channelA,
 								 VortexChannel * channelB);
@@ -445,6 +444,11 @@ axl_bool            vortex_channel_check_serialize_pending         (VortexCtx   
 
 axl_bool            vortex_channel_check_msg_no                    (VortexChannel  * channel, 
  								    VortexFrame    * frame);
+
+axl_bool            vortex_channel_check_incoming_seqno            (VortexChannel  * channel,
+								    VortexFrame    * frame);
+
+axl_bool            vortex_channel_is_stalled                      (VortexChannel  * channel);
 
 axl_bool            vortex_channel_remove_first_pending_msg_no     (VortexChannel * channel, 
  								    int             msg_no_rpy);

@@ -5454,7 +5454,10 @@ axl_bool  test_02o (void) {
 	/* wait for the reply */
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame == NULL || vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY || ! axl_cmp (vortex_frame_get_payload (frame), "second message")) {
-		printf ("Expected to find a particular reply for first message but received something different..\n");
+		printf (" (3) Expected to find a particular reply for first message but received something different..\n");
+		printf (" frame == NULL: %d\n", frame == NULL);
+		printf (" vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY: %d\n", vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY);
+		printf ("! axl_cmp (vortex_frame_get_payload (frame), \"second message\"): %d", ! axl_cmp (vortex_frame_get_payload (frame), "second message"));
 		return axl_false;
 	}
 	vortex_frame_unref (frame);
@@ -7089,7 +7092,8 @@ axl_bool test_04_d_send_content (VortexConnection * connection, VortexChannel * 
 
 		/* check message size and payload */
 		if (! axl_cmp (vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE)) {
-			printf ("ERROR (7): expected to find a message, but found something different...\n");
+			printf ("ERROR (7): expected to find a message, but found something different: sizes differs %d != %d...\n",
+				vortex_frame_get_payload_size (frame), 4096);
 			return axl_false;
 		} /* end if */
 

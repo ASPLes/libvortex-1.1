@@ -474,26 +474,6 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		return;
 	}	
 
-	/* check if remote peer is sending more data over the channel
-	 * than expected. The following check is done to ensure that
-	 * the received frame is inside the sequence allowed due to
-	 * buffer sizes. So, the check sums current sequence number of
-	 * the message plus the sequence number added that is result
-	 * from the frame size minus one unit. */
-	if ((vortex_frame_get_seqno (frame) + vortex_frame_get_content_size (frame) - 1) > 
-	    vortex_channel_get_max_seq_no_accepted (channel)) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, 
-			    "Protocol violation, received a frame larger than the maximum buffer expected, your session will be closed (seq no: %u + size: %d) > max seq no: %u",
-			    vortex_frame_get_seqno (frame), vortex_frame_get_content_size (frame),
-			    vortex_channel_get_max_seq_no_accepted (channel));
-		__vortex_connection_set_not_connected (connection,
-						       "Protocol violation, received a frame larger than the maximum buffer expected, your session will be closed",
-						       VortexProtocolError);
-		/* unref no longer needed frame */
-		vortex_frame_unref (frame);
-		return;
-	}
-
 	/* update channel internal status for next incoming messages */
 	switch (type) {
 	case VORTEX_FRAME_TYPE_MSG:

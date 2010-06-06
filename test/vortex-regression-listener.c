@@ -1240,7 +1240,7 @@ void frame_seqno_exceeded (VortexChannel    * channel,
 		 * we have to reduce the value passed to the function
 		 * in 15 units. */
 		vortex_channel_update_status_received (channel, (unsigned int) 2147479552 - 15, 0, UPDATE_SEQ_NO);
-		vortex_channel_set_max_seq_no_accepted (channel, (unsigned int) 2147483647);
+		vortex_channel_set_max_seq_no_accepted (channel, (unsigned int) 2147479552, 4096);
 		vortex_channel_send_rpy (channel, "first message", 13, vortex_frame_get_msgno (frame));
 		return;
 	} else if (axl_cmp (vortex_frame_get_payload (frame), "second message")) {
@@ -1254,7 +1254,7 @@ void frame_seqno_exceeded (VortexChannel    * channel,
 		 * messages (2 +2) */
 		vortex_channel_update_status_received (channel, (unsigned int) 2147475436, 0, UPDATE_SEQ_NO);
 		vortex_channel_send_rpy (channel, "second message", 14, vortex_frame_get_msgno (frame));
-		vortex_channel_set_max_seq_no_accepted (channel, MAX_SEQ_NO);
+		vortex_channel_set_max_seq_no_accepted (channel, MAX_SEQ_NO - 4095, 4096);
 		return;
 	} /* end if */
 
