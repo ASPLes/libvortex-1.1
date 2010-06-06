@@ -198,10 +198,10 @@ transfer_again:
 	vortex_async_queue_pop (queue);
 	transfer_count--;
 	if (transfer_count > 0) {
-		if (transfer_count == 15) {
+/*		if (transfer_count == 15) {
 			vortex_log_enable (ctx, axl_true);
 			vortex_color_log_enable (ctx, axl_true);
-		} 
+			}  */
 		printf ("Transfer done, pending count: %d\n", transfer_count);
 		goto transfer_again;
 	}

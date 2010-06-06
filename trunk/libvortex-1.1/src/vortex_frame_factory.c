@@ -1591,8 +1591,8 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 		frame->more = axl_true;
 
 	/* check incoming frame size fits expected window size - seqno  */
-	if (((frame->seqno + frame->size) - 1) > vortex_channel_get_max_seq_no_accepted (frame->channel_ref)) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "received an excessive sized frame (max seqno expected: %u, but received: %u), frame seqno: %u, frame size: %d, expected: %u), closing session",
+	if (! vortex_channel_check_incoming_seqno (frame->channel_ref, frame)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "received an excesive frame size (max seqno expected: %u, but received: %u), frame seqno: %u, frame size: %d, expected: %u), closing session",
 			    vortex_channel_get_max_seq_no_accepted (frame->channel_ref), frame->seqno + frame->size,
 			    frame->seqno, frame->size, vortex_channel_get_max_seq_no_accepted (frame->channel_ref));
 		__vortex_connection_set_not_connected (connection, "received an excessive sized frame, closing session",
