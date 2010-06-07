@@ -1592,10 +1592,10 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 
 	/* check incoming frame size fits expected window size - seqno  */
 	if (! vortex_channel_check_incoming_seqno (frame->channel_ref, frame)) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "received an excesive frame size (max seqno expected: %u, but received: %u), frame seqno: %u, frame size: %d, expected: %u), closing session",
+		vortex_log (VORTEX_LEVEL_CRITICAL, "received an unexpected frame size (max seqno expected: %u, but received: %u), frame seqno: %u, frame size: %d, expected: %u), closing session",
 			    vortex_channel_get_max_seq_no_accepted (frame->channel_ref), frame->seqno + frame->size,
 			    frame->seqno, frame->size, vortex_channel_get_max_seq_no_accepted (frame->channel_ref));
-		__vortex_connection_set_not_connected (connection, "received an excessive sized frame, closing session",
+		__vortex_connection_set_not_connected (connection, "received an unexpected frame size, closing session",
 						       VortexProtocolError);
 
 		/* unref frame node allocated */

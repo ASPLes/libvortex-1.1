@@ -3172,10 +3172,9 @@ axl_bool  test_03_common (VortexConnection * connection) {
 	return axl_true;
 }
 
-char * test_04_ab_gen_md5 (const char * file)
+char * test_04_read_file (const char * file, int * size)
 {
 	char * result;
-	char * resultAux;
 	FILE * handle;
 	struct stat status;
 
@@ -3212,14 +3211,29 @@ char * test_04_ab_gen_md5 (const char * file)
 	/* close the file and return the content */
 	fclose (handle);
 
+	/* update size */
+	if (size)
+		*size = status.st_size;
+
+	return result;
+}
+
+char * test_04_ab_gen_md5 (const char * file)
+{
+	char * result;
+	char * resultAux = NULL;
+	int    size      = 0;
+	
+	/* read file */
+	result = test_04_read_file (file, &size);
+
 #if defined(ENABLE_TLS_SUPPORT)
 	/* now create the md5 representation */
-	resultAux = vortex_tls_get_digest_sized (VORTEX_MD5, result, status.st_size);
-	axl_free (result);
+	resultAux = vortex_tls_get_digest_sized (VORTEX_MD5, result, size);
 #else
 	printf ("Current build does not have TLS support.\n");
-	resultAux = NULL;
 #endif
+	axl_free (result);
 
 	return resultAux;
 }
@@ -5316,6 +5330,8 @@ axl_bool  test_02o (void) {
 	VortexAsyncQueue  * queue;
 	VortexFrame       * frame;
 	unsigned int        seq_no_sent;
+	char              * file_content;
+	int                 file_size;
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
@@ -5525,6 +5541,77 @@ axl_bool  test_02o (void) {
 
 	/* ok, close the connection */
 	vortex_connection_close (connection);
+
+	printf ("Test 02-o: now check transfer..\n");
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_SEQNO_EXCEEDED,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return axl_false;
+	}
+
+	/* now request remote side to set its seqno received to (2^32-1) - 100000 */
+	printf ("Test 02-o: sending request to change..\n");
+	if (! vortex_channel_send_msg (channel, "set-to=4294867295", 17, NULL)) {
+		printf ("Failed to send 4k message after first message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* check connection */
+	printf ("Test 02-o: checking connection status after requesting change..\n");
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		printf ("Expected to find connection status ok, but found an error..\n");
+		return axl_false;
+	}
+
+	/* wait for the reply */
+	printf ("Test 02-o: getting first reply..\n");
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL || vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY || ! axl_cmp (vortex_frame_get_payload (frame), "set-to=4294867295")) {
+		printf ("Expected to find a particular reply for first message but received something different..\n");
+		return axl_false;
+	}
+	vortex_frame_unref (frame);
+
+	/* read file content */
+	file_content = test_04_read_file ("vortex-regression-client.o", &file_size);
+
+	/* now update internal counters to simulate we have
+	   transferred until now 4294867295 */
+	vortex_channel_update_status (channel, 4294867295, 0, UPDATE_SEQ_NO);
+	vortex_channel_update_remote_incoming_buffer (channel, 4294867295, 4096);
+	vortex_channel_set_next_seq_no (channel, 4294867295);
+	
+	/* send content and wait reply */
+	printf ("Test 02-o: Sending file content (vortex-regression-client.o) with size: %d\n", file_size);
+	if (! vortex_channel_send_msg (channel, file_content, file_size, NULL)) {
+		printf ("Failed to send file..\n");
+		return axl_false;
+	}
+	
+	/* now wait for the reply */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL || vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY || ! axl_cmp (vortex_frame_get_payload (frame), file_content)) {
+		printf ("Expected to find a particular reply for first message but received something different..\n");
+		return axl_false;
+	}
+	vortex_frame_unref (frame);
+
+	/* free file content */
+	axl_free (file_content);
 
 	/* free queue */
 	vortex_async_queue_unref (queue);

@@ -451,7 +451,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	    vortex_frame_get_seqno (frame)) {
 
 		/* drop a log */
-		vortex_log (VORTEX_LEVEL_CRITICAL, "expected seq no %u for channel=%d, connection-id=%d wasn't found, received %u",
+		vortex_log (VORTEX_LEVEL_CRITICAL, "expected seq no %u for channel=%d in connection-id=%d, but received %u",
 			    vortex_channel_get_next_expected_seq_no (channel),
 			    vortex_channel_get_number (channel),
 			    vortex_connection_get_id (connection),

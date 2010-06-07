@@ -1228,6 +1228,7 @@ void frame_seqno_exceeded (VortexChannel    * channel,
 			   VortexFrame      * frame,
 			   axlPointer           user_data)
 {
+	long value;
 
 	if (axl_cmp (vortex_frame_get_payload (frame), "first message")) {
 		/* assume we have received until now 2GB - 4096 bytes = 2147479552 */
@@ -1256,6 +1257,13 @@ void frame_seqno_exceeded (VortexChannel    * channel,
 		vortex_channel_send_rpy (channel, "second message", 14, vortex_frame_get_msgno (frame));
 		vortex_channel_set_max_seq_no_accepted (channel, MAX_SEQ_NO - 4095, 4096);
 		return;
+	} else if (axl_memcmp (vortex_frame_get_payload (frame), "set-to=", 7)) {
+		value = atol (vortex_frame_get_payload (frame) + 7);
+		printf ("Test 02-o: setting received content until now to: %ld\n", value);
+
+		vortex_channel_update_status_received (channel, (unsigned int) value, 0, UPDATE_SEQ_NO);
+		vortex_channel_set_max_seq_no_accepted (channel, value, 4096);
+
 	} /* end if */
 
 	/* normal message, reply same content as received */
