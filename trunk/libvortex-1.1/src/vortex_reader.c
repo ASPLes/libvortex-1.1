@@ -393,7 +393,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 			    vortex_frame_get_channel (frame), vortex_frame_get_seqno (frame),
 			    vortex_frame_get_payload_size (frame));
 
-		if (vortex_frame_get_seqno (frame) > vortex_channel_get_next_seq_no (channel)) {
+		/*		if (vortex_frame_get_seqno (frame) > vortex_channel_get_next_seq_no (channel)) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
 				    "received a SEQ frame specifying a seqno reference value that wasn't used (ackno: %u > max seq no sent: %u): SEQ %d %u %d",
 				    vortex_frame_get_seqno (frame), vortex_channel_get_next_seq_no (channel),
@@ -402,11 +402,11 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 			
 			__vortex_connection_set_not_connected (connection, 
 							       "received a SEQ frame specifying a seqno reference value that wasn't used",
-							       VortexProtocolError);
+							       VortexProtocolError); */
 			/* unref frame due to errors */
-			vortex_frame_unref (frame);
+		/*			vortex_frame_unref (frame);
 			return;
-		}
+			}  */
 		
 		/* check that the window size is not bigger than MAX_BUFFER_SIZE */
 /*		if (MAX_BUFFER_SIZE < vortex_frame_get_payload_size (frame)) {
