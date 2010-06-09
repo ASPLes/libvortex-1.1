@@ -256,6 +256,7 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
 							   data->first_seq_no, 
 							   data->message_size, 
  							   max_seq_no_accepted);
+
 	/* check that the next_frame_size do not report wrong values */
 	if (size_to_copy > data->message_size || size_to_copy < 0) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "vortex_channel_get_next_frame_size is reporting wrong values (%d), this will cause protocol failures...shutdown connection");

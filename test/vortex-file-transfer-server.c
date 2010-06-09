@@ -25,10 +25,10 @@
 #define FILE_TRANSFER_URI_WITH_MSG "http://www.aspl.es/vortex/profiles/file-transfer/bigmessage"
 
 /* the file to send: 69522068  bytes = 67M */
-#define FILE_TO_TRANSFER "/usr/src/linux-2.6.35-rc2.tar.bz2"
+#define FILE_TO_TRANSFER "/tmp/file"
 
 /* file size, in bytes */
-#define FILE_SIZE (69522068)
+#define FILE_SIZE (532064536)
 
 /* listener context */
 VortexCtx * ctx = NULL;

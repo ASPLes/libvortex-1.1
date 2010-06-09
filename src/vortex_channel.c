@@ -3514,6 +3514,7 @@ int                vortex_channel_get_next_frame_size         (VortexChannel * c
 	/* get current context */
 	VortexCtx   * ctx = vortex_channel_get_ctx (channel);
 	int           size;
+	int           remote_buffer_available;
 
 	v_return_val_if_fail (channel, -1);
 
@@ -3535,10 +3536,15 @@ int                vortex_channel_get_next_frame_size         (VortexChannel * c
 		return ctx->next_frame_size (channel, next_seq_no, message_size, max_seq_no, ctx->next_frame_size_data);
 	} /* end if */
 
+	/* get max bytes available between next_seq_no and max_seq_no */
+	if (next_seq_no <= max_seq_no) 
+		remote_buffer_available = max_seq_no - next_seq_no + 1;
+	else 
+		remote_buffer_available = (MAX_SEQ_NO - next_seq_no) + max_seq_no + 1; 
+	
 	/* use default implementation */
-	if ((next_seq_no + message_size) > max_seq_no)
-		return VORTEX_MIN (max_seq_no - next_seq_no + 1, VORTEX_MIN (channel->window_size, VORTEX_MIN (message_size, 4096)));
-	return VORTEX_MIN (message_size, VORTEX_MIN (channel->window_size, 4096));
+	size =  VORTEX_MIN (remote_buffer_available, VORTEX_MIN (channel->window_size, VORTEX_MIN (message_size, 4096)));
+	return size;
 }
 
 /** 

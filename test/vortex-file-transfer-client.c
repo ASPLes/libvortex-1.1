@@ -25,7 +25,7 @@
 #define FILE_TRANSFER_URI_WITH_MSG "http://www.aspl.es/vortex/profiles/file-transfer/bigmessage"
 
 /* the file name to save */
-#define FILE_TO_TRANSFER "linux-2.6.20.1.tar.bz2" 
+#define FILE_TO_TRANSFER "/tmp/file.2" 
 
 /* server hosting the file */
 #define SERVER_HOST "localhost"
