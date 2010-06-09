@@ -5333,6 +5333,7 @@ axl_bool  test_02o (void) {
 	char              * file_content;
 	int                 file_size;
 
+
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
 	if (!vortex_connection_is_ok (connection, axl_false)) {
@@ -5542,6 +5543,8 @@ axl_bool  test_02o (void) {
 	/* ok, close the connection */
 	vortex_connection_close (connection);
 
+	goto finish;
+
 	printf ("Test 02-o: now check transfer..\n");
 	connection = connection_new ();
 	if (!vortex_connection_is_ok (connection, axl_false)) {
@@ -5591,9 +5594,10 @@ axl_bool  test_02o (void) {
 
 	/* now update internal counters to simulate we have
 	   transferred until now 4294867295 */
-	vortex_channel_update_status (channel, 4294867295, 0, UPDATE_SEQ_NO);
-	vortex_channel_update_remote_incoming_buffer (channel, 4294867295, 4096);
-	vortex_channel_set_next_seq_no (channel, 4294867295);
+	seq_no_sent = ((unsigned int) 1024 * 1024 * 1024 * 4) - 1 - 100000;
+	vortex_channel_update_status (channel, seq_no_sent, 0, UPDATE_SEQ_NO);
+	vortex_channel_update_remote_incoming_buffer (channel, seq_no_sent, 4096);
+	vortex_channel_set_next_seq_no (channel, seq_no_sent);
 	
 	/* send content and wait reply */
 	printf ("Test 02-o: Sending file content (vortex-regression-client.o) with size: %d\n", file_size);
@@ -5612,6 +5616,8 @@ axl_bool  test_02o (void) {
 
 	/* free file content */
 	axl_free (file_content);
+
+finish:
 
 	/* free queue */
 	vortex_async_queue_unref (queue);

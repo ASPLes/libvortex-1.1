@@ -1,0 +1,62 @@
+# -*- makefile -*- Makefile for windows (mingw)
+OBJ  = vortex_alive.o 
+
+ifdef enable_vortex_log
+   DLL = $(vortex_debug_alive_1_1_dll).dll
+   vortex_dll = -lvortex-debug-1.1
+else
+   DLL = $(vortex_alive_1_1_dll).dll
+   vortex_dll = -lvortex-1.1
+endif
+
+IMPORT_DLL = $(DLL).a
+STATIC_LIB = $(vortex_alive_1_1_dll).a
+
+#LIBS = -Wall $(enable_gcc_debug) -L"$(BASE_DIR)/lib" \
+#	-L"$(BASE_DIR)/bin" \
+#	--add-stdcall-alias \
+#	-lws2_32 \
+#	-lintl  -liconv  -lm 
+LIBS = -Wall  -Werror $(enable_gcc_debug) -L"../src" -L"../../libaxl/src/" -laxl -lws2_32 $(vortex_dll) $(search_lib_path) 
+
+# build vortex with log support
+INCS = -Wall  -Werror $(enable_gcc_debug) -I"." -I"../../libaxl/src" -I"../src" $(enable_vortex_log) -DENABLE_ALIVE_SUPPORT
+
+CFLAGS = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" -D__axl_disable_broken_bool_def__   \
+	-DPACKAGE_DTD_DIR=\""$(datadir)"\" -DPACKAGE_TOP_DIR=\""$(top_srcdir)"\" -Wall $(enable_gcc_debug) 
+RM = rm -f
+
+.PHONY: all clean
+
+all: $(DLL)
+
+clean: 
+	${RM} $(OBJ) $(DLL) *.a *.dll.a *.lib *.dll
+
+install: all
+	test -d $(INSTALL_DIR) || exit -1
+	cp libvortex-alive-1.1.dll $(INSTALL_DIR)
+
+$(DLL): $(OBJ)
+# add the following line to create an import library. At this point this step
+# is not requiered because gcc automatically get an import library from the dll.
+# -Wl,--out-implib,libvortex-1.1.lib
+	$(CC) -m$(MODE) -shared -Wl,--out-implib,$(IMPORT_DLL) --export-all-symbols \
+		  $(OBJ) -o $(DLL)        $(LIBS)
+	lib.exe /def:libvortex-alive-1.1.def
+ifdef enable_vortex_log
+	cp libvortex-alive-1.1.lib $(release_dir)/libvortex-alive-debug-1.1.lib
+	cp libvortex-alive-1.1.def $(release_dir)/libvortex-alive-debug-1.1.def
+	cp libvortex-alive-1.1.exp $(release_dir)/libvortex-alive-debug-1.1.exp
+else
+	cp libvortex-alive-1.1.lib $(release_dir)/
+	cp libvortex-alive-1.1.def $(release_dir)/
+	cp libvortex-alive-1.1.exp $(release_dir)/
+       # only strip if not debug
+	strip --strip-unneeded $(DLL)
+endif
+	cp $(DLL) $(release_dir)/
+	cp $(DLL).a $(release_dir)/
+
+%.o: %.c
+	$(CC) -c $< -o $@ $(CFLAGS)
