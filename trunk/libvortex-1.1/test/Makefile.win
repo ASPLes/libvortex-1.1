@@ -7,6 +7,7 @@ ifdef enable_vortex_log
    vortex_sasl_dll    = -lvortex-sasl-debug-1.1
    vortex_pull_dll    = -lvortex-pull-debug-1.1
    vortex_http_dll    = -lvortex-http-debug-1.1
+   vortex_alive_dll    = -lvortex-alive-debug-1.1
 
    # file created
    vortex_file_dll         = libvortex-debug-1.1.dll
@@ -16,6 +17,7 @@ ifdef enable_vortex_log
    vortex_file_sasl_dll    = libvortex-sasl-debug-1.1.dll
    vortex_file_pull_dll    = libvortex-pull-debug-1.1.dll
    vortex_file_http_dll    = libvortex-http-debug-1.1.dll
+   vortex_file_alive_dll   = libvortex-alive-debug-1.1.dll
 else
    vortex_dll         = -lvortex-1.1
    vortex_tunnel_dll  = -lvortex-tunnel-1.1
@@ -24,6 +26,7 @@ else
    vortex_sasl_dll    = -lvortex-sasl-1.1
    vortex_pull_dll    = -lvortex-pull-1.1
    vortex_http_dll    = -lvortex-http-1.1
+   vortex_alive_dll    = -lvortex-alive-1.1
 
    # file created
    vortex_file_dll         = libvortex-1.1.dll
@@ -33,6 +36,7 @@ else
    vortex_file_sasl_dll    = libvortex-sasl-1.1.dll
    vortex_file_pull_dll    = libvortex-pull-1.1.dll
    vortex_file_http_dll    = libvortex-http-1.1.dll
+   vortex_file_alive_dll    = libvortex-alive-1.1.dll
 endif
 
 CC       = gcc.exe -g -Wall  -Werror
@@ -72,9 +76,10 @@ LIBS     = -Wall  -Werror -g \
 	-L../sasl $(vortex_sasl_dll) \
 	-L../pull $(vortex_pull_dll) \
 	-L../http $(vortex_http_dll) \
+	-L../alive $(vortex_alive_dll) \
 	-lreadline5
 
-INCS =  -I"." -I"../src" -I"../tunnel" -I"../tls" -I"../sasl" -I"../xml-rpc" -I"../pull" -I"../http" \
+INCS =  -I"." -I"../src" -I"../tunnel" -I"../tls" -I"../sasl" -I"../xml-rpc" -I"../pull" -I"../http" -I"../alive" \
         -I"../../libaxl/src" -I$(DEPEND_DIR)/include -DENABLE_SASL_SUPPORT -DENABLE_XML_RPC_SUPPORT -DENABLE_TLS_SUPPORT
 
 CFLAGS   = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" -Wall -g -D__axl_disable_broken_bool_def__  
@@ -137,6 +142,7 @@ links:
 	cp ../xml-rpc/$(vortex_file_xml_rpc_dll) .
 	cp ../pull/$(vortex_file_pull_dll) .
 	cp ../http/$(vortex_file_http_dll) .
+	cp ../alive/$(vortex_file_alive_dll) .
 	cp ../data/*.dtd .
 	cp ../../libaxl/src/libaxl.dll .
 	cp $(OPENSSL_LIBS) .

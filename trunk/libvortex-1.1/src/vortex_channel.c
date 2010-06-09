@@ -3394,7 +3394,9 @@ void vortex_channel_update_remote_incoming_buffer (VortexChannel * channel,
  						   unsigned        window)
 {
 	unsigned int   new_size;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx    * ctx     = vortex_channel_get_ctx (channel);
+#endif
 	unsigned int   max_remote_seq_no;
 
 	/* check reference */
