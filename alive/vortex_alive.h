@@ -72,7 +72,7 @@ typedef void (*VortexAliveFailure) (VortexConnection * conn,
 
 axl_bool           vortex_alive_init                       (VortexCtx * ctx);
 
-void               vortex_alive_enable_check               (VortexConnection * conn,
+axl_bool           vortex_alive_enable_check               (VortexConnection * conn,
 							    long               check_period,
 							    int                max_unreply_count,
 							    VortexAliveFailure failure_handler);
