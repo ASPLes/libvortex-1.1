@@ -78,10 +78,13 @@ void frame_received (VortexChannel    * channel,
 
 	} while (axl_true);
 
-/*	if (vortex_frame_get_msgno (frame) == 84) {
+/*
+	if (vortex_frame_get_msgno (frame) == 7) {
 		vortex_log_enable (ctx, axl_true);
 		vortex_color_log_enable (ctx, axl_true);
-		}  */
+	}
+*/
+
 	
 	/* send the last reply. */
 	if (!vortex_channel_finalize_ans_rpy (channel, vortex_frame_get_msgno (frame))) {

@@ -3393,11 +3393,11 @@ void vortex_channel_update_remote_incoming_buffer (VortexChannel * channel,
  						   unsigned        ackno,
  						   unsigned        window)
 {
-	unsigned int   new_size;
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx    * ctx     = vortex_channel_get_ctx (channel);
 #endif
 	unsigned int   max_remote_seq_no;
+	int            window_available;
 
 	/* check reference */
 	if (channel == NULL)
@@ -3406,16 +3406,25 @@ void vortex_channel_update_remote_incoming_buffer (VortexChannel * channel,
  	vortex_log (VORTEX_LEVEL_DEBUG, "Received SEQ frame update operation: channel=%d ackno=%u window=%u",
  		    vortex_channel_get_number (channel), ackno, window);
 
- 	/* do some checks to ensure SEQ frame notification is
-	 * right. */
+	/* do some checks to ensure SEQ frame notification is right. */
+	if (channel->remote_consumed_seq_no <= ackno) {
+		window_available = channel->remote_window - (ackno - channel->remote_consumed_seq_no);
+	} else {
+		window_available = channel->remote_window - (MAX_SEQ_NO - channel->remote_consumed_seq_no) - ackno;
+	}
 	max_remote_seq_no = (channel->remote_consumed_seq_no + channel->remote_window - 1) % MAX_SEQ_NO;
-	new_size          = (ackno + window -1) % (MAX_SEQ_NO);
 
-	if ( new_size <= max_remote_seq_no && channel->last_seq_no != ackno) {
+	/* check that current available bytes that could be sent is
+	 * smaller that the amount of bytes we could send with this
+	 * notification, taking as a reference the ackno value, AND
+	 * that the next seq no expected is already inside of the
+	 * adviced window + 1 */
+	if (! ((window_available >= 0) && (window > window_available))) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
-			    "Received a SEQ frame specifying a new seq no maximum value (%u = %u + %u) that is smaller than the max seq no stored (%u). Attempt to shrink window not allowed. Protocol violation",
+			    "Received a SEQ frame specifying a new seq no maximum value (%u = %u + %u) that is smaller than the max seq no stored (%u) or it is outside of the current adviced newton (ackno: %u <= max seq no stored + 1: %u), window available (window: %u > window_available: %u). Attempt to shrink window not allowed. Protocol violation",
 			    (ackno + window -1), ackno, window,
-			    max_remote_seq_no);
+			    max_remote_seq_no, ackno, max_remote_seq_no + 1,
+			    window, window_available);
 		__vortex_connection_set_not_connected (
 			vortex_channel_get_connection (channel), 
 			"Received a SEQ frame specifying a new seq no maximum value that is smaller than the max seq no stored. Attempt to shrink window not allowed. Protocol violation",
@@ -3446,7 +3455,7 @@ void vortex_channel_update_remote_incoming_buffer (VortexChannel * channel,
 	 * side is the sum of the ackno value plus the window size
 	 * minus one octet. */
  	vortex_log (VORTEX_LEVEL_DEBUG, "received SEQ frame, updated maximum seq no allowed from %u to %u",
-  		    max_remote_seq_no, new_size);
+  		    max_remote_seq_no, (ackno + window -1));
 	
  	/* update size allowed */
 	channel->remote_consumed_seq_no = ackno;
@@ -3545,8 +3554,7 @@ int                vortex_channel_get_next_frame_size         (VortexChannel * c
 		remote_buffer_available = (MAX_SEQ_NO - next_seq_no) + max_seq_no + 1; 
 	
 	/* use default implementation */
-	size =  VORTEX_MIN (remote_buffer_available, VORTEX_MIN (channel->window_size, VORTEX_MIN (message_size, 4096)));
-	return size;
+	return VORTEX_MIN (remote_buffer_available, VORTEX_MIN (channel->window_size, VORTEX_MIN (message_size, 4096)));
 }
 
 /** 
@@ -3609,9 +3617,9 @@ int vortex_channel_incoming_bytes_available (VortexChannel * channel, VortexFram
 	 * 2) The second case, the most common, is where the consumed
 	 * seqno is smaller than frame seqno.
 	 */
-
+	
 	if (vortex_frame_get_seqno (frame) < channel->consumed_seqno)
-		return channel->seq_no_window - (MAX_SEQ_NO - channel->consumed_seqno) - vortex_frame_get_msgno (frame) - vortex_frame_get_content_size (frame);
+		return channel->seq_no_window - (MAX_SEQ_NO - channel->consumed_seqno) - vortex_frame_get_seqno (frame) - vortex_frame_get_content_size (frame);
 	return channel->seq_no_window - (vortex_frame_get_seqno (frame) - channel->consumed_seqno)  - vortex_frame_get_content_size (frame);
 }
 
@@ -3707,13 +3715,13 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
  	if (bytes_available > (channel->seq_no_window / 2)) {
  		if (vortex_log_is_enabled (ctx)) {
  			vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: not updated, already not consumed half of window advertised: bytes %d > (%d / 2)",
-				    bytes_available, window_size);
+				    bytes_available, channel->seq_no_window);
 			vortex_log (VORTEX_LEVEL_DEBUG, "           channel=%d, ",
  				    channel->channel_num);
  			vortex_log (VORTEX_LEVEL_DEBUG, "           frame-content-size=%d, frame-payload-size=%d, ",
  				    vortex_frame_get_content_size (frame), vortex_frame_get_payload_size (frame));
- 			vortex_log (VORTEX_LEVEL_DEBUG, "           window_size=%d, consumed_seqno=%u, new_max_seq_no_accepted=%u",
- 				    window_size, consumed_seqno, new_max_seq_no_accepted);
+ 			vortex_log (VORTEX_LEVEL_DEBUG, "           seq_no_window=%d, consumed_seqno=%u, next-expected-seqno: %u, channel_max_seq_no_accepted=%u",
+ 				    channel->seq_no_window, channel->consumed_seqno, channel->last_seq_no_expected, channel_max_seq_no_accepted);
  		} /* end if */
 		goto not_update;
 	} else {
@@ -8505,18 +8513,19 @@ axl_bool            vortex_channel_check_incoming_seqno            (VortexChanne
 }
 
 /** 
- * @internal Function that allows to check if the channel is stalled,
- * that is, it do not support sending more content.
+ * @brief Allows to check if a channel is stalled (no more remote
+ * buffer available to hold more content).
+ *
+ * @param channel The channel to be checked.
+ *
+ * @return The function returns axl_true in the case the channel is
+ * stalled. Otherwise axl_false is returned. In the case a channel is
+ * stalled, it means that all new sends (and pending ones) are
+ * retained until a SEQ frame is received. 
  */
 axl_bool            vortex_channel_is_stalled                      (VortexChannel  * channel)
 {
-/*	VortexCtx * ctx = channel->ctx;
-
-	vortex_log (VORTEX_LEVEL_DEBUG, "checking channel->remote_consumed_seq_no=%u <= channel->last_seq_no=%u (remote window: %d)", 
-	channel->remote_consumed_seq_no, channel->last_seq_no, channel->remote_window); */
-	if (channel->remote_consumed_seq_no <= channel->last_seq_no)
-		return ! (channel->remote_window > (channel->last_seq_no - channel->remote_consumed_seq_no));
-	return ! (channel->remote_window > ((MAX_SEQ_NO - channel->remote_consumed_seq_no) + channel->last_seq_no));
+	return channel->last_seq_no == (channel->remote_consumed_seq_no + channel->remote_window);
 }
 
 /** 
