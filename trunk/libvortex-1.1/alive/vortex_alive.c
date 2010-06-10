@@ -102,7 +102,9 @@ void __vortex_alive_channel_created (int                channel_num,
 	int                code;
 	char             * msg;
 	int                iterator;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx  = CONN_CTX (conn);
+#endif
 
 	/* update channel reference */
 	data->channel = channel;
