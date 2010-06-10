@@ -211,8 +211,8 @@ axl_bool  vortex_sequencer_if_channel_stalled_queue_message (VortexCtx          
 	 * received must be hold until a SEQ frame is received
 	 * signaling that more bytes could be sent.
 	 */
-	/* vortex_log (VORTEX_LEVEL_DEBUG, "checking if channel is stalled: next seq no %u >= max seq no %u",
-	   data->first_seq_no, vortex_channel_get_max_seq_no_remote_accepted (data->channel)); */
+/*	vortex_log (VORTEX_LEVEL_DEBUG, "checking if channel is stalled: next seq no %u >= max seq no %u",
+	data->first_seq_no, vortex_channel_get_max_seq_no_remote_accepted (data->channel));  */
 	if (vortex_channel_is_stalled (data->channel)) {
 
 		vortex_log (VORTEX_LEVEL_DEBUG, 
@@ -258,8 +258,12 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
  							   max_seq_no_accepted);
 
 	/* check that the next_frame_size do not report wrong values */
-	if (size_to_copy > data->message_size || size_to_copy < 0) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "vortex_channel_get_next_frame_size is reporting wrong values (%d), this will cause protocol failures...shutdown connection");
+	if (size_to_copy > data->message_size || size_to_copy <= 0) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "vortex_channel_get_next_frame_size is reporting wrong values (size to copy: %d > message size: %d), this will cause protocol failures...shutdown connection", 
+			    size_to_copy, data->message_size);
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Context data: next seqno: %u, max seq no accepted: %u, channel is stalled: %d",
+			    data->first_seq_no, max_seq_no_accepted, vortex_channel_is_stalled (channel));
+		
 		vortex_connection_shutdown (vortex_channel_get_connection (channel));
 		return 0;
 	}
@@ -368,7 +372,7 @@ axl_bool vortex_sequencer_previous_pending_messages (VortexCtx            * ctx,
 		} /* end if */
 		
 		/* stop if the channel is stalled */
-		if ((*data)->first_seq_no >= vortex_channel_get_max_seq_no_remote_accepted (channel)) {
+		if (vortex_channel_is_stalled (channel)) {
 			vortex_log (VORTEX_LEVEL_DEBUG, 
  				    "channel=%d is still stalled (seqno: %u, allowed seqno: %u), queued message for future delivery",
 				    vortex_channel_get_number (channel), 

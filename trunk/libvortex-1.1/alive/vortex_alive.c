@@ -93,24 +93,37 @@ axl_bool           vortex_alive_init                       (VortexCtx * ctx)
 	return axl_true;
 }
 
-void __vortex_alive_update_status (VortexChannel    * channel,
-				   VortexConnection * connection,
-				   VortexFrame      * frame,
-				   axlPointer         user_data)
-{
-	return;
-}
-
 void __vortex_alive_channel_created (int                channel_num, 
 				     VortexChannel    * channel, 
 				     VortexConnection * conn, 
 				     axlPointer         user_data)
 {
 	VortexAliaveData * data = user_data;
+	int                code;
+	char             * msg;
+	int                iterator;
+	VortexCtx        * ctx  = CONN_CTX (conn);
 
 	/* update channel reference */
 	data->channel = channel;
 	data->channel_in_progress = axl_false;
+
+	/* log reporting */
+	if (channel) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "alive channel created on connection id=%d", vortex_connection_get_id (conn));
+		return;
+	}
+
+	/* reached this point, error was found */
+	vortex_log (VORTEX_LEVEL_CRITICAL, "failed to create alive channel on connection id=%d, error stack:", vortex_connection_get_id (conn));
+	iterator = 0;
+	while (vortex_connection_pop_channel_error (conn, &code, &msg)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "  %d: code:%d message: %s",
+			    iterator, code, msg);
+		axl_free (msg);
+		iterator++;
+	} /* end while */
+
 	return;
 }
 				   
@@ -134,23 +147,61 @@ axl_bool __vortex_alive_do_check        (VortexCtx  * ctx,
 		return axl_true;
 	} /* end if */
 
-	if (data->channel == NULL && ! data->channel_in_progress) {
-		/* notify we are in progress of creating a channel */
-		data->channel_in_progress = axl_true;
+	if (data->channel == NULL) {
+		if (! data->channel_in_progress) {
+			/* notify we are in progress of creating a channel */
+			data->channel_in_progress = axl_true;
 
-		vortex_log (VORTEX_LEVEL_DEBUG, "channel alive profile still not created, triggering async creation..");
-		vortex_channel_new (data->conn, 0, VORTEX_ALIVE_PROFILE_URI, 
-				    /* on close handler */
-				    NULL, NULL, 
-				    /* on frame received */
-				    __vortex_alive_update_status, data,
-				    /* async notification */
-				    __vortex_alive_channel_created, data);
-
+			vortex_log (VORTEX_LEVEL_DEBUG, "channel alive profile still not created, triggering async creation..");
+			vortex_channel_new (data->conn, 0, VORTEX_ALIVE_PROFILE_URI, 
+					    /* on close handler */
+					    NULL, NULL, 
+					    /* on frame received */
+					    NULL, NULL,
+					    /* async notification */
+					    __vortex_alive_channel_created, data);
+		} /* end if */
+			
 		/* still channel not created, unable to do checks */
 		return axl_false;
 	} /* end if */
 
+	/* if channel is ok, and so the connection, check if there are pending replies */
+	if (data->max_unreply_count >= vortex_channel_get_outstanding_messages (data->channel, NULL)) {
+
+		/* remove check alive data */
+		vortex_connection_set_data (data->conn, VORTEX_ALIVE_CHECK_ENABLED, NULL);
+
+		/* check if we have a handler defined */
+		if (data->failure_handler) {
+			/* notify on handler */
+			vortex_log (VORTEX_LEVEL_CRITICAL, "alive check max unreplied count reached=%d, notify on failure handler for connection id=%d",
+				    vortex_connection_get_id (data->conn));
+
+			/* request to remove this event */
+			return axl_true;
+		}
+
+		vortex_log (VORTEX_LEVEL_CRITICAL, "alive check max unreplied count reached=%d, shutting down the connection id=%d",
+			    vortex_connection_get_id (data->conn));
+
+		/* close the connection */
+		vortex_connection_shutdown (data->conn);
+
+		/* request to remove this event */
+		return axl_true;
+	}
+
+	/* request to send content (ping) */
+	if (! vortex_channel_send_msg (data->channel, "", 0, NULL)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to send check alive message on connection id=%d, removing check alive event",
+			    vortex_connection_get_id (data->conn));
+
+		/* call to remove data associated */
+		vortex_connection_set_data (data->conn, VORTEX_ALIVE_CHECK_ENABLED, NULL);
+		
+		return axl_true;
+	} /* end ok */
 
 	/* request the system to not remove the alive check */
 	return axl_false;

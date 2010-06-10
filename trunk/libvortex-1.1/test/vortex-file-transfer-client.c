@@ -66,8 +66,14 @@ void frame_received (VortexChannel    * channel,
 	/* dump content to the file */
 /*	md5           = vortex_tls_get_digest_sized (VORTEX_MD5, vortex_frame_get_payload (frame), vortex_frame_get_payload_size (frame)); */
 	bytes_written = fwrite (vortex_frame_get_payload (frame), 1, vortex_frame_get_payload_size (frame), file); 
-/*	printf ("Writing frame content: asno=%d, size=%d, md5=%s\n", vortex_frame_get_ansno (frame), bytes_written, md5);  
-	axl_free (md5); */
+/*	printf ("Written frame content: asno=%d, size=%d, seqno=%u\n", vortex_frame_get_ansno (frame), bytes_written, vortex_frame_get_seqno (frame));   */
+/*	axl_free (md5); */
+
+/*	if (vortex_frame_get_seqno (frame) == 1240) {
+		vortex_log_enable (CONN_CTX (connection), axl_true);
+		vortex_color_log_enable (CONN_CTX (connection), axl_true);
+	} 
+*/
 
 	if (bytes_written != vortex_frame_get_payload_size (frame)) {
 		printf ("ERROR: error while writing to the file: %d != %d\n", 
@@ -108,6 +114,7 @@ int  main (int  argc, char ** argv)
 	VortexConnection * connection;
 	VortexChannel    * channel;
 	VortexAsyncQueue * queue;
+	int                window_size;
 	int                transfer_count = 1;
 
 
@@ -165,9 +172,17 @@ int  main (int  argc, char ** argv)
 		goto end;
 	}
 
+	/* get number of messages to be sent */
 	if (argv != NULL && argv[2] != NULL) {
 		transfer_count = atoi (argv[2]);
 		printf ("Requested to download %s, %d times..\n", FILE_TO_TRANSFER, transfer_count);
+	}
+
+	/* get channel window size */
+	if (argv != NULL && argv[3] != NULL) {
+		window_size = atoi (argv[3]);
+		printf ("Requested to change window size to: %d..\n", window_size);
+		vortex_channel_set_window_size (channel, window_size);
 	}
 
 	/* serialize channel */
@@ -198,11 +213,12 @@ transfer_again:
 	vortex_async_queue_pop (queue);
 	transfer_count--;
 	if (transfer_count > 0) {
-/*		if (transfer_count == 15) {
+/*		if (transfer_count == 2) {
 			vortex_log_enable (ctx, axl_true);
 			vortex_color_log_enable (ctx, axl_true);
-			}  */
-		printf ("Transfer done, pending count: %d\n", transfer_count);
+		} 
+ */
+		printf ("Transfer done, pending count: %d\n", transfer_count); 
 		goto transfer_again;
 	}
 
