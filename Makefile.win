@@ -1,0 +1,152 @@
+# Hey emacs this this -*- makefile -*- 
+# Makefile.win: compile the af-arch enviroment under the mingw
+# Advanced Software Prodution Line, S.L.
+# 
+# Instructions:
+# 
+# 1) To compile the project run:
+#
+#    >> make -f Makefile.win build_vortex_1_1
+# 
+# 2) To clean the project run:
+# 
+#    >> make -f Makefile.win clean_vortex_1_1
+#
+#  Requirements: mingw, msys, make and gcc
+# 
+
+# version
+vortex_1_1_version = 1.1.5,4395,4395
+
+# While especifiying directories do not append the trailing slash
+
+# cc compiler to use usually gcc.exe
+export CC          = gcc.exe
+
+# general configuration
+export enable_gcc_debug = -g
+
+# axl configuration (enable log: uncomment)
+# export enable_axl_log = -DSHOW_DEBUG_LOG 
+
+# compilation mode to use: console, windows. If console is used the
+# output to the console will be allowed. Other wise, if windows
+# selected the console output will be disabled. On windows platforms
+# is prefered the windows mode. For debuging I recomend to use
+# console.
+export MODE        = windows
+
+# AXL location:
+AXL_BUILD_DIR = "../../axl-0.6.2.b4329.g4333"
+
+# Flags to compile OPENSSL
+# Uncomment the following lines, placing the libraries following the path
+# schema provided to get support OpenSSL
+export OPENSSL_FLAGS = -DENABLE_TLS_SUPPORT -Ic:/openssl-098h/include
+export OPENSSL_LIBS = c:/openssl-098h/bin/libeay32.dll c:/openssl-098h/bin/ssleay32.dll
+
+# Flags for readline (used by vortex-client)
+export READLINE_LIBS = c:/af-arch-depends/bin/readline5.dll
+
+# Uncomment the following lines, placing the libraries following the path
+# schema provided to get support for GSASL
+export GSASL_FLAGS = -DENABLE_SASL_SUPPORT -Ic:/gsasl/gsasl-1.0/include
+export GSASL_LIBS = c:/gsasl/gsasl-1.0/bin/libgsasl-7.dll \
+	            c:/gsasl/gsasl-1.0/bin/libgcrypt-11.dll \
+                    c:/gsasl/gsasl-1.0/bin/libgpg-error-0.dll 
+
+#############################################
+# after this line lines shouldn't be edited #
+#############################################
+
+# configure axl aditional flags
+export AXL_INCLUDE = -I$(AXL_BUILD_DIR)/src
+export AXL_LIBS    = -L$(AXL_BUILD_DIR)/src -laxl
+export AXL_BUILD_DIR
+
+top_srcdir               = ../..
+version_prefix           = -MinGW32
+export search_lib_path   = 
+export READLINE_BASEDIR  = `dirname $(READLINE_LIBS)`
+
+# vortex configuration
+vortex_1_1                     = src
+vortex_tunnel_1_1              = tunnel
+vortex_pull_1_1                = pull
+vortex_sasl_1_1                = sasl
+vortex_tls_1_1                 = tls
+vortex_xml_rpc_1_1             = xml-rpc
+vortex_http_1_1                = http
+vortex_alive_1_1               = alive
+vortex_1_1_test                = test
+vortex_1_1_xml_rpc_gen         = xml-rpc-gen
+
+# library build names
+export vortex_1_1_dll          = libvortex-1.1
+export vortex_tunnel_1_1_dll   = libvortex-tunnel-1.1
+export vortex_pull_1_1_dll     = libvortex-pull-1.1
+export vortex_sasl_1_1_dll     = libvortex-sasl-1.1
+export vortex_tls_1_1_dll      = libvortex-tls-1.1
+export vortex_xml_rpc_1_1_dll  = libvortex-xml-rpc-1.1
+export vortex_http_1_1_dll     = libvortex-http-1.1
+export vortex_alive_1_1_dll    = libvortex-alive-1.1
+
+# library debug build names
+export vortex_debug_1_1_dll          = libvortex-debug-1.1
+export vortex_debug_tunnel_1_1_dll   = libvortex-tunnel-debug-1.1
+export vortex_debug_pull_1_1_dll     = libvortex-pull-debug-1.1
+export vortex_debug_sasl_1_1_dll     = libvortex-sasl-debug-1.1
+export vortex_debug_tls_1_1_dll      = libvortex-tls-debug-1.1
+export vortex_debug_xml_rpc_1_1_dll  = libvortex-xml-rpc-debug-1.1
+export vortex_debug_http_1_1_dll     = libvortex-http-debug-1.1
+export vortex_debug_alive_1_1_dll    = libvortex-alive-debug-1.1
+
+build_vortex_1_1: 
+	@echo
+	@echo "Building libvortex 1.1.."
+	@echo "Building libvortex 1.1 (PRODUCTION RELEASE).."
+	test -d release || mkdir release
+	rm -rf release/libvortex-1.1
+	mkdir release/libvortex-1.1
+	@cd $(vortex_1_1); VORTEX_VERSION=$(vortex_1_1_version) release_dir=../release/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
+	@cd $(vortex_sasl_1_1); VORTEX_VERSION=$(vortex_1_1_version) release_dir=../release/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
+	@cd $(vortex_tls_1_1); VORTEX_VERSION=$(vortex_1_1_version) release_dir=../release/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
+	@cd $(vortex_xml_rpc_1_1); VORTEX_VERSION=$(vortex_1_1_version) release_dir=../release/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
+	@cd $(vortex_tunnel_1_1); VORTEX_VERSION=$(vortex_1_1_version) release_dir=../release/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
+	@cd $(vortex_pull_1_1); VORTEX_VERSION=$(vortex_1_1_version) release_dir=../release/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
+	@cd $(vortex_http_1_1); VORTEX_VERSION=$(vortex_1_1_version) release_dir=../release/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
+#	@cd $(vortex_alive_1_1); VORTEX_VERSION=$(vortex_1_1_version) release_dir=../release/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
+	@cd $(vortex_1_1_test); VORTEX_VERSION=$(vortex_1_1_version) make -f Makefile.win; cd $(top_srcdir)
+	@cd $(vortex_1_1_xml_rpc_gen); VORTEX_VERSION=$(vortex_1_1_version) make -f Makefile.win; cd $(top_srcdir)
+
+build_debug_vortex_1_1: prepare_versions_mk
+	@echo
+	@echo "Building libvortex 1.1 (DEBUG SUPPORT).."
+	test -d debug || mkdir debug
+	rm -rf debug/libvortex-1.1
+	mkdir debug/libvortex-1.1
+	@cd $(vortex_1_1);         enable_vortex_log=-DENABLE_VORTEX_LOG VORTEX_VERSION=$(vortex_1_1_version) release_dir=../debug/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
+	@cd $(vortex_sasl_1_1);    enable_vortex_log=-DENABLE_VORTEX_LOG VORTEX_VERSION=$(vortex_1_1_version) release_dir=../debug/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
+	@cd $(vortex_tls_1_1);     enable_vortex_log=-DENABLE_VORTEX_LOG VORTEX_VERSION=$(vortex_1_1_version) release_dir=../debug/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
+	@cd $(vortex_xml_rpc_1_1); enable_vortex_log=-DENABLE_VORTEX_LOG VORTEX_VERSION=$(vortex_1_1_version) release_dir=../debug/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
+	@cd $(vortex_tunnel_1_1);  enable_vortex_log=-DENABLE_VORTEX_LOG VORTEX_VERSION=$(vortex_1_1_version) release_dir=../debug/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
+	@cd $(vortex_pull_1_1);    enable_vortex_log=-DENABLE_VORTEX_LOG VORTEX_VERSION=$(vortex_1_1_version) release_dir=../debug/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
+	@cd $(vortex_http_1_1);    enable_vortex_log=-DENABLE_VORTEX_LOG VORTEX_VERSION=$(vortex_1_1_version) release_dir=../debug/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
+	@cd $(vortex_alive_1_1);    enable_vortex_log=-DENABLE_VORTEX_LOG VORTEX_VERSION=$(vortex_1_1_version) release_dir=../debug/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
+	@cd $(vortex_1_1_test);    enable_vortex_log=-DENABLE_VORTEX_LOG VORTEX_VERSION=$(vortex_1_1_version) make -f Makefile.win; cd $(top_srcdir)
+	@cd $(vortex_1_1_xml_rpc_gen); enable_vortex_log=-DENABLE_VORTEX_LOG VORTEX_VERSION=$(vortex_1_1_version) make -f Makefile.win; cd $(top_srcdir)
+
+clean_vortex_1_1:
+	@echo "CLEANING VORTEX 1.1"
+	cd $(vortex_1_1);             make -f Makefile.win clean; cd $(top_srcdir)
+	cd $(vortex_tunnel_1_1);      make -f Makefile.win clean; cd $(top_srcdir)
+	cd $(vortex_pull_1_1);        make -f Makefile.win clean; cd $(top_srcdir)
+	cd $(vortex_http_1_1);        make -f Makefile.win clean; cd $(top_srcdir)
+	cd $(vortex_alive_1_1);       make -f Makefile.win clean; cd $(top_srcdir)
+	cd $(vortex_xml_rpc_1_1);     make -f Makefile.win clean; cd $(top_srcdir)
+	cd $(vortex_sasl_1_1);        make -f Makefile.win clean; cd $(top_srcdir)
+	cd $(vortex_tls_1_1);         make -f Makefile.win clean; cd $(top_srcdir)
+	cd $(vortex_1_1_test);        make -f Makefile.win clean; cd $(top_srcdir)
+	cd $(vortex_1_1_xml_rpc_gen); make -f Makefile.win clean; cd $(top_srcdir)
+
+

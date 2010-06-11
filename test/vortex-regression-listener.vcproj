@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="9,00"
 	Name="vortex-regression-listener"
 	ProjectGUID="{2E4A0893-D008-45B0-97F4-B2E0AFA7250A}"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -57,6 +58,8 @@
 				AdditionalDependencies="ws2_32.lib C:\af-arch-depends\lib\libgsasl-7.lib c:\openssl\lib\libssl.lib c:\openssl\lib\libcrypto.lib"
 				OutputFile=".\$(ProjectName).exe"
 				GenerateDebugInformation="true"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -75,9 +78,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -117,6 +117,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -137,9 +139,6 @@
 				Name="VCAppVerifierTool"
 			/>
 			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -147,11 +146,9 @@
 	<References>
 		<ProjectReference
 			ReferencedProjectIdentifier="{BD4D0BE0-916C-4468-A0E5-6170CBFE6421}"
-			RelativePathToProject=".\src\libvortex.vcproj"
 		/>
 		<ProjectReference
 			ReferencedProjectIdentifier="{4AD56D01-116B-4146-B468-F4E85CFB8C7D}"
-			RelativePathToProject="..\libaxl\src\libaxl.vcproj"
 		/>
 	</References>
 	<Files>
