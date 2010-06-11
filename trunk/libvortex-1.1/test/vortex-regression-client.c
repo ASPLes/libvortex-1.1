@@ -9986,14 +9986,14 @@ void test_16_on_close_full (VortexConnection * conn,
 	return;
 }
 
-/** 
- * @brief Check alive profile support 
- */
-axl_bool  test_16 (void)
+axl_bool test_16_aux (long check_period, int unreply_count, VortexAsyncQueue * queue)
 {
 	VortexConnection * conn;
 	VortexChannel    * channel;
-	VortexAsyncQueue * queue;
+
+
+	printf ("Test 16: checking alive with check-perid=%ld, and unreply count=%d\n",
+		check_period, unreply_count);
 
 	/* create connection */
 	conn = connection_new ();
@@ -10003,7 +10003,10 @@ axl_bool  test_16 (void)
 	} /* end if */
 
 	/* enable alive check on this connection every 20ms */
-	vortex_alive_enable_check (conn, 20000, 0, NULL);
+	if (! vortex_alive_enable_check (conn, 20000, 0, NULL)) {
+		printf ("ERROR: failed to install connection check..\n");
+		return axl_false;
+	}
 
 	/* now ask remote server to block the connection during 30 ms */
 	channel = vortex_channel_new (conn, 0,
@@ -10022,7 +10025,6 @@ axl_bool  test_16 (void)
 	} /* end if */
 
 	/* configure close connection to be triggered by the alive check */
-	queue = vortex_async_queue_new ();
 	vortex_connection_set_on_close_full (conn, test_16_on_close_full, queue);
 
 	if (! vortex_channel_send_msg (channel, "block-connection", 16, NULL)) {
@@ -10038,6 +10040,27 @@ axl_bool  test_16 (void)
 
 	/* close connection */
 	vortex_connection_close (conn);
+
+	return axl_true;
+}
+
+/** 
+ * @brief Check alive profile support 
+ */
+axl_bool  test_16 (void)
+{
+
+	VortexAsyncQueue * queue;
+
+	/* configure close connection to be triggered by the alive check */
+	queue = vortex_async_queue_new ();
+
+	if (! test_16_aux (20000, 0, queue))
+		return axl_false;
+	if (! test_16_aux (10000, 4, queue))
+		return axl_false;
+
+	vortex_async_queue_unref (queue);
 
 	return axl_true;
 
