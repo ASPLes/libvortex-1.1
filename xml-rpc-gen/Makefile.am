@@ -9,7 +9,7 @@ xdl_files = reg-test06.xdl reg-test07.xdl reg-test08.xdl reg-test05.xdl \
 c_files   = reg-test03.c reg-test01a.c reg-test01.c reg-test02.c \
 	reg-test04.c reg-test05.c reg-test06.c reg-test07.c  _support.c 
 
-EXTRA_DIST = $(dtd_DATA) $(idl_files) $(xdl_files) $(c_files)
+EXTRA_DIST = $(dtd_DATA) $(idl_files) $(xdl_files) $(c_files) Makefile.win
 
 INCLUDES = -g -Wall -ansi -I. -I$(top_srcdir)/libvortex-1.1/src $(AXL_CFLAGS) $(PTHREAD_CFLAGS) -DVERSION=\""$(VORTEX_VERSION)"\" \
 	-DINSTALL_DIR=\"$(datadir)/libvortex-1.1\" -I$(top_srcdir)/src -D__axl_disable_broken_bool_def__  $(EXARG_FLAGS)

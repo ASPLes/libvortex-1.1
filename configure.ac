@@ -41,6 +41,9 @@ configure_dir=`dirname "$0"`
 VORTEX_VERSION=`cat $configure_dir/VERSION`
 AC_SUBST(VORTEX_VERSION)
 
+axl_string_version=axl-`axl-knife --version`
+AC_SUBST(axl_string_version)
+
 AC_CONFIG_AUX_DIR(.)
 AM_INIT_AUTOMAKE(vortex, $VORTEX_VERSION)
 AM_CONFIG_HEADER(config.h)
@@ -387,6 +390,7 @@ AC_SUBST(EXARG_FLAGS)
 
 AC_OUTPUT([
 Makefile
+Makefile.win
 src/Makefile
 tunnel/Makefile
 pull/Makefile
