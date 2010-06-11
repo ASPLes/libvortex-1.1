@@ -142,6 +142,9 @@ axl_bool __vortex_alive_do_check        (VortexCtx  * ctx,
 
 	/* check connection status after continue with tests */
 	if (! vortex_connection_is_ok (data->conn, axl_false)) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "finishing alive check on connection id=%d, found closed", 
+			    vortex_connection_get_id (data->conn));
+
 		/* call to remove data associated */
 		vortex_connection_set_data (data->conn, VORTEX_ALIVE_CHECK_ENABLED, NULL);
 		
@@ -171,14 +174,15 @@ axl_bool __vortex_alive_do_check        (VortexCtx  * ctx,
 	/* if channel is ok, and so the connection, check if there are pending replies */
 	if (data->max_unreply_count >= vortex_channel_get_outstanding_messages (data->channel, NULL)) {
 
-		/* remove check alive data */
-		vortex_connection_set_data (data->conn, VORTEX_ALIVE_CHECK_ENABLED, NULL);
-
 		/* check if we have a handler defined */
 		if (data->failure_handler) {
 			/* notify on handler */
 			vortex_log (VORTEX_LEVEL_CRITICAL, "alive check max unreplied count reached=%d, notify on failure handler for connection id=%d",
 				    vortex_connection_get_id (data->conn));
+			data->failure_handler (data->conn, data->check_period, data->max_unreply_count);
+
+			/* remove check alive data */
+			vortex_connection_set_data (data->conn, VORTEX_ALIVE_CHECK_ENABLED, NULL);
 
 			/* request to remove this event */
 			return axl_true;
@@ -190,11 +194,15 @@ axl_bool __vortex_alive_do_check        (VortexCtx  * ctx,
 		/* close the connection */
 		vortex_connection_shutdown (data->conn);
 
+		/* remove check alive data */
+		vortex_connection_set_data (data->conn, VORTEX_ALIVE_CHECK_ENABLED, NULL);
+
 		/* request to remove this event */
 		return axl_true;
 	}
 
 	/* request to send content (ping) */
+	vortex_log (VORTEX_LEVEL_DEBUG, "doing alive check on connection id=%d", vortex_connection_get_id (data->conn));
 	if (! vortex_channel_send_msg (data->channel, "", 0, NULL)) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to send check alive message on connection id=%d, removing check alive event",
 			    vortex_connection_get_id (data->conn));
@@ -268,7 +276,7 @@ axl_bool           vortex_alive_enable_check               (VortexConnection * c
 	VortexAliaveData * data;
 	VortexCtx        * ctx = CONN_CTX (conn);
 
-	if (check_period <= 0 || max_unreply_count <= 0) {
+	if (check_period <= 0 || max_unreply_count < 0) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "Expecified an unsupported check period or max unreply count. Both must be > 0.");
 		return axl_false;
 	}
