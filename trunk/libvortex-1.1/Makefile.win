@@ -16,7 +16,7 @@
 # 
 
 # version
-vortex_1_1_version = 1.1.5,4395,4395
+vortex_1_1_version = 1.1.5.b4417.g4419
 
 # While especifiying directories do not append the trailing slash
 
@@ -37,7 +37,7 @@ export enable_gcc_debug = -g
 export MODE        = windows
 
 # AXL location:
-AXL_BUILD_DIR = "../../axl-0.6.2.b4329.g4333"
+AXL_BUILD_DIR = "../../axl-0.6.2.b4392.g4416"
 
 # Flags to compile OPENSSL
 # Uncomment the following lines, placing the libraries following the path
@@ -115,7 +115,7 @@ build_vortex_1_1:
 	@cd $(vortex_tunnel_1_1); VORTEX_VERSION=$(vortex_1_1_version) release_dir=../release/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
 	@cd $(vortex_pull_1_1); VORTEX_VERSION=$(vortex_1_1_version) release_dir=../release/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
 	@cd $(vortex_http_1_1); VORTEX_VERSION=$(vortex_1_1_version) release_dir=../release/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
-#	@cd $(vortex_alive_1_1); VORTEX_VERSION=$(vortex_1_1_version) release_dir=../release/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
+	@cd $(vortex_alive_1_1); VORTEX_VERSION=$(vortex_1_1_version) release_dir=../release/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
 	@cd $(vortex_1_1_test); VORTEX_VERSION=$(vortex_1_1_version) make -f Makefile.win; cd $(top_srcdir)
 	@cd $(vortex_1_1_xml_rpc_gen); VORTEX_VERSION=$(vortex_1_1_version) make -f Makefile.win; cd $(top_srcdir)
 

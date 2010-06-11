@@ -1,3 +1,4 @@
+# -*- makefile -*- Makefile for windows (mingw)
 # xml-rpc-gen makefile for windows
 ifdef enable_vortex_log
    vortex_dll = -lvortex-debug-1.1
@@ -10,11 +11,11 @@ OBJ      = exarg.o xml-rpc-support.o xml-rpc-gen-translate.o xml-rpc-gen.o xml-r
 
 PROGRAMS = xml-rpc-gen.exe 
 
-LIBS     = -Wall  -Werror -g \
+LIBS     = -Wall  -Werror -g $(AXL_LIBS) \
 	-L../../libaxl/src -L$(DEPEND_DIR)/bin -laxl  \
 	-L../src/ $(vortex_dll)
 
-INCS =  -I"." -I"../../libaxl/src" -I$(DEPEND_DIR)/include -I"../../libexarg/src" -I"../src/" -DOS_WIN32
+INCS =  -I"." -I"../../libaxl/src" $(AXL_INCLUDE) -I$(DEPEND_DIR)/include -I"../../libexarg/src" -I"../src/" -DOS_WIN32
 
 CFLAGS   = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" -DINSTALL_DIR=\".\" -Wall -g -D__axl_disable_broken_bool_def__  
 
