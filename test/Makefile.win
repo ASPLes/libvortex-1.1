@@ -17,7 +17,7 @@ ifdef enable_vortex_log
    vortex_file_sasl_dll    = libvortex-sasl-debug-1.1.dll
    vortex_file_pull_dll    = libvortex-pull-debug-1.1.dll
    vortex_file_http_dll    = libvortex-http-debug-1.1.dll
-   vortex_file_alive_dll   = libvortex-alive-debug-1.1.dll
+   vortex_file_alive_dll    = libvortex-alive-debug-1.1.dll
 else
    vortex_dll         = -lvortex-1.1
    vortex_tunnel_dll  = -lvortex-tunnel-1.1
@@ -39,7 +39,7 @@ else
    vortex_file_alive_dll    = libvortex-alive-1.1.dll
 endif
 
-CC       = gcc.exe -g -Wall  -Werror
+CC       = gcc.exe -g -Wall -Werror
 OBJ      = vortex-listener.o \
            vortex-client.o \
 	   vortex-omr-server.o \
@@ -67,7 +67,7 @@ PROGRAMS = vortex-listener.exe \
 	   vortex-file-transfer-server.exe \
 	   vortex-client-connections.exe
 
-LIBS     = -Wall  -Werror -g \
+LIBS     = -Wall -Werror -g $(AXL_LIBS) -L$(READLINE_BASEDIR) \
 	-lws2_32 $(search_lib_path) \
 	-L../src -L../../libaxl/src -L$(DEPEND_DIR)/bin -laxl $(vortex_dll) \
 	-L../tunnel $(vortex_tunnel_dll) \
@@ -79,7 +79,7 @@ LIBS     = -Wall  -Werror -g \
 	-L../alive $(vortex_alive_dll) \
 	-lreadline5
 
-INCS =  -I"." -I"../src" -I"../tunnel" -I"../tls" -I"../sasl" -I"../xml-rpc" -I"../pull" -I"../http" -I"../alive" \
+INCS =  -I"." -I"../src" -I"../tunnel" -I"../tls" -I"../sasl" -I"../xml-rpc" -I"../pull" -I"../http" -I"../alive" $(AXL_INCLUDE) \
         -I"../../libaxl/src" -I$(DEPEND_DIR)/include -DENABLE_SASL_SUPPORT -DENABLE_XML_RPC_SUPPORT -DENABLE_TLS_SUPPORT
 
 CFLAGS   = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" -Wall -g -D__axl_disable_broken_bool_def__  
@@ -144,7 +144,11 @@ links:
 	cp ../http/$(vortex_file_http_dll) .
 	cp ../alive/$(vortex_file_alive_dll) .
 	cp ../data/*.dtd .
+ifdef AXL_BUILD_DIR
+	cp $(AXL_BUILD_DIR)/src/libaxl.dll .
+else
 	cp ../../libaxl/src/libaxl.dll .
+endif
 	cp $(OPENSSL_LIBS) .
         # copy gsasl libraries and strip them
 	cp $(GSASL_LIBS) .
