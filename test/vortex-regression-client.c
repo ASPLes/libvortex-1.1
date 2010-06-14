@@ -10003,7 +10003,7 @@ axl_bool test_16_aux (long check_period, int unreply_count, VortexAsyncQueue * q
 	} /* end if */
 
 	/* enable alive check on this connection every 20ms */
-	if (! vortex_alive_enable_check (conn, 20000, 0, NULL)) {
+	if (! vortex_alive_enable_check (conn, check_period, unreply_count, NULL)) {
 		printf ("ERROR: failed to install connection check..\n");
 		return axl_false;
 	}
