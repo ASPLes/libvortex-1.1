@@ -1262,8 +1262,6 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * - \ref vortex_listener
  * - \ref vortex_greetings
  * - \ref vortex_handlers
- * - \ref vortex_pull
- * - \ref vortex_http
  *  
  * </li>
  * <li><b>Vortex Library API profiles already implemented:</b>
@@ -1272,7 +1270,14 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * - \ref vortex_xml_rpc
  * - \ref vortex_xml_rpc_types
  * - \ref vortex_tunnel
+ * </li>
+ * <li><b>Vortex Library extension API </b>
  *
+ * - \ref vortex_pull
+ * - \ref vortex_http
+ * - \ref vortex_alive
+ *
+ * </li>
  * <li><b>General library support, types, handlers, thread handling</b>
  *
  * - \ref vortex_thread
@@ -1979,6 +1984,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *  - \ref vortex_manual_transfering_files
  *  - \ref vortex_manual_http_support
  *  - \ref vortex_manual_pull_api
+ *  - \ref vortex_manual_alive_api
  *
  *  <b>Section 5: </b>Securing and authenticating your BEEP sessions: TLS and SASL profiles
  * 
@@ -3631,6 +3637,74 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * <b>The recommended approach</b> is is to check for pending events
  * and pull them on idle loops or to just get blocked on \ref vortex_pull_next_event.
+ *
+ * \section vortex_manual_alive_api 4.6 ALIVE API, active checks for connection status
+ *
+ * Vortex ALIVE API is an extension (optional) library that can be
+ * used to improve connection alive checks and notifications produced
+ * by \ref vortex_connection_set_on_close_full.
+ *
+ * Currently, connection close notification is only received when an
+ * active connection close was done either at the local or the remote
+ * peer. However, in the case the connection becomes unavailable
+ * because network unplug or because the remote peer has poweroff, or
+ * because the remote peer application is hanged, this causes the
+ * connection close to be not triggered until the TCP timeout is
+ * reached.
+ *
+ * In this case, ALIVE check can be used to enforce a transparent and
+ * active check implemented on top of a simply MSG/RPY where, if
+ * reached some amount of unreplied messages, a connection close is
+ * triggered, causing the code configured at \ref
+ * vortex_connection_set_on_close_full to be called.
+ *
+ * To enable the check, the receiver must accept be "checked" by the
+ * remote peer. This is done by calling:
+ *
+ * \code
+ * // enable receiving alive checks from any peer 
+ * vortex_alive_init ();
+ * \endcode
+ *
+ * Now, at the watching side (my be the listener or the initiator), you
+ * have to do the following to enable checking on the connection:
+ *
+ * \code
+ * if (! vortex_alive_enable_check (conn, check_period, unreply_count, NULL)) {
+ *      // failed to enable check 
+ * } 
+ * \endcode
+ *
+ * This will enable a period check (defined by check_period) and will
+ * trigger a connection close in the case it is found that unreplied
+ * count reaches unreply_count.
+ *
+ * <b>NOTES:</b>
+ * 
+ * - The check is implemented using a simply MSG/RPY protocol as
+ * discussed in previous mails.
+ *
+ * - The check can be enabled at any time.
+ *
+ * - The check will trigger a connection, allowing to reuse all
+ * connection close code already configured.
+ *
+ * - It is not required to do anything to remove the check after a
+ * connection was closed. This is done automatically.
+ *
+ * - If it is required to enable check in both directions, the same
+ * reverse steps must be done.
+ *
+ * To use alive API, you must include the header:
+ * \code
+ * #include <vortex_alive.h>
+ * \endcode
+ *
+ * And to add a link flag to use <b>libvortex-alive-1.1.dll</b>. In case of Linux/Unix you can use <b>-lvortex-alive-1.1</b> or: 
+ *
+ * \code
+ * >> pkg-config --libs vortex-aliave-1.1
+ * \endcode
  *
  * \section vortex_manual_securing_your_session 5.1 Securing a Vortex Connection (or How to use the TLS profile)
  * 
