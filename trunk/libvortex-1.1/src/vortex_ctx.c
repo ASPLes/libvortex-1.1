@@ -404,9 +404,10 @@ void        vortex_ctx_set_channel_start_handler (VortexCtx                     
  * a connection was idle because no activity was registered within
  * that period.
  *
- * @param user_data Optional user defined pointer to be passed to the idle_handler when activated.
+ * @param user_data Optional user defined pointer to be passed to the
+ * idle_handler when activated.
  *
- * @param user_data Second optional user defined pointer to be passed
+ * @param user_data2 Second optional user defined pointer to be passed
  * to the idle_handler when activated.
  */
 void        vortex_ctx_set_idle_handler          (VortexCtx                       * ctx,

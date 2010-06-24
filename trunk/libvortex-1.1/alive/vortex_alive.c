@@ -37,11 +37,11 @@
  */
 
 /** 
- * \defgroup vortex_tls Vortex ALIVE: A profile extension that allows to check peer alive status
+ * \defgroup vortex_alive Vortex ALIVE: A profile extension that allows to check peer alive status
  */
 
 /** 
- * \addtogroup vortex_tls
+ * \addtogroup vortex_alive
  * @{
  */
 
@@ -116,7 +116,6 @@ void vortex_alive_frame_received (VortexChannel    * channel,
  *
  * @param ctx The context where the alive profile will be enabled. 
  *
- * @param accept_monitoring Allows to control if 
  */
 axl_bool           vortex_alive_init                       (VortexCtx * ctx)
 {
