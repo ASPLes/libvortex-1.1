@@ -9986,7 +9986,7 @@ void test_16_on_close_full (VortexConnection * conn,
 	return;
 }
 
-axl_bool test_16_aux (long check_period, int unreply_count, VortexAsyncQueue * queue)
+axl_bool test_16_aux (long check_period, int unreply_count, VortexAsyncQueue * queue, axl_bool enable_check_after)
 {
 	VortexConnection * conn;
 	VortexChannel    * channel;
@@ -10002,11 +10002,14 @@ axl_bool test_16_aux (long check_period, int unreply_count, VortexAsyncQueue * q
 		return axl_false;
 	} /* end if */
 
-	/* enable alive check on this connection every 20ms */
-	if (! vortex_alive_enable_check (conn, check_period, unreply_count, NULL)) {
-		printf ("ERROR: failed to install connection check..\n");
-		return axl_false;
-	}
+
+	if (! enable_check_after) {
+		/* enable alive check on this connection every 20ms */
+		if (! vortex_alive_enable_check (conn, check_period, unreply_count, NULL)) {
+			printf ("ERROR: failed to install connection check..\n");
+			return axl_false;
+		}
+	} /* end if */
 
 	/* now ask remote server to block the connection during 30 ms */
 	channel = vortex_channel_new (conn, 0,
@@ -10017,6 +10020,7 @@ axl_bool test_16_aux (long check_period, int unreply_count, VortexAsyncQueue * q
 				      NULL, NULL,
 				      /* no async channel creation */
 				      NULL, NULL);
+
 
 	/* check channel */
 	if (channel == NULL) {
@@ -10030,6 +10034,14 @@ axl_bool test_16_aux (long check_period, int unreply_count, VortexAsyncQueue * q
 	if (! vortex_channel_send_msg (channel, "block-connection", 16, NULL)) {
 		printf ("Test 16: failed to send block connection message..\n");
 		return axl_false;
+	} /* end if */
+
+	if (enable_check_after) {
+		/* enable alive check on this connection every 20ms */
+		if (! vortex_alive_enable_check (conn, check_period, unreply_count, NULL)) {
+			printf ("ERROR: failed to install connection check..\n");
+			return axl_false;
+		}
 	} /* end if */
 
 	/* lock until connection is closed */
@@ -10055,9 +10067,11 @@ axl_bool  test_16 (void)
 	/* configure close connection to be triggered by the alive check */
 	queue = vortex_async_queue_new ();
 
-	if (! test_16_aux (20000, 0, queue))
+	if (! test_16_aux (20000, 0, queue, axl_false))
 		return axl_false;
-	if (! test_16_aux (10000, 4, queue))
+	if (! test_16_aux (10000, 4, queue, axl_false))
+		return axl_false;
+	if (! test_16_aux (10000, 4, queue, axl_true))
 		return axl_false;
 
 	vortex_async_queue_unref (queue);
