@@ -23,11 +23,15 @@
 /* include xml-rpc implementation */
 #include <vortex_xml_rpc.h>
 
+#if defined(ENABLE_SASL_SUPPORT)
 /* include sasl implementation */
 #include <vortex_sasl.h>
+#endif
 
+#if defined(ENABLE_TLS_SUPPORT)
 /* include tls implementation */
 #include <vortex_tls.h>
+#endif
 
 /* additional libraries */
 #include <readline/readline.h>
@@ -663,6 +667,7 @@ void vortex_client_connection_status (VortexConnection * connection)
 }
 
 void vortex_client_begin_auth (void) {
+#if defined(ENABLE_SASL_SUPPORT)	
 	int       profile;
 	char    * profile_selected = NULL;
 	char    * response;
@@ -675,17 +680,12 @@ void vortex_client_begin_auth (void) {
 	if (!check_connected ("can't start SASL auth if not connected first", connection))
 		return;
 
-#if defined(ENABLE_SASL_SUPPORT)	
 	/* check and init SASL state on the provided context */
 	if (! vortex_sasl_init (ctx)) {
 		printf ("Unable to begin SASL negotiation. Current Vortex Library doesn't support SASL");
 		return;
 	}
-#else
-	printf ("vortex-client does not have SASL support.\n");
-	return;
-#endif
-	
+
 	printf ("Choose a profile to negociate: \n");
 	printf ("1) %s\n", VORTEX_SASL_ANONYMOUS);
 	printf ("2) %s\n", VORTEX_SASL_EXTERNAL);
@@ -785,6 +785,10 @@ void vortex_client_begin_auth (void) {
 	}
 
 	return;
+#else
+	printf ("vortex-client does not have SASL support.\n");
+	return;
+#endif
 }
 
 #if defined(ENABLE_XML_RPC_SUPPORT)

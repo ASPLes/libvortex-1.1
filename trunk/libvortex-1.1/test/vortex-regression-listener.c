@@ -42,11 +42,15 @@
 /* include vortex tunnel support */
 #include <vortex_tunnel.h>
 
+#if defined(ENABLE_SASL_SUPPORT)
 /* include sasl support */
 #include <vortex_sasl.h>
+#endif
 
+#if defined(ENABLE_TLS_SUPPORT)
 /* include tls support */
 #include <vortex_tls.h>
+#endif
 
 /* include alive support */
 #include <vortex_alive.h>
