@@ -43,11 +43,15 @@
 /* include vortex tunnel support */
 #include <vortex_tunnel.h>
 
+#if defined(ENABLE_SASL_SUPPORT)
 /* include sasl support */
 #include <vortex_sasl.h>
+#endif
 
+#if defined(ENABLE_TLS_SUPPORT)
 /* include tls support */
 #include <vortex_tls.h> 
+#endif
 
 /* include local headers produced by xml-rpc-gen */
 #include <test_xml_rpc.h>
@@ -6300,6 +6304,7 @@ axl_bool  test_04 (void)
  */
 axl_bool  test_05 (void)
 {
+#if defined(ENABLE_TLS_SUPPORT)
 	/* TLS status notification */
 	VortexStatus       status;
 	char             * status_message = NULL;
@@ -6312,16 +6317,11 @@ axl_bool  test_05 (void)
 	/* vortex connection */
 	VortexConnection * connection;
 
-#if defined(ENABLE_TLS_SUPPORT)
 	/* initialize and check if current vortex library supports TLS */
 	if (! vortex_tls_init (ctx)) {
 		printf ("--- WARNING: Unable to activate TLS, current vortex library has not TLS support activated. \n");
 		return axl_true;
 	}
-#else
-	printf ("--- WARNING: Current build does not have TLS support.\n");
-	return axl_true;
-#endif
 
 	/* create a new connection */
 	connection = connection_new ();
@@ -6432,6 +6432,10 @@ axl_bool  test_05 (void)
 
 	/* close connection */
 	return axl_true;
+#else
+	printf ("--- WARNING: Current build does not have TLS support.\n");
+	return axl_true;
+#endif
 }
 
 axl_bool  test_02l (void) {
@@ -6530,6 +6534,7 @@ axl_bool  test_02l (void) {
  */
 axl_bool  test_05_a (void)
 {
+#if defined(ENABLE_TLS_SUPPORT)
 	/* TLS status notification */
 	VortexStatus       status;
 	char             * status_message = NULL;
@@ -6540,16 +6545,11 @@ axl_bool  test_05_a (void)
 	VortexConnection * connection;
 	VortexConnection * connection2;
 
-#if defined(ENABLE_TLS_SUPPORT)
 	/* initialize and check if current vortex library supports TLS */
 	if (! vortex_tls_init (ctx)) {
 		printf ("--- WARNING: Unable to activate TLS, current vortex library has not TLS support activated. \n");
 		return axl_true;
 	}
-#else
-	printf ("--- WARNING: Current build does not have TLS support.\n");
-	return axl_true;
-#endif
 
 	/* create a new connection */
 	connection = connection_new ();
@@ -6708,12 +6708,16 @@ axl_bool  test_05_a (void)
 	/* close the connection */
 	vortex_connection_close (connection2);
 
-
 	return axl_true;
+#else
+	printf ("--- WARNING: Current build does not have TLS support.\n");
+	return axl_true;
+#endif
 }
 
 axl_bool test_05_b (void)
 {
+#if defined(ENABLE_TLS_SUPPORT)
 	/* TLS status notification */
 	VortexStatus       status;
 	char             * status_message = NULL;
@@ -6721,17 +6725,11 @@ axl_bool test_05_b (void)
 	/* vortex connection */
 	VortexConnection * connection;
 
-#if defined(ENABLE_TLS_SUPPORT)
 	/* initialize and check if current vortex library supports TLS */
 	if (! vortex_tls_init (ctx)) {
 		printf ("--- WARNING: Unable to activate TLS, current vortex library has not TLS support activated. \n");
 		return axl_true;
 	}
-#else
-	printf ("--- WARNING: Current build does not have TLS support.\n");
-	return axl_true;
-#endif
-
 	
 	/* create a new connection */
 	connection = connection_new ();
@@ -6745,6 +6743,10 @@ axl_bool test_05_b (void)
 	vortex_connection_close (connection);
 
 	return axl_true;
+#else
+	printf ("--- WARNING: Current build does not have TLS support.\n");
+	return axl_true;
+#endif
 }
 
 

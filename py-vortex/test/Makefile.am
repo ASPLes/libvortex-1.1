@@ -12,9 +12,14 @@ prepare:
 	@cd ../src; make; cd -
 	@test -d vortex || mkdir vortex
         # copy dynamic libraries
+
 	@cp `find ../src -name libpy_vortex_11$(SHARED_EXTENSION) -type l` vortex/
+if ENABLE_SASL_SUPPORT
 	@cp `find ../src -name libpy_vortex_sasl_11$(SHARED_EXTENSION) -type l` vortex/
+endif
+if ENABLE_TLS_SUPPORT
 	@cp `find ../src -name libpy_vortex_tls_11$(SHARED_EXTENSION) -type l` vortex/
+endif
         # copy python imports
 	@test -e vortex/__init__.py || cp ../src/__init__.py vortex/
 	@diff vortex/__init__.py ../src/__init__.py || cp ../src/__init__.py vortex/

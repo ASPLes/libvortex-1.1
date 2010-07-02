@@ -97,7 +97,7 @@ AC_DEFUN([VORTEX_PTHREADS_CHECK],[
 
 AC_CACHE_CHECK([for CFLAGS needed for pthreads], [vortex_cv_pthreads_cflags],
 [vortex_ptc_cflags=$CFLAGS
- for flag in none -kthread -pthread -pthreads -mt -mthreads -Kthread -threads; do 
+ for flag in -kthread -pthread -pthreads -mt -mthreads -Kthread -threads; do 
     CFLAGS=$vortex_ptc_cflags
     test "x$flag" != "xnone" && CFLAGS="$CFLAGS $flag"
     VORTEX_PTHREADS_TRY_RUN([

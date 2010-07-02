@@ -70,13 +70,15 @@ vortex_regression_client_xml_rpc_files = test_types.h \
 endif
 
 if ENABLE_SASL_SUPPORT
-INCLUDE_SASL_SUPPORT = -DENABLE_SASL_SUPPORT
+INCLUDE_SASL_SUPPORT = -DENABLE_SASL_SUPPORT -I$(top_srcdir)/sasl
 SASL_SUPPORT_LIBS    = $(top_builddir)/sasl/libvortex-sasl-1.1.la 
+SASL_TESTS           = vortex-sasl-listener
 endif
 
 if ENABLE_TLS_SUPPORT
-INCLUDE_TLS_SUPPORT = -DENABLE_TLS_SUPPORT
+INCLUDE_TLS_SUPPORT = -DENABLE_TLS_SUPPORT -I$(top_srcdir)/tls
 TLS_SUPPORT_LIBS    = $(top_builddir)/tls/libvortex-tls-1.1.la 
+TLS_TESTS           = vortex-tls-listener
 endif
 
 certfilesdir    = $(datadir)/libvortex-1.1
@@ -88,9 +90,7 @@ noinst_PROGRAMS = \
 	vortex-listener \
 	vortex-simple-listener \
 	vortex-simple-client \
-	vortex-omr-server \
-	vortex-tls-listener \
-	vortex-sasl-listener \
+	vortex-omr-server $(SASL_TESTS) $(TLS_TESTS) \
 	vortex-xml-rpc-listener \
 	vortex-client-connections \
 	vortex-regression-client \
@@ -102,7 +102,7 @@ noinst_PROGRAMS = \
 	vortex-pull-listener
 
 INCLUDES = -I$(top_srcdir)/src -I$(top_srcdir)/tunnel -I$(top_srcdir)/pull -I$(top_srcdir)/alive \
-	-I$(top_srcdir)/xml-rpc -I$(top_srcdir)/sasl -I$(top_srcdir)/tls -I$(top_srcdir)/http $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
+	-I$(top_srcdir)/xml-rpc -I$(top_srcdir)/http $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
 	-I$(READLINE_PATH)/include -Wall  -Wstrict-prototypes -g -ansi -D__axl_disable_broken_bool_def__   \
         -DVERSION=\""$(VORTEX_VERSION)"\" -I$(top_srcdir)/src $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_VORTEX_LOG) $(INCLUDE_TUNNEL_SUPPORT) $(INCLUDE_PULL_SUPPORT)  $(INCLUDE_XML_RPC_SUPPORT) $(INCLUDE_SASL_SUPPORT) $(INCLUDE_HTTP_SUPPORT) $(INCLUDE_TLS_SUPPORT)
 
@@ -128,8 +128,10 @@ vortex_listener_LDADD          = $(LIBS) $(top_builddir)/src/libvortex-1.1.la
 vortex_omr_server_SOURCES      = vortex-omr-server.c
 vortex_omr_server_LDADD        = $(LIBS) $(top_builddir)/src/libvortex-1.1.la
 
+if ENABLE_TLS_SUPPORT
 vortex_tls_listener_SOURCES    = vortex-tls-listener.c
 vortex_tls_listener_LDADD      = $(LIBS) $(top_builddir)/src/libvortex-1.1.la $(TLS_SUPPORT_LIBS)
+endif
 
 vortex_client_SOURCES          = vortex-client.c 
 vortex_client_LDADD            = $(LIBS) $(top_builddir)/src/libvortex-1.1.la -L$(READLINE_PATH)/lib -lreadline $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS)
@@ -172,8 +174,10 @@ vortex_client_without_cbs_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.1.
 vortex_close_listeners_SOURCES      = vortex-close-listeners.c
 vortex_close_listeners_LDADD        = $(LIBS) $(top_builddir)/src/libvortex-1.1.la 
 
+if ENABLE_SASL_SUPPORT
 vortex_sasl_listener_SOURCES   = vortex-sasl-listener.c
 vortex_sasl_listener_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.1.la $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS)
+endif
 
 vortex_xml_rpc_listener_SOURCES   = vortex-xml-rpc-listener.c
 vortex_xml_rpc_listener_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.1.la $(XML_RPC_SUPPORT_LIBS)
