@@ -584,7 +584,7 @@ axl_bool test_00c_event (VortexCtx * ctx, axlPointer data, axlPointer data2)
 	/* get timeofday value */
 	gettimeofday (&now, NULL);
 	(*count)++;
-	printf ("Test 00-c: Time now (%p): %ld.%ld, count=%d\n", data, now.tv_sec, now.tv_usec, *count); 
+	printf ("Test 00-c: Time now (%p): %ld.%ld, count=%d\n", data, (long) now.tv_sec, (long) now.tv_usec, *count); 
 	if ((*count) == 10)  {
 		/* notify waiting thread we have finished */
 		vortex_async_queue_push (queue, INT_TO_PTR (1723123));
@@ -605,7 +605,7 @@ axl_bool test_00c_event_2 (VortexCtx * ctx, axlPointer data, axlPointer data2)
 	/* get timeofday value */
 	gettimeofday (&now, NULL);
 	(*count)++;
-	printf ("Test 00-c: Time now (%p): %ld.%ld, count=%d\n", data, now.tv_sec, now.tv_usec, *count); 
+	printf ("Test 00-c: Time now (%p): %ld.%ld, count=%d\n", data, (long) now.tv_sec, (long) now.tv_usec, *count); 
 	if ((*count) == 3)  {
 		/* notify waiting thread we have finished */
 		vortex_async_queue_push (queue, INT_TO_PTR (5231412));
@@ -4075,7 +4075,7 @@ axl_bool  test_02f_send_data (VortexChannel * channel, const char * message, Vor
 	vortex_timeval_substract (&stop, &start, &result);
 	
 	printf ("Test 02-f:    ellapsed time to transfer %d bytes (%d Kbytes): %ld secs +  %ld microseconds\n", 
-		TEST_03_MSGSIZE * 10, (TEST_03_MSGSIZE * 10) / 1024 , result.tv_sec, result.tv_usec);
+		TEST_03_MSGSIZE * 10, (TEST_03_MSGSIZE * 10) / 1024 , (long) result.tv_sec, (long) result.tv_usec);
 
 	/* check time results if not enabled */
 /*	if (! disable_time_checks) {
@@ -4876,7 +4876,7 @@ axl_bool  test_02m1 (void) {
 	gettimeofday (&stop, NULL);
 	vortex_timeval_substract (&stop, &start, &result);
 	printf ("Test 02-m1: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 65536, step 32768). Waiting reply..\n", 
-		size, result.tv_sec, result.tv_usec);
+		size, (long) result.tv_sec, (long) result.tv_usec);
 
 	/* GET NEXT REPLY */
 	gettimeofday (&start, NULL);
@@ -4888,7 +4888,7 @@ axl_bool  test_02m1 (void) {
 	gettimeofday (&stop, NULL);
 	vortex_timeval_substract (&stop, &start, &result);
 	printf ("Test 02-m1: ..transfer reply %d bytes done in %ld segs + %ld microsegs (window size 65536, step 32768). \n", 
-		vortex_frame_get_payload_size (frame), result.tv_sec, result.tv_usec);
+		vortex_frame_get_payload_size (frame), (long) result.tv_sec, (long) result.tv_usec);
 
 	if (! axl_cmp (content, vortex_frame_get_payload (frame))) {
 		printf ("Test 02-m1: expected to find different content..\n");
@@ -5680,7 +5680,7 @@ axl_bool  test_02h (void) {
 		return axl_false;
 	gettimeofday (&stop, NULL);
 	vortex_timeval_substract (&stop, &start, &result);
-	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 4096, step 4096.\n", amount, result.tv_sec, result.tv_usec);
+	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 4096, step 4096.\n", amount, (long) result.tv_sec, (long) result.tv_usec);
 	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 02-h: ERROR, connection status is not ok before test..\n");
 		return axl_false;
@@ -5695,7 +5695,7 @@ axl_bool  test_02h (void) {
 		return axl_false;
 	gettimeofday (&stop, NULL);
 	vortex_timeval_substract (&stop, &start, &result);
-	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 8192, step 4096.\n", amount, result.tv_sec, result.tv_usec);
+	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 8192, step 4096.\n", amount, (long) result.tv_sec, (long) result.tv_usec);
 	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 02-h: ERROR, connection status is not ok before test..\n");
 		return axl_false;
@@ -5710,7 +5710,7 @@ axl_bool  test_02h (void) {
 		return axl_false;
 	gettimeofday (&stop, NULL);
 	vortex_timeval_substract (&stop, &start, &result);
-	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 16384, step 4096.\n", amount, result.tv_sec, result.tv_usec);
+	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 16384, step 4096.\n", amount, (long) result.tv_sec, (long) result.tv_usec);
 	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 02-h: ERROR, connection status is not ok before test..\n");
 		return axl_false;
@@ -5725,7 +5725,7 @@ axl_bool  test_02h (void) {
 		return axl_false;
 	gettimeofday (&stop, NULL);
 	vortex_timeval_substract (&stop, &start, &result);
-	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 32768, step 4096.\n", amount, result.tv_sec, result.tv_usec);
+	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 32768, step 4096.\n", amount, (long) result.tv_sec, (long) result.tv_usec);
 	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 02-h: ERROR, connection status is not ok before test..\n");
 		return axl_false;
@@ -5740,7 +5740,7 @@ axl_bool  test_02h (void) {
 		return axl_false;
 	gettimeofday (&stop, NULL);
 	vortex_timeval_substract (&stop, &start, &result);
-	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 65536, step 4096.\n", amount, result.tv_sec, result.tv_usec);
+	printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 65536, step 4096.\n", amount, (long) result.tv_sec, (long) result.tv_usec);
 	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 02-h: ERROR, connection status is not ok before test..\n");
 		return axl_false;
@@ -5763,7 +5763,7 @@ axl_bool  test_02h (void) {
 			return axl_false;
 		gettimeofday (&stop, NULL);
 		vortex_timeval_substract (&stop, &start, &result);
-		printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 32768, step 4096.\n", amount, result.tv_sec, result.tv_usec);
+		printf ("Test 02-h: ..transfer %d bytes done in %ld segs + %ld microsegs (window size 32768, step 4096.\n", amount, (long) result.tv_sec, (long) result.tv_usec);
 		if (! vortex_connection_is_ok (connection, axl_false)) {
 			printf ("Test 02-h: ERROR, connection status is not ok before test..\n");
 			return axl_false;
@@ -6928,7 +6928,7 @@ axl_bool  test_04_a_common (int block_size, int num_blocks, int num_times) {
 		subs (stop, start, &stop);
 		
 		printf ("Test 04-a:     Test ok, operation completed in: %ld.%ld seconds!  (bytes transfered: %d)!\n", 
-			stop.tv_sec, stop.tv_usec, total_bytes);
+			(long) stop.tv_sec, (long) stop.tv_usec, total_bytes);
 #endif
 		
 		printf ("Test 04-a:     now, perform the same operation without queue/reply, using frame received handler\n");
@@ -6966,7 +6966,7 @@ axl_bool  test_04_a_common (int block_size, int num_blocks, int num_times) {
 		subs (stop, start, &stop);
 		
 		printf ("Test 04-a:     Test ok, operation completed in: %ld.%ld seconds! (bytes transfered: %d)!\n", 
-			stop.tv_sec, stop.tv_usec, total_bytes);
+			(long) stop.tv_sec, (long) stop.tv_usec, total_bytes);
 #endif
 		
 		/* free the queue */
@@ -10110,12 +10110,12 @@ void run_test (VortexRegressionTest test, const char * test_name, const char * m
  				printf ("***WARNING***: should finish in less than %ld secs, %ld microseconds\n",
  					limit_seconds, limit_microseconds);
  				printf ("                          but finished in %ld secs, %ld microseconds\n", 
- 					result.tv_sec, result.tv_usec);
+ 					(long) result.tv_sec, (long) result.tv_usec);
  				exit (-1);
  			} 
  		} /* end if */
 		
- 		printf ("%s: %s [   OK   ] (finished in %ld secs, %ld microseconds)\n", test_name, message, result.tv_sec, result.tv_usec);
+ 		printf ("%s: %s [   OK   ] (finished in %ld secs, %ld microseconds)\n", test_name, message, (long) result.tv_sec, (long) result.tv_usec);
  	} else {
  		printf ("%s: %s [ FAILED ]\n", test_name, message);
  		exit (-1);
