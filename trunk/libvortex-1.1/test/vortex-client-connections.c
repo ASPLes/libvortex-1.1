@@ -193,7 +193,7 @@ int main (int argc, char ** argv)
 
 #if defined(AXL_OS_UNIX)
 	printf ("INFO: Test ok, created %d connections: diff: %ld.%ld!\n", 
-		count, stop.tv_sec, stop.tv_usec);
+		count, (long) stop.tv_sec, (long) stop.tv_usec);
 #endif
 
 	return 0;
