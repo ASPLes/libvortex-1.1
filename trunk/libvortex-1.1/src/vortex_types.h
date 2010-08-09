@@ -1102,6 +1102,23 @@ typedef enum {
 	CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES = 2 
 } VortexConnectionStage;
 
+/** 
+ * @brief List of possible handlers that can be uninstalled from a
+ * connection after being added.
+ */
+typedef enum {
+	/** 
+	 * @brief Enum type that represents handlers installed by \ref
+	 * vortex_connection_set_channel_added_handler.
+	 */
+	CONNECTION_CHANNEL_ADD_HANDLER = 1,
+	/** 
+	 * @brief Enum type that represents handlers installed by \ref
+	 * vortex_connection_set_channel_removed_handler.
+	 */
+	CONNECTION_CHANNEL_REMOVE_HANDLER = 2,
+} VortexConnectionHandler;
+
 #endif
 
 /* @} */

@@ -3708,10 +3708,11 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * \section vortex_manual_securing_your_session 5.1 Securing a Vortex Connection (or How to use the TLS profile)
  * 
- * As we have said, the main advantage the BEEP protocol have is that
- * is solves many common problems that the network protocol designer
- * will have to face over again. Securing a connection to avoid other
- * parties to access data exchanged by BEEP peers is one of them.
+ * The main advantage the BEEP protocol has is that it solves many
+ * common problems that the network protocol designer will have to
+ * face while designing an application protocol. Securing a connection
+ * to avoid other parties to access data exchanged by BEEP peers is
+ * one of them.
  * 
  * The idea behind the TLS profile is to enable user level
  * applications to activate the TLS profile for a given session and then create
@@ -3727,12 +3728,13 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * - 2. Secure the connection already created using \ref
  * vortex_tls_start_negotiation.
  *
- * - 3. Then use the \ref VortexConnection "connection", as normal,
- * creating channels (\ref vortex_channel_new), sending data over them (\ref vortex_channel_send_msg), etc. From the
- * application programmer's point of view there is no difference while
- * using a connection secured from one that is not secured.
+ * - 3. Then use the \ref VortexConnection "connection", as usual,
+ * creating channels (\ref vortex_channel_new), sending data over them
+ * (\ref vortex_channel_send_msg), etc. From the application
+ * programmer's point of view there is no difference from using a
+ * connection secured to one that is not.
  *
- * For the listener side of the TLS profile, we have two possibilities: 
+ * For the TLS profile listener side, we have two possibilities:
  * 
  * <ol>
  * <li>
@@ -3741,13 +3743,13 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * 
  * This is a cheap-effort option because the library comes with a test
  * certificate and a test private key that are used in the case that
- * locator handlers for such files are not provided.  
+ * location handlers for such files are not provided.  
  * 
- * This enables to start developing the whole system and later, in the
+ * This enables starting developing the whole system and later, in the
  * production environment, create a private key and a certificate and
  * define needed handlers to locate them.
  * 
- * On this case, we could activate listener TLS profile support as follows:
+ * In this case, we could activate listener TLS profile support as follows:
  * \code
  * // activate TLS profile support using defaults
  * vortex_tls_accept_negotiation (ctx,   // context to configure
@@ -3767,7 +3769,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * <ul>
  *
  *  <li>A \ref VortexTlsAcceptQuery handler should be defined to
- *  control how are accepted incoming TLS requests. Here is an example:
+ *  control if an incoming TLS requests is accepted. Here is an example:
  * \code
  * // return axl_true if we agree to accept the TLS negotiation
  * axl_bool      check_and_accept_tls_request (VortexConnection * connection, 
@@ -3830,7 +3832,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * <b> NOTE:</b> If some handler is not provided the default one will
  * be used. Not providing one of the file locators handler (either
- * certificate locator and private key locator) will cause to not work
+ * certificate locator and private key locator) may cause to not work
  * TLS profile.
  * 
  * </li>
@@ -3843,9 +3845,9 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * vortex_tls_set_ctx_creation and \ref vortex_tls_set_default_ctx_creation.
  * 
  * Now your listener is prepared to receive incoming connections and
- * TLS-fixate them. The only step required to finish the TLS issue is
- * to produce a certificate and a private key to avoid using the
- * default provided by Vortex Library. See next section.
+ * enable TLS on them. Next section provides information on how to
+ * produce a certificate and a private key to avoid using the default
+ * provided by Vortex Library. See next section.
  *
  * 
  * \section vortex_manual_creating_certificates 5.2 How to create a test certificate and a private key to be used by the TLS profile
@@ -3858,7 +3860,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * and a private key that can be used for testing purposes:
  * 
  * <ol>
- * <li>Create the private key using:
+ * <li>Create a 1024 bits private key using:
  * 
  * \code
  *  >> openssl genrsa 1024 > test-private.key

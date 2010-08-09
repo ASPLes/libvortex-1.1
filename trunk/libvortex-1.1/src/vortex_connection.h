@@ -345,13 +345,17 @@ axl_bool            vortex_connection_is_tlsficated              (VortexConnecti
 
 void                vortex_connection_shutdown                   (VortexConnection * connection);
 
-void                vortex_connection_set_channel_added_handler   (VortexConnection                * connection,
+axlPointer          vortex_connection_set_channel_added_handler   (VortexConnection                * connection,
 								   VortexConnectionOnChannelUpdate   added_handler,
 								   axlPointer                        user_data);
 
-void                vortex_connection_set_channel_removed_handler  (VortexConnection                * connection,
+axlPointer          vortex_connection_set_channel_removed_handler  (VortexConnection                * connection,
 								    VortexConnectionOnChannelUpdate   removed_handler,
 								    axlPointer                        user_data);
+
+void                vortex_connection_remove_handler               (VortexConnection                * connection,
+								    VortexConnectionHandler           handler_type,
+								    axlPointer                        handler_id);
 
 void                vortex_connection_set_receive_stamp            (VortexConnection * conn);
 
