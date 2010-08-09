@@ -1091,6 +1091,10 @@ VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx       
 								       (axlDestroyFunc) vortex_channel_unref);
 		/* creates the user space data */
 		if (__connection != NULL) {
+			/* set current serverName if defined */
+			connection->serverName        = __connection->serverName;
+			__connection->serverName      = NULL;
+
 			/* transfer hash used by previous connection into the new one */
 			connection->data       = __connection->data;
 			/* creates a new hash to keep the connection internal state consistent */
