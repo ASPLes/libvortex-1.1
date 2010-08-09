@@ -1097,7 +1097,7 @@ VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx       
 			__connection->data     = vortex_hash_new_full (axl_hash_string, axl_hash_equal_string,
 								       NULL,
 								       NULL);
-			
+
 			/* remove being closed flag if found */
 			vortex_connection_set_data (connection, "being_closed", NULL);
 		} else 
@@ -4525,27 +4525,32 @@ void    vortex_connection_shutdown           (VortexConnection * connection)
  * connection. The function support adding several handlers.
  * 
  * @param connection The connection where the handler is going to be
- * installed.
+ * installed. This parameter cannot be null.
  *
  * @param added_handler The handler to be called once the even
- * happens.
+ * happens. This parameter cannot be null.
  *
  * @param user_data A reference to the user data to be passed to the
  * function.
+ *
+ * @return An identifier pointer that can be used later to remove the
+ * handler to avoid receiving more notifications. To remove the
+ * handler installed use \ref vortex_connection_remove_handler with
+ * the handler type \ref CONNECTION_CHANNEL_ADD_HANDLER.
  */
-void                vortex_connection_set_channel_added_handler   (VortexConnection                * connection,
-								   VortexConnectionOnChannelUpdate   added_handler,
-								   axlPointer                        user_data)
+axlPointer                vortex_connection_set_channel_added_handler   (VortexConnection                * connection,
+									 VortexConnectionOnChannelUpdate   added_handler,
+									 axlPointer                        user_data)
 {
 	VortexChannelStatusUpdate * update;
 
 	/* check parameters received */
 	if (connection == NULL || added_handler == NULL)
-		return;
+		return NULL;
 
 	/* lock the connection */
 	vortex_mutex_lock (&connection->channel_update_mutex);
-
+	
 	/* add the handler */
 	update               = axl_new (VortexChannelStatusUpdate, 1);
 	update->handler      = added_handler;
@@ -4559,7 +4564,7 @@ void                vortex_connection_set_channel_added_handler   (VortexConnect
 	/* unlock the connection */
 	vortex_mutex_unlock (&connection->channel_update_mutex);
 
-	return;
+	return update;
 }
 
 /** 
@@ -4570,24 +4575,29 @@ void                vortex_connection_set_channel_added_handler   (VortexConnect
  * called.
  * 
  * @param connection The connection where the handler is going to be
- * installed.
+ * installed. This parameter cannot be null.
  *
  * @param removed_handler The handler to be called once the even
- * happens.
+ * happens. This parameter cannot be null.
  *
  * @param user_data A reference to the user data to be passed to the
  * function.
+ *
+ * @return An identifier pointer that can be used later to remove the
+ * handler to avoid receiving more notifications. To remove the
+ * handler installed use \ref vortex_connection_remove_handler with
+ * the handler type \ref CONNECTION_CHANNEL_REMOVE_HANDLER.
  */
-void                vortex_connection_set_channel_removed_handler  (VortexConnection                * connection,
-								    VortexConnectionOnChannelUpdate   removed_handler,
-								    axlPointer                        user_data)
+axlPointer                vortex_connection_set_channel_removed_handler  (VortexConnection                * connection,
+									  VortexConnectionOnChannelUpdate   removed_handler,
+									  axlPointer                        user_data)
 {
 	VortexChannelStatusUpdate * update;
 	VortexCtx                 * ctx;
 
 	/* check parameters received */
 	if (connection == NULL || removed_handler == NULL)
-		return;
+		return NULL;
 
 	/* get a reference to the context */
 	ctx = connection->ctx;
@@ -4610,6 +4620,54 @@ void                vortex_connection_set_channel_removed_handler  (VortexConnec
 	/* unlock the connection */
 	vortex_mutex_unlock (&connection->channel_update_mutex);
 
+	return update;
+}
+
+
+/** 
+ * @brief Allows to remove a particular handler (handler_type) with
+ * the provided handler id.
+ *
+ * @param connection The connection where the handler will be removed. This value cannot be null.
+ *
+ * @param handler_type The handler type that is being removed.
+ *
+ * @param handler_id The handler unique identifier to be removed. This
+ * value is returned by the function that added the handler. This value cannot be null.
+ */
+void                vortex_connection_remove_handler               (VortexConnection                * connection,
+								    VortexConnectionHandler           handler_type,
+								    axlPointer                        handler_id)
+{
+	/* check parameters received */
+	if (connection == NULL || handler_id == NULL)
+		return;
+	switch (handler_type) {
+	case CONNECTION_CHANNEL_ADD_HANDLER:
+		/* lock especific mutex */
+		vortex_mutex_lock (&connection->channel_update_mutex);
+
+		/* remove and release memory hold by the handler id */
+		axl_list_remove_ptr (connection->add_channel_handlers, handler_id);
+
+		/* unlock especific mutex */
+		vortex_mutex_unlock (&connection->channel_update_mutex);
+		break;
+	case CONNECTION_CHANNEL_REMOVE_HANDLER:
+		/* lock especific mutex */
+		vortex_mutex_lock (&connection->channel_update_mutex);
+
+		/* remove and release memory hold by the handler id */
+		axl_list_remove_ptr (connection->remove_channel_handlers, handler_id);
+
+		/* unlock especific mutex */
+		vortex_mutex_unlock (&connection->channel_update_mutex);
+		break;
+	default:
+		/* not implemented */
+		break;
+	} /* end switch */
+	
 	return;
 }
 

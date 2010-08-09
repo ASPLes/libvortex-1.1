@@ -411,12 +411,20 @@ void     vortex_support_add_domain_search_path_ref (VortexCtx * ctx,
 	SearchPathNode * node;
 	int              iterator;
 
-	v_return_if_fail (path);
-	v_return_if_fail (ctx);
+
+	/* check arguments received */
+	if (path == NULL || ctx == NULL) {
+		axl_free (domain);
+		return;
+	} /* end if */
 
 	/* check if the path already exists */
-	if (vortex_support_check_search_path (ctx, "default", path))
+	if (vortex_support_check_search_path (ctx, "default", path)) {
+		/* release values even if we got them */
+		axl_free (path);
+		axl_free (domain);
 		return; /* do not added it, already added */
+	}
 	
 	vortex_mutex_lock (&ctx->search_path_mutex);
 
@@ -427,6 +435,10 @@ void     vortex_support_add_domain_search_path_ref (VortexCtx * ctx,
 		node = axl_list_get_nth (ctx->support_search_path, iterator);
 		
 		if (axl_cmp (node->domain, domain) && axl_cmp (node->path, path)) {
+			/* release values even if we got them */
+			axl_free (path);
+			axl_free (domain);
+
 			/* item already added, skip it */
 			vortex_mutex_unlock (&ctx->search_path_mutex);	
 			return;

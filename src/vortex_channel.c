@@ -6186,6 +6186,10 @@ axl_bool  vortex_channel_notify_start_internal (const char       * serverName,
 	   reference to be invalid */
 	vortex_channel_ref (new_channel);
 
+	/* notify here channel added */
+	vortex_log (VORTEX_LEVEL_DEBUG, "Calling to notify channel=%d added to connection id=%d", new_channel->channel_num, vortex_connection_get_id (conn));
+	__vortex_connection_check_and_notify (conn, new_channel, axl_true);
+
 	/* build start reply here using the optional content profile
 	 * reply */
 	start_rpy = vortex_frame_get_start_rpy_message (profile, profile_content_reply);
@@ -6199,9 +6203,6 @@ axl_bool  vortex_channel_notify_start_internal (const char       * serverName,
 
 	/* free start reply */
 	axl_free (start_rpy);
-
-	/* notify here channel added */
-	__vortex_connection_check_and_notify (conn, new_channel, axl_true);
 
 	/* decrease reference */
 	vortex_channel_unref (new_channel);
@@ -6334,7 +6335,9 @@ char *  __vortex_channel_0_handle_start_msg_reply (VortexCtx        * ctx,
 		return NULL;
 	} /* end if */
 
-	/* add channel to the connection but without notification */
+	/* add channel to the connection but without notification:
+	 * this is done later in
+	 * vortex_channel_notify_start_internal */
 	vortex_connection_add_channel_common (connection, new_channel, axl_false);
 
 	/* configure msg_no to reply and the serverName value, this
@@ -6353,10 +6356,14 @@ char *  __vortex_channel_0_handle_start_msg_reply (VortexCtx        * ctx,
 	status = vortex_profiles_invoke_start (profile, channel_num, connection,
 					       serverName, profile_content, 
 					       &profile_content_reply, encoding);
+	vortex_log (VORTEX_LEVEL_DEBUG, "invoke start status=%d for profile=%s and channel_num=%d on connection id=%d",
+		    status, profile, channel_num, vortex_connection_get_id (connection));
 
 	/* if the channel start is deferred, flag the msgno and do not
 	 * reply */
 	if (PTR_TO_INT (vortex_channel_get_data (new_channel, "_vo:ch:defer"))) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "found channel start deferred for profile=%s and channel_num=%d on connection id=%d",
+			    status, profile, channel_num, vortex_connection_get_id (connection));
 		axl_free (profile_content_reply);
 		return NULL;
 	} /* end if */
@@ -6431,11 +6438,11 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, 
-	       "start message received: channel='%d' profile='%s' serverName='%s' profile_content='%s' encoding='%s'", 
-	       channel_num, profile,
-	       (serverName != NULL) ? serverName : "",
-	       (profile_content != NULL) ? profile_content : "",
-	       (encoding == EncodingNone) ? "none" : "base64");
+		    "start message received: channel='%d' profile='%s' serverName='%s' profile_content='%s' encoding='%s'", 
+		    channel_num, profile,
+		    (serverName != NULL) ? serverName : "",
+		    (profile_content != NULL) ? profile_content : "",
+		    (encoding == EncodingNone) ? "none" : "base64");
 
 	/* check if channel exists */
 	if (vortex_connection_channel_exists (connection, channel_num)) {
