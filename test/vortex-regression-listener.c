@@ -231,7 +231,7 @@ void frame_received (VortexChannel    * channel,
 		vortex_channel_set_serialize (channel, axl_true);
 	} else if (axl_memcmp (vortex_frame_get_payload (frame), "get-file-by-feeder-rpy", 22)) {
 		/* create the feeder */
-		feeder = vortex_payload_feeder_file ("vortex-regression-client.c");
+		feeder = vortex_payload_feeder_file ("vortex-regression-client.c", axl_true);
 		
 		/* send content */
 		printf ("Test 04-e: sending RPY using feeder..\n");

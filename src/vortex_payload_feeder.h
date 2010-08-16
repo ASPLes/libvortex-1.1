@@ -49,7 +49,8 @@
 VortexPayloadFeeder * vortex_payload_feeder_new (VortexPayloadFeederHandler handler,
 						 axlPointer                 user_data);
 
-VortexPayloadFeeder * vortex_payload_feeder_file (const char * path);
+VortexPayloadFeeder * vortex_payload_feeder_file (const char * path, 
+						  axl_bool     add_mime_head);
 
 int                   vortex_payload_feeder_get_pending_size (VortexPayloadFeeder * feeder,
 							      VortexCtx           * ctx);

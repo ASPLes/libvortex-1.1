@@ -165,7 +165,7 @@ void frame_received_with_feeder (VortexChannel    * channel,
 	VortexPayloadFeeder * feeder;
 
 	/* create the feeder */
-	feeder = vortex_payload_feeder_file (FILE_TO_TRANSFER);
+	feeder = vortex_payload_feeder_file (FILE_TO_TRANSFER, axl_false);
 
 	/* send rpy */
 	if (! vortex_channel_send_rpy_from_feeder (channel, feeder, vortex_frame_get_msgno (frame))) {
