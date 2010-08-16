@@ -2143,25 +2143,39 @@ void vortex_channel_update_status_received (VortexChannel * channel,
  * @param channel the channel where the message will be sent.
  * @param message the message to be sent.
  * @param message_size the message size.
- * @param proposed_msg_no The message number to be used for the next send operation. If not defined (-1) vortex will allocate automatically a new one.
- * @param msg_no message number reference used for this message sending attempt.
- * @param wait_reply optional wait reply to implement Wait Reply method.
+ *
+ * @param proposed_msg_no The message number to be used for the next
+ * send operation. If not defined (-1) vortex will allocate
+ * automatically a new one.
+ *
+ * @param msg_no message number reference used for this message
+ * sending attempt.
+ *
+ * @param wait_reply optional wait reply to implement Wait Reply
+ * method.
+ *
+ * @param feeder optional content feeder used to send the message. If
+ * this value is defined, message and message_size paramter is ignored
+ * but the caller still have to define message_size (the total amount
+ * of bytes that will be feeded).
  * 
  * @return axl_true if channel was sent or axl_false if not.
  */
-axl_bool    vortex_channel_send_msg_common (VortexChannel   * channel,
-					    const void      * message,
-					    size_t            message_size,
-					    int               proposed_msg_no, 
-					    int             * msg_no,
-					    WaitReplyData   * wait_reply)
+axl_bool    vortex_channel_send_msg_common (VortexChannel       * channel,
+					    const void          * message,
+					    size_t                message_size,
+					    int                   proposed_msg_no, 
+					    int                 * msg_no,
+					    WaitReplyData       * wait_reply,
+					    VortexPayloadFeeder * feeder)
 {
 	VortexSequencerData * data;
 	int                   mime_header_size;
 	VortexCtx           * ctx     = vortex_channel_get_ctx (channel);
 
 	v_return_val_if_fail (channel,                           axl_false);
-	v_return_val_if_fail (message,                           axl_false);
+	if (! feeder && message_size > 0)
+		v_return_val_if_fail (message,                   axl_false);
 	v_return_val_if_fail (channel->is_opened,                axl_false);
 
 	if (channel->channel_num != 0) {
@@ -2214,24 +2228,29 @@ check_limit:
  	else
  		data->msg_no   = vortex_channel_get_next_msg_no (channel);
 		
-	/* update message size */
-	data->message_size     = message_size + mime_header_size;
-		
-	vortex_log (VORTEX_LEVEL_DEBUG, 
- 		    "new message to sent, type=%d channel=%d msgno=%d (proposed: %d) size (%d) = msg size (%d) + mime size (%d)",
-		    data->type, data->channel_num, data->msg_no, proposed_msg_no,
-		    data->message_size, message_size, mime_header_size);
+	if (! feeder) {
+		/* update message size */
+		data->message_size     = message_size + mime_header_size;
 
-	/* copy mime headers according to channel configuration, that
-	 * comes from profile configuration. */
-	data->message          = axl_new (char , data->message_size + 1);
+		vortex_log (VORTEX_LEVEL_DEBUG, 
+			    "new message to sent, type=%d channel=%d msgno=%d (proposed: %d) size (%d) = msg size (%d) + mime size (%d)",
+			    data->type, data->channel_num, data->msg_no, proposed_msg_no,
+			    data->message_size, message_size, mime_header_size);
 
-	/* according to mime headers size */
-	if (mime_header_size > 0)
-		__vortex_channel_get_mime_headers (channel, data->message);
+		/* copy mime headers according to channel configuration, that
+		 * comes from profile configuration. */
+		data->message          = axl_new (char , data->message_size + 1);
+
+		/* according to mime headers size */
+		if (mime_header_size > 0)
+			__vortex_channel_get_mime_headers (channel, data->message);
 	
-	/* copy message content */
-	memcpy (data->message + mime_header_size, message, message_size);
+		/* copy message content */
+		memcpy (data->message + mime_header_size, message, message_size);
+	} else {
+		/* feeder configured, set it */
+		data->feeder = feeder;
+	} 
 
 	/* return back message no used  */
 	if (msg_no != NULL) 
@@ -2254,7 +2273,8 @@ check_limit:
 	}
 
 	/* update channel status */
- 	vortex_channel_update_status (channel, data->message_size, data->msg_no, UPDATE_MSG_NO);
+	vortex_channel_update_status (channel, data->message_size, data->msg_no, UPDATE_MSG_NO);
+
   
  	/* update pending messages to be replied */
  	vortex_mutex_lock (&channel->outstanding_msg_mutex);
@@ -2275,6 +2295,22 @@ check_limit:
 	channel->being_sending = axl_false;
 
 	return axl_true;
+}
+
+/** 
+ * @brief Request to send a new MSG frame on the provided channel,
+ * taking as input the content received from the feeder provided.
+ *
+ * @param channel The channel where the send operation will take place.
+ * @param feeder  The feeder that will be queried to return content to build the MSG to be sent.
+ *
+ * @return axl_true if the request to send the message was placed
+ * otherwise axl_false is returned.
+ */
+axl_bool           vortex_channel_send_msg_from_feeder            (VortexChannel       * channel,
+								   VortexPayloadFeeder * feeder)
+{
+	return vortex_channel_send_msg_common (channel, NULL, 0, 0, NULL, NULL, feeder);
 }
 
 /** 
@@ -2378,7 +2414,7 @@ axl_bool        vortex_channel_send_msg   (VortexChannel    * channel,
 					   size_t             message_size,
 					   int              * msg_no)
 {
-	return vortex_channel_send_msg_common (channel, message, message_size, -1, msg_no, NULL);
+	return vortex_channel_send_msg_common (channel, message, message_size, -1, msg_no, NULL, NULL);
 }
 
 /** 
@@ -2470,7 +2506,7 @@ axl_bool           vortex_channel_send_msg_and_wait               (VortexChannel
 								   int              * msg_no,
 								   WaitReplyData    * wait_reply)
 {
-	return vortex_channel_send_msg_common (channel, message, message_size, -1, msg_no, wait_reply);
+	return vortex_channel_send_msg_common (channel, message, message_size, -1, msg_no, wait_reply, NULL);
 }
 
 /** 
@@ -2540,18 +2576,25 @@ void __vortex_channel_free_sequencer_data (VortexSequencerData * data)
  * @brief Common function to perform message replies.
  * 
  * @param channel the channel where the reply will be sent.
+ *
  * @param type the reply type for the message.
+ *
  * @param message the message included on the reply.
+ *
  * @param message_size the message reply size
+ *
  * @param msg_no_rpy the message number this function is going to reply.
+ *
+ * @param feeder Optional feeder object used to inject content to reply frame.
  * 
  * @return axl_true if reply was sent, axl_false if not.
  */
-axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
-				       VortexFrameType    type,
-				       const void       * message,
-				       size_t             message_size,
-				       int                msg_no_rpy)
+axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
+				       VortexFrameType       type,
+				       const void          * message,
+				       size_t                message_size,
+				       int                   msg_no_rpy,
+				       VortexPayloadFeeder * feeder)
 {
 	VortexSequencerData * data;
 	VortexSequencerData * data2;
@@ -2561,7 +2604,7 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
 	v_return_val_if_fail (channel,            axl_false);
 
 	/* check message content only if the frame type is not NUL */
-	if (type != VORTEX_FRAME_TYPE_NUL) {
+	if (type != VORTEX_FRAME_TYPE_NUL && feeder == NULL) {
 		v_return_val_if_fail (message,    axl_false);
 	} /* end if */
 	v_return_val_if_fail (channel->is_opened, axl_false);
@@ -2592,17 +2635,17 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
 	data->type            = type;
 	data->channel_num     = vortex_channel_get_number (channel);
 	data->msg_no          = msg_no_rpy;
+	data->ansno           = channel->last_ansno_sent;
 
 	/* get current mime header configuration */
 	mime_header_size      = __vortex_channel_get_mime_headers_size (ctx, channel);
 	data->message_size    = message_size + mime_header_size;
-	data->ansno           = channel->last_ansno_sent;
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "new reply message to sent size (%d) = msg size (%d) + mime size (%d)",
-	       data->message_size, message_size, mime_header_size);
-	
 	/* copy the message to be send using memcpy */
-	if (message != NULL || data->message_size > 0) {
+	if (feeder == NULL && (message != NULL || data->message_size > 0)) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "new reply message to sent size (%d) = msg size (%d) + mime size (%d)",
+			    data->message_size, message_size, mime_header_size);
+
 		/* copy mime header configuration if defined */
 		data->message = axl_new (char , data->message_size + 1);
 		if (data->message == NULL) {
@@ -2619,6 +2662,12 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel    * channel,
 
 		/* copy application level message */
 		memcpy (data->message + mime_header_size, message, message_size);
+	} else {
+		/* set feeder for this send operation */
+		data->feeder = feeder;
+
+		vortex_log (VORTEX_LEVEL_DEBUG, "new reply message to sent using feeder (channel=%d)",
+			    channel->channel_num);
 	}
 
 	/* check we are going to reply the message that is waiting to
@@ -2848,6 +2897,27 @@ axl_bool        vortex_channel_send_rpyv       (VortexChannel * channel,
 }
 
 /** 
+ * @brief Allowsto send a RPY message in reply to the provided
+ * msg_no_rpy, using a feeder to fill the content.
+ *
+ * @param channel The channel where the send RPY operation will take place.
+ * 
+ * @param feeder The feeder object that will provide the content to send.
+ * 
+ * @param msg_no_rpy The msg number to reply.
+ *
+ * @return axl_true if the RPY operation was initiated properly,
+ * otherwise axl_false is returned.
+ */
+axl_bool           vortex_channel_send_rpy_from_feeder            (VortexChannel       * channel,
+								   VortexPayloadFeeder * feeder,
+								   int                   msg_no_rpy)
+{
+	/* call to common implementation */
+	return __vortex_channel_common_rpy (channel, VORTEX_FRAME_TYPE_RPY, NULL, 0, msg_no_rpy, feeder);
+}
+
+/** 
  * @brief Allows to send a message reply using RPY type.
  *
  * Sends a RPY message to received message MSG identified by
@@ -2921,7 +2991,7 @@ axl_bool        vortex_channel_send_rpy        (VortexChannel    * channel,
 						int                msg_no_rpy)
 {
 	return __vortex_channel_common_rpy (channel, VORTEX_FRAME_TYPE_RPY,
-					    message, message_size, msg_no_rpy);
+					    message, message_size, msg_no_rpy, NULL);
 }
 
 /** 
@@ -3034,7 +3104,7 @@ axl_bool           vortex_channel_send_ans_rpy                    (VortexChannel
 {
 	return __vortex_channel_common_rpy (channel, VORTEX_FRAME_TYPE_ANS,
 					    message, message_size,
-					    msg_no_rpy);
+					    msg_no_rpy, NULL);
 }
 
 /** 
@@ -3107,7 +3177,7 @@ axl_bool           vortex_channel_finalize_ans_rpy                (VortexChannel
 								   int             msg_no_rpy)
 {
 	return __vortex_channel_common_rpy (channel, VORTEX_FRAME_TYPE_NUL,
-					    NULL, 0, msg_no_rpy);
+					    NULL, 0, msg_no_rpy, NULL);
 }
 
 /** 
@@ -3146,7 +3216,7 @@ axl_bool   vortex_channel_send_err        (VortexChannel    * channel,
 					   int                msg_no_rpy)
 {
 	return __vortex_channel_common_rpy (channel, VORTEX_FRAME_TYPE_ERR,
-					    message, message_size, msg_no_rpy);
+					    message, message_size, msg_no_rpy, NULL);
 }
 
 /** 

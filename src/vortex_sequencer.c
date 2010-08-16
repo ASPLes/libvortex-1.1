@@ -91,6 +91,10 @@ void __vortex_sequencer_unref_and_clear (VortexConnection    * connection,
 		/* unref channel */
 		vortex_channel_unref (data->channel);
 		data->channel = NULL;
+
+		/* free feeder if defined */
+		vortex_payload_feeder_free (data->feeder, CONN_CTX (connection));
+		data->feeder = NULL;
 	
 		/* free node */
 		axl_free (data);
@@ -245,10 +249,33 @@ axl_bool  vortex_sequencer_if_channel_stalled_queue_message (VortexCtx          
 	return axl_false;
 }
 
+#define CHECK_AND_INCREASE_BUFFER(size_to_copy, buffer, buffer_size) \
+	do {								\
+		if ((size_to_copy + 100) > buffer_size) {		\
+			vortex_log (VORTEX_LEVEL_DEBUG, "Found vortex sequencer buffer size not enough for current send operation: (size to copy:%d) > (buffer_size:%d)", \
+				    (size_to_copy + 100), buffer_size);	\
+			if (buffer_size > 100) {			\
+				while ((size_to_copy + 100) > buffer_size) { \
+					/* update buffer size */	\
+					buffer_size = (buffer_size - 100) * 2 + 100; \
+				} /* end if */				\
+			} else {					\
+				buffer_size = size_to_copy + 100;	\
+			}						\
+			vortex_log (VORTEX_LEVEL_DEBUG, "Updated sequencer buffer size for send operation to: (size to copy:%d) <= (buffer_size:%d)", \
+				    (size_to_copy + 100),  buffer_size); \
+			/* free current buffer */			\
+			axl_free (buffer);				\
+			/* allocate new buffer */			\
+			buffer      = axl_new (char, buffer_size);	\
+		} /* end if */						\
+	} while(0)
+
 int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * channel, VortexSequencerData * data, VortexWriterData * packet)
 {
  	int          size_to_copy;
  	unsigned int max_seq_no_accepted = vortex_channel_get_max_seq_no_remote_accepted (channel);
+	char       * payload;
   
 	/* calculate how many bytes to copy from the payload
 	 * according to max_seq_no */
@@ -259,14 +286,24 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
 
 	/* check that the next_frame_size do not report wrong values */
 	if (size_to_copy > data->message_size || size_to_copy <= 0) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "vortex_channel_get_next_frame_size is reporting wrong values (size to copy: %d > message size: %d), this will cause protocol failures...shutdown connection", 
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
+			    "vortex_channel_get_next_frame_size is reporting wrong values (size to copy: %d > message size: %d), this will cause protocol failures...shutdown connection", 
 			    size_to_copy, data->message_size);
-		vortex_log (VORTEX_LEVEL_CRITICAL, "Context data: next seqno: %u, max seq no accepted: %u, channel is stalled: %d",
-			    data->first_seq_no, max_seq_no_accepted, vortex_channel_is_stalled (channel));
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Context data: next seqno: %u, max seq no accepted: %u, channel is stalled: %d, message type: %d",
+			    data->first_seq_no, max_seq_no_accepted, vortex_channel_is_stalled (channel), data->type);
 		
 		vortex_connection_shutdown (vortex_channel_get_connection (channel));
 		return 0;
 	}
+
+	/* check here if we have a feeder defined */
+	if (data->feeder) {
+		/* check and increase buffer */
+		CHECK_AND_INCREASE_BUFFER (size_to_copy, ctx->sequencer_feeder_buffer, ctx->sequencer_feeder_buffer_size);
+
+		/* get content available at this moment to be sent */
+		size_to_copy = vortex_payload_feeder_get_content (data->feeder, ctx, size_to_copy, ctx->sequencer_feeder_buffer);
+	} /* end if */
 	
 	vortex_log (VORTEX_LEVEL_DEBUG, "the channel is not stalled, continue with sequencing, about to send (size_to_copy:%d) bytes as payload (buffer:%d)...",
  		    size_to_copy, ctx->sequencer_send_buffer_size);
@@ -278,20 +315,7 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
 	packet->msg_no       = data->msg_no;
  
  	/* check if we have to realloc buffer */
- 	if ((size_to_copy + 100) > ctx->sequencer_send_buffer_size) {
- 		vortex_log (VORTEX_LEVEL_DEBUG, "Found vortex sequencer buffer size not enough for current send operation: (size to copy:%d) > (buffer_size:%d)",
- 			    (size_to_copy + 100), ctx->sequencer_send_buffer_size);
- 		while ((size_to_copy + 100) > ctx->sequencer_send_buffer_size) {
- 			/* update buffer size */
- 			ctx->sequencer_send_buffer_size = (ctx->sequencer_send_buffer_size - 100) * 2 + 100;
- 		} /* end if */
- 		vortex_log (VORTEX_LEVEL_DEBUG, "Updated sequencer buffer size for send operation to: (size to copy:%d) <= (buffer_size:%d)",
- 			    (size_to_copy + 100),  ctx->sequencer_send_buffer_size);
- 		/* free current buffer */
- 		axl_free (ctx->sequencer_send_buffer);
- 		/* allocate new buffer */
- 		ctx->sequencer_send_buffer      = axl_new (char, ctx->sequencer_send_buffer_size);
- 	} /* end if */
+	CHECK_AND_INCREASE_BUFFER (size_to_copy, ctx->sequencer_send_buffer, ctx->sequencer_send_buffer_size);
 	
 	/* we have the payload on buffer */
 	vortex_log (VORTEX_LEVEL_DEBUG, "sequencing next message: type=%d, channel num=%d, msgno=%d, more=%d, next seq=%u size=%d ansno=%d",
@@ -300,14 +324,27 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
 	vortex_log (VORTEX_LEVEL_DEBUG, "                         message=%p, step=%u, message-size=%u",
 		    data->message, data->step, data->message_size);
 
+	/* point to payload */
+	if (data->feeder) 
+		payload = ctx->sequencer_feeder_buffer;
+	else
+		payload = (data->message != NULL) ? (data->message + data->step) : NULL;
+
+	/* check if the packet is complete (either last frame or all
+	 * the payload fits into a single frame */
+	if (data->feeder) 
+		packet->is_complete = vortex_payload_feeder_is_finished (data->feeder, ctx);
+	else
+		packet->is_complete = (size_to_copy == data->message_size);
+
+	/* build frame */
 	packet->the_frame = vortex_frame_build_up_from_params_s_buffer (
 		data->type,        /* frame type to be created */
 		data->channel_num, /* channel number the frame applies to */
 		data->msg_no,      /* the message number */
 		/* frame payload size to be created */
-		!(data->message_size == size_to_copy), /* have more frames */
-						       /* sequence number for the frame to be created */
-		data->first_seq_no, 
+		!packet->is_complete, /* have more frames */
+		data->first_seq_no,   /* sequence number for the frame to be created */
 		/* size for the payload starting from previous sequence number */
 		size_to_copy,
 		/* an optional ansno value, only used for ANS frames */
@@ -318,15 +355,12 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
 		 * already handler by vortex channel module */
 		NULL, 
 		/* the frame payload itself */
-		(data->message != NULL) ? (data->message + data->step) : NULL,
+		payload,
 		/* calculated frame size */
 		&(packet->the_size),
 		/* buffer and its size */
 		ctx->sequencer_send_buffer, ctx->sequencer_send_buffer_size);
 	
-	/* set frame returned to the package */
-	packet->is_complete = (size_to_copy == data->message_size);
-
 	/* return size used from the entire message */
 	return size_to_copy;
 }
@@ -547,6 +581,11 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		/* create the frame (or frames to send) (splitter
 		 * process) */
 	keep_sending:
+		/* if feeder is defined, get pending message size */
+		if (data->feeder)
+			data->message_size = vortex_payload_feeder_get_pending_size (data->feeder, ctx);
+
+		/* refresh all sending data */
 		data->first_seq_no     = vortex_channel_get_next_seq_no (channel);
 		message_size           = data->message_size;
 		max_seq_no             = vortex_channel_get_max_seq_no_remote_accepted (channel);
@@ -577,7 +616,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		 *
 		 * Incredible, but true! 
 		 */
-		if (size_to_copy != message_size) {
+		if (! packet.is_complete) {
 			vortex_log (VORTEX_LEVEL_DEBUG, "the message sequenced is not going to be sent completely (%d != %d)", 
 			       size_to_copy, message_size);
 
@@ -636,7 +675,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		 * messages pending until the current max seq no value
 		 * gets exhausted.
 		 */
-		if (size_to_copy == message_size) {
+		if (packet.is_complete) {
 			vortex_log (VORTEX_LEVEL_DEBUG, "it seems the message was sent completely");
 			/* the message was sent completely, check for
 			 * re-sequence to remove the first pending
@@ -748,6 +787,7 @@ void vortex_sequencer_stop (VortexCtx * ctx)
 	
 	/* free sequencer buffer */
 	axl_free (ctx->sequencer_send_buffer);
+	axl_free (ctx->sequencer_feeder_buffer);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "vortex sequencer completely stopped");
 

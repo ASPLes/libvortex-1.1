@@ -51,7 +51,8 @@ libvortex_1_1_la_SOURCES =	\
 	vortex_channel_pool.c \
 	vortex_win32.c \
 	vortex_errno.c \
-	vortex_thread.c 
+	vortex_thread.c \
+	vortex_payload_feeder.c
 
 libvortex_1_1_include_HEADERS = vortex.h \
 	vortex_ctx.h \
@@ -76,6 +77,7 @@ libvortex_1_1_include_HEADERS = vortex.h \
 	vortex_win32.h \
 	vortex_errno.h \
 	vortex_thread.h \
+	vortex_payload_feeder.h \
 	vortex-channel.dtd.h \
 	vortex-listener-conf.dtd.h 
 

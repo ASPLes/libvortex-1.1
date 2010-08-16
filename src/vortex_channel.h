@@ -281,12 +281,16 @@ axl_bool           vortex_channel_send_msg_and_waitv              (VortexChannel
 								   const char      * format,
 								   ...);
 
-axl_bool           vortex_channel_send_msg_common                 (VortexChannel   * channel,
-								   const void      * message,
-								   size_t            message_size,
-								   int               proposed_msg_no, 
-								   int             * msg_no,
-								   WaitReplyData   * wait_reply);
+axl_bool           vortex_channel_send_msg_common                 (VortexChannel       * channel,
+								   const void          * message,
+								   size_t                message_size,
+								   int                   proposed_msg_no, 
+								   int                 * msg_no,
+								   WaitReplyData       * wait_reply,
+								   VortexPayloadFeeder * feeder);
+
+axl_bool           vortex_channel_send_msg_from_feeder            (VortexChannel       * channel,
+								   VortexPayloadFeeder * feeder);
 
 axl_bool           vortex_channel_send_rpy                        (VortexChannel    * channel,  
 								   const void       * message,
@@ -297,6 +301,10 @@ axl_bool           vortex_channel_send_rpyv                       (VortexChannel
 								   int             msg_no_rpy,
 								   const   char  * format,
 								   ...);
+
+axl_bool           vortex_channel_send_rpy_from_feeder            (VortexChannel       * channel,
+								   VortexPayloadFeeder * feeder,
+								   int                   msg_no_rpy);
 
 axl_bool           vortex_channel_send_ans_rpy                    (VortexChannel    * channel,
 								   const void       * message,
@@ -472,6 +480,7 @@ void              __vortex_channel_set_state                       (VortexChanne
 								    int                last_seq_no,
 								    int                last_seq_no_expected,
 								    int                last_reply_received);
+
 #endif
 
 /* @} */

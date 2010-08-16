@@ -24,6 +24,9 @@
 /* profile that sends the big file using a single MSG */
 #define FILE_TRANSFER_URI_WITH_MSG "http://www.aspl.es/vortex/profiles/file-transfer/bigmessage"
 
+/* profile that sends the big file using a single MSG */
+#define FILE_TRANSFER_URI_WITH_FEEDER "http://www.aspl.es/vortex/profiles/file-transfer/feeder"
+
 /* the file name to save */
 #define FILE_TO_TRANSFER "/tmp/file.2" 
 
@@ -44,7 +47,7 @@ void frame_received (VortexChannel    * channel,
 /*	char * md5; */
 
 	/* check for the last nul frame */
-	if (vortex_frame_get_ansno (frame) == 0 && vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
+	if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
 		if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_NUL) {
 			printf ("Expected to find NUL terminator message, but found: %d frame type\n",
 				vortex_frame_get_type (frame));
@@ -66,7 +69,9 @@ void frame_received (VortexChannel    * channel,
 	/* dump content to the file */
 /*	md5           = vortex_tls_get_digest_sized (VORTEX_MD5, vortex_frame_get_payload (frame), vortex_frame_get_payload_size (frame)); */
 	bytes_written = fwrite (vortex_frame_get_payload (frame), 1, vortex_frame_get_payload_size (frame), file); 
-/*	printf ("Written frame content: asno=%d, size=%d, seqno=%u\n", vortex_frame_get_ansno (frame), bytes_written, vortex_frame_get_seqno (frame));   */
+/*	printf ("Written frame content: ansno=%d, size=%d, seqno=%u\n", vortex_frame_get_ansno (frame), bytes_written, vortex_frame_get_seqno (frame));   
+	printf ("        Is nul frame: %d\n", vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL); */
+	
 /*	axl_free (md5); */
 
 /*	if (vortex_frame_get_seqno (frame) == 1240) {
@@ -117,7 +122,16 @@ int  main (int  argc, char ** argv)
 	int                window_size;
 	int                transfer_count = 1;
 
+	printf ("Usage:    ./vortex-file-transfer-client [bigmsg|feeder [transfer_count [window_size]]]\n");
+	printf ("Examples: \n");
+	printf ("  -- transfer one copy using feeder method..\n");
+	printf ("  >> ./vortex-file-transfer-client feeder\n");
+	printf ("  -- transfer 10 copies using bigmsg method..\n");
+	printf ("  >> ./vortex-file-transfer-client bigmsg 10\n");
 
+
+	printf ("\n");
+	printf ("Running test..\n");
 
 	/* create the context */
 	ctx = vortex_ctx_new ();
@@ -154,6 +168,17 @@ int  main (int  argc, char ** argv)
 					      frame_received_with_msg, queue,
 					      /* no async channel creation */
 					      NULL, NULL);
+	} else if (argv != NULL && argv[1] != NULL && axl_cmp (argv[1], "feeder")) {
+		printf ("Creating a channel with payload feeder\n");
+		channel = vortex_channel_new (connection, 0,
+					      FILE_TRANSFER_URI_WITH_FEEDER,
+					      /* no close handling */
+					      NULL, NULL,
+					      /* no frame receive async
+					       * handling */
+					      frame_received_with_msg, queue,
+					      /* no async channel creation */
+					      NULL, NULL);		
 	} else {
 		printf ("Creating channel with ANS/NUL pattern..\n");
 		channel = vortex_channel_new (connection, 0,
@@ -173,19 +198,20 @@ int  main (int  argc, char ** argv)
 	}
 
 	/* get number of messages to be sent */
-	if (argv != NULL && argv[2] != NULL) {
+	if (argv != NULL && argc >= 3 && argv[2] != NULL) {
 		transfer_count = atoi (argv[2]);
 		printf ("Requested to download %s, %d times..\n", FILE_TO_TRANSFER, transfer_count);
 	}
 
 	/* get channel window size */
-	if (argv != NULL && argv[3] != NULL) {
+	if (argv != NULL &&  argc >= 4 && argv[3] != NULL) {
 		window_size = atoi (argv[3]);
 		printf ("Requested to change window size to: %d..\n", window_size);
 		vortex_channel_set_window_size (channel, window_size);
 	}
 
 	/* serialize channel */
+	printf ("Configuring set serialize..\n");
 	vortex_channel_set_serialize (channel, axl_true);
 	
 	/* open the file */

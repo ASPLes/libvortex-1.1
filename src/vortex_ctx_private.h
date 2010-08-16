@@ -255,6 +255,8 @@ struct _VortexCtx {
 	 * be sent (and its associated size). */
 	char                    * sequencer_send_buffer;
 	int                       sequencer_send_buffer_size;
+	char                    * sequencer_feeder_buffer;
+	int                       sequencer_feeder_buffer_size;
 
 	/**** vortex thread pool module state ****/
 	/** 

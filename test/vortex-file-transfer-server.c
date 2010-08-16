@@ -24,11 +24,11 @@
 /* profile that sends the big file using a single MSG */
 #define FILE_TRANSFER_URI_WITH_MSG "http://www.aspl.es/vortex/profiles/file-transfer/bigmessage"
 
-/* the file to send: 69522068  bytes = 67M */
-#define FILE_TO_TRANSFER "/tmp/file"
+/* profile that sends the big file using a single MSG */
+#define FILE_TRANSFER_URI_WITH_FEEDER "http://www.aspl.es/vortex/profiles/file-transfer/feeder"
 
-/* file size, in bytes */
-#define FILE_SIZE (532064536)
+/* file to transfer */
+#define FILE_TO_TRANSFER "/tmp/file"
 
 /* listener context */
 VortexCtx * ctx = NULL;
@@ -98,6 +98,15 @@ void frame_received (VortexChannel    * channel,
 	return;
 }
 
+int  get_file_size (const char * file)
+{
+	struct stat stats;
+	
+	if (stat (file, &stats) != 0)
+		return -1;
+	return stats.st_size;
+}
+
 void frame_received_with_msg (VortexChannel    * channel,
 			      VortexConnection * connection,
 			      VortexFrame      * frame,
@@ -107,6 +116,7 @@ void frame_received_with_msg (VortexChannel    * channel,
 	char * buffer;
 	int    bytes_read;
 	long   total_bytes;
+	int    file_size  = get_file_size (FILE_TO_TRANSFER);
 
 	/* open file */
 	file = fopen (FILE_TO_TRANSFER, "r");
@@ -120,22 +130,22 @@ void frame_received_with_msg (VortexChannel    * channel,
 	}
 
 	/* allow */
-	buffer = axl_new (char, FILE_SIZE + 1);
+	buffer = axl_new (char, file_size + 1);
 	
 	/* read all the content */
-	bytes_read = fread (buffer, 1, FILE_SIZE, file);
+	bytes_read = fread (buffer, 1, file_size, file);
 	
-	if (bytes_read != FILE_SIZE) {
+	if (bytes_read != file_size) {
 		axl_free (buffer);
 
 		printf ("failed to load the hole file, expected to read %d, but found: %d\n",
-			bytes_read, FILE_SIZE);
+			bytes_read, file_size);
 		return;
 	} /* end if */
 	total_bytes = bytes_read;
 	
 	/* send the last reply. */
-	if (! vortex_channel_send_rpy (channel, buffer, FILE_SIZE, vortex_frame_get_msgno (frame))) {
+	if (! vortex_channel_send_rpy (channel, buffer, file_size, vortex_frame_get_msgno (frame))) {
 		fprintf (stderr, "There was an error while sending the NUL reply message");
 	}
 
@@ -143,6 +153,25 @@ void frame_received_with_msg (VortexChannel    * channel,
 				
 	printf ("VORTEX_LISTENER: end task (pid: %d), bytes transferred: %ld (one big message)\n", getpid (), total_bytes);
 	fclose (file);
+
+	return;
+}
+
+void frame_received_with_feeder (VortexChannel    * channel,
+				 VortexConnection * connection,
+				 VortexFrame      * frame,
+				 axlPointer         user_data)
+{
+	VortexPayloadFeeder * feeder;
+
+	/* create the feeder */
+	feeder = vortex_payload_feeder_file (FILE_TO_TRANSFER);
+
+	/* send rpy */
+	if (! vortex_channel_send_rpy_from_feeder (channel, feeder, vortex_frame_get_msgno (frame))) {
+		printf ("ERROR: failed to send RPY using feeder..\n");
+		return;
+	} /* end if */
 
 	return;
 }
@@ -180,17 +209,23 @@ int  main (int  argc, char ** argv)
 		return -1;
 	} /* end if */
 
-	/* register a profile */
+	/* register profile */
 	vortex_profiles_register (ctx, FILE_TRANSFER_URI,
 				  start_channel, NULL, 
 				  close_channel, NULL,
 				  frame_received, NULL);
 
-	/* register a profile */
+	/* register profile */
 	vortex_profiles_register (ctx, FILE_TRANSFER_URI_WITH_MSG,
 				  start_channel, NULL, 
 				  close_channel, NULL,
 				  frame_received_with_msg, NULL);
+
+	/* register profile */
+	vortex_profiles_register (ctx, FILE_TRANSFER_URI_WITH_FEEDER,
+				  start_channel, NULL, 
+				  close_channel, NULL,
+				  frame_received_with_feeder, NULL);
        
 	/* create a vortex server */
 	vortex_listener_new (ctx, "0.0.0.0", "44017", NULL, NULL);
