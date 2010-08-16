@@ -96,7 +96,7 @@ void frame_received_with_msg (VortexChannel    * channel,
 	int bytes_written;
 
 	/* received big file */
-	printf ("Received big file, size: %d\n", vortex_frame_get_payload_size (frame));
+	/* printf ("Received frame with size: %d\n", vortex_frame_get_payload_size (frame)); */
 
 	/* dump content to the file */
 	bytes_written = fwrite (vortex_frame_get_payload (frame),
@@ -106,13 +106,13 @@ void frame_received_with_msg (VortexChannel    * channel,
 			bytes_written, vortex_frame_get_payload_size (frame));
 	} /* end if */
 
-	printf ("Looking caller..\n");
-	vortex_async_queue_push ((axlPointer) user_data, INT_TO_PTR (1));
+	if (! vortex_frame_get_more_flag (frame)) {
+		printf ("Looking caller..\n");
+		vortex_async_queue_push ((axlPointer) user_data, INT_TO_PTR (1));
+	} /* end if */
 	
 	return;
 }
-
-
 
 int  main (int  argc, char ** argv)
 {
@@ -163,8 +163,7 @@ int  main (int  argc, char ** argv)
 					      FILE_TRANSFER_URI_WITH_MSG,
 					      /* no close handling */
 					      NULL, NULL,
-					      /* no frame receive async
-					       * handling */
+					      /* frame received */
 					      frame_received_with_msg, queue,
 					      /* no async channel creation */
 					      NULL, NULL);
@@ -174,19 +173,20 @@ int  main (int  argc, char ** argv)
 					      FILE_TRANSFER_URI_WITH_FEEDER,
 					      /* no close handling */
 					      NULL, NULL,
-					      /* no frame receive async
-					       * handling */
+					      /* frame received */
 					      frame_received_with_msg, queue,
 					      /* no async channel creation */
 					      NULL, NULL);		
+
+		/* set complete frame */
+		vortex_channel_set_complete_flag (channel, axl_false);
 	} else {
 		printf ("Creating channel with ANS/NUL pattern..\n");
 		channel = vortex_channel_new (connection, 0,
 					      FILE_TRANSFER_URI,
 					      /* no close handling */
 					      NULL, NULL,
-					      /* no frame receive async
-					       * handling */
+					      /* frame received */
 					      frame_received, queue,
 					      /* no async channel creation */
 					      NULL, NULL);

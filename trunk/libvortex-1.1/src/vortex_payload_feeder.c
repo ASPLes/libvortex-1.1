@@ -120,11 +120,21 @@ axl_bool __vortex_payload_feeder_file (VortexCtx               * ctx,
  *
  * @param path The path to the file that will be feeded into the send operation.
  *
+ * @param add_mime_head In general is recommend that the feeder add an
+ * empty mime header before sending the content found on the
+ * file. However, it may be required to avoid producing such mime
+ * header in the case remote BEEP peer will not process such
+ * header. For example, if remote peer disable \ref
+ * vortex_channel_set_complete_flag "complete flag", it will require
+ * the content to be without a mime header or to detect the first
+ * frame fragment and skip the initial MIME header.
+ *
  * @return A reference to a \ref VortexPayloadFeeder object or NULL if
  * it fails. The function checks if the function exists and can be
  * opened. In such checks fails, function will return NULL.
  */ 
-VortexPayloadFeeder * vortex_payload_feeder_file (const char * path)
+VortexPayloadFeeder * vortex_payload_feeder_file (const char * path,
+						  axl_bool     add_mime_head)
 {
 	FILE                    * file_to_feed;
 	VortexPayloadFileFeeder * state;
@@ -145,7 +155,7 @@ VortexPayloadFeeder * vortex_payload_feeder_file (const char * path)
 
 	/* create state */
 	state               = axl_new (VortexPayloadFileFeeder, 1);
-	state->mime_pending = axl_true;
+	state->mime_pending = add_mime_head;
 	state->file_to_feed = file_to_feed;
 	state->size         = stats.st_size;
 

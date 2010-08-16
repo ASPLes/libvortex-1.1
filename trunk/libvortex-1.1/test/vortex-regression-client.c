@@ -7808,7 +7808,7 @@ axl_bool test_04_e (void)
 
 	/* open the feeder */
 	printf ("Test 04-e: creating feeder to send vortex-regression-client.c..\n");
-	feeder = vortex_payload_feeder_file ("vortex-regression-client.c");
+	feeder = vortex_payload_feeder_file ("vortex-regression-client.c", axl_true);
 	if (feeder == NULL) {
 		printf ("ERROR (3): expected to find proper feeder reference but found NULL..\n");
 		return axl_false;
