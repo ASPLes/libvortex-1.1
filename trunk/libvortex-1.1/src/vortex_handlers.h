@@ -1142,6 +1142,19 @@ typedef void (* VortexIdleHandler) (VortexCtx        * ctx,
 				    axlPointer         user_data,
 				    axlPointer         user_data2);
 
+/** 
+ * @brief Function used to retrieve content to be send when required
+ * by vortex sequencer. The function receives the context where the
+ * operation happens and the vortex sequencer data that describes the
+ * send operation.
+ */
+typedef axl_bool (* VortexPayloadFeederHandler) (VortexCtx              * ctx,
+						 VortexPayloadFeederOp    op_type,
+						 axlPointer               param1,
+						 axlPointer               param2,
+						 axlPointer               user_data);
+				      
+
 #endif
 
 /* @} */

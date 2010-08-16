@@ -671,6 +671,11 @@ typedef enum {
 	EncodingBase64  = 3
 } VortexEncoding;
 
+/** 
+ * @brief Type used to represent a payload feeder.
+ */
+typedef struct _VortexPayloadFeeder VortexPayloadFeeder;
+
 
 /**
  * @internal
@@ -764,8 +769,11 @@ typedef struct _VortexSequencerData {
 	 * ANS/NUL pending replies that must be sent.
 	 */
 	axlList        * ans_nul_list;
-	
 
+	/** 
+	 * @brief Optional feeder defined for this send operation.
+	 */
+	VortexPayloadFeeder * feeder;
 } VortexSequencerData;
 
 
@@ -1118,6 +1126,33 @@ typedef enum {
 	 */
 	CONNECTION_CHANNEL_REMOVE_HANDLER = 2,
 } VortexConnectionHandler;
+
+typedef enum {
+	/** 
+	 * @brief Notifies the feed handler that it must return total
+	 * amount of bytes pending to be send.
+	 */
+	PAYLOAD_FEEDER_GET_SIZE = 1,
+	/** 
+	 * @brief Notifies the feed handler to return next payload
+	 * content to be send. The handler receives in "data" the
+	 * maximum amount of content required at this time.
+	 */
+	PAYLOAD_FEEDER_GET_CONTENT = 2,
+	/** 
+	 * @brief Notifies the feed handler to return if the feeder
+	 * have sent all content it represents. The feed handler must
+	 * return axl_true to notify finished or axl_false to notify
+	 * there are pending content.
+	 */
+	PAYLOAD_FEEDER_IS_FINISHED = 3,
+	/** 
+	 * @brief Notifies the feed handler to release all resources
+	 * acquired. When this signal is received, the feeder is about
+	 * to be collected.
+	 */
+	PAYLOAD_FEEDER_RELEASE = 4
+} VortexPayloadFeederOp;
 
 #endif
 

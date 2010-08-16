@@ -257,6 +257,7 @@ BEGIN_C_DECLS
 #include <vortex_sequencer.h>
 #include <vortex_channel_pool.h>
 #include <vortex_errno.h>
+#include <vortex_payload_feeder.h>
 
 END_C_DECLS
 

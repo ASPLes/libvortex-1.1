@@ -68,6 +68,9 @@
 /* include local support */
 #include <vortex-regression-common.h>
 
+/* include private details for checking */
+#include <vortex_ctx_private.h>
+
 #ifdef AXL_OS_UNIX
 #include <signal.h>
 #endif
@@ -5027,7 +5030,7 @@ axl_bool test_02n_check_sequence (VortexChannel * channel, VortexAsyncQueue * qu
 			break;
 
 		/* perform send operation */
-		if (! vortex_channel_send_msg_common (channel, "this is a test", 14, msg_no, &msg_no_used, NULL)) {
+		if (! vortex_channel_send_msg_common (channel, "this is a test", 14, msg_no, &msg_no_used, NULL, NULL)) {
 			printf ("Failed to send message..\n");
 			return axl_false;
 		} /* end if */
@@ -5128,7 +5131,7 @@ axl_bool  test_02n (void) {
 	}
 
 	/* now perform tree sends operations */
-	if (! vortex_channel_send_msg_common (channel, "this is a test", 14, 5, &msg_no, NULL)) {
+	if (! vortex_channel_send_msg_common (channel, "this is a test", 14, 5, &msg_no, NULL, NULL)) {
 		printf ("Failed to send message..\n");
 		return axl_false;
 	} /* end if */
@@ -5141,7 +5144,7 @@ axl_bool  test_02n (void) {
 	}
 
 	/* now perform tree sends operations */
-	if (! vortex_channel_send_msg_common (channel, "this is a test", 14, 659, &msg_no, NULL)) {
+	if (! vortex_channel_send_msg_common (channel, "this is a test", 14, 659, &msg_no, NULL, NULL)) {
 		printf ("Failed to send message..\n");
 		return axl_false;
 	} /* end if */
@@ -5154,7 +5157,7 @@ axl_bool  test_02n (void) {
 	}
 
 	/* now perform tree sends operations */
-	if (! vortex_channel_send_msg_common (channel, "this is a test", 14, 3, &msg_no, NULL)) {
+	if (! vortex_channel_send_msg_common (channel, "this is a test", 14, 3, &msg_no, NULL, NULL)) {
 		printf ("Failed to send message..\n");
 		return axl_false;
 	} /* end if */
@@ -5211,7 +5214,7 @@ axl_bool  test_02n (void) {
 
 	while (iterator < 10) {
 		/* send content with message number 0 */
-		if (! vortex_channel_send_msg_common (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), 0, &msg_no, NULL)) {
+		if (! vortex_channel_send_msg_common (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), 0, &msg_no, NULL, NULL)) {
 			printf ("Failed to send message..\n");
 			return axl_false;
 		} /* end if */
@@ -5300,13 +5303,13 @@ axl_bool  test_02n (void) {
 	} /* end if */
 
 	/* perform two send operations to force connection broken */
-	if (! vortex_channel_send_msg_common (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), 0, &msg_no, NULL)) {
+	if (! vortex_channel_send_msg_common (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), 0, &msg_no, NULL, NULL)) {
 		printf ("Failed to send message..\n");
 		return axl_false;
 	} /* end if */
 
 	/* perform two send operations to force connection broken */
-	if (! vortex_channel_send_msg_common (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), 0, &msg_no, NULL)) {
+	if (! vortex_channel_send_msg_common (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), 0, &msg_no, NULL, NULL)) {
 		printf ("Failed to send message..\n");
 		return axl_false;
 	} /* end if */
@@ -5627,6 +5630,68 @@ finish:
 
 	/* free queue */
 	vortex_async_queue_unref (queue);
+
+	return axl_true;
+}
+
+axl_bool  test_02p (void) {
+	VortexConnection  * connection;
+	VortexChannel     * channel;
+	VortexAsyncQueue  * queue;
+	VortexFrame       * frame;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+
+	/* create the queue */
+	queue   = vortex_async_queue_new ();
+
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return axl_false;
+	}
+
+	/* send empty msg */
+	if (! vortex_channel_send_msg (channel, NULL, 0, NULL)) {
+		printf ("ERROR (1): failed to send empty MSG..\n");
+		return axl_false;
+	}
+
+	/* get reply */
+	frame = vortex_channel_get_reply (channel, queue);
+
+	if (vortex_frame_get_payload_size (frame) != 0) {
+		printf ("ERROR (2): expected empty content on reply..\n");
+		return axl_false;
+	}
+
+	if (vortex_frame_get_content_size (frame) != 2) {
+		printf ("ERROR (3): expected 2 bytes content on reply..\n");
+		return axl_false;
+	}
+
+	/* free frame */
+	vortex_frame_unref (frame);
+
+	/* free connection */
+	vortex_connection_close (connection);
+
+	/* free queue */
+	vortex_async_queue_unref (queue);
+
 
 	return axl_true;
 }
@@ -7671,6 +7736,150 @@ axl_bool test_04_d (void)
 	vortex_connection_close (connection);
 
 	/* clear queue */
+	vortex_async_queue_unref (queue);
+
+	return axl_true;
+}
+
+axl_bool test_04_e_save (VortexFrame * frame, const char * file) {
+	FILE * file_to_save;
+
+	file_to_save = fopen (file, "w");
+	if (file_to_save == NULL)
+		return axl_false;
+	if (fwrite ((const char *) vortex_frame_get_payload (frame), 1, vortex_frame_get_payload_size (frame), file_to_save) != vortex_frame_get_payload_size (frame)) {
+		printf ("ERROR (?): write size differs from requested value..\n");
+		return axl_false;
+	}
+	fclose (file_to_save);
+
+	return axl_true;
+}
+
+axl_bool test_04_e (void)
+{
+	VortexConnection    * connection;
+	VortexChannel       * channel;
+	VortexAsyncQueue    * queue;
+	VortexPayloadFeeder * feeder;
+	VortexFrame         * frame;
+	char                * md5_1;
+	char                * md5_2;
+	axl_bool              reply_by_feeder = axl_false;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+
+	/* create the queue */
+	queue   = vortex_async_queue_new ();
+
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+
+	if (channel == NULL) {
+		printf ("ERROR (1): expected to find proper channel creation..\n");
+		return axl_false;
+	}
+
+	/* enable serialize */
+	printf ("Test 04-e: setting channel to serialize replies..\n");
+	vortex_channel_set_serialize (channel, axl_true);
+	vortex_channel_send_msg (channel, "set_serial", 10, NULL);
+
+	/* get reply */
+	printf ("Test 04-e: getting reply..\n");
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL || ! axl_cmp (vortex_frame_get_payload (frame), "set_serial")) {
+		printf ("ERROR (2): expected to find proper set serial activation but a failure aas found..\n");
+		return axl_false;
+	} /* end if */
+	vortex_frame_unref (frame);
+
+	/* open the feeder */
+	printf ("Test 04-e: creating feeder to send vortex-regression-client.c..\n");
+	feeder = vortex_payload_feeder_file ("vortex-regression-client.c");
+	if (feeder == NULL) {
+		printf ("ERROR (3): expected to find proper feeder reference but found NULL..\n");
+		return axl_false;
+	} /* end if */
+
+	/* send feeder */
+	printf ("Test 04-e: sending content..\n");
+	if (! vortex_channel_send_msg_from_feeder (channel, feeder)) {
+		printf ("ERROR (4): expected to find proper send using feeder..\n");
+		return axl_false;
+	}
+
+get_reply_and_check:
+
+	/* get next frame */
+	printf ("Test 04-e: waiting reply..\n");
+	frame = vortex_channel_get_reply (channel, queue);
+
+	printf ("Test 04-e: reply received, buffer size: (%d, %d)\n", ctx->sequencer_feeder_buffer_size, ctx->sequencer_send_buffer_size);
+	if (ctx->sequencer_feeder_buffer_size > 10000) {
+		printf ("ERROR (5): expected to find a buffer size lower than 10000 but found: %d\n",
+			ctx->sequencer_feeder_buffer_size);
+		return axl_false;
+	}
+
+	if (ctx->sequencer_send_buffer_size > 32868) {
+		printf ("ERROR (6): expected to find a buffer size lower than 32868 but found: %d\n",
+			ctx->sequencer_send_buffer_size);
+		return axl_false;
+	}
+
+	/* print size */
+	printf ("Test 04-e: file size received: %d\n", vortex_frame_get_payload_size (frame));
+	if (! test_04_e_save (frame, "test_04_e.save")) {
+		printf ("ERROR (7): expected proper save operation but a failure was found..\n");
+		return axl_false;
+	} /* end if */
+
+	/* release frame */
+	vortex_frame_unref (frame);
+
+	/* now check MD5 */
+	md5_1 = test_04_ab_gen_md5 ("vortex-regression-client.c");
+	md5_2 = test_04_ab_gen_md5 ("test_04_e.save");
+
+	/* check md5s..*/
+	if (! axl_cmp (md5_1, md5_2)) {
+		printf ("ERROR (8): found md5 differs..\n");
+		return axl_false;
+	} /* end if */
+
+	axl_free (md5_1);
+	axl_free (md5_2);
+
+	/* now get the reply */
+	if (! reply_by_feeder) {
+		/* ok, now get the file by a reply feeded by the payload feeder */
+		if (! vortex_channel_send_msg (channel, "get-file-by-feeder-rpy", 22, NULL)) {
+			printf ("ERROR (9): unable to send request to get the file using feeder..\n");
+			return axl_false;
+		}
+
+		printf ("Test 04-e: now getting content using RPY feeder..\n");
+		reply_by_feeder = axl_true;
+		goto get_reply_and_check;
+	} /* end if */
+
+	/* close connection */
+	vortex_connection_close (connection);
+
+	/* release queue */
 	vortex_async_queue_unref (queue);
 
 	return axl_true;
@@ -10264,9 +10473,9 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o, test_01p\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
- 	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, \n");
+ 	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, test_02p, \n");
  	printf ("**                       test_03, test_03a, test_03b, test_03d, test_03c, test_04, test_04a, \n");
- 	printf ("**                       test_04b, test_04c, test_05, test_05a, test_05b, test_05c, test_06, test_06a, \n");
+ 	printf ("**                       test_04b, test_04c, test_04d, test_04e, test_05, test_05a, test_05b, test_05, ctest_06, test_06a, \n");
  	printf ("**                       test_07, test_08, test_09, test_10, test_11, test_12, test_13, test_14, \n");
  	printf ("**                       test_14a, test_14b, test_14ctest_14d, test_15, test_15a, test_16\n");
 	printf ("**\n");
@@ -10496,6 +10705,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_02o"))
 			run_test (test_02o, "Test 02-o", "Checking support for seqno transfers over 4GB (MAX SEQ NO: 4294967295)", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_02p"))
+			run_test (test_02p, "Test 02-p", "Check empty RPY", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_03"))
 			run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
 
@@ -10525,6 +10737,9 @@ int main (int  argc, char ** argv)
 
 		if (axl_cmp (run_test_name, "test_04d"))
 			run_test (test_04_d, "Test 04-d", "check channel window size reduction", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_04e"))
+			run_test (test_04_e, "Test 04-e", "check payload feeder support", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_05"))
 			run_test (test_05, "Test 05", "TLS profile support", -1, -1);
@@ -10686,6 +10901,8 @@ int main (int  argc, char ** argv)
  	run_test (test_02n, "Test 02-n", "Checking MSG number reusing", -1, -1);
 
  	run_test (test_02o, "Test 02-o", "Checking support for seqno transfers over 4GB (MAX SEQ NO: 4294967295)", -1, -1);
+
+	run_test (test_02p, "Test 02-p", "Check empty RPY", -1, -1);
  
  	run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
   
@@ -10706,6 +10923,8 @@ int main (int  argc, char ** argv)
  	run_test (test_04_c, "Test 04-c", "check client adviced profiles", -1, -1);
 
 	run_test (test_04_d, "Test 04-d", "check channel window size reduction", -1, -1);
+
+	run_test (test_04_e, "Test 04-e", "check payload feeder support", -1, -1);
   
  	run_test (test_05, "Test 05", "TLS profile support", -1, -1);
   	

@@ -184,9 +184,10 @@ void frame_received (VortexChannel    * channel,
 		     VortexFrame      * frame,
 		     axlPointer           user_data)
 {
-	int    window_size;
-	int    bytes;
-	char * content;
+	int                   window_size;
+	int                   bytes;
+	char                * content;
+	VortexPayloadFeeder * feeder;
 
 	/* check some commands */
 	if (axl_cmp (vortex_frame_get_payload (frame), "GET serverName")) {
@@ -225,6 +226,21 @@ void frame_received (VortexChannel    * channel,
 		vortex_connection_block (connection, axl_true);
 		/* install an event handler to remove this connection between 100ms */
 		vortex_thread_pool_new_event (CONN_CTX (connection), 100000, __close_connection, connection, NULL);
+	} else if (axl_memcmp (vortex_frame_get_payload (frame), "set_serial", 10)) {
+		/* enable channel serialization */
+		vortex_channel_set_serialize (channel, axl_true);
+	} else if (axl_memcmp (vortex_frame_get_payload (frame), "get-file-by-feeder-rpy", 22)) {
+		/* create the feeder */
+		feeder = vortex_payload_feeder_file ("vortex-regression-client.c");
+		
+		/* send content */
+		printf ("Test 04-e: sending RPY using feeder..\n");
+		if (! vortex_channel_send_rpy_from_feeder (channel, feeder, vortex_frame_get_msgno (frame))) {
+			printf ("ERROR: failed to send content via feeder using RPY..\n");
+			return;
+		} /* end if */
+
+		return;
 	} /* end if */
 
 	/* DEFAULT REPLY, JUST ECHO */
