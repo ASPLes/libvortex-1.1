@@ -187,7 +187,6 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * data)
 
 		/* get next task to process: precision=100ms */
 		task = vortex_async_queue_timedpop (queue, 100000);
-
 		
 		if (task == NULL) {
 			/* call to process events */
@@ -367,7 +366,13 @@ void vortex_thread_pool_add                 (VortexCtx        * ctx,
 	while (iterator < threads) {
 		/* create the thread */
 		thread          = axl_new (VortexThread, 1);
+		if (thread == NULL)
+			break;
 		starter         = axl_new (VortexThreadPoolStarter, 1);
+		if (starter == NULL) {
+			axl_free (thread);
+			break;
+		} /* end if */
 		starter->thread = thread;
 		starter->pool   = ctx->thread_pool;
 		if (! vortex_thread_create (thread,
@@ -594,17 +599,20 @@ int  vortex_thread_pool_new_event           (VortexCtx              * ctx,
 
 	/* create the event data */
 	event            = axl_new (VortexThreadPoolEvent, 1);
-	event->func      = event_handler;
-	event->data      = user_data;
-	event->data2     = user_data2;
-	event->delay     = microseconds;
-	gettimeofday (&event->next_step, NULL);
+	/* check alloc result */
+	if (event) {
+		event->func      = event_handler;
+		event->data      = user_data;
+		event->data2     = user_data2;
+		event->delay     = microseconds;
+		gettimeofday (&event->next_step, NULL);
 
-	/* update next step to the appropiate value */
-	__vortex_thread_pool_increase_stamp (event);
+		/* update next step to the appropiate value */
+		__vortex_thread_pool_increase_stamp (event);
 
-	/* add into the event event */
-	axl_list_add (ctx->thread_pool->events, event);
+		/* add into the event event */
+		axl_list_add (ctx->thread_pool->events, event);
+	} /* end if */
 
 	/* (un)lock the thread pool */
 	vortex_mutex_unlock (&(ctx->thread_pool->mutex));

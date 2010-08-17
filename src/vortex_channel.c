@@ -307,28 +307,6 @@ struct _VortexChannel {
 	 */
 	VortexMutex            receive_mutex;
 
-	/* the queue_msgs:
-	 *
-	 * The queue_msgs is used by the vortex sequencer process as a
-	 * buffer of frames to be sent.  The sequencer receive request
-	 * of messages to be sent. Then, them are splitted if the
-	 * message is larger than channel window size into one or
-	 * several frames ready to sent.
-	 *
-	 * Once the sequencer have queue some frames to be sent it
-	 * signal the vortex writer to sent pending frames. */
-	VortexQueue           * queue_msgs;
-
-
-	/* the queue_seqs:
-	 *
-	 * The queue_seqs is used to organize all SEQ frames to be
-	 * sent having a greater priority. This queue and the
-	 * queue_msgs are internally handled by the vortex library.
-	 */
-	VortexQueue           * queue_seqs;
-
-
 	/* the close_cond:
 	 *
 	 * This conditional is used to get blocked close message
@@ -816,22 +794,24 @@ axl_bool  __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _p
 		
 		/* the cache */
 		cache        = axl_new (VortexStartReplyCache, 1);
+		/* check alloc result */
+		if (cache) {
+			/* store the profile content */
+			if (profile_content)
+				cache->profile_content = axl_strdup (profile_content);
+			else
+				cache->profile_content = NULL;
+			
+			/* store the frame */
+			cache->frame = frame;
 
-		/* store the profile content */
-		if (profile_content)
-			cache->profile_content = axl_strdup (profile_content);
-		else
-			cache->profile_content = NULL;
-
-		/* store the frame */
-		cache->frame = frame;
-
-		/* store using as index the frame content */
-		axl_hash_insert_full (ctx->channel_start_reply_cache,
-				      /* pointer to the key and its destroy function */
-				      (axlPointer) vortex_frame_get_payload (frame), NULL,
-				      /* the value and its destroy function */
-				      cache, (axlDestroyFunc) __vortex_channel_start_reply_free);
+			/* store using as index the frame content */
+			axl_hash_insert_full (ctx->channel_start_reply_cache,
+					      /* pointer to the key and its destroy function */
+					      (axlPointer) vortex_frame_get_payload (frame), NULL,
+					      /* the value and its destroy function */
+					      cache, (axlDestroyFunc) __vortex_channel_start_reply_free);
+		} /* end if */
 
 		vortex_mutex_unlock (&ctx->channel_start_reply_cache_mutex);
 	} /* end if */
@@ -1292,6 +1272,10 @@ VortexChannel * vortex_channel_new_full (VortexConnection      * connection,
 
 	/* creates data to be passed in to __vortex_channel_new */
 	data                        = axl_new (VortexChannelData, 1);
+	if (data == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Allocation failed, unable to create channel");
+		return NULL;
+	}
 	data->connection            = connection;
 	data->channel_num           = channel_num;
 	data->close                 = close;
@@ -1306,14 +1290,16 @@ VortexChannel * vortex_channel_new_full (VortexConnection      * connection,
 		data->serverName    = axl_strdup (serverName);
 
 	/* profile stuff */
-	data->profile               = axl_strdup(profile);
+	data->profile               = axl_strdup (profile);
 	data->encoding              = encoding;
 	data->profile_content_size  = profile_content_size;
 	
 	/* profile content  */
 	if (profile_content != NULL && profile_content_size > 0) {
 		data->profile_content       = axl_new (char , profile_content_size + 1);
-		memcpy (data->profile_content, profile_content, profile_content_size);
+		/* check alloc result and memcpy only on success */
+		if (data->profile_content)
+			memcpy (data->profile_content, profile_content, profile_content_size);
 	}
 
 	data->on_channel_created    = on_channel_created;
@@ -1491,6 +1477,10 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 	}
 
 	channel                                 = axl_new (VortexChannel, 1);
+	if (channel == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to allocate memory for channel, unable to create it");
+		return NULL;
+	} /* end if */
 	channel->ctx                            = ctx;
 	channel->channel_num                    = channel_num;
 	channel->last_message_sent              = -1;
@@ -1531,8 +1521,6 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 	vortex_mutex_create (&channel->outstanding_msg_mutex);
 
 	channel->waiting_msgno                  = vortex_queue_new ();
-	channel->queue_msgs                     = vortex_queue_new ();
-	channel->queue_seqs                     = vortex_queue_new ();
 	vortex_mutex_create (&channel->send_mutex);
 	vortex_cond_create  (&channel->send_cond);
 	vortex_mutex_create (&channel->receive_mutex);
@@ -1549,6 +1537,21 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 	channel->reply_processed                = axl_true;
 	channel->data                           = vortex_hash_new_full (axl_hash_string, axl_hash_equal_string, NULL, NULL);
 	channel->stored_replies                 = axl_hash_new (axl_hash_int, axl_hash_equal_int);
+
+	/* check alloc references */
+	if (channel->previous_frame         == NULL ||
+	    channel->pending_messages       == NULL ||
+	    channel->incoming_msg           == NULL ||
+	    channel->incoming_msg_cursor    == NULL ||
+	    channel->outstanding_msg        == NULL ||
+	    channel->outstanding_msg_cursor == NULL ||
+	    channel->waiting_msgno          == NULL ||
+	    channel->data                   == NULL ||
+	    channel->stored_replies         == NULL) {
+		/* allocation failed, finish channel */
+		vortex_channel_free (channel);
+		return NULL;
+	}
 
 	/* The following are a set of values implicitly accepted as
 	 * default for the channel 0.  It includes:
@@ -4036,29 +4039,6 @@ void               vortex_channel_remove_pending_message        (VortexChannel *
 }
 
 /** 
- * @internal
- *
- * @brief Returns the current status of pending frames to be sent for
- * the given channel.
- *
- * This function will return how many frames are pending to be sent
- * for the given channel.
- * 
- * @param channel the channel where messages pending will be counted.
- * 
- * @return pending message for the given channel
- */
-int                vortex_channel_queue_length                    (VortexChannel * channel)
-{
-	/* check reference */
-	if (channel == NULL)
-		return 0;
-
-	/* return current queue length */
-	return vortex_queue_get_length (channel->queue_msgs) + vortex_queue_get_length (channel->queue_seqs);
-}
-
-/** 
  * @brief Allows to serialize all messages/replies (MSG, ERR, RPY,
  * ANS/NUL) received on a particular channel, by checking that
  * previous messages/replies were delivered, avoiding thread race conditions.
@@ -5749,8 +5729,7 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 
 	/* invoke handler */
 	if (channel->received) {
-		channel->received (channel, channel->connection, frame, 
-				   channel->received_user_data);
+		channel->received (channel, channel->connection, frame, channel->received_user_data);
  		if (vortex_log_is_enabled (ctx)) {
  			/* get type */
  			type = vortex_frame_get_type (frame);
@@ -5918,6 +5897,11 @@ axl_bool      vortex_channel_invoke_received_handler (VortexConnection * connect
 
 	/* prepare data to be passed in to thread */
 	data              = axl_new (ReceivedInvokeData, 1);
+	if (data == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Allocation failed, unable to deliver frame");
+		vortex_frame_unref (frame);
+		return axl_false;
+	}
 	data->channel     = channel;
 	data->frame       = frame;
 	data->channel_num = channel->channel_num;
@@ -7172,7 +7156,6 @@ axl_bool        vortex_channel_is_being_closed (VortexChannel * channel)
  */
 void vortex_channel_free (VortexChannel * channel)
 {
-	VortexWriterData * writer_data;
 	WaitReplyData    * wait_reply;
 	VortexCtx        * ctx     = vortex_channel_get_ctx (channel);
 
@@ -7238,24 +7221,6 @@ void vortex_channel_free (VortexChannel * channel)
 	/* destroy data hash */
 	vortex_hash_destroy (channel->data);
 	channel->data = NULL;
-
-	/* freeing queue messages */
-	vortex_log (VORTEX_LEVEL_DEBUG, "freeing messages queue");
-	while (!vortex_queue_is_empty (channel->queue_msgs)) {
-		writer_data = vortex_queue_pop (channel->queue_msgs);
-		vortex_writer_data_free (writer_data);
-	}
-	vortex_queue_free   (channel->queue_msgs);
-	channel->queue_msgs = NULL;
-
-	/* freeing SEQ frames queue */
-	vortex_log (VORTEX_LEVEL_DEBUG, "freeing SEQ frames queue");
-	while (!vortex_queue_is_empty (channel->queue_seqs)) {
-		writer_data = vortex_queue_pop (channel->queue_seqs);
-		vortex_writer_data_free (writer_data);
-	}
-	vortex_queue_free   (channel->queue_seqs);
-	channel->queue_seqs = NULL;
 
 	/* freeing wait replies */
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing waiting reply queue");
