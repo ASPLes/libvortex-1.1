@@ -311,6 +311,10 @@ axl_bool           vortex_channel_send_ans_rpy                    (VortexChannel
 								   size_t             message_size,
 								   int                msg_no_rpy);
 
+axl_bool           vortex_channel_send_ans_rpy_from_feeder        (VortexChannel       * channel,
+								   VortexPayloadFeeder * feeder,
+								   int                   msg_no_rpy);
+
 axl_bool           vortex_channel_send_ans_rpyv                   (VortexChannel * channel,
 								   int             msg_no_rpy,
 								   const char    * format,

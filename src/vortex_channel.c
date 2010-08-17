@@ -3108,6 +3108,27 @@ axl_bool           vortex_channel_send_ans_rpy                    (VortexChannel
 }
 
 /** 
+ * @brief Allows to send an ANS frame taking the content from the
+ * feeder provided.
+ *
+ * @param channel The channel where the send operation will happen.
+ *
+ * @param feeder The \ref VortexProfileFeeder object to take the
+ * content from.
+ *
+ * @param msg_no_rpy The message number to reply to.
+ *
+ * @return axl_true if the requested send operation was submited
+ * otherwise axl_false is returned.
+ */
+axl_bool           vortex_channel_send_ans_rpy_from_feeder        (VortexChannel       * channel,
+								   VortexPayloadFeeder * feeder,
+								   int                   msg_no_rpy)
+{
+	return __vortex_channel_common_rpy (channel, VORTEX_FRAME_TYPE_ANS, NULL, 0, msg_no_rpy, feeder);
+}
+
+/** 
  * @brief Allows to send ANS message reply using stdargs argument.
  * Check documentation for \ref vortex_channel_send_ans_rpy
  * function. This function only differ in the sense that message to be
