@@ -231,8 +231,6 @@ axl_bool           vortex_channel_queue_is_empty                  (VortexChannel
 
 VortexWriterData * vortex_channel_queue_next_msg                  (VortexChannel * channel);
 
-int                vortex_channel_queue_length                    (VortexChannel * channel);
-
 void               vortex_channel_set_serialize                   (VortexChannel * channel,
 								   axl_bool        serialize);
 

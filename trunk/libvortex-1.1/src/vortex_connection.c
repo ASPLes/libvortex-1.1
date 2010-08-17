@@ -5577,28 +5577,6 @@ void                vortex_connection_remove_channel_pool    (VortexConnection  
 
 
 /** 
- * @internal
- * @brief Support function for \ref vortex_connection_get_pending_msgs
- *
- * This function adds the message pending to be send over a given
- * channel.
- * 
- * @param key 
- * @param value the channel to retrieve how many messages are waiting
- * @param user_data 
- */
-axl_bool  __vortex_connection_get_pending_msgs (axlPointer key, axlPointer value, axlPointer user_data)
-{
-	VortexChannel * channel  = value;
-	int           * messages = user_data;
-	int             msgs     = vortex_channel_queue_length (channel);
-	
-	(* messages ) = (* messages) + msgs;
-
-	return axl_false;
-}
-
-/** 
  * @brief Allows to get current frames waiting to be sent on the given connection.
  *
  * This function will iterate over all channels the connection have
@@ -5619,8 +5597,6 @@ int                 vortex_connection_get_pending_msgs       (VortexConnection *
 {
 	int  messages = 0;
 
-	vortex_hash_foreach (connection->channels, 
-			     __vortex_connection_get_pending_msgs, &messages);	
 	return messages;
 }
 
