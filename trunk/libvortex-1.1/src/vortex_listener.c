@@ -99,6 +99,13 @@ void vortex_listener_accept_connection    (VortexConnection * connection, axl_bo
 		/* call and check */
 		data = axl_list_get_nth (ctx->listener_on_accept_handlers, iterator);
 
+		/* internal check */
+		if (data == NULL) {
+			result = axl_false;
+			break;
+		} /* end if */
+			
+
 		/* check if the following handler accept the incoming
 		 * connection */
 		vortex_log (VORTEX_LEVEL_DEBUG, "calling to accept connection, handler: %p, data: %p",
@@ -1273,12 +1280,26 @@ void          vortex_listener_set_on_connection_accepted (VortexCtx             
 
 	/* store handler configuration */
 	data                 = axl_new (VortexListenerOnAcceptData, 1);
+	if (data == NULL) {
+		/* memory allocation failed. */
+		vortex_mutex_unlock (&ctx->listener_mutex);
+		return;
+	}
 	data->on_accept      = on_accepted;
 	data->on_accept_data = _data;
 
 	/* init the list if it wasn't */
-	if (ctx->listener_on_accept_handlers == NULL)
+	if (ctx->listener_on_accept_handlers == NULL) {
+		/* alloc list */
 		ctx->listener_on_accept_handlers = axl_list_new (axl_list_always_return_1, axl_free);
+
+		/* check allocated list */
+		if (ctx->listener_on_accept_handlers == NULL) {
+			/* memory allocation failed. */
+			vortex_mutex_unlock (&ctx->listener_mutex);
+			return;
+		} /* end if */
+	}
 
 	/* add the item */
 	axl_list_add (ctx->listener_on_accept_handlers, data);
