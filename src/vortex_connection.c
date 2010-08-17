@@ -2183,8 +2183,20 @@ VortexConnection  * vortex_connection_new_full               (VortexCtx         
 	} /* end if */
 
 	data                                  = axl_new (VortexConnectionNewData, 1);
+	if (data == NULL) {
+		/* check to release options if defined */
+		vortex_connection_opts_check_and_release (options);
+		return NULL;
+	} /* end if */
 	data->options                         = options;
 	data->connection                      = axl_new (VortexConnection, 1);
+	/* check allocated connection */
+	if (data->connection == NULL) {
+		/* check to release options if defined */
+		vortex_connection_opts_check_and_release (options);
+		axl_free (data);
+		return NULL;
+	} /* end if */
 	data->connection->id                  = __vortex_connection_get_next_id (ctx);
 	data->connection->ctx                 = ctx;
 	data->connection->host                = axl_strdup (host);
@@ -2225,6 +2237,20 @@ VortexConnection  * vortex_connection_new_full               (VortexCtx         
 	data->on_connected                    = on_connected;
 	data->user_data                       = user_data;
 	data->threaded                        = (on_connected != NULL);
+
+	/* check allocated values */
+	if (data->connection->host          == NULL ||
+	    data->connection->port          == NULL ||
+	    data->connection->channels      == NULL ||
+	    data->connection->data          == NULL ||
+	    data->connection->channel_pools == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Connection memory allocation failed.."); 
+		/* connection allocation failed */
+		vortex_connection_free (data->connection);
+		axl_free (data);
+		return NULL;
+	}
+
 
 	if (data->threaded) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "invoking connection_new threaded mode");
@@ -2480,8 +2506,10 @@ axl_bool            vortex_connection_reconnect              (VortexConnection *
 
 	/* create data needed to invoke the service */
 	data               = axl_new (VortexConnectionNewData, 1);
+	/* check allocated value */
+	if (data == NULL) 
+		return axl_false;
 	data->connection   = connection;
-	
 	
 	data->on_connected = on_connected;
 	data->user_data    = user_data;
@@ -3171,11 +3199,13 @@ void                vortex_connection_push_channel_error     (VortexConnection  
 
 	/* create the value */
 	error       = axl_new (VortexChannelError, 1);
-	error->code = code;
-	error->msg  = msg;
+	if (error != NULL) {
+		error->code = code;
+		error->msg  = msg;
 
-	/* push the data */
-	axl_stack_push (connection->pending_errors, error);
+		/* push the data */
+		axl_stack_push (connection->pending_errors, error);
+	} /* end if */
 	
 	/* unlock */
 	vortex_mutex_unlock (&connection->pending_errors_mutex);
@@ -3478,7 +3508,7 @@ typedef struct _VortexMaskNode {
  * 
  * @return A unique identifier to refer to the mask installed. The
  * function returns -1 if the function receives a null reference for
- * the connection and the mask function.
+ * the connection and the mask function. 
  */
 int                 vortex_connection_set_profile_mask       (VortexConnection      * connection,
 							      VortexProfileMaskFunc   mask,
@@ -3491,6 +3521,10 @@ int                 vortex_connection_set_profile_mask       (VortexConnection  
 
 	/* create and store the mask */
 	node            = axl_new (VortexMaskNode, 1);
+	if (node == NULL) {
+		/* allocation failure */
+		return -1;
+	}
 	node->mask_id   = axl_list_length (connection->profile_masks);
 	node->mask      = mask;
 	node->user_data = user_data;
@@ -4557,12 +4591,27 @@ axlPointer                vortex_connection_set_channel_added_handler   (VortexC
 	
 	/* add the handler */
 	update               = axl_new (VortexChannelStatusUpdate, 1);
+	if (update == NULL) {
+		/* unlock the connection */
+		vortex_mutex_unlock (&connection->channel_update_mutex);
+		/* allocation failure */
+		return NULL;
+	}
 	update->handler      = added_handler;
 	update->handler_data = user_data;
 
 	/* check the list and add the item */
-	if (connection->add_channel_handlers == NULL)
+	if (connection->add_channel_handlers == NULL) {
 		connection->add_channel_handlers = axl_list_new (axl_list_always_return_1, axl_free);
+		if (connection->add_channel_handlers == NULL) {
+			/* free allocated node */
+			axl_free (update);
+
+			/* unlock the connection */
+			vortex_mutex_unlock (&connection->channel_update_mutex);
+			return NULL;
+		}
+	}
 	axl_list_add (connection->add_channel_handlers, update);
 
 	/* unlock the connection */
@@ -4611,14 +4660,29 @@ axlPointer                vortex_connection_set_channel_removed_handler  (Vortex
 
 	/* add the handler */
 	update               = axl_new (VortexChannelStatusUpdate, 1);
+	if (update == NULL) {
+		/* unlock the connection */
+		vortex_mutex_unlock (&connection->channel_update_mutex);
+		/* allocation failure */
+		return NULL;
+	}
 	update->handler      = removed_handler;
 	update->handler_data = user_data;
 	vortex_log (VORTEX_LEVEL_DEBUG, "Configure on channel removed handler at: 0x%x",
 		    removed_handler);
 
 	/* check the list and add the item */
-	if (connection->remove_channel_handlers == NULL)
+	if (connection->remove_channel_handlers == NULL) {
 		connection->remove_channel_handlers = axl_list_new (axl_list_always_return_1, axl_free);
+		if (connection->remove_channel_handlers == NULL) {
+			/* free allocated node */
+			axl_free (update);
+
+			/* unlock the connection */
+			vortex_mutex_unlock (&connection->channel_update_mutex);
+			return NULL;
+		}
+	}
 	axl_list_add (connection->remove_channel_handlers, update);
 
 	/* unlock the connection */
