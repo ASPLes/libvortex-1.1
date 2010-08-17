@@ -118,6 +118,20 @@ axl_bool __vortex_payload_feeder_file (VortexCtx               * ctx,
  * @brief Creates a feeder object connected to the file found at the
  * path provided.
  *
+ * Once you have created the feeder object you initialize a send
+ * operation providing the feeder. This will cause to send a frame or
+ * the desired type, making its content to be filled from content
+ * found at the \ref VortexPayloadFeeder. The the following functions:
+ *
+ * - \ref vortex_channel_send_msg_from_feeder
+ * - \ref vortex_channel_send_rpy_from_feeder
+ * - \ref vortex_channel_send_ans_rpy_from_feeder
+ *
+ * <b>NOTE:</b> there is a \ref vortex_payload_feeder_free
+ * function. This is usually not required because the send operation
+ * already finishes the object when the send operation has been
+ * completed. 
+ *
  * @param path The path to the file that will be feeded into the send operation.
  *
  * @param add_mime_head In general is recommend that the feeder add an
@@ -132,7 +146,7 @@ axl_bool __vortex_payload_feeder_file (VortexCtx               * ctx,
  * @return A reference to a \ref VortexPayloadFeeder object or NULL if
  * it fails. The function checks if the function exists and can be
  * opened. In such checks fails, function will return NULL.
- */ 
+ */
 VortexPayloadFeeder * vortex_payload_feeder_file (const char * path,
 						  axl_bool     add_mime_head)
 {
@@ -213,8 +227,15 @@ axl_bool              vortex_payload_feeder_is_finished (VortexPayloadFeeder * f
 }
 
 /** 
- * @internal Function that signal and releases all resources
- * associated to the feeder.
+ * @brief Function that signal and releases all resources
+ * associated to the feeder. 
+ *
+ * <b>NOTE:</b> in most cases you don't need to call this function
+ * because release operation is usually done by the send operation
+ * (including when the send operation fails).
+ *
+ * @param feeder The feeder to be released.
+ * @param ctx The context where the feeder release will happen. 
  */
 void              vortex_payload_feeder_free (VortexPayloadFeeder * feeder,
 					      VortexCtx           * ctx)

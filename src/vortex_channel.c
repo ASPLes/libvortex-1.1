@@ -3113,7 +3113,7 @@ axl_bool           vortex_channel_send_ans_rpy                    (VortexChannel
  *
  * @param channel The channel where the send operation will happen.
  *
- * @param feeder The \ref VortexProfileFeeder object to take the
+ * @param feeder The \ref VortexPayloadFeeder object to take the
  * content from.
  *
  * @param msg_no_rpy The message number to reply to.
