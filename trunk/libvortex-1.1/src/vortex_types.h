@@ -672,7 +672,18 @@ typedef enum {
 } VortexEncoding;
 
 /** 
- * @brief Type used to represent a payload feeder.
+ * @brief Type used to represent a payload feeder. This object
+ * represents an abstration that allows to feed content directly into
+ * the vortex sequencer, querying the object for data at the right
+ * time with optimal sizes available on each moment.
+ *
+ * See \ref vortex_payload_feeder_file for a payload feeder example
+ * that allows to feed as body for a message the content found at a
+ * particular file.
+ *
+ * Once created the feeder, you send a message or reply using \ref
+ * vortex_channel_send_msg_from_feeder, \ref
+ * vortex_channel_send_ans_rpy_from_feeder...
  */
 typedef struct _VortexPayloadFeeder VortexPayloadFeeder;
 
@@ -1127,6 +1138,10 @@ typedef enum {
 	CONNECTION_CHANNEL_REMOVE_HANDLER = 2,
 } VortexConnectionHandler;
 
+/**
+ * @brief Enumeration type used to represent the query operations
+ * that must support a VortexPayloadFeeder implementation.
+ */
 typedef enum {
 	/** 
 	 * @brief Notifies the feed handler that it must return total
