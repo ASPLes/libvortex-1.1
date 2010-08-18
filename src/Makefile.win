@@ -19,7 +19,8 @@ OBJ  = vortex.o \
        vortex_thread.o\
        vortex_thread_pool.o\
        vortex_errno.o \
-       vortex_win32.o
+       vortex_win32.o \
+       vortex_payload_feeder.o
 
 ifdef enable_vortex_log
    DLL = $(vortex_debug_1_1_dll).dll
