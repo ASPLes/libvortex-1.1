@@ -349,9 +349,6 @@ struct _VortexChannel {
 	axl_bool               reply_processed;
 
 
-	/* the being_sending */
-	axl_bool               being_sending;
-
 	/* the pending_mutex 
 	 *
 	 * This mutex is used to ensure we have sent all replies to
@@ -1296,7 +1293,7 @@ VortexChannel * vortex_channel_new_full (VortexConnection      * connection,
 	
 	/* profile content  */
 	if (profile_content != NULL && profile_content_size > 0) {
-		data->profile_content       = axl_new (char , profile_content_size + 1);
+		data->profile_content = axl_new (char , profile_content_size + 1);
 		/* check alloc result and memcpy only on success */
 		if (data->profile_content)
 			memcpy (data->profile_content, profile_content, profile_content_size);
@@ -1910,6 +1907,9 @@ VortexFrame      * vortex_channel_build_single_pending_frame   (VortexChannel * 
 
 	/* now we have the size to build */
 	payload = axl_new (unsigned char, size + 1);
+	/* check alloc operation */
+	if (payload == NULL)
+		return NULL;
 	size    = 0;
 
 	/* reset to the first position of the cursor */
@@ -2215,14 +2215,16 @@ check_limit:
 		}
 	}
 
-	/* flag the channel to be awaiting to process message */
-	channel->being_sending = axl_true;
-
 	/* get current mime header configuration */
 	mime_header_size       = __vortex_channel_get_mime_headers_size (ctx, channel);
 
 	/* prepare data to be sent */
 	data                   = axl_new (VortexSequencerData, 1);
+	if (data == NULL) {
+		/* unlock send mutex */
+		vortex_mutex_unlock (&channel->send_mutex);
+		return axl_false;
+	} /* end if */
 	data->channel          = channel;
 	data->type             = VORTEX_FRAME_TYPE_MSG;
 	data->channel_num      = vortex_channel_get_number (channel);
@@ -2243,6 +2245,13 @@ check_limit:
 		/* copy mime headers according to channel configuration, that
 		 * comes from profile configuration. */
 		data->message          = axl_new (char , data->message_size + 1);
+		/* check alloc operation */
+		if (data->message == NULL) {
+			axl_free (data);
+			/* unlock send mutex */
+			vortex_mutex_unlock (&channel->send_mutex);
+			return axl_false;
+		}
 
 		/* according to mime headers size */
 		if (mime_header_size > 0)
@@ -2293,9 +2302,6 @@ check_limit:
 
 	/* unlock send mutex */
 	vortex_mutex_unlock (&channel->send_mutex);
-
-	/* flag the channel to be ready (no message being_sending) */
-	channel->being_sending = axl_false;
 
 	return axl_true;
 }
@@ -2614,14 +2620,12 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 	
 	/* lock send mutex */
 	vortex_mutex_lock (&channel->send_mutex);
-	channel->being_sending = axl_true;
 	
 	/* check if the connection is ok */
 	if (! vortex_connection_is_ok (channel->connection, axl_false)) {
 		vortex_log (VORTEX_LEVEL_WARNING, "received a reply request to be sent over a non connected session, dropming message");
 
 		/* flag the channels non being sending */
-		channel->being_sending = axl_false;	
 		vortex_mutex_unlock (&channel->send_mutex);
 		return axl_false;
 	}
@@ -2630,7 +2634,6 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 	data                  = axl_new (VortexSequencerData, 1);
 	if (data == NULL) {
 		/* flag the channels non being sending */
-		channel->being_sending = axl_false;	
 		vortex_mutex_unlock (&channel->send_mutex);
 		return axl_false;
 	}
@@ -2655,7 +2658,6 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to allocate memory to hold message to be sent");
 			axl_free (data);
 			/* flag the channels non being sending */
-			channel->being_sending = axl_false;	
 			vortex_mutex_unlock (&channel->send_mutex);
 			return axl_false;
 		} /* end if */
@@ -2683,7 +2685,6 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 				    "while waiting for a previous reply to be sent, detected reply request to be sent over a non connected session, dropming message");
 			
 			/* flag the channels non being sending */
-			channel->being_sending = axl_false;	
 			vortex_mutex_unlock (&channel->send_mutex);
 
 			/* free data to be sent */
@@ -2711,7 +2712,6 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 					/* free, unlock and return failure */
 					__vortex_channel_free_sequencer_data (data);
 					vortex_mutex_unlock (&channel->send_mutex);
-					channel->being_sending = axl_false;
 					return axl_false;
 				} /* end if */
 
@@ -2721,7 +2721,6 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 
 				/* free, unlock and return failure */
 				__vortex_channel_free_sequencer_data (data);
-				channel->being_sending = axl_false;	
 				vortex_mutex_unlock (&channel->send_mutex);
 				return axl_false;
 			} /* end if */
@@ -2852,7 +2851,6 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 
 	/* unlock send mutex */
 	vortex_mutex_unlock   (&channel->send_mutex);
-	channel->being_sending = axl_false;	
 
 	return axl_true;
 }
@@ -5289,24 +5287,32 @@ axl_bool      __vortex_channel_close_full (VortexChannel * channel,
 	/* flag this thread to be the only one closing the channel */
 	channel->being_closed = axl_true;
 	vortex_mutex_unlock (&channel->close_mutex);
+
+	/* creates data to be passed in to __vortex_channel_close  */
+	data            = axl_new (VortexChannelCloseData, 1);
+	/* check ralloc value */
+	if (data == NULL)
+		return axl_false;
+	data->channel   = channel;
+	data->on_closed = on_closed;
+	data->on_closed_full = on_closed_full;
+	data->user_data = user_data;
+	data->threaded  = (on_closed != NULL) || (on_closed_full != NULL);
 	
 	/* create and register the way reply here to ensure that we
 	 * support close in transit */
 	wait_reply = vortex_channel_create_wait_reply ();
+	/* check returned reply */
+	if (wait_reply == NULL) {
+		axl_free (data);
+		return axl_false;
+	} /* end if */
 	wait_reply->channel = channel;
 	vortex_channel_set_data (channel, 
 				 /* the key */
 				 VORTEX_CHANNEL_WAIT_REPLY, 
 				 /* the value */
 				 wait_reply);
-
-	/* creates data to be passed in to __vortex_channel_close  */
-	data            = axl_new (VortexChannelCloseData, 1);
-	data->channel   = channel;
-	data->on_closed = on_closed;
-	data->on_closed_full = on_closed_full;
-	data->user_data = user_data;
-	data->threaded  = (on_closed != NULL) || (on_closed_full != NULL);
 
 	/* launch threaded mode */
 	if (data->threaded) {
@@ -6978,10 +6984,8 @@ void vortex_channel_notify_close (VortexChannel * channel, int  msg_no, axl_bool
 
 		/* before closing the channel ensure there are not
 		 * message being_sending */
-		if (channel->being_sending) {
-			vortex_mutex_lock   (&channel->send_mutex);
-			vortex_mutex_unlock (&channel->send_mutex);
-		}
+		vortex_mutex_lock   (&channel->send_mutex);
+		vortex_mutex_unlock (&channel->send_mutex);
 
 		/* remove channel from connection */
 		vortex_connection_remove_channel (connection, channel);
@@ -7817,7 +7821,15 @@ WaitReplyData * vortex_channel_create_wait_reply (void)
 {
 	WaitReplyData * data;	
 	data           = axl_new (WaitReplyData, 1);
+	/* check alloc value */
+	if (data == NULL)
+		return NULL;
 	data->queue    = vortex_async_queue_new ();
+	/* check alloc value */
+	if (data->queue == NULL) {
+		axl_free (data);
+		return NULL;
+	} /* end if */
 	data->refcount = 1;
 	vortex_mutex_create (&data->mutex);
 
@@ -8163,8 +8175,8 @@ void vortex_channel_flag_reply_processed (VortexChannel * channel, axl_bool   fl
  * @param channel 
  * @param rpy 
  */
-void               vortex_channel_install_waiter                 (VortexChannel * channel,
-								  int             msg_no)
+axl_bool               vortex_channel_install_waiter                 (VortexChannel * channel,
+								      int             msg_no)
 {
 	char * rpy;
 	
@@ -8172,18 +8184,24 @@ void               vortex_channel_install_waiter                 (VortexChannel 
 
 	/* get channel profile */
 	if (channel == NULL)
-		return;
+		return axl_false;
 
 	/* create the wait rpy */
 	rpy   = axl_strdup_printf ("vortex:wait:rpy:%d", msg_no);
+	if (rpy == NULL)
+		return axl_false;
 
 	/* create the queue */
 	queue = vortex_async_queue_new ();
+	if (queue == NULL) {
+		axl_free (rpy);
+		return axl_false;
+	} /* end if */
 
 	/* install on the data associated to the channel */
 	vortex_channel_set_data_full (channel, rpy, queue, axl_free, NULL);
 
-	return;
+	return axl_true;
 }
 
 /** 
