@@ -417,7 +417,7 @@ void           	   vortex_channel_signal_on_close_blocked        (VortexChannel 
 void               vortex_channel_flag_reply_processed           (VortexChannel * channel, 
 								  axl_bool        flag);
 
-void               vortex_channel_install_waiter                 (VortexChannel * channel,
+axl_bool           vortex_channel_install_waiter                 (VortexChannel * channel,
 								  int             rpy);
 
 void               vortex_channel_wait_until_sent                (VortexChannel * channel,
