@@ -157,7 +157,11 @@ VortexPayloadFeeder * vortex_payload_feeder_file (const char * path,
 	v_return_val_if_fail (path, NULL);
 
 	/* open file */
+#if defined(AXL_OS_UNIX)
 	file_to_feed = fopen (path, "r");
+#elif defined(AXL_OS_WIN32)
+	file_to_feed = fopen (path, "rb");
+#endif
 	if (file_to_feed == NULL)
 		return NULL;
 
