@@ -107,7 +107,6 @@ vortex_channel_pool_new
 vortex_channel_pool_new_full
 vortex_channel_pool_release_channel
 vortex_channel_pool_remove
-vortex_channel_queue_length
 vortex_channel_queue_pending_message
 vortex_channel_queue_reply
 vortex_channel_ref
