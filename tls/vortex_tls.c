@@ -1569,8 +1569,8 @@ int      vortex_tls_process_start_msg (const char        * profile,
 			return axl_true;
 		}
 
-		vortex_lg (VORTEX_LEVEL_DEBUG, "Application level provided certificate=%s, key=%s, continue", 
-			   certificate_file, private_key_file);
+		vortex_log (VORTEX_LEVEL_DEBUG, "Application level provided certificate=%s, key=%s, continue", 
+			    certificate_file, private_key_file);
 
 		/* store certificate and private key files */
 		vortex_connection_set_data_full    (connection, "tls:certificate-file", certificate_file, NULL, axl_free);
