@@ -104,6 +104,12 @@ axlList * vortex_profiles_get_actual_list         (VortexCtx        * ctx);
 
 axlList * vortex_profiles_get_actual_list_ref     (VortexCtx        * ctx);
 
+axl_bool  vortex_profiles_has_profiles            (VortexCtx        * ctx);
+
+axlList * vortex_profiles_acquire                 (VortexCtx        * ctx);
+
+void      vortex_profiles_release                 (VortexCtx        * ctx);
+
 int       vortex_profiles_registered              (VortexCtx        * ctx);
 
 axl_bool  vortex_profiles_is_registered           (VortexCtx        * ctx,

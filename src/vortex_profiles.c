@@ -1009,7 +1009,8 @@ axlList * vortex_profiles_get_actual_list (VortexCtx * ctx)
  * @param ctx The context where the operation will be performed.
  * 
  * @return A reference to the profile list. Do not manipulate or
- * dealloc the list.
+ * dealloc the list. In the case you add/remove profiles dinamically
+ * should use \ref vortex_profiles_acquire.
  */
 axlList * vortex_profiles_get_actual_list_ref (VortexCtx * ctx)
 {
@@ -1020,6 +1021,74 @@ axlList * vortex_profiles_get_actual_list_ref (VortexCtx * ctx)
 	/* return the reference */
 	return ctx->profiles_list;
 }
+
+/** 
+ * @brief Return current profiles registered, in a internally created
+ * list, acquiring an internal mutex to ensure thread safety while
+ * using the list.
+ *
+ * In the case you register all profiles at the application start, you
+ * can safely use \ref vortex_profiles_get_actual_list_ref which is
+ * faster. In the case you are registering and unregistering profiles
+ * dynamically, you should use this function to avoid races. 
+ *
+ * Each call to \ref vortex_profiles_acquire requires a call to
+ * \ref vortex_profiles_release.
+ * 
+ * @return A reference to the profile list. This reference must be
+ * released with vortex_profiles_release when not being used anymore
+ */
+axlList * vortex_profiles_acquire (VortexCtx * ctx)
+{
+       if (ctx == NULL)
+               return NULL;
+
+       vortex_mutex_lock (&ctx->profiles_list_mutex);
+
+       return ctx->profiles_list;
+}
+
+/** 
+ * @Brief Release current profiles list. The user must call to release
+ * the list acquired by \ref vortex_profiles_acquire.
+ * 
+ * @param ctx The context where the release operation will take place.
+ */
+void vortex_profiles_release (VortexCtx * ctx)
+{
+       if (ctx == NULL)
+               return;
+
+       vortex_mutex_unlock (&ctx->profiles_list_mutex);
+
+       return;
+}
+
+/** 
+ * @brief Return true if there are profiles currently registered.
+ *
+ * @param ctx The context where the query will be done.
+ *
+ * @return The function returns axl_true in the case profiles were
+ * registered, otherwise axl_false is returned.
+ */
+axl_bool vortex_profiles_has_profiles (VortexCtx * ctx)
+{
+   axl_bool    result;
+
+   if (ctx == NULL)
+          return axl_false;
+
+   vortex_mutex_lock(&ctx->profiles_list_mutex);
+
+   result = axl_list_length (ctx->profiles_list) > 0;
+
+   vortex_mutex_unlock(&ctx->profiles_list_mutex);
+
+   return result;
+}
+
+
 
 /** 
  * @brief Return the actual number of profiles registered. 
