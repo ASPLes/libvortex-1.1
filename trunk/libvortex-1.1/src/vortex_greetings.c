@@ -67,7 +67,7 @@ int __vortex_greetings_build_message (VortexConnection     * connection,
 				      int                    buffer_size)
 {
 	VortexCtx     * ctx                 = CONN_CTX (connection);
-	axlList       * registered_profiles = vortex_profiles_get_actual_list_ref (ctx);
+	axlList       * registered_profiles;
 	int             iterator;
 	int             next_index          = 0;
 	const char    * localize            = NULL;
@@ -117,6 +117,7 @@ int __vortex_greetings_build_message (VortexConnection     * connection,
 	} /* end features */
 	
 	/* if found registered profiles */
+	registered_profiles = vortex_profiles_acquire (ctx);
 	if (registered_profiles != NULL && axl_list_length (registered_profiles) > 0) {
 		memcpy (greetings_buffer + next_index, ">\x0D\x0A", 3);
 		next_index += 3;
@@ -145,6 +146,7 @@ int __vortex_greetings_build_message (VortexConnection     * connection,
 			if ((next_index + size + 36) >= buffer_size) {
 				vortex_log (VORTEX_LEVEL_CRITICAL,  
 					"found buffer to build greetings to be not enough to hold current profiles to advertise");
+				vortex_profiles_release (ctx);
 				return -1;
 			} /* end if */
 			
@@ -173,6 +175,9 @@ int __vortex_greetings_build_message (VortexConnection     * connection,
 		memcpy (greetings_buffer + next_index, " />\x0D\x0A", 5);
 		next_index += 5;
 	} /* end if */
+
+	/* release profile list */
+	vortex_profiles_release (ctx);
 	
 	return next_index;
 }
