@@ -1556,6 +1556,14 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 
 	/* configure the channel where the frame was received */
 	frame->channel_ref = vortex_connection_get_channel (connection, frame->channel);
+	if (frame->channel_ref == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "received a frame header pointing to a channel=%d that do not exists, closing connection",
+			    frame->channel);
+		__vortex_connection_set_not_connected (connection, "received a frame header pointing to a channel that do not exists, closing connection",
+						       VortexProtocolError);
+		axl_free (frame);
+		return NULL;
+	}
 	
 	/* in the case it is a SEQ frame */
 	if (frame->type == VORTEX_FRAME_TYPE_SEQ) 

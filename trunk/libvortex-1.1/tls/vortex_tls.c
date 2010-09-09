@@ -1668,6 +1668,20 @@ void __vortex_tls_start_negotiation_sync_process (VortexConnection * connection,
 #endif
 	VortexTlsSyncResult * result;
 
+	vortex_log (VORTEX_LEVEL_DEBUG, "Received reply for tls sync process, num waiters: %d", vortex_async_queue_waiters (queue));
+
+	if (vortex_async_queue_waiters (queue) == 0) {
+		vortex_log (VORTEX_LEVEL_WARNING, "No body is waiting this connection, unable to pass this reference to the user, finish it");
+		/* finish the queue */
+		vortex_async_queue_unref (queue);
+		
+		/* shutdown the connection */
+		vortex_connection_shutdown (connection);
+		vortex_connection_close (connection);
+
+		return;
+	}
+
 	/* create a structure to hold all the result produced. */
 	result                 = axl_new (VortexTlsSyncResult, 1);
 	result->connection     = connection;
@@ -1761,7 +1775,11 @@ VortexConnection * vortex_tls_start_negotiation_sync     (VortexConnection  * co
 
 	/* get status */
 	result = vortex_async_queue_timedpop (queue, vortex_connection_get_timeout (ctx));
+	vortex_log (VORTEX_LEVEL_DEBUG, "Pointer returned by queue_timedpop %p", result);
 	if (result == NULL) {
+		/* finish the queue */
+		vortex_async_queue_unref (queue);
+
 		/* seems timeout have happen while waiting for SASL to
 		 * end */
 		if (status != NULL)
@@ -1770,7 +1788,7 @@ VortexConnection * vortex_tls_start_negotiation_sync     (VortexConnection  * co
 			(* status_message) = "Timeout have been reached while waiting for TLS to finish";
 
 		/* return the same connection */
-		return connection;
+		return NULL;
 	}
 
 	/* get status */
