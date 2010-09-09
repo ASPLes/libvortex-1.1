@@ -5760,33 +5760,6 @@ VortexCtx         * vortex_connection_get_ctx                (VortexConnection *
 	return connection->ctx;
 }
 
-/* @internal Function used by the macro CONN_CTX that allows to return
- * the context associated to the connection, and at the same time,
- * some checks are done.
- */
-VortexCtx         * vortex_connection_get_ctx_aux            (const char * file,
-							             int  line, 
-							             VortexConnection * connection)
-{
-	/* fake ctx declaration for the following vortex_log calls */
-#if defined(ENABLE_VORTEX_LOG)
-	VortexCtx * ctx = NULL;
-#endif
-
-	if (connection == NULL) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to return context because a null connection was received (%s:%d)",
-			    file, line);
-		return NULL;
-	} else if (connection->ctx == NULL) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to return context because it was received a connection without context configured (%s:%d)",
-			    file, line);
-		return NULL;
-	} /* end if */
-
-	/* return context configured */
-	return connection->ctx;
-}
-
 /** 
  * @brief Allows to configure the send handler used to actually
  * perform sending operations over the underlying connection.
