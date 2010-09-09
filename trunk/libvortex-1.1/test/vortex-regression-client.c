@@ -3643,6 +3643,66 @@ axl_bool  test_02a1 (void) {
 	return axl_true;
 }
 
+#define TEST_02A2_CONTENT "MSG 3 1 . 52 56\r\nContent-Type: application/beep+xml\r\n\r\nThis is a testEND\r\n"
+void test_02a2_unlock (VortexConnection * conn, axlPointer data)
+{
+	VortexAsyncQueue * queue = data;
+	vortex_async_queue_push (queue, INT_TO_PTR (1));
+	return;
+}
+
+
+axl_bool  test_02a2 (void) {
+	VortexConnection * connection;
+	VortexAsyncQueue * queue;
+	int                iterator;
+
+	/* create a queue to store data from handlers */
+	queue = vortex_async_queue_new ();
+
+	/* creates a new connection against localhost:44000 */
+	iterator = 0;
+	while (iterator < 3) {
+		connection = connection_new ();
+		if (!vortex_connection_is_ok (connection, axl_false)) {
+			vortex_connection_close (connection);
+			return axl_false;
+			
+		} /* end if */
+
+		/* install on close handlers */
+		vortex_connection_set_on_close_full (connection, test_02a2_unlock, queue);
+
+		/* send right content to unopened channel */
+		if (! vortex_frame_send_raw (connection, TEST_02A2_CONTENT, strlen (TEST_02A2_CONTENT))) {
+			printf ("ERROR (1): expected to be able to send content but found a failure..\n");
+			return axl_false;
+		} /* end if */
+
+
+		/* wait for reply */
+		printf ("Test 02-a2: waiting server to close connection..\n");
+		vortex_async_queue_pop (queue);
+
+		/* check if the connection is really *closed* */
+		if (vortex_connection_is_ok (connection, axl_false)) {
+			printf ("ERROR (2): expected to find unconnected connection but found proper status..\n");
+			return axl_false;
+		}
+
+		/* close the connection */
+		vortex_connection_close (connection);
+
+		/* next check */
+		iterator++;
+	} /* end while */
+
+	/* finishing queue */
+	vortex_async_queue_unref (queue);
+
+	return axl_true;
+}
+
 axl_bool  test_02b (void) {
 	VortexConnection  * connection;
 	VortexChannel     * channel;
@@ -10550,7 +10610,7 @@ int main (int  argc, char ** argv)
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
 	printf ("**       Test available: test_00, test_00a, test_00b, test_00c, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
 	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o, test_01p\n");
-	printf ("**                       test_02, test_02a, test_02a1, test_02b, test_02c, test_02d, test_02e, \n"); 
+	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, test_02p, \n");
  	printf ("**                       test_03, test_03a, test_03b, test_03d, test_03c, test_04, test_04a, \n");
@@ -10736,6 +10796,9 @@ int main (int  argc, char ** argv)
 		
 		if (axl_cmp (run_test_name, "test_02a1"))
 			run_test (test_02a1, "Test 02-a1", "connection close notification with handlers removed", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_02a2"))
+			run_test (test_02a2, "Test 02-a2", "send content to an unopened channel", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02b"))
 			run_test (test_02b, "Test 02-b", "small message followed by close", -1, -1);
@@ -10946,12 +11009,14 @@ int main (int  argc, char ** argv)
 	run_test (test_01o, "Test 01-o", "Memory consuption with channel pool acquire/release API", -1, -1);
 
 	run_test (test_01p, "Test 01-p", "Check upper limits for window sizes and idle handling (bug fix)", -1, -1);
-  
+
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   
  	run_test (test_02a, "Test 02-a", "connection close notification", -1, -1);
 
 	run_test (test_02a1, "Test 02-a1", "connection close notification with handlers removed", -1, -1);
+
+	run_test (test_02a2, "Test 02-a2", "send content to an unopened channel", -1, -1);
  
  	run_test (test_02b, "Test 02-b", "small message followed by close", -1, -1);
   	
