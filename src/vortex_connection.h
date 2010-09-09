@@ -78,7 +78,7 @@
  * @param c The connection that is required to return the context
  * associated.
  */
-#define CONN_CTX(c) vortex_connection_get_ctx_aux(__AXL_FILE__, __AXL_LINE__, c)
+#define CONN_CTX(c) vortex_connection_get_ctx(c)
 
 VortexConnection  * vortex_connection_new                    (VortexCtx            * ctx,
 							      const char           * host, 
@@ -288,10 +288,6 @@ int                 vortex_connection_get_opened_channels    (VortexConnection *
 VortexConnection  * vortex_connection_get_listener           (VortexConnection * connection);
 
 VortexCtx         * vortex_connection_get_ctx                (VortexConnection * connection);
-
-VortexCtx         * vortex_connection_get_ctx_aux            (const char * file,
-							      int  line, 
-							      VortexConnection * connection);
 
 VortexSendHandler      vortex_connection_set_send_handler    (VortexConnection * connection,
 							      VortexSendHandler  send_handler);
