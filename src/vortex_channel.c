@@ -5088,11 +5088,15 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
 	vortex_channel_block_until_replies_are_sent (channel, -1);
 
 	frame = vortex_channel_wait_reply (channel0, msg_no, wait_reply);
+	/* check frame returned and connection status */
+	if ((! vortex_connection_is_ok (connection, axl_false)) || frame == NULL) {
+		/* seems the connection was closed during the operation. */
+		vortex_channel_free_wait_reply (wait_reply);
+	}
 
 	/* check frame returned and connection status */
 	if ((! vortex_connection_is_ok (connection, axl_false)) && frame == NULL) {
 		/* seems the connection was closed during the operation. */
-		vortex_channel_free_wait_reply (wait_reply);
 		result             = axl_true;
 		channel->is_opened = axl_false;
 		goto __vortex_channel_close_invoke_caller;
@@ -6215,7 +6219,7 @@ axl_bool  vortex_channel_notify_start_internal (const char       * serverName,
 	const char  * profile;
 	axl_bool      result = axl_true;
 #if defined(ENABLE_VORTEX_LOG)
-	VortexCtx   * ctx     = vortex_channel_get_ctx (channel0);
+	VortexCtx   * ctx     = CONN_CTX (conn);
 #endif
 
 	/* according to the action received, close the channel */

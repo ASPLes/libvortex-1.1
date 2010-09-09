@@ -6909,6 +6909,85 @@ axl_bool test_05_c (void)
 #endif
 }
 
+axl_bool test_05_d (void)
+{
+#if defined(ENABLE_TLS_SUPPORT)
+	/* TLS status notification */
+	VortexStatus       status;
+	char             * status_message = NULL;
+	int                iterator;
+	VortexAsyncQueue * sleep;
+
+	/* vortex connection */
+	VortexConnection * conn;
+
+	/* initialize and check if current vortex library supports TLS */
+	if (! vortex_tls_init (ctx)) {
+		printf ("--- WARNING: Unable to activate TLS, current vortex library has not TLS support activated. \n");
+		return axl_true;
+	}
+	
+	iterator = 0;
+	while (iterator < 10) {
+
+		/* now configure timeout: 3000ms */
+		vortex_connection_timeout (ctx, 3000000);
+
+		/* create a new connection */
+		conn = connection_new ();
+		if (! vortex_connection_is_ok (conn, axl_false)) {
+			printf ("ERROR (5): expected proper connection creation but failure found..\n");
+			return axl_false;
+		} /* end if */
+
+		if (iterator == 3) {
+			printf ("Test 05-d: activating TLS with timeout simulation: waiting 0,200ms for failure..\n");
+			vortex_connection_timeout (ctx, 200);
+		} else if (iterator == 5) {
+			printf ("Test 05-d: activating TLS with timeout simulation: waiting 0,020ms for failure..\n");
+			vortex_connection_timeout (ctx, 20);
+		} else if (iterator == 7) {
+			printf ("Test 05-d: activating TLS with timeout simulation: waiting 10ms for failure..\n");
+			vortex_connection_timeout (ctx, 10000);
+		} else {
+			printf ("Test 05-d: activating TLS with timeout simulation: waiting 2ms for failure..\n");
+		}
+		
+		/* now start tls */
+		printf ("Test 05-d: activating TLS on connection id=%d\n", vortex_connection_get_id (conn));
+		conn = vortex_tls_start_negotiation_sync (conn, "test-05-d.server", &status, &status_message);
+		if (status == VortexOk) {
+			printf ("ERROR (6): expected to find TLS activation FAILURE but found success..\n");
+			return axl_false;
+		} /* end if */
+
+		if (conn != NULL) {
+			printf ("Test 05-d: found connection with proper reference after TLS failure..\n");
+			if (! vortex_connection_is_ok (conn, axl_false)) {
+				printf ("ERROR (7): expected to find proper connection after TLS timeout failure..\n");
+				return axl_false;
+			}
+			printf ("Test 05-d: closing connection id=%d\n", vortex_connection_get_id (conn));
+			vortex_connection_close (conn);
+		} /* end if */
+
+		iterator++;
+	} /* end if */
+
+	sleep = vortex_async_queue_new ();
+	vortex_async_queue_timedpop (sleep, 1000000);
+	vortex_async_queue_unref (sleep);
+		
+	/* reset timeout */
+	vortex_connection_timeout (ctx, 0);
+	
+	return axl_true;
+#else
+	printf ("--- WARNING: Current build does not have TLS support.\n");
+	return axl_true;
+#endif
+}
+
 
 /* message size: 4096 */
 #define TEST_REGRESION_URI_4_MESSAGE "This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary ."
@@ -10475,7 +10554,8 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, test_02p, \n");
  	printf ("**                       test_03, test_03a, test_03b, test_03d, test_03c, test_04, test_04a, \n");
- 	printf ("**                       test_04b, test_04c, test_04d, test_04e, test_05, test_05a, test_05b, test_05, ctest_06, test_06a, \n");
+ 	printf ("**                       test_04b, test_04c, test_04d, test_04e, test_05, test_05a, test_05b, test_05c, \n");
+	printf ("**                       test_05d, ctest_06, test_06a, \n");
  	printf ("**                       test_07, test_08, test_09, test_10, test_11, test_12, test_13, test_14, \n");
  	printf ("**                       test_14a, test_14b, test_14ctest_14d, test_15, test_15a, test_16\n");
 	printf ("**\n");
@@ -10753,6 +10833,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_05c"))
 			run_test (test_05_c, "Test 05-c", "TLS client serverName after success (09/08/2010)", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_05d"))
+			run_test (test_05_d, "Test 05-d", "TLS sync timeout (09/09/2010)", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_06"))
 			run_test (test_06, "Test 06", "SASL profile support", -1, -1);
 
@@ -10933,7 +11016,9 @@ int main (int  argc, char ** argv)
 	run_test (test_05_b, "Test 05-b", "TLS client blocked during connection close (14/12/2009)", -1, -1);
 
 	run_test (test_05_c, "Test 05-c", "TLS client serverName after success (09/08/2010)", -1, -1);
-  
+
+	run_test (test_05_d, "Test 05-d", "TLS sync timeout (09/09/2010)", -1, -1);
+
  	run_test (test_06, "Test 06", "SASL profile support", -1, -1);
 
 	run_test (test_06a, "Test 06-a", "SASL profile support (common handler)", -1, -1);

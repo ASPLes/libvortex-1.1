@@ -958,6 +958,8 @@ axl_bool  regression_tls_handle_query (VortexConnection * connection, const char
 {
 
 #if defined(ENABLE_TLS_SUPPORT)
+	VortexAsyncQueue * queue;
+
 	printf ("Receiving request to start tls auth, with status=%d..\n", enable_block_tls_queries);
 	if (enable_block_tls_queries) {
 		/* return to not accept TLS query but revert state for
@@ -970,6 +972,15 @@ axl_bool  regression_tls_handle_query (VortexConnection * connection, const char
 
 		return axl_false;
 	} /* end if */
+
+	/* check for the test-05-d.server serverName to lock the
+	 * listener during 10 seconds */
+	if (axl_cmp (serverName, "test-05-d.server")) {
+		queue = vortex_async_queue_new ();
+		vortex_async_queue_timedpop (queue, 10000000);
+		vortex_async_queue_unref (queue);
+	} /* end if */
+
 #else
 	printf ("--- WARNING: Current build does not have TLS support.\n");
 	return axl_false;
