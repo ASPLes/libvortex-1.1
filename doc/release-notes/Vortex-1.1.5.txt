@@ -1,0 +1,370 @@
+      ###################################################
+      ##              Vortex Library 1.1.4             ##
+      ##               "Radical Notion"               ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce Vortex
+  Library 1.1.5 "Radical Notion" release availability: an open source
+  "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.aspl.es/vortex/py-vortex/html
+      [PyVortex homepage]
+
+    - http://www.aspl.es/turbulence
+      [Turbulence BEEP server homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+This release in short
+~~~~~~~~~~~~~~~~~~~~~
+
+  This new stable release comes with several fixings and improvement,
+  and the following new general API/features:
+
+   - Ready to use implementation for an ALIVE protocol that issues a
+     connection close even when remote peer unplug the cable or a
+     suddenly power failure. 
+
+   - New API to install period handlers that are handled by the vortex
+     thread pool, allowing to create period tasks (like reconnects) in
+     a portable form. 
+
+   - Fixed and checked support to allow continuous transfer (more that
+     4GB over the same channel..) required for streaming.
+
+   - Added new payload feeder API which allows to feed content
+     directly into the vortex engine at the right time with the
+     optimal sizes, reducing allocation cycles. 
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  None
+
+Thanks to..
+~~~~~~~~~~~
+
+  Ralf Konush (reported c++ compilation issues, reported problems
+  with unix specific definitions on vortex_ctx_reinit, reported
+  windows binary transfer failures when using new feeder API). 
+
+  Benoit Amiaux (provided patches and reported some race conditions
+  while accessing registered profiles and reported races when TLS sync
+  activation timeouts in the middle of the process).
+
+Changes since 1.1.4
+~~~~~~~~~~~~~~~~~~~
+
+* [fix] Making vortex_ctx_set_on_finish function to uninstall previous
+  handler when NULL is received.
+
+* [fix] Making vortex low level frame reader to check frame header
+  size against current maximum seq no expected before continuing
+  reading content, closing the connection if the value exceeds, rather
+  waiting to complete frame reading to do that check. Added test_01-p
+  reg test to reproduce and check the fix introduced. Security issue.
+
+* [fix] Fixed bug caused by notifying a fragmented frame, and then
+  half closing the connection, shutdown (SHUT_WR), causing listener
+  connection to loop consuming CPU. Security issue.
+
+* [fix] Minor debug comment fixings.
+
+* [fix] Updating version.
+
+* [fix] Fixed bug while checking sequence numbers at frame low level
+  reception.
+
+* [fix] Added define to SHUT_WR for windows platform.
+
+* [fix] Added missing C DECLS TO vortex ctx module. Fixed c++ compiler
+  issue. Reported by Ralf Konush.
+
+* [new] Added support for idle handling, allowing to install a handler
+  that will be called when the configured period is expired without
+  activity. Added regression test test_01-p to check its function.
+  API added:
+   
+   - VortexIdleHandler
+   - vortex_ctx_set_idle_handler
+
+* [fix] Removed unix exclusive definitions for vortex_ctx_reinit to
+  avoid having missing this symbol on windows. Reported by Ralf.
+
+* [new] Added support to filter debug log level. Now
+  VORTEX_DEBUG_FILTER environment variable is checked to see if a
+  filter string is configured to drop logs matching the filter. API
+  added:
+
+  - vortex_support_getenv
+  - vortex_log_filter_level
+  - vortex_log_filter_is_enabled
+
+* [fix] Committing changes for windows. Fixings at
+  vortex_support_getenv.
+
+* [new] Added initial support for vortex alive check. This will allow
+  people implementing transparent connection checks triggering
+  automatic connection close even in the case of network or power
+  failure. API added:
+
+   - vortex_alive_init
+   - vortex_alive_enable_check
+   - VortexAliveFailure (handler)
+
+  Added initial regression test. Still not finished.
+
+* [new] Updated vortex thread pool API to include a function that
+  allows removing events installed:
+ 
+   - vortex_thread_pool_remove_event.
+
+* [fix] Making channel seqno update to be done at the vortex sequencer
+  instead of doing the update at the channel send code.
+
+* [new] Updated vortex thread pool API to allow removing events
+  installed.  API added:
+
+   - vortex_thread_pool_remove_event
+
+* [fix] Added initial regression tests to check alive API.
+
+* [fix] General updates inside vortex channel module to implement
+  seqno tracking using two values (ackno + reference) instead of 
+  a maximum value which is problematic for continuous transfer
+  (exceeding 4GB limit). 
+
+* [fix] Added several alloc checks inside channel module.
+
+* [fix] Updated vortex sequencer to check values returned by next
+  frame size handler installed, closing the connection in case of
+  failures.
+
+* [fix] Updated vortex frame module to use new incoming seq no check
+  implemented.
+  
+* [fix] Removing automatically created Makefile.
+
+* [fix] Removing seqno check implement at vortex reader which already
+  implemented by vortex channel module.
+
+* [fix] More updates to vortex reg test 02-o to check continuous
+  transfer.
+
+* [fix] Updated default next frame size implementation to support seq
+  no rotation after exceeding 4GB limit.
+
+* [fix] More updates on vortex alive profile support.
+
+* [fix] Adding missing libvortex-alive-1.1.def.
+
+* [fix] Fixed compilation bug without debug enabled
+  and updated makefiles to compile alive component.
+
+* [fix] Several bug fixings inside vortex sequencer to properly check
+  channel stalled after exceeding 4GB seqno limit.
+
+* [fix] Added internal check inside vortex sequencer to ensure size to
+  copy value matches current environment, closing the connection if
+  something fails.
+
+* [fix] Fixed remote seqno buffer checks for cases where seqno value
+  exceeds 4GB seqno limit.
+
+* [fix] Making vortex_channel_is_stalled to be public.
+
+* [fix] Fixing compilation bug inside alive module.
+
+* [fix] More updates to connection alive support. Updated regression
+  test (test_16).
+
+* [fix] Several modifications to allow compiling vortex on windows
+  using plain makefiles.
+
+* [fix] Committing missing Makefile.win
+
+* [fix] More changes to provide alternative method to compile vortex
+  on windows.
+
+* [fix] Committing changes to allow building vortex with plain
+  makefiles for windows.
+
+* [fix] Committing missing files
+
+* [fix] General updates to vortex alive module. Updated regression
+  test to check features implemented.
+
+* [fix] Added additional checks to ensure vortex alive support works
+  even enabling it on a blocked connection (reg test 16).
+
+* [fix] Added documentation to use vortex alive API.
+
+* [fix] Several updates to ensure the library can cleanly compile
+  without sasl and tls components.
+
+* [fix] Several fixings to make vortex-regression-client.c and
+  vortex-client-connections.c to compile on MAC OS/X.
+
+* [new] Updated vortex_connection_set_channel_removed_handler and
+  vortex_connection_set_channel_added_handler to return an unique
+  reference to the installed handler which allows to remove it
+  later. API added:
+
+   - vortex_connection_remove_handler
+
+* [fix] Change added channel notification at server side to be done
+  before doing the RPY to avoid race conditions.
+
+* [fix] Fixed memory leak at vortex_support_add_domain_search_path_ref
+  which was causing to lost memory references in the case the path was
+  already added.
+
+* [fix] Many updates to Vortex TLS documentation.
+
+* [fix] Fixed memory leak at vortex_tls_start_negotiation which was
+  causing to not release serverName value in the case it was
+  configured.
+
+* [fix] Making vortex_tls_start_negotiation (client) to not consider
+  as a fatal error not finding TLS profile among the set announced by
+  server greetings.
+
+* [fix] Fixed bug at vortex_connection_new_from_empty which was not
+  transferring the connection serverName. Added reg test to reproduce
+  the bug and check the fix (reg test 05-c).
+
+* [new] General updates to vortex channel send API to include a
+  payload feeder support which allow streaming content directly into
+  the vortex engine without requiring to prealloc it. Added a general
+  API to build on and also added an specific API on top of it
+  implementing payload feeding from a file. NICE!! API added:
+
+   - VortexPayloadFeederHandler (handler)
+   - VortexPayloadFeeder (type)
+   - VortexPayloadFeederOp (enum) 
+   - vortex_channel_send_msg_from_feeder
+   - vortex_channel_send_rpy_from_feeder
+   - vortex_payload_feeder_new
+   - vortex_payload_feeder_file
+
+  Added regression test to check feeder support added (test_04-e).
+  
+* [fix] Updated vortex-file-transfer-{client,server}.c to allow
+  checking feeder API. Initial tests shows 200% less allocations
+  compared with the most efficient method (until now) using ANS/NUL
+  replies. Updated files to get the file size directly from the file
+  rather requiring the user to provide such value.
+
+* [fix] Updated vortex payload feeder API to allow configuring if the
+  feeder should include an empty MIME header or not.
+
+* [new] Adding new Feeder API to allow transferring ANS frames taking
+  the content from a payload feeder. API added:
+
+   - vortex_channel_send_ans_rpy_from_feeder
+
+* [fix] Updated documentation to include some references to vortex
+  payload feeder.
+
+* [fix] Several updates to vortex connection vortex thread pool and
+  vortex listener module to check alloc operations to avoid continue
+  on failure.
+
+* [fix] Removed internal queues inside vortex channels that where
+  not used. Checked regression test to ensure everything keeps 
+  working. Added additional checks to alloc operations done 
+  inside vortex channel and thread pool module.
+
+* [fix] Added more memory alloc checks to vortex channel module.
+  Removed being_sending flag used to lock and synchronize close
+  channel session. Used mutex itself to ensure conditions. Checked reg
+  test.
+
+* [fix] Updated windows makefiles to include vortex payload feeder
+  module.
+
+* [fix] Making vortex payload feeder from file to also work with
+  binary files on windows (But reported by Ralf Konush).
+
+* [fix] Adding debug comment into vortex tls module.
+
+* [fix] Fixing compilation error..
+
+* [new] Updated vortex profiles API to include a new set of functions
+  to iterate over all registered profiles in a thread safe manner,
+  allowing to support scenarios where run time register and
+  unregister operations are done (in contrast to registering all
+  profiles at the application start). API added:
+
+   - vortex_profiles_has_profiles
+   - vortex_profiles_acquire
+   - vortex_profiles_release
+
+  Initial patch approach and bug report by Benoit Amiaux. Cleanup,
+  validation and port to Vortex 1.1 by Francis Brosnan.
+
+* [fix] Removing vortex_connection_get_ctx_aux internal function.  It
+  was providing no value.
+
+* [fix] Making vortex channel close internals to check connection
+  status and frame reference to remove the wait reply object which may
+  be not used under some timeout situations causing a leak. Added reg
+  test test-05-d to reproduce and check the issue.
+
+* [fix] Updated vortex frame factory to check if a channel existing
+  when reading a frame, to avoid setting the reference to NULL.
+
+* [fix] Fixed vortex_tls_start_negotiation_sync to report the
+  connection or NULL in the case of TLS failure or timeout
+  problem. Updated internal implementation to ensure that, if the
+  function return a valid connection to avoid finishing it in
+  background or to return NULL in the case it is not possible to stop
+  the background TLS activation process. Bug reported by Benoit
+  Amiaux. Added reg test to reproduce the problem and check the issue:
+  test 05-d.
+
+* [fix] Added reg test-02-a2 to check sending raw frame content
+  pointing to a unopened channel. Pass ok.
+
+* [fix] Adding documentation to explain how to use feeder API.
+
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organization to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  We hope Vortex Library help you. Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+10th sep 2010, Madrid (Spain)
