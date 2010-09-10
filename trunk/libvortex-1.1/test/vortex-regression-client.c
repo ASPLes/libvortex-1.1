@@ -1,6 +1,6 @@
 /*
  *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
- *  Copyright (C) 2008 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2010 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
@@ -10582,7 +10582,7 @@ int main (int  argc, char ** argv)
 #endif
 
 	printf ("** Vortex Library: A BEEP core implementation.\n");
-	printf ("** Copyright (C) 2008 Advanced Software Production Line, S.L.\n**\n");
+	printf ("** Copyright (C) 2010 Advanced Software Production Line, S.L.\n**\n");
 	printf ("** Vortex Regression tests: version=%s\n**\n",
 		VERSION);
 	printf ("** To properly run this test it is required to run vortex-regression-listener.\n");

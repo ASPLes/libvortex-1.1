@@ -1,6 +1,6 @@
 /* 
  *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
- *  Copyright (C) 2008 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2010 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
@@ -4476,7 +4476,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * (jobs:0)[acinom@barbol libvortex-1.1]
  * $ vortex-client
  * Vortex-client v.0.8.3.b1498.g1498: a cmd tool to test vortex (and BEEP-enabled) peers
- * Copyright (c) 2005 Advanced Software Production Line, S.L.
+ * Copyright (c) 2010 Advanced Software Production Line, S.L.
  * [=|=] vortex-client > connect
  * server to connect to: localhost
  * port to connect to: 44000
