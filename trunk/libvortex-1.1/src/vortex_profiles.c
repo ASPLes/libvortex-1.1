@@ -1049,7 +1049,7 @@ axlList * vortex_profiles_acquire (VortexCtx * ctx)
 }
 
 /** 
- * @Brief Release current profiles list. The user must call to release
+ * @brief Release current profiles list. The user must call to release
  * the list acquired by \ref vortex_profiles_acquire.
  * 
  * @param ctx The context where the release operation will take place.
