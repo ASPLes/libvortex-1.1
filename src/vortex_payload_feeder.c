@@ -42,6 +42,31 @@ struct _VortexPayloadFeeder {
 	axlPointer                 user_data;
 };
 
+/** 
+ * @brief Allows to create a new payload feeder object that will be
+ * defined by feeder handler provided.
+ *
+ * Once created the feeder, you can use use the sending API for feeder objects, see:
+ *
+ * - \ref vortex_channel_send_msg_from_feeder
+ * - \ref vortex_channel_send_rpy_from_feeder
+ * - \ref vortex_channel_send_ans_rpy_from_feeder
+ *
+ * The handler provided must implement feeder events defined by \ref
+ * VortexPayloadFeederOp. As an example, you can take a look on how is
+ * implemented vortex_payload_feeder_file. 
+ *
+ * Once a feeder is used to initiate a send operation, the user is not
+ * required to release it. This is already done by the vortex
+ * sequencer thread.
+ *
+ * @param handler The feeder handler that will define how this instance will work.
+ *
+ * @param user_data User defined pointer passed to the feeder handler when it is called.
+ *
+ * @return A reference to the payload feeder ready to use or NULL it
+ * if fails. 
+ */
 VortexPayloadFeeder * vortex_payload_feeder_new (VortexPayloadFeederHandler handler,
 						 axlPointer                 user_data)
 {

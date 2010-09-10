@@ -1227,7 +1227,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * Vortex Library is being run and tested regularly under GNU/Linux
  * and Microsoft Windows platforms, but it is known to work in other
- * platforms. Its development is also checked with a <b>regression tests</b>
+ * platforms. Its development is also checked with a <b>regression test suite</b>
  * to ensure proper function across releases.
  *
  * The following section represents documents you may find useful to
@@ -1988,6 +1988,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *  - \ref vortex_manual_http_support
  *  - \ref vortex_manual_pull_api
  *  - \ref vortex_manual_alive_api
+ *  - \ref vortex_manual_feeder_api
  *
  *  <b>Section 5: </b>Securing and authenticating your BEEP sessions: TLS and SASL profiles
  * 
@@ -3708,6 +3709,57 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * \code
  * >> pkg-config --libs vortex-aliave-1.1
  * \endcode
+ *
+ * \section vortex_manual_feeder_api 4.7 How to use feeder API (streaming and transfering files efficiently)
+ *
+ * The usual pattern to send content is to issue a MSG frame (no
+ * matter its size) using \ref vortex_channel_send_msg (or
+ * similar functions) or replying to an incoming MSG sending content
+ * in the form of a RPY frame or a series of ANS frames ended by a NUL
+ * frame.
+ * 
+ * While this approach is the most suitable for small and unknown
+ * sizes, it becomes a problem if we want to do continus transfer or
+ * just send a huge file. 
+ *
+ * This is because every message we send with vortex, it is copied
+ * into its internal structures so the caller is not blocked (nice
+ * feature) and at the sime time it is allowed to release the content
+ * right after returning from the send function. Obviously this is a
+ * problem that grows with the size of the content to be transferred.
+ *
+ * Here is where the payload feeder API can be used to feed content
+ * directly into the vortex sequencer (the vortex private thread in
+ * charge of sending all pending content) without allocating it and
+ * feeding the content with the optimal sizes at the right time.
+ *
+ * The \ref vortex_payload_feeder "feeder API" is built on top of the \ref VortexPayloadFeeder type
+ * which encapsulates a handler defined by the user that must react
+ * and complete a set of events issued by the vortex sending engine. 
+ *
+ * On top of this feeder API, it is already implemented a feeder to
+ * read the content from a file, and stream it into vortex. Here is how to use it:
+ *
+ * \code
+ * VortexPayloadFeeder * feeder;
+ *
+ * // create the feeder configured to read content from a file 
+ * feeder = vortex_payload_feeder_file (FILE_TO_TRANSFER, axl_false);
+ *
+ * // use the feeder to issue a RPY frame
+ * if (! vortex_channel_send_rpy_from_feeder (channel, feeder, vortex_frame_get_msgno (frame))) {
+ *     printf ("ERROR: failed to send RPY using feeder..\n");
+ *     return;
+ * } 
+ * \endcode
+ *
+ * In the case you want to feed content directly from a database or a
+ * socket, etc, you can take a look on how it is implemented \ref
+ * vortex_payload_feeder_file to create the appropriate handler that
+ * implements your needs and then call to \ref
+ * vortex_payload_feeder_new to create a feeder object governed by
+ * that handler.
+ *
  *
  * \section vortex_manual_securing_your_session 5.1 Securing a Vortex Connection (or How to use the TLS profile)
  * 

@@ -42,7 +42,7 @@
 #include <vortex.h>
 
 /** 
- * \addtogroup vortex_payload_feeder Vortex Payload Feeder: an abstraction to efficiently feed content to messages and replies sent. 
+ * \addtogroup vortex_payload_feeder Vortex Payload Feeder: an abstraction to efficiently feed content into vortex sending engine
  * @{
  */
 
