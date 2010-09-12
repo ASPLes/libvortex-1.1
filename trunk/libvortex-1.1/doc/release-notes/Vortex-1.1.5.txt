@@ -352,7 +352,7 @@ About Us
 ~~~~~~~~
 
   Advanced Software Production Line provides GNU/Linux support and
-  consulting services to help organization to introduce GNU/Linux
+  consulting services to help organizations to introduce GNU/Linux
   inside its process.
 
   Contact us, using English or Spanish, to get commercial support
@@ -362,7 +362,7 @@ About Us
 
        http://www.aspl.es - info@aspl.es
 
-  We hope Vortex Library help you. Enjoy Vortex Library!  
+  Enjoy Vortex Library!  
 
 --
 Francis Brosnan Blázquez           - francis@aspl.es
