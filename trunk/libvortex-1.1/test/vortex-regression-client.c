@@ -2234,40 +2234,45 @@ axl_bool test_01g (void) {
 	return axl_true;
 }
 
-#define TEST_01H_CHECK(string) do {                             \
-                                                                \
-	/* do a socket connect with wrong header content */     \
-	socket = vortex_connection_sock_connect (ctx,           \
-						 listener_host, \
-						 LISTENER_PORT, \
-						 NULL, NULL);   \
-	if (socket == -1)                                       \
-		return axl_false;                               \
-	                                                        \
-	/* send wrong content */                                \
-	result = write (socket, string, strlen (string));       \
-	                                                        \
-	vortex_close_socket (socket);                           \
-} while (0);
+axl_bool test_01h_check (const char * string) {
+	int result;
+
+	VORTEX_SOCKET _socket;
+
+	_socket = vortex_connection_sock_connect (ctx,
+						 listener_host,
+						 LISTENER_PORT,
+						 NULL, NULL);
+	if (_socket == -1)                                    
+		return axl_false;                            
+	                                                     
+	result = send (_socket, string, strlen (string), 0);
+	                                                     
+	vortex_close_socket (_socket);                        
+	return axl_true;
+}
 
 
 axl_bool test_01h (void) {
 
-	VORTEX_SOCKET socket;
-	int result;
-
 	/* check different wrong headers */
-	TEST_01H_CHECK ("RPY\n");
+	if (! test_01h_check ("RPY\n"))
+		return axl_false;
 
-	TEST_01H_CHECK ("RPY\r\n");
+	if (! test_01h_check ("RPY\r\n"))
+		return axl_false;
 
-	TEST_01H_CHECK ("RPY \0 \0 \r\n");
+	if (! test_01h_check ("RPY \0 \0 \r\n"))
+		return axl_false;
 
-	TEST_01H_CHECK ("\n");
+	if (! test_01h_check ("\n"))
+		return axl_false;
 
-	TEST_01H_CHECK ("\0");
+	if (! test_01h_check ("\0"))
+		return axl_false;
 
-	TEST_01H_CHECK ("RPY 1234123\0\r\n");
+	if (! test_01h_check ("RPY 1234123\0\r\n"))
+		return axl_false;
 
 	return axl_true;
 }
@@ -3184,6 +3189,7 @@ char * test_04_read_file (const char * file, int * size)
 	char * result;
 	FILE * handle;
 	struct stat status;
+	int    size_read;
 
 	/* check parameter received */
 	if (file == NULL)
@@ -3206,10 +3212,11 @@ char * test_04_read_file (const char * file, int * size)
 	} /* end if */
 	
 	result = axl_new (char, status.st_size + 1);
-	if (fread (result, 1, status.st_size, handle) != status.st_size) {
+	size_read = fread (result, 1, status.st_size, handle);
+	if (size_read != status.st_size) {
 		/* failed to read content */
-		fprintf (stdout, "Unable to properly read the file, size expected to read %d, wasn't fulfilled",
-			 (int) status.st_size);
+		fprintf (stdout, "Unable to properly read the file, size expected to read %d but found %d, wasn't fulfilled",
+			 (int) status.st_size, size_read);
 		axl_free (result);
 		fclose (handle);
 		return NULL;
@@ -7883,9 +7890,14 @@ axl_bool test_04_d (void)
 axl_bool test_04_e_save (VortexFrame * frame, const char * file) {
 	FILE * file_to_save;
 
+#if defined(AXL_OS_WIN32)
+	file_to_save = fopen (file, "wb");
+#else
 	file_to_save = fopen (file, "w");
+#endif
 	if (file_to_save == NULL)
 		return axl_false;
+	printf ("Test 04-e: saving file %s, with size: %d..\n", file, vortex_frame_get_payload_size (frame));
 	if (fwrite ((const char *) vortex_frame_get_payload (frame), 1, vortex_frame_get_payload_size (frame), file_to_save) != vortex_frame_get_payload_size (frame)) {
 		printf ("ERROR (?): write size differs from requested value..\n");
 		return axl_false;
@@ -7986,7 +7998,9 @@ get_reply_and_check:
 		return axl_false;
 	} /* end if */
 
-	/* release frame */
+	printf ("Test 04-e: file test_04_e.save saved right..\n");
+
+	/* relaese frame */
 	vortex_frame_unref (frame);
 
 	/* now check MD5 */
