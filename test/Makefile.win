@@ -67,8 +67,7 @@ PROGRAMS = vortex-listener.exe \
 	   vortex-file-transfer-server.exe \
 	   vortex-client-connections.exe
 
-LIBS     = -Wall -Werror -g $(AXL_LIBS) -L$(READLINE_BASEDIR) \
-	-lws2_32 $(search_lib_path) \
+LIBS     = -Wall -Werror -g -lws2_32 $(AXL_LIBS) $(search_lib_path) \
 	-L../src -L../../libaxl/src -L$(DEPEND_DIR)/bin -laxl $(vortex_dll) \
 	-L../tunnel $(vortex_tunnel_dll) \
 	-L../xml-rpc $(vortex_xml_rpc_dll) \
