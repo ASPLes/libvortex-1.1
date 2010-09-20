@@ -1453,6 +1453,10 @@ struct in_addr * vortex_gethostbyname (VortexCtx  * ctx,
 	/* get current context */
 	struct in_addr * result;
 	struct hostent * _result;
+
+	/* check that context and hostname are valid */
+	if (ctx == NULL || hostname == NULL)
+		return NULL;
 	
 	/* lock and resolv */
 	vortex_mutex_lock (&ctx->connection_hostname_mutex);
