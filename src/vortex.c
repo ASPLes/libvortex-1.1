@@ -1195,7 +1195,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
 /* @} */
 
 
-/**
+/** 
  * \mainpage Vortex Library 1.1:  A professional BEEP Core implementation
  *
  * \section intro Introduction 

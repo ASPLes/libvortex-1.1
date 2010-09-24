@@ -2112,9 +2112,9 @@ char             * vortex_tls_get_digest_sized           (VortexDigestMethod   m
 	/* translate value returned into an octal representation */
 	for (iterator = 0; iterator < md_len; iterator++) {
 #if defined(AXL_OS_WIN32) && ! defined(__GNUC__)
-		sprintf_s (result + (iterator * 3), (md_len * 3), "%02X%s", 
-			       buffer [iterator], 
-			       (iterator + 1 != md_len) ? ":" : "");
+		sprintf_s (result + (iterator * 3), (md_len - iterator) * 3, "%02X%s", 
+			   buffer [iterator], 
+			   (iterator + 1 != md_len) ? ":" : "");
 #else	
 		sprintf (result + (iterator * 3), "%02X%s", 
 			 buffer [iterator], 
