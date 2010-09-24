@@ -1236,8 +1236,6 @@ void    vortex_profiles_init (VortexCtx * ctx)
 				      (axlDestroyFunc) __vortex_profiles_destroy_profile_item); /* value destroy function */
 
 	ctx->profiles_list = axl_list_new (axl_list_always_return_1, NULL);
-	/* init mutex associated */
-	vortex_mutex_create (&ctx->profiles_list_mutex);
 
 	return;
 }
@@ -1261,9 +1259,6 @@ void  vortex_profiles_cleanup (VortexCtx * ctx)
 	/* destroy the list */
 	axl_list_free (ctx->profiles_list);
 	ctx->profiles_list = NULL;
-
-	/* destroy mutex */
-	vortex_mutex_destroy (&ctx->profiles_list_mutex);
 
 	return;
 }

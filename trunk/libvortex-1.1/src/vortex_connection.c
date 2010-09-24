@@ -1960,7 +1960,7 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 			/* release data */
 			axl_free (data);
 
-			return axl_false;
+			return NULL;
 		} /* end if */
 	
 		/* set local addr and local port */
