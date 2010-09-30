@@ -908,6 +908,11 @@ axl_bool      vortex_profiles_invoke_frame_received (const char       * uri,
 	 
 	 * invoke frame received */
 	data              = axl_new (VortexProfileReceivedData, 1);
+	if (data == NULL) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "Allowcation failred, unable to invoke profile level frame received");
+		/* do not dealloc frame: this is done by the caller */
+		return axl_false;
+	} /* end if */
 	data->profile     = profile;
 	data->channel_num = channel_num;
 	data->connection  = connection;
@@ -920,7 +925,7 @@ axl_bool      vortex_profiles_invoke_frame_received (const char       * uri,
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to increase connection reference, avoiding delivering data (dropping frame)..");
 
 		/* deallocate resources */
-		vortex_frame_unref (frame);
+		/* do not dealloc frame: this is done by the caller */
 		axl_free (data);
 		return axl_false;
 	}

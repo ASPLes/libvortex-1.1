@@ -1004,7 +1004,8 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 				frame = vortex_channel_get_piggyback (channel);
 				
 				/* invoke the frame received */
-				vortex_channel_invoke_received_handler (data->connection, channel, frame);
+				if (! vortex_channel_invoke_received_handler (data->connection, channel, frame))
+					vortex_frame_unref (frame);
 			}
 			
 			/* unref the channel here */
@@ -5909,7 +5910,7 @@ axl_bool      vortex_channel_invoke_received_handler (VortexConnection * connect
 	data              = axl_new (ReceivedInvokeData, 1);
 	if (data == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "Allocation failed, unable to deliver frame");
-		vortex_frame_unref (frame);
+		/* do not dealloc frame: this is done by the caller */
 		return axl_false;
 	}
 	data->channel     = channel;
@@ -5923,7 +5924,7 @@ axl_bool      vortex_channel_invoke_received_handler (VortexConnection * connect
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to increase connection reference, avoiding delivering data (dropping frame)..");
 
 		/* deallocate resources */
-		vortex_frame_unref (frame);
+		/* do not dealloc frame: this is done by the caller */
 		axl_free (data);
 		return axl_false;
 	}

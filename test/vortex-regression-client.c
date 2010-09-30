@@ -5060,6 +5060,102 @@ axl_bool  test_02m2 (void) {
 	return axl_true;
 }
 
+axl_bool  test_02m3 (void) {
+
+	VortexConnection * connection;
+	VortexChannel    * channel;
+	VortexAsyncQueue * queue;
+	int                iterator;
+	VortexFrame      * frame;
+	int                msg_type = 0;
+
+
+	/* create queue */
+	queue      = vortex_async_queue_new ();
+
+	iterator = 0;
+	while (iterator < 20) {
+		/* creates a new connection against localhost:44000 */
+		connection = connection_new ();
+		if (!vortex_connection_is_ok (connection, axl_false)) {
+			vortex_connection_close (connection);
+			return axl_false;
+		} /* end if */
+		
+		printf ("Test 02-m3: checking receiving content during connection close iterator=%d\n", iterator);
+		
+		/* CREATE A CHANNEL */
+		channel = vortex_channel_new (connection, 0,
+					      REGRESSION_URI, 
+					      /* no close handling */
+					      NULL, NULL,
+					      /* frame receive async handling */
+					      vortex_channel_queue_reply, queue,
+					      /* no async channel creation */
+					      NULL, NULL);
+
+		/* deliver every thing */
+		vortex_channel_set_complete_flag (channel, axl_false);
+
+		if (channel == NULL) {
+			printf ("Test 02-m3: failed to create channel to perform transfer\n");
+			return axl_false;
+		}
+
+		/* SEND THE CONTENT */
+		switch (msg_type) {
+		case 0:
+			msg_type = 1;
+			if (! vortex_channel_send_msg (channel, "This is a test message#", 23, NULL)) {
+				printf ("Test 02-m3: failed to send content..\n");
+				return axl_false;
+			} /* end if */
+			break;
+		case 1:
+			msg_type = 2;
+			if (! vortex_channel_send_msg (channel, TEST_REGRESION_URI_4_MESSAGE, 4096, NULL)) {
+				printf ("Test 02-m3: failed to send content..\n");
+				return axl_false;
+			} /* end if */
+			break;
+		case 2:
+			msg_type = 0;
+			if (! vortex_channel_send_msg (channel, TEST_REGRESION_URI_8_MESSAGE, 8192, NULL)) {
+				printf ("Test 02-m3: failed to send content..\n");
+				return axl_false;
+			} /* end if */
+			break;
+		default:
+			/* never reached */
+			break;
+		}
+
+		/* shutdown the connection */
+		vortex_connection_shutdown (connection);
+
+		/* get replies received */
+		while (vortex_async_queue_items (queue) > 0) {
+			/* get frame reference */
+			frame = vortex_channel_get_reply (channel, queue);
+			
+			/* dealloc frame */
+			vortex_frame_unref (frame);
+		} /* end while */
+
+		/* release connection */
+		vortex_connection_close (connection);
+
+		iterator++;
+
+	} /* end while */
+
+	/* terminate queue */
+	vortex_async_queue_unref (queue);
+
+	/* return axl_true */
+	return axl_true;
+}
+
 axl_bool test_02n_check_sequence (VortexChannel * channel, VortexAsyncQueue * queue, 
 				  int first, int second, int third, int fourth)
 {
@@ -10626,7 +10722,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o, test_01p\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
- 	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02n, test_02o, test_02p, \n");
+ 	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02m3, test_02n, test_02o, test_02p, \n");
  	printf ("**                       test_03, test_03a, test_03b, test_03d, test_03c, test_04, test_04a, \n");
  	printf ("**                       test_04b, test_04c, test_04d, test_04e, test_05, test_05a, test_05b, test_05c, \n");
 	printf ("**                       test_05d, ctest_06, test_06a, \n");
@@ -10856,6 +10952,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_02m2"))
 			run_test (test_02m2, "Test 02-m2", "Dealloc pending queued replies on connection shutdown.", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_02m3"))
+			run_test (test_02m3, "Test 02-m3", "Check receiving frames during connection close.", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_02n"))
 			run_test (test_02n, "Test 02-n", "Checking MSG number reusing", -1, -1);
 
@@ -11059,6 +11158,8 @@ int main (int  argc, char ** argv)
 	run_test (test_02m1, "Test 02-m1", "Transfer with big frame sizes.", -1, -1);
 
   	run_test (test_02m2, "Test 02-m2", "Dealloc pending queued replies on connection shutdown.", -1, -1);
+
+	run_test (test_02m3, "Test 02-m3", "Check receiving frames during connection close.", -1, -1);
 
  	run_test (test_02n, "Test 02-n", "Checking MSG number reusing", -1, -1);
 
