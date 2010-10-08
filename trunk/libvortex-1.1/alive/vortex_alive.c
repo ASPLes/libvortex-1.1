@@ -115,7 +115,7 @@ void __vortex_alive_connection_closed (VortexConnection * conn, axlPointer user_
 	VortexCtx       * ctx  = CONN_CTX(conn);
 
 	/* remove events */
-	vortex_thread_pool_remove_event (CONN_CTX (data->conn), data->event_id);
+	vortex_thread_pool_remove_event (ctx, data->event_id);
 
 	/* call to implement alive stop process */
 	vortex_log (VORTEX_LEVEL_WARNING, "detected connection-id=%d close having alive activated",
@@ -165,9 +165,10 @@ axl_bool           vortex_alive_init                       (VortexCtx * ctx)
  */
 axl_bool __vortex_alive_trigger_failure (VortexAliveData * data)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	/* get ctx */
 	VortexCtx * ctx = CONN_CTX (data->conn);
-
+#endif
 	/* remove on close */
 	vortex_connection_remove_on_close_full (data->conn, __vortex_alive_connection_closed, data);
 
@@ -256,9 +257,7 @@ void __vortex_alive_channel_created (int                channel_num,
 	int                code;
 	char             * msg;
 	int                iterator;
-#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx  = CONN_CTX (conn);
-#endif
 
 	if (data->conn == NULL || data->event_id == -1 || vortex_connection_get_data (conn, VORTEX_ALIVE_CHECK_ENABLED) == NULL) {
 		vortex_log (VORTEX_LEVEL_WARNING, "received channel alive created after perioed was expired for conn-id=%d",
