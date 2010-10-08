@@ -106,6 +106,11 @@ void __vortex_thread_pool_process_events (VortexCtx * ctx, VortexThreadPool * po
 	struct timeval          now;
 	VortexThreadPoolEvent * event;
 
+	/* reference to implement the call */
+	VortexThreadAsyncEvent   func;
+	axlPointer               data;
+	axlPointer               data2;
+
 	/* ensure only one thread is processing */
 	if (pool->processing_events || axl_list_length (pool->events) == 0)
 		return;
@@ -129,16 +134,25 @@ void __vortex_thread_pool_process_events (VortexCtx * ctx, VortexThreadPool * po
 		/* get event reference */
 		vortex_mutex_lock (&pool->mutex);
 		event = axl_list_get_nth (pool->events, iterator);
-		vortex_mutex_unlock (&pool->mutex);
-		if (event == NULL)
+		if (event == NULL) {
+			vortex_mutex_unlock (&pool->mutex);
 			break;
+		}
 
 		/* get stamp */
 		if ((now.tv_sec > event->next_step.tv_sec) ||
 		    ((now.tv_sec == event->next_step.tv_sec) &&
 		     (now.tv_usec >= event->next_step.tv_usec))) {
+
+			func  = event->func;
+			data  = event->data;
+			data2 = event->data2;
+
+			/* unlock before calling */
+			vortex_mutex_unlock (&pool->mutex);
+
 			/* call to notify event */
-			if (event->func (ctx, event->data, event->data2)) {
+			if (func (ctx, data, data2)) {
 				vortex_mutex_lock (&pool->mutex);
 				/* remove event */
 				axl_list_remove_at (pool->events, iterator);
@@ -151,9 +165,13 @@ void __vortex_thread_pool_process_events (VortexCtx * ctx, VortexThreadPool * po
 			/* now recalculate event to be executed in the
 			 * future (because the user did selected to
 			 * keep it) */
+			vortex_mutex_lock (&pool->mutex);
 			__vortex_thread_pool_increase_stamp (event);
 			
 		} /* end if */
+
+		/* unlock for the next lock */
+		vortex_mutex_unlock (&pool->mutex);
 
 		/* next position */
 		iterator++;
@@ -233,7 +251,7 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * data)
 		vortex_log (VORTEX_LEVEL_DEBUG, "--> thread from pool processing new job");
 
 		/* at this point we already are executing inside a thread */
-		if (! ctx->thread_pool_being_stopped)
+		if (! ctx->thread_pool_being_stopped && ! ctx->vortex_exit)
 			task->func (task->data);
 
 		/* free the task */

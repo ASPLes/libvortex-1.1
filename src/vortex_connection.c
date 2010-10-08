@@ -1066,6 +1066,7 @@ VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx       
 	VORTEX_CHECK_REF (connection, NULL);
 
 	connection->ctx                = ctx;
+	vortex_ctx_ref (ctx); /* acquire a reference to context */
 	connection->id                 = __vortex_connection_get_next_id (ctx);
 
 	connection->message            = axl_strdup ("session established and ready");
@@ -2203,6 +2204,7 @@ VortexConnection  * vortex_connection_new_full               (VortexCtx         
 	} /* end if */
 	data->connection->id                  = __vortex_connection_get_next_id (ctx);
 	data->connection->ctx                 = ctx;
+	vortex_ctx_ref (ctx); /* acquire a reference to context */
 	data->connection->host                = axl_strdup (host);
 	data->connection->port                = axl_strdup (port);
 	data->connection->channels            = vortex_hash_new_full (axl_hash_int, axl_hash_equal_int,
@@ -3250,8 +3252,9 @@ void               vortex_connection_free (VortexConnection * connection)
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing connection id=%d", connection->id);
 
-	/* notify sequencer to drop all packages */
-	vortex_sequencer_drop_connection_messages (connection);
+	/* notify sequencer to drop all packages only if we are not exiting */
+	if (! ctx->vortex_exit)
+		vortex_sequencer_drop_connection_messages (connection);
 
 	/*
 	 * NOTE: The order in which the channels and the channel pools
@@ -3388,6 +3391,9 @@ void               vortex_connection_free (VortexConnection * connection)
 
 	/* free serverName */
 	axl_free (connection->serverName);
+
+	/* release reference to context */
+	vortex_ctx_unref (&connection->ctx);
 
 	/* free connection */
 	axl_free (connection);

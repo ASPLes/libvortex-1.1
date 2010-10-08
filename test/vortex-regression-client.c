@@ -2795,6 +2795,54 @@ axl_bool test_01p (void) {
 }
 
 
+/** 
+ * @brief Check connection close after vortex termination.
+ */
+axl_bool test_01q (void) {
+
+	VortexConnection   * conn;
+	VortexCtx          * ctx;
+	VortexAsyncQueue   * wait_queue = NULL;
+
+	/* create an indepenent client context */
+	ctx = vortex_ctx_new ();
+
+	/* init vortex on this context */
+	if (! vortex_init_ctx (ctx)) {
+		printf ("ERROR: failed to init client vortex context for PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	/* init queue */
+	wait_queue = vortex_async_queue_new ();
+
+	printf ("Test 01-q: Creating connection..\n");
+	/* do a connection */
+	conn = vortex_connection_new (ctx, listener_host, LISTENER_PORT, NULL, NULL);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR (1): expected proper connection..\n");
+		return axl_false;
+	}
+
+	/* terminate ctx */
+	printf ("Test 01-q: done, now terminate ctx..\n");
+	vortex_exit_ctx (ctx, axl_true);
+
+	/* now a bit */
+	vortex_async_queue_timedpop (wait_queue, 20000);
+
+	/* now close the connection */
+	printf ("Test 01-q: done, now terminate connection..\n");
+	vortex_connection_close (conn);
+
+	/* release the queue */
+	vortex_async_queue_unref (wait_queue);
+
+
+	return axl_true;
+
+}
+
 
 
 #define TEST_02_MAX_CHANNELS 24
@@ -10541,7 +10589,7 @@ void test_16_on_close_full (VortexConnection * conn,
 	return;
 }
 
-axl_bool test_16_aux (long check_period, int unreply_count, VortexAsyncQueue * queue, axl_bool enable_check_after)
+axl_bool test_16_aux (VortexCtx * ctx, long check_period, int unreply_count, VortexAsyncQueue * queue, axl_bool enable_check_after)
 {
 	VortexConnection * conn;
 	VortexChannel    * channel;
@@ -10551,7 +10599,7 @@ axl_bool test_16_aux (long check_period, int unreply_count, VortexAsyncQueue * q
 		check_period, unreply_count);
 
 	/* create connection */
-	conn = connection_new ();
+	conn = vortex_connection_new (ctx, listener_host, LISTENER_PORT, NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("ERROR: failed to create connection under HTTP CONNECT..\n");
 		return axl_false;
@@ -10618,17 +10666,52 @@ axl_bool  test_16 (void)
 {
 
 	VortexAsyncQueue * queue;
+	VortexConnection * conn;
+	VortexCtx        * ctx;
+
+	/* init vortex here */
+	ctx = vortex_ctx_new ();
+	if (! vortex_init_ctx (ctx)) {
+		printf ("Test 00-a: failed to init VortexCtx reference..\n");
+		return axl_false;
+	}
 
 	/* configure close connection to be triggered by the alive check */
 	queue = vortex_async_queue_new ();
 
-	if (! test_16_aux (20000, 0, queue, axl_false))
+	if (! test_16_aux (ctx, 20000, 0, queue, axl_false))
 		return axl_false;
-	if (! test_16_aux (10000, 4, queue, axl_false))
+	if (! test_16_aux (ctx, 10000, 4, queue, axl_false))
 		return axl_false;
-	if (! test_16_aux (10000, 4, queue, axl_true))
+	if (! test_16_aux (ctx, 10000, 4, queue, axl_true))
 		return axl_false;
 
+	/* now check channel alive report after alive cancel */
+	printf ("Test 16: checking alive activation after delay alive channel notification due to really small notification..\n");
+	conn = vortex_connection_new (ctx, listener_host, LISTENER_PORT, NULL, NULL);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: failed to create connection under HTTP CONNECT..\n");
+		return axl_false;
+	} /* end if */
+
+	/* enable alive check on this connection every 20ms */
+	if (! vortex_alive_enable_check (conn, 10, 1, NULL)) {
+		printf ("ERROR: failed to install connection check..\n");
+		return axl_false;
+	} /* end if */
+
+	/* wait a bit to force channel alive notification when no longer required */
+	printf ("Test 16: forcing channel alive notification when no longer required (waiting 40ms)..\n");
+	vortex_async_queue_timedpop (queue, 40000);
+
+	/* close connection */
+	vortex_connection_close (conn);
+
+	/* terminate context */
+	vortex_exit_ctx (ctx, axl_true);
+
+	printf ("Test 16: ok, wait to close connection (100ms)..\n");
+	vortex_async_queue_timedpop (queue, 100000);
 	vortex_async_queue_unref (queue);
 
 	return axl_true;
@@ -10719,7 +10802,7 @@ int main (int  argc, char ** argv)
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
 	printf ("**       Test available: test_00, test_00a, test_00b, test_00c, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
-	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o, test_01p\n");
+	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o, test_01p, test_01q\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02m3, test_02n, test_02o, test_02p, \n");
@@ -10897,6 +10980,9 @@ int main (int  argc, char ** argv)
 
 		if (axl_cmp (run_test_name, "test_01p"))
 			run_test (test_01p, "Test 01-p", "Check upper limits for window sizes and idle handling (bug fix)", -1, -1);
+		
+		if (axl_cmp (run_test_name, "test_01q"))
+			run_test (test_01q, "Test 01-q", "Closing connection after vortex termination", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
@@ -11122,6 +11208,8 @@ int main (int  argc, char ** argv)
 	run_test (test_01o, "Test 01-o", "Memory consuption with channel pool acquire/release API", -1, -1);
 
 	run_test (test_01p, "Test 01-p", "Check upper limits for window sizes and idle handling (bug fix)", -1, -1);
+
+	run_test (test_01q, "Test 01-q", "Closing connection after vortex termination", -1, -1);
 
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   
