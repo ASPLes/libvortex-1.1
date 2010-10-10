@@ -4755,6 +4755,9 @@ void                vortex_connection_remove_handler               (VortexConnec
  * session associated to stop accepting any data. This is done by
  * signaling the vortex reader engine to not watch for status change
  * on the connection provided.
+ *
+ * The connection is still able to send content through its opened
+ * channels but no content will be received.
  * 
  * @param conn The connection to (un)block.
  *

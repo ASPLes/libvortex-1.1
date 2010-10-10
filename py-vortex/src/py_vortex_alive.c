@@ -37,10 +37,12 @@
  */
 
 /* include base library */
-#include <py_vortex_tls.h>
+#include <py_vortex_alive.h>
 
-/* include vortex tls support */
-#include <vortex_tls.h>
+/* include vortex alive support */
+#include <vortex_alive.h>
+
+#define PY_VORTEX_ALIVE_FAILURE_HANDLER "py:vo:al:fail"
 
 /** 
  * @brief Allows to init vortex.alive module.
@@ -64,6 +66,48 @@ static PyObject * py_vortex_alive_init (PyObject * self, PyObject * args)
 	return Py_BuildValue ("i", vortex_alive_init (py_vortex_ctx_get (py_ctx)));
 }
 
+void py_vortex_alive_failure_handler (VortexConnection * conn, 
+				      long               check_period,
+				      int                unreply_count)
+{
+	PyObject          * py_ctx  = py_vortex_ctx_create (CONN_CTX (conn));
+	PyObject          * py_conn = py_vortex_connection_find_reference (conn, py_ctx);
+	PyGILState_STATE    state;
+	PyObject          * _result;
+	PyObject          * args;
+	PyObject          * failure_handler;
+
+	/*** bridge into python ***/
+	/* acquire the GIL */
+	state = PyGILState_Ensure();
+
+	/* build references */
+	py_ctx  = py_vortex_ctx_create (CONN_CTX (conn));
+	py_conn = py_vortex_connection_find_reference (conn, py_ctx);
+
+	/* now implementuser code notification */
+	args = PyTuple_New (3);
+	PyTuple_SetItem (args, 0, py_conn);
+	PyTuple_SetItem (args, 1, Py_BuildValue ("i", (int) check_period));
+	PyTuple_SetItem (args, 2, Py_BuildValue ("i", unreply_count));
+
+	/* perform call */
+	failure_handler = vortex_connection_get_data (conn, PY_VORTEX_ALIVE_FAILURE_HANDLER);
+	_result = PyObject_Call (failure_handler, args, NULL);
+
+	py_vortex_log (PY_VORTEX_DEBUG, "ALIVE failure handler finished , checking for exceptions, _result: %p..", _result);
+	py_vortex_handle_and_clear_exception (py_conn);
+
+	Py_XDECREF (_result);
+	Py_DECREF (args);
+
+	/* release the GIL */
+	PyGILState_Release(state);
+	
+	
+	return;
+}
+
 static PyObject * py_vortex_alive_enable_check (PyObject * self, 
 						PyObject * args, 
 						PyObject * kwds)
@@ -80,10 +124,7 @@ static PyObject * py_vortex_alive_enable_check (PyObject * self,
 	/* parse and check result */
 	if (! PyArg_ParseTupleAndKeywords(args, kwds, "Oii|O", kwlist, 
 					  &py_conn,
-					  
-					  &accept_handler, &accept_handler_data, 
-					  &cert_handler, &cert_handler_data, 
-					  &key_handler, &key_handler_data))
+					  &check_period, &unreply_count, &failure_handler))
 		return NULL;
 
 	/* check context object received */
@@ -94,70 +135,23 @@ static PyObject * py_vortex_alive_enable_check (PyObject * self,
 	} /* end if */
 
 	/* check callable object */
-	if (accept_handler != NULL && ! PyCallable_Check (accept_handler)) {
+	if (failure_handler != NULL && ! PyCallable_Check (failure_handler)) {
 		/* set exception */
 		PyErr_SetString (PyExc_TypeError, "Expected to receive callable object for accept_handler handler, but received something different.");
 		return NULL;
 	} /* end if */
 
-	/* check callable object */
-	if (cert_handler != NULL && ! PyCallable_Check (cert_handler)) {
-		/* set exception */
-		PyErr_SetString (PyExc_TypeError, "Expected to receive callable object for cert_handler handler, but received something different.");
-		return NULL;
+	/* acquire a reference to the failure handler if defined */
+	if (failure_handler) {
+		Py_INCREF (failure_handler);
+		vortex_connection_set_data_full (py_vortex_connection_get (py_conn), PY_VORTEX_ALIVE_FAILURE_HANDLER, 
+						 failure_handler, NULL, (axlDestroyFunc) py_vortex_decref);
 	} /* end if */
 
-	/* check callable object */
-	if (key_handler != NULL && ! PyCallable_Check (key_handler)) {
-		/* set exception */
-		PyErr_SetString (PyExc_TypeError, "Expected to receive callable object for key_handler handler, but received something different.");
-		return NULL;
-	} /* end if */
+	/* call to enable check */
+	result = vortex_alive_enable_check (py_vortex_connection_get (py_conn),
+					    check_period, unreply_count, failure_handler ? py_vortex_alive_failure_handler : NULL);
 
-	data  = axl_new (PyVortexTlsAcceptData, 1);
-	/* set accept_handler */
-	data->accept_handler = accept_handler;
-	if (data->accept_handler)
-		Py_INCREF (data->accept_handler);
-	data->accept_handler_data = accept_handler_data;
-	Py_INCREF (data->accept_handler_data);
-
-	/* set cert_handler */
-	data->cert_handler = cert_handler;
-	if (data->cert_handler)
-		Py_INCREF (data->cert_handler);
-	data->cert_handler_data = cert_handler_data;
-	Py_INCREF (data->cert_handler_data);
-
-	/* set key_handler */
-	data->key_handler = key_handler;
-	if (data->key_handler)
-		Py_INCREF (data->key_handler);
-	data->key_handler_data = key_handler_data;
-	Py_INCREF (data->key_handler_data);
-
-	/* set py_ctx */
-	data->ctx      = py_ctx;
-
-	/* set the data into the current context */
-	vortex_ctx_set_data_full (
-		py_vortex_ctx_get (py_ctx),
-		/* key and value */
-		PY_VORTEX_TLS_DATA, data,
-		/* destroy functions */
-		NULL, (axlDestroyFunc) py_vortex_tls_data_free);
-
-	/* call to accept incoming TLS requests */
-	result = vortex_tls_accept_negotiation (
-		/* the context */
-		py_vortex_ctx_get (py_ctx), 
-		/* accept handler if defined python one */
-		data->accept_handler ? py_vortex_tls_accept_handler_bridge : NULL,
-		/* cert handler if defined python one */
-		data->cert_handler ? py_vortex_tls_cert_handler_bridge : NULL,
-		/* key handler if defined python one */
-		data->key_handler ? py_vortex_tls_key_handler_bridge : NULL);
-	
 	/* configure bridge handlers */
 	return Py_BuildValue ("i", result);
 }

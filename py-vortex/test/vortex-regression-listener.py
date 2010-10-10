@@ -39,6 +39,7 @@
 import vortex
 import vortex.sasl
 import vortex.tls
+import vortex.alive
 import signal
 import sys
 
@@ -201,6 +202,11 @@ if __name__ == '__main__':
                            cert_handler=tls_cert_handler, cert_handler_data="test 2",
                            # key handler
                            key_handler=tls_key_handler, key_handler_data="test 3")
+
+    # enable receiving alive requests
+    if not vortex.alive.init (ctx):
+        error ("Unable to start listener, vortex.alive.init failed..")
+        sys.exit (-1)
 
     # create a listener
     info ("starting listener at 0.0.0.0:44010")

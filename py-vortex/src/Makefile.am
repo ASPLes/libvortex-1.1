@@ -16,9 +16,9 @@ endif
 
 INCLUDES = -Wall -g -ansi -I. -DCOMPILATION_DATE=`date +%s` \
 	   -DVERSION=\"$(VORTEX_VERSION)\" \
-	   $(AXL_CFLAGS) -I$(top_srcdir)/src $(sasl_includes) $(tls_includes) $(PYTHON_CFLAGS) $(INCLUDE_PY_VORTEX_LOG)
+	   $(AXL_CFLAGS) -I$(top_srcdir)/src -I$(top_srcdir)/alive $(sasl_includes) $(tls_includes) $(PYTHON_CFLAGS) $(INCLUDE_PY_VORTEX_LOG)
 
-lib_LTLIBRARIES    = libpy_vortex_11.la $(sasl_lib) $(tls_lib)
+lib_LTLIBRARIES    = libpy_vortex_11.la $(sasl_lib) $(tls_lib) libpy_vortex_alive_11.la
 
 # libpy_vortex_11.la
 libpy_vortex_11_la_include_HEADERS  = \
