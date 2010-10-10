@@ -190,6 +190,7 @@ VortexChannel * __vortex_channel_pool_add_channels (VortexChannelPool * pool, in
 		/* increase the reference to the channel */
 		
 		/* so the channel have been created  */
+		vortex_channel_ref (channel);
 		axl_list_append (pool->channels, channel);
 
 		/* set a reference to the pool this channel belongs to */
@@ -702,7 +703,7 @@ void __vortex_channel_pool_remove (VortexChannelPool * pool, int  num)
 	init_num  = axl_list_length (pool->channels);
 	iterator = 0;
 
-	/* do not perform any operation if not channel is available */
+	/* do not perform any operation if no channel is available */
 	if (init_num == 0)
 		return;
 
@@ -719,7 +720,6 @@ void __vortex_channel_pool_remove (VortexChannelPool * pool, int  num)
 		if (iterator == num)
 			break;
 			
-
 		/* get the channel at the current cursor position */
 		channel = axl_list_cursor_get (cursor);
 		if (__vortex_channel_pool_is_ready (channel)) {
@@ -734,9 +734,16 @@ void __vortex_channel_pool_remove (VortexChannelPool * pool, int  num)
 
 			/* close the channel */
 			vortex_channel_close (channel, NULL);
+
+			/* remove channel reference */
+			vortex_channel_unref (channel);
+
 			continue;
 		} /* end if */
-		
+
+		/* remove channel reference */
+		vortex_channel_unref (channel);
+
 		/* get the next */
 		axl_list_cursor_next (cursor);
 		
@@ -865,6 +872,7 @@ void                vortex_channel_pool_close          (VortexChannelPool * pool
 {
 	/* call to close the pool dettaching from the connection */
 	__vortex_channel_pool_close_common (pool, axl_true);
+	return;
 }
 
 /** 
@@ -905,11 +913,14 @@ axl_bool      __vortex_channel_check_same_connections (VortexChannelPool * pool,
 	connection  = vortex_channel_pool_get_connection (pool);
 	connection2 = vortex_channel_get_connection (channel);
 	ctx         = vortex_connection_get_ctx (connection);
+	if (ctx == NULL)
+		ctx = vortex_connection_get_ctx (connection2);
 	
 	if (vortex_connection_get_id (connection) !=
 	    vortex_connection_get_id (connection2)) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
-		       "trying to add a channel from a different session. Channels from different connections can't be mixed");
+			    "trying to add a channel from a different session (pool session: %d != channel session: %d). Channels from different connections can't be mixed",
+			    vortex_connection_get_id (connection), vortex_connection_get_id (connection2));
 		return axl_false;
 	}
 
@@ -981,6 +992,7 @@ void                vortex_channel_pool_attach         (VortexChannelPool * pool
 	
 	/* it seems the channel wasn't found on the channel pool. Add
 	 * the channel. */
+	vortex_channel_ref (channel);
 	axl_list_append (pool->channels, channel);
 
 	vortex_connection_unlock_channel_pool (pool->connection);
@@ -1040,6 +1052,8 @@ void                vortex_channel_pool_deattach       (VortexChannelPool * pool
 
 		/* check the channel and remove from the list if found */
 		if (vortex_channel_are_equal (channel, channel_aux)) {
+			/* decrease reference */
+			vortex_channel_unref (channel);
 			axl_list_cursor_unlink (cursor);
 			break;
 		} /* end if */
