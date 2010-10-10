@@ -187,6 +187,17 @@ Module API
 
       :rtype: Returns the vortex.ChannelPool associated or None if no channel pool exists with the provided id.
 
+   .. method:: block ([block=True])
+   
+      Allows to block all incoming content on the provided connection by skiping connection available data state. This method binds vortex_connection_block C API.
+
+      :param block: Optional boolean value that configure if the connection must be blocked (True) or unblocked (False). If not configured the connection is blocked (True).
+      :type  block: Boolean (True if not configured)
+
+   .. method:: is_blocked ()
+   
+      :rtype: Returns if the connection is blocked (due to :meth:`block`) or not.
+
    .. method:: close ()
    
       Allows to close the connection using full BEEP close negotation procotol. Keep in mind that using full BEEP close procedure may suffer from BNRA (see http://www.aspl.es/vortex/draft-brosnan-beep-limit-close.txt). It is recommended to use shutdown method.
