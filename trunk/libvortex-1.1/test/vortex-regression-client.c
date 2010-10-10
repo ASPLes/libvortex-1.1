@@ -732,13 +732,13 @@ axl_bool test_00c (void) {
 	return axl_true;
 }
 
-axl_bool  test_01 (void) {
-	VortexConnection  * connection;
+axl_bool  test_01_real (VortexConnection * connection, axl_bool close_conn) {
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
 
 	/* creates a new connection against localhost:44000 */
-	connection = connection_new ();
+	if (connection == NULL)
+		connection = connection_new ();
 	if (!vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 01: failed to create connection..");
 		vortex_connection_close (connection);
@@ -766,13 +766,18 @@ axl_bool  test_01 (void) {
 	vortex_channel_close (channel, NULL);
 
 	/* ok, close the connection */
-	vortex_connection_close (connection);
+	if (close_conn)
+		vortex_connection_close (connection);
 
 	/* free queue */
 	vortex_async_queue_unref (queue);
 
 	/* return axl_true */
 	return axl_true;
+}
+
+axl_bool test_01 (void) {
+	return test_01_real (NULL, axl_true);
 }
 
 axl_bool  test_01a (void) {
@@ -10659,6 +10664,23 @@ axl_bool test_16_aux (VortexCtx * ctx, long check_period, int unreply_count, Vor
 	return axl_true;
 }
 
+void test_16_wait_until_channel_closed (VortexConnection * connection,
+					int                channel_num,
+					axl_bool           was_closed,
+					const char       * code,
+					const char       * msg,
+					axlPointer         user_data)
+{
+	/* push we have received channel close */
+	if (was_closed) {
+		vortex_async_queue_push (user_data, INT_TO_PTR (1));
+		return;
+	}
+	/* channel was not closed */
+	vortex_async_queue_push (user_data, INT_TO_PTR (2));
+	return;
+}
+
 /** 
  * @brief Check alive profile support 
  */
@@ -10667,8 +10689,12 @@ axl_bool  test_16 (void)
 
 	VortexAsyncQueue * queue;
 	VortexConnection * conn;
+	VortexChannel    * channel;
 	VortexCtx        * ctx;
+	int                iterator;
+	int                result;
 
+	/**** FIRST PART ****/
 	/* init vortex here */
 	ctx = vortex_ctx_new ();
 	if (! vortex_init_ctx (ctx)) {
@@ -10712,7 +10738,122 @@ axl_bool  test_16 (void)
 
 	printf ("Test 16: ok, wait to close connection (100ms)..\n");
 	vortex_async_queue_timedpop (queue, 100000);
+
+	/**** SECOND PART: checking proper connection close after alive check ****/
+	ctx = vortex_ctx_new ();
+	if (! vortex_init_ctx (ctx)) {
+		printf ("Test 00-a: failed to init VortexCtx reference..\n");
+		return axl_false;
+	}
+
+	printf ("Test 16: Creating a connection, enable alive check and close it..\n");
+	iterator = 0;
+	while (iterator < 10) {
+		conn = connection_new ();
+		if (! vortex_connection_is_ok (conn, axl_false)) {
+			printf ("ERROR: failed to create connection under HTTP CONNECT..\n");
+			return axl_false;
+		} /* end if */
+		
+		if (! vortex_alive_enable_check (conn, 20000, 5, NULL)) {
+			printf ("ERROR: failed to install connection check..\n");
+			return axl_false;
+		} /* end if */
+		
+		vortex_connection_close (conn);
+		
+		/* next iterator */
+		iterator++;
+	} /* end while */
+	
+	/**** THIRD PART: check alive with real content transfer ****/
+
+	/* now test alive with ongoing transfer */
+	printf ("Test 16: check alive with other transfer content..\n");
+	conn = connection_new ();
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: failed to create connection under HTTP CONNECT..\n");
+		return axl_false;
+	} /* end if */
+
+	if (! vortex_alive_enable_check (conn, 20000, 5, NULL)) {
+		printf ("ERROR: failed to install connection check..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 16: checking real content transfer");
+	iterator = 0;
+	while (iterator < 20) {
+		printf (".");
+		fflush (stdout);
+		if (! test_01_real (conn, axl_false)) {
+			printf ("basic BEEP support [ FAILED ]\n");
+			return axl_false;
+		}
+		iterator++;
+	} /* end if */
+	printf ("\n");
+
+	/* close connection */
+	vortex_connection_close (conn);
+
+	/**** FOURTH PART: checking alive channel close ****/
+	printf ("Test 16: fourth part: checking alive channel close\n");
+	conn = connection_new ();
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: failed to create connection under HTTP CONNECT..\n");
+		return axl_false;
+	} /* end if */
+
+	if (! vortex_alive_enable_check (conn, 20000, 5, NULL)) {
+		printf ("ERROR: failed to install connection check..\n");
+		return axl_false;
+	} /* end if */
+
+	/* wait channel alive to be created */
+	iterator = 0;
+	while (iterator < 10) {
+		vortex_async_queue_timedpop (queue, 100000);
+		channel = vortex_connection_get_channel_by_uri (conn, VORTEX_ALIVE_PROFILE_URI);
+		/* channel found */
+		if (channel)
+			break;
+
+		/* wait try */
+		iterator++;
+	}
+
+	if (channel == NULL ) {
+		printf ("ERROR: expected to find alive channel but found NULL reference..\n");
+		return axl_false;
+	} /* end if */
+
+	/* close alive channel */
+	vortex_channel_close_full (channel, test_16_wait_until_channel_closed, queue);
+
+	/* wait channel alive to be created */
+	result = PTR_TO_INT (vortex_async_queue_pop (queue));
+	if (result != 1) {
+		printf ("ERROR: found unexpected close result, expected 1 but found %d\n", result);
+		return axl_false;
+	} /* end if */
+
+	/* check connection is still working */
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: expected to find proper connection status but found it unconnected..\n");
+		return axl_false;
+	} /* end if */
+
+	/* close connection */
+	vortex_connection_close (conn);
+	
+	/* terminate context */
+	vortex_exit_ctx (ctx, axl_true);
+	vortex_async_queue_timedpop (queue, 100000);
+
 	vortex_async_queue_unref (queue);
+
+	
 
 	return axl_true;
 
