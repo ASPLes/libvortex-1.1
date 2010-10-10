@@ -10846,6 +10846,61 @@ axl_bool  test_16 (void)
 
 	/* close connection */
 	vortex_connection_close (conn);
+
+	/**** FIFTH PATH: checking alive on heavy transfer escenarios ****/
+	printf ("Test 16: fifth path, checking alive on heavy transfer situations..\n");
+	conn = connection_new ();
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: failed to create connection under HTTP CONNECT..\n");
+		return axl_false;
+	} /* end if */
+
+	if (! vortex_alive_enable_check (conn, 20000, 5, NULL)) {
+		printf ("ERROR: failed to install connection check..\n");
+		return axl_false;
+	} /* end if */
+
+	/* create a channel */
+	channel = vortex_channel_new (conn, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+	iterator = 0;
+	while (iterator < 200) {
+		if (! vortex_channel_send_msg (channel, TEST_REGRESION_URI_4_MESSAGE, 4096, NULL)) {
+			printf ("ERROR: failed to send message\n");
+			return axl_false;
+		}
+
+		/* next position */
+		iterator++;
+	}
+
+	iterator = 0;
+	while (vortex_channel_get_outstanding_messages (channel, NULL) > 0) {
+		/* check connection status */
+		if (! vortex_connection_is_ok (conn, axl_false)) {
+			printf ("ERROR: found connection close during reply received check..\n");
+			return axl_false;
+		}
+
+		/* now wait a bit */
+		vortex_async_queue_timedpop (queue, 100000);
+		iterator++;
+	}
+
+	/* now check connection after transfer completed */
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: found connection close during reply received check..\n");
+		return axl_false;
+	}
+
+	/* close connection */
+	vortex_connection_close (conn);
 	
 	/* terminate context */
 	vortex_exit_ctx (ctx, axl_true);

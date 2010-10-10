@@ -192,10 +192,12 @@ axl_bool __vortex_alive_trigger_failure (VortexAliveData * data)
 		    data->max_unreply_count, vortex_channel_get_outstanding_messages (data->channel, NULL), vortex_connection_get_id (data->conn));
 	
 	/* shutdown the connection */
-	if (vortex_connection_is_ok (data->conn, axl_false))
+	if (vortex_connection_is_ok (data->conn, axl_false)) {
+		/* remove connection close */
 		vortex_connection_shutdown (data->conn);
-	
-	/* remove check alive data */
+	}
+
+ 	/* remove check alive data */
 	__vortex_alive_free_reference (data);
 
 	return axl_true;

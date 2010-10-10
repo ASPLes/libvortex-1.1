@@ -77,6 +77,7 @@ typedef struct _VortexThreadPoolEvent {
 	axlPointer               data2;
 	long                     delay;
 	struct timeval           next_step;
+	int                      ref_count;
 } VortexThreadPoolEvent;
 
 typedef struct _VortexThreadPoolStarter {
@@ -96,6 +97,15 @@ void __vortex_thread_pool_increase_stamp (VortexThreadPoolEvent * event)
 	/* now increase microseconds part */
 	event->next_step.tv_usec = ((event->next_step.tv_usec + event->delay) % 1000000);
 
+	return;
+}
+
+void __vortex_thread_pool_unref_event (axlPointer _event)
+{
+	VortexThreadPoolEvent * event = _event;
+	event->ref_count--;
+	if (event->ref_count == 0) 
+		axl_free (event);
 	return;
 }
 
@@ -139,6 +149,9 @@ void __vortex_thread_pool_process_events (VortexCtx * ctx, VortexThreadPool * po
 			break;
 		}
 
+		/* increase ref count now we have the look */
+		event->ref_count++;
+
 		/* get stamp */
 		if ((now.tv_sec > event->next_step.tv_sec) ||
 		    ((now.tv_sec == event->next_step.tv_sec) &&
@@ -154,6 +167,9 @@ void __vortex_thread_pool_process_events (VortexCtx * ctx, VortexThreadPool * po
 			/* call to notify event */
 			if (func (ctx, data, data2)) {
 				vortex_mutex_lock (&pool->mutex);
+				/* decrease local reference */
+				__vortex_thread_pool_unref_event (event);
+
 				/* remove event */
 				axl_list_remove_at (pool->events, iterator);
 				vortex_mutex_unlock (&pool->mutex);
@@ -169,6 +185,9 @@ void __vortex_thread_pool_process_events (VortexCtx * ctx, VortexThreadPool * po
 			__vortex_thread_pool_increase_stamp (event);
 			
 		} /* end if */
+
+		/* decrease local reference */
+		__vortex_thread_pool_unref_event (event);
 
 		/* unlock for the next lock */
 		vortex_mutex_unlock (&pool->mutex);
@@ -341,7 +360,7 @@ void vortex_thread_pool_init     (VortexCtx * ctx,
 	} /* end if */
 	ctx->thread_pool->threads       = axl_list_new (axl_list_always_return_1, __vortex_thread_pool_terminate_thread);
 	ctx->thread_pool->stopped       = axl_list_new (axl_list_always_return_1, __vortex_thread_pool_terminate_thread);
-	ctx->thread_pool->events        = axl_list_new (axl_list_always_return_1, axl_free);
+	ctx->thread_pool->events        = axl_list_new (axl_list_always_return_1, __vortex_thread_pool_unref_event);
 	ctx->thread_pool->events_cursor = axl_list_cursor_new (ctx->thread_pool->events);
 	ctx->thread_pool->ctx           = ctx;
 
@@ -620,6 +639,7 @@ int  vortex_thread_pool_new_event           (VortexCtx              * ctx,
 	/* check alloc result */
 	if (event) {
 		event->func      = event_handler;
+		event->ref_count = 1;
 		event->data      = user_data;
 		event->data2     = user_data2;
 		event->delay     = microseconds;
@@ -634,7 +654,10 @@ int  vortex_thread_pool_new_event           (VortexCtx              * ctx,
 
 	/* (un)lock the thread pool */
 	vortex_mutex_unlock (&(ctx->thread_pool->mutex));
-
+	/* in case of failure */
+	if (event == NULL)
+		return PTR_TO_INT (-1);
+	
 	return PTR_TO_INT (event);
 }
 
