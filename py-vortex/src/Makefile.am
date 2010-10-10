@@ -60,6 +60,14 @@ libpy_vortex_tls_11_la_LDFLAGS  = $(PYTHON_LIBS) $(top_srcdir)/src/libvortex-1.1
 libpy_vortex_tls_11_la_includedir = $(includedir)/py_vortex
 endif
 
+# libpy_vortex_alive_11.la
+libpy_vortex_alive_11_la_include_HEADERS = \
+	py_vortex_alive.h
+libpy_vortex_alive_11_la_SOURCES = \
+	py_vortex_alive.c
+libpy_vortex_alive_11_la_LDFLAGS  = $(PYTHON_LIBS) $(top_srcdir)/src/libvortex-1.1.la $(top_srcdir)/alive/libvortex-alive-1.1.la $(AXL_LIBS) libpy_vortex_11.la
+libpy_vortex_alive_11_la_includedir = $(includedir)/py_vortex
+
 libdir = ${pythondir}/vortex
 
 # post-build script
@@ -67,7 +75,7 @@ all-local:
 	@echo "Running postbuild tasks.."
 
 clean-local:
-	@rm -f vortex$(SHARED_EXTENSION) _sasl$(SHARED_EXTENSION) _tls$(SHARED_EXTENSION)
+	@rm -f vortex$(SHARED_EXTENSION) _sasl$(SHARED_EXTENSION) _tls$(SHARED_EXTENSION) _alive$(SHARED_EXTENSION)
 
 install-exec-hook:
 	@echo "site installation ${DESTDIR}${pythondir}/vortex.."
