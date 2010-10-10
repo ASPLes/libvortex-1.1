@@ -50,6 +50,9 @@ import vortex.sasl
 # import vortex tls support
 import vortex.tls
 
+# import alive support
+import vortex.alive
+
 # import common items for reg test
 from regtest_common import *
 
@@ -2343,6 +2346,38 @@ def test_23 ():
     
     return True
 
+def test_24 ():
+
+    # all to register events
+    ctx = vortex.Ctx ()
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # call to create a connection
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # ok, now enable alive 
+    if not vortex.alive.enable_check (conn, 20000, 10):
+        error ("Expect to find proper alive.enable_check but found failure..")
+        return False
+
+    # block connection for a period
+    conn.block ()
+
+    # check that the connection is blocked
+    if not conn.is_blocked ():
+        error ("Expected to find blocked connection but different status..")
+        return False
+
+    # alive check ok
+    return True
+
 ###########################
 # intraestructure support #
 ###########################
@@ -2376,39 +2411,40 @@ def run_all_tests ():
 
 # declare list of tests available
 tests = [
-    (test_00_a, "Check PyVortex async queue wrapper"),
-    (test_01,   "Check PyVortex context initialization"),
-    (test_02,   "Check PyVortex basic BEEP connection"),
-    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
-    (test_03_a, "Check PyVortex connection set data"),
-    (test_04,   "Check PyVortex basic BEEP channel creation"),
-    (test_05,   "Check BEEP basic data exchange"),
-    (test_06,   "Check BEEP check several send operations (serialize)"),
-    (test_07,   "Check BEEP check several send operations (one send, one receive)"),
-    (test_08,   "Check BEEP transfer zeroed binaries frames"),
-    (test_09,   "Check BEEP channel support"),
-    (test_10,   "Check BEEP channel creation deny"),
-    (test_10_a, "Check BEEP channel creation deny (a)"),
-    (test_10_b, "Check reference counting on async notifications"),
-    (test_10_c, "Check async channel start notification"),
-    (test_10_d, "Check async channel start notification (failure expected)"),
-    (test_11,   "Check BEEP listener support"),
-    (test_12,   "Check connection on close notification"),
-    (test_12_a, "Check connection on close notification (during channel start)"),
-    (test_12_b, "Check channel start during connection close notify"),
-    (test_12_c, "Check close notification for conn refs not owned by caller"),
-    (test_12_d, "Check close notification for conn refs at listener"),
-    (test_13,   "Check wrong listener allocation"),
-    (test_14,   "Check SASL PLAIN support"),
-    (test_15,   "Check SASL ANONYMOUS support"),
-    (test_16,   "Check SASL DIGEST-MD5 support"),
-    (test_17,   "Check SASL CRAM-MD5 support"),
-    (test_18,   "Check TLS support"),
-    (test_19,   "Check TLS support (async notification)"),
-    (test_20,   "Check SASL PLAIN support (async notification)"),
-    (test_21,   "Check channel pool support"),
-    (test_22,   "Check channel pool support (handlers)"),
-    (test_23,   "Check event tasks")
+#    (test_00_a, "Check PyVortex async queue wrapper"),
+#    (test_01,   "Check PyVortex context initialization"),
+#    (test_02,   "Check PyVortex basic BEEP connection"),
+#    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
+#    (test_03_a, "Check PyVortex connection set data"),
+#    (test_04,   "Check PyVortex basic BEEP channel creation"),
+#    (test_05,   "Check BEEP basic data exchange"),
+#    (test_06,   "Check BEEP check several send operations (serialize)"),
+#    (test_07,   "Check BEEP check several send operations (one send, one receive)"),
+#    (test_08,   "Check BEEP transfer zeroed binaries frames"),
+#    (test_09,   "Check BEEP channel support"),
+#    (test_10,   "Check BEEP channel creation deny"),
+#    (test_10_a, "Check BEEP channel creation deny (a)"),
+#    (test_10_b, "Check reference counting on async notifications"),
+#    (test_10_c, "Check async channel start notification"),
+#    (test_10_d, "Check async channel start notification (failure expected)"),
+#    (test_11,   "Check BEEP listener support"),
+#    (test_12,   "Check connection on close notification"),
+#    (test_12_a, "Check connection on close notification (during channel start)"),
+#    (test_12_b, "Check channel start during connection close notify"),
+#    (test_12_c, "Check close notification for conn refs not owned by caller"),
+#    (test_12_d, "Check close notification for conn refs at listener"),
+#    (test_13,   "Check wrong listener allocation"),
+#    (test_14,   "Check SASL PLAIN support"),
+#    (test_15,   "Check SASL ANONYMOUS support"),
+#    (test_16,   "Check SASL DIGEST-MD5 support"),
+#    (test_17,   "Check SASL CRAM-MD5 support"),
+#    (test_18,   "Check TLS support"),
+#    (test_19,   "Check TLS support (async notification)"),
+#    (test_20,   "Check SASL PLAIN support (async notification)"),
+#    (test_21,   "Check channel pool support"),
+#    (test_22,   "Check channel pool support (handlers)"),
+#    (test_23,   "Check event tasks",
+    (test_24,   "Check alive implementation")
 ]
 
 # declare default host and port

@@ -20,13 +20,20 @@ endif
 if ENABLE_TLS_SUPPORT
 	@cp `find ../src -name libpy_vortex_tls_11$(SHARED_EXTENSION) -type l` vortex/
 endif
+	@cp `find ../src -name libpy_vortex_alive_11$(SHARED_EXTENSION) -type l` vortex/
+
         # copy python imports
 	@test -e vortex/__init__.py || cp ../src/__init__.py vortex/
 	@diff vortex/__init__.py ../src/__init__.py || cp ../src/__init__.py vortex/
+
 	@test -e vortex/sasl.py     || cp ../src/sasl.py vortex/
 	@diff vortex/sasl.py ../src/sasl.py || cp ../src/sasl.py vortex/
+
 	@test -e vortex/tls.py      || cp ../src/tls.py vortex/
 	@diff vortex/tls.py ../src/tls.py || cp ../src/tls.py vortex/
+
+	@test -e vortex/alive.py      || cp ../src/alive.py vortex/
+	@diff vortex/alive.py ../src/alive.py || cp ../src/alive.py vortex/
 check:
 	python vortex-regression-client.py
 

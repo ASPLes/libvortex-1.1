@@ -931,6 +931,38 @@ static PyObject * py_vortex_connection_skip_conn_close (PyVortexConnection * sel
 	return Py_None;
 }
 
+static PyObject * py_vortex_connection_block (PyVortexConnection * self, PyObject * args)
+{
+	axl_bool block = axl_true;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "|i", &block))
+		return NULL;
+
+	/* call to block connection */
+	vortex_connection_block (self->conn, block);
+
+	/* done, return ok */
+	Py_INCREF (Py_None);
+	return Py_None;
+}
+
+static PyObject * py_vortex_connection_is_blocked (PyVortexConnection * self, PyObject * args)
+{
+	axl_bool is_blocked;
+
+	/* call to block connection */
+	is_blocked = vortex_connection_is_blocked (self->conn);
+
+	/* done, return ok */
+	if (is_blocked) {
+		Py_INCREF (Py_True);
+		return Py_True;
+	}
+	Py_INCREF (Py_False);
+	return Py_False;
+}
+
 static PyObject * py_vortex_connection_get_data (PyVortexConnection * self, PyObject * args)
 {
 	const char  * key = NULL; 
@@ -999,6 +1031,12 @@ static PyMethodDef py_vortex_connection_methods[] = {
 	/* skip_conn_close */
 	{"skip_conn_close", (PyCFunction) py_vortex_connection_skip_conn_close, METH_VARARGS,
 	 "Allows to configure this vortex.Connection object to not close automatically its associated reference when the object is collected. Calling without arguments activates skip connection close on dealloction, otherwise pass skip=False to leave default behaviour."},
+	/* block */
+	{"block", (PyCFunction) py_vortex_connection_block, METH_VARARGS,
+	 "Allows to receiving any content from the provided connection. This method uses vortex_connection_block."},
+	/* is_blocked */
+	{"is_blocked", (PyCFunction) py_vortex_connection_is_blocked, METH_VARARGS,
+	 "Allows to check blocked status applied by vortex.Connection.block method."},
  	{NULL}  
 }; 
 

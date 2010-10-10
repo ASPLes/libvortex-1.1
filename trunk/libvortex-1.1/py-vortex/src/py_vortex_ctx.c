@@ -50,6 +50,9 @@ struct _PyVortexCtx {
 	axl_bool    exit_pending;
 };
 
+axlHash      * py_ctx_refs = NULL;
+VortexMutex    py_ctx_refs_mutex;
+
 /** 
  * @brief Allows to get the VortexCtx type definition found inside the
  * PyVortexCtx encapsulation.
