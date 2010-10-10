@@ -260,6 +260,7 @@ static PyObject * py_vortex_channel_pool_next_ready (PyVortexChannelPool * self,
 	if (channel == NULL) {
 		/* set configured */
 		Py_INCREF (Py_None);
+		return Py_None;
 	} /* end if */
 
 	/* create the python channel reference */
@@ -455,8 +456,6 @@ void py_vortex_channel_pool_on_created (VortexChannelPool * _pool,
 
 	/* set internal pool reference */
 	py_pool->pool = _pool;
-	py_vortex_log (PY_VORTEX_DEBUG, "on pool created notification: PyVortexChanenlPool ref: %p, VortexChannelPool: %p",
-		       py_pool, py_pool->pool);
 
 	/* set hook on on the pool */
 	py_vortex_channel_pool_set_data (py_pool);
@@ -511,6 +510,7 @@ PyObject * py_vortex_channel_pool_create   (PyObject           * py_conn,
 {
 	/* return a new instance */
 	PyVortexChannelPool     * obj;
+	VortexChannelPool       * pool;
 	
 
 	/* check callable handlers */
@@ -545,20 +545,20 @@ PyObject * py_vortex_channel_pool_create   (PyObject           * py_conn,
 	Py_BEGIN_ALLOW_THREADS;
 
 	/* create the pool */
-	obj->pool = vortex_channel_pool_new_full (py_vortex_connection_get (py_conn),
-						  profile,
-						  init_num,
-						  /* create channel */
-						  create_channel ? py_vortex_channel_pool_create_channel : NULL,
-						  create_channel ? obj : NULL,
-						  /* close channel handler */
-						  close ? py_vortex_channel_pool_close_channel : NULL,
-						  close ? obj : NULL,
-						  /* received handler */
-						  NULL, NULL,
-						  /* on created pool */
-						  on_channel_pool_created ? py_vortex_channel_pool_on_created : NULL,
-						  on_channel_pool_created ? obj : NULL);
+	pool = vortex_channel_pool_new_full (py_vortex_connection_get (py_conn),
+					     profile,
+					     init_num,
+					     /* create channel */
+					     create_channel ? py_vortex_channel_pool_create_channel : NULL,
+					     create_channel ? obj : NULL,
+					     /* close channel handler */
+					     close ? py_vortex_channel_pool_close_channel : NULL,
+					     close ? obj : NULL,
+					     /* received handler */
+					     NULL, NULL,
+					     /* on created pool */
+					     on_channel_pool_created ? py_vortex_channel_pool_on_created : NULL,
+					     on_channel_pool_created ? obj : NULL);
 
 	/* end threads */
 	Py_END_ALLOW_THREADS;
@@ -569,6 +569,9 @@ PyObject * py_vortex_channel_pool_create   (PyObject           * py_conn,
 		Py_INCREF (Py_None);
 		return Py_None;
 	} /* end if */
+
+	/* because we don't have a pool created handler set pool reference here.  */
+	obj->pool = pool;
 
 	/* set pool internal data here */
 	py_vortex_channel_pool_set_data (obj);

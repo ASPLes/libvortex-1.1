@@ -6113,6 +6113,7 @@ axl_bool  test_03a (void) {
 	}
 
 	/* create the channel pool */
+	printf ("Test 03-a: creating pool...\n");
 	pool = vortex_channel_pool_new (connection,
 					REGRESSION_URI,
 					1,
@@ -6123,6 +6124,7 @@ axl_bool  test_03a (void) {
 					/* no async channel creation */
 					NULL, NULL);
 	/* add tree channels */
+	printf ("Test 03-a: adding 3 more channels to the pool...\n");
 	vortex_channel_pool_add (pool, 3);
 	
 	/* check channel number */
@@ -6135,6 +6137,7 @@ axl_bool  test_03a (void) {
 	channels = axl_list_new (axl_list_always_return_1, NULL);
 
 	/* get next channel */
+	printf ("Test 03-a: getting one channel..\n");
 	channel = vortex_channel_pool_get_next_ready (pool, axl_false);
 	if (channel == NULL) 
 		return axl_false;
@@ -6151,7 +6154,6 @@ axl_bool  test_03a (void) {
 	if (channel == NULL) 
 		return axl_false;
 	axl_list_add (channels, channel);
-
 
 	/* get next channel */
 	channel = vortex_channel_pool_get_next_ready (pool, axl_false);
