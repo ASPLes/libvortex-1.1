@@ -241,7 +241,7 @@ axl_bool __vortex_alive_do_check        (VortexCtx  * ctx,
 		/* call to remove data associated */
 		__vortex_alive_free_reference (data);
 		
-		return axl_true;
+		return axl_true; /* request to remove event */
 	} /* end ok */
 
 	/* request the system to not remove the alive check */
