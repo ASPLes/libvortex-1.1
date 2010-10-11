@@ -4264,7 +4264,7 @@ void                vortex_connection_remove_channel_common  (VortexConnection *
 
 /** 
  * @internal Function used by vortex to notify that this connection
- * either writen or received content, setting a timestamp, which
+ * has either writen or received content, setting a timestamp, which
  * allows checking if the connection was idle.
  *
  * @param conn The connection that received or produced content.

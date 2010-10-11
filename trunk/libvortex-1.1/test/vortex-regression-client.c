@@ -10683,6 +10683,17 @@ void test_16_wait_until_channel_closed (VortexConnection * connection,
 	return;
 }
 
+void test_16_failure_handler (VortexConnection * conn, long check_period, int unreply_count)
+{
+	VortexAsyncQueue * queue;
+
+	printf ("Test 16: received failure handler conn-id=%d\n", vortex_connection_get_id (conn));
+	queue = vortex_connection_get_data (conn, "test_16:queue");
+	printf ("Test 16: pushing connection into queue: %p\n", queue);
+	vortex_async_queue_push (queue, conn);
+	return;
+}
+
 /** 
  * @brief Check alive profile support 
  */
@@ -10691,6 +10702,7 @@ axl_bool  test_16 (void)
 
 	VortexAsyncQueue * queue;
 	VortexConnection * conn;
+	VortexConnection * conn2;
 	VortexChannel    * channel;
 	VortexCtx        * ctx;
 	int                iterator;
@@ -10902,6 +10914,42 @@ axl_bool  test_16 (void)
 	}
 
 	/* close connection */
+	vortex_connection_close (conn);
+
+	/**** SIXTH: check failure handler ****/
+	printf ("Test 16: sixth part, checking failure handler..\n");
+	conn = connection_new ();
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: failed to create connection under HTTP CONNECT..\n");
+		return axl_false;
+	} /* end if */
+
+	vortex_connection_set_data (conn, "test_16:queue", queue);
+	if (! vortex_alive_enable_check (conn, 20000, 5, test_16_failure_handler)) {
+		printf ("ERROR: failed to install connection check..\n");
+		return axl_false;
+	} /* end if */
+
+	/* call to block connection */
+	vortex_connection_block (conn, axl_true);
+
+	/* wait until connection is received */
+	conn2 = vortex_async_queue_pop (queue);
+	printf ("Test 16: received connection..\n");
+	
+	/* check references */
+	if (vortex_connection_get_id (conn) != vortex_connection_get_id (conn2)) {
+		printf ("ERROR: expected to find same connection from failure handler..\n");
+		return axl_false;
+	} /* end if */
+
+	if (! vortex_connection_is_ok (conn2, axl_false)) {
+		printf ("ERROR: expected proper connection but found failure..\n");
+		return axl_false;
+	}
+
+	/* close connection */
+	vortex_connection_block (conn, axl_false);
 	vortex_connection_close (conn);
 	
 	/* terminate context */
