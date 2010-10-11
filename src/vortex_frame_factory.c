@@ -1823,8 +1823,9 @@ axl_bool             vortex_frame_send_raw     (VortexConnection * connection, c
 	}
 
  	/* sum total amount of data */
- 	if (bytes > 0)
+ 	if (bytes > 0) {
  		total += bytes;
+	}
 
  	if (total != frame_size) {
  		vortex_log (VORTEX_LEVEL_CRITICAL, "write request mismatch with write done (%d != %d), pending tries=%d",
