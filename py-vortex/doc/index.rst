@@ -42,6 +42,7 @@ used while using PyVortex: http://www.aspl.es/fact/files/af-arch/vortex-1.1/html
    handlers
    vortexsasl
    vortextls
+   vortexalive
 
 =================
 Community support
