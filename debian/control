@@ -125,6 +125,21 @@ Depends: libaxl-dev (>= 0.6.2), libvortex-1.1-dev (= ${Source-Version}),
  libvortex-http-1.1 (= ${Source-Version})
 Description: HTTP CONNECT extension library headers
   Development headers for HTTP CONNECT extension library.
+
+Package: libvortex-alive-1.1
+Section: libs
+Architecture: any
+Depends: libc6, libaxl1 (>= 0.6.2), libvortex-1.1 (= ${Source-Version})
+Description: BEEP ALIVE support for Vortex Library
+ This package contains ALIVE Vortex Library implementation.
+
+Package: libvortex-alive-1.1-dev
+Section: libdevel
+Architecture: any
+Depends: libaxl-dev (>= 0.6.2), libvortex-1.1-dev (= ${Source-Version}),
+ libvortex-tls-1.1 (= ${Source-Version})
+Description: BEEP ALIVE support for Vortex Library (devel headers).
+ Development headers for BEEP ALIVE profile.
  
 Package: vortex-xml-rpc-gen-1.1
 Section: net
@@ -193,3 +208,12 @@ Depends: libvortex-1.1-dev (= ${Source-Version}), python-vortex,
   python-vortex-sasl (= ${Source-Version})
 Description: Development headers for Python Vortex SASL bindings
   Python Vortex SASL  bindings development headers.
+
+Package: python-vortex-alive
+Section: libs
+Architecture: any
+Depends: libvortex-1.1 (= ${Source-Version}), python,
+  libvortex-alive-1.1 (= ${Source-Version})
+Description: Python bindings for Vortex Library ALIVE support
+ Python bindings for Vortex Library ALIVE profile.
+
