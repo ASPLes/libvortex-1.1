@@ -353,7 +353,9 @@ void                vortex_connection_remove_handler               (VortexConnec
 								    VortexConnectionHandler           handler_type,
 								    axlPointer                        handler_id);
 
-void                vortex_connection_set_receive_stamp            (VortexConnection * conn);
+void                vortex_connection_set_receive_stamp            (VortexConnection * conn, long bytes);
+
+void                vortex_connection_get_receive_stamp            (VortexConnection * conn, long * bytes, long * last_idle_stamp);
 
 void                vortex_connection_check_idle_status            (VortexConnection * conn, VortexCtx * ctx, long time_stamp);
 
