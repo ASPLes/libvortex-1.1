@@ -58,6 +58,8 @@ typedef struct _VortexAliveData {
 	axl_bool             channel_in_progress;
 	int                  channel_tries;
 	int                  event_id;
+	long                 last_idle_stamp;
+	long                 bytes_received;
 }VortexAliveData;
 
 /** 
@@ -159,6 +161,28 @@ axl_bool           vortex_alive_init                       (VortexCtx * ctx)
 	return axl_true;
 }
 
+axl_bool __vortex_alive_found_activity (VortexCtx * ctx, VortexConnection * conn, VortexAliveData * data)
+{
+	long              bytes_received;
+	long              last_idle_stamp;
+
+	/* get current stamp and bytes received */
+	vortex_connection_get_receive_stamp (conn, &bytes_received, &last_idle_stamp);
+
+	/* check against values previously recorded */
+	if (bytes_received > data->bytes_received || last_idle_stamp > data->last_idle_stamp) {
+		vortex_log (VORTEX_LEVEL_WARNING, 
+			    "Skipping failure check because stamp=%ld (previous %ld) or bytes=%ld (previous %ld) received signals activity on conn-id=%d",
+			    last_idle_stamp, data->last_idle_stamp, bytes_received, data->bytes_received, vortex_connection_get_id (conn));
+		data->bytes_received  = bytes_received;
+		data->last_idle_stamp = last_idle_stamp;
+		return axl_true; /* activity found, skip alive failure checks */
+	} /* end if */
+
+	return axl_false; /* no activity, continue check */
+}
+
+
 /** 
  * @internal Function used to trigger failure after channel start
  * timeout or unreply count is reached.
@@ -225,6 +249,11 @@ axl_bool __vortex_alive_do_check        (VortexCtx  * ctx,
 		/* request system to remove this task */
 		return axl_true;
 	} /* end if */
+
+	/* do not trigger alive failure if connection idle stamp was
+	   updated or more bytes were received */
+	if (__vortex_alive_found_activity (ctx, data->conn, data))
+		return axl_false;
 
 	/* if channel is ok, and so the connection, check if there are
 	 * pending replies and if they exceed the max unreplied
@@ -353,6 +382,11 @@ axl_bool   __vortex_alive_create_channel        (VortexCtx  * ctx,
 	vortex_log (VORTEX_LEVEL_WARNING, "Alive channel still not created, tries: %d (in_progress: %d, outstanding messages: %d)", 
 		    data->channel_tries, data->channel_in_progress,
 		    vortex_channel_get_outstanding_messages (data->channel, NULL));
+
+	/* do not trigger alive failure if connection idle stamp was
+	   updated or more bytes were received */
+	if (__vortex_alive_found_activity (ctx, data->conn, data))
+		return axl_false;
 	
 	/* check channel tries */
 	data->channel_tries --;
@@ -446,6 +480,9 @@ axl_bool           vortex_alive_enable_check               (VortexConnection * c
 	
 	/* also configure connection close to detect and react */
 	vortex_connection_set_on_close_full (conn, __vortex_alive_connection_closed, data);
+
+	/* record current bytes received and idle stamp */
+	vortex_connection_get_receive_stamp (conn, &data->bytes_received, &data->last_idle_stamp);
 
 	/* install event to create the channel */
 	data->event_id = vortex_thread_pool_new_event (ctx, check_period > 40000 ? check_period : 40000, __vortex_alive_create_channel, data, NULL);

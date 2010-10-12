@@ -1132,8 +1132,13 @@ int         vortex_frame_receive_raw  (VortexConnection * connection, char  * bu
 		       maxlen, error_msg ? error_msg : "");
 	}
 
+	if (nread > 0) {
+		/* notify here frame received (content receieved) */
+		vortex_connection_set_receive_stamp (connection, (long) nread);
+	}
+
 	/* ensure we don't access outside the array */
-	if (nread < 0)
+	if (nread < 0) 
 		nread = 0;
 
 	buffer[nread] = 0;
@@ -1696,9 +1701,6 @@ process_buffer:
  			    (vortex_frame_get_transfer_encoding (frame) != NULL) ? vortex_frame_get_transfer_encoding (frame) : "",
  			    frame->size, frame->mime_headers_size);
 	} /* end if */
-
-	/* notify here frame received (content receieved) */
-	vortex_connection_set_receive_stamp (connection);
 
 	return frame;
 

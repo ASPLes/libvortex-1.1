@@ -522,6 +522,12 @@ struct _VortexConnection {
 	 * @internal Value to track connection activity.
 	 */
 	long                    last_idle_stamp;
+
+	/** 
+	 * @internal Value to track now many bytes has being received
+	 * on this connection.
+	 */
+	long                    bytes_received;
 };
 
 
@@ -4268,11 +4274,35 @@ void                vortex_connection_remove_channel_common  (VortexConnection *
  * allows checking if the connection was idle.
  *
  * @param conn The connection that received or produced content.
+ * @param bytes Bytes received on this stamp.
  */
-void                vortex_connection_set_receive_stamp            (VortexConnection * conn)
+void                vortex_connection_set_receive_stamp            (VortexConnection * conn, long bytes)
 {
 	/* set that content was received */
 	conn->last_idle_stamp = (long) time (NULL);
+	conn->bytes_received  += bytes;
+
+	return;
+}
+
+/** 
+ * @internal allows to get bytes received so far and last idle stamp
+ * (idle since that stamp) on the provided connection.
+ */ 
+void                vortex_connection_get_receive_stamp            (VortexConnection * conn, 
+								    long             * bytes, 
+								    long             * last_idle_stamp)
+{
+	if (bytes != NULL)
+		(*bytes) = 0;
+	if (last_idle_stamp != NULL)
+		(*last_idle_stamp) = 0;
+	if (conn == NULL)
+		return;
+	if (bytes != NULL)
+		(*bytes) = conn->bytes_received;
+	if (last_idle_stamp != NULL)
+		(*last_idle_stamp) = conn->last_idle_stamp;
 
 	return;
 }
@@ -4290,7 +4320,7 @@ void                vortex_connection_check_idle_status            (VortexConnec
 
 	/* check if the connection was never checked */
 	if (conn->last_idle_stamp == 0) {
-		vortex_connection_set_receive_stamp (conn);
+		vortex_connection_set_receive_stamp (conn, 0);
 		return;
 	} /* end if */
 

@@ -447,7 +447,7 @@ axlPointer __vortex_ctx_notify_idle (VortexConnection * conn)
 		    vortex_connection_get_id (conn));
 
 	/* reset idle state to current time and notify idle notification finished */
-	vortex_connection_set_receive_stamp (conn);
+	vortex_connection_set_receive_stamp (conn, 0);
 	vortex_connection_set_data (conn, "vo:co:idle", NULL);
 
 	vortex_connection_unref (conn, "notify-idle");
