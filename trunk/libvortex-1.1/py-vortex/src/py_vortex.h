@@ -120,6 +120,7 @@ void     py_vortex_decref                (PyObject * obj);
 PyMODINIT_FUNC  initlibpy_vortex_11 (void);
 
 /* include other modules */
+#include <py_vortex_handle.h>
 #include <py_vortex_ctx.h>
 #include <py_vortex_connection.h>
 #include <py_vortex_channel.h>

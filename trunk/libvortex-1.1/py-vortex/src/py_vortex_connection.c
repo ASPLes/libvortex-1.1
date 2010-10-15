@@ -826,11 +826,35 @@ static PyObject * py_vortex_connection_set_on_close (PyObject * self, PyObject *
 	       py_vortex_connection_set_on_close_handler, 
 	       /* the object with all references */
 	       on_close_obj);
-					     
 
-	/* set configured */
-	Py_INCREF (Py_None);
-	return Py_None;
+	/* create a handle that allows to remove this particular
+	   handler. This handler can be used to remove the on close
+	   handler */
+	return py_vortex_handle_create (on_close_obj, NULL);
+}
+
+static PyObject * py_vortex_connection_remove_on_close (PyObject * self, PyObject * args, PyObject * kwds)
+{
+	PyObject  * handle      = NULL;
+	
+	/* now parse arguments */
+	static char *kwlist[] = {"handle", NULL};
+
+	/* parse and check result */
+	if (! PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &handle)) 
+		return NULL;
+
+	/* call to remove close handler */
+	if (vortex_connection_remove_on_close_full (py_vortex_connection_get (self), 
+						    py_vortex_connection_set_on_close_handler,
+						    py_vortex_handle_get (handle))) {
+		/* handler removed */
+		Py_INCREF (Py_True);
+		return Py_True;
+	} /* end if */
+
+	Py_INCREF (Py_False);
+	return Py_False;
 }
 
 typedef struct _PyVortexConnectionSelectChannels {
@@ -1001,6 +1025,9 @@ static PyMethodDef py_vortex_connection_methods[] = {
 	/* set_on_close */
 	{"set_on_close", (PyCFunction) py_vortex_connection_set_on_close, METH_VARARGS | METH_KEYWORDS,
 	 "API wrapper for vortex_connection_set_on_close_full. This method allows to configure a handler which will be called in case the connection is closed. This is useful to detect client or server broken connection."},
+	/* remove_on_close */
+	{"remove_on_close", (PyCFunction) py_vortex_connection_remove_on_close, METH_VARARGS | METH_KEYWORDS,
+	 "API wrapper for vortex_connection_remove_on_close_full. This method allows to remove a particular on close handler installed by the method .set_on_close."},
 	/* find_by_uri */
 	{"find_by_uri", (PyCFunction) py_vortex_connection_find_by_uri, METH_VARARGS,
 	 "Allows to get a reference to all channels opened on the conection using a particular profile."},
