@@ -531,6 +531,7 @@ PyMODINIT_FUNC  initlibpy_vortex_11 (void)
 	init_vortex_async_queue  (module);
 	init_vortex_frame        (module);
 	init_vortex_channel_pool (module);
+	init_vortex_handle       (module);
 
 	return;
 }
