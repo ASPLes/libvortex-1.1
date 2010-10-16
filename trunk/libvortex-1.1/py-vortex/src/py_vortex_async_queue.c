@@ -167,7 +167,7 @@ static PyObject * py_vortex_async_queue_timedpop (PyVortexAsyncQueue* self, PyOb
 	int        microseconds = 0;
 
 	/* now implement other attributes */
-	if (! PyArg_Parse (args, "i", &microseconds))
+	if (! PyArg_ParseTuple (args, "i", &microseconds))
 		return NULL;
 
 	/* allow other threads to enter into the python space */
@@ -178,6 +178,11 @@ static PyObject * py_vortex_async_queue_timedpop (PyVortexAsyncQueue* self, PyOb
 
 	/* restore thread state */
 	Py_END_ALLOW_THREADS
+
+	if (_result == NULL) {
+		Py_INCREF (Py_None);
+		return Py_None;
+	} /* end if */
 
 	/* do not decrement reference counting. It was increased to
 	 * provide a reference owned by the caller */
