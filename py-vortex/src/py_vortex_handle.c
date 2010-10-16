@@ -60,8 +60,16 @@ static void py_vortex_handle_dealloc (PyVortexHandle* self)
 	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortexHandle id: %p", self);
 	
 	/* call to destroy */
-	if (self->data_destroy)
+	if (self->data_destroy) {
+		/* allow threads */
+		Py_BEGIN_ALLOW_THREADS
+
+		/* call user code */
 		self->data_destroy (self->data);
+
+		/* end threads */
+		Py_END_ALLOW_THREADS
+	}
 	self->data         = NULL;
 	self->data_destroy = NULL;
 
@@ -109,8 +117,8 @@ static PyMethodDef py_vortex_handle_methods[] = {
  */
 static PyObject * py_vortex_handle_new (PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
-	Py_INCREF (Py_None);
-	return Py_None;
+	/* create the object */
+	return type->tp_alloc(type, 0);
 }
 
 static PyTypeObject PyVortexHandleType = {
@@ -152,7 +160,7 @@ static PyTypeObject PyVortexHandleType = {
     0,                         /* tp_dictoffset */
     (initproc)py_vortex_handle_init_type,      /* tp_init */
     0,                         /* tp_alloc */
-    py_vortex_handle_new,  /* tp_new */
+    py_vortex_handle_new,      /* tp_new */
 
 };
 
@@ -164,6 +172,8 @@ void                 init_vortex_handle        (PyObject           * module)
 	
 	Py_INCREF (&PyVortexHandleType);
 	PyModule_AddObject(module, "Handle", (PyObject *)&PyVortexHandleType);
+
+	return;
 }
 
 /** 
@@ -180,6 +190,23 @@ axlPointer         py_vortex_handle_get      (PyObject           * obj)
 		return NULL;
 	/* return stored pointer */
 	return handle->data;
+}
+
+/** 
+ * @brief Cleanup the provided PyVortexHandle to erase its internal
+ * pointer and internal destroy function.
+ */
+void                 py_vortex_handle_nullify  (PyObject           * obj)
+{
+	PyVortexHandle * handle = (PyVortexHandle *) obj;
+	if (handle == NULL)
+		return;
+	py_vortex_log (PY_VORTEX_DEBUG, "nullifying vortex.Handle (%p)", obj);
+	/* clear handles */
+	handle->data         = NULL;
+	handle->data_destroy = NULL;
+
+	return;
 }
 
 /** 
@@ -214,6 +241,8 @@ PyObject         * py_vortex_handle_create   (axlPointer           data,
 	/* set references */
 	obj->data         = data;
 	obj->data_destroy = data_destroy;
+
+	py_vortex_log (PY_VORTEX_DEBUG, "creating vortex.Handle (%p), storing %p", obj, data);
 
 	return __PY_OBJECT (obj);
 }

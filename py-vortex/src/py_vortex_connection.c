@@ -744,8 +744,8 @@ void py_vortex_connection_set_on_close_handler (VortexConnection * conn,
 	PyObject                         * result;
 
 	/* notify on close notification received */
-	py_vortex_log (PY_VORTEX_DEBUG, "found on close notification for connection id=%d, py_conn=%p (internal: %p)", 
-		       vortex_connection_get_id (conn), on_close_obj->py_conn, ((PyVortexConnection *) on_close_obj->py_conn)->conn);
+	py_vortex_log (PY_VORTEX_DEBUG, "found on close notification for connection id=%d, (internal: %p)", 
+		       vortex_connection_get_id (conn), _on_close_obj);
 	
 	/*** bridge into python ***/
 	/* acquire the GIL */
@@ -782,7 +782,7 @@ void py_vortex_connection_set_on_close_handler (VortexConnection * conn,
 	return;
 }
 
-static PyObject * py_vortex_connection_set_on_close (PyObject * self, PyObject * args, PyObject * kwds)
+PyObject * py_vortex_connection_set_on_close (PyObject * self, PyObject * args, PyObject * kwds)
 {
 	PyObject                         * on_close      = NULL;
 	PyObject                         * on_close_data = Py_None;
@@ -835,7 +835,9 @@ static PyObject * py_vortex_connection_set_on_close (PyObject * self, PyObject *
 
 static PyObject * py_vortex_connection_remove_on_close (PyObject * self, PyObject * args, PyObject * kwds)
 {
-	PyObject  * handle      = NULL;
+	PyObject                         * handle      = NULL;
+	PyVortexConnectionSetOnCloseData * on_close_obj;
+	axl_bool                           result;
 	
 	/* now parse arguments */
 	static char *kwlist[] = {"handle", NULL};
@@ -844,10 +846,25 @@ static PyObject * py_vortex_connection_remove_on_close (PyObject * self, PyObjec
 	if (! PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &handle)) 
 		return NULL;
 
+	/* get on_close object */
+	on_close_obj = py_vortex_handle_get (handle);
+	py_vortex_handle_nullify (handle);
+
 	/* call to remove close handler */
-	if (vortex_connection_remove_on_close_full (py_vortex_connection_get (self), 
-						    py_vortex_connection_set_on_close_handler,
-						    py_vortex_handle_get (handle))) {
+	result = vortex_connection_remove_on_close_full (py_vortex_connection_get (self), 
+							 py_vortex_connection_set_on_close_handler,
+							 on_close_obj);
+
+	/* finish close object */
+	if (on_close_obj) {
+		py_vortex_log (PY_VORTEX_DEBUG, "finishing on close object reference (%p)", on_close_obj);
+		Py_DECREF (on_close_obj->py_conn);
+		Py_DECREF (on_close_obj->on_close);
+		Py_DECREF (on_close_obj->on_close_data);
+		axl_free (on_close_obj);
+	} /* end if */
+
+	if (result) {
 		/* handler removed */
 		Py_INCREF (Py_True);
 		return Py_True;

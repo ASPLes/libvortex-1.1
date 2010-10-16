@@ -150,6 +150,17 @@ Module API
       :param on_close_data: The user defined data to be passed to the on_close handler along with handler corresponding parameters.
       :type  on_close_data: Object
 
+      :return: Returns a new reference to a vortex.Handle that can be used to remove the on close handler configured using :meth:`remove_on_close`
+
+   .. method:: remove_on_close (handle_ref)
+   
+      Allows to remove an on close handler configured using :meth:`set_on_close`. The close handler to remove is identified by the handle_ref parameter which is the value returned by the :meth:`set_on_close` handler.
+
+      :param handle_ref: Reference to the on close handler to remove (value returned by :meth:`set_on_close`).
+      :type  handl_ref: :class:`vortex.Handle`
+
+      :return: True in the case the handler was found and removed, otherwise False is returned.
+
    .. method:: find_by_uri (profile)
    
       Allows to get the list of channels available (opened) on the connection which are running the provided profile.

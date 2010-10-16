@@ -97,6 +97,7 @@ void __vortex_alive_free (axlPointer _data)
 void __vortex_alive_free_reference (VortexAliveData * data)
 {
 	VortexConnection * conn = data->conn;
+	VortexCtx        * ctx  = CONN_CTX (conn);
 
 	/* nullify reference */
 	data->conn = NULL;
@@ -107,6 +108,9 @@ void __vortex_alive_free_reference (VortexAliveData * data)
 	vortex_connection_set_data (data->conn, VORTEX_ALIVE_CHECK_ENABLED, NULL);
 
 	/* now unref here */
+	
+	vortex_log (VORTEX_LEVEL_DEBUG, "releasing alive conn-id=%d ref (current: %d)", 
+		    vortex_connection_get_id (conn), vortex_connection_ref_count (conn));
 	vortex_connection_unref (conn, "alive-check");
 	return;
 }
@@ -203,6 +207,8 @@ axl_bool __vortex_alive_trigger_failure (VortexAliveData * data)
 			    "alive check max unreplied count reached=%d or alive channel not created, notify on failure handler for connection id=%d",
 			    data->max_unreply_count,
 			    vortex_connection_get_id (data->conn));
+
+		/* call user space */
 		data->failure_handler (data->conn, data->check_period, data->max_unreply_count);
 		
 		/* remove check alive data */

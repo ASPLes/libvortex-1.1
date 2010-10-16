@@ -59,6 +59,8 @@ axl_bool             py_vortex_handle_check    (PyObject           * obj);
 
 axlPointer           py_vortex_handle_get      (PyObject           * obj);
 
+void                 py_vortex_handle_nullify  (PyObject           * obj);
+
 PyObject           * py_vortex_handle_create   (axlPointer           data,
 						axlDestroyFunc       data_destroy);
 
