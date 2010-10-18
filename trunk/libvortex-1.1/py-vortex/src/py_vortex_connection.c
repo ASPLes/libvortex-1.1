@@ -466,25 +466,25 @@ PyObject * py_vortex_connection_get_attr (PyObject *o, PyObject *attr_name) {
 
 	if (axl_cmp (attr, "error_msg")) {
 		/* found error_msg attribute */
-		return Py_BuildValue ("s", vortex_connection_get_message (self->conn));
+		return Py_BuildValue ("z", vortex_connection_get_message (self->conn));
 	} else if (axl_cmp (attr, "status")) {
 		/* found status attribute */
 		return Py_BuildValue ("i", vortex_connection_get_status (self->conn));
 	} else if (axl_cmp (attr, "server_name")) {
 		/* found server_name */
-		return Py_BuildValue ("s", vortex_connection_get_server_name (self->conn));
+		return Py_BuildValue ("z", vortex_connection_get_server_name (self->conn));
 	} else if (axl_cmp (attr, "host")) {
 		/* found host attribute */
-		return Py_BuildValue ("s", vortex_connection_get_host (self->conn));
+		return Py_BuildValue ("z", vortex_connection_get_host (self->conn));
 	} else if (axl_cmp (attr, "port")) {
 		/* found port attribute */
-		return Py_BuildValue ("s", vortex_connection_get_port (self->conn));
+		return Py_BuildValue ("z", vortex_connection_get_port (self->conn));
 	} else if (axl_cmp (attr, "local_addr")) {
 		/* found local_addr attribute */
-		return Py_BuildValue ("s", vortex_connection_get_local_addr (self->conn));
+		return Py_BuildValue ("z", vortex_connection_get_local_addr (self->conn));
 	} else if (axl_cmp (attr, "local_port")) {
 		/* found local_port attribute */
-		return Py_BuildValue ("s", vortex_connection_get_local_port (self->conn));
+		return Py_BuildValue ("z", vortex_connection_get_local_port (self->conn));
 	} else if (axl_cmp (attr, "num_channels")) {
 		/* found num_channels attribute */
 		return Py_BuildValue ("i", vortex_connection_channels_count (self->conn));
