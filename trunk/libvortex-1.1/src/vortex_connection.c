@@ -4493,9 +4493,11 @@ void __vortex_connection_invoke_on_close (VortexConnection * connection,
 {
 	VortexConnectionOnClose        on_close_handler;
 	VortexConnectionOnCloseData  * handler;
-#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx                    * ctx = connection->ctx;
-#endif
+
+	/* check if context is in process of finishing */
+	if (ctx->vortex_exit) 
+		return;
 
 	/* lock now the op mutex is not blocked */
 	vortex_mutex_lock (&connection->op_mutex);
@@ -5990,6 +5992,10 @@ void vortex_connection_set_on_close       (VortexConnection * connection,
  *
  * @param data User defined data to be passed to the handler.
  * 
+ *
+ * NOTE: handler configured will be skipped in the case \ref VortexCtx
+ * hosting the provided connection is being closed (a call to \ref
+ * vortex_exit_ctx was done). 
  */
 void vortex_connection_set_on_close_full  (VortexConnection * connection,
 					   VortexConnectionOnCloseFull on_close_handler,
