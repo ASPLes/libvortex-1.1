@@ -2169,6 +2169,10 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
  * the connection, not only to initiate the BEEP close protocol, but
  * to also release the reference you acquired previously.
  *
+ * <b>Calling to create connections when vortex is being finished or uninitialized</b>
+ *
+ * If a call to vortex_exit_ctx was done before calling to create a
+ * new connection, then the function will return NULL. 
  */
 VortexConnection  * vortex_connection_new_full               (VortexCtx            * ctx,
 							      const char           * host, 
@@ -2180,7 +2184,7 @@ VortexConnection  * vortex_connection_new_full               (VortexCtx         
 	VortexConnectionNewData * data;
 
 	/* check context is initialized */
-	if (! vortex_init_check (ctx)) {
+	if (! vortex_init_check (ctx) || ctx->vortex_exit) {
 		/* check to release options if defined */
 		vortex_connection_opts_check_and_release (options);
 		return NULL;

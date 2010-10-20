@@ -122,7 +122,7 @@ void __vortex_thread_pool_process_events (VortexCtx * ctx, VortexThreadPool * po
 	axlPointer               data2;
 
 	/* ensure only one thread is processing */
-	if (pool->processing_events || axl_list_length (pool->events) == 0)
+	if (ctx->vortex_exit || pool->processing_events || axl_list_length (pool->events) == 0)
 		return;
 	/* acquire lock */
 	vortex_mutex_lock (&pool->mutex);
@@ -219,6 +219,9 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * data)
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "thread from pool started");
 
+	/* acquire a reference to the context */
+	vortex_ctx_ref (ctx);
+
 	/* get a reference to the queue, waiting for the next work */
 	while (axl_true) {
 
@@ -254,6 +257,9 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * data)
 
 			/* unref the queue and return */
 			vortex_async_queue_unref (queue);
+
+			/* unref ctx */
+			vortex_ctx_unref (&ctx);
 			return NULL;
 		} /* end if */
 
@@ -264,6 +270,7 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * data)
 			/* unref the queue and return */
 			vortex_async_queue_unref (queue);
 			
+			vortex_ctx_unref (&ctx);
 			return NULL;
 		} /* end if */
 
@@ -284,6 +291,7 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * data)
 	} /* end if */
 		
 	/* That's all! */
+	vortex_ctx_unref (&ctx);
 	return NULL;
 }
 

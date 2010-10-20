@@ -1086,6 +1086,15 @@ axl_bool vortex_init_check (VortexCtx * ctx)
  *
  * @param free_ctx Allows to signal the function if the context
  * provided must be deallocated (by calling to \ref vortex_ctx_free).
+ *
+ * <b>Notes about calling to terminate vortex from inside its handlers:<b>
+ *
+ * Currently this is allowed and supported only in the following handlers:
+ *
+ * - \ref VortexOnFrameReceived (\ref vortex_channel_set_received_handler)
+ * - \ref VortexConnectionOnCloseFull (\ref vortex_connection_set_on_close_full)
+ *
+ * The rest of handlers has being not tested.
  */
 void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
 {
