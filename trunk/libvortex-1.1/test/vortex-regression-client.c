@@ -2848,6 +2848,136 @@ axl_bool test_01q (void) {
 
 }
 
+void test_01r_frame_received (VortexChannel    * channel,
+			      VortexConnection * conn,
+			      VortexFrame      * frame,
+			      axlPointer         user_data)
+{
+	VortexAsyncQueue * queue = user_data;
+
+	/* call to finish vortex */
+	printf ("Test 01-r: calling to terminate vortex context from inside the frame received handler..\n");
+	vortex_exit_ctx (CONN_CTX (conn), axl_true);
+
+	/* push into the queue to advice */
+	vortex_async_queue_push (queue, INT_TO_PTR (1));
+
+	printf ("Test 01-r: returning from frame received close handler..\n");
+	return;
+}
+
+void test_01r_on_close (VortexConnection * conn, axlPointer user_data)
+{
+
+	VortexAsyncQueue * queue = user_data;
+
+	/* call to finish vortex */
+	printf ("Test 01-r: calling to terminate vortex context from inside the connection close handler..\n");
+	vortex_exit_ctx (CONN_CTX (conn), axl_true);
+
+	/* push into the queue to advice */
+	vortex_async_queue_push (queue, INT_TO_PTR (1));
+
+	printf ("Test 01-r: returning from connection close handler..\n");
+	return;
+}
+
+/** 
+ * @brief Check connection close after vortex termination.
+ */
+axl_bool test_01r (void) {
+
+	VortexConnection   * conn;
+	VortexChannel      * channel;
+	VortexCtx          * ctx;
+	VortexAsyncQueue   * queue = NULL;
+
+	/* create an indepenent client context */
+	ctx = vortex_ctx_new ();
+
+	/* init vortex on this context */
+	if (! vortex_init_ctx (ctx)) {
+		printf ("ERROR: failed to init client vortex context for PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	/* init queue */
+	queue = vortex_async_queue_new ();
+
+	/* create a new connection */
+	conn = vortex_connection_new (ctx, listener_host, LISTENER_PORT, NULL, NULL);
+	if (!vortex_connection_is_ok (conn, axl_false)) {
+		vortex_connection_close (conn);
+		return axl_false;
+	} /* end if */
+
+	/* create a channel */
+	printf ("Test 01-r: check calling to vortex_exit_ctx when received at the frame received..\n");
+	channel = vortex_channel_new (conn, 0,
+				      REGRESSION_URI_ZERO,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      test_01r_frame_received, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return axl_false;
+	}
+
+	/* send a message */
+	if (! vortex_channel_send_msg (channel, "please close me", 15, NULL)) {
+		printf ("Unable to send close me message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* wait for vortex termination signal */
+	vortex_async_queue_pop (queue);
+
+	/* now close the connection */
+	printf ("Test 01-r: done, now terminate connection..\n");
+	vortex_connection_close (conn);
+
+	vortex_async_queue_unref (queue);
+	return axl_true;
+
+	printf ("Test 01-r: check calling to vortex_exit_ctx when received a connection close..\n");
+	ctx = vortex_ctx_new ();
+
+	/* init vortex on this context */
+	if (! vortex_init_ctx (ctx)) {
+		printf ("ERROR: failed to init client vortex context for PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	/* call to connection close */
+	conn = vortex_connection_new (ctx, listener_host, LISTENER_PORT, NULL, NULL);
+	if (!vortex_connection_is_ok (conn, axl_false)) {
+		vortex_connection_close (conn);
+		return axl_false;
+	} /* end if */
+
+	/* set connection close */
+	vortex_connection_set_on_close_full (conn, test_01r_on_close, queue);
+
+	/* call to shutdown */
+	vortex_connection_shutdown (conn);
+
+	/* wait for vortex termination signal */
+	vortex_async_queue_pop (queue);
+
+	/* now close the connection */
+	printf ("Test 01-r: done, now terminate connection..\n");
+	vortex_connection_close (conn);
+
+	/* release the queue */
+	vortex_async_queue_unref (queue);
+
+	return axl_true;
+
+}
+
 
 
 #define TEST_02_MAX_CHANNELS 24
@@ -11048,7 +11178,7 @@ int main (int  argc, char ** argv)
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
 	printf ("**       Test available: test_00, test_00a, test_00b, test_00c, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
-	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o, test_01p, test_01q\n");
+	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o, test_01p, test_01q, test_01r\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02m3, test_02n, test_02o, test_02p, \n");
@@ -11229,6 +11359,9 @@ int main (int  argc, char ** argv)
 		
 		if (axl_cmp (run_test_name, "test_01q"))
 			run_test (test_01q, "Test 01-q", "Closing connection after vortex termination", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_01r"))
+			run_test (test_01r, "Test 01-r", "Terminating vortex from inside its handlers (frame received, connection close)", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
@@ -11456,6 +11589,8 @@ int main (int  argc, char ** argv)
 	run_test (test_01p, "Test 01-p", "Check upper limits for window sizes and idle handling (bug fix)", -1, -1);
 
 	run_test (test_01q, "Test 01-q", "Closing connection after vortex termination", -1, -1);
+
+	run_test (test_01r, "Test 01-r", "Terminating vortex from inside its handlers (frame received, connection close)", -1, -1);
 
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   

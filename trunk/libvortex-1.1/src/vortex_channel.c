@@ -4803,6 +4803,12 @@ axl_bool      __vortex_channel_block_until_replies_are_received (VortexChannel *
 	 * managing the last message.
 	 */
 	while (! (channel->last_message_sent == channel->last_reply_received)) {
+
+		/* check for vortex termination */
+		if (ctx->vortex_exit)  {
+			vortex_log (VORTEX_LEVEL_WARNING, "Found vortex context being terminated during channel wait reply..");
+			break;
+		}
 		
 		/* flag that we are waiting for replies */
 		channel->waiting_replies = axl_true;
