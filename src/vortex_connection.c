@@ -2184,7 +2184,7 @@ VortexConnection  * vortex_connection_new_full               (VortexCtx         
 	VortexConnectionNewData * data;
 
 	/* check context is initialized */
-	if (! vortex_init_check (ctx) || ctx->vortex_exit) {
+	if ((! vortex_init_check (ctx)) || ctx->vortex_exit) {
 		/* check to release options if defined */
 		vortex_connection_opts_check_and_release (options);
 		return NULL;
@@ -4497,8 +4497,12 @@ void __vortex_connection_invoke_on_close (VortexConnection * connection,
 	VortexCtx                    * ctx = connection->ctx;
 #endif
 
+	/* lock now the op mutex is not blocked */
+	vortex_mutex_lock (&connection->op_mutex);
+
 	/* invoke full */
 	if (is_full) {
+
 		/* iterate over all full handlers and invoke them */
 		while (axl_list_length (connection->on_close_full) > 0) {
 
@@ -4511,11 +4515,17 @@ void __vortex_connection_invoke_on_close (VortexConnection * connection,
 			/* remove the handler from the list */
 			axl_list_unlink_first (connection->on_close_full);
 
+			/* unlock now the op mutex is not blocked */
+			vortex_mutex_unlock (&connection->op_mutex);
+
 			/* invoke */
 			handler->handler (connection, handler->data);
 			
 			/* free handler node */
 			axl_free (handler);
+
+			/* reacquire the mutex */
+			vortex_mutex_lock (&connection->op_mutex);
 		} /* end if */
 
 	} else {
@@ -4528,11 +4538,20 @@ void __vortex_connection_invoke_on_close (VortexConnection * connection,
 			/* remove the handler from the list */
 			axl_list_unlink_first (connection->on_close);
 
+			/* unlock now the op mutex is not blocked */
+			vortex_mutex_unlock (&connection->op_mutex);
+
 			/* invoke */
 			on_close_handler (connection);
+
+			/* reacquire the mutex */
+			vortex_mutex_lock (&connection->op_mutex);
 		} /* end if */
 
 	} /* if */
+
+	/* unlock now the op mutex is not blocked */
+	vortex_mutex_unlock (&connection->op_mutex);
 
 	return;
 } 
