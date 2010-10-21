@@ -5542,33 +5542,33 @@ axl_bool  test_02n (void) {
 
 	/* check msg no returned */
 	if (msg_no != 5) {
-		printf ("Expected to recevied another value for msg_no: %d != 5\n",
+		printf ("ERROR (1): Expected to recevied another value for msg_no: %d != 5\n",
 			msg_no);
 		return axl_false;
 	}
 
 	/* now perform tree sends operations */
 	if (! vortex_channel_send_msg_common (channel, "this is a test", 14, 659, &msg_no, NULL, NULL)) {
-		printf ("Failed to send message..\n");
+		printf ("ERROR (2): Failed to send message..\n");
 		return axl_false;
 	} /* end if */
 
 	/* check msg no returned */
 	if (msg_no != 659) {
-		printf ("Expected to recevied another value for msg_no: %d != 659\n",
+		printf ("ERROR (3): Expected to recevied another value for msg_no: %d != 659\n",
 			msg_no);
 		return axl_false;
 	}
 
 	/* now perform tree sends operations */
 	if (! vortex_channel_send_msg_common (channel, "this is a test", 14, 3, &msg_no, NULL, NULL)) {
-		printf ("Failed to send message..\n");
+		printf ("ERROR (4): Failed to send message..\n");
 		return axl_false;
 	} /* end if */
 
 	/* check msg no returned */
 	if (msg_no != 3) {
-		printf ("Expected to recevied another value for msg_no: %d != 3\n",
+		printf ("ERROR (5): Expected to recevied another value for msg_no: %d != 3\n",
 			msg_no);
 		return axl_false;
 	}
@@ -5576,11 +5576,11 @@ axl_bool  test_02n (void) {
 	/* wait for frames received */
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame == NULL) {
-		printf ("Expected to receive reply to frame msgno 5..\n");
+		printf ("ERROR (6): Expected to receive reply to frame msgno 5..\n");
 		return axl_false;
 	} /* end if */
 	if (vortex_frame_get_msgno (frame) != 5) {
-		printf ("Expected to receive reply to frame msgno 5 but received: %d..\n",
+		printf ("ERROR (7): Expected to receive reply to frame msgno 5 but received: %d..\n",
 			vortex_frame_get_msgno (frame));
 		return axl_false;
 	} /* end if */
@@ -5589,11 +5589,11 @@ axl_bool  test_02n (void) {
 	/* wait for frames received */
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame == NULL) {
-		printf ("Expected to receive reply to frame msgno 659..\n");
+		printf ("ERROR (8): Expected to receive reply to frame msgno 659..\n");
 		return axl_false;
 	} /* end if */
 	if (vortex_frame_get_msgno (frame) != 659) {
-		printf ("Expected to receive reply to frame msgno 659 but received: %d..\n",
+		printf ("ERROR (9): Expected to receive reply to frame msgno 659 but received: %d..\n",
 			vortex_frame_get_msgno (frame));
 		return axl_false;
 	} /* end if */
@@ -5602,11 +5602,11 @@ axl_bool  test_02n (void) {
 	/* wait for frames received */
 	frame = vortex_channel_get_reply (channel, queue);
 	if (frame == NULL) {
-		printf ("Expected to receive reply to frame msgno 3..\n");
+		printf ("ERROR (10): Expected to receive reply to frame msgno 3..\n");
 		return axl_false;
 	} /* end if */
 	if (vortex_frame_get_msgno (frame) != 3) {
-		printf ("Expected to receive reply to frame msgno 3 but received: %d..\n",
+		printf ("ERROR (11): Expected to receive reply to frame msgno 3 but received: %d..\n",
 			vortex_frame_get_msgno (frame));
 		return axl_false;
 	} /* end if */
@@ -5619,30 +5619,30 @@ axl_bool  test_02n (void) {
 	while (iterator < 10) {
 		/* send content with message number 0 */
 		if (! vortex_channel_send_msg_common (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), 0, &msg_no, NULL, NULL)) {
-			printf ("Failed to send message..\n");
+			printf ("ERROR (12): Failed to send message..\n");
 			return axl_false;
 		} /* end if */
 
 		if (msg_no != 0) {
-			printf ("Requested to perform send operation with 0 but found %d..\n", msg_no);
+			printf ("ERROR (13): Requested to perform send operation with 0 but found %d..\n", msg_no);
 			return axl_false;
 		}
 
 		/* wait for frames received */
 		frame = vortex_channel_get_reply (channel, queue);
 		if (frame == NULL) {
-			printf ("Expected to receive reply to frame msgno 3..\n");
+			printf ("ERROR (14): Expected to receive reply to frame msgno 3..\n");
 			return axl_false;
 		} /* end if */
 		if (vortex_frame_get_msgno (frame) != 0) {
-			printf ("Expected to receive reply to frame msgno 0 but received: %d..\n",
+			printf ("ERROR (15): Expected to receive reply to frame msgno 0 but received: %d..\n",
 				vortex_frame_get_msgno (frame));
 			return axl_false;
 		} /* end if */
 
 		/* check content */
 		if (! axl_cmp (vortex_frame_get_payload (frame), TEST_REGRESION_URI_4_MESSAGE)) {
-			printf ("Expected to find test content but found something different..\n");
+			printf ("ERROR (16): Expected to find test content but found something different..\n");
 			return axl_false;
 		} /* end if */
 
@@ -5702,19 +5702,19 @@ axl_bool  test_02n (void) {
 				      /* no async channel creation */
 				      NULL, NULL);
 	if (channel == NULL) {
-		printf ("Failed to create nothing channel..\n");
+		printf ("ERROR (17): Failed to create nothing channel..\n");
 		return axl_false;
 	} /* end if */
 
 	/* perform two send operations to force connection broken */
 	if (! vortex_channel_send_msg_common (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), 0, &msg_no, NULL, NULL)) {
-		printf ("Failed to send message..\n");
+		printf ("ERROR (18): Failed to send message..\n");
 		return axl_false;
 	} /* end if */
 
 	/* perform two send operations to force connection broken */
 	if (! vortex_channel_send_msg_common (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), 0, &msg_no, NULL, NULL)) {
-		printf ("Failed to send message..\n");
+		printf ("ERROR (19): Failed to send message..\n");
 		return axl_false;
 	} /* end if */
 
@@ -5725,7 +5725,7 @@ axl_bool  test_02n (void) {
 
 	/* check connection */
 	if (vortex_connection_is_ok (connection, axl_false)) {
-		printf ("Expected to find a failure in the connection after reunsing MSG numbers not replied..\n");
+		printf ("ERROR (20): Expected to find a failure in the connection after reunsing MSG numbers not replied..\n");
 		return axl_false;
 	} /* end if */
 
