@@ -250,24 +250,26 @@ axl_bool  vortex_thread_destroy_internal (VortexThread * thread_def, axl_bool  f
 
 #elif defined(AXL_OS_UNIX)
 
-	void * status;
-	int    err = pthread_join (*thread_def, &status);
+	void      * status;
+	int         err = pthread_join (*thread_def, &status);
+	/* VortexCtx * ctx = NULL; */
 	switch (err) {
 	default:
 	case 0:
-		/* vortex_log (VORTEX_LEVEL_DEBUG, "thread %p stopped with status %p", thread_def, status); */
+		/* vortex_log (VORTEX_LEVEL_DEBUG, "thread %p stopped with status %p", thread_def, status);  */
 		break;
 
 	case EINVAL:
-		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to stop non-joinable thread %p", thread_def); */
+		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to stop non-joinable thread %p", thread_def);  */
 		break;
 		
 	case ESRCH:
-		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to stop invalid thread %p", thread_def); */
+		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to stop invalid thread %p", thread_def);  */
 		break;
 
 	case EDEADLK:
-		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to stop thread %p, deadlock detected", thread_def); */
+		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to stop thread %p, deadlock detected", thread_def);  */
+		pthread_detach (*thread_def);
 		break;
 	}
 	
