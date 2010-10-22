@@ -4776,9 +4776,7 @@ axl_bool  __vortex_channel_close_validate_rpy (VortexChannel * channel,
 axl_bool      __vortex_channel_block_until_replies_are_received (VortexChannel * channel)
 {
 	VortexConnection * connection;
-#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx    = vortex_channel_get_ctx (channel);
-#endif
 	int                result = axl_true;
 
 	/* flag the channel to be in close situation */

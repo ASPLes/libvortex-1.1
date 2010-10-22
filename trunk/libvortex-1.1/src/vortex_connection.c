@@ -4489,8 +4489,9 @@ typedef struct __VortexOnCloseNotify {
 
 axlPointer __vortex_connection_on_close_do_notify (VortexOnCloseNotify * data)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx = CONN_CTX (data->conn);
-
+#endif
 	/* do notification */
 	if (data->is_full) 
 		data->handler (data->conn, data->data);
@@ -4511,7 +4512,9 @@ void __vortex_connection_invoke_on_close_do_notify (VortexConnection            
 						    axl_bool                      is_full)
 {
 	VortexOnCloseNotify * data;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx           * ctx = CONN_CTX (conn);
+#endif
 	VortexThread          thread_def;
 
 	/* acquire data to launch the thread */
