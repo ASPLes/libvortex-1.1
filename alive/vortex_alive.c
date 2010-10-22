@@ -97,7 +97,9 @@ void __vortex_alive_free (axlPointer _data)
 void __vortex_alive_free_reference (VortexAliveData * data)
 {
 	VortexConnection * conn = data->conn;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx  = CONN_CTX (conn);
+#endif
 
 	/* nullify reference */
 	data->conn = NULL;

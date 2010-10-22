@@ -125,6 +125,7 @@ build_debug_vortex_1_1: prepare_versions_mk
 	test -d debug || mkdir debug
 	rm -rf debug/libvortex-1.1
 	mkdir debug/libvortex-1.1
+	export MODE = console
 	@cd $(vortex_1_1);         enable_vortex_log=-DENABLE_VORTEX_LOG VORTEX_VERSION=$(vortex_1_1_version) release_dir=../debug/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
 	@cd $(vortex_sasl_1_1);    enable_vortex_log=-DENABLE_VORTEX_LOG VORTEX_VERSION=$(vortex_1_1_version) release_dir=../debug/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
 	@cd $(vortex_tls_1_1);     enable_vortex_log=-DENABLE_VORTEX_LOG VORTEX_VERSION=$(vortex_1_1_version) release_dir=../debug/libvortex-1.1 make -f Makefile.win; cd $(top_srcdir)
