@@ -1327,7 +1327,7 @@ axl_bool      vortex_connection_set_nonblocking_socket (VortexConnection * conne
 
 	/* get a reference to context */
 	ctx = connection->ctx;
-
+	
 #if defined(AXL_OS_WIN32)
 	if (!vortex_win32_nonblocking_enable (connection->session)) {
 		__vortex_connection_set_not_connected (connection, "unable to set non-blocking I/O", VortexError);
@@ -4480,6 +4480,68 @@ const char        * vortex_connection_get_local_port         (VortexConnection *
 	return connection->local_port;
 }
 
+typedef struct __VortexOnCloseNotify {
+	VortexConnection              * conn;
+	VortexConnectionOnCloseFull     handler;
+	axlPointer                      data;
+	axl_bool                        is_full;
+} VortexOnCloseNotify;
+
+axlPointer __vortex_connection_on_close_do_notify (VortexOnCloseNotify * data)
+{
+	VortexCtx * ctx = CONN_CTX (data->conn);
+
+	/* do notification */
+	if (data->is_full) 
+		data->handler (data->conn, data->data);
+	else
+		((VortexConnectionOnClose) data->handler) (data->conn);
+
+	/* terminate thread */
+	vortex_log (VORTEX_LEVEL_DEBUG, "async on close notification done for conn-id=%d..", vortex_connection_get_id (data->conn));
+
+	vortex_connection_unref (data->conn, "on-close-notification");
+	axl_free (data);
+	return NULL;
+}
+
+void __vortex_connection_invoke_on_close_do_notify (VortexConnection            * conn, 
+						    VortexConnectionOnCloseFull   handler, 
+						    axlPointer                    user_data, 
+						    axl_bool                      is_full)
+{
+	VortexOnCloseNotify * data;
+	VortexCtx           * ctx = CONN_CTX (conn);
+	VortexThread          thread_def;
+
+	/* acquire data to launch the thread */
+	data = axl_new (VortexOnCloseNotify, 1);
+	if (data == NULL)
+		return;
+
+	/* set all data */
+	data->conn    = conn;
+	data->handler = handler;
+	data->data    = user_data;
+	data->is_full = is_full;
+	
+	/* increase reference counting during thread activation */
+	vortex_connection_ref_internal (conn, "on-close-notification", axl_false);
+
+	/* call to notify using a thread */
+	if (! vortex_thread_create (&thread_def, (VortexThreadFunc) __vortex_connection_on_close_do_notify, data, 
+				    VORTEX_THREAD_CONF_DETACHED, VORTEX_THREAD_CONF_END)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to start thread to do connection-id=%d close notify", vortex_connection_get_id (conn));
+
+		/* release data due to failure */
+		vortex_connection_unref (conn, "on-close-notification");
+		axl_free (data);
+		return;
+	}
+
+	return;
+} 
+
 /** 
  * @internal 
  *
@@ -4521,7 +4583,7 @@ void __vortex_connection_invoke_on_close (VortexConnection * connection,
 			vortex_mutex_unlock (&connection->op_mutex);
 
 			/* invoke */
-			handler->handler (connection, handler->data);
+			__vortex_connection_invoke_on_close_do_notify (connection, handler->handler, handler->data, axl_true);
 			
 			/* free handler node */
 			axl_free (handler);
@@ -4544,7 +4606,7 @@ void __vortex_connection_invoke_on_close (VortexConnection * connection,
 			vortex_mutex_unlock (&connection->op_mutex);
 
 			/* invoke */
-			on_close_handler (connection);
+			__vortex_connection_invoke_on_close_do_notify (connection, (VortexConnectionOnCloseFull) on_close_handler, NULL, axl_false);
 
 			/* reacquire the mutex */
 			vortex_mutex_lock (&connection->op_mutex);

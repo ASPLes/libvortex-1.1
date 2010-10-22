@@ -3047,12 +3047,25 @@ void test_01s_on_close (VortexConnection * conn, axlPointer user_data)
 	
 	/* push into the queue to advice */
 	printf ("Test 01-s: blocking forever..\n");
+	vortex_async_queue_ref (queue);
 	vortex_async_queue_pop (queue);
 
 	/* notify we have ended */
-	vortex_async_queue_push (queue, INT_TO_PTR (1));
-
+	printf ("Test 01-s: unlocked (vortex_exit_ctx finished)...\n");
+	vortex_async_queue_push  (queue, INT_TO_PTR (1));
+	vortex_async_queue_unref (queue);
+	printf ("Test 01-s: rogue thread finished..\n");
 	return;
+}
+
+int test_01s_faulty_receive (VortexConnection * connection,
+			     char             * buffer,
+			     int                buffer_len)
+{
+	/* faulty kk */
+	printf ("Test 01-s: Requested to read content (%p, len: %d)\n", buffer, buffer_len);
+	memcpy (buffer, "KKKKK", buffer_len >= 5 ? 5 : buffer_len);
+	return 5;
 }
 
 axl_bool test_01s (void) {
@@ -3080,6 +3093,7 @@ axl_bool test_01s (void) {
 	} /* end if */
 
 	/* set connection close */
+	queue = vortex_async_queue_new ();
 	vortex_connection_set_on_close_full (conn, test_01s_on_close, queue);
 
 	/* create a channel */
@@ -3104,22 +3118,26 @@ axl_bool test_01s (void) {
 		iterator++;
 	}
 
+	/* configure a faulty connection receive data handler */
+	printf ("Test 01-s: setting faulty receive..\n");
+	vortex_connection_set_receive_handler (conn, test_01s_faulty_receive);
+
 	printf ("Test 01-s: waiting to receive content...\n");
 	vortex_async_queue_timedpop (queue, 1000000);
-
-	/* call to shutdown */
-	printf ("Test 01-s: shutting down the connection...\n");
-	vortex_connection_shutdown_socket (conn);
 
 	/* finish vortex context */
 	printf ("Test 01-s: exiting vortex context...\n");
 	vortex_exit_ctx (ctx, axl_true);
 
 	/* now wait for queue result */
+	printf ("Test 01-s: vortex_exit_ctx finished, pushing to unlock blocking thread..\n");
 	vortex_async_queue_push (queue, INT_TO_PTR (1));
 	vortex_async_queue_pop (queue); 
 
 	vortex_connection_close (conn);
+
+	printf ("Test 01-s: wait for rogue thread...\n");
+	vortex_async_queue_timedpop (queue, 1000000);
 
 	/* wait for vortex termination signal */
 	vortex_async_queue_unref (queue);

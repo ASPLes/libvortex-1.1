@@ -1549,13 +1549,17 @@ void vortex_reader_stop (VortexCtx * ctx)
 	vortex_log (VORTEX_LEVEL_DEBUG, "signal sent reader ..");
 
 	/* waiting until the reader is stoped */
-	vortex_async_queue_pop (ctx->reader_stopped);
-	vortex_async_queue_unref (ctx->reader_stopped);
-	
-	/* terminate thread */
-	vortex_thread_destroy (&ctx->reader_thread, axl_false);
+	vortex_log (VORTEX_LEVEL_DEBUG, "waiting vortex reader 60 seconds to stop");
+	if (PTR_TO_INT (vortex_async_queue_timedpop (ctx->reader_stopped, 60000000))) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "vortex reader properly stopped, cleaning thread..");
+		/* terminate thread */
+		vortex_thread_destroy (&ctx->reader_thread, axl_false);
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "vortex reader process stopped");
+		/* clear queue */
+		vortex_async_queue_unref (ctx->reader_stopped);
+	} else {
+		vortex_log (VORTEX_LEVEL_WARNING, "timeout while waiting vortex reader thread to stop..");
+	}
 
 	return;
 }

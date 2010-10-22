@@ -781,15 +781,20 @@ void vortex_sequencer_stop (VortexCtx * ctx)
 	QUEUE_PUSH  (ctx->sequencer_queue, INT_TO_PTR (1));
 
 	/* wait until the sequencer stops */
-	vortex_async_queue_pop   (ctx->sequencer_stopped);
-	vortex_async_queue_unref (ctx->sequencer_stopped);
-	vortex_thread_destroy    (&ctx->sequencer_thread, axl_false);
+	vortex_log (VORTEX_LEVEL_DEBUG, "waiting vortex sequencer 60 seconds to stop");
+	if (PTR_TO_INT (vortex_async_queue_timedpop (ctx->sequencer_stopped, 60000000))) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "vortex sequencer properly stopped, cleaning thread..");
+		vortex_thread_destroy       (&ctx->sequencer_thread, axl_false);
+
+		vortex_log (VORTEX_LEVEL_DEBUG, "vortex sequencer completely stopped");
+		vortex_async_queue_unref    (ctx->sequencer_stopped);
+	} else {
+		vortex_log (VORTEX_LEVEL_WARNING, "timeout while waiting vortex sequencer thread to stop..");
+	}
 	
 	/* free sequencer buffer */
 	axl_free (ctx->sequencer_send_buffer);
 	axl_free (ctx->sequencer_feeder_buffer);
-
-	vortex_log (VORTEX_LEVEL_DEBUG, "vortex sequencer completely stopped");
 
 	return; 
 }

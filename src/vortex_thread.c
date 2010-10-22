@@ -141,6 +141,9 @@ axl_bool  vortex_thread_create_internal (VortexThread      * thread_def,
 			/* thread joinable state configuration, get the parameter */
 			joinable = va_arg (args, axl_bool);
 			break;
+		case VORTEX_THREAD_CONF_DETACHED:
+			joinable = axl_false;
+			break;
 		default:
 			return axl_false;
 		} /* end if */
@@ -204,7 +207,8 @@ axl_bool  vortex_thread_create_internal (VortexThread      * thread_def,
 		return axl_false;
 	} /* end if */
 	
-	pthread_attr_destroy(&attr);
+	pthread_attr_destroy (&attr);
+
 #endif
 	return axl_true;
 }
@@ -1098,7 +1102,7 @@ axlPointer         vortex_async_queue_pop       (VortexAsyncQueue * queue)
  * 
  * @param queue The queue where data will be required.
  * 
- * @param microseconds The period to wait.
+ * @param microseconds The period to wait. 1 second = 1.000.000 microseconds. 
  * 
  * @return A reference to the next data available.
  * 
