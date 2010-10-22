@@ -341,6 +341,8 @@ axl_bool            vortex_connection_is_tlsficated              (VortexConnecti
 
 void                vortex_connection_shutdown                   (VortexConnection * connection);
 
+void                vortex_connection_shutdown_socket            (VortexConnection * connection);
+
 axlPointer          vortex_connection_set_channel_added_handler   (VortexConnection                * connection,
 								   VortexConnectionOnChannelUpdate   added_handler,
 								   axlPointer                        user_data);
