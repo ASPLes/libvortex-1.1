@@ -1014,6 +1014,12 @@ typedef enum  {
 	 * \endcode
 	 */
 	VORTEX_THREAD_CONF_JOINABLE  = 1,
+	/** 
+	 * @brief Allows to configure that the thread is in detached
+	 * state, so no thread can join and wait for it for its
+	 * termination but it will also provide.
+	 */
+	VORTEX_THREAD_CONF_DETACHED = 2,
 }VortexThreadConf;
 
 /**
