@@ -4622,6 +4622,26 @@ void    vortex_connection_shutdown           (VortexConnection * connection)
 } /* end vortex_connection_shutdown */
 
 /** 
+ * @brief Function used to just shutdown socket associated to the
+ * connection.
+ *
+ * This function differs from \ref vortex_connection_shutdown in the
+ * sense this one do not triggers all the internal connection close
+ * (like calling connection close handlers, dropping frames associated
+ * to this connection at the sequencer). 
+ *
+ * @param connection The connection where the socket will be closed.
+ */
+void    vortex_connection_shutdown_socket      (VortexConnection * connection)
+{
+	if (connection == NULL)
+		return;
+	vortex_close_socket (connection->session);
+	/* do not set connection->session to -1 */
+	return;
+}
+
+/** 
  * @brief Allows to configure a handler which is executed once a
  * channel is added to the provided connection. This could be used to
  * implement some init policy once the channel is added to the
@@ -5191,12 +5211,14 @@ void           __vortex_connection_set_not_connected (VortexConnection * connect
 
 		/* check to invoke on close handler */
 		if (connection->on_close != NULL) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "notifying connection-id=%d close handlers", connection->id);
 			/* invoking on close handler */
 			__vortex_connection_invoke_on_close (connection, axl_false);
 		}
 
 		/* check for the close handler full definition */
 		if (connection->on_close_full != NULL) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "notifying connection-id=%d close handlers", connection->id);
 			/* invokin on close handler full */ 
 			__vortex_connection_invoke_on_close (connection, axl_true);
 		}
