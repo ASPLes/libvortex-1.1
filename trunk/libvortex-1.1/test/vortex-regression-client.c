@@ -3136,8 +3136,8 @@ axl_bool test_01s (void) {
 
 	vortex_connection_close (conn);
 
-	printf ("Test 01-s: wait for rogue thread...\n");
-	vortex_async_queue_timedpop (queue, 1000000);
+	printf ("Test 01-s: wait for rogue thread (2 seconds)...\n");
+	vortex_async_queue_timedpop (queue, 2000000);
 
 	/* wait for vortex termination signal */
 	vortex_async_queue_unref (queue);
