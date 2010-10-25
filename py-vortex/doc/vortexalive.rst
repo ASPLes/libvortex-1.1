@@ -9,6 +9,10 @@
 This modules includes all functions required to implement connection
 ALIVE through Vortex Library ALIVE implementation.
 
+See notes from C API explaining how to use ALIVE API. Because this module is a binding for that API, all documentation applies:
+
+http://www.aspl.es/fact/files/af-arch/vortex-1.1/html/starting_to_program.html#vortex_manual_alive_api
+
 ==========
 Module API
 ==========
@@ -37,6 +41,8 @@ Module API
 
    :param failure_handler: Optional handler called when a failure is detected.
    :type  failure_handler: Handler
+
+   :rtype: True it initialization was completed, otherwise False is returned.
 
 
    

@@ -1,4 +1,4 @@
-EXTRA_DIST=__init__.py sasl.py tls.py
+EXTRA_DIST=__init__.py sasl.py tls.py alive.py
 
 if ENABLE_PY_VORTEX_LOG
 INCLUDE_PY_VORTEX_LOG=-DENABLE_PY_VORTEX_LOG
@@ -85,5 +85,6 @@ install-exec-hook:
 	install -m 644 \
 		sasl.py \
 		tls.py \
+		alive.py \
 		__init__.py \
 		${DESTDIR}${pythondir}/vortex

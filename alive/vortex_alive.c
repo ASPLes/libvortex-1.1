@@ -477,6 +477,7 @@ axl_bool           vortex_alive_enable_check               (VortexConnection * c
 	data->conn              = conn;
 	data->failure_handler   = failure_handler;
 	data->max_unreply_count = max_unreply_count;
+	data->check_period      = check_period;
 
 	if (! vortex_connection_ref (conn, "alive-check")) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to enable alive check, connection reference acquisition have failed");
