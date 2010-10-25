@@ -1087,7 +1087,7 @@ axl_bool vortex_init_check (VortexCtx * ctx)
  * @param free_ctx Allows to signal the function if the context
  * provided must be deallocated (by calling to \ref vortex_ctx_free).
  *
- * <b>Notes about calling to terminate vortex from inside its handlers:<b>
+ * <b>Notes about calling to terminate vortex from inside its handlers:</b>
  *
  * Currently this is allowed and supported only in the following handlers:
  *
@@ -3653,9 +3653,19 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * \section vortex_manual_alive_api 4.6 ALIVE API, active checks for connection status
  *
- * Vortex ALIVE API is an extension (optional) library that can be
- * used to improve connection alive checks and notifications produced
- * by \ref vortex_connection_set_on_close_full.
+ * Vortex ALIVE API is an optional extension library that can be used
+ * to improve connection/peer alive checks and notifications
+ * optionally produced by \ref vortex_connection_set_on_close_full.
+ *
+ * Vortex ALIVE is implemented as a profile that exchanges "no
+ * operation" messages waiting for a simple echo reply by the remote
+ * peer. These "ping messages" are tracked and if a max error count is
+ * reached an automatic connection close is triggered or, in the case
+ * the user provides it, a user space handler is called to notify
+ * failure.
+ *
+ * Vortex ALIVE will run in a transparent manner, mixed with user
+ * profiles and it is fully compatible with any BEEP escenario.
  *
  * Currently, connection close notification is only received when an
  * active connection close was done either at the local or the remote
@@ -3663,7 +3673,9 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * because network unplug or because the remote peer has poweroff, or
  * because the remote peer application is hanged, this causes the
  * connection close to be not triggered until the TCP timeout is
- * reached.
+ * reached in the case a write is done, and in the worst case, if the
+ * remote process is hanged (or suspended) TCP stack won't timeout if
+ * no operation is implemented.
  *
  * In this case, ALIVE check can be used to enforce a transparent and
  * active check implemented on top of a simply MSG/RPY where, if
@@ -3679,8 +3691,8 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * vortex_alive_init ();
  * \endcode
  *
- * Now, at the watching side (my be the listener or the initiator), you
- * have to do the following to enable checking on the connection:
+ * Now, at the watching side (may be the listener or the initiator), you
+ * have to do the following to enable ALIVE connection check:
  *
  * \code
  * if (! vortex_alive_enable_check (conn, check_period, unreply_count, NULL)) {
@@ -3699,7 +3711,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * - The check can be enabled at any time.
  *
- * - The check will trigger a connection, allowing to reuse all
+ * - The check will trigger a connection close, allowing to reuse all
  * connection close code already configured.
  *
  * - It is not required to do anything to remove the check after a
@@ -3707,6 +3719,14 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * - If it is required to enable check in both directions, the same
  * reverse steps must be done.
+ *
+ * - ALIVE implementation checks if the connection has activity before
+ * triggering the check. If it finds that the connection has being
+ * working then the alive check is assumed to be ok, avoiding to
+ * produce more connection traffic. This allows to silently disable
+ * ALIVE in the case connection activity is found.
+ *
+ * - BEEP channel ALIVE uri is: urn:aspl.es:beep:profiles:ALIVE
  *
  * To use alive API, you must include the header:
  * \code
