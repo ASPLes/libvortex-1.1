@@ -210,8 +210,8 @@ void frame_received (VortexChannel    * channel,
 		vortex_channel_send_rpy (channel, "ok", 2, vortex_frame_get_msgno (frame));
 		return;
 	} else if (axl_memcmp (vortex_frame_get_payload (frame), "count bytes: ", 13)) {
-		bytes = strlen (vortex_frame_get_payload (frame) + 12);
-		printf ("Content received: %s (bytes: %d)\n", (char *) (vortex_frame_get_payload (frame) + 12), bytes);
+		bytes = strlen ((char*) vortex_frame_get_payload (frame) + 12);
+		printf ("Content received: %s (bytes: %d)\n", (char*) vortex_frame_get_payload (frame) + 12, bytes);
 		content = axl_strdup_printf ("%d", bytes);
 		vortex_channel_send_rpy (channel, content, strlen (content), vortex_frame_get_msgno (frame));
 		return;
@@ -628,7 +628,7 @@ char  * sasl_cram_md5_validation_full (VortexConnection * connection,
 		return sasl_cram_md5_validation (connection, auth_id);
 	}
 	printf ("Received cram md5 validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.", auth_id);
-	return axl_false;
+	return NULL;
 }
 
 char  * sasl_digest_md5_validation (VortexConnection * connection,
@@ -651,7 +651,7 @@ char  * sasl_digest_md5_validation_full (VortexConnection * connection,
 	}
 
 	printf ("Received digest md5 validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.", auth_id);
-	return axl_false;
+	return NULL;
 }
 
 #if defined(ENABLE_SASL_SUPPORT) 
@@ -677,7 +677,7 @@ axlPointer  common_auth_handler  (VortexConnection * conn,
 		if (! axl_cmp (user_data, "anonymous beacon 123123")) {
 			printf ("ERROR: expected to find anonymous beacon %s, but found %s..\n",
 				(char *)user_data, "anonymous beacon 123123");
-			return axl_false;
+			return NULL;
 		} /* end if */
 
 		return INT_TO_PTR (sasl_anonymous_validation (conn, props->anonymous_token));
@@ -688,7 +688,7 @@ axlPointer  common_auth_handler  (VortexConnection * conn,
 		if (! axl_cmp ((char *)user_data, "external beacon 123123")) {
 			printf ("ERROR: expected to find external beacon %s, but found %s..\n",
 				(char *)user_data, "external beacon 123123");
-			return axl_false;
+			return NULL;
 		} /* end if */
 
 		return INT_TO_PTR (sasl_external_validation (conn, props->authorization_id));
@@ -699,7 +699,7 @@ axlPointer  common_auth_handler  (VortexConnection * conn,
 		if (! axl_cmp ((char *)user_data, "plain beacon 123123")) {
 			printf ("ERROR: expected to find plain beacon %s, but found %s..\n",
 				(char *)user_data, "plain beacon 123123");
-			return axl_false;
+			return NULL;
 		} /* end if */
 
 		return INT_TO_PTR (sasl_plain_validation (conn, props->auth_id, props->authorization_id, props->password));
@@ -710,7 +710,7 @@ axlPointer  common_auth_handler  (VortexConnection * conn,
 		if (! axl_cmp ((char *)user_data, "cram-md5 beacon 123123")) {
 			printf ("ERROR: expected to find cram-md5 beacon %s, but found %s..\n",
 				(char *)user_data, "cram-md5 beacon 123123");
-			return axl_false;
+			return NULL;
 		} /* end if */
 
 		/* signal we are returning a password */
@@ -723,7 +723,7 @@ axlPointer  common_auth_handler  (VortexConnection * conn,
 		if (! axl_cmp ((char *)user_data, "digest-md5 beacon 123123")) {
 			printf ("ERROR: expected to find digest-md5 beacon %s, but found %s..\n",
 				(char *)user_data, "digest-md5 beacon 123123");
-			return axl_false;
+			return NULL;
 		} /* end if */
 
 		/* signal we are returning a password */
@@ -732,7 +732,7 @@ axlPointer  common_auth_handler  (VortexConnection * conn,
 	}
 
 	/* reject auth by default */
-	return axl_false;
+	return NULL;
 }
 #endif
 
@@ -1298,7 +1298,7 @@ void frame_seqno_exceeded (VortexChannel    * channel,
 		vortex_channel_set_max_seq_no_accepted (channel, MAX_SEQ_NO - 4095, 4096);
 		return;
 	} else if (axl_memcmp (vortex_frame_get_payload (frame), "set-to=", 7)) {
-		value = atol (vortex_frame_get_payload (frame) + 7);
+		value = atol ((char*) vortex_frame_get_payload (frame) + 7);
 		printf ("Test 02-o: setting received content until now to: %ld\n", value);
 
 		vortex_channel_update_status_received (channel, (unsigned int) value, 0, UPDATE_SEQ_NO);

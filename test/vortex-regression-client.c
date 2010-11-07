@@ -10558,7 +10558,7 @@ axlPointer test_14_d_create_channel (axlPointer user_data)
 				      NULL, NULL);
 	if (channel == NULL) {
 		printf ("Unable to create the channel (TEST 14-D IS FAILING...)..");
-		return axl_false;
+		return NULL;
 	} /* end if */
 
 	/* return channel created */
