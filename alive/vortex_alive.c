@@ -480,6 +480,8 @@ axl_bool           vortex_alive_enable_check               (VortexConnection * c
 	data->check_period      = check_period;
 
 	if (! vortex_connection_ref (conn, "alive-check")) {
+		/* release */
+		axl_free (data);
 		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to enable alive check, connection reference acquisition have failed");
 		return axl_false;
 	}
