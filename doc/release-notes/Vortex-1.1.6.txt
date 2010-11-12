@@ -1,0 +1,277 @@
+      ###################################################
+      ##              Vortex Library 1.1.6             ##
+      ##               "Break on Through"              ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce Vortex
+  Library 1.1.6 "Break on Through" release availability: an open
+  source "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.aspl.es/vortex/py-vortex/html
+      [PyVortex homepage]
+
+    - http://www.aspl.es/turbulence
+      [Turbulence BEEP server homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+This release in short
+~~~~~~~~~~~~~~~~~~~~~
+
+  This release fixes several issues with the vortex ALIVE
+  implementation and also adds python interface to it. ALIVE
+  implementation was updated to also detect connection activity to
+  skip doing checks in that case.
+
+  Many updates to vortex engine to allow calling to terminate the
+  vortex context (VortexCtx) from inside its handlers (frame received
+  or connection close). Making vortex connection close notification to
+  not block critical threads (vortex sequencer and vortex reader).
+
+  Several updates to PyVortex API.
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  None
+
+Thanks to..
+~~~~~~~~~~~
+
+  - Benoit Amiaux (reported by fixed double deallocation problem at
+    profiles list mutex, typo warning at __vortex_connection_new
+    returning axl_false instead of NULL, wrong memory access at
+    vortex_tls_get_digest_sized win32 implementation, a double frame
+    deallocation when frame received handler failed)
+
+  - Balazs Tirpak (reported and provided initial useful patches to fix
+    wrong reply using msg, wrong outstanding message check, missing
+    user failure handler configuration).
+
+
+
+Changes since 1.1.5
+~~~~~~~~~~~~~~~~~~~
+
+* [fix] Updating documentation.
+
+* [fix] Fixed vortex-regression-client.c to properly check and run on
+  windows. Several updates on windows files to produce the bundle.
+
+* [fix] Making vortex_gethostbyname to not break when receiving NULL
+  (which also avoids vortex_connection_sock_connect to not break when
+  received NULL ctx).
+
+* [fix] Fixed double deallocation error for ctx->profiles_list_mutex.  
+  Reported and fixed by Benoit Amiaux. 
+
+* [fix] Fixed warning at __vortex_connection_new which was returning
+  axl_false instead of NULL. Reported and fixed by Benoit Amiaux.
+
+* [fix] Fixed vortex_tls_get_digest_sized on win32 which was causing a
+  wrong memory access due to wrong buffer size indication. Reported
+  and fixed by Benoit Amiaux.
+
+* [fix] Fixed double dealloction on receiving frame when the channel
+  frame received or profile frame received invocation failed. Bug
+  reported and provided patch by Benoit Amiaux. Added regression test
+  test02-m3 to reproduce the bug and check the fix introduced.
+
+* [fix] Making vortex connection creation to acquire and release a
+  reference to the context to allow closing a connection (and release
+  its resources) even after having called vortex_exit_ctx.  Added
+  regression test test-01q to reproduce the bug and check the fix
+  introduced.
+
+* [fix] Making vortex connection internal close to avoid contacting
+  vortex sequencer to drop pending packages when a vortex context exit
+  is in place.
+
+* [fix] Making vortex_channel_new to acquire an internal reference to
+  the channel created to avoid races between this function and the on
+  created handler. Checked in test_16 alive reg test. Making also to
+  acquire a reference to the connection during the creation process.
+
+* [fix] Making vortex thread pool to acquire independent references to
+  func and user data pointers to allow releasing internal mutexes
+  during user code invocation. Making thread pool module to skip user
+  code invocation in a vortex exit is in place.
+
+* [fix] General updates to vortex alive module to decouple channel
+  creation from the alive check itself to avoid races that may cause
+  the alive check to monopolize (which was integrating channel
+  creation) resources. Fixed several wrong access. Many thanks to
+  DEXTER which provided a patch that fixed several bugs in the initial
+  code (wrong reply using msg, wrong outstanding messages check,
+  missing user failure handler configuration).
+
+* [fix] Fixed unused Ctx references when ENABLE_LOG_SUPPORT
+  is not defined.
+
+* [fix] More updates to alive regression test (test_16). No bug found.
+
+* [fix] Implemented reference counting support for objects
+  representing events to be executed avoid races.
+
+* [fix] Updated regression test to improve alive checkings.
+
+* [fix] Adding initial vortex.alive PyVortex implementation.
+
+* [new] Updated PyVortex connection module to include two new methods:
+  blocked and is_blocked as bindings for its associated C API.
+
+* [fix] More updates to PyVortex alive API. Added initial reg tests.
+
+* [fix] Making vortex channel pool to acquire a reference to channels
+  added allowing to check their internal status even after having the
+  channel closed. Checked test_03-a. This also fixes test_22 inside
+  pyvortex which was warning when run under valgrind.
+
+* [fix] Updated internal channel pool same session check to test if
+  ctx reference is defined to acquire it from the pool (avoids nasty
+  context undefined message).
+
+* [fix] Fixed channel pool race inside PyVortex when configured on
+  created channel pool handler which was causing to nullify internal
+  reference if the thread planner chooses to notify pool and then
+  complete caller code (ouch!!)
+
+* [fix] Adding more documentation to PyVortex.
+
+* [fix] Added additional checks to alive tests (test_16) to ensure
+  failure handlers is properly triggered.
+
+* [fix] Improved alive internal implementation to also check
+  connection activity to avoid triggering alive failure only based on
+  its conditions. This better supports introducing alive on
+  connections with heavy traffic (avoiding closing the connection
+  because alive checks do not progress).
+
+* [new] Updating debian packaging to produce new packages for alive
+  implementation (including python binding).
+
+* [fix] Adding PyVortex alive documentation.
+
+* [new] Added initial implementation of vortex.Handle inside PyVortex
+  API which will allow wrapping pointers used by the PyVortex
+  API. Used this new object to implement selective connection on close
+  removal. API added:
+
+   - vortex.Connection.remove_on_close
+
+* [fix] Committing missing alive.py file..
+
+* [fix] Updates to libvortex-1.1.def and auxiliary files.
+
+* [fix] Added regression test to check PyVortex
+  vortex.Connection.remove_on_close method. Added documentation for
+  this method.
+
+* [fix] Fixed PyVortex vortex.AsyncQueue.timedout which was not
+  working at all (fixed proper parameter parsing and added support to
+  remove None in case of NULL received).
+
+* [fix] Making PyVortexHandle destroy data function to unlock thread
+  and reacquire it then user space call is finished.
+
+* [fix] Fixed memory leak at vortex.alive implementation when a
+  failure handler was configured.
+
+* [fix] Making several vortex.Connection attributes at the PyVortex
+  implementation to return None in case they are not defined.
+
+* [fix] Making vortex_connection_new internal implementation to check
+  if the VortexCtx provided is finishing to avoid creating a
+  connection that will be in the middle. Added test_01-r to reproduce
+  and check fix introduced.
+
+* [fix] Making vortex channel close process to check if VortexCtx is
+  being finished to unlock the wait for pending replies on the
+  provided channel. Allows to call to finish vortex from inside frame
+  received.  Added test-01-r to reproduce and check fix introduced.
+
+* [fix] Making thread pool to not check for events in the case
+  VortexCtx associated is being finished. Added test-01-r to reproduce
+  and check fix introduced.
+
+* [fix] Making vortex thread pool to acquire a reference to the
+  VortexCtx it uses and to release it after exiting to avoid memory
+  races.  Added test-01-r to reproduce and check fix introduced.
+
+* [fix] Making vortex connection close notification to be protected by
+  the internal mutex before calling user code. Updated current
+  test_01r reg test to check this issue. All reg tests passed.
+
+* [fix] Making vortex connection close notification to skip user
+  handler calling in the case vortex context that holds the connection
+  is being finished (due to a vortex_exit_ctx call).
+
+* [fix] Added pthread_detach to vortex_thread_destroy in the case
+  pthreads signals a deadlock after calling to pthread_join.
+
+* [new] Updated vortex connection API to include a function that only
+  shutdowns the connection socket (transport). Added new regression
+  test to reproduce and introduce a fix to avoid locking the vortex
+  reader in the case a connection close that never ends is installed.
+  Still not able to reproduce the bug. Test 01-s.
+
+* [fix] Making internal vortex connection close notification to use an
+  async notification to the thread pool, avoiding to lock important
+  threads like vortex reader and vortex sequencer when a connection
+  close with a blocking task is called. Added regression test
+  (test_01-s) to reproduce the bug and to check the fix introduced.
+
+* [fix] Making vortex reader stop and vortex sequencer stop to have a
+  timeout to avoid waiting for ever (60 seconds).
+
+* [fix] Fixed minors unused variables when console debug is disabled.
+
+* [fix] Minor timeout modification at test_01s
+
+* [fix] Updated ALIVE and PyVortex ALIVE documentation.
+
+* [fix] Fixed bug at ALIVE implementation which was not recording
+  check period provided by the user, causing the check period to be 0.
+
+* [fix] Fixed PyVortex Makefile.am which was not installing auxiliary
+  files required to use vortex.alive.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organizations to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+26th oct 2010, Madrid (Spain)

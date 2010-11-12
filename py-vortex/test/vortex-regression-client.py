@@ -2441,6 +2441,56 @@ def test_24 ():
     # alive check ok
     return True
 
+def test_25 ():
+
+    # call to initialize a context 
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # call to create a connection
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    # now create a channel
+    channel = conn.open_channel (0, REGRESSION_URI)
+
+    if not channel:
+        error ("Expected to find proper channel creation, but error found:")
+        # get first message
+        err = conn.pop_channel_error ()
+        while err:
+            error ("Found error message: " + str (err[0]) + ": " + err[1])
+
+            # next message
+            err = conn.pop_channel_error ()
+        return False
+
+    # configure frame received handler 
+    queue = vortex.AsyncQueue ()
+    channel.set_frame_received (vortex.queue_reply, queue)
+
+    # send a message to test */
+    channel.send_msg ("Camión", -1)
+
+    # wait for the reply
+    frame = channel.get_reply (queue)
+
+    # check result
+    if frame.payload != "Camión":
+        error ("Expected to find content: Camión but found: " + frame.payload)
+        return False
+
+    # send utf-8 content ok
+    return True
+
 ###########################
 # intraestructure support #
 ###########################
@@ -2508,7 +2558,8 @@ tests = [
    (test_21,   "Check channel pool support"),
    (test_22,   "Check channel pool support (handlers)"),
    (test_23,   "Check event tasks"),
-   (test_24,   "Check alive implementation")
+   (test_24,   "Check alive implementation"),
+   (test_25,   "Check sending utf-8 content")
 ]
 
 # declare default host and port

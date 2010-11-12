@@ -367,13 +367,17 @@ static PyObject * py_vortex_channel_set_frame_received (PyVortexChannel * self, 
 static PyObject * py_vortex_channel_send_msg (PyVortexChannel * self, PyObject * args)
 {
 	const char * content = NULL;
-	int          size    = 0;
+	int          size    = -1;
 	axl_bool     result;
 	int          msg_no  = 0;
 
 	/* parse and check result */
-	if (! PyArg_ParseTuple (args, "zi", &content, &size))
+	if (! PyArg_ParseTuple (args, "z|i", &content, &size))
 		return NULL;
+
+	/* recalculate size according to size -1 */
+	if (size == -1)
+		size = strlen (content);
 
 	/* call to send the message */
 	result = vortex_channel_send_msg (self->channel, content, size, &msg_no);
@@ -399,6 +403,10 @@ PyObject * py_vortex_channel_send_rpy (PyVortexChannel * self, PyObject * args)
 	/* parse and check result */
 	if (! PyArg_ParseTuple (args, "zii", &content, &size, &msg_no))
 		return NULL;
+
+	/* recalculate size according to size -1 */
+	if (size == -1)
+		size = strlen (content);
 
 	/* remove the following log since it is not secure */
 	py_vortex_log (PY_VORTEX_DEBUG, "received request to send rpy, channel: %p (id: %d), content: %s, size: %d, msg_no: %d",
@@ -430,6 +438,10 @@ PyObject * py_vortex_channel_send_err (PyVortexChannel * self, PyObject * args)
 	if (! PyArg_ParseTuple (args, "zii", &content, &size, &msg_no))
 		return NULL;
 
+	/* recalculate size according to size -1 */
+	if (size == -1)
+		size = strlen (content);
+
 	/* call to send reply */
 	result = vortex_channel_send_err (self->channel, content, size, msg_no);
 
@@ -453,6 +465,10 @@ PyObject * py_vortex_channel_send_ans (PyVortexChannel * self, PyObject * args)
 	/* parse and check result */
 	if (! PyArg_ParseTuple (args, "zii", &content, &size, &msg_no))
 		return NULL;
+
+	/* recalculate size according to size -1 */
+	if (size == -1)
+		size = strlen (content);
 
 	/* call to send ans reply */
 	result = vortex_channel_send_ans_rpy (self->channel, content, size, msg_no);

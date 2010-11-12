@@ -17,15 +17,15 @@ Module API
 
 .. class:: Channel
 
-   .. method:: send_msg (content, size)
+   .. method:: send_msg (content, [size])
    
       Allows to send a message (content) with the size provided.
 
       :param content: The content to send.
       :type  content: String (may contain binary data like \0)
 
-      :param size: The content size
-      :type  size: Integer > 0
+      :param size: Optional content size indication or -1 to let the function to deduce string size. In the case you work with unicode strings, you use use -1 to let the method to deduce the right size because API requires byte-length while python provides the char length.
+      :type  size: Integer 
 
       :rtype: Returns the msg_no used for the send operation or None if the send operation fails. 
 
@@ -44,8 +44,8 @@ Module API
       :param content: The content to send.
       :type  content: String (may contain binary data like \0)
 
-      :param size: The content size
-      :type  size: Integer > 0
+      :param size: The content size or -1 to let the function to deduce string size. In the case you work with unicode strings, you use use -1 to let the method to deduce the right size because API requires byte-length while python provides the char length.
+      :type  size: Integer
 
       :param msg_no: The frame msgno that identifies the frame  MSG we are replying
       :type  msg_no: Integer > 0
@@ -59,8 +59,8 @@ Module API
       :param content: The content to send.
       :type  content: String (may contain binary data like \0)
 
-      :param size: The content size
-      :type  size: Integer > 0
+      :param size: The content size or -1 to let the function to deduce string size. In the case you work with unicode strings, you use use -1 to let the method to deduce the right size because API requires byte-length while python provides the char length.
+      :type  size: Integer 
 
       :param msg_no: The frame msgno that identifies the frame  MSG we are replying
       :type  msg_no: Integer > 0
@@ -74,8 +74,8 @@ Module API
       :param content: The content to send.
       :type  content: String (may contain binary data like \0)
 
-      :param size: The content size
-      :type  size: Integer > 0
+      :param size: The content size or -1 to let the function to deduce string size. In the case you work with unicode strings, you use use -1 to let the method to deduce the right size because API requires byte-length while python provides the char length.
+      :type  size: Integer 
 
       :param msg_no: The frame msgno that identifies the frame  MSG we are replying
       :type  msg_no: Integer > 0
