@@ -377,6 +377,8 @@ void vortex_thread_set_create (VortexThreadCreateFunc create_fn)
 		__vortex_thread_create = create_fn;
 	else
 		__vortex_thread_create = vortex_thread_create_internal;
+
+	return;
 }
 
 /** 
