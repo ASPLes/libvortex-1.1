@@ -3357,8 +3357,19 @@ int             vortex_channel_get_window_size (VortexChannel * channel)
  *
  * A larger window size than the default (4096) allows the remote peer
  * to send more data over this channel at once. This increases the
- * bandwidth that can be received, especially over high-latency sockets,
- * at the expense of increasing the latency for other channels.
+ * bandwidth that can be received, especially over high-latency
+ * sockets, at the expense of increasing the latency for other
+ * channels.
+ *
+ * NOTE: the value configured at this function is not applied
+ * directly. This is because a BEEP peer can't modify or reduce an
+ * announced window size, the change you request via
+ * vortex_channel_set_window_size will be only applied until it is
+ * required to announce more window.
+ *
+ * This is why \ref vortex_channel_get_window_size returns previously
+ * configured value if you call to that function just after calling
+ * \ref vortex_channel_set_window_size.
  *
  * @param channel the channel to operate on.
  *

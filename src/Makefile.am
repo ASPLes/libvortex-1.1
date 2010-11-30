@@ -52,7 +52,8 @@ libvortex_1_1_la_SOURCES =	\
 	vortex_win32.c \
 	vortex_errno.c \
 	vortex_thread.c \
-	vortex_payload_feeder.c
+	vortex_payload_feeder.c \
+	vortex_cbuffer.c
 
 libvortex_1_1_include_HEADERS = vortex.h \
 	vortex_ctx.h \
@@ -78,8 +79,9 @@ libvortex_1_1_include_HEADERS = vortex.h \
 	vortex_errno.h \
 	vortex_thread.h \
 	vortex_payload_feeder.h \
+	vortex_cbuffer.h \
 	vortex-channel.dtd.h \
-	vortex-listener-conf.dtd.h 
+	vortex-listener-conf.dtd.h
 
 libvortex_1_1_la_LIBADD = \
 	$(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
