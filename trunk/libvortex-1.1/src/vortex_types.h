@@ -394,6 +394,13 @@ typedef struct _VortexHash        VortexHash;
  */
 typedef struct _VortexQueue       VortexQueue;
 
+
+/** 
+ * @brief Circular byte buffer used by Vortex to efficiently pack
+ * bytes in a circular buffer.
+ */
+typedef struct _VortexCBuffer     VortexCBuffer;
+
 /** 
  * @brief Vortex Channel Pool definition.
  *
