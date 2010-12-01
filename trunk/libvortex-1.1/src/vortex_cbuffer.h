@@ -42,11 +42,11 @@
 
 VortexCBuffer * vortex_cbuffer_new             (int buffer_size);
 
-axl_bool        vortex_cbuffer_is_empty        (VortexCBuffer * buffer);
+axl_bool        vortex_cbuffer_is_empty        (VortexCBuffer * buffer, axl_bool lock);
 
-int             vortex_cbuffer_size            (VortexCBuffer * buffer);
+int             vortex_cbuffer_size            (VortexCBuffer * buffer, axl_bool lock);
 
-int             vortex_cbuffer_available_bytes (VortexCBuffer * buffer);
+int             vortex_cbuffer_available_bytes (VortexCBuffer * buffer, axl_bool lock);
 
 int             vortex_cbuffer_put             (VortexCBuffer * buffer, 
 						const char    * data, 
@@ -55,7 +55,7 @@ int             vortex_cbuffer_put             (VortexCBuffer * buffer,
 
 int             vortex_cbuffer_get             (VortexCBuffer  * buffer, 
 						char           * data, 
-						int            * data_size,
+						int              data_size,
 						axl_bool         satisfy);
 
 void            vortex_cbuffer_free            (VortexCBuffer * buffer);
