@@ -732,6 +732,251 @@ axl_bool test_00c (void) {
 	return axl_true;
 }
 
+axl_bool test_00d_get_and_check (VortexCBuffer * buffer, int amount_to_get, const char * check_string, int size_after) 
+{
+	char content[1024];
+
+	if (vortex_cbuffer_get (buffer, content, amount_to_get, axl_true) != amount_to_get) {
+		printf ("ERROR: expected to find %d but buffer get returned something different..\n", amount_to_get);
+		return axl_false;
+	} /* end if */
+
+	/* check content */
+	if (! axl_memcmp (content, check_string, amount_to_get)) {
+		printf ("ERROR: (check string %s) expected another content after get operation..\n", check_string);
+		return axl_false;
+	}
+
+	if (vortex_cbuffer_available_bytes (buffer, axl_true) != size_after) {
+		printf ("ERROR: expected to find %d buffer size but found %d\n", size_after, vortex_cbuffer_available_bytes (buffer, axl_true));
+		return axl_false;
+	} /* end if */
+
+	if (size_after > 0 && vortex_cbuffer_is_empty (buffer, axl_true)) {
+		printf ("ERROR: expected to NOT find buffer empty but it isn't..\n");
+		return axl_false;
+	} else if (size_after == 0 && ! vortex_cbuffer_is_empty (buffer, axl_true)) {
+		printf ("ERROR: expected to find buffer empty but it isn't..\n");
+		return axl_false;
+	}
+
+	return axl_true;
+}
+
+axlPointer test_00_read_file (VortexCBuffer * buffer)
+{
+	FILE * file;
+	char   content[4096];
+	int    bytes_read;
+
+#if defined(AXL_OS_WIN32)	
+	file = fopen ("vortex-regression-client.c", "rb");
+#elif defined(AXL_OS_UNIX)	
+	file = fopen ("vortex-regression-client.c", "r");
+#endif
+	/* read the content and push it into the buffer */
+	do {
+		/* read content */
+		bytes_read = fread (content, 1, 4095, file);
+		if (bytes_read == 0)
+			break;
+		printf ("Test 00-d: read content %d, pushing..\n", bytes_read);
+		
+		/* write into the buffer and lock until every thing is
+		 * read */
+		vortex_cbuffer_put (buffer, content, bytes_read, axl_true);
+	}while (1); /* end while */
+	
+	fclose (file);
+	return NULL;
+}
+
+axl_bool test_00d (void) {
+	
+	VortexCBuffer * buffer;
+	VortexThread    thread;
+	FILE          * file_out;
+	char            content[1024];
+	int             bytes_read;
+
+	/* create and release a buffer */
+	buffer = vortex_cbuffer_new (20);
+	vortex_cbuffer_free (buffer);
+
+	/* create a new buffer */
+	buffer = vortex_cbuffer_new (30);
+
+	/* check it is empty */
+	if (! vortex_cbuffer_is_empty (buffer, axl_true)) {
+		printf ("ERROR: expected to find buffer empty but it isn't..\n");
+		return axl_false;
+	}
+
+	/* get current size */
+	if (vortex_cbuffer_size (buffer, axl_true) != 30) {
+		printf ("ERROR: expected to find 30 buffer size but found %d\n", vortex_cbuffer_size (buffer, axl_true));
+		return axl_false;
+	} /* end if */
+
+	if (vortex_cbuffer_available_bytes (buffer, axl_true) != 0) {
+		printf ("ERROR: expected to find 0 buffer size but found %d\n", vortex_cbuffer_available_bytes (buffer, axl_true));
+		return axl_false;
+	} /* end if */
+	
+	/* now put some content */
+	vortex_cbuffer_put (buffer, "test", 4, axl_false);
+	if (vortex_cbuffer_available_bytes (buffer, axl_true) != 4) {
+		printf ("ERROR: expected to find 4 buffer size but found %d\n", vortex_cbuffer_available_bytes (buffer, axl_true));
+		return axl_false;
+	} /* end if */
+
+	vortex_cbuffer_put (buffer, "hola", 4, axl_true);
+	if (vortex_cbuffer_available_bytes (buffer, axl_true) != 8) {
+		printf ("ERROR: expected to find 4 buffer size but found %d\n", vortex_cbuffer_available_bytes (buffer, axl_true));
+		return axl_false;
+	} /* end if */
+
+	/* now get content */
+	if (! test_00d_get_and_check (buffer, 2, "te", 6))
+		return axl_false;
+
+	/* now get content */
+	if (! test_00d_get_and_check (buffer, 2, "st", 4))
+		return axl_false;
+	/* now get content */
+	if (! test_00d_get_and_check (buffer, 2, "ho", 2))
+		return axl_false;
+	/* now get content */
+	if (! test_00d_get_and_check (buffer, 2, "la", 0))
+		return axl_false;
+
+	/* push content */
+	vortex_cbuffer_put (buffer, "This is a test", 14, axl_true);
+	/* now get content */
+	if (! test_00d_get_and_check (buffer, 14, "This is a test", 0))
+		return axl_false;
+
+	
+	/* push content */
+	vortex_cbuffer_put (buffer, "This is a test##123sdf", 22, axl_true);
+
+	/* now get content */
+	if (! test_00d_get_and_check (buffer, 14, "This is a test", 8))
+		return axl_false;
+
+	/* now put enough content to make last to round the buffer */
+	vortex_cbuffer_put (buffer, "crockle crockle dudle", 21, axl_true);
+
+	/* check the size */
+	if (vortex_cbuffer_available_bytes (buffer, axl_true) != 29) {
+		printf ("ERROR: expected to find 29 buffer size but found %d\n", vortex_cbuffer_available_bytes (buffer, axl_true));
+		return axl_false;
+	} /* end if */
+
+	/* consume content */
+	printf ("Test 00-d: getting content that rounds the buffer..\n");
+	if (! test_00d_get_and_check (buffer, 29, "##123sdfcrockle crockle dudle", 0))
+		return axl_false;
+
+	/* check the size */
+	if (vortex_cbuffer_available_bytes (buffer, axl_true) != 0) {
+		printf ("ERROR: expected to find 0 buffer size but found %d\n", vortex_cbuffer_available_bytes (buffer, axl_true));
+		return axl_false;
+	} /* end if */
+
+	/* push content */
+	printf ("Test 00-d: getting part of the content leaving the buffer in the middle\n");
+	vortex_cbuffer_put (buffer, "This is a test##123sdf", 22, axl_true);
+
+	/* now get content */
+	if (! test_00d_get_and_check (buffer, 14, "This is a test", 8))
+		return axl_false;
+
+	/* now put enough content to make last to round the buffer */
+	vortex_cbuffer_put (buffer, "crockle crockle dudle", 21, axl_true);
+
+	/* get content */
+	if (! test_00d_get_and_check (buffer, 15, "##123sdfcrockle", 14))
+		return axl_false;
+
+	/* put content */
+	vortex_cbuffer_put (buffer, "1234567890123456", 16, axl_true);
+
+	/* check data available */
+	if (vortex_cbuffer_available_bytes (buffer, axl_true) != 30) {
+		printf ("ERROR: expected to find 30 buffer size but found %d\n", vortex_cbuffer_available_bytes (buffer, axl_true));
+		return axl_false;
+	} /* end if */
+
+	/* get content */
+	if (! test_00d_get_and_check (buffer, 30, " crockle dudle1234567890123456", 0))
+		return axl_false;
+
+	/* put content */
+	vortex_cbuffer_put (buffer, "1234567890123456", 16, axl_true);
+
+	/* get content */
+	if (! test_00d_get_and_check (buffer, 16, "1234567890123456", 0))
+		return axl_false;
+
+	printf ("Test 00-d: circular buffer testing limits..\n");
+	/* put content */
+	vortex_cbuffer_put (buffer, "123456789012345678901234567890", 30, axl_true);
+
+	/* now try putting more content */
+	if (vortex_cbuffer_put (buffer, "hello", 5, axl_false) != 0) {
+		printf ("Test 00-d: expected to receive 0 but received %d after trying to place more content than buffer can hold without setting satisfy to true\n",
+			vortex_cbuffer_put (buffer, "hello", 5, axl_false));
+		return axl_false;
+	}
+
+	/* get content */
+	if (! test_00d_get_and_check (buffer, 30, "123456789012345678901234567890", 0))
+		return axl_false;
+
+	printf ("Test 00-d: now read a file from a circular buffer \n");
+	if (! vortex_thread_create (&thread, (VortexThreadFunc) test_00_read_file, buffer,
+				    VORTEX_THREAD_CONF_END)) {
+		printf ("ERROR: failed to create a thread to create the client channel..\n");
+		return axl_false;
+	} /* end if */
+
+	/* now read all the content */
+#if defined(AXL_OS_WIN32)
+	file_out = fopen ("test_00d-ref.ignore.txt", "wb");
+#elif defined(AXL_OS_UNIX)
+	file_out = fopen ("test_00d-ref.ignore.txt", "w");
+#endif
+
+	/* get first items */
+	printf ("Test 00-d: reading first bytes..\n");
+	bytes_read = vortex_cbuffer_get (buffer, content, 1024, axl_true);
+	printf ("Test 00-d: received %d bytes..\n", bytes_read);
+		
+	/* now write into the file */
+	fwrite (content, 1, bytes_read, file_out);
+
+	/* until all content is read */
+	while (vortex_cbuffer_available_bytes (buffer, axl_true)) {
+		
+		/* read content */
+		bytes_read = vortex_cbuffer_get (buffer, content, 1024, axl_true);
+		printf ("Test 00-d: received content %d, writting into disk\n", bytes_read);
+
+		/* now write into the file */
+		fwrite (content, 1, bytes_read, file_out);
+		
+	} /* end while */
+
+	/* close the file */
+	fclose (file_out);
+
+	/* free the buffer */
+	vortex_cbuffer_free (buffer);
+
+	return axl_true;
+}
+
 axl_bool  test_01_real (VortexConnection * connection, axl_bool close_conn) {
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
@@ -11342,7 +11587,7 @@ int main (int  argc, char ** argv)
         printf ("**       valgrind or similar tools.\n");
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
-	printf ("**       Test available: test_00, test_00a, test_00b, test_00c, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
+	printf ("**       Test available: test_00, test_00a, test_00b, test_00c, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
 	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o,\n");
 	printf ("**                       test_01p, test_01q, test_01r, test_01s\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02b, test_02c, test_02d, test_02e, \n"); 
@@ -11477,6 +11722,9 @@ int main (int  argc, char ** argv)
 
 		if (axl_cmp (run_test_name, "test_00c"))
 			run_test (test_00c, "Test 00-c", "Thread pool events", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_00d"))
+			run_test (test_00d, "Test 00-d", "Check circular byte buffer", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_01"))
 			run_test (test_01, "Test 01", "basic BEEP support", -1, -1);
@@ -11726,6 +11974,8 @@ int main (int  argc, char ** argv)
 	run_test (test_00b, "Test 00-b", "Thread pool stats (change number)", -1, -1);
 
 	run_test (test_00c, "Test 00-c", "Thread pool events", -1, -1);
+
+	run_test (test_00d, "Test 00-d", "Check circular byte buffer", -1, -1);
   
  	run_test (test_01, "Test 01", "basic BEEP support", -1, -1);
   

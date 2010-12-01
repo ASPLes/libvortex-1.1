@@ -31,7 +31,7 @@
 #define FILE_TO_TRANSFER "/tmp/file.2" 
 
 /* server hosting the file */
-#define SERVER_HOST "localhost"
+#define SERVER_HOST "192.168.0.67"
 
 FILE      * file;
 
@@ -117,12 +117,12 @@ void frame_received_with_msg (VortexChannel    * channel,
 int  main (int  argc, char ** argv)
 {
 	VortexConnection * connection;
-	VortexChannel    * channel;
+	VortexChannel    * channel = NULL;
 	VortexAsyncQueue * queue;
 	int                window_size;
 	int                transfer_count = 1;
 
-	printf ("Usage:    ./vortex-file-transfer-client [bigmsg|feeder [transfer_count [window_size]]]\n");
+	printf ("Usage:    ./vortex-file-transfer-client [bigmsg|feeder|ansnul [transfer_count [window_size]]]\n");
 	printf ("Examples: \n");
 	printf ("  -- transfer one copy using feeder method..\n");
 	printf ("  >> ./vortex-file-transfer-client feeder\n");
@@ -180,7 +180,7 @@ int  main (int  argc, char ** argv)
 
 		/* set complete frame */
 		vortex_channel_set_complete_flag (channel, axl_false);
-	} else {
+	} else if (argv != NULL && argv[1] != NULL && axl_cmp (argv[1], "ansnul")) {
 		printf ("Creating channel with ANS/NUL pattern..\n");
 		channel = vortex_channel_new (connection, 0,
 					      FILE_TRANSFER_URI,
