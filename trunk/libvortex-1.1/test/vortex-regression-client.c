@@ -791,6 +791,18 @@ axlPointer test_00_read_file (VortexCBuffer * buffer)
 	return NULL;
 }
 
+#define TEST_00D_STRING "This is a testññññ,123125kljsdf5lkj This is  ateadsfklajsdml234klsjdfkljsd test test asdlfkjasdklfjasdflkjasdgfklj3rsdvklm34123123"
+
+axlPointer test_00d_push_content (VortexCBuffer * buffer)
+{
+	/* push content */
+	printf ("Test 00-d: pushing %d bytes..\n", strlen (TEST_00D_STRING));
+	vortex_cbuffer_put (buffer, TEST_00D_STRING, strlen (TEST_00D_STRING), axl_true);
+	printf ("Test 00-d: push finished..\n");
+	
+	return NULL;
+}
+
 axl_bool test_00d (void) {
 	
 	VortexCBuffer * buffer;
@@ -798,6 +810,7 @@ axl_bool test_00d (void) {
 	FILE          * file_out;
 	char            content[1024];
 	int             bytes_read;
+	int             bytes_requested;
 
 	/* create and release a buffer */
 	buffer = vortex_cbuffer_new (20);
@@ -934,6 +947,24 @@ axl_bool test_00d (void) {
 	if (! test_00d_get_and_check (buffer, 30, "123456789012345678901234567890", 0))
 		return axl_false;
 
+
+	printf ("Test 00-d: now test sending larger content than the buffer\n");
+	if (! vortex_thread_create (&thread, (VortexThreadFunc) test_00d_push_content, buffer,
+				    VORTEX_THREAD_CONF_END)) {
+		printf ("ERROR: failed to create a thread to create the client channel..\n");
+		return axl_false;
+	} /* end if */
+
+	/* now read the content */
+	printf ("Test 00-d: getting content from buffer..\n");
+	if (! test_00d_get_and_check (buffer, strlen (TEST_00D_STRING), TEST_00D_STRING, 0))
+		return axl_false;
+	printf ("Test 00-d: finished getting content from buffer..\n");
+
+	/* call to finish thread */
+	vortex_thread_destroy (&thread, axl_false);
+
+	printf ("*******************\n");
 	printf ("Test 00-d: now read a file from a circular buffer \n");
 	if (! vortex_thread_create (&thread, (VortexThreadFunc) test_00_read_file, buffer,
 				    VORTEX_THREAD_CONF_END)) {
@@ -960,8 +991,12 @@ axl_bool test_00d (void) {
 	while (vortex_cbuffer_available_bytes (buffer, axl_true)) {
 		
 		/* read content */
-		bytes_read = vortex_cbuffer_get (buffer, content, 1024, axl_true);
-		printf ("Test 00-d: received content %d, writting into disk\n", bytes_read);
+		bytes_requested = vortex_cbuffer_available_bytes (buffer, axl_true);
+		if (bytes_requested > 1024)
+			bytes_requested = 1024;
+		printf ("Test 00-d: requested %d\n", bytes_requested);
+		bytes_read      = vortex_cbuffer_get (buffer, content, bytes_read, axl_true);
+		printf ("Test 00-d:   received content %d, writting into disk\n", bytes_read);
 
 		/* now write into the file */
 		fwrite (content, 1, bytes_read, file_out);
@@ -973,6 +1008,9 @@ axl_bool test_00d (void) {
 
 	/* free the buffer */
 	vortex_cbuffer_free (buffer);
+
+	/* call to finish thread */
+	vortex_thread_destroy (&thread, axl_false);
 
 	return axl_true;
 }
