@@ -253,6 +253,10 @@ int             vortex_cbuffer_put           (VortexCBuffer * buffer,
 
 transfer_content:
 
+	printf ("W: Attempting to write into the buffer first: %d, last: %d, buffer size: %d, available data: %d, requested: %d, bytes written: %d",
+		buffer->first_byte_available, buffer->last_byte_available, buffer->buffer_size, vortex_cbuffer_available_bytes (buffer, axl_false),
+		data_size, bytes_written);
+
 	/* check if we have to initialize first byte indicator */
 	if (buffer->first_byte_available == -1)
 		buffer->first_byte_available = 0;
@@ -271,7 +275,8 @@ transfer_content:
 	/* update last byte position */
 	buffer->last_byte_available = (iterator - 1);
 
-	printf ("W: Bytes written %d, requested %d (first: %d, last: %d)\n", bytes_written, data_size, 
+	printf ("W: Bytes written %d, buffer size: %d, requested %d (first: %d, last: %d)\n", 
+		bytes_written, buffer->buffer_size, data_size, 
 		buffer->first_byte_available, buffer->last_byte_available);
 
 	/* check if we have completed operation */
@@ -320,10 +325,16 @@ transfer_content:
 		return bytes_written;
 	} /* end if */
 
+
+	if (vortex_cbuffer_available_bytes (buffer, axl_false) == buffer->buffer_size) {
+		/* awake threads pending */
+		vortex_cond_signal (&buffer->cond);
+	} /* end if */
+
 	/* reached this point we have pending bytes to be written and
 	 * satisfy enabled, lock the caller */
 	while (vortex_cbuffer_available_bytes (buffer, axl_false) == buffer->buffer_size) {
-		printf ("   W: Buffer is full, %d bytes, but pending bytes are %d\n", 
+		printf ("   W: Buffer is full, %d bytes, but pending bytes are %d, waiting\n", 
 			vortex_cbuffer_available_bytes (buffer, axl_false), data_size - bytes_written);
 		VORTEX_COND_WAIT (&buffer->cond, &buffer->mutex);
 	}
@@ -393,7 +404,8 @@ do_transfer:
 	iterator  = buffer->first_byte_available;
 	available = vortex_cbuffer_available_bytes (buffer, axl_false);
 	served    = 0;
-	printf ("R: First byte available = %d, last = %d (requested bytes: %d, available: %d)\n", iterator, buffer->last_byte_available, data_size, available);
+	printf ("R: First byte available = %d, last = %d (requested bytes: %d, available: %d, served %d)\n", 
+		iterator, buffer->last_byte_available, data_size, available, index);
 
 	/* copy the first part available (from first to last or the
 	 * end of the buffer):
@@ -424,27 +436,36 @@ do_transfer:
 
 	/* update first byte available to iterator or 0 in the case
 	 * end of the buffer was reached */
-	if (iterator < buffer->buffer_size)
+	if (served == available) {
+		buffer->first_byte_available = -1;
+		buffer->last_byte_available  = -1;
+	} else if (iterator < buffer->buffer_size)
 		buffer->first_byte_available = iterator;
 	else
 		buffer->first_byte_available = 0;
 
-	/* now transfer second part */
-	iterator = buffer->first_byte_available;
-	while (iterator <= buffer->last_byte_available &&
-	       index < data_size) {
-		/* copy content */
-		data[index] = buffer->buffer[iterator];
-		printf ("  R: Copy(2): %d (served %d)\n", (int)data[index], served + 1);
-		
-		/* update indexes */
-		index++;
-		iterator++;
-		served++;
-	} /* end while */
+	printf ("   R: after first copy round status is served: %d (first %d, last %d)\n",
+		served, buffer->first_byte_available, buffer->last_byte_available);
 
-	/* always first byte points to iterator */
-	buffer->first_byte_available = iterator;
+	if (buffer->first_byte_available >= 0) {
+
+		/* now transfer second part */
+		iterator = buffer->first_byte_available;
+		while (iterator <= buffer->last_byte_available &&
+		       index < data_size) {
+			/* copy content */
+			data[index] = buffer->buffer[iterator];
+			printf ("  R: Copy(2): %d (served %d)\n", (int)data[index], served + 1);
+			
+			/* update indexes */
+			index++;
+			iterator++;
+			served++;
+		} /* end while */
+		
+		/* always first byte points to iterator */
+		buffer->first_byte_available = iterator;
+	} /* end if */
 
 	/* check if we have finished either because all content
 	 * requested was transferred or because the buffer has no more
@@ -486,6 +507,12 @@ do_transfer:
 	} /* end if */
 
 	printf ("      R: index is = %d, data_size = %d\n", index, data_size);
+
+
+	if (vortex_cbuffer_available_bytes (buffer, axl_false) == 0) {
+		/* awake threads pending */
+		vortex_cond_signal (&buffer->cond);
+	}
 
 	/* reached this point no more content is available on
 	 * the buffer but satisfy is axl_true */
