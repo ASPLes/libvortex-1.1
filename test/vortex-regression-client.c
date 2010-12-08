@@ -765,9 +765,26 @@ axl_bool test_00d_get_and_check (VortexCBuffer * buffer, int amount_to_get, cons
 
 axlPointer test_00_read_file (VortexCBuffer * buffer)
 {
-	FILE * file;
-	char   content[4096];
-	int    bytes_read;
+	FILE         * file;
+	char           content[4096];
+	int            bytes_read;
+	struct stat    status;
+	int            bytes_pending;
+
+	/* acquire a reference to the buffer */
+	vortex_cbuffer_ref (buffer);
+
+	/* get file size to read */
+	memset (&status, 0, sizeof (struct stat));
+	if (stat ("vortex-regression-client.c", &status) != 0) {
+		/* failed to get file size */
+		printf ("ERROR: Failed to get file size for vortex-regression-client.c..\n");
+		return axl_false;
+	} /* end if */
+
+	/* record the set of bytes that should be read from the file */
+	printf ("Test 00-d: Reading %d bytes from %s\n", (int) status.st_size, "vortex-regression-client.c");
+	bytes_pending = status.st_size;
 
 #if defined(AXL_OS_WIN32)	
 	file = fopen ("vortex-regression-client.c", "rb");
@@ -780,7 +797,11 @@ axlPointer test_00_read_file (VortexCBuffer * buffer)
 		bytes_read = fread (content, 1, 4095, file);
 		if (bytes_read == 0)
 			break;
-		printf ("Test 00-d: read content %d, pushing..\n", bytes_read);
+
+		bytes_pending -= bytes_read;
+
+		printf ("Test 00-d: read content %d (status: %d bytes, pending: %d), pushing..\n", 
+			bytes_read, vortex_cbuffer_available_bytes (buffer, axl_true), bytes_pending);
 		
 		/* write into the buffer and lock until every thing is
 		 * read */
@@ -788,6 +809,10 @@ axlPointer test_00_read_file (VortexCBuffer * buffer)
 	}while (1); /* end while */
 	
 	fclose (file);
+
+	/* release reference */
+	vortex_cbuffer_unref (buffer);
+
 	return NULL;
 }
 
@@ -796,7 +821,7 @@ axlPointer test_00_read_file (VortexCBuffer * buffer)
 axlPointer test_00d_push_content (VortexCBuffer * buffer)
 {
 	/* push content */
-	printf ("Test 00-d: pushing %d bytes..\n", strlen (TEST_00D_STRING));
+	printf ("Test 00-d: pushing %d bytes..\n", (int) strlen (TEST_00D_STRING));
 	vortex_cbuffer_put (buffer, TEST_00D_STRING, strlen (TEST_00D_STRING), axl_true);
 	printf ("Test 00-d: push finished..\n");
 	
@@ -811,10 +836,11 @@ axl_bool test_00d (void) {
 	char            content[1024];
 	int             bytes_read;
 	int             bytes_requested;
+	struct stat     status;
 
 	/* create and release a buffer */
 	buffer = vortex_cbuffer_new (20);
-	vortex_cbuffer_free (buffer);
+	vortex_cbuffer_unref (buffer);
 
 	/* create a new buffer */
 	buffer = vortex_cbuffer_new (30);
@@ -979,27 +1005,37 @@ axl_bool test_00d (void) {
 	file_out = fopen ("test_00d-ref.ignore.txt", "w");
 #endif
 
+	/* get file size to read */
+	memset (&status, 0, sizeof (struct stat));
+	if (stat ("vortex-regression-client.c", &status) != 0) {
+		/* failed to get file size */
+		printf ("ERROR: Failed to get file size for vortex-regression-client.c..\n");
+		return axl_false;
+	} /* end if */
+
+	bytes_requested = status.st_size;
+
 	/* get first items */
-	printf ("Test 00-d: reading first bytes..\n");
-	bytes_read = vortex_cbuffer_get (buffer, content, 1024, axl_true);
-	printf ("Test 00-d: received %d bytes..\n", bytes_read);
-		
-	/* now write into the file */
-	fwrite (content, 1, bytes_read, file_out);
+	printf ("Test 00-d: reading bytes %d..\n", bytes_requested); 
 
 	/* until all content is read */
-	while (vortex_cbuffer_available_bytes (buffer, axl_true)) {
+	while (bytes_requested > 0) {
+
+		/* get how many bytes to be read */
+		bytes_read = (bytes_requested > 1024) ? 1024 : bytes_requested;
 		
 		/* read content */
-		bytes_requested = vortex_cbuffer_available_bytes (buffer, axl_true);
-		if (bytes_requested > 1024)
-			bytes_requested = 1024;
-		printf ("Test 00-d: requested %d\n", bytes_requested);
+		printf (" Test 00-d: requested %d (pending: %d)\n", bytes_read, bytes_requested);
 		bytes_read      = vortex_cbuffer_get (buffer, content, bytes_read, axl_true);
-		printf ("Test 00-d:   received content %d, writting into disk\n", bytes_read);
+		printf (" Test 00-d:   received content %d, writting into disk\n", bytes_read); 
 
 		/* now write into the file */
 		fwrite (content, 1, bytes_read, file_out);
+
+		/* reduce amount read */
+		bytes_requested -= bytes_read;
+
+		printf (" Test 00-d:   bytes pending: %d\n", bytes_requested);
 		
 	} /* end while */
 
@@ -1007,7 +1043,7 @@ axl_bool test_00d (void) {
 	fclose (file_out);
 
 	/* free the buffer */
-	vortex_cbuffer_free (buffer);
+	vortex_cbuffer_unref (buffer);
 
 	/* call to finish thread */
 	vortex_thread_destroy (&thread, axl_false);

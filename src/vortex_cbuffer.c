@@ -40,6 +40,7 @@
 
 struct _VortexCBuffer {
 	char         * buffer;
+	int            ref_count;
 	int            buffer_size;
 	int            first_byte_available;
 	int            last_byte_available;
@@ -62,6 +63,9 @@ struct _VortexCBuffer {
  *
  * You can call to \ref vortex_cbuffer_size to get total buffer
  * capacity (without considering how many bytes are stored).
+ *
+ * To terminate the circular buffer created use \ref
+ * vortex_cbuffer_unref.
  *
  * @param buffer_size The amount of byte capacity that will be able to
  * hold this circular buffer. It must be > 0.
@@ -97,6 +101,9 @@ VortexCBuffer * vortex_cbuffer_new           (int buffer_size)
 	/* set initial state for index */
 	buffer->last_byte_available  = -1;
 	buffer->first_byte_available = -1;
+	
+	/* set initial ref count state */
+	buffer->ref_count = 1;
 
 	return buffer;
 }
@@ -239,8 +246,8 @@ int             vortex_cbuffer_put           (VortexCBuffer * buffer,
 					      int             data_size,
 					      axl_bool        satisfy)
 {
-	int iterator;
-	int bytes_written;
+	int      iterator;
+	int      bytes_written;
 
 	if (buffer == NULL || data == NULL)
 		return -1;
@@ -253,9 +260,9 @@ int             vortex_cbuffer_put           (VortexCBuffer * buffer,
 
 transfer_content:
 
-	printf ("W: Attempting to write into the buffer first: %d, last: %d, buffer size: %d, available data: %d, requested: %d, bytes written: %d",
+	/*printf ("W:(1) Attempting to write into the buffer first: %d, last: %d, buffer size: %d, available data: %d, requested: %d, bytes written: %d\n",
 		buffer->first_byte_available, buffer->last_byte_available, buffer->buffer_size, vortex_cbuffer_available_bytes (buffer, axl_false),
-		data_size, bytes_written);
+		data_size, bytes_written); */
 
 	/* check if we have to initialize first byte indicator */
 	if (buffer->first_byte_available == -1)
@@ -267,27 +274,31 @@ transfer_content:
 		/* copy content */
 		buffer->buffer[iterator] = data[bytes_written];
 
+		/* update last byte position */
+		buffer->last_byte_available = iterator;
+
 		/* next position */
 		iterator++;
 		bytes_written++;
 	} /* end while */
 
-	/* update last byte position */
-	buffer->last_byte_available = (iterator - 1);
-
-	printf ("W: Bytes written %d, buffer size: %d, requested %d (first: %d, last: %d)\n", 
+	/* printf ("  W:(2) Bytes written %d, buffer size: %d, requested %d (first: %d, last: %d)\n", 
 		bytes_written, buffer->buffer_size, data_size, 
-		buffer->first_byte_available, buffer->last_byte_available);
+		buffer->first_byte_available, buffer->last_byte_available);*/
 
 	/* check if we have completed operation */
 	if (bytes_written == data_size) {
-		/* signal */
-		vortex_cond_signal  (&buffer->cond);
+		/* broadcast */
+		vortex_cond_broadcast  (&buffer->cond);
 
 		/* release the mutex */
 		vortex_mutex_unlock (&buffer->mutex);
 		return bytes_written;
 	}
+
+	/* printf ("  W:(3) Attempting to write at the buffer start, until now bytes written %d, buffer size: %d, requested %d (first: %d, last: %d)\n", 
+		bytes_written, buffer->buffer_size, data_size, 
+		buffer->first_byte_available, buffer->last_byte_available); */
 
 	/* if reached this point, it seems we have more content to
 	 * write still pending */
@@ -296,18 +307,22 @@ transfer_content:
 		/* copy content */
 		buffer->buffer[iterator] = data[bytes_written];
 
+		/* update last byte position */
+		buffer->last_byte_available = iterator;
+
 		/* next position */
 		iterator++;
 		bytes_written++;
 	}
 
+	/* printf ("  W:(4) after trying to write at the buffer start, until now bytes written %d, buffer size: %d, requested %d (first: %d, last: %d)\n", 
+		bytes_written, buffer->buffer_size, data_size, 
+		buffer->first_byte_available, buffer->last_byte_available); */
+
 	/* check if we have completed operation */
 	if (bytes_written == data_size) {
-		/* update last byte position */
-		buffer->last_byte_available = (iterator - 1);
-
-		/* signal */
-		vortex_cond_signal  (&buffer->cond);
+		/* broadcast */
+		vortex_cond_broadcast  (&buffer->cond);
 
 		/* release the mutex */
 		vortex_mutex_unlock (&buffer->mutex);
@@ -317,8 +332,8 @@ transfer_content:
 	/* reached this point, it seems there are still some bytes
 	 * pending to be written, check satisfy request */
 	if (! satisfy) {
-		/* signal */
-		vortex_cond_signal  (&buffer->cond);
+		/* broadcast */
+		vortex_cond_broadcast  (&buffer->cond);
 
 		/* release the mutex */
 		vortex_mutex_unlock (&buffer->mutex);
@@ -326,21 +341,22 @@ transfer_content:
 	} /* end if */
 
 
-	if (vortex_cbuffer_available_bytes (buffer, axl_false) == buffer->buffer_size) {
-		/* awake threads pending */
-		vortex_cond_signal (&buffer->cond);
-	} /* end if */
-
 	/* reached this point we have pending bytes to be written and
 	 * satisfy enabled, lock the caller */
-	while (vortex_cbuffer_available_bytes (buffer, axl_false) == buffer->buffer_size) {
-		printf ("   W: Buffer is full, %d bytes, but pending bytes are %d, waiting\n", 
-			vortex_cbuffer_available_bytes (buffer, axl_false), data_size - bytes_written);
-		VORTEX_COND_WAIT (&buffer->cond, &buffer->mutex);
+	if (vortex_cbuffer_available_bytes (buffer, axl_false) == buffer->buffer_size) {
+		/* awake threads pending */
+		vortex_cond_broadcast (&buffer->cond);
+		do {
+			printf ("   W:(5) Buffer is full, %d bytes, but pending bytes are %d, waiting\n", 
+				vortex_cbuffer_available_bytes (buffer, axl_false), data_size - bytes_written); 
+			VORTEX_COND_WAIT (&buffer->cond, &buffer->mutex);
+			printf ("   W:(6)   unlocked, buffer status i, %d bytes, but pending bytes are %d, waiting\n", 
+				vortex_cbuffer_available_bytes (buffer, axl_false), data_size - bytes_written); 
+		} while (vortex_cbuffer_available_bytes (buffer, axl_false) == buffer->buffer_size);
 	}
 	
 	/* unlocked, restart transfer */
-	printf ("     W: Ready to transfer, available space: %d\n", buffer->buffer_size - vortex_cbuffer_available_bytes (buffer, axl_false) );
+	/* printf ("     W:(6)  Ready to transfer, available space: %d\n", buffer->buffer_size - vortex_cbuffer_available_bytes (buffer, axl_false) ); */
 	goto transfer_content;
 	/* this is never reached */
 }
@@ -387,13 +403,13 @@ int             vortex_cbuffer_get           (VortexCBuffer  * buffer,
 	index    = 0;
 
 	/* check if the buffer is empty to block */
-	if (buffer->first_byte_available == -1) {
+	if (vortex_cbuffer_is_empty (buffer, axl_false)) {
 		/* if satisfy is not configured, return */
 		if (! satisfy)
 			return 0;
 
 		/* lock while this condition is meet */
-		while (buffer->first_byte_available == buffer->last_byte_available)
+		while (vortex_cbuffer_available_bytes (buffer, axl_false) == 0)
 			VORTEX_COND_WAIT (&buffer->cond, &buffer->mutex);
 	} /* end if */
 
@@ -404,8 +420,8 @@ do_transfer:
 	iterator  = buffer->first_byte_available;
 	available = vortex_cbuffer_available_bytes (buffer, axl_false);
 	served    = 0;
-	printf ("R: First byte available = %d, last = %d (requested bytes: %d, available: %d, served %d)\n", 
-		iterator, buffer->last_byte_available, data_size, available, index);
+	/* printf ("R: First byte available = %d, last = %d (requested bytes: %d, available: %d, served %d)\n", 
+	   iterator, buffer->last_byte_available, data_size, available, index); */
 
 	/* copy the first part available (from first to last or the
 	 * end of the buffer):
@@ -426,7 +442,7 @@ do_transfer:
 		
 		/* copy content */
 		data[index] = buffer->buffer[iterator];
-		printf ("  R: Copy: %d (served %d)\n", (int)data[index], served + 1);
+		/* printf ("  R: Copy: %d (served %d)\n", (int)data[index], served + 1); */
 		
 		/* update indexes */
 		index++;
@@ -444,8 +460,8 @@ do_transfer:
 	else
 		buffer->first_byte_available = 0;
 
-	printf ("   R: after first copy round status is served: %d (first %d, last %d)\n",
-		served, buffer->first_byte_available, buffer->last_byte_available);
+	/* printf ("   R: after first copy round status is served: %d (first %d, last %d)\n",
+	   served, buffer->first_byte_available, buffer->last_byte_available); */
 
 	if (buffer->first_byte_available >= 0) {
 
@@ -455,7 +471,7 @@ do_transfer:
 		       index < data_size) {
 			/* copy content */
 			data[index] = buffer->buffer[iterator];
-			printf ("  R: Copy(2): %d (served %d)\n", (int)data[index], served + 1);
+			/* printf ("  R: Copy(2): %d (served %d)\n", (int)data[index], served + 1); */
 			
 			/* update indexes */
 			index++;
@@ -467,21 +483,21 @@ do_transfer:
 		buffer->first_byte_available = iterator;
 	} /* end if */
 
+	/* reset buffer status in the case no more content is found */
+	if (available == served) {
+		buffer->last_byte_available  = -1;
+		buffer->first_byte_available = -1;
+	} /* end if */
+
 	/* check if we have finished either because all content
 	 * requested was transferred or because the buffer has no more
 	 * content */
 	if (index == data_size) {
-		printf ("     R: Finishing: first %d, last: %d, iterator: %d, index: %d, data_size: %d\n",
-			buffer->first_byte_available, buffer->last_byte_available, iterator, index, data_size);
+		/* printf ("     R: Finishing: first %d, last: %d, iterator: %d, index: %d, data_size: %d\n",
+		   buffer->first_byte_available, buffer->last_byte_available, iterator, index, data_size); */
 
-		/* reset buffer status in the case no more content is found */
-		if (available == served) {
-			buffer->last_byte_available  = -1;
-			buffer->first_byte_available = -1;
-		} /* end if */
-
-		/* signal */
-		vortex_cond_signal  (&buffer->cond);
+		/* broadcast */
+		vortex_cond_broadcast  (&buffer->cond);
 
 		/* acquire the lock */
 		vortex_mutex_unlock (&buffer->mutex);
@@ -489,52 +505,76 @@ do_transfer:
 	} /* end if */
 
 	if (buffer->first_byte_available == buffer->last_byte_available && ! satisfy) {
-		printf ("    R: Finishing: first %d, last: %d, iterator: %d, index: %d, data_size: %d\n",
-			buffer->first_byte_available, buffer->last_byte_available, iterator, index, data_size);
+		/* printf ("    R: Finishing: first %d, last: %d, iterator: %d, index: %d, data_size: %d\n",
+		   buffer->first_byte_available, buffer->last_byte_available, iterator, index, data_size); */
 
-		/* reset buffer status in the case no more content is found */
-		if (available == served) {
-			buffer->last_byte_available  = -1;
-			buffer->first_byte_available = -1;
-		} /* end if */
-
-		/* signal */
-		vortex_cond_signal  (&buffer->cond);
+		/* broadcast */
+		vortex_cond_broadcast  (&buffer->cond);
 
 		/* acquire the lock */
 		vortex_mutex_unlock (&buffer->mutex);
 		return index;
 	} /* end if */
 
-	printf ("      R: index is = %d, data_size = %d\n", index, data_size);
+	/* printf ("      R: index is = %d, data_size = %d, bytes available %d\n", index, data_size, vortex_cbuffer_available_bytes (buffer, axl_false)); */
 
-
+	/* reached this point no more space is available on
+	 * the buffer but satisfy is axl_true */
 	if (vortex_cbuffer_available_bytes (buffer, axl_false) == 0) {
 		/* awake threads pending */
-		vortex_cond_signal (&buffer->cond);
-	}
-
-	/* reached this point no more content is available on
-	 * the buffer but satisfy is axl_true */
-	while (vortex_cbuffer_available_bytes (buffer, axl_false) == 0) {
-		printf ("      R: no more bytes available, waiting until buffer has more, read %d, requested %d\n",
-			served, data_size);
-		VORTEX_COND_WAIT (&buffer->cond, &buffer->mutex);
-	}
+		vortex_cond_broadcast (&buffer->cond);
+		
+		do {
+			/* printf ("      R: no more bytes available, waiting until buffer has more, read %d, requested %d\n",
+			   served, data_size); */
+			VORTEX_COND_WAIT (&buffer->cond, &buffer->mutex);
+		} while (vortex_cbuffer_available_bytes (buffer, axl_false) == 0);
+	} /* end if */
 
 	/* do the content transfer */
 	goto do_transfer;
 }
 
 /** 
+ * @brief Allows to increase reference counting to the provided
+ * structure.
+ *
+ * @buffer The buffer structure to acquire a reference.
+ *
+ * @return axl_true if the reference was acquired, otherwise axl_false
+ * is returned. To release the reference use \ref vortex_cbuffer_unref
+ */
+axl_bool        vortex_cbuffer_ref            (VortexCBuffer * buffer)
+{
+	/* check pointer received */
+	if (buffer == NULL || buffer->ref_count == 0 || buffer->buffer == NULL)
+		return axl_false;
+
+	/* lock and reduce */
+	vortex_mutex_lock (&buffer->mutex);
+	buffer->ref_count++;
+	vortex_mutex_unlock (&buffer->mutex);
+	return axl_true;
+
+}
+
+/** 
  * @brief Terminates the provided circular buffer.
  * @param buffer The buffer to be finished.
  */
-void            vortex_cbuffer_free          (VortexCBuffer * buffer)
+void            vortex_cbuffer_unref          (VortexCBuffer * buffer)
 {
 	/* check pointer received */
 	if (buffer == NULL)
 		return;
+
+	/* lock and reduce */
+	vortex_mutex_lock (&buffer->mutex);
+	buffer->ref_count--;
+	if (buffer->ref_count != 0) {
+		vortex_mutex_unlock (&buffer->mutex);
+		return;
+	} /* end if */
 
 	/* free internal buffer */
 	axl_free (buffer->buffer);
