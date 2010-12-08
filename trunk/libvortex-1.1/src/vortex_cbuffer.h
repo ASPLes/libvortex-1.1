@@ -58,7 +58,9 @@ int             vortex_cbuffer_get             (VortexCBuffer  * buffer,
 						int              data_size,
 						axl_bool         satisfy);
 
-void            vortex_cbuffer_free            (VortexCBuffer * buffer);
+axl_bool        vortex_cbuffer_ref             (VortexCBuffer * buffer);
+
+void            vortex_cbuffer_unref           (VortexCBuffer * buffer);
 
 
 #endif
