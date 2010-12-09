@@ -44,6 +44,8 @@ struct _VortexCBuffer {
 	int            buffer_size;
 	int            first_byte_available;
 	int            last_byte_available;
+
+	/* read mutex */
 	VortexMutex    mutex;
 	VortexCond     cond;
 };
@@ -279,7 +281,7 @@ transfer_content:
 
 	/* check if we have completed operation */
 	if (bytes_written == data_size) {
-		fflush (stdout); 
+
 		/* broadcast */
 		vortex_cond_broadcast  (&buffer->cond);
 
@@ -317,7 +319,6 @@ transfer_content:
 
 	/* check if we have completed operation */
 	if (bytes_written == data_size) {
-		fflush (stdout); 
 		/* broadcast */
 		vortex_cond_broadcast  (&buffer->cond);
 
