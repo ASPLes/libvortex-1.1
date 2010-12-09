@@ -168,7 +168,8 @@ void frame_received_with_feeder (VortexChannel    * channel,
 	feeder = vortex_payload_feeder_file (FILE_TO_TRANSFER, axl_false);
 
 	/* set a buffer */
-	vortex_payload_feeder_file_set_buffer (feeder, 8192);
+	printf ("Configuring 64k buffer..\n"); 
+	vortex_payload_feeder_file_set_buffer (feeder, 65536); 
 
 	/* send rpy */
 	if (! vortex_channel_send_rpy_from_feeder (channel, feeder, vortex_frame_get_msgno (frame))) {

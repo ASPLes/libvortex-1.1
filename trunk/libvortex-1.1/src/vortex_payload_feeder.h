@@ -65,6 +65,11 @@ int                   vortex_payload_feeder_get_content (VortexPayloadFeeder * f
 axl_bool              vortex_payload_feeder_is_finished (VortexPayloadFeeder * feeder,
 							 VortexCtx           * ctx);
 
+axl_bool              vortex_payload_feeder_ref         (VortexPayloadFeeder * feeder);
+
+void                  vortex_payload_feeder_unref       (VortexPayloadFeeder * feeder,
+							 VortexCtx           * ctx);
+
 void                  vortex_payload_feeder_free        (VortexPayloadFeeder * feeder,
 							 VortexCtx           * ctx);
 

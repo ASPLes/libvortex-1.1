@@ -119,15 +119,20 @@ int  main (int  argc, char ** argv)
 	VortexConnection * connection;
 	VortexChannel    * channel = NULL;
 	VortexAsyncQueue * queue;
-	int                window_size;
+	int                window_size    = 0;
 	int                transfer_count = 1;
+	const char       * server_host    = NULL;
+	const char       * format         = NULL;
+	int                iterator;
 
-	printf ("Usage:    ./vortex-file-transfer-client [bigmsg|feeder|ansnul [transfer_count [window_size]]]\n");
+	printf ("Usage:    ./vortex-file-transfer-client [--server=hostname] [bigmsg|feeder|ansnul]\n");
+	printf ("Usage:                                  [--transfer-count=transfer_count]\n");
+	printf ("Usage:                                  [--window-size=window_size]\n");
 	printf ("Examples: \n");
 	printf ("  -- transfer one copy using feeder method..\n");
-	printf ("  >> ./vortex-file-transfer-client feeder\n");
+	printf ("  >> ./vortex-file-transfer-client --server=localhost feeder\n");
 	printf ("  -- transfer 10 copies using bigmsg method..\n");
-	printf ("  >> ./vortex-file-transfer-client bigmsg 10\n");
+	printf ("  >> ./vortex-file-transfer-client --server=localhost bigmsg --transfer-count=10\n");
 
 
 	printf ("\n");
@@ -144,8 +149,36 @@ int  main (int  argc, char ** argv)
 	} /* end if */
 
 	/* creates a new connection against localhost:44017 */
-	printf ("connecting to %s:44017...\n", SERVER_HOST);
-	connection = vortex_connection_new (ctx, SERVER_HOST, "44017", NULL, NULL);
+	server_host = SERVER_HOST;
+
+	/* find server */
+	iterator = 1;
+	while (iterator < argc) {
+		if (axl_memcmp (argv[iterator], "--server=", 9)) {
+			/* configuring host */
+			server_host = argv[iterator] + 9;
+		} else if (axl_cmp (argv[iterator], "bigmsg")) {
+			format = "bigmsg";
+		} else if (axl_cmp (argv[iterator], "feeder")) {
+			format = "feeder";
+		} else if (axl_cmp (argv[iterator], "ansnul")) {
+			format = "ansnul";
+		} else if (axl_memcmp (argv[iterator], "--transfer-count=", 17)) {
+			/* configure transfer count */
+			transfer_count = atoi (argv[iterator] + 17);
+		} else if (axl_memcmp (argv[iterator], "--window-size=", 14)) {
+			/* configure host */
+			window_size = atoi (argv[iterator] + 14);
+		}
+
+		/* iterator next */
+		iterator++;
+	} /* end while */
+
+	printf ("connecting to %s:44017...\n", server_host);
+	
+	/* create the connection */
+	connection = vortex_connection_new (ctx, server_host, "44017", NULL, NULL);
 	if (!vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Unable to connect remote server, error was: %s\n",
 			 vortex_connection_get_message (connection));
@@ -157,7 +190,7 @@ int  main (int  argc, char ** argv)
 	 * Vortex Library will automatically assign the new channel
 	 * number free. */
 	queue   = vortex_async_queue_new ();
-	if (argv != NULL && argv[1] != NULL && axl_cmp (argv[1], "bigmsg")) {
+	if (axl_cmp (format, "bigmsg")) {
 		printf ("Creating a channel with big message profile\n");
 		channel = vortex_channel_new (connection, 0,
 					      FILE_TRANSFER_URI_WITH_MSG,
@@ -167,7 +200,7 @@ int  main (int  argc, char ** argv)
 					      frame_received_with_msg, queue,
 					      /* no async channel creation */
 					      NULL, NULL);
-	} else if (argv != NULL && argv[1] != NULL && axl_cmp (argv[1], "feeder")) {
+	} else 	if (axl_cmp (format, "feeder")) {
 		printf ("Creating a channel with payload feeder\n");
 		channel = vortex_channel_new (connection, 0,
 					      FILE_TRANSFER_URI_WITH_FEEDER,
@@ -180,7 +213,7 @@ int  main (int  argc, char ** argv)
 
 		/* set complete frame */
 		vortex_channel_set_complete_flag (channel, axl_false);
-	} else if (argv != NULL && argv[1] != NULL && axl_cmp (argv[1], "ansnul")) {
+	} else 	if (axl_cmp (format, "ansnul")) {
 		printf ("Creating channel with ANS/NUL pattern..\n");
 		channel = vortex_channel_new (connection, 0,
 					      FILE_TRANSFER_URI,
@@ -198,14 +231,10 @@ int  main (int  argc, char ** argv)
 	}
 
 	/* get number of messages to be sent */
-	if (argv != NULL && argc >= 3 && argv[2] != NULL) {
-		transfer_count = atoi (argv[2]);
-		printf ("Requested to download %s, %d times..\n", FILE_TO_TRANSFER, transfer_count);
-	}
+	printf ("Requested to download %s, %d times..\n", FILE_TO_TRANSFER, transfer_count);
 
 	/* get channel window size */
-	if (argv != NULL &&  argc >= 4 && argv[3] != NULL) {
-		window_size = atoi (argv[3]);
+	if (window_size > 0) {
 		printf ("Requested to change window size to: %d..\n", window_size);
 		vortex_channel_set_window_size (channel, window_size);
 	}

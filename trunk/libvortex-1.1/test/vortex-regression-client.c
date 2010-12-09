@@ -8820,6 +8820,12 @@ axl_bool test_04_e (void)
 	char                * md5_1;
 	char                * md5_2;
 	axl_bool              reply_by_feeder = axl_false;
+	axl_bool              check_buffer    = axl_true;
+
+	/* get start, stop and result */
+ 	struct timeval      start;
+ 	struct timeval      stop;
+ 	struct timeval      result;
 
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
@@ -8861,6 +8867,7 @@ axl_bool test_04_e (void)
 	vortex_frame_unref (frame);
 
 	/* open the feeder */
+	gettimeofday (&start, NULL);
 	printf ("Test 04-e: creating feeder to send vortex-regression-client.c..\n");
 	feeder = vortex_payload_feeder_file ("vortex-regression-client.c", axl_true);
 	if (feeder == NULL) {
@@ -8880,6 +8887,13 @@ get_reply_and_check:
 	/* get next frame */
 	printf ("Test 04-e: waiting reply..\n");
 	frame = vortex_channel_get_reply (channel, queue);
+	gettimeofday (&stop, NULL);
+
+	printf ("Test 04-e: %d bytes transferred in %ld secs, %ld microseconds\n", 
+		vortex_frame_get_payload_size (frame), (long) result.tv_sec, (long) result.tv_usec);
+
+	/* get result */
+	vortex_timeval_substract (&stop, &start, &result);
 
 	printf ("Test 04-e: reply received, buffer size: (%d, %d)\n", ctx->sequencer_feeder_buffer_size, ctx->sequencer_send_buffer_size);
 	if (ctx->sequencer_feeder_buffer_size > 10000) {
@@ -8929,6 +8943,39 @@ get_reply_and_check:
 
 		printf ("Test 04-e: now getting content using RPY feeder..\n");
 		reply_by_feeder = axl_true;
+		goto get_reply_and_check;
+	} /* end if */
+
+	if (check_buffer) {
+		/* flag as false check buffer */
+		check_buffer = axl_false;
+
+		/* open the feeder */
+		gettimeofday (&start, NULL);
+
+		/* now check to transfer with buffer installed */
+		/* printf ("***********\n"); */
+		printf ("Test 04-e: now transfer the same file but adding a buffer..\n");
+		feeder = vortex_payload_feeder_file ("vortex-regression-client.c", axl_true);
+		if (feeder == NULL) {
+			printf ("ERROR (3): expected to find proper feeder reference but found NULL..\n");
+			return axl_false;
+		} /* end if */
+
+		/* set buffer to 8K */
+		if (! vortex_payload_feeder_file_set_buffer (feeder, 8192)) {
+			printf ("ERROR (4): failed to configure buffer to be used by the feeder..\n");
+			return axl_false;
+		} /* end if */
+
+		/* send feeder */
+		printf ("Test 04-e: sending content with buffer..\n");
+		if (! vortex_channel_send_msg_from_feeder (channel, feeder)) {
+			printf ("ERROR (4): expected to find proper send using feeder..\n");
+			return axl_false;
+		}
+		
+		/* check reply */
 		goto get_reply_and_check;
 	} /* end if */
 
