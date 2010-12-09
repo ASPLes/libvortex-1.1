@@ -119,6 +119,9 @@ int __vortex_payload_feeder_read_file (VortexCtx * ctx, VortexPayloadFileFeeder 
 
 		/* get requested content and block the caller until it
 		   is received */
+		if (vortex_cbuffer_is_empty (feeder->buffer, axl_true)) {
+			printf ("F: found buffer empty..\n");
+		} /* end if */
 		bytes_read           = vortex_cbuffer_get (feeder->buffer, buffer, size, axl_true);
 		feeder->amount_read += bytes_read;
 
