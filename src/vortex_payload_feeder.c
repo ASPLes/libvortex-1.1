@@ -38,10 +38,11 @@
 #include <vortex_payload_feeder.h>
 
 struct _VortexPayloadFeeder {
-	VortexPayloadFeederHandler handler;
-	axlPointer                 user_data;
-	VortexMutex                mutex;
-	int                        ref_count;
+	VortexCtx                  * ctx;
+	VortexPayloadFeederHandler   handler;
+	axlPointer                   user_data;
+	VortexMutex                  mutex;
+	int                          ref_count;
 };
 
 /** 
@@ -62,6 +63,8 @@ struct _VortexPayloadFeeder {
  * required to release it. This is already done by the vortex
  * sequencer thread.
  *
+ * @param ctx     The context where the feeder will be created
+ *
  * @param handler The feeder handler that will define how this instance will work.
  *
  * @param user_data User defined pointer passed to the feeder handler when it is called.
@@ -69,7 +72,8 @@ struct _VortexPayloadFeeder {
  * @return A reference to the payload feeder ready to use or NULL it
  * if fails. 
  */
-VortexPayloadFeeder * vortex_payload_feeder_new (VortexPayloadFeederHandler handler,
+VortexPayloadFeeder * vortex_payload_feeder_new (VortexCtx                * ctx,
+						 VortexPayloadFeederHandler handler,
 						 axlPointer                 user_data)
 {
 	VortexPayloadFeeder * feeder;
@@ -85,52 +89,139 @@ VortexPayloadFeeder * vortex_payload_feeder_new (VortexPayloadFeederHandler hand
 	vortex_mutex_create (&feeder->mutex);
 	feeder->ref_count = 1;
 
+	/* set context */
+	feeder->ctx       = ctx;
+
 	return feeder;
 }
 
 typedef struct _VortexPayloadFileFeeder {
 	int             size;
 	FILE          * file_to_feed;
+
 	axl_bool        mime_pending;
 	VortexCBuffer * buffer;
-	VortexThread    thread;
+
 	int             amount_read;
+
 	axl_bool        failure_found;
+	axl_bool        requested_read;
 } VortexPayloadFileFeeder;
 
-int __vortex_payload_feeder_read_file (VortexCtx * ctx, VortexPayloadFileFeeder * feeder, char * buffer, int size)
+int __vortex_payload_feeder_check_fill_percentage (VortexPayloadFileFeeder * file_feeder)
 {
-	int bytes_read;
+	int             percentage;
+	VortexCBuffer * buffer = file_feeder->buffer;
+
+	/* if a read is in progress do not trigger a new one */
+	if (file_feeder->requested_read) 
+		return axl_false;
+
+	/* check percentages .. */
+	percentage = (int) (((double) vortex_cbuffer_available_bytes (buffer, axl_true) / ((double) vortex_cbuffer_size (buffer, axl_true))) * 100);
+	return (percentage <= 25);
+}
+
+axlPointer vortex_payload_feeder_file_thread (VortexPayloadFeeder * feeder)
+{
+	VortexPayloadFileFeeder * file_feeder = feeder->user_data;
+	VortexCtx               * ctx         = feeder->ctx;
+	VortexCBuffer           * buffer      = file_feeder->buffer;
+	char                      content[4096];
+	int                       bytes_read;
+	int                       empty_space;
+	
+	/* acquire a reference to the buffer */
+	vortex_cbuffer_ref (buffer);
+	vortex_payload_feeder_ref (feeder);
+
+	/* get empty espace */
+	empty_space = vortex_cbuffer_size (buffer, axl_true) - vortex_cbuffer_available_bytes (buffer, axl_true);
+	/* printf ("F: available espace to fill up %d\n", empty_space); */
+
+	/* read the content and push it into the buffer */
+	while (empty_space > 0) {
+		/* configure how many bytes to read */
+		bytes_read = (empty_space > 4095) ? 4095 : empty_space;
+
+		/* read content */
+		bytes_read = fread (content, 1, bytes_read, file_feeder->file_to_feed);
+		if (bytes_read == 0)
+			break;
+
+		/* accumulate bytes read */
+		empty_space -= bytes_read;
+
+		/* write into the buffer and lock until every thing is
+		 * read */
+		/* printf ("T:(1) Pushing %d bytes into the buffer (currently holding %d bytes, read until now %d)..\n",
+		   bytes_read, vortex_cbuffer_available_bytes (buffer, axl_true), total_bytes); */
+		if (vortex_cbuffer_put (buffer, content, bytes_read, axl_true) != bytes_read) {
+			/* flag that a failure was found */
+			file_feeder->failure_found = axl_true;
+			vortex_log (VORTEX_LEVEL_CRITICAL, "expected to write %d bytes but something different was found..\n", bytes_read); 
+			break;
+		}
+		/* printf ("T:(2)   Pushed %d bytes into the buffer (currently holding %d bytes, read until now %d)..\n",
+		   bytes_read, vortex_cbuffer_available_bytes (buffer, axl_true), total_bytes); */
+	} /* end while */
+
+	/* signal that current read has finished */
+	file_feeder->requested_read = axl_false;
+
+	/* release reference to the buffer */
+	vortex_cbuffer_unref (buffer);
+	vortex_payload_feeder_unref (feeder, NULL);
+
+	return NULL;
+}
+
+
+int __vortex_payload_feeder_read_file (VortexCtx * ctx, VortexPayloadFeeder * feeder, char * buffer, int size)
+{
+	int                       bytes_read;
+	VortexCBuffer           * cbuffer;
+	VortexPayloadFileFeeder * file_feeder = feeder->user_data;
 
 	/* check for failure found */
-	if (feeder->failure_found) {
+	if (file_feeder->failure_found) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to feed content from file, failure found");
 		return -1;
 	}
 
 	/* check if we have a buffer and read from it */
-	if (feeder->buffer) {
+	if (file_feeder->buffer) {
+		/* the buffer */
+		cbuffer = file_feeder->buffer;
+
+		/* check to queue a task in the case 25% is reached
+		 * and we are not about to finish reading the file */
+		if (__vortex_payload_feeder_check_fill_percentage (file_feeder)) {
+			/* printf ("F: charging because buffer status is %d%%\n", __vortex_payload_feeder_get_fill_percentage (cbuffer)); */
+			vortex_thread_pool_new_task (ctx, (VortexThreadFunc) vortex_payload_feeder_file_thread, feeder);
+		}
 
 		/* check if the size requested is bigger than the
 		 * total amount of bytes to be transferred for a
 		 * file */
-		if ((feeder->size - feeder->amount_read) < size)
-			size = feeder->size - feeder->amount_read;
+		if ((file_feeder->size - file_feeder->amount_read) < size)
+			size = file_feeder->size - file_feeder->amount_read;
+
 
 		/* get requested content and block the caller until it
 		   is received */
-		if (vortex_cbuffer_is_empty (feeder->buffer, axl_true)) {
+		if (vortex_cbuffer_is_empty (file_feeder->buffer, axl_true)) {
 			printf ("F: found buffer empty..\n");
 		} /* end if */
-		bytes_read           = vortex_cbuffer_get (feeder->buffer, buffer, size, axl_true);
-		feeder->amount_read += bytes_read;
+		bytes_read           = vortex_cbuffer_get (file_feeder->buffer, buffer, size, axl_true);
+		file_feeder->amount_read += bytes_read;
 
 		/* printf ("F: Reading from buffer %d bytes (requested: %d, amount served until now: %d)\n", bytes_read, size, feeder->amount_read); */
 		return bytes_read; 
 	}
 
 	/* read requested content */
-	bytes_read = fread (buffer, 1, size, feeder->file_to_feed);
+	bytes_read = fread (buffer, 1, size, file_feeder->file_to_feed);
 
 	/* printf ("F: Reading directly from the file %d bytes (requested: %d, amount served until now: %d)\n", bytes_read, size, feeder->amount_read); */
 
@@ -139,6 +230,7 @@ int __vortex_payload_feeder_read_file (VortexCtx * ctx, VortexPayloadFileFeeder 
 
 axl_bool __vortex_payload_feeder_file (VortexCtx               * ctx,
 				       VortexPayloadFeederOp     op_type,
+				       VortexPayloadFeeder     * feeder,
 				       axlPointer                param1,
 				       axlPointer                param2,
 				       axlPointer                user_data)
@@ -164,13 +256,13 @@ axl_bool __vortex_payload_feeder_file (VortexCtx               * ctx,
 
 			buffer [0] = '\r';
 			buffer [1] = '\n';
-			(* size) = __vortex_payload_feeder_read_file (ctx, state, buffer + 2, (*size) - 2);
+			(* size) = __vortex_payload_feeder_read_file (ctx, feeder, buffer + 2, (*size) - 2);
 			
 			/* ..and update (* size) to include two additional bytes */
 			(*size) += 2;
 		} else  {
 			/* read the provided amount of bytes on the provided buffer */
-			(* size) = __vortex_payload_feeder_read_file (ctx, state, buffer, (*size));
+			(* size) = __vortex_payload_feeder_read_file (ctx, feeder, buffer, (*size));
 		}
 		vortex_log (VORTEX_LEVEL_DEBUG, "Returning %d bytes content", (*size));
 		return axl_true;
@@ -196,9 +288,6 @@ axl_bool __vortex_payload_feeder_file (VortexCtx               * ctx,
 			/* finish buffer */
 			vortex_cbuffer_unref (state->buffer);
 			state->buffer = NULL;
-
-			/* call to finish thread */
-			vortex_thread_destroy (&state->thread, axl_false);
 		}
 
 		axl_free (state);
@@ -242,7 +331,8 @@ axl_bool __vortex_payload_feeder_file (VortexCtx               * ctx,
  * it fails. The function checks if the function exists and can be
  * opened. In such checks fails, function will return NULL.
  */
-VortexPayloadFeeder * vortex_payload_feeder_file (const char * path,
+VortexPayloadFeeder * vortex_payload_feeder_file (VortexCtx  * ctx,
+						  const char * path,
 						  axl_bool     add_mime_head)
 {
 	FILE                    * file_to_feed;
@@ -273,54 +363,9 @@ VortexPayloadFeeder * vortex_payload_feeder_file (const char * path,
 	state->size         = stats.st_size;
 
 	/* ok, now create the feeder */
-	return vortex_payload_feeder_new (__vortex_payload_feeder_file, state);
+	return vortex_payload_feeder_new (ctx, __vortex_payload_feeder_file, state);
 }
 
-
-axlPointer vortex_payload_feeder_file_thread (VortexPayloadFeeder * feeder)
-{
-	VortexPayloadFileFeeder * file_feeder = feeder->user_data;
-	VortexCBuffer           * buffer      = file_feeder->buffer;
-	char                      content[4096];
-	int                       bytes_read;
-	int                       total_bytes = 0;
-	
-	/* acquire a reference to the buffer */
-	vortex_cbuffer_ref (buffer);
-	vortex_payload_feeder_ref (feeder);
-
-	/* acquire a refrence to the payload feeder */
-
-	/* read the content and push it into the buffer */
-	do {
-		/* read content */
-		bytes_read = fread (content, 1, 4095, file_feeder->file_to_feed);
-		if (bytes_read == 0)
-			break;
-
-		/* accumulate bytes read */
-		total_bytes += bytes_read;
-
-		/* write into the buffer and lock until every thing is
-		 * read */
-		/* printf ("T:(1) Pushing %d bytes into the buffer (currently holding %d bytes, read until now %d)..\n",
-		   bytes_read, vortex_cbuffer_available_bytes (buffer, axl_true), total_bytes); */
-		if (vortex_cbuffer_put (buffer, content, bytes_read, axl_true) != bytes_read) {
-			/* flag that a failure was found */
-			file_feeder->failure_found = axl_true;
-			/* printf ("ERROR: expected to write %d bytes but something different was found..\n", bytes_read); */
-			break;
-		}
-		/* printf ("T:(2)   Pushed %d bytes into the buffer (currently holding %d bytes, read until now %d)..\n",
-		   bytes_read, vortex_cbuffer_available_bytes (buffer, axl_true), total_bytes); */
-	}while (1); /* end while */
-
-	/* release reference to the buffer */
-	vortex_cbuffer_unref (buffer);
-	vortex_payload_feeder_unref (feeder, NULL);
-	
-	return NULL;
-}
 
 /** 
  * @brief Allows to configure the buffer size that will be used a \ref
@@ -361,10 +406,7 @@ axl_bool              vortex_payload_feeder_file_set_buffer (VortexPayloadFeeder
 
 	/* configure the buffer and create the thread that will feed content */
 	file_feeder->buffer = buffer;
-	if (! vortex_thread_create (&file_feeder->thread, (VortexThreadFunc) vortex_payload_feeder_file_thread, feeder,
-				    VORTEX_THREAD_CONF_END)) {
-		return axl_false;
-	} /* end if */
+	vortex_thread_pool_new_task (feeder->ctx, (VortexThreadFunc) vortex_payload_feeder_file_thread, feeder);
 
 	return axl_true;
 }
@@ -380,7 +422,7 @@ int                   vortex_payload_feeder_get_pending_size (VortexPayloadFeede
 	int      size = -1;
 	
 	/* call to get pending size */
-	feeder->handler (ctx, PAYLOAD_FEEDER_GET_SIZE, &size, NULL, feeder->user_data);
+	feeder->handler (ctx, PAYLOAD_FEEDER_GET_SIZE, feeder, &size, NULL, feeder->user_data);
 	
 	/* return size */
 	return size;
@@ -397,7 +439,7 @@ int                   vortex_payload_feeder_get_content (VortexPayloadFeeder * f
 							 char                * buffer)
 {
 	/* call to get content */
-	feeder->handler (ctx, PAYLOAD_FEEDER_GET_CONTENT, &size_to_copy, buffer, feeder->user_data);
+	feeder->handler (ctx, PAYLOAD_FEEDER_GET_CONTENT, feeder, &size_to_copy, buffer, feeder->user_data);
 
 	/* return updated size to copy */
 	return size_to_copy;
@@ -413,7 +455,7 @@ axl_bool              vortex_payload_feeder_is_finished (VortexPayloadFeeder * f
 	axl_bool is_finished = axl_false;
 
 	/* call to get finished status */
-	feeder->handler (ctx, PAYLOAD_FEEDER_IS_FINISHED, &is_finished, NULL, feeder->user_data);
+	feeder->handler (ctx, PAYLOAD_FEEDER_IS_FINISHED, feeder, &is_finished, NULL, feeder->user_data);
 
 	return is_finished;
 }
@@ -494,7 +536,7 @@ void              vortex_payload_feeder_free (VortexPayloadFeeder * feeder,
 
 	/* call to get finished status */
 	if (feeder->handler) {
-		feeder->handler (ctx, PAYLOAD_FEEDER_RELEASE, NULL, NULL, feeder->user_data);
+		feeder->handler (ctx, PAYLOAD_FEEDER_RELEASE, feeder, NULL, NULL, feeder->user_data);
 		feeder->handler = NULL;
 	} /* end if */
 
