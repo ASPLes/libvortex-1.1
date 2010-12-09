@@ -83,10 +83,25 @@ VortexPayloadFeeder * vortex_payload_feeder_new (VortexPayloadFeederHandler hand
 }
 
 typedef struct _VortexPayloadFileFeeder {
-	int         size;
-	FILE      * file_to_feed;
-	axl_bool    mime_pending;
+	int             size;
+	FILE          * file_to_feed;
+	axl_bool        mime_pending;
+	VortexCBuffer * buffer;
+	VortexThread    thread;
 } VortexPayloadFileFeeder;
+
+int __vortex_payload_feeder_read_file (VortexCtx * ctx, VortexPayloadFileFeeder * feeder, char * buffer, int size)
+{
+	/* check if we have a buffer and read from it */
+	if (feeder->buffer) {
+		/* get requested content and block the caller until it
+		   is received */
+		return vortex_cbuffer_get (feeder->buffer, buffer, size, axl_true);
+	}
+
+	/* read requested content */
+	return fread (buffer, 1, size, feeder->file_to_feed);
+}
 
 axl_bool __vortex_payload_feeder_file (VortexCtx               * ctx,
 				       VortexPayloadFeederOp     op_type,
@@ -114,13 +129,13 @@ axl_bool __vortex_payload_feeder_file (VortexCtx               * ctx,
 
 			buffer [0] = '\r';
 			buffer [1] = '\n';
-			(* size) = fread (buffer + 2, 1, (*size) - 2, state->file_to_feed);
+			(* size) = __vortex_payload_feeder_read_file (ctx, state, buffer + 2, (*size) - 2);
 			
 			/* ..and update (* size) to include two additional bytes */
 			(*size) += 2;
 		} else  {
 			/* read the provided amount of bytes on the provided buffer */
-			(* size) = fread (buffer, 1, (*size), state->file_to_feed);
+			(* size) = __vortex_payload_feeder_read_file (ctx, state, buffer, (*size));
 		}
 		vortex_log (VORTEX_LEVEL_DEBUG, "Returning %d bytes content", (*size));
 		return axl_true;
@@ -131,6 +146,17 @@ axl_bool __vortex_payload_feeder_file (VortexCtx               * ctx,
 	case PAYLOAD_FEEDER_RELEASE:
 		/* release current feeder */
 		fclose (state->file_to_feed);
+
+		/* check it there is a buffer created */
+		if (state->buffer) {
+			/* finish buffer */
+			vortex_cbuffer_unref (state->buffer);
+			state->buffer = NULL;
+
+			/* call to finish thread */
+			vortex_thread_destroy (&state->thread, axl_false);
+		}
+
 		axl_free (state);
 		return axl_true;
 	} /* end switch */
@@ -204,6 +230,81 @@ VortexPayloadFeeder * vortex_payload_feeder_file (const char * path,
 
 	/* ok, now create the feeder */
 	return vortex_payload_feeder_new (__vortex_payload_feeder_file, state);
+}
+
+
+axlPointer vortex_payload_feeder_file_thread (VortexPayloadFileFeeder * file_feeder)
+{
+	VortexCBuffer * buffer = file_feeder->buffer;
+	char            content[4096];
+	int             bytes_read;
+	
+	/* acquire a reference to the buffer */
+	vortex_cbuffer_ref (buffer);
+
+	/* read the content and push it into the buffer */
+	do {
+		/* read content */
+		bytes_read = fread (content, 1, 4095, file_feeder->file_to_feed);
+		if (bytes_read == 0)
+			break;
+
+		/* write into the buffer and lock until every thing is
+		 * read */
+		vortex_cbuffer_put (buffer, content, bytes_read, axl_true);
+	}while (1); /* end while */
+
+	/* release reference to the buffer */
+	vortex_cbuffer_unref (buffer);
+	
+	return NULL;
+}
+
+/** 
+ * @brief Allows to configure the buffer size that will be used a \ref
+ * VortexPayloadFeeder that was created with \ref
+ * vortex_payload_feeder_file.
+ *
+ * @param feeder A payload feeder that was created by \ref vortex_payload_feeder_file
+ *
+ * @param buffer_size The amount of bytes that can hold at once the buffer.
+ *
+ * @return axl_true if the buffer was created and installed in the
+ * feeder, otherwise axl_false is returned. The buffer can be added at
+ * any time during the transfer process. A buffer added cannot be
+ * later removed. The function will also fail if there is already a
+ * buffer installed.
+ */
+axl_bool              vortex_payload_feeder_file_set_buffer (VortexPayloadFeeder * feeder, int buffer_size)
+{
+	VortexCBuffer           * buffer;
+	VortexPayloadFileFeeder * file_feeder;
+
+	/* check parameters */
+	if (feeder == NULL || buffer_size <= 0 || feeder->user_data == NULL)
+		return axl_false;
+
+	/* get the file feeder */
+	file_feeder = feeder->user_data;
+
+	/* check if a buffer is already in place: still there is no
+	   support for buffer resize */
+	if (file_feeder->buffer)
+		return axl_false;
+
+	/* create the buffer and start feeding content */
+	buffer = vortex_cbuffer_new (buffer_size);
+	if (buffer == NULL)
+		return axl_false;
+
+	/* configure the buffer and create the thread that will feed content */
+	file_feeder->buffer = buffer;
+	if (! vortex_thread_create (&file_feeder->thread, (VortexThreadFunc) vortex_payload_feeder_file_thread, file_feeder,
+				    VORTEX_THREAD_CONF_END)) {
+		return axl_false;
+	} /* end if */
+
+	return axl_true;
 }
 
 /** 

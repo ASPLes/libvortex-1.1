@@ -31,7 +31,7 @@
 #define FILE_TO_TRANSFER "/tmp/file.2" 
 
 /* server hosting the file */
-#define SERVER_HOST "192.168.0.67"
+#define SERVER_HOST "192.168.0.153"
 
 FILE      * file;
 
