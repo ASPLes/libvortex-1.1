@@ -1752,6 +1752,8 @@ VORTEX_SOCKET vortex_connection_sock_connect (VortexCtx   * ctx,
 	} /* end if */
 
 	/* return socket created */
+
+
 	return session;
 }
 			

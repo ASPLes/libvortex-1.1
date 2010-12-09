@@ -743,7 +743,7 @@ axl_bool test_00d_get_and_check (VortexCBuffer * buffer, int amount_to_get, cons
 
 	/* check content */
 	if (! axl_memcmp (content, check_string, amount_to_get)) {
-		printf ("ERROR: (check string %s) expected another content after get operation..\n", check_string);
+		printf ("ERROR: check string expected another content after get operation..\n'%s' !=\n'%s'\n", check_string, content);
 		return axl_false;
 	}
 
@@ -783,7 +783,8 @@ axlPointer test_00_read_file (VortexCBuffer * buffer)
 	} /* end if */
 
 	/* record the set of bytes that should be read from the file */
-	printf ("Test 00-d: Reading %d bytes from %s\n", (int) status.st_size, "vortex-regression-client.c");
+	printf ("Test 00-d: Reading %d bytes from %s (transfering through a %d bytes buffer)\n", 
+		(int) status.st_size, "vortex-regression-client.c", vortex_cbuffer_size (buffer, axl_true));
 	bytes_pending = status.st_size;
 
 #if defined(AXL_OS_WIN32)	
@@ -800,8 +801,8 @@ axlPointer test_00_read_file (VortexCBuffer * buffer)
 
 		bytes_pending -= bytes_read;
 
-		printf ("Test 00-d: read content %d (status: %d bytes, pending: %d), pushing..\n", 
-			bytes_read, vortex_cbuffer_available_bytes (buffer, axl_true), bytes_pending);
+		/* printf ("Test 00-d: read content %d (status: %d bytes, pending: %d), pushing..\n", 
+		   bytes_read, vortex_cbuffer_available_bytes (buffer, axl_true), bytes_pending);  */
 		
 		/* write into the buffer and lock until every thing is
 		 * read */
@@ -828,15 +829,110 @@ axlPointer test_00d_push_content (VortexCBuffer * buffer)
 	return NULL;
 }
 
+axl_bool test_00d_transfer_file (int buffer_size)
+{
+	VortexCBuffer * buffer;
+	VortexThread    thread;
+	FILE          * file_out;
+	struct stat     status;
+	char          * file_content, * file_content2;
+	char            content[1024];
+	int             bytes_read;
+	int             bytes_requested;
+
+	/* timestamp */
+ 	struct timeval      start;
+ 	struct timeval      stop;
+ 	struct timeval      result;
+
+	/* create a buffer*/
+	buffer = vortex_cbuffer_new (buffer_size);
+
+	/* printf ("*******************\n"); */
+	printf ("Test 00-d: now read a file from a circular buffer with size %d \n", buffer_size);
+	if (! vortex_thread_create (&thread, (VortexThreadFunc) test_00_read_file, buffer,
+				    VORTEX_THREAD_CONF_END)) {
+		printf ("ERROR: failed to create a thread to create the client channel..\n");
+		return axl_false;
+	} /* end if */
+
+	/* now read all the content */
+#if defined(AXL_OS_WIN32)
+	file_out = fopen ("test_00d-ref.ignore.txt", "wb");
+#elif defined(AXL_OS_UNIX)
+	file_out = fopen ("test_00d-ref.ignore.txt", "w");
+#endif
+
+	/* get file size to read */
+	memset (&status, 0, sizeof (struct stat));
+	if (stat ("vortex-regression-client.c", &status) != 0) {
+		/* failed to get file size */
+		printf ("ERROR: Failed to get file size for vortex-regression-client.c..\n");
+		return axl_false;
+	} /* end if */
+
+	bytes_requested = status.st_size;
+
+	/* get first items */
+	/* printf ("Test 00-d: reading bytes %d..\n", bytes_requested);  */
+
+	/* until all content is read */
+	gettimeofday (&start, NULL);
+	while (bytes_requested > 0) {
+
+		/* get how many bytes to be read */
+		bytes_read = (bytes_requested > 1024) ? 1024 : bytes_requested;
+		
+		/* read content */
+		/* printf (" Test 00-d: requested %d (pending: %d)\n", bytes_read, bytes_requested); */
+		bytes_read = vortex_cbuffer_get (buffer, content, bytes_read, axl_true);
+		/* printf (" Test 00-d:   received content %d, writting into disk\n", bytes_read);  */
+
+		/* now write into the file */
+		fwrite (content, 1, bytes_read, file_out);
+
+		/* reduce amount read */
+		bytes_requested -= bytes_read;
+
+		/* printf (" Test 00-d:   bytes pending: %d\n", bytes_requested); */
+		
+	} /* end while */
+
+	/* close the file */
+	fclose (file_out);
+
+	gettimeofday (&stop, NULL);
+
+	/* free the buffer */
+	vortex_cbuffer_unref (buffer);
+
+	/* call to finish thread */
+	vortex_thread_destroy (&thread, axl_false);
+
+	/* now check both files are equal */
+	file_content  = vortex_regression_common_read_file ("vortex-regression-client.c", NULL);
+	file_content2 = vortex_regression_common_read_file ("test_00d-ref.ignore.txt", NULL);
+	if (! axl_cmp (file_content2, file_content)) {
+		printf ("ERROR: transfer through the buffer failed, reference file is not equal..\n");
+		return axl_false;
+	}
+	axl_free (file_content);
+	axl_free (file_content2);
+
+	/* get result */
+	vortex_timeval_substract (&stop, &start, &result);
+
+	printf ("Test 00-d: transfer with buffer size %d done in %ld secs, %ld microseconds\n", 
+		buffer_size, (long) result.tv_sec, (long) result.tv_usec);
+
+	/* ok */
+	return axl_true;
+}
+
 axl_bool test_00d (void) {
 	
 	VortexCBuffer * buffer;
 	VortexThread    thread;
-	FILE          * file_out;
-	char            content[1024];
-	int             bytes_read;
-	int             bytes_requested;
-	struct stat     status;
 
 	/* create and release a buffer */
 	buffer = vortex_cbuffer_new (20);
@@ -990,63 +1086,105 @@ axl_bool test_00d (void) {
 	/* call to finish thread */
 	vortex_thread_destroy (&thread, axl_false);
 
-	printf ("*******************\n");
-	printf ("Test 00-d: now read a file from a circular buffer \n");
-	if (! vortex_thread_create (&thread, (VortexThreadFunc) test_00_read_file, buffer,
-				    VORTEX_THREAD_CONF_END)) {
-		printf ("ERROR: failed to create a thread to create the client channel..\n");
+	/* check single byte reading */
+	if (! vortex_cbuffer_is_empty (buffer, axl_true)) {
+		printf ("ERROR: expected to find empty buffer to check 1 byte write/read\n");
 		return axl_false;
 	} /* end if */
 
-	/* now read all the content */
-#if defined(AXL_OS_WIN32)
-	file_out = fopen ("test_00d-ref.ignore.txt", "wb");
-#elif defined(AXL_OS_UNIX)
-	file_out = fopen ("test_00d-ref.ignore.txt", "w");
-#endif
-
-	/* get file size to read */
-	memset (&status, 0, sizeof (struct stat));
-	if (stat ("vortex-regression-client.c", &status) != 0) {
-		/* failed to get file size */
-		printf ("ERROR: Failed to get file size for vortex-regression-client.c..\n");
+	printf ("Test 00-d: checking one byte pushing..at the begining of the internal buffer..\n");
+	if (vortex_cbuffer_put (buffer, "1", 1, axl_true) != 1) {
+		printf ("ERROR: expected to find proper single byte write..\n");
 		return axl_false;
 	} /* end if */
 
-	bytes_requested = status.st_size;
+	/* check now many bytes are there */
+	if (vortex_cbuffer_available_bytes (buffer, axl_true) != 1) {
+		printf ("ERROR: expected to find 1 byte available at the buffer but found: %d\n", vortex_cbuffer_available_bytes (buffer, axl_true));
+		return axl_false;
+	} /* end if */
 
-	/* get first items */
-	printf ("Test 00-d: reading bytes %d..\n", bytes_requested); 
+	if (! test_00d_get_and_check (buffer, 1, "1", 0))
+		return axl_false;
 
-	/* until all content is read */
-	while (bytes_requested > 0) {
+	printf ("Test 00-d: checking one byte pushing..at the middle of the internal buffer..\n");
+	if (vortex_cbuffer_put (buffer, "asdfkjlasfkjsdf1", 16, axl_true) != 16) {
+		printf ("ERROR: expected to find proper single byte write..\n");
+		return axl_false;
+	}
 
-		/* get how many bytes to be read */
-		bytes_read = (bytes_requested > 1024) ? 1024 : bytes_requested;
-		
-		/* read content */
-		printf (" Test 00-d: requested %d (pending: %d)\n", bytes_read, bytes_requested);
-		bytes_read      = vortex_cbuffer_get (buffer, content, bytes_read, axl_true);
-		printf (" Test 00-d:   received content %d, writting into disk\n", bytes_read); 
+	/* get 15 bytes from the buffer and check the buffer still contains 1 byte */
+	if (! test_00d_get_and_check (buffer, 15, "asdfkjlasfkjsdf", 1))
+		return axl_false;
 
-		/* now write into the file */
-		fwrite (content, 1, bytes_read, file_out);
+	/* check now many bytes are there */
+	if (vortex_cbuffer_available_bytes (buffer, axl_true) != 1) {
+		printf ("ERROR: expected to find 1 byte available in the middle of the buffer but found: %d\n", vortex_cbuffer_available_bytes (buffer, axl_true));
+		return axl_false;
+	} /* end if */
 
-		/* reduce amount read */
-		bytes_requested -= bytes_read;
+	if (! test_00d_get_and_check (buffer, 1, "1", 0))
+		return axl_false;
 
-		printf (" Test 00-d:   bytes pending: %d\n", bytes_requested);
-		
-	} /* end while */
+	/* nice now check to have one at the end */
+	if (vortex_cbuffer_put (buffer, "asdfkjlasfkjsdf1algkjlkj34dfed", 30, axl_true) != 30) {
+		printf ("ERROR: expected to find proper single byte write..\n");
+		return axl_false;
+	}
 
-	/* close the file */
-	fclose (file_out);
+	/* get 29 bytes */
+	if (! test_00d_get_and_check (buffer, 29, "asdfkjlasfkjsdf1algkjlkj34dfe", 1))
+		return axl_false;
+
+	/* now get 1 byte */
+	if (! test_00d_get_and_check (buffer, 1, "d", 0))
+		return axl_false;
+
+	/* good, now check to have two bytes at the end */
+	if (vortex_cbuffer_put (buffer, "asdfkjlasfkjsdf1algkjlkj34dfed", 30, axl_true) != 30) {
+		printf ("ERROR: expected to find proper single byte write..\n");
+		return axl_false;
+	}
+
+	/* get 29 bytes */
+	if (! test_00d_get_and_check (buffer, 29, "asdfkjlasfkjsdf1algkjlkj34dfe", 1))
+		return axl_false;
+
+	if (vortex_cbuffer_put (buffer, "d", 1, axl_true) != 1) {
+		printf ("ERROR: expected to find proper single byte write..\n");
+		return axl_false;
+	}
+
+	/* check now many bytes are there */
+	if (vortex_cbuffer_available_bytes (buffer, axl_true) != 2) {
+		printf ("ERROR: expected to find 1 byte available in the middle of the buffer but found: %d\n", vortex_cbuffer_available_bytes (buffer, axl_true));
+		return axl_false;
+	} /* end if */
+
+	/* now get 1 byte */
+	if (! test_00d_get_and_check (buffer, 2, "dd", 0))
+		return axl_false;
+
+	/* check single byte reading */
+	if (! vortex_cbuffer_is_empty (buffer, axl_true)) {
+		printf ("ERROR: expected to find empty buffer to check 1 byte write/read\n");
+		return axl_false;
+	} /* end if */
 
 	/* free the buffer */
 	vortex_cbuffer_unref (buffer);
 
-	/* call to finish thread */
-	vortex_thread_destroy (&thread, axl_false);
+	if (! test_00d_transfer_file (30))
+		return axl_false;
+	if (! test_00d_transfer_file (1024))
+		return axl_false;
+	if (! test_00d_transfer_file (2048))
+		return axl_false; 
+	if (! test_00d_transfer_file (4096))
+		return axl_false;
+	if (! test_00d_transfer_file (8192))
+		return axl_false;
+
 
 	return axl_true;
 }
