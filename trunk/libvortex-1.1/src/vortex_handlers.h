@@ -1150,6 +1150,7 @@ typedef void (* VortexIdleHandler) (VortexCtx        * ctx,
  */
 typedef axl_bool (* VortexPayloadFeederHandler) (VortexCtx              * ctx,
 						 VortexPayloadFeederOp    op_type,
+						 VortexPayloadFeeder    * feeder,
 						 axlPointer               param1,
 						 axlPointer               param2,
 						 axlPointer               user_data);

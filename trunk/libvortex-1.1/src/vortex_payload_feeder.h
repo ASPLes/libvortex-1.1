@@ -46,10 +46,12 @@
  * @{
  */
 
-VortexPayloadFeeder * vortex_payload_feeder_new (VortexPayloadFeederHandler handler,
-						 axlPointer                 user_data);
+VortexPayloadFeeder * vortex_payload_feeder_new (VortexCtx                  * ctx,
+						 VortexPayloadFeederHandler   handler,
+						 axlPointer                   user_data);
 
-VortexPayloadFeeder * vortex_payload_feeder_file (const char * path, 
+VortexPayloadFeeder * vortex_payload_feeder_file (VortexCtx  * ctx,
+						  const char * path, 
 						  axl_bool     add_mime_head);
 
 axl_bool              vortex_payload_feeder_file_set_buffer (VortexPayloadFeeder * feeder, int buffer_size);

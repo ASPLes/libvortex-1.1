@@ -165,7 +165,7 @@ void frame_received_with_feeder (VortexChannel    * channel,
 	VortexPayloadFeeder * feeder;
 
 	/* create the feeder */
-	feeder = vortex_payload_feeder_file (FILE_TO_TRANSFER, axl_false);
+	feeder = vortex_payload_feeder_file (ctx, FILE_TO_TRANSFER, axl_false);
 
 	/* set a buffer */
 	printf ("Configuring 64k buffer..\n"); 

@@ -8869,7 +8869,7 @@ axl_bool test_04_e (void)
 	/* open the feeder */
 	gettimeofday (&start, NULL);
 	printf ("Test 04-e: creating feeder to send vortex-regression-client.c..\n");
-	feeder = vortex_payload_feeder_file ("vortex-regression-client.c", axl_true);
+	feeder = vortex_payload_feeder_file (ctx, "vortex-regression-client.c", axl_true);
 	if (feeder == NULL) {
 		printf ("ERROR (3): expected to find proper feeder reference but found NULL..\n");
 		return axl_false;
@@ -8956,7 +8956,7 @@ get_reply_and_check:
 		/* now check to transfer with buffer installed */
 		/* printf ("***********\n"); */
 		printf ("Test 04-e: now transfer the same file but adding a buffer..\n");
-		feeder = vortex_payload_feeder_file ("vortex-regression-client.c", axl_true);
+		feeder = vortex_payload_feeder_file (ctx, "vortex-regression-client.c", axl_true);
 		if (feeder == NULL) {
 			printf ("ERROR (3): expected to find proper feeder reference but found NULL..\n");
 			return axl_false;
