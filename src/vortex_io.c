@@ -655,7 +655,7 @@ int __vortex_io_waiting_epoll_wait_on (axlPointer __fd_group, int max_fds, Vorte
 	VortexEPoll * epoll   = (VortexEPoll *) __fd_group;
 
 	/* clear events reported */
-	memset (epoll->events, 0, sizeof (struct epoll_event) * epoll->max);
+	/* memset (epoll->events, 0, sizeof (struct epoll_event) * epoll->max); */
 
 	/* perform the select operation according to the
 	 * <b>wait_to</b> value. */
