@@ -244,7 +244,6 @@ BEGIN_C_DECLS
 #include <vortex_thread_pool.h>
 #include <vortex_queue.h>
 #include <vortex_hash.h>
-#include <vortex_cbuffer.h>
 #include <vortex_connection.h>
 #include <vortex_listener.h>
 #include <vortex_frame_factory.h>
