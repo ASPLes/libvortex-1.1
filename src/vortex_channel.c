@@ -3771,7 +3771,9 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
  	unsigned int consumed_seqno;
  	int          window_size;
 	int          bytes_available;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx     = vortex_channel_get_ctx (channel);
+#endif
 
 	if (channel == NULL || frame == NULL)
 		return axl_false;
@@ -3828,6 +3830,7 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 /*	if ((new_max_seq_no_accepted - channel->max_seq_no_accepted) < (window_size / 2)) { */
 	bytes_available = vortex_channel_incoming_bytes_available (channel, frame);
  	if (bytes_available > (channel->seq_no_window / 2)) {
+#if defined(ENABLE_VORTEX_LOG)
  		if (vortex_log_is_enabled (ctx)) {
  			vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: not updated, already not consumed half of window advertised: bytes %d > (%d / 2)",
 				    bytes_available, channel->seq_no_window);
@@ -3838,6 +3841,7 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
  			vortex_log (VORTEX_LEVEL_DEBUG, "           seq_no_window=%d, consumed_seqno=%u, next-expected-seqno: %u, channel_max_seq_no_accepted=%u",
  				    channel->seq_no_window, channel->consumed_seqno, channel->last_seq_no_expected, channel_max_seq_no_accepted);
  		} /* end if */
+#endif
 		goto not_update;
 	} else {
 		vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: notifying seq frame update, current values consumed_seqno=%u, window_size=%u",
@@ -5701,9 +5705,11 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 	VortexChannel    * channel      = data->channel;
 	VortexConnection * connection   = vortex_channel_get_connection (channel);
 	VortexFrame      * frame        = data->frame;
-	char             * raw_frame    = NULL;
 	axl_bool           is_connected;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexFrameType    type;
+	char             * raw_frame    = NULL;
+#endif
 
 	/* get a reference to channel number so we can check after
 	 * frame received handler if the channel have been closed.
@@ -5711,7 +5717,8 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 	 * know if application space have issued a close channel. */
 	int               channel_num   = data->channel_num;
 	VortexCtx       * ctx           = vortex_channel_get_ctx (channel);
-	
+
+#if defined(ENABLE_VORTEX_LOG)	
  	if (vortex_log_is_enabled (ctx)) {
  		/* get type */
  		type = vortex_frame_get_type (frame);
@@ -5745,6 +5752,7 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 		       raw_frame);
 		axl_free (raw_frame);
 	}
+#endif
 
 	/* record actual connection state */
 	is_connected = vortex_connection_is_ok (connection, axl_false);
@@ -5769,6 +5777,7 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 	/* invoke handler */
 	if (channel->received) {
 		channel->received (channel, channel->connection, frame, channel->received_user_data);
+#if defined(ENABLE_VORTEX_LOG)
  		if (vortex_log_is_enabled (ctx)) {
  			/* get type */
  			type = vortex_frame_get_type (frame);
@@ -5790,6 +5799,7 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
  				    vortex_frame_get_content_size (frame),
 				    vortex_frame_get_ansno (frame));
  		} /* end if */
+#endif
 	}else {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "invoking frame received on channel %d with not handler defined",
 		       vortex_channel_get_number (channel));

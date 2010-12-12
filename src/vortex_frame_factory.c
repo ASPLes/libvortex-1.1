@@ -1693,6 +1693,7 @@ process_buffer:
 	/* get a reference to the buffer to dealloc it */
 	frame->buffer    = buffer;
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* log frame on channel received */
 	if (vortex_log_is_enabled (ctx)) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "Frame received on channel %d, content type=%s, transfer encoding=%s, payload size=%d, mime content size=%d", 
@@ -1701,6 +1702,7 @@ process_buffer:
  			    (vortex_frame_get_transfer_encoding (frame) != NULL) ? vortex_frame_get_transfer_encoding (frame) : "",
  			    frame->size, frame->mime_headers_size);
 	} /* end if */
+#endif
 
 	return frame;
 

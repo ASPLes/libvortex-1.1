@@ -246,7 +246,7 @@ axl_bool      vortex_reader_check_incoming_msgno (VortexCtx        * ctx,
   	return axl_true;
 }
 
-/**
+/** 
  * @internal
  * 
  * The main purpose of this function is to dispatch received frames
@@ -288,7 +288,9 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	VortexFrameType    type;
 	VortexChannel    * channel;
 	axl_bool           more;
+#if defined(ENABLE_VORTEX_LOG)
 	char             * raw_frame;
+#endif
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "something to read conn-id=%d", vortex_connection_get_id (connection));
 
@@ -322,12 +324,14 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	 * joining frame fragments. */
 
 	/* check for debug to throw some debug messages.*/
+#if defined(ENABLE_VORTEX_LOG)
 	if (vortex_log2_is_enabled (ctx)) {
 		raw_frame = vortex_frame_get_raw_frame (frame);
 		vortex_log (VORTEX_LEVEL_DEBUG, "frame received (before all filters)\n%s",
 		       raw_frame);
 		axl_free (raw_frame);
 	}
+#endif
 	
 	/* check if this connection is being initially accepted */
 	if (PTR_TO_INT (vortex_connection_get_data (connection, "initial_accept"))) {
