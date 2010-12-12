@@ -807,11 +807,14 @@ axl_bool      vortex_sequencer_direct_send (VortexConnection * connection,
 {
 	/* reply number */
 	axl_bool    result = axl_true;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx    = vortex_connection_get_ctx (connection);
+#endif
 
 	/* reference the channel during the transmission */
 	vortex_channel_ref (channel);
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* send the frame */
 	if (vortex_log2_is_enabled (ctx))
 		vortex_log2 (VORTEX_LEVEL_DEBUG, "Sending message, size (%d) over connection id=%d, errno=%d, Content: \n%s",
@@ -821,6 +824,7 @@ axl_bool      vortex_sequencer_direct_send (VortexConnection * connection,
 		vortex_log (VORTEX_LEVEL_DEBUG, "Sending message, size (%d) over connection id=%d, errno=%d",
 			    packet->the_size,  
 			    vortex_connection_get_id (connection), errno);
+#endif
 
 	if (! vortex_frame_send_raw (connection, packet->the_frame, packet->the_size)) {
 		/* drop a log */
