@@ -337,17 +337,6 @@ struct _VortexChannel {
 	 * sent. */
 	axl_bool              waiting_replies;
 
-	/* the reply_processed:
-	 *
-	 * This variable is used by the vortex reader and close
-	 * channel process to synchronize channel frame replies
-	 * reception and its process and the possible on going channel
-	 * closing. 
-	 * 
-	 * A channel can be closed until all replies to all message
-	 * are receive and they are delivered to application level. */
-	axl_bool               reply_processed;
-
 
 	/* the pending_mutex 
 	 *
@@ -1543,7 +1532,6 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 	channel->serialize                      = axl_false;
 	channel->serialize_next_seqno           = 0;
 	channel->waiting_replies                = axl_false;
-	channel->reply_processed                = axl_true;
 	channel->data                           = vortex_hash_new_full (axl_hash_string, axl_hash_equal_string, NULL, NULL);
 	channel->stored_replies                 = axl_hash_new (axl_hash_int, axl_hash_equal_int);
 
@@ -7423,22 +7411,12 @@ void     vortex_channel_free_wait_reply (WaitReplyData * wait_reply)
  */
 axl_bool         vortex_channel_is_ready                       (VortexChannel * channel)
 {
-#if defined(ENABLE_VORTEX_LOG)
-	VortexCtx * ctx     = vortex_channel_get_ctx (channel);
-#endif
 	axl_bool result;
 
 	if (channel == NULL)
 		return axl_false;
 
- 	/* return ((channel->last_message_sent == channel->last_reply_received) && channel->reply_processed); */
 	vortex_mutex_lock (&(channel->outstanding_msg_mutex));
-
-	vortex_log (VORTEX_LEVEL_DEBUG, "checking channel to be ready (%d == %d) && reply_processed=%d",
- 		    channel->last_message_sent, 
- 		    (channel->last_reply_received), 
- 		    channel->reply_processed);
-
 	result = axl_list_length (channel->outstanding_msg) == 0;
 	vortex_mutex_unlock (&(channel->outstanding_msg_mutex));
 
@@ -7970,10 +7948,6 @@ VortexFrame   * vortex_channel_wait_reply              (VortexChannel * channel,
 	vortex_log (VORTEX_LEVEL_DEBUG, "getting reply at wait reply from the queue");
 	frame = vortex_async_queue_timedpop (wait_reply->queue, vortex_connection_get_timeout (ctx));
 
-	/* because we have accept to deliver the frame to a waiting
-	 * thread, we understand this frame have being delivered */
-	channel->reply_processed = axl_true;
-
 	if (PTR_TO_INT (frame) == -3) {
 		vortex_log (
 			VORTEX_LEVEL_CRITICAL, 
@@ -8107,9 +8081,6 @@ void           	   vortex_channel_signal_on_close_blocked        (VortexChannel 
 
 	vortex_mutex_lock   (&channel->close_mutex);
 
-	/* flag channel to be up to date on reply process */
-	channel->reply_processed = axl_true;
-
 	/* check if channel is being closed */
 	if (!channel->being_closed) {
 		vortex_mutex_unlock (&channel->close_mutex);
@@ -8159,7 +8130,7 @@ void   vortex_channel_signal_reply_sent_on_close_blocked (VortexChannel * channe
 
 /** 
  * @brief Allows to flag that the channel have processed its last
- * reply.
+ * reply (DEPRECATED, DO NOT USE).
  *
  * Under normal situations, this function is used by the vortex reader
  * to notify the reply processed status for a provided channel. This
@@ -8194,20 +8165,6 @@ void   vortex_channel_signal_reply_sent_on_close_blocked (VortexChannel * channe
  */
 void vortex_channel_flag_reply_processed (VortexChannel * channel, axl_bool   flag)
 {
-#if defined(ENABLE_VORTEX_LOG)
-	VortexCtx    * ctx     = vortex_channel_get_ctx (channel);
-#endif
-
-	/* get channel profile */
-	if (channel == NULL)
-		return;
-
-	vortex_mutex_lock   (&channel->close_mutex);
-	vortex_log (VORTEX_LEVEL_DEBUG, "setting pending reply processed=%d for channel=%d",
-	       flag, channel->channel_num);
-	channel->reply_processed = flag;
-	vortex_mutex_unlock (&channel->close_mutex);
-
 	return;
 }
 
