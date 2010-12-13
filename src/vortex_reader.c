@@ -649,23 +649,6 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	vortex_log (VORTEX_LEVEL_CRITICAL, 
 	       "unable to deliver incoming frame, no first or second level handler defined, dropping frame");
 
-	/* in case of a frame reply */
-	switch (type) {
-	case VORTEX_FRAME_TYPE_RPY:
-	case VORTEX_FRAME_TYPE_ERR:
-	case VORTEX_FRAME_TYPE_ANS:
-	case VORTEX_FRAME_TYPE_NUL:
-		/* flag this frame over the channel to be delivered because a
-		 * dead-lock can happen if we receive a close message at this
-		 * point. We have to be able to close a channel having defined
-		 * a frame receive handler for any level or not. */
-		vortex_channel_flag_reply_processed (channel, axl_true);
-		break;
-	default:
-		/* do nothing */
-		break;
-	}
-	
 	/* unable to deliver the frame, free it */
 	vortex_frame_unref (frame);
 
