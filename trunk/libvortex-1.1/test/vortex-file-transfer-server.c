@@ -17,6 +17,7 @@
  */
 
 #include <vortex.h>
+#include <stdlib.h>
 
 /* profile that sends the big file using ANS/NUL reply */
 #define FILE_TRANSFER_URI "http://www.aspl.es/vortex/profiles/file-transfer"
@@ -28,10 +29,35 @@
 #define FILE_TRANSFER_URI_WITH_FEEDER "http://www.aspl.es/vortex/profiles/file-transfer/feeder"
 
 /* file to transfer */
-#define FILE_TO_TRANSFER "/tmp/file"
+#define FILE_TO_TRANSFER "c:/temp/VMware-VMvisor-Installer-4.1.0-260247.x86_64.iso"
 
 /* listener context */
 VortexCtx * ctx = NULL;
+
+FILE * open_file (VortexChannel * channel, VortexFrame * frame)
+{
+	FILE * file;
+
+	/* open file */
+#if defined(AXL_OS_UNIX)
+	printf ("Unix open..\n");
+	file = fopen (FILE_TO_TRANSFER, "r");
+#elif defined(AXL_OS_WIN32)
+	printf ("Win32 open..\n");
+	file = fopen (FILE_TO_TRANSFER, "rb");
+#endif
+	if (file == NULL) {
+		printf ("FAILED to open file (%s): %d:%s..\n", FILE_TO_TRANSFER, errno, vortex_errno_get_error (errno));
+		vortex_channel_send_err (channel, 
+					 "Unable to open file requested",
+					 29, 
+					 vortex_frame_get_msgno (frame));
+		return file;
+	} /* end if */
+
+	printf ("INFO: file %s opened..\n", FILE_TO_TRANSFER);	
+	return file;
+}
 
 void frame_received (VortexChannel    * channel,
 		     VortexConnection * connection,
@@ -44,16 +70,10 @@ void frame_received (VortexChannel    * channel,
 	long   total_bytes;
 
 	/* open file */
-	file = fopen (FILE_TO_TRANSFER, "r");
-	if (file == NULL) {
-		printf ("FAILED to open file..\n");
-		vortex_channel_send_err (channel, 
-					 "Unable to open file requested",
-					 29, 
-					 vortex_frame_get_msgno (frame));
+	file = open_file (channel, frame);
+	if (file == NULL)
 		return;
-	}
-	
+
 	/* reply the peer client with the same content 10 times */
 	total_bytes = 0;
 	do {
@@ -119,15 +139,9 @@ void frame_received_with_msg (VortexChannel    * channel,
 	int    file_size  = get_file_size (FILE_TO_TRANSFER);
 
 	/* open file */
-	file = fopen (FILE_TO_TRANSFER, "r");
-	if (file == NULL) {
-		printf ("FAILED to open file..\n");
-		vortex_channel_send_err (channel, 
-					 "Unable to open file requested",
-					 29, 
-					 vortex_frame_get_msgno (frame));
+	file = open_file (channel, frame);
+	if (file == NULL)
 		return;
-	}
 
 	/* allow */
 	buffer = axl_new (char, file_size + 1);
