@@ -297,8 +297,6 @@ int  __vortex_frame_get_next_id (VortexCtx * ctx, char  * from)
 	result = ctx->frame_id;
 	ctx->frame_id++;
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "from='%s' allocating a new frame id=%d", from, result);
-
 	vortex_mutex_unlock (&ctx->frame_id_mutex);
 
 	return result;
