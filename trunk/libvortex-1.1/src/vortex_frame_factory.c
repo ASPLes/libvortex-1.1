@@ -39,6 +39,7 @@
 
 /* local include */
 #include <vortex_ctx_private.h>
+#include <vortex_connection_private.h>
 
 #define LOG_DOMAIN "vortex-frame-factory"
 
@@ -1475,7 +1476,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 		}
 
 		/* check for connection into initial connect state */
-		if (PTR_TO_INT (vortex_connection_get_data (connection, "initial_accept"))) {
+		if (connection->initial_accept) {
 			/* found a connection broken in the middle of
 			 * the negotiation (just before the initial
 			 * step, but after the second step) */

@@ -39,6 +39,7 @@
 
 /* local include */
 #include <vortex_ctx_private.h>
+#include <vortex_connection_private.h>
 
 /* include inline dtd */
 #include <vortex-listener-conf.dtd.h>
@@ -184,7 +185,7 @@ void          vortex_listener_complete_register    (VortexConnection     * conne
 	ctx = vortex_connection_get_ctx (connection);
 
 	/* flag the connection to be on initial step */
-	vortex_connection_set_data (connection, "initial_accept", INT_TO_PTR (axl_true));
+	connection->initial_accept = axl_true;
 
 	/*
 	 * register the connection on vortex reader from here, the
@@ -395,7 +396,7 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 	
 	/*** CONNECTION COMPLETELY ACCEPTED ***/
 	/* flag the connection to be totally accepted. */
-	vortex_connection_set_data (connection, "initial_accept", NULL);
+	connection->initial_accept = axl_false;
 	/* flag that the greetings message was already sent */
 	vortex_connection_set_data (connection, "vo:greetings-sent", NULL);
 
