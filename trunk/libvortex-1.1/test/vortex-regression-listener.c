@@ -154,7 +154,7 @@ void test_01p_idle_handler (VortexCtx * ctx, VortexConnection * conn, axlPointer
 	printf ("Test 01-p: idle handler called for connection id=%d, count=%d\n", vortex_connection_get_id (conn), *count);
 
 	/* check initial state */
-	if (PTR_TO_INT (vortex_connection_get_data (conn, "initial_accept"))) {
+	if (vortex_connection_half_opened (conn)) {
 		printf ("Test 01-p: found idle connection at connection stage, killing..\n");
 		vortex_connection_shutdown (conn);
 		return;
