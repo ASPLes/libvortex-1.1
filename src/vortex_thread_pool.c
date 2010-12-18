@@ -574,7 +574,7 @@ void vortex_thread_pool_new_task (VortexCtx * ctx, VortexThreadFunc func, axlPoi
 		return;
 
 	/* create the task data */
-	task       = axl_new (VortexThreadPoolTask, 1);
+	task       = malloc (sizeof (VortexThreadPoolTask));
 	/* check allocated result */
 	if (task == NULL)
 		return;
