@@ -29,7 +29,7 @@
 #define FILE_TRANSFER_URI_WITH_FEEDER "http://www.aspl.es/vortex/profiles/file-transfer/feeder"
 
 /* file to transfer */
-#define FILE_TO_TRANSFER "c:/temp/VMware-VMvisor-Installer-4.1.0-260247.x86_64.iso"
+const char * file_to_transfer = NULL;
 
 /* listener context */
 VortexCtx * ctx = NULL;
@@ -41,13 +41,13 @@ FILE * open_file (VortexChannel * channel, VortexFrame * frame)
 	/* open file */
 #if defined(AXL_OS_UNIX)
 	printf ("Unix open..\n");
-	file = fopen (FILE_TO_TRANSFER, "r");
+	file = fopen (file_to_transfer, "r");
 #elif defined(AXL_OS_WIN32)
 	printf ("Win32 open..\n");
-	file = fopen (FILE_TO_TRANSFER, "rb");
+	file = fopen (file_to_transfer, "rb");
 #endif
 	if (file == NULL) {
-		printf ("FAILED to open file (%s): %d:%s..\n", FILE_TO_TRANSFER, errno, vortex_errno_get_error (errno));
+		printf ("FAILED to open file (%s): %d:%s..\n", file_to_transfer, errno, vortex_errno_get_error (errno));
 		vortex_channel_send_err (channel, 
 					 "Unable to open file requested",
 					 29, 
@@ -55,7 +55,7 @@ FILE * open_file (VortexChannel * channel, VortexFrame * frame)
 		return file;
 	} /* end if */
 
-	printf ("INFO: file %s opened..\n", FILE_TO_TRANSFER);	
+	printf ("INFO: file %s opened..\n", file_to_transfer);	
 	return file;
 }
 
@@ -136,7 +136,7 @@ void frame_received_with_msg (VortexChannel    * channel,
 	char * buffer;
 	int    bytes_read;
 	long   total_bytes;
-	int    file_size  = get_file_size (FILE_TO_TRANSFER);
+	int    file_size  = get_file_size (file_to_transfer);
 
 	/* open file */
 	file = open_file (channel, frame);
@@ -179,7 +179,7 @@ void frame_received_with_feeder (VortexChannel    * channel,
 	VortexPayloadFeeder * feeder;
 
 	/* create the feeder */
-	feeder = vortex_payload_feeder_file (ctx, FILE_TO_TRANSFER, axl_false);
+	feeder = vortex_payload_feeder_file (ctx, file_to_transfer, axl_false);
 
 	/* send rpy */
 	if (! vortex_channel_send_rpy_from_feeder (channel, feeder, vortex_frame_get_msgno (frame))) {
@@ -222,6 +222,20 @@ int  main (int  argc, char ** argv)
 		vortex_ctx_free (ctx);
 		return -1;
 	} /* end if */
+
+	if (argc < 2) {
+		printf ("ERROR: Not provided a file to serve..\n");
+		exit (-1);
+	}
+
+	/* check file provided exists */
+	if (! vortex_support_file_test (argv[1], FILE_EXISTS | FILE_IS_REGULAR)) {
+		printf ("ERROR: file %s provided either do not exists or it is not regular..\n", argv[1]);
+		exit (-1);
+	}
+
+	printf ("INFO: serving file %s (file found, regular file)\n", argv[1]);
+	file_to_transfer = argv[1];
 
 	/* register profile */
 	vortex_profiles_register (ctx, FILE_TRANSFER_URI,
