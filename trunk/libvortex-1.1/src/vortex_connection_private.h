@@ -349,6 +349,25 @@ struct _VortexConnection {
 	 * handler.
 	 */ 
 	VortexConnectionOnPreRead    pre_accept_handler;
+
+	/** 
+	 * @internal Pointer used to store the buffer that is holding
+	 * the content of the next frame.
+	 */
+	char                       * buffer;
+	
+	/** 
+	 * @internal Pointer to the last frame being read at the
+	 * connection.
+	 */
+	VortexFrame                * last_frame;
+
+	/** 
+	 * @internal Variable that is used by vortex_frame_get_next to
+	 * track status for partial reads.
+	 */
+	int                          remaining_bytes;
+	int                          bytes_read;
 };
 
 #endif /* __VORTEX_CONNECTION_PRIVATE_H__ */

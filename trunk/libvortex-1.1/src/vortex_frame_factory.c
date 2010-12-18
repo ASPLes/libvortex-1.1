@@ -1397,30 +1397,32 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 
 	/* before reading anything else, we have to check if previous
 	 * read was complete if not, we are in a frame fragment case */
-	buffer = vortex_connection_get_data (connection, "buffer");
+	buffer = connection->buffer;
 	
 	if (buffer) {
 		vortex_log (VORTEX_LEVEL_DEBUG, 
 			    "received more data after a frame fragment, previous read isn't still complete");
 		/* get previous frame */
-		frame        = vortex_connection_get_data (connection, "frame");
+		frame        = connection->last_frame;
 		v_return_val_if_fail (frame, NULL);
 
 		/* get previous remaining */
-		remaining    = PTR_TO_INT (vortex_connection_get_data (connection, "remaining_bytes"));
+		remaining    = connection->remaining_bytes;
 		vortex_log (VORTEX_LEVEL_DEBUG, "remaining bytes to be read: %d", remaining);
 		v_return_val_if_fail (remaining > 0, NULL);
 
 		/* get previous bytes read */
-		bytes_read = PTR_TO_INT (vortex_connection_get_data (connection, "bytes_read"));
+		bytes_read   = connection->bytes_read;
 		vortex_log (VORTEX_LEVEL_DEBUG, "bytes already read: %d", bytes_read);
 
 		bytes_read = vortex_frame_receive_raw (connection, buffer + bytes_read, remaining);
 		if (bytes_read == 0) {
 			vortex_frame_free (frame);
 			axl_free (buffer);
-			vortex_connection_set_data (connection, "buffer", NULL);
-			vortex_connection_set_data (connection, "frame", NULL);
+
+			connection->buffer     = NULL;
+			connection->last_frame = NULL;
+
 			vortex_log (VORTEX_LEVEL_CRITICAL, "remote peer have closed connection while reading the rest of the frame having received part of it");
 			__vortex_connection_set_not_connected (connection, "remote peer have closed connection while reading the rest of the frame",
 							       VortexProtocolError);
@@ -1433,7 +1435,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 		/* check data received */
 		if (bytes_read != remaining) {
 			/* add bytes read to keep on reading */
-			bytes_read += PTR_TO_INT (vortex_connection_get_data (connection, "bytes_read"));
+			bytes_read += connection->bytes_read;
 			vortex_log (VORTEX_LEVEL_DEBUG, "the frame fragment isn't still complete, total read: %d", bytes_read);
 			goto save_buffer;
 		}
@@ -1442,8 +1444,10 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 		 * continue the process but, before doing that we have
 		 * to restore expected state of bytes_read. */
 		bytes_read = (frame->size + 5);
-		vortex_connection_set_data (connection, "buffer", NULL);
-		vortex_connection_set_data (connection, "frame", NULL);
+
+		connection->buffer     = NULL;
+		connection->last_frame = NULL;
+
 		vortex_log (VORTEX_LEVEL_DEBUG, "this already complete (total size: %d", frame->size);
 		goto process_buffer;
 	}
@@ -1637,18 +1641,16 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 
 	save_buffer:
 		/* save current frame */
-		vortex_connection_set_data (connection, "frame", frame);
+		connection->last_frame = frame;
 		
 		/* save current buffer read */
-		vortex_connection_set_data (connection, "buffer", buffer);
+		connection->buffer = buffer;
 		
 		/* save remaining bytes */
-		vortex_connection_set_data (connection, "remaining_bytes", 
-					    INT_TO_PTR ((frame->size + 5) - bytes_read));
+		connection->remaining_bytes = (frame->size + 5) - bytes_read;
 
 		/* save read bytes */
-		vortex_connection_set_data (connection, "bytes_read", 
-					    INT_TO_PTR (bytes_read));
+		connection->bytes_read      = bytes_read;
 
 		vortex_log (VORTEX_LEVEL_DEBUG, 
 		       "(ok message) received a frame fragment (expected: %d read: %d remaining: %d), storing into this connection id=%d",
