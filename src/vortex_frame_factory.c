@@ -1608,7 +1608,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	}
 
 	/* allocate exactly frame->size + 5 bytes */
-	buffer = axl_new (char , frame->size + 6);
+	buffer = malloc (sizeof (char) * (frame->size + 6));
 	VORTEX_CHECK_REF2 (buffer, NULL, frame, axl_free);
 	
 	/* read the next frame content */
