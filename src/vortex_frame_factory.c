@@ -1146,12 +1146,6 @@ int         vortex_frame_receive_raw  (VortexConnection * connection, char  * bu
 	return nread;
 }
 
-/** 
- * @internal Key used to store and retrieve pending lines (not fully
- * read) from vortex_frame_readline.
- */
-#define VORTEX_FRAME_PENDING_LINE "vo:pe:li"
-
 /**
  * @brief Read the next line, byte by byte until it gets a \n or
  * maxlen is reached. Some code errors are used to manage exceptions
@@ -1176,20 +1170,18 @@ int          vortex_frame_readline (VortexConnection * connection, char  * buffe
 	int         desp;
 	char        c, *ptr;
 	char      * error_msg;
-	char      * pending_line;
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 #endif
 
 	/* clear the buffer received */
-	memset (buffer, 0, maxlen * sizeof (char ));
+	/* memset (buffer, 0, maxlen * sizeof (char ));  */
 
 	/* check for pending line read */
-	pending_line = vortex_connection_get_data (connection, VORTEX_FRAME_PENDING_LINE);
 	desp         = 0;
-	if (pending_line) {
+	if (connection->pending_line) {
 		/* get size and check exceeded values */
-		desp = strlen (pending_line);
+		desp = strlen (connection->pending_line);
 		if (desp >= maxlen) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
 				    "found fragmented frame line header but allowed size was exceeded (desp:%d >= maxlen:%d)",
@@ -1200,10 +1192,11 @@ int          vortex_frame_readline (VortexConnection * connection, char  * buffe
 		} /* end if */
 
 		/* now store content into the buffer */
-		memcpy (buffer, pending_line, desp);
+		memcpy (buffer, connection->pending_line, desp);
 
 		/* clear from the connection the line */
-		vortex_connection_set_data (connection, VORTEX_FRAME_PENDING_LINE, NULL);
+		axl_free (connection->pending_line);
+		connection->pending_line = NULL;
 	}
 
 
@@ -1226,12 +1219,11 @@ int          vortex_frame_readline (VortexConnection * connection, char  * buffe
 			if ((errno == VORTEX_EWOULDBLOCK) || (errno == VORTEX_EAGAIN) || (rc == -2)) {
 				if (n > 0) {
 					/* store content read until now */
-					pending_line = axl_strdup (buffer);
-					vortex_connection_set_data_full (connection, 
-									 /* key and value */
-									 VORTEX_FRAME_PENDING_LINE, pending_line, 
-									 /* key destroy and value destroy */
-									 NULL, axl_free);
+					if ((n + desp - 1) > 0) {
+						buffer[n+desp - 1] = 0;
+						/* vortex_log (VORTEX_LEVEL_WARNING, "storing partially line read: '%s' n:%d, desp:%d", buffer, n, desp);*/
+						connection->pending_line = axl_strdup (buffer);
+					} /* end if */
 				} /* end if */
 				return (-2);
 			}

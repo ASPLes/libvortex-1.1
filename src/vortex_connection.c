@@ -3053,6 +3053,10 @@ void               vortex_connection_free (VortexConnection * connection)
 	connection->features = NULL;
 	connection->localize = NULL;
 
+	/* free pending line */
+	axl_free (connection->pending_line);
+	connection->pending_line = NULL;
+
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing connection channel pools id=%d", connection->id);
 	/* free channel pools */
 	if (connection->channel_pools) {
@@ -4658,6 +4662,26 @@ axl_bool             vortex_connection_is_blocked                   (VortexConne
 
 	/* set blocking state */
 	return conn->is_blocked;
+}
+
+/** 
+ * @brief Allows to check if the provided connection is still in
+ * transit of being accepted.
+ *
+ * @param conn The connection to be checked. In the case the function
+ * returns axl_true it means the connection is still not fully
+ * opened/accepted (still greetings phase wasn't finished).
+ *
+ * @return axl_true in the case the connection is half opened (BEEP
+ * greetings not yet not completed) otherwise axl_false is
+ * returned. The function also returns axl_false in the case or NULL
+ * pointer received.
+ */
+axl_bool            vortex_connection_half_opened                  (VortexConnection  * conn)
+{
+	if (conn == NULL)
+		return axl_false;
+	return conn->initial_accept;
 }
 
 /** 

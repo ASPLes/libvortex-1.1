@@ -369,6 +369,8 @@ void                vortex_connection_block                        (VortexConnec
 
 axl_bool            vortex_connection_is_blocked                   (VortexConnection  * conn);
 
+axl_bool            vortex_connection_half_opened                  (VortexConnection  * conn);
+
 int                 vortex_connection_get_next_frame_size          (VortexConnection * connection,
 								    VortexChannel    * channel,
 								    int                next_seq_no,

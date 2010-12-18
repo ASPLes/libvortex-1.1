@@ -331,6 +331,12 @@ struct _VortexConnection {
 	 * to a connection in the middle of the greetings.
 	 */
 	axl_bool                initial_accept;
+
+	/** 
+	 * @internal Reference to a line that wasn't totally read when
+	 * call vortex_frame_readline.
+	 */ 
+	char                  * pending_line;
 };
 
 #endif /* __VORTEX_CONNECTION_PRIVATE_H__ */

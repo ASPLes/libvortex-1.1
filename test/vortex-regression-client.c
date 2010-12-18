@@ -2661,7 +2661,7 @@ axl_bool test_01p (void) {
 
 	vortex_connection_close (conn);
 
-	printf ("Test 01-p: OK");
+	printf ("Test 01-p: OK\n");
 
 
 	/* socket close after incomplete frame */
