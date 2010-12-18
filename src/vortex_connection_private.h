@@ -337,6 +337,18 @@ struct _VortexConnection {
 	 * call vortex_frame_readline.
 	 */ 
 	char                  * pending_line;
+
+	/** 
+	 * @internal Value that signals if seq frame emision is
+	 * disabled.
+	 */
+	axl_bool                seq_frames_disabled;
+
+	/** 
+	 * @internal Pointer to the currently configured pre accept
+	 * handler.
+	 */ 
+	VortexConnectionOnPreRead    pre_accept_handler;
 };
 
 #endif /* __VORTEX_CONNECTION_PRIVATE_H__ */
