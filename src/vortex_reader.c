@@ -37,12 +37,11 @@
  */
 #include <vortex.h>
 
-/* local include */
+/* local/private includes */
 #include <vortex_ctx_private.h>
+#include <vortex_connection_private.h>
 
 #define LOG_DOMAIN "vortex-reader"
-
-#define VORTEX_READER_UNWATCH "vo:re:un-watch"
 
 /**
  * \defgroup vortex_reader Vortex Reader: The module that reads you frames. 
@@ -307,7 +306,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		return;
 
 	/* check for unwatch requests */
-	if (PTR_TO_INT (vortex_connection_get_data (connection, VORTEX_READER_UNWATCH)))
+	if (connection->reader_unwatch)
 		return;
 
 	/* read all frames received from remote site */
@@ -334,7 +333,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 #endif
 	
 	/* check if this connection is being initially accepted */
-	if (PTR_TO_INT (vortex_connection_get_data (connection, "initial_accept"))) {
+	if (connection->initial_accept) {
 		/* it doesn't matter to have a connection accepted or
 		 * not accepted to the vortex reader mission, so
 		 * simply call second step accept and return.  */
@@ -984,9 +983,9 @@ VORTEX_SOCKET __vortex_reader_build_set_to_watch_aux (VortexCtx     * ctx,
 		} /* end if */
 
 		/* check if the connection must be unwatched */
-		if (PTR_TO_INT (vortex_connection_get_data (connection, VORTEX_READER_UNWATCH))) {
+		if (connection->reader_unwatch) {
 			/* remove the unwatch flag from the connection */
-			vortex_connection_set_data (connection, VORTEX_READER_UNWATCH, NULL);
+			connection->reader_unwatch = axl_false;
 
 			/* connection isn't ok, unref it */
 			vortex_connection_unref (connection, "vortex reader (process: unwatch)");
@@ -1380,7 +1379,7 @@ void vortex_reader_unwatch_connection          (VortexCtx        * ctx,
 {
 	v_return_if_fail (ctx && connection);
 	/* flag connection vortex reader unwatch */
-	vortex_connection_set_data (connection, VORTEX_READER_UNWATCH, INT_TO_PTR (axl_true));
+	connection->reader_unwatch = axl_true;
 	return;
 }
 

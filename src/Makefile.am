@@ -59,6 +59,7 @@ libvortex_1_1_include_HEADERS = vortex.h \
 	vortex_ctx_private.h \
 	vortex_support.h \
 	vortex_connection.h \
+	vortex_connection_private.h \
 	vortex_listener.h \
 	vortex_handlers.h \
 	vortex_types.h \

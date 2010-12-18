@@ -41,6 +41,9 @@
 
 #include <vortex.h>
 
+/* include connection internal definition */
+#include <vortex_connection_private.h>
+
 /** 
  * \addtogroup vortex_connection
  * @{
