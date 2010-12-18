@@ -5933,7 +5933,7 @@ axl_bool      vortex_channel_invoke_received_handler (VortexConnection * connect
 	}
 
 	/* prepare data to be passed in to thread */
-	data              = axl_new (ReceivedInvokeData, 1);
+	data              = malloc (sizeof (ReceivedInvokeData));
 	if (data == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "Allocation failed, unable to deliver frame");
 		/* do not dealloc frame: this is done by the caller */
