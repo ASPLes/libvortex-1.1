@@ -4761,7 +4761,7 @@ void                vortex_connection_seq_frame_updates            (VortexConnec
 	v_return_if_fail (vortex_connection_is_ok (connection, axl_false));
 
 	/* set the flag */
-	vortex_connection_set_data (connection, "_vo:se:up", INT_TO_PTR(is_disabled));
+	connection->seq_frames_disabled = is_disabled;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "configuring SEQ frame generation status: is-disabled=%d", is_disabled);
 	
@@ -4781,15 +4781,12 @@ void                vortex_connection_seq_frame_updates            (VortexConnec
  */
 axl_bool            vortex_connection_seq_frame_updates_status     (VortexConnection * connection)
 {
-	axl_bool result;
-
 	v_return_val_if_fail (connection, axl_false);
 	v_return_val_if_fail (vortex_connection_is_ok (connection, axl_false), axl_false);
 
 	/* get the flag */
-	result = PTR_TO_INT (vortex_connection_get_data (connection, "_vo:se:up"));
+	return connection->seq_frames_disabled;
 
-	return result;
 }
 
 /** 
@@ -6160,9 +6157,8 @@ void                vortex_connection_set_preread_handler        (VortexConnecti
 	/* no reference, no operation */
 	if (connection == NULL)
 		return;
-
-	vortex_connection_set_data (connection, "vo:co:pr", pre_accept_handler);
-	
+	/* configure handler */
+	connection->pre_accept_handler = pre_accept_handler;
 	return;
 }
 
@@ -6201,7 +6197,8 @@ axl_bool                 vortex_connection_is_tlsficated              (VortexCon
 
 
 /** 
- * @brief Allows to check if there are an pre read handler defined on the given connection.
+ * @brief Allows to check if there are an pre read handler defined on
+ * the given connection.
  * 
  * @param connection The connection to check.
  * 
@@ -6209,7 +6206,7 @@ axl_bool                 vortex_connection_is_tlsficated              (VortexCon
  */
 axl_bool                 vortex_connection_is_defined_preread_handler (VortexConnection * connection)
 {
-	return (vortex_connection_get_data (connection, "vo:co:pr") != NULL);
+	return connection->pre_accept_handler != NULL;
 }
 
 /** 
@@ -6223,10 +6220,8 @@ axl_bool                 vortex_connection_is_defined_preread_handler (VortexCon
  */
 void            vortex_connection_invoke_preread_handler     (VortexConnection * connection)
 {
-	VortexConnectionOnPreRead pre_accept_handler = vortex_connection_get_data (connection, "vo:co:pr");
-
-	if (pre_accept_handler != NULL)
-		pre_accept_handler (connection);
+	if (connection->pre_accept_handler != NULL)
+		connection->pre_accept_handler (connection);
 	return;
 }
 
