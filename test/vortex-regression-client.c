@@ -8478,11 +8478,11 @@ get_reply_and_check:
 	frame = vortex_channel_get_reply (channel, queue);
 	gettimeofday (&stop, NULL);
 
-	printf ("Test 04-e: %d bytes transferred in %ld secs, %ld microseconds\n", 
-		vortex_frame_get_payload_size (frame), (long) result.tv_sec, (long) result.tv_usec);
-
 	/* get result */
 	vortex_timeval_substract (&stop, &start, &result);
+
+	printf ("Test 04-e: %d bytes transferred in %ld secs, %ld microseconds\n", 
+		vortex_frame_get_payload_size (frame), (long) result.tv_sec, (long) result.tv_usec);
 
 	printf ("Test 04-e: reply received, buffer size: (%d, %d)\n", ctx->sequencer_feeder_buffer_size, ctx->sequencer_send_buffer_size);
 	if (ctx->sequencer_feeder_buffer_size > 10000) {
