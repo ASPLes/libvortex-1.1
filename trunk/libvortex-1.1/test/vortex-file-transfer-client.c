@@ -125,6 +125,14 @@ int  main (int  argc, char ** argv)
 	const char       * format         = NULL;
 	int                iterator;
 
+	/* file size */
+	struct stat status;
+
+	/* timing tracking */
+	struct timeval    start;
+	struct timeval    stop;
+	struct timeval    result;
+
 	printf ("Usage:    ./vortex-file-transfer-client [--server=hostname] [bigmsg|feeder|ansnul]\n");
 	printf ("Usage:                                  [--transfer-count=transfer_count]\n");
 	printf ("Usage:                                  [--window-size=window_size]\n");
@@ -256,6 +264,7 @@ transfer_again:
 	}
 
 	/* send the message */
+	gettimeofday (&start, NULL);
 	if (! vortex_channel_send_msg (channel, 
 				       "send the message, please",
 				       24, 
@@ -277,10 +286,12 @@ transfer_again:
 		goto transfer_again;
 	}
 
-	vortex_async_queue_unref (queue);
-
 	printf ("closing file...\n");
 	fclose (file);
+
+	gettimeofday (&stop, NULL);
+
+	vortex_async_queue_unref (queue);
 
 	/* close the channel */
 	vortex_channel_close (channel, NULL);
@@ -288,7 +299,19 @@ transfer_again:
  end:				      
 	vortex_connection_close (connection);
 	vortex_exit_ctx (ctx, axl_true);
-	return 0 ;	      
+
+	/* get result */
+	vortex_timeval_substract (&stop, &start, &result);
+
+	memset (&status, 0, sizeof (struct stat));
+	if (stat (FILE_TO_TRANSFER, &status) != 0) {
+		printf ("ERROR: unable to get file size from %s\n", FILE_TO_TRANSFER);
+		return 0;
+	}
+	printf ("Time to transfer %d bytes (%d Kbytes): %ld.%ld secs\n", 
+		(int) status.st_size, (int) status.st_size / 1024, (long) result.tv_sec, (long) result.tv_usec / 1000);
+
+	return 0;	      
 }
 
 
