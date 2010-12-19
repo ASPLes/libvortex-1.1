@@ -116,6 +116,10 @@ char   * vortex_support_build_filename             (const char  * name, ...);
 double   vortex_support_strtod                     (const char  * param,
 						    char       ** string_aux);
 
+int      vortex_support_itoa                       (unsigned int   value,
+						    char         * buffer,
+						    int            buffer_size);
+
 int      vortex_timeval_substract                  (struct timeval * a, 
 						    struct timeval * b,
 						    struct timeval * result);

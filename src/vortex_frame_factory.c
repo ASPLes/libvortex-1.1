@@ -505,6 +505,132 @@ char  * vortex_frame_build_up_from_params (VortexFrameType   type,
     /* place entity header trailing header if some of them is defined */      \
     ( place_content_type || place_transfer_encoding) ? "\x0D\x0A" : ""
 
+#define header_place(content) buffer[position] = content; \
+	position++;
+
+int vortex_frame_build_header (char        * buffer,
+			       int           buffer_size,
+			       int         * real_size,
+			       char        * message_type,
+			       int           channel, 
+			       int           msgno,
+			       axl_bool      more,
+			       unsigned int  seqno,
+			       int           size,
+			       int           ansno,
+			       const char  * content_type,
+			       const char  * transfer_encoding)
+{
+	int position = 0;
+	int result;
+	int length;
+
+	/* check if the buffer size is bigger enough to hold the frame
+	 * header */
+	if (buffer_size < 100)
+		return -1;
+
+	/* copy message type header */
+	while (position < 3) {
+		buffer[position] = message_type[position];
+		position++;
+	} /* end while */
+	
+	/* place white space */
+	header_place (' ');
+	
+	/* place channel */
+	result = vortex_support_itoa (channel, buffer + position, 10);
+	if (result == -1)
+		return -1;
+	position += result;
+	
+	/* place white space */
+	header_place (' ');
+
+	/* place msqno */
+	result = vortex_support_itoa (msgno, buffer + position, 10);
+	if (result == -1)
+		return -1;
+	position += result;
+	
+	/* place white space */
+	header_place (' ');
+
+	/* more indication */
+	buffer[position] = (more ? '*' : '.');
+	position++;
+
+	/* place white space */
+	header_place (' ');
+
+	/* place seqno */
+	result = vortex_support_itoa (seqno, buffer + position, 10);
+	if (result == -1)
+		return -1;
+	position += result;
+
+	/* place white space */
+	header_place (' ');
+
+	/* place size */
+	result = vortex_support_itoa (size, buffer + position, 10);
+	if (result == -1)
+		return -1;
+	position += result;
+		
+	if (ansno >= 0) {
+		/* place white space */
+		header_place (' ');
+
+		/* place ansno */
+		result = vortex_support_itoa (ansno, buffer + position, 10);
+		if (result == -1)
+			return -1;
+		position += result;
+	} /* end if */
+
+	/* place last \r\n */
+	memcpy (buffer + position, "\x0D\x0A", 2);
+	position += 2;
+
+	/* configure content type if defined */
+	if (content_type) {
+		memcpy (buffer + position, "Content-Type: ", 14);
+		position += 14;
+
+		length = strlen (content_type);
+		memcpy (buffer + position, content_type, length);
+		position += length;
+
+		memcpy (buffer + position, "\x0D\x0A", 2);
+		position += 2;
+	}
+
+	/* configure transfer encoding if defined */
+	if (transfer_encoding) {
+		memcpy (buffer + position, "Content-Transfer-Encoding: ", 27);
+		position += 27;
+
+		length = strlen (transfer_encoding);
+		memcpy (buffer + position, transfer_encoding, length);
+		position += length;
+
+		memcpy (buffer + position, "\x0D\x0A", 2);
+		position += 2;
+	}
+
+	/* configure last \r\n */
+	if (content_type || transfer_encoding) {
+		memcpy (buffer + position, "\x0D\x0A", 2);
+		position += 2;
+	}
+
+	/* return length */
+	*real_size = position;
+	return position;
+}
+
 /** 
  * @brief Creates a new frame, using the given data and returning
  * current frame size resulting from the operation, and placing the
@@ -629,24 +755,22 @@ char  * vortex_frame_build_up_from_params_s_buffer (VortexFrameType   type,
 	if (buffer && buffer_size > 0) {
 		/* check if we are building a BEEP ANS header */
 		if (type == VORTEX_FRAME_TYPE_ANS) {
-			header_length  = axl_stream_printf_buffer (
-				buffer,
-				buffer_size,
-				&real_size,
-				/* place printf format for ANS BEEP headers */
-				"%s %d %d %c %u %d %d\x0D\x0A%s%s%s%s%s%s%s",
-				/* place arguments */
-				VORTEX_FRAME_COMMON_BEEP_HEADER(ansno));
-			
+			/* use header builder */
+			header_length  = vortex_frame_build_header (
+				buffer, buffer_size, 
+				&real_size, 
+				message_type, channel, msgno,
+				more, seqno, header_size, ansno,
+				content_type, 
+				transfer_encoding);
 		} else {
-			header_length  = axl_stream_printf_buffer (
-				buffer,
-				buffer_size,
-				&real_size,
-				/* place printf format for the rest of BEEP headers */
-				"%s %d %d %c %u %d%s\x0D\x0A%s%s%s%s%s%s%s",
-				/* place arguments */
-				VORTEX_FRAME_COMMON_BEEP_HEADER(""));
+			/* use header builder */
+			header_length  = vortex_frame_build_header (
+				buffer, buffer_size, &real_size, 
+				message_type, channel, msgno,
+				more, seqno, header_size, -1,
+				content_type, 
+				transfer_encoding);
 		} /* end if */
 
 		/* check return status */
