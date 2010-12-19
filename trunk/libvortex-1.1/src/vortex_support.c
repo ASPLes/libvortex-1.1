@@ -821,7 +821,65 @@ double   vortex_support_strtod                     (const char * param, char ** 
 	return 0.0;
 }
 
-/**
+/** 
+ * @brief Allows to convert the provided integer value into its string
+ * representation leaving the result on the provided buffer.
+ *
+ * @param value The value to convert.
+ * @param buffer Pointer to the buffer that will hold the result.
+ * @param buffer_size The size of the buffer that will hold the result.
+ *
+ * Note the function does not place a \0 at the end of the number
+ * written.
+ * 
+ * @return The function returns bytes written into the buffer or -1 if
+ * the buffer can't hold the content.
+ */ 
+int      vortex_support_itoa                       (unsigned int    value,
+						    char          * buffer,
+						    int             buffer_size)
+{
+	static char digits[] = "0123456789";
+	char        inverse[10];
+	int         iterator  = 0;
+	int         iterator2 = 0;
+
+	if (buffer_size <= 0)
+		return -1;
+
+	/* do the conversion */
+	while (iterator < 10) {
+		/* copy content */
+		inverse[iterator] = digits[value % 10];
+
+		/* reduce the value */
+		value = value / 10;
+
+		if (value == 0)
+			break;
+		iterator++;
+	} /* end while */
+
+	/* now reserve the content */
+	while (iterator2 < buffer_size) {
+		buffer[iterator2] = inverse[iterator];
+		iterator2++;
+		iterator--;
+
+		if (iterator == -1)
+			break;
+			
+	} /* end while */
+    
+	/* check result */
+	if (iterator != -1) 
+		return -1;
+
+	/* return size created */
+	return iterator2;
+}
+
+/** 
  * @brief Performs a timeval substract leaving the result in
  * (result). Subtract the `struct timeval' values a and b, storing the
  * result in result.  

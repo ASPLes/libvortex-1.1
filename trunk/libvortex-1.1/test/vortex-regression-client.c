@@ -732,6 +732,53 @@ axl_bool test_00c (void) {
 	return axl_true;
 }
 
+axl_bool test_00d_check (int value, int expected_value_size, const char * expected_str_value)
+{
+	char buffer[10];
+	
+	/* do some conversions */
+	if (vortex_support_itoa (value, buffer, 10) != expected_value_size) {
+		printf ("Expected to return %d bytes written but found something different: %d\n", expected_value_size, vortex_support_itoa (value, buffer, 20));
+		return axl_false;
+	}
+	buffer[expected_value_size] = 0;
+	if (! axl_memcmp (buffer, expected_str_value, expected_value_size)) {
+		printf ("Expected to find '%s' but found '%s'\n", expected_str_value, buffer);
+		return axl_false;
+	}
+	
+	return axl_true;
+}
+
+axl_bool test_00d (void) {
+	
+	/* do some conversions */
+	if (! test_00d_check (0, 1, "0"))
+		return axl_false;
+
+	/* do some conversions */
+	if (! test_00d_check (1, 1, "1"))
+		return axl_false;
+
+	/* do some conversions */
+	if (! test_00d_check (1039, 4, "1039"))
+		return axl_false;
+
+	/* do some conversions */
+	if (! test_00d_check (2147483647, 10, "2147483647"))
+		return axl_false;
+
+	/* do some conversions */
+	if (! test_00d_check (2147483648, 10, "2147483648"))
+		return axl_false;
+
+	/* do some conversions */
+	if (! test_00d_check (4294967295, 10, "4294967295"))
+		return axl_false;
+
+	return axl_true;
+}
+
 axl_bool  test_01_real (VortexConnection * connection, axl_bool close_conn) {
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
@@ -11355,7 +11402,7 @@ int main (int  argc, char ** argv)
         printf ("**       valgrind or similar tools.\n");
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
-	printf ("**       Test available: test_00, test_00a, test_00b, test_00c, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
+	printf ("**       Test available: test_00, test_00a, test_00b, test_00c, test_00d, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
 	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o,\n");
 	printf ("**                       test_01p, test_01q, test_01r, test_01s\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02b, test_02c, test_02d, test_02e, \n"); 
@@ -11490,6 +11537,9 @@ int main (int  argc, char ** argv)
 
 		if (axl_cmp (run_test_name, "test_00c"))
 			run_test (test_00c, "Test 00-c", "Thread pool events", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_00d"))
+			run_test (test_00d, "Test 00-d", "(unsigned) Int to string conversion", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_01"))
 			run_test (test_01, "Test 01", "basic BEEP support", -1, -1);
@@ -11739,6 +11789,8 @@ int main (int  argc, char ** argv)
 	run_test (test_00b, "Test 00-b", "Thread pool stats (change number)", -1, -1);
 
 	run_test (test_00c, "Test 00-c", "Thread pool events", -1, -1);
+
+	run_test (test_00d, "Test 00-d", "(unsigned) Int to string conversion", -1, -1);
 
  	run_test (test_01, "Test 01", "basic BEEP support", -1, -1);
   
