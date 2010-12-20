@@ -219,6 +219,7 @@ vortex_connection_get_server_name
 vortex_connection_get_socket
 vortex_connection_get_status
 vortex_connection_get_timeout
+vortex_connection_half_opened
 vortex_connection_init
 vortex_connection_invoke_preread_handler
 vortex_connection_invoke_receive
@@ -315,6 +316,7 @@ vortex_errno_show_last_error
 vortex_exit_ctx
 vortex_frame_are_equal
 vortex_frame_are_joinable
+vortex_frame_build_header
 vortex_frame_build_up_from_params
 vortex_frame_build_up_from_params_s
 vortex_frame_build_up_from_params_s_buffer
@@ -545,6 +547,7 @@ vortex_support_getenv
 vortex_support_getenv_int
 vortex_support_inet_ntoa
 vortex_support_init
+vortex_support_itoa
 vortex_support_setenv
 vortex_support_strtod
 vortex_support_unsetenv
