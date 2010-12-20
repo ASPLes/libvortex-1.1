@@ -249,7 +249,7 @@ axlPointer  vortex_ctx_get_data (VortexCtx       * ctx,
 	return vortex_hash_lookup (ctx->data, key);
 }
 
-/**
+/** 
  * @brief Allows to configure a global frame received handler where
  * all frames are delivered, overriding first and second level
  * handlers. The frame handler is executed using the thread created
