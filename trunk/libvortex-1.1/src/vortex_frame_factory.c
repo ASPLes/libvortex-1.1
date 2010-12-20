@@ -341,6 +341,141 @@ char  *       vortex_frame_get_raw_frame         (VortexFrame * frame)
 						    NULL);
 }
 
+#define header_place(content) buffer[position] = content;	\
+	position++;
+
+int vortex_frame_build_header (char        * buffer,
+			       int           buffer_size,
+			       int         * real_size,
+			       char        * message_type,
+			       int           channel, 
+			       int           msgno,
+			       axl_bool      more,
+			       unsigned int  seqno,
+			       int           size,
+			       int           ansno,
+			       const char  * content_type,
+			       const char  * transfer_encoding)
+{
+	int position = 0;
+	int result;
+	int length;
+
+	/* copy message type header */
+	while (position < 3) {
+		buffer[position] = message_type[position];
+		position++;
+	} /* end while */
+
+	/* place white space */
+	header_place (' ');
+
+	/* place channel */
+	result = vortex_support_itoa (channel, buffer + position, 10);
+	if (result == -1)
+		return -1;
+	position += result;
+
+	/* place white space */
+	header_place (' ');
+
+	/* place msqno */
+	result = vortex_support_itoa (msgno, buffer + position, 10);
+	if (result == -1)
+		return -1;
+	position += result;
+
+	/* place white space */
+	header_place (' ');
+
+	if (message_type[0] != 'S') {
+		/* more indication */
+		buffer[position] = (more ? '*' : '.');
+		position++;
+		
+		/* place white space */
+		header_place (' ');
+	}
+
+	/* place seqno */
+	result = vortex_support_itoa (seqno, buffer + position, 10);
+	if (result == -1)
+		return -1;
+	position += result;
+
+	/* check if we have a SEQ frame here to end and return */
+	if (message_type[0] == 'S') {
+		/* place last \r\n */
+		memcpy (buffer + position, "\x0D\x0A", 2);
+		position += 2;
+		
+		*real_size = position;
+		return position;
+	}
+
+	/* place white space */
+	header_place (' ');
+
+	/* place size */
+	result = vortex_support_itoa (size, buffer + position, 10);
+	if (result == -1)
+		return -1;
+	position += result;
+		
+	if (ansno >= 0) {
+		/* place white space */
+		header_place (' ');
+
+		/* place ansno */
+		result = vortex_support_itoa (ansno, buffer + position, 10);
+		if (result == -1)
+			return -1;
+		position += result;
+	} /* end if */
+
+	/* place last \r\n */
+	memcpy (buffer + position, "\x0D\x0A", 2);
+	position += 2;
+
+	/* configure content type if defined */
+	if (content_type) {
+		memcpy (buffer + position, "Content-Type: ", 14);
+		position += 14;
+
+		length = strlen (content_type);
+		memcpy (buffer + position, content_type, length);
+		position += length;
+
+		memcpy (buffer + position, "\x0D\x0A", 2);
+		position += 2;
+	}
+
+	/* configure transfer encoding if defined */
+	if (transfer_encoding) {
+		memcpy (buffer + position, "Content-Transfer-Encoding: ", 27);
+		position += 27;
+
+		length = strlen (transfer_encoding);
+		memcpy (buffer + position, transfer_encoding, length);
+		position += length;
+
+		memcpy (buffer + position, "\x0D\x0A", 2);
+		position += 2;
+	}
+
+	/* configure last \r\n */
+	if (content_type || transfer_encoding) {
+		memcpy (buffer + position, "\x0D\x0A", 2);
+		position += 2;
+	}
+
+	/* return length */
+	*real_size = position;
+	return position;
+}
+
+
+
 /** 
  * @brief Allows to create a new SEQ frame.
  *
@@ -406,8 +541,12 @@ char  * vortex_frame_seq_build_up_from_params_buffer (int         channel_num,
 		if (result_size)
 			(*result_size) = 0;
 
-		axl_stream_printf_buffer (buffer, buffer_size, &real_size, 
-					  "SEQ %d %u %d\x0D\x0A", channel_num, ackno, window_size);
+		vortex_frame_build_header (buffer, buffer_size, &real_size, 
+					   "SEQ", channel_num, ackno, axl_false, window_size, 0, -1, NULL, NULL);
+		buffer[real_size] = 0;
+		
+		/* axl_stream_printf_buffer (buffer, buffer_size, &real_size, 
+		   "SEQ %d %u %d\x0D\x0A", channel_num, ackno, window_size);*/
 		if (real_size > buffer_size) {
 			return NULL;
 		} /* end if */
@@ -504,132 +643,6 @@ char  * vortex_frame_build_up_from_params (VortexFrameType   type,
     place_transfer_encoding ? "\x0D\x0A"                      : "",           \
     /* place entity header trailing header if some of them is defined */      \
     ( place_content_type || place_transfer_encoding) ? "\x0D\x0A" : ""
-
-#define header_place(content) buffer[position] = content; \
-	position++;
-
-int vortex_frame_build_header (char        * buffer,
-			       int           buffer_size,
-			       int         * real_size,
-			       char        * message_type,
-			       int           channel, 
-			       int           msgno,
-			       axl_bool      more,
-			       unsigned int  seqno,
-			       int           size,
-			       int           ansno,
-			       const char  * content_type,
-			       const char  * transfer_encoding)
-{
-	int position = 0;
-	int result;
-	int length;
-
-	/* check if the buffer size is bigger enough to hold the frame
-	 * header */
-	if (buffer_size < 100)
-		return -1;
-
-	/* copy message type header */
-	while (position < 3) {
-		buffer[position] = message_type[position];
-		position++;
-	} /* end while */
-	
-	/* place white space */
-	header_place (' ');
-	
-	/* place channel */
-	result = vortex_support_itoa (channel, buffer + position, 10);
-	if (result == -1)
-		return -1;
-	position += result;
-	
-	/* place white space */
-	header_place (' ');
-
-	/* place msqno */
-	result = vortex_support_itoa (msgno, buffer + position, 10);
-	if (result == -1)
-		return -1;
-	position += result;
-	
-	/* place white space */
-	header_place (' ');
-
-	/* more indication */
-	buffer[position] = (more ? '*' : '.');
-	position++;
-
-	/* place white space */
-	header_place (' ');
-
-	/* place seqno */
-	result = vortex_support_itoa (seqno, buffer + position, 10);
-	if (result == -1)
-		return -1;
-	position += result;
-
-	/* place white space */
-	header_place (' ');
-
-	/* place size */
-	result = vortex_support_itoa (size, buffer + position, 10);
-	if (result == -1)
-		return -1;
-	position += result;
-		
-	if (ansno >= 0) {
-		/* place white space */
-		header_place (' ');
-
-		/* place ansno */
-		result = vortex_support_itoa (ansno, buffer + position, 10);
-		if (result == -1)
-			return -1;
-		position += result;
-	} /* end if */
-
-	/* place last \r\n */
-	memcpy (buffer + position, "\x0D\x0A", 2);
-	position += 2;
-
-	/* configure content type if defined */
-	if (content_type) {
-		memcpy (buffer + position, "Content-Type: ", 14);
-		position += 14;
-
-		length = strlen (content_type);
-		memcpy (buffer + position, content_type, length);
-		position += length;
-
-		memcpy (buffer + position, "\x0D\x0A", 2);
-		position += 2;
-	}
-
-	/* configure transfer encoding if defined */
-	if (transfer_encoding) {
-		memcpy (buffer + position, "Content-Transfer-Encoding: ", 27);
-		position += 27;
-
-		length = strlen (transfer_encoding);
-		memcpy (buffer + position, transfer_encoding, length);
-		position += length;
-
-		memcpy (buffer + position, "\x0D\x0A", 2);
-		position += 2;
-	}
-
-	/* configure last \r\n */
-	if (content_type || transfer_encoding) {
-		memcpy (buffer + position, "\x0D\x0A", 2);
-		position += 2;
-	}
-
-	/* return length */
-	*real_size = position;
-	return position;
-}
 
 /** 
  * @brief Creates a new frame, using the given data and returning
