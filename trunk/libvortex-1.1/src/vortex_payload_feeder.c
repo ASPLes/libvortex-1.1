@@ -226,7 +226,6 @@ VortexPayloadFeeder * vortex_payload_feeder_file (VortexCtx  * ctx,
 	return vortex_payload_feeder_new (ctx, __vortex_payload_feeder_file, state);
 }
 
-
 /** 
  * @internal Makes the feeder to return pending content size to be feeded.
  * @param feeder The feeder object where the operation will be applied.

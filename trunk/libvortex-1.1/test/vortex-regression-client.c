@@ -769,11 +769,11 @@ axl_bool test_00d (void) {
 		return axl_false;
 
 	/* do some conversions */
-	if (! test_00d_check (2147483648, 10, "2147483648"))
+	if (! test_00d_check (INT64_CONSTANT(2147483648), 10, "2147483648"))
 		return axl_false;
 
 	/* do some conversions */
-	if (! test_00d_check (4294967295, 10, "4294967295"))
+	if (! test_00d_check (INT64_CONSTANT(4294967295), 10, "4294967295"))
 		return axl_false;
 
 	return axl_true;
