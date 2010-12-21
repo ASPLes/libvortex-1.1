@@ -1813,11 +1813,8 @@ process_buffer:
 		return NULL;
 	}
 	
-	/* locate body frame init */
-	frame->size      = frame->size - frame->mime_headers_size;
-
 	/* point to the content received and nullify trailing BEEP frame */
-	frame->payload   = buffer + frame->mime_headers_size;
+	frame->payload   = buffer;
 	((char*)frame->payload) [frame->size] = 0;
 
 	/* get a reference to the buffer to dealloc it */
@@ -3067,14 +3064,16 @@ int vortex_frame_read_mime_header (VortexFrame  * frame,
 				break;
 		} /* end if */
 		
-		/* check for LF termination without being
-		 * followed by a WSP */
-		if (((iterator) < frame->size) &&
-		    payload[iterator] == '\x0A') {
-			
+		/* check for LF termination without being followed by a WSP */
+		if ((iterator < frame->size) && payload[iterator] == '\x0A') {
+
 			if (payload[iterator + 1] != ' ' && payload[iterator + 1] != '\t') 
 				break;
 		} /* end if */
+
+		/* stop the look in case frame size was reached */
+ 		if (iterator == frame->size)
+			break;
 
 		/* next character */
 		iterator++;
@@ -3169,8 +3168,8 @@ axl_bool           vortex_frame_mime_process          (VortexFrame * frame)
 	payload  = frame->payload;
 	ctx      = frame->ctx;
 
-	/* vortex_log (VORTEX_LEVEL_DEBUG, "frame content size=%d: '%s'",
-	   frame->size, frame->payload);  */
+	vortex_log (VORTEX_LEVEL_DEBUG, "frame content size=%d: '%c%c'",
+		    frame->size, payload[0],payload[1]);  
 
 	/* do not check to init mime_headers here; this is because to
 	 * enable fast implementations for mime body without

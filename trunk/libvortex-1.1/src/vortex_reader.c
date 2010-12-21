@@ -613,7 +613,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	vortex_log (VORTEX_LEVEL_DEBUG, "passed frame checking stage");
 
  	/* if the frame is complete, apply mime processing */
- 	if (vortex_frame_get_more_flag (frame) == 0 && type != VORTEX_FRAME_TYPE_NUL) {
+ 	if (vortex_frame_get_more_flag (frame) == 0 && type != VORTEX_FRAME_TYPE_NUL && vortex_channel_have_complete_flag (channel)) {
  		/* call to update frame MIME status */
  		if (! vortex_frame_mime_process (frame))
  			vortex_log (VORTEX_LEVEL_WARNING, "failed to update MIME status for the frame, continue delivery");

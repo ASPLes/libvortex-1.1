@@ -98,8 +98,8 @@ VortexPayloadFeeder * vortex_payload_feeder_new (VortexCtx                * ctx,
 typedef struct _VortexPayloadFileFeeder {
 	int             size;
 	FILE          * file_to_feed;
-
 	axl_bool        mime_pending;
+	int             cancel_status;
 } VortexPayloadFileFeeder;
 
 axl_bool __vortex_payload_feeder_file (VortexCtx               * ctx,
@@ -122,6 +122,12 @@ axl_bool __vortex_payload_feeder_file (VortexCtx               * ctx,
 		return axl_true;
 	case PAYLOAD_FEEDER_GET_CONTENT:
 		vortex_log (VORTEX_LEVEL_DEBUG, "Requesting to return %d bytes content", (*size));
+
+		/* check for pause or cancel */
+		if (state->cancel_status < 0)
+			return state->cancel_status; /* return directly the state of the 
+							should continue either because 
+							it is paused or cancel */
 
 		/* check to place initial mime headers */
 		if (state->mime_pending) {
@@ -273,6 +279,19 @@ axl_bool              vortex_payload_feeder_is_finished (VortexPayloadFeeder * f
 	feeder->handler (ctx, PAYLOAD_FEEDER_IS_FINISHED, feeder, &is_finished, NULL, feeder->user_data);
 
 	return is_finished;
+}
+
+/** 
+ * @brief Flags the feeder 
+ */
+int                   vortex_payload_feeder_cancel      (VortexPayloadFeeder * feeder)
+{
+	return -1;
+}
+
+int                   vortex_payload_feeder_pause       (VortexPayloadFeeder * feeder)
+{
+	return -1;
 }
 
 /** 
