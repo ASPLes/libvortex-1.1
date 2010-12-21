@@ -3076,10 +3076,6 @@ axl_bool test_01r (void) {
 		iterator++;
 	} /* end while */
 
-	/* now close the connection */
-	printf ("Test 01-r: done, now terminate connection..\n");
-	vortex_connection_close (conn);
-
 	/* release the queue */
 	vortex_async_queue_unref (queue);
 
