@@ -96,7 +96,8 @@ void frame_received_with_msg (VortexChannel    * channel,
 	int bytes_written;
 
 	/* received big file */
-	/* printf ("Received frame with size: %d\n", vortex_frame_get_payload_size (frame)); */
+	/* printf ("Received frame with size: %d, content is: (%d, %d) '%s'\n", vortex_frame_get_payload_size (frame), 
+	   vortex_frame_get_content (frame)[0], vortex_frame_get_content (frame)[1], vortex_frame_get_content (frame));  */
 
 	/* dump content to the file */
 	bytes_written = fwrite (vortex_frame_get_payload (frame),

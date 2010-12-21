@@ -79,7 +79,7 @@ void vortex_sequencer_queue_data (VortexCtx * ctx, VortexSequencerData * data)
 
 void __vortex_sequencer_unref_and_clear (VortexConnection    * connection,
 					 VortexSequencerData * data, 
-					 int                   unref)
+					 axl_bool              unref)
 {
 
 	if (data != NULL) {
@@ -303,6 +303,20 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
 
 		/* get content available at this moment to be sent */
 		size_to_copy = vortex_payload_feeder_get_content (data->feeder, ctx, size_to_copy, ctx->sequencer_feeder_buffer);
+
+		/* check error conditions (cancel, pause) */
+		if (size_to_copy < 0) {
+			/* check if user requested to pause */
+			if (size_to_copy == -1)
+				data = NULL;
+			
+			/* unref the connection and clear data (if
+			 * user cancel feeder size_to_copy == -2) */
+			__vortex_sequencer_unref_and_clear (vortex_channel_get_connection (channel), data, axl_true);
+
+			/* signal caller to stop delivering this content */
+			return size_to_copy;
+		} /* end if */
 	} /* end if */
 	
 	vortex_log (VORTEX_LEVEL_DEBUG, "the channel is not stalled, continue with sequencing, about to send (size_to_copy:%d) bytes as payload (buffer:%d)...",
@@ -603,7 +617,11 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		}
 		
  		/* build the packet to send */
- 		size_to_copy = vortex_sequencer_build_packet_to_send (ctx, channel, data, &packet);		
+ 		size_to_copy = vortex_sequencer_build_packet_to_send (ctx, channel, data, &packet);
+
+		/* check if the transfer is cancelled or paused */
+		if (size_to_copy < 0)
+			continue;
 			
 		/* STEP 1: now queue the rest of the message if it
 		 * wasn't completly sequence. We do this before

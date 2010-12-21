@@ -65,6 +65,10 @@ int                   vortex_payload_feeder_get_content (VortexPayloadFeeder * f
 axl_bool              vortex_payload_feeder_is_finished (VortexPayloadFeeder * feeder,
 							 VortexCtx           * ctx);
 
+int                   vortex_payload_feeder_cancel      (VortexPayloadFeeder * feeder);
+
+int                   vortex_payload_feeder_pause       (VortexPayloadFeeder * feeder);
+
 axl_bool              vortex_payload_feeder_ref         (VortexPayloadFeeder * feeder);
 
 void                  vortex_payload_feeder_unref       (VortexPayloadFeeder * feeder,
