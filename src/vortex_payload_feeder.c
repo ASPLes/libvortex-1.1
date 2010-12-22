@@ -282,16 +282,44 @@ axl_bool              vortex_payload_feeder_is_finished (VortexPayloadFeeder * f
 }
 
 /** 
- * @brief Flags the feeder 
+ * @brief Flags the feeder to be cancelled as soon as possible. 
+ *
+ * The cancel operation does not happens immediately because the
+ * sequencer thread needs to access again to the feeder to check the
+ * cancel status.
+ *
+ * To cancel this function the caller must "own" a reference to the
+ * feeder because the default reference is owned by the vortex
+ * sequencer.
+ *
+ * @param feeder The feeder to be cancelled. 
+ *
+ * @return The function returns axl_true if the feeder was flagged to
+ * be cancelled. Otherwise axl_false is returned.
+ *
+ * 
  */
-int                   vortex_payload_feeder_cancel      (VortexPayloadFeeder * feeder)
+axl_bool                   vortex_payload_feeder_cancel      (VortexPayloadFeeder * feeder)
 {
 	return -1;
 }
 
-int                   vortex_payload_feeder_pause       (VortexPayloadFeeder * feeder)
+axl_bool                   vortex_payload_feeder_pause       (VortexPayloadFeeder * feeder)
 {
 	return -1;
+}
+
+/** 
+ * @brief Returns current status of the provided payload feeder.
+ *
+ * The status object contains information about how many bytes has
+ * being transferred so far, total bytes to be transferred (if
+ * supported by the feeder), if is cancelled or paused.
+ */
+void                  vortex_payload_feeder_status      (VortexPayloadFeeder       * feeder, 
+							 VortexPayloadFeederStatus * status)
+{
+	return;
 }
 
 /** 
