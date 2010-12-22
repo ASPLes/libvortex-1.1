@@ -695,6 +695,26 @@ typedef enum {
 typedef struct _VortexPayloadFeeder VortexPayloadFeeder;
 
 
+/** 
+ * @brief Public structure that represents transfer status associated
+ * to a single payload feeder transfer.
+ */
+typedef struct _VortexPayloadFeederStatus {
+	/** 
+	 * @brief How many bytes did the feeder sent so far.
+	 */
+	long bytes_transferred;
+	/** 
+	 * @brief How many bytes are expected to be sent.
+	 */
+	long total_size;
+	/** 
+	 * @brief Current feeder status, 0 sending, -1 cancelled, -2
+	 * paused.
+	 */
+	int  status;
+} VortexPayloadFeederStatus;
+
 /**
  * @internal
  *
