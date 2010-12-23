@@ -62,8 +62,11 @@ int                   vortex_payload_feeder_get_content (VortexPayloadFeeder * f
 							 int                   size_to_copy, 
 							 char                * buffer);
 
-axl_bool              vortex_payload_feeder_is_finished (VortexPayloadFeeder * feeder,
-							 VortexCtx           * ctx);
+axl_bool              vortex_payload_feeder_is_finished (VortexPayloadFeeder * feeder);
+
+void                  vortex_payload_feeder_set_on_finished (VortexPayloadFeeder                * feeder,
+							     VortexPayloadFeederFinishedHandler   on_finished,
+							     axlPointer                           user_data);
 
 axl_bool              vortex_payload_feeder_cancel      (VortexPayloadFeeder * feeder);
 

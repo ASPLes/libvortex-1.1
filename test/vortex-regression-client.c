@@ -8540,6 +8540,80 @@ get_reply_and_check:
 	return axl_true;
 }
 
+axl_bool test_04_f (void) {
+
+	VortexConnection    * connection;
+	VortexChannel       * channel;
+	VortexAsyncQueue    * queue;
+	VortexPayloadFeeder * feeder;
+	VortexFrame         * frame;
+	char                * md5_1;
+	char                * md5_2;
+	unsigned int          last_seq_no_sent;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+
+	/* create the queue */
+	queue   = vortex_async_queue_new ();
+
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+
+	if (channel == NULL) {
+		printf ("ERROR (1): expected to find proper channel creation..\n");
+		return axl_false;
+	}
+
+	/* build feeder to be sent */
+	printf ("Test 04-f: sending content...\n");
+	feeder = vortex_payload_feeder_file (ctx, "vortex-regression-client.c", axl_true);
+	if (feeder == NULL) {
+		printf ("ERROR (3): expected to find proper feeder reference but found NULL..\n");
+		return axl_false;
+	} /* end if */
+
+	/* before sending, acquire reference */
+	vortex_payload_feeder_ref (feeder);
+
+	/* track last seq no sent */
+	last_seq_no_sent = vortex_channel_get_next_seq_no (channel);
+
+	/* send feeder */
+	printf ("Test 04-f: sending content..\n");
+	if (! vortex_channel_send_msg_from_feeder (channel, feeder)) {
+		printf ("ERROR (4): expected to find proper send using feeder..\n");
+		return axl_false;
+	}
+
+	/* active wait until seq no is updated */
+	while (axl_true) {
+		if (vortex_channel_get_next_seq_no (channel) != last_seq_no_sent)
+			break;
+	}
+
+	/* ok now pause transfer */
+	vortex_payload_feeder_pause (feeder);
+
+	/* track new seq_no_sent */
+	last_seq_no_sent = vortex_channel_get_next_seq_no (channel);
+
+
+	
+	return axl_false;
+}
+
 VortexConnection * test_06_enable_unified_api (void)
 {
 	return vortex_connection_new (ctx, listener_host, LISTENER_UNIFIED_SASL_PORT, NULL, NULL);
@@ -11405,7 +11479,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02m3, test_02n, test_02o, test_02p, \n");
  	printf ("**                       test_03, test_03a, test_03b, test_03d, test_03c, test_04, test_04a, \n");
- 	printf ("**                       test_04b, test_04c, test_04d, test_04e, test_05, test_05a, test_05b, test_05c, \n");
+ 	printf ("**                       test_04b, test_04c, test_04d, test_04e, test_04f, test_05, test_05a, test_05b, test_05c, \n");
 	printf ("**                       test_05d, ctest_06, test_06a, \n");
  	printf ("**                       test_07, test_08, test_09, test_10, test_11, test_12, test_13, test_14, \n");
  	printf ("**                       test_14a, test_14b, test_14ctest_14d, test_15, test_15a, test_16\n");
@@ -11690,6 +11764,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_04e"))
 			run_test (test_04_e, "Test 04-e", "check payload feeder support", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_04f"))
+			run_test (test_04_f, "Test 04-f", "check payload feeder support (pause/cancel)", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_05"))
 			run_test (test_05, "Test 05", "TLS profile support", -1, -1);
 		
@@ -11889,6 +11966,8 @@ int main (int  argc, char ** argv)
 	run_test (test_04_d, "Test 04-d", "check channel window size reduction", -1, -1);
 
 	run_test (test_04_e, "Test 04-e", "check payload feeder support", -1, -1);
+
+	run_test (test_04_f, "Test 04-f", "check payload feeder support (pause/cancel)", -1, -1);
   
  	run_test (test_05, "Test 05", "TLS profile support", -1, -1);
   	

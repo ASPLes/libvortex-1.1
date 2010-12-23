@@ -43,6 +43,20 @@ struct _VortexPayloadFeeder {
 	axlPointer                   user_data;
 	VortexMutex                  mutex;
 	int                          ref_count;
+
+	/** 
+	 * @internal Status variable used to signal if the feeder can
+	 * continue (0), or if it should be paused (-1) or if it should
+	 * cancelled (-2).
+	 */
+	int                          status;
+
+	/** 
+	 * @internal Handler used to notify that the transfer has
+	 * finished.
+	 */
+	VortexPayloadFeederFinishedHandler finish_handler;
+	axlPointer                         finish_user_data;
 };
 
 /** 
@@ -99,7 +113,6 @@ typedef struct _VortexPayloadFileFeeder {
 	int             size;
 	FILE          * file_to_feed;
 	axl_bool        mime_pending;
-	int             cancel_status;
 } VortexPayloadFileFeeder;
 
 axl_bool __vortex_payload_feeder_file (VortexCtx               * ctx,
@@ -122,12 +135,6 @@ axl_bool __vortex_payload_feeder_file (VortexCtx               * ctx,
 		return axl_true;
 	case PAYLOAD_FEEDER_GET_CONTENT:
 		vortex_log (VORTEX_LEVEL_DEBUG, "Requesting to return %d bytes content", (*size));
-
-		/* check for pause or cancel */
-		if (state->cancel_status < 0)
-			return state->cancel_status; /* return directly the state of the 
-							should continue either because 
-							it is paused or cancel */
 
 		/* check to place initial mime headers */
 		if (state->mime_pending) {
@@ -233,8 +240,11 @@ VortexPayloadFeeder * vortex_payload_feeder_file (VortexCtx  * ctx,
 }
 
 /** 
- * @internal Makes the feeder to return pending content size to be feeded.
- * @param feeder The feeder object where the operation will be applied.
+ * @internal Makes the feeder to return pending content size to be
+ * feeded.
+ *
+ * @param feeder The feeder object where the operation will be
+ * applied.
  *
  * @return The pending size. The function must always return > 0.
  */
@@ -259,6 +269,11 @@ int                   vortex_payload_feeder_get_content (VortexPayloadFeeder * f
 							 int                   size_to_copy, 
 							 char                * buffer)
 {
+	/* check for pause or cancel */
+	if (feeder->status < 0)
+		return feeder->status; /* return directly the state of the 
+					  should continue either because 
+					  it is paused or cancel */
 	/* call to get content */
 	feeder->handler (ctx, PAYLOAD_FEEDER_GET_CONTENT, feeder, &size_to_copy, buffer, feeder->user_data);
 
@@ -267,19 +282,52 @@ int                   vortex_payload_feeder_get_content (VortexPayloadFeeder * f
 }
 
 /** 
- * @internal Allows to query the feeder if it has more content to be
+ * @brief Allows to query the feeder if it has more content to be
  * send.
+ * @param feeder The feeder to be checked.
+ *
+ * @return axl_true if the feeder has no more content, otherwise
+ * axl_false is returned.
  */
-axl_bool              vortex_payload_feeder_is_finished (VortexPayloadFeeder * feeder,
-							 VortexCtx           * ctx)
+axl_bool              vortex_payload_feeder_is_finished (VortexPayloadFeeder * feeder)
 {
 	axl_bool is_finished = axl_false;
 
+	if (feeder == NULL)
+		return axl_false;
+
 	/* call to get finished status */
-	feeder->handler (ctx, PAYLOAD_FEEDER_IS_FINISHED, feeder, &is_finished, NULL, feeder->user_data);
+	feeder->handler (feeder->ctx, PAYLOAD_FEEDER_IS_FINISHED, feeder, &is_finished, NULL, feeder->user_data);
 
 	return is_finished;
 }
+
+
+/** 
+ * @brief Allows to configure a finished handler that will be called
+ * when the feeder is done sending all its content.
+ *
+ * @param feeder The feeder to be configured with the finished
+ * handler.
+ *
+ * @param on_finished The on finished handler to configure.
+ *
+ * @param user_data Optional user defined pointer to be passed to the on finished handler
+ */
+void                  vortex_payload_feeder_set_on_finished (VortexPayloadFeeder                * feeder,
+							     VortexPayloadFeederFinishedHandler   on_finished,
+							     axlPointer                           user_data)
+{
+	/* check input data */
+	if (feeder == NULL || on_finished == NULL)
+		return;
+
+	/* configure handler */
+	feeder->finish_handler     = on_finished;
+	feeder->finish_user_data   = user_data;
+	return;
+}
+
 
 /** 
  * @brief Flags the feeder to be cancelled as soon as possible. 
@@ -288,25 +336,54 @@ axl_bool              vortex_payload_feeder_is_finished (VortexPayloadFeeder * f
  * sequencer thread needs to access again to the feeder to check the
  * cancel status.
  *
- * To cancel this function the caller must "own" a reference to the
- * feeder because the default reference is owned by the vortex
- * sequencer.
+ * To cancel, the caller must "own" a reference to the feeder because
+ * the default reference is owned by the vortex sequencer. This will
+ * avoid race conditions.
  *
  * @param feeder The feeder to be cancelled. 
  *
  * @return The function returns axl_true if the feeder was flagged to
- * be cancelled. Otherwise axl_false is returned.
- *
+ * be cancelled. Otherwise axl_false is returned. The function also
+ * returns axl_false in the case NULL is received.
  * 
  */
 axl_bool                   vortex_payload_feeder_cancel      (VortexPayloadFeeder * feeder)
 {
-	return -1;
+	if (feeder == NULL)
+		return axl_false;
+
+	/* flag the feeder to be cancelled */
+	feeder->status = -2;
+
+	return axl_true;
 }
 
+/** 
+ * @brief Flags the feeder to be paused as soon as possible.
+ *
+ * The pause operation does not happens immediately because the
+ * sequencer thread needs to access again to the feeder to check the
+ * pause status.
+ *
+ * To pause, the caller must "own" a reference to the feeder because
+ * the default reference is owned by the vortex sequencer. This will
+ * avoid race conditions.
+ *
+ * @param feeder The feeder to be cancelled. 
+ *
+ * @return The function returns axl_true if the feeder was flagged to
+ * be cancelled. Otherwise axl_false is returned. The function also
+ * returns axl_false in the case NULL is received.
+ */
 axl_bool                   vortex_payload_feeder_pause       (VortexPayloadFeeder * feeder)
 {
-	return -1;
+	if (feeder == NULL)
+		return axl_false;
+
+	/* flag the feeder to be cancelled */
+	feeder->status = -1;
+
+	return axl_true;
 }
 
 /** 

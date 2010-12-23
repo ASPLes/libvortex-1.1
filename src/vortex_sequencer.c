@@ -347,7 +347,7 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
 	/* check if the packet is complete (either last frame or all
 	 * the payload fits into a single frame */
 	if (data->feeder) 
-		packet->is_complete = vortex_payload_feeder_is_finished (data->feeder, ctx);
+		packet->is_complete = vortex_payload_feeder_is_finished (data->feeder);
 	else
 		packet->is_complete = (size_to_copy == data->message_size);
 

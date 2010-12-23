@@ -97,7 +97,7 @@ struct _VortexChannel {
 
 	/** 
 	 * @internal Value that tracks the next seq no value to be
-	 * used on the next send operation.  In the hand,
+	 * used on the next send operation.  In the other hand,
 	 * last_seq_no_expected tracks the next expected seq no value
 	 * that should be received on this channel.
 	 */

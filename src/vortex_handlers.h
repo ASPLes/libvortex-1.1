@@ -1154,6 +1154,22 @@ typedef axl_bool (* VortexPayloadFeederHandler) (VortexCtx              * ctx,
 						 axlPointer               param1,
 						 axlPointer               param2,
 						 axlPointer               user_data);
+
+/** 
+ * @brief Optional handler definition that allows to get a
+ * notification when a feeder has finished sending.
+ *
+ * This handler is used by:
+ *
+ * - \ref vortex_payload_feeder_set_on_finished
+ *
+ * @param ctx The context where the notification happens
+ * @param channel The channel where the send operation happens
+ * @param user_data User defined pointer.
+ */
+typedef void (* VortexPayloadFeederFinishedHandler) (VortexChannel        * channel,
+						     VortexPayloadFeeder  * feeder,
+						     axlPointer             user_data);
 				      
 
 #endif
