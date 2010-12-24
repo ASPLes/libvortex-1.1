@@ -48,6 +48,7 @@
 
 /* local include */
 #include <vortex_ctx_private.h>
+#include <vortex_payload_feeder_private.h>
 
 /** 
  * @internal
@@ -2262,6 +2263,9 @@ check_limit:
 	} else {
 		/* feeder configured, set it */
 		data->feeder = feeder;
+
+		/* update its transfer status to ok */
+		feeder->status = 0;
 	} 
 
 	/* return back message no used  */
@@ -2670,6 +2674,9 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 	} else {
 		/* set feeder for this send operation */
 		data->feeder = feeder;
+
+		/* update its transfer status to ok */
+		feeder->status = 0;
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "new reply message to sent using feeder (channel=%d)",
 			    channel->channel_num);

@@ -8599,19 +8599,60 @@ axl_bool test_04_f (void) {
 
 	/* active wait until seq no is updated */
 	while (axl_true) {
-		if (vortex_channel_get_next_seq_no (channel) != last_seq_no_sent)
+		if (vortex_channel_get_next_seq_no (channel) != last_seq_no_sent) {
+			printf ("Test 04-f: found sending is progressing..pause\n");
 			break;
+		}
 	}
 
 	/* ok now pause transfer */
-	vortex_payload_feeder_pause (feeder);
+	vortex_payload_feeder_pause (feeder, axl_true);
 
 	/* track new seq_no_sent */
 	last_seq_no_sent = vortex_channel_get_next_seq_no (channel);
 
+	/* now wait 20ms to recheck again we are not transferring */
+	vortex_async_queue_timedpop (queue, 20000);
+
+	if (last_seq_no_sent != vortex_channel_get_next_seq_no (channel)) {
+		printf ("ERROR: expected to transfer while paused...but found differences\n");
+		return axl_false;
+	}
+
+	printf ("Test 04-f: resume transfer..\n");
+	if (! vortex_channel_send_msg_from_feeder (channel, feeder)) {
+		printf ("ERROR (4): expected to find proper send using feeder..\n");
+		return axl_false;
+	}
+
+	/* get reply */
+	frame = vortex_channel_get_reply (channel, queue);
+	/* save content */
+	if (! test_04_e_save (frame, "test_04_e.save")) {
+		printf ("ERROR (7): expected proper save operation but a failure was found..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 04-f: file test_04_e.save saved right..checking differences\n");
+
+	/* relaese frame */
+	vortex_frame_unref (frame);
+
+	/* now check MD5 */
+	md5_1 = test_04_ab_gen_md5 ("vortex-regression-client.c");
+	md5_2 = test_04_ab_gen_md5 ("test_04_e.save");
+
+	/* check md5s..*/
+	if (! axl_cmp (md5_1, md5_2)) {
+		printf ("ERROR (8): found md5 differs..\n");
+		return axl_false;
+	} /* end if */
+
+	axl_free (md5_1);
+	axl_free (md5_2);
 
 	
-	return axl_false;
+	return axl_true;
 }
 
 VortexConnection * test_06_enable_unified_api (void)

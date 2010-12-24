@@ -70,7 +70,8 @@ void                  vortex_payload_feeder_set_on_finished (VortexPayloadFeeder
 
 axl_bool              vortex_payload_feeder_cancel      (VortexPayloadFeeder * feeder);
 
-axl_bool              vortex_payload_feeder_pause       (VortexPayloadFeeder * feeder);
+axl_bool              vortex_payload_feeder_pause       (VortexPayloadFeeder * feeder,
+							 axl_bool              close_transfer);
 
 void                  vortex_payload_feeder_status      (VortexPayloadFeeder       * feeder, 
 							 VortexPayloadFeederStatus * status);
