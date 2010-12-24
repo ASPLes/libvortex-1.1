@@ -36,28 +36,7 @@
  *         info@aspl.es - http://www.aspl.es/vortex
  */
 #include <vortex_payload_feeder.h>
-
-struct _VortexPayloadFeeder {
-	VortexCtx                  * ctx;
-	VortexPayloadFeederHandler   handler;
-	axlPointer                   user_data;
-	VortexMutex                  mutex;
-	int                          ref_count;
-
-	/** 
-	 * @internal Status variable used to signal if the feeder can
-	 * continue (0), or if it should be paused (-1) or if it should
-	 * cancelled (-2).
-	 */
-	int                          status;
-
-	/** 
-	 * @internal Handler used to notify that the transfer has
-	 * finished.
-	 */
-	VortexPayloadFeederFinishedHandler finish_handler;
-	axlPointer                         finish_user_data;
-};
+#include <vortex_payload_feeder_private.h>
 
 /** 
  * @brief Allows to create a new payload feeder object that will be
@@ -369,19 +348,43 @@ axl_bool                   vortex_payload_feeder_cancel      (VortexPayloadFeede
  * the default reference is owned by the vortex sequencer. This will
  * avoid race conditions.
  *
- * @param feeder The feeder to be cancelled. 
+ * @param feeder The feeder to be paused
+ *
+ * @param close_transfer In the case the feeder is paused it may be
+ * required to send an empty frame to close the series of frames that
+ * may be sent. The idea is that pausing current transfer leaves the
+ * channel in such state that a frame with more flag is active so it
+ * is required at least another frame with the same msgno and more
+ * flag set to false (.) to complete this particular transfer. This is
+ * achieved by setting close_transfer = axl_true. In the other hand,
+ * if close_transfer = axl_false, the caller will block the channel
+ * until this feeder is resumed (because having an pending transfer
+ * makes not possible other transfers). If you don't know how to
+ * proceed, in general is a good idea to close_transfer = axl_true so
+ * your channel is available for other transfer.
  *
  * @return The function returns axl_true if the feeder was flagged to
- * be cancelled. Otherwise axl_false is returned. The function also
+ * be paused. Otherwise axl_false is returned. The function also
  * returns axl_false in the case NULL is received.
+ *
+ * <b>How do I resume a transfer?</b>
+ *
+ * To resume a transfer just call again to transfer the feeder as
+ * usual (for example \ref vortex_channel_send_msg_from_feeder). Because 
+ * the feeder object holds its internal state, the transfer will continue 
+ * at the place it was suspended.
+ *
  */
-axl_bool                   vortex_payload_feeder_pause       (VortexPayloadFeeder * feeder)
+axl_bool                   vortex_payload_feeder_pause       (VortexPayloadFeeder * feeder,
+							      axl_bool              close_transfer)
 {
 	if (feeder == NULL)
 		return axl_false;
 
 	/* flag the feeder to be cancelled */
-	feeder->status = -1;
+	feeder->status         = -1;
+	feeder->close_transfer = close_transfer;
+	
 
 	return axl_true;
 }

@@ -79,6 +79,7 @@ libvortex_1_1_include_HEADERS = vortex.h \
 	vortex_errno.h \
 	vortex_thread.h \
 	vortex_payload_feeder.h \
+	vortex_payload_feeder_private.h \
 	vortex-channel.dtd.h \
 	vortex-listener-conf.dtd.h
 
