@@ -309,48 +309,19 @@ void                  vortex_payload_feeder_set_on_finished (VortexPayloadFeeder
 
 
 /** 
- * @brief Flags the feeder to be cancelled as soon as possible. 
+ * @brief Flags the feeder to be paused/cancelled as soon as possible.
  *
- * The cancel operation does not happens immediately because the
+ * The pause/cancel operation does not happens immediately because the
  * sequencer thread needs to access again to the feeder to check the
- * cancel status.
+ * pause/cancel status.
  *
- * To cancel, the caller must "own" a reference to the feeder because
+ * To pause/cancel, the caller must "own" a reference to the feeder because
  * the default reference is owned by the vortex sequencer. This will
  * avoid race conditions.
  *
- * @param feeder The feeder to be cancelled. 
+ * @param feeder The feeder to be paused/cancelled
  *
- * @return The function returns axl_true if the feeder was flagged to
- * be cancelled. Otherwise axl_false is returned. The function also
- * returns axl_false in the case NULL is received.
- * 
- */
-axl_bool                   vortex_payload_feeder_cancel      (VortexPayloadFeeder * feeder)
-{
-	if (feeder == NULL)
-		return axl_false;
-
-	/* flag the feeder to be cancelled */
-	feeder->status = -2;
-
-	return axl_true;
-}
-
-/** 
- * @brief Flags the feeder to be paused as soon as possible.
- *
- * The pause operation does not happens immediately because the
- * sequencer thread needs to access again to the feeder to check the
- * pause status.
- *
- * To pause, the caller must "own" a reference to the feeder because
- * the default reference is owned by the vortex sequencer. This will
- * avoid race conditions.
- *
- * @param feeder The feeder to be paused
- *
- * @param close_transfer In the case the feeder is paused it may be
+ * @param close_transfer In the case the feeder is paused/cancelled it may be
  * required to send an empty frame to close the series of frames that
  * may be sent. The idea is that pausing current transfer leaves the
  * channel in such state that a frame with more flag is active so it
@@ -364,7 +335,7 @@ axl_bool                   vortex_payload_feeder_cancel      (VortexPayloadFeede
  * your channel is available for other transfer.
  *
  * @return The function returns axl_true if the feeder was flagged to
- * be paused. Otherwise axl_false is returned. The function also
+ * be paused/cancelled. Otherwise axl_false is returned. The function also
  * returns axl_false in the case NULL is received.
  *
  * <b>How do I resume a transfer?</b>

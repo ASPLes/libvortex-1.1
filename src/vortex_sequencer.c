@@ -39,6 +39,7 @@
 
 /* local include */
 #include <vortex_ctx_private.h>
+#include <vortex_payload_feeder_private.h>
 
 #define LOG_DOMAIN "vortex-sequencer"
 
@@ -298,24 +299,25 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
 
 	/* check here if we have a feeder defined */
 	if (data->feeder) {
-		/* check and increase buffer */
-		CHECK_AND_INCREASE_BUFFER (size_to_copy, ctx->sequencer_feeder_buffer, ctx->sequencer_feeder_buffer_size);
+		if (data->feeder->status == 0) {
+			/* check and increase buffer */
+			CHECK_AND_INCREASE_BUFFER (size_to_copy, ctx->sequencer_feeder_buffer, ctx->sequencer_feeder_buffer_size);
 
-		/* get content available at this moment to be sent */
-		size_to_copy = vortex_payload_feeder_get_content (data->feeder, ctx, size_to_copy, ctx->sequencer_feeder_buffer);
+			/* get content available at this moment to be sent */
+			size_to_copy = vortex_payload_feeder_get_content (data->feeder, ctx, size_to_copy, ctx->sequencer_feeder_buffer);
+		} else {
+			vortex_log (VORTEX_LEVEL_DEBUG, "feeder cancelled, close transfer status is: %d", data->feeder->close_transfer);
+			if (! data->feeder->close_transfer) {
+				/* unref the connection and clear data (if
+				 * user cancel feeder size_to_copy == -2) */
+				__vortex_sequencer_unref_and_clear (vortex_channel_get_connection (channel), data, axl_true);
+				
+				/* signal caller to stop delivering this content */
+				return -1;
+			} /* end if */
 
-		/* check error conditions (cancel, pause) */
-		if (size_to_copy < 0) {
-			/* check if user requested to pause */
-			if (size_to_copy == -1)
-				data = NULL;
-			
-			/* unref the connection and clear data (if
-			 * user cancel feeder size_to_copy == -2) */
-			__vortex_sequencer_unref_and_clear (vortex_channel_get_connection (channel), data, axl_true);
-
-			/* signal caller to stop delivering this content */
-			return size_to_copy;
+			/* flag this feeder is about being cancelled/paused */
+			size_to_copy = -1;
 		} /* end if */
 	} /* end if */
 	
@@ -328,8 +330,10 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
 	packet->type         = data->type;
 	packet->msg_no       = data->msg_no;
  
- 	/* check if we have to realloc buffer */
-	CHECK_AND_INCREASE_BUFFER (size_to_copy, ctx->sequencer_send_buffer, ctx->sequencer_send_buffer_size);
+	if (size_to_copy > 0) {
+		/* check if we have to realloc buffer */
+		CHECK_AND_INCREASE_BUFFER (size_to_copy, ctx->sequencer_send_buffer, ctx->sequencer_send_buffer_size);
+	}
 	
 	/* we have the payload on buffer */
 	vortex_log (VORTEX_LEVEL_DEBUG, "sequencing next message: type=%d, channel num=%d, msgno=%d, more=%d, next seq=%u size=%d ansno=%d",
@@ -339,16 +343,21 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
 		    data->message, data->step, data->message_size);
 
 	/* point to payload */
-	if (data->feeder) 
-		payload = ctx->sequencer_feeder_buffer;
-	else
+	if (data->feeder) {
+		payload = (size_to_copy > 0) ? ctx->sequencer_feeder_buffer : NULL;
+	} else
 		payload = (data->message != NULL) ? (data->message + data->step) : NULL;
 
 	/* check if the packet is complete (either last frame or all
 	 * the payload fits into a single frame */
-	if (data->feeder) 
-		packet->is_complete = vortex_payload_feeder_is_finished (data->feeder);
-	else
+	if (data->feeder) {
+		/* prepare is complete flag */
+		packet->is_complete = data->feeder->close_transfer ? axl_true : vortex_payload_feeder_is_finished (data->feeder);
+
+		/* normalize size_to_copy to avoid the caller to skipp ending this empty frame */
+		if (size_to_copy < 0)
+			size_to_copy = 0;
+	} else
 		packet->is_complete = (size_to_copy == data->message_size);
 
 	/* build frame */
