@@ -397,8 +397,6 @@ axl_bool           vortex_channel_validate_err                   (VortexFrame * 
 								  char  ** code, char  **msg);
 
 /* internal vortex function */
-axl_bool           vortex_channel_is_up_to_date                  (VortexChannel * channel);
-
 void               vortex_channel_lock_to_update_received        (VortexChannel * channel);
 
 void               vortex_channel_unlock_to_update_received      (VortexChannel * channel);

@@ -8376,13 +8376,13 @@ axl_bool test_04_d (void)
 	return axl_true;
 }
 
-axl_bool test_04_e_save (VortexFrame * frame, const char * file) {
+axl_bool test_04_e_save (VortexFrame * frame, const char * file, axl_bool append) {
 	FILE * file_to_save;
 
 #if defined(AXL_OS_WIN32)
-	file_to_save = fopen (file, "wb");
+	file_to_save = fopen (file, append ? "ab" : "wb");
 #else
-	file_to_save = fopen (file, "w");
+	file_to_save = fopen (file, append ? "a" : "w");
 #endif
 	if (file_to_save == NULL)
 		return axl_false;
@@ -8495,7 +8495,7 @@ get_reply_and_check:
 
 	/* print size */
 	printf ("Test 04-e: file size received: %d\n", vortex_frame_get_payload_size (frame));
-	if (! test_04_e_save (frame, "test_04_e.save")) {
+	if (! test_04_e_save (frame, "test_04_e.save", axl_false)) {
 		printf ("ERROR (7): expected proper save operation but a failure was found..\n");
 		return axl_false;
 	} /* end if */
@@ -8540,45 +8540,22 @@ get_reply_and_check:
 	return axl_true;
 }
 
-axl_bool test_04_f (void) {
-
-	VortexConnection    * connection;
-	VortexChannel       * channel;
-	VortexAsyncQueue    * queue;
+axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
+					 axl_bool           should_close_transfer,
+					 VortexChannel    * channel, 
+					 VortexAsyncQueue * wait, 
+					 VortexAsyncQueue * queue)
+{
 	VortexPayloadFeeder * feeder;
-	VortexFrame         * frame;
-	char                * md5_1;
-	char                * md5_2;
+	char                * md5_2, * md5_1;
 	unsigned int          last_seq_no_sent;
-
-	/* creates a new connection against localhost:44000 */
-	connection = connection_new ();
-	if (!vortex_connection_is_ok (connection, axl_false)) {
-		vortex_connection_close (connection);
-		return axl_false;
-	}
-
-	/* create the queue */
-	queue   = vortex_async_queue_new ();
-
-	/* create a channel */
-	channel = vortex_channel_new (connection, 0,
-				      REGRESSION_URI,
-				      /* no close handling */
-				      NULL, NULL,
-				      /* frame receive async handling */
-				      vortex_channel_queue_reply, queue,
-				      /* no async channel creation */
-				      NULL, NULL);
-
-	if (channel == NULL) {
-		printf ("ERROR (1): expected to find proper channel creation..\n");
-		return axl_false;
-	}
+	VortexFrame         * frame;
+	int                   file_size;
+	struct stat           stats;
 
 	/* build feeder to be sent */
-	printf ("Test 04-f: sending content...\n");
-	feeder = vortex_payload_feeder_file (ctx, "vortex-regression-client.c", axl_true);
+	printf ("Test 04-f: creating feeder...\n");
+	feeder = vortex_payload_feeder_file (ctx, file_to_send, axl_true);
 	if (feeder == NULL) {
 		printf ("ERROR (3): expected to find proper feeder reference but found NULL..\n");
 		return axl_false;
@@ -8607,21 +8584,24 @@ axl_bool test_04_f (void) {
 
 	/* ok now pause transfer */
 	printf ("Test 04-f: #### calling to pause..\n");
-	vortex_payload_feeder_pause (feeder, axl_true);
+	vortex_payload_feeder_pause (feeder, should_close_transfer);
+
+	/* now wait 20ms to recheck again we are not transferring */
+	vortex_async_queue_timedpop (wait, 20000);
 
 	/* track new seq_no_sent */
 	last_seq_no_sent = vortex_channel_get_next_seq_no (channel);
 
 	/* now wait 20ms to recheck again we are not transferring */
-	vortex_async_queue_timedpop (queue, 20000);
+	vortex_async_queue_timedpop (wait, 20000);
 
 	if (last_seq_no_sent != vortex_channel_get_next_seq_no (channel)) {
-		printf ("ERROR: expected to transfer while paused...but found differences\n");
+		printf ("ERROR: to not expected to transfer while paused...but found differences\n");
 		return axl_false;
 	}
 
 	/* now wait 20ms to recheck again we are not transferring */
-	vortex_async_queue_timedpop (queue, 20000);
+	vortex_async_queue_timedpop (wait, 20000);
 
 	printf ("Test 04-f: resume transfer..\n");
 	if (! vortex_channel_send_msg_from_feeder (channel, feeder)) {
@@ -8629,21 +8609,47 @@ axl_bool test_04_f (void) {
 		return axl_false;
 	}
 
-	/* get reply */
-	frame = vortex_channel_get_reply (channel, queue);
-	/* save content */
-	if (! test_04_e_save (frame, "test_04_e.save")) {
-		printf ("ERROR (7): expected proper save operation but a failure was found..\n");
+	/* now wait 20ms to recheck again we are not transferring */
+	vortex_async_queue_timedpop (wait, 20000);
+
+	/* remove file */
+	unlink ("test_04_e.save");
+
+	/* get file size */
+	if (stat (file_to_send, &stats) != 0) {
+		printf ("ERROR (4.2): failed to run stat() call over file_to_send..\n");
 		return axl_false;
 	} /* end if */
 
-	printf ("Test 04-f: file test_04_e.save saved right..checking differences\n");
+	file_size = stats.st_size;
 
-	/* relaese frame */
-	vortex_frame_unref (frame);
+	/* get reply */
+	while (file_size > 0) {
+		printf ("Test 04-f: getting frame..\n");
+		frame = vortex_channel_get_reply (channel, queue);
+
+		if (frame == NULL) {
+			printf ("ERROR (7.1): received NULL frame ..\n");
+			return axl_false;
+		} /* end if */
+
+		/* save content */
+		if (! test_04_e_save (frame, "test_04_e.save", axl_true)) {
+			printf ("ERROR (7): expected proper save operation but a failure was found..\n");
+			return axl_false;
+		} /* end if */
+		
+		/* reduce file size remaining */
+		file_size -= vortex_frame_get_payload_size (frame);
+
+		printf ("Test 04-f:   file test_04_e.save saved right..checking for more (pending %d) \n", file_size);
+
+		/* relaese frame */
+		vortex_frame_unref (frame);
+	} 
 
 	/* now check MD5 */
-	md5_1 = test_04_ab_gen_md5 ("vortex-regression-client.c");
+	md5_1 = test_04_ab_gen_md5 (file_to_send);
 	md5_2 = test_04_ab_gen_md5 ("test_04_e.save");
 
 	/* check md5s..*/
@@ -8655,6 +8661,67 @@ axl_bool test_04_f (void) {
 	axl_free (md5_1);
 	axl_free (md5_2);
 
+	/* release feeder */
+	vortex_payload_feeder_unref (feeder);
+
+	return axl_true;
+}
+
+axl_bool test_04_f (void) {
+
+	VortexConnection    * connection;
+	VortexChannel       * channel;
+	VortexAsyncQueue    * queue, * wait;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+
+	/* create the queue */
+	queue   = vortex_async_queue_new ();
+	wait    = vortex_async_queue_new ();
+
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	/* configure serialize */
+	vortex_channel_set_serialize (channel, axl_true);
+
+	if (channel == NULL) {
+		printf ("ERROR (1): expected to find proper channel creation..\n");
+		return axl_false;
+	}
+
+	/* text sending content and pause */
+	if (! test_04_f_send_pause_and_check ("mime.example.body.1.txt", axl_true, channel, wait, queue))
+		return axl_false;  
+
+	/* text sending content and pause */
+	if (! test_04_f_send_pause_and_check ("vortex-regression-client.c", axl_true, channel, wait, queue))
+		return axl_false; 
+
+	/* text sending content and pause */
+	if (! test_04_f_send_pause_and_check ("mime.example.body.1.txt", axl_false, channel, wait, queue))
+		return axl_false;  
+
+	/* text sending content and pause */
+	if (! test_04_f_send_pause_and_check ("vortex-regression-client.c", axl_false, channel, wait, queue))
+		return axl_false; 
+
+	/* finish queues */
+	vortex_async_queue_unref (wait);
+	vortex_async_queue_unref (queue);
+
+	vortex_connection_close (connection);
 	
 	return axl_true;
 }
@@ -12012,7 +12079,7 @@ int main (int  argc, char ** argv)
 
 	run_test (test_04_e, "Test 04-e", "check payload feeder support", -1, -1);
 
-	/* run_test (test_04_f, "Test 04-f", "check payload feeder support (pause/cancel)", -1, -1); */
+	run_test (test_04_f, "Test 04-f", "check payload feeder support (pause/cancel)", -1, -1); 
   
  	run_test (test_05, "Test 05", "TLS profile support", -1, -1);
   	

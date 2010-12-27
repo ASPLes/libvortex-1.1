@@ -887,6 +887,8 @@ axl_bool      vortex_profiles_invoke_frame_received (const char       * uri,
 	v_return_val_if_fail (frame,                           axl_false);
 	v_return_val_if_fail (ctx && ctx->registered_profiles, axl_false);
 
+	vortex_log (VORTEX_LEVEL_DEBUG, "delivering frame-id=%d", vortex_frame_get_id (frame));
+
 	profile = vortex_hash_lookup (ctx->registered_profiles, (axlPointer) uri);
 
 	if ((profile == NULL) || (profile->received == NULL)) {

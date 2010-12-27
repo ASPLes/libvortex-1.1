@@ -70,6 +70,13 @@ struct _VortexPayloadFeeder {
 	axl_bool                     close_transfer;
 
 	/** 
+	 * @internal In the case of a pause tranfer without closing
+	 * the transfer, this field records the msg_no that should be
+	 * used to continue.
+	 */
+	int                          msg_no;
+
+	/** 
 	 * @internal Handler used to notify that the transfer has
 	 * finished.
 	 */

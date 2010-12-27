@@ -69,16 +69,12 @@ struct _VortexChannel {
 	VortexCtx             * ctx;
 	int                     channel_num;
 
-	int                     last_message_sent;
-	int                     last_message_received;
-
 	/** 
-	 * @internal Internal counter which tracks the last reply
-	 * number used to send a reply. It is not actually the last
-	 * reply fully sent (prepared and written into the wire). See
-	 * last_reply_written.
+	 * @internal Variable used to fast propose a msgno value for
+	 * the following send operation (MSG).
 	 */
-	int                     last_reply_received;
+	int                     next_proposed_msgno;
+	int                     last_message_received;
 
 	/** 
 	 * @internal Counter which tracks the last reply written to
@@ -1415,11 +1411,11 @@ int             vortex_channel_get_next_msg_no (VortexChannel * channel)
 	if (channel == NULL)
 		return -1;
 
-	/* reset proposed next message number if reached limit */
-	if (channel->last_message_sent == MAX_MSG_NO)
-		channel->last_message_sent = -1;
-
-	return channel->last_message_sent + 1;
+	/* next proposed message */
+	channel->next_proposed_msgno++;
+	if (channel->next_proposed_msgno == -1)
+		channel->next_proposed_msgno++;
+	return channel->next_proposed_msgno;
 }
 
 /**
@@ -1482,9 +1478,8 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 	} /* end if */
 	channel->ctx                            = ctx;
 	channel->channel_num                    = channel_num;
-	channel->last_message_sent              = -1;
 	channel->last_message_received          = -1;
-	channel->last_reply_received            = -1;
+	channel->next_proposed_msgno            = -1;
 	/* init value that signal vortex update process 
 	   to skip the first reply written (greetings RPY) 
 	   so it doesn't count the MSG that should be received */
@@ -1564,9 +1559,6 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 		channel->received              = vortex_channel_0_frame_received;
 		channel->mime_type             = "application/beep+xml";
 		channel->transfer_encoding     = "binary";
-
-		/* some message number exceptions */
-		channel->last_message_sent     = 0;
 	}else {
 		channel->mime_type         = vortex_profiles_get_mime_type (ctx, profile);
 		channel->transfer_encoding = vortex_profiles_get_transfer_encoding (ctx, profile);
@@ -2039,12 +2031,6 @@ void vortex_channel_update_status (VortexChannel * channel, unsigned int  frame_
 	if (channel == NULL)
 		return;
 
-	/* update msgno */
-	if ((update & UPDATE_MSG_NO) == UPDATE_MSG_NO) {
-		/* update to the last msg no used */
-		channel->last_message_sent = msg_no;
-	}
-
 	/* update seqno */
 	if ((update & UPDATE_SEQ_NO) == UPDATE_SEQ_NO) {
 		channel->last_seq_no        = ((channel->last_seq_no + frame_size) % (MAX_SEQ_NO));
@@ -2069,9 +2055,8 @@ void vortex_channel_update_status (VortexChannel * channel, unsigned int  frame_
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, 
-		    "updating channel %d sending status to: msgno=%d, rpyno-sent=%d, rpyno-written=%d seqno=%u, ansno=%d..",
- 		    channel->channel_num, channel->last_message_sent, channel->last_message_sent, 
- 		    channel->last_reply_written, channel->last_seq_no, channel->last_ansno_sent);
+		    "updating channel %d sending status to: rpyno-sent=%d, seqno=%u, ansno=%d..",
+ 		    channel->channel_num, channel->last_reply_written, channel->last_seq_no, channel->last_ansno_sent);
 
 	return;
 }
@@ -2114,11 +2099,6 @@ void vortex_channel_update_status_received (VortexChannel * channel,
 		channel->last_message_received -= 1;
 	}
 
-	/* update expected rpy no */
-	if ((update & UPDATE_RPY_NO) == UPDATE_RPY_NO) {
-		channel->last_reply_received = msg_no;
-	}
-
 	/* update expected seqno */
 	if ((update & UPDATE_SEQ_NO) == UPDATE_SEQ_NO) {
 		channel->last_seq_no_expected   = ((channel->last_seq_no_expected + frame_size) % (MAX_SEQ_NO));
@@ -2130,9 +2110,8 @@ void vortex_channel_update_status_received (VortexChannel * channel,
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, 
- 		    "updating channel receiving status to: msgno=%d, rpyno=%d, seqno=%u, ansno=%d..",
+ 		    "updating channel receiving status to: msgno=%d, seqno=%u, ansno=%d..",
 		    channel->last_message_received, 
- 		    channel->last_reply_received, 
  		    channel->last_seq_no_expected, 
  		    channel->last_ansno_expected);
 
@@ -2175,7 +2154,8 @@ axl_bool    vortex_channel_send_msg_common (VortexChannel       * channel,
 {
 	VortexSequencerData * data;
 	int                   mime_header_size;
-	VortexCtx           * ctx     = vortex_channel_get_ctx (channel);
+	VortexCtx           * ctx           = vortex_channel_get_ctx (channel);
+	axl_bool              update_msg_no = axl_true;
 
 	v_return_val_if_fail (channel,                           axl_false);
 	if (! feeder && message_size > 0)
@@ -2265,7 +2245,20 @@ check_limit:
 		data->feeder = feeder;
 
 		/* update its transfer status to ok */
-		feeder->status = 0;
+		if (feeder->status != 0) {
+			/* regrab a reference */
+			vortex_payload_feeder_ref (feeder);
+			/* set status to ok */
+			feeder->status = 0;
+
+			/* if feeder was paused without closing
+			   transfer use msg_no indicated by the
+			   sequencer */
+			if (! feeder->close_transfer) {
+				data->msg_no = feeder->msg_no;
+				update_msg_no = axl_false;
+			}
+		} /* end if */
 	} 
 
 	/* return back message no used  */
@@ -2288,20 +2281,23 @@ check_limit:
 		vortex_mutex_unlock (&channel->receive_mutex);
 	}
 
-	/* update channel status */
-	vortex_channel_update_status (channel, data->message_size, data->msg_no, UPDATE_MSG_NO);
-
-  
- 	/* update pending messages to be replied */
- 	vortex_mutex_lock (&channel->outstanding_msg_mutex);
- 	axl_list_append (channel->outstanding_msg, INT_TO_PTR (data->msg_no));
+	/* update channel status but only if it is not a feeder and
+	   close_transfer was not activated so, the expected message
+	   is already placed on the list */
+	if (update_msg_no) {
+		/* update pending messages to be replied */
+		vortex_mutex_lock (&channel->outstanding_msg_mutex);
+		axl_list_append (channel->outstanding_msg, INT_TO_PTR (data->msg_no));
+		
+		vortex_log (VORTEX_LEVEL_DEBUG, "channel=%d append pending msg no to be replied: %d (length: %d), first: %d",
+			    channel->channel_num, data->msg_no, axl_list_length (channel->outstanding_msg), 
+			    PTR_TO_INT (axl_list_get_first (channel->outstanding_msg)));
  
- 	vortex_log (VORTEX_LEVEL_DEBUG, "channel=%d append pending msg no to be replied: %d (length: %d), first: %d",
- 		    channel->channel_num, data->msg_no, axl_list_length (channel->outstanding_msg), 
- 		    PTR_TO_INT (axl_list_get_first (channel->outstanding_msg)));
- 
- 	vortex_mutex_unlock (&channel->outstanding_msg_mutex);
+		vortex_mutex_unlock (&channel->outstanding_msg_mutex);
 
+	} /* end if */
+
+	/* queue request */
 	vortex_sequencer_queue_data (ctx, data);
 
 	/* unlock send mutex */
@@ -2323,7 +2319,7 @@ check_limit:
 axl_bool           vortex_channel_send_msg_from_feeder            (VortexChannel       * channel,
 								   VortexPayloadFeeder * feeder)
 {
-	return vortex_channel_send_msg_common (channel, NULL, 0, 0, NULL, NULL, feeder);
+	return vortex_channel_send_msg_common (channel, NULL, 0, -1, NULL, NULL, feeder);
 }
 
 /** 
@@ -2676,7 +2672,12 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 		data->feeder = feeder;
 
 		/* update its transfer status to ok */
-		feeder->status = 0;
+		if (feeder->status != 0) {
+			/* regrab a reference */
+			vortex_payload_feeder_ref (feeder);
+			/* set status to ok */
+			feeder->status = 0;
+		}
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "new reply message to sent using feeder (channel=%d)",
 			    channel->channel_num);
@@ -4810,7 +4811,7 @@ axl_bool      __vortex_channel_block_until_replies_are_received (VortexChannel *
 	 * channel from inside the frame received handler that is
 	 * managing the last message.
 	 */
-	while (! (channel->last_message_sent == channel->last_reply_received)) {
+	while (axl_list_length (channel->outstanding_msg) > 0) {
 
 		/* check for vortex termination */
 		if (ctx->vortex_exit)  {
@@ -4823,10 +4824,10 @@ axl_bool      __vortex_channel_block_until_replies_are_received (VortexChannel *
 		
 		/* drop a log */
 		vortex_log (VORTEX_LEVEL_WARNING, 
- 			    "we still didn't receive all replies for connection=%d channel=%d (MSG %d != RPY %d), %s",
+ 			    "we still didn't receive all replies for connection=%d channel=%d (pending: %d), %s",
  			    vortex_connection_get_id (channel->connection),
  			    channel->channel_num,
- 			    channel->last_message_sent, channel->last_reply_received,
+			    axl_list_length (channel->outstanding_msg),
  			    vortex_connection_is_ok (connection, axl_false) ? "block until all replies are received" :
  			    "leaving remaining replies because connection is broken..");
 		
@@ -4858,9 +4859,8 @@ axl_bool      __vortex_channel_block_until_replies_are_received (VortexChannel *
 	} /* end while */
 	
 	vortex_mutex_unlock (&channel->close_mutex);
-	vortex_log (VORTEX_LEVEL_DEBUG, 
-		    "we have received (or it should!) the last reply we can now close the channel %d (MSG %d = RPY %d)", 
-		    channel->channel_num, channel->last_message_sent, channel->last_reply_received);
+	vortex_log (VORTEX_LEVEL_DEBUG,    "we have received all replies we can now close the channel %d", 
+		    channel->channel_num);
 
 	/* return wait status */
 	return result;
@@ -7818,32 +7818,6 @@ int                vortex_channel_get_outstanding_messages       (VortexChannel 
 }
 
 /** 
- * @internal
- * 
- * This function is for internal Vortex library purposes. Actually
- * this function is used by the vortex_channel_pool to check if a
- * message is ready from the point of view that all replies to message
- * sent have been received discarding if that replies have been
- * actually processed.
- *
- * This function should not be useful for vortex library consumer but
- * can be used to check if a channel have received (but may not
- * processed) all replies.
- * 
- * @param channel the channel to operate on
- * 
- * @return 
- */
-axl_bool          vortex_channel_is_up_to_date (VortexChannel * channel)
-{
-	/* get channel profile */
-	if (channel == NULL)
-		return axl_false;
-	
-	return (channel->last_message_sent == channel->last_reply_received);
-}
-
-/** 
  * @brief Creates a new wait reply to be used to wait for a specific
  * reply.
  *
@@ -8661,8 +8635,6 @@ void              __vortex_channel_set_state (VortexChannel * channel,
 	/* update seq no */
 	channel->last_seq_no          = last_seq_no;
 	channel->last_seq_no_expected = last_seq_no_expected;
-	channel->last_reply_received  = last_reply_received;
-
 	return;
 }
 					      

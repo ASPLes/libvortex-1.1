@@ -355,7 +355,6 @@ axl_bool                   vortex_payload_feeder_pause       (VortexPayloadFeede
 	/* flag the feeder to be cancelled */
 	feeder->status         = -1;
 	feeder->close_transfer = close_transfer;
-	
 
 	return axl_true;
 }
@@ -406,14 +405,14 @@ axl_bool              vortex_payload_feeder_ref         (VortexPayloadFeeder * f
  *
  * @param feeder The payload feeder that will be reduced.
  *
- * @param ctx The context where the operation will take place.
- *
  */ 
-void              vortex_payload_feeder_unref       (VortexPayloadFeeder * feeder,
-						     VortexCtx           * ctx)
+void              vortex_payload_feeder_unref       (VortexPayloadFeeder * feeder)
 {
+	if (feeder == NULL)
+		return;
+
 	/* call to current implementation */
-	vortex_payload_feeder_free (feeder, ctx);
+	vortex_payload_feeder_free (feeder, feeder->ctx);
 	return;
 }
 
