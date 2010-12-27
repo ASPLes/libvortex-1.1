@@ -400,35 +400,6 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 			    vortex_frame_get_channel (frame), vortex_frame_get_seqno (frame),
 			    vortex_frame_get_payload_size (frame));
 
-		/*		if (vortex_frame_get_seqno (frame) > vortex_channel_get_next_seq_no (channel)) {
-			vortex_log (VORTEX_LEVEL_CRITICAL, 
-				    "received a SEQ frame specifying a seqno reference value that wasn't used (ackno: %u > max seq no sent: %u): SEQ %d %u %d",
-				    vortex_frame_get_seqno (frame), vortex_channel_get_next_seq_no (channel),
-				    vortex_frame_get_channel (frame), vortex_frame_get_seqno (frame),
-				    vortex_frame_get_payload_size (frame));
-			
-			__vortex_connection_set_not_connected (connection, 
-							       "received a SEQ frame specifying a seqno reference value that wasn't used",
-							       VortexProtocolError); */
-			/* unref frame due to errors */
-		/*			vortex_frame_unref (frame);
-			return;
-			}  */
-		
-		/* check that the window size is not bigger than MAX_BUFFER_SIZE */
-/*		if (MAX_BUFFER_SIZE < vortex_frame_get_payload_size (frame)) {
-			__vortex_connection_set_not_connected (connection, "received a SEQ frame specifying a not allowed value for the window size",
-							       VortexProtocolError);
-			
-			vortex_log (VORTEX_LEVEL_CRITICAL, 
-				    "received a SEQ frame specifying a not allowed value for the window size (max buffer size accepted is: %d < seq window (size - seqno) notified: %d).",
-				    MAX_BUFFER_SIZE, vortex_frame_get_payload_size (frame)); 
-*/
-			/* unref frame due to errors */
-/*			vortex_frame_unref (frame); 
-			return;
-		}    */
-		
 		/* update information about the buffer state of the
 		 * remote peer for the given channel */
 		vortex_channel_update_remote_incoming_buffer (channel, 
