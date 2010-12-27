@@ -221,7 +221,7 @@ axl_bool      vortex_reader_check_incoming_msgno (VortexCtx        * ctx,
 						  VortexChannel    * channel, 
 						  VortexFrame      * frame)
 {
-  	vortex_log (VORTEX_LEVEL_DEBUG, "about to checking expected message to be received on this channel");
+  	vortex_log (VORTEX_LEVEL_DEBUG, "about to check expected message to be received on this channel");
 
   
  	/* check if the message is not already available in the
@@ -289,6 +289,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	axl_bool           more;
 #if defined(ENABLE_VORTEX_LOG)
 	char             * raw_frame;
+	int                frame_id;
 #endif
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "something to read conn-id=%d", vortex_connection_get_id (connection));
@@ -324,10 +325,13 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 
 	/* check for debug to throw some debug messages.*/
 #if defined(ENABLE_VORTEX_LOG)
+	/* get frame id */ 
+	frame_id = vortex_frame_get_id (frame);
+
 	if (vortex_log2_is_enabled (ctx)) {
 		raw_frame = vortex_frame_get_raw_frame (frame);
-		vortex_log (VORTEX_LEVEL_DEBUG, "frame received (before all filters)\n%s",
-		       raw_frame);
+		vortex_log (VORTEX_LEVEL_DEBUG, "frame id=%d received (before all filters)\n%s",
+			    frame_id, raw_frame);
 		axl_free (raw_frame);
 	}
 #endif
@@ -340,7 +344,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		__vortex_listener_second_step_accept (frame, connection);
 		return;
 	}
-	vortex_log (VORTEX_LEVEL_DEBUG, "passed initial accept stage");
+	vortex_log (VORTEX_LEVEL_DEBUG, "passed frame id=%d initial accept stage", frame_id);
 
 	/* channel exists, get a channel reference */
 	channel = vortex_connection_get_channel (connection,
@@ -355,7 +359,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		return;		
 	}
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "passed connection existence stage");	
+	vortex_log (VORTEX_LEVEL_DEBUG, "passed frame id=%d connection id=%d existence stage", frame_id, vortex_connection_get_id (connection));
  	/* now update current incoming buffers to track SEQ frames */
  	if (! __vortex_reader_update_incoming_buffer_and_notify (ctx, connection, channel, frame)) {
  		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to notify SEQ channel status, connection broken or protocol violation");
@@ -379,7 +383,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 			__vortex_connection_set_not_connected (connection, "expected reply message previous to received",
 							       VortexProtocolError);
 
-			vortex_log (VORTEX_LEVEL_CRITICAL, "expected reply message %d previous to received %d",
+			vortex_log (VORTEX_LEVEL_CRITICAL, "expected reply message %d but received %d",
 			       vortex_channel_get_next_expected_reply_no (channel),
 			       vortex_frame_get_msgno (frame));
 
@@ -446,7 +450,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		 * rpyno) */
 		break;
 	}
-	vortex_log (VORTEX_LEVEL_DEBUG, "passed message number checking stage");
+	vortex_log (VORTEX_LEVEL_DEBUG, "passed frame id=%d message number checking stage", frame_id);
 
 	/* Check next sequence number, this check is always applied,
 	 * for SEQ frames received this case is not reached. */
@@ -507,9 +511,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		vortex_channel_update_status_received (channel, 
 						       vortex_frame_get_content_size (frame), 
 						       vortex_frame_get_msgno (frame),
-						       vortex_frame_get_more_flag (frame) ? 
-						       UPDATE_SEQ_NO : 
-						       UPDATE_SEQ_NO | UPDATE_RPY_NO);
+						       UPDATE_SEQ_NO);
 
 		/* remove the message replied from outstanding list */
 		if (! vortex_frame_get_more_flag (frame))
@@ -526,7 +528,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		vortex_channel_update_status_received (channel, 
 						       vortex_frame_get_content_size (frame), 
 						       vortex_frame_get_msgno (frame),
-						       UPDATE_RPY_NO | UPDATE_SEQ_NO);
+						       UPDATE_SEQ_NO);
 
 		/* remove the message replied from outstanding list */
 		vortex_channel_remove_first_outstanding_msg_no (channel, vortex_frame_get_msgno (frame));
@@ -548,7 +550,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		break;
 	}
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "passed channel update status due to frame received stage type=%d", type);
+	vortex_log (VORTEX_LEVEL_DEBUG, "passed channel update status due to frame id=%d received stage type=%d", frame_id, type);
 
 	/* If we have a frame to be joined then threat it instead of
 	 * invoke frame received handler. This is done by checking for
@@ -607,29 +609,39 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 
 			/* create one single frame with all stored frames */
 			frame = vortex_channel_build_single_pending_frame (channel);
+
+			vortex_log (VORTEX_LEVEL_DEBUG, "produced single consolidated frame id=%d due to complete flag enabled",
+				    vortex_frame_get_id (frame));
+#if defined(ENABLE_VORTEX_LOG)
+			/* get frame id */
+			frame_id = vortex_frame_get_id (frame);
+#endif			
 		} /* end if */
 	} /* end if */
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "passed frame checking stage");
+	vortex_log (VORTEX_LEVEL_DEBUG, "passed frame id=%d checking stage", frame_id);
 
  	/* if the frame is complete, apply mime processing */
  	if (vortex_frame_get_more_flag (frame) == 0 && type != VORTEX_FRAME_TYPE_NUL && vortex_channel_have_complete_flag (channel)) {
  		/* call to update frame MIME status */
  		if (! vortex_frame_mime_process (frame))
- 			vortex_log (VORTEX_LEVEL_WARNING, "failed to update MIME status for the frame, continue delivery");
+ 			vortex_log (VORTEX_LEVEL_WARNING, "failed to update MIME status for the frame id=%d, continue delivery",
+				    frame_id);
  	} 
 
 	/* check for general frame received (channel != 0) */
 	if (vortex_channel_get_number (channel) != 0 && 
 	    vortex_reader_invoke_frame_received (ctx, connection, channel, frame)) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "frame delivered to global frame received handler");
+		vortex_log (VORTEX_LEVEL_DEBUG, "frame id=%d delivered to global frame received handler", 
+			    frame_id);
 		return; /* frame was successfully delivered */
 	}
 
 	/* invoke frame received handler for second level and, if not
 	 * defined, the first level handler */
 	if (vortex_channel_invoke_received_handler (connection, channel, frame)) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "frame delivered on second (channel) level handler channel");
+		vortex_log (VORTEX_LEVEL_DEBUG, "frame id=%d delivered on second (channel) level handler channel",
+			    frame_id);
 		return; /* frame was successfully delivered */
 	}
 	
@@ -641,12 +653,14 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 						   vortex_channel_get_number     (channel),
 						   vortex_channel_get_connection (channel),
 						   frame)) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "frame delivered on first (profile) level handler channel");
+		vortex_log (VORTEX_LEVEL_DEBUG, "frame id=%d delivered on first (profile) level handler channel",
+			    frame_id);
 		return; /* frame was successfully delivered */
 	}
 	
 	vortex_log (VORTEX_LEVEL_CRITICAL, 
-	       "unable to deliver incoming frame, no first or second level handler defined, dropping frame");
+		    "unable to deliver incoming frame id=%d, no first or second level handler defined, dropping frame",
+		    frame_id);
 
 	/* unable to deliver the frame, free it */
 	vortex_frame_unref (frame);

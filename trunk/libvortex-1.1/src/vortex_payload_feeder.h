@@ -78,8 +78,7 @@ void                  vortex_payload_feeder_status      (VortexPayloadFeeder    
 
 axl_bool              vortex_payload_feeder_ref         (VortexPayloadFeeder * feeder);
 
-void                  vortex_payload_feeder_unref       (VortexPayloadFeeder * feeder,
-							 VortexCtx           * ctx);
+void                  vortex_payload_feeder_unref       (VortexPayloadFeeder * feeder);
 
 void                  vortex_payload_feeder_free        (VortexPayloadFeeder * feeder,
 							 VortexCtx           * ctx);

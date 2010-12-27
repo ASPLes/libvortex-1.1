@@ -308,10 +308,18 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
 		} else {
 			vortex_log (VORTEX_LEVEL_DEBUG, "feeder cancelled, close transfer status is: %d", data->feeder->close_transfer);
 			if (! data->feeder->close_transfer) {
+				/* also record current msgno to
+				   continue in the future */
+				data->feeder->msg_no = data->msg_no;
+
+				/* remove queued request if found same pointer */
+				if (data == vortex_channel_next_pending_message (channel))
+					vortex_channel_remove_pending_message (channel);
+
 				/* unref the connection and clear data (if
 				 * user cancel feeder size_to_copy == -2) */
 				__vortex_sequencer_unref_and_clear (vortex_channel_get_connection (channel), data, axl_true);
-				
+
 				/* signal caller to stop delivering this content */
 				return -1;
 			} /* end if */
@@ -352,7 +360,7 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
 	 * the payload fits into a single frame */
 	if (data->feeder) {
 		/* prepare is complete flag */
-		packet->is_complete = data->feeder->close_transfer ? axl_true : vortex_payload_feeder_is_finished (data->feeder);
+		packet->is_complete = (data->feeder->status != 0 && data->feeder->close_transfer) ? axl_true : vortex_payload_feeder_is_finished (data->feeder);
 
 		/* normalize size_to_copy to avoid the caller to skipp ending this empty frame */
 		if (size_to_copy < 0)
