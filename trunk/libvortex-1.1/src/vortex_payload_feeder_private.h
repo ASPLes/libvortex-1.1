@@ -63,6 +63,7 @@ struct _VortexPayloadFeeder {
 	 * cancelled (-2).
 	 */
 	int                          status;
+
 	/** 
 	 * @internal Flag to track how close current ongoing transfer
 	 * when they are cancelled or paused.
@@ -77,10 +78,21 @@ struct _VortexPayloadFeeder {
 	int                          msg_no;
 
 	/** 
+	 * @internal Bytes transferred by this feeder so far.
+	 */
+	long                         bytes_transferred;
+
+	/** 
 	 * @internal Handler used to notify that the transfer has
 	 * finished.
 	 */
 	VortexPayloadFeederFinishedHandler finish_handler;
 	axlPointer                         finish_user_data;
+	axl_bool                           notification_done;
+
+	/** 
+	 * @brief Pointer to the channel that is used to transfer content..
+	 */
+	VortexChannel              * channel;
 };
 #endif

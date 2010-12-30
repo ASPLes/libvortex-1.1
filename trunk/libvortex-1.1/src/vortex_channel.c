@@ -2258,6 +2258,9 @@ check_limit:
 				data->msg_no = feeder->msg_no;
 				update_msg_no = axl_false;
 			}
+		} else { /* status == 0 */
+			vortex_channel_ref (channel);
+			feeder->channel = channel;
 		} /* end if */
 	} 
 
@@ -2677,6 +2680,9 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 			vortex_payload_feeder_ref (feeder);
 			/* set status to ok */
 			feeder->status = 0;
+		} else { /* status == 0 */
+			vortex_channel_ref (channel);
+			feeder->channel = channel;
 		}
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "new reply message to sent using feeder (channel=%d)",
