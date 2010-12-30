@@ -709,10 +709,17 @@ typedef struct _VortexPayloadFeederStatus {
 	 */
 	long total_size;
 	/** 
-	 * @brief Current feeder status, 0 sending, -1 cancelled, -2
-	 * paused.
+	 * @brief Signals that the feeder has finished sending all
+	 * content associated.
 	 */
-	int  status;
+	axl_bool is_finished;
+	
+	/** 
+	 * @brief Signals if the feeder is in pause state. It was
+	 * issued a call to send content using this feeder but it was
+	 * caused using \ref vortex_payload_feeder_pause.
+	 */
+	axl_bool is_paused;
 } VortexPayloadFeederStatus;
 
 /**

@@ -182,6 +182,24 @@ axl_bool __vortex_payload_feeder_file (VortexCtx               * ctx,
  * @return A reference to a \ref VortexPayloadFeeder object or NULL if
  * it fails. The function checks if the function exists and can be
  * opened. In such checks fails, function will return NULL.
+ *
+ * <b>Important note about reference returned by this function</b>
+ *
+ * \ref VortexPayloadFeeder object support reference counting. Once
+ * the feeder object is "sent" (using some of available function like
+ * \ref vortex_channel_send_msg_from_feeder) then the reference is
+ * considered to be owned by the vortex engine (in particular by the
+ * vortex sequencer loop).
+ *
+ * This means that you must call to \ref vortex_payload_feeder_ref in
+ * the case you want to pause a feeder transfer (\ref
+ * vortex_payload_feeder_pause) or to check its transfer status (\ref
+ * vortex_payload_feeder_status).
+ *
+ * In the case you use the feeder to just send content, then you don't
+ * have to worry about \ref vortex_payload_feeder_ref. In the other
+ * hand, as much calls are done to \ref vortex_payload_feeder_ref as much
+ * as required to \ref vortex_payload_feeder_unref.
  */
 VortexPayloadFeeder * vortex_payload_feeder_file (VortexCtx  * ctx,
 						  const char * path,
@@ -255,9 +273,24 @@ int                   vortex_payload_feeder_get_content (VortexPayloadFeeder * f
 					  it is paused or cancel */
 	/* call to get content */
 	feeder->handler (ctx, PAYLOAD_FEEDER_GET_CONTENT, feeder, &size_to_copy, buffer, feeder->user_data);
+	
+	/* accumulate bytes transferred */
+	if (size_to_copy > 0)
+		feeder->bytes_transferred += size_to_copy;
 
 	/* return updated size to copy */
 	return size_to_copy;
+}
+
+axlPointer __vortex_payload_feeder_is_finished_notification (VortexPayloadFeeder * feeder)
+{
+	/* call to notify */
+	feeder->finish_handler (feeder->channel, feeder, feeder->finish_user_data);
+
+	/* release references */
+	vortex_payload_feeder_unref (feeder);
+
+	return NULL;
 }
 
 /** 
@@ -270,13 +303,26 @@ int                   vortex_payload_feeder_get_content (VortexPayloadFeeder * f
  */
 axl_bool              vortex_payload_feeder_is_finished (VortexPayloadFeeder * feeder)
 {
-	axl_bool is_finished = axl_false;
+	axl_bool                           is_finished = axl_false;
 
 	if (feeder == NULL)
 		return axl_false;
 
 	/* call to get finished status */
 	feeder->handler (feeder->ctx, PAYLOAD_FEEDER_IS_FINISHED, feeder, &is_finished, NULL, feeder->user_data);
+	
+	/* check if it is finished and if there are handlers
+	 * configured */
+	if (is_finished && feeder->finish_handler && ! feeder->notification_done) {
+		/* flag that the notification is already done */
+		feeder->notification_done = axl_true;
+
+		/* acquire a reference */
+		vortex_payload_feeder_ref (feeder);
+
+		/* call to report finished handler */
+		vortex_thread_pool_new_task (feeder->ctx, (VortexThreadFunc)__vortex_payload_feeder_is_finished_notification, feeder);
+	} /* end if */
 
 	return is_finished;
 }
@@ -365,10 +411,23 @@ axl_bool                   vortex_payload_feeder_pause       (VortexPayloadFeede
  * The status object contains information about how many bytes has
  * being transferred so far, total bytes to be transferred (if
  * supported by the feeder), if is cancelled or paused.
+ *
+ * NOTE: you must call first \ref vortex_payload_feeder_ref to own a
+ * reference to avoid a race condition between your access and vortex
+ * sequencer finishing its reference.
  */
 void                  vortex_payload_feeder_status      (VortexPayloadFeeder       * feeder, 
 							 VortexPayloadFeederStatus * status)
 {
+	if (feeder == NULL || status == NULL)
+		return;
+		
+	/* configure data */
+	status->is_finished       = vortex_payload_feeder_is_finished (feeder);
+	status->total_size        = vortex_payload_feeder_get_pending_size (feeder, feeder->ctx);
+	status->bytes_transferred = feeder->bytes_transferred;
+	status->is_paused         = (feeder->status == -1);
+
 	return;
 }
 
@@ -451,6 +510,10 @@ void              vortex_payload_feeder_free (VortexPayloadFeeder * feeder,
 		feeder->handler (ctx, PAYLOAD_FEEDER_RELEASE, feeder, NULL, NULL, feeder->user_data);
 		feeder->handler = NULL;
 	} /* end if */
+
+	/* call to finish channel ref */
+	vortex_channel_unref (feeder->channel);
+	feeder->channel = NULL;
 
 	/* release mutex */
 	vortex_mutex_unlock (&feeder->mutex);

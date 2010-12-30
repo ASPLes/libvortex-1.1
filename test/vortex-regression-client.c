@@ -8607,18 +8607,34 @@ get_reply_and_check:
 	return axl_true;
 }
 
+void test_04f_on_finished (VortexChannel       * channel, 
+			   VortexPayloadFeeder * feeder, 
+			   axlPointer            user_data)
+{
+	vortex_channel_get_number (channel);
+	vortex_channel_ref (channel);
+	vortex_channel_unref (channel);
+
+	/* push finish notifier */
+	vortex_async_queue_push (user_data, INT_TO_PTR (-4));
+
+	return;
+}
+
 axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
 					 axl_bool           should_close_transfer,
 					 VortexChannel    * channel, 
 					 VortexAsyncQueue * wait, 
 					 VortexAsyncQueue * queue)
 {
-	VortexPayloadFeeder * feeder;
-	char                * md5_2, * md5_1;
-	unsigned int          last_seq_no_sent;
-	VortexFrame         * frame;
-	int                   file_size;
-	struct stat           stats;
+	VortexPayloadFeeder         * feeder;
+	VortexPayloadFeederStatus     status;
+	char                        * md5_2, * md5_1;
+	unsigned int                  last_seq_no_sent;
+	VortexFrame                 * frame;
+	int                           file_size;
+	struct stat                   stats;
+	VortexAsyncQueue            * finish_q;
 
 	/* build feeder to be sent */
 	printf ("Test 04-f: creating feeder...\n");
@@ -8630,6 +8646,10 @@ axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
 
 	/* before sending, acquire reference */
 	vortex_payload_feeder_ref (feeder);
+
+	/* configure finished handler */
+	finish_q = vortex_async_queue_new ();
+	vortex_payload_feeder_set_on_finished (feeder, test_04f_on_finished, finish_q); 
 
 	/* track last seq no sent */
 	last_seq_no_sent = vortex_channel_get_next_seq_no (channel);
@@ -8653,8 +8673,16 @@ axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
 	printf ("Test 04-f: #### calling to pause..\n");
 	vortex_payload_feeder_pause (feeder, should_close_transfer);
 
-	/* now wait 20ms to recheck again we are not transferring */
-	vortex_async_queue_timedpop (wait, 20000);
+	/* now wait 200ms to recheck again we are not transferring */
+	vortex_async_queue_timedpop (wait, 200000);
+
+	/* get status */
+	vortex_payload_feeder_status (feeder, &status);
+	if (! status.is_paused) {
+		printf ("Test 04-f: ERROR: expected to find feeder status paused but not found..\n");
+		return axl_false;
+	}
+	printf ("Test 04-f: Current status %ld / %ld\n", status.bytes_transferred, status.total_size);
 
 	/* track new seq_no_sent */
 	last_seq_no_sent = vortex_channel_get_next_seq_no (channel);
@@ -8727,6 +8755,26 @@ axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
 
 	axl_free (md5_1);
 	axl_free (md5_2);
+
+	/* get status */
+	vortex_payload_feeder_status (feeder, &status);
+	if (! status.is_finished) {
+		printf ("Test 04-f: ERROR: expected to find feeder status finished but not found..\n");
+		return axl_false;
+	}
+	printf ("Test 04-f: Current status %ld / %ld\n", status.bytes_transferred, status.total_size);
+	if (status.total_size != status.bytes_transferred) {
+		printf ("Test 04-f: ERROR: expected to find feeder status to had transferred all content..\n");
+		return axl_false;
+	}
+
+	/* get queue notification */
+	printf ("Test 04-f: getting finished handler notification..\n");
+	if (PTR_TO_INT (vortex_async_queue_pop (finish_q)) != -4) {
+		printf ("Test 04-f: ERROR: expected to find -4 value but found something different..\n");
+		return axl_false;
+	}
+	vortex_async_queue_unref (finish_q);
 
 	/* release feeder */
 	vortex_payload_feeder_unref (feeder);
