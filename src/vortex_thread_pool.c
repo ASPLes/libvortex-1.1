@@ -306,6 +306,14 @@ void __vortex_thread_pool_terminate_thread (axlPointer _thread)
 	/* cast a get a proper reference */
 	VortexThread * thread = (VortexThread *) _thread;
 
+#if defined(AXL_OS_WIN32)
+	/* check to not dealock ourselves */
+	if (thread->id == (int) GetCurrentThreadId ()) {
+		axl_free (thread);
+		return;
+	}
+#endif
+
 	/* dealloc the node allocated */
 	vortex_thread_destroy (thread, axl_true);
 	return;
