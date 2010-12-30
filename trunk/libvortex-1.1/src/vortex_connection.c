@@ -6377,5 +6377,17 @@ axl_bool vortex_connection_check_socket_limit (VortexCtx * ctx, VORTEX_SOCKET so
 	return axl_true; /* connection check ok */
 }
 
+/** 
+ * @internal Function used to change connection initial accept
+ * status..
+ */
+void                vortex_connection_set_initial_accept     (VortexConnection * conn,
+							      axl_bool           status)
+{
+	/* set status */
+	conn->initial_accept = status;
+	return;
+}
+
 /* @} */
 

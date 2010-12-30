@@ -433,6 +433,10 @@ axl_bool            vortex_connection_check_socket_limit     (VortexCtx        *
 axl_bool               vortex_connection_ref_internal                    (VortexConnection * connection, 
 									  const char       * who,
 									  axl_bool           check_ref);
+
+void                vortex_connection_set_initial_accept     (VortexConnection * conn,
+							      axl_bool           status);
+
 /** 
  * @internal Flag used to flag a connection to skip futher handling.
  */
