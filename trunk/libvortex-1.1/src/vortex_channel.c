@@ -5119,7 +5119,8 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
 	/* check frame returned and connection status */
 	if ((! vortex_connection_is_ok (connection, axl_false)) || frame == NULL) {
 		/* seems the connection was closed during the operation. */
-		vortex_channel_free_wait_reply (wait_reply);
+		if (frame == NULL)
+			vortex_channel_free_wait_reply (wait_reply);
 	}
 
 	/* check frame returned and connection status */
@@ -7929,6 +7930,18 @@ VortexFrame   * vortex_channel_wait_reply              (VortexChannel * channel,
 	vortex_log (VORTEX_LEVEL_DEBUG, "getting reply at wait reply from the queue");
 	frame = vortex_async_queue_timedpop (wait_reply->queue, vortex_connection_get_timeout (ctx));
 
+	/* uninstall handler */
+	if (! vortex_connection_remove_on_close_full (channel->connection, __vortex_channel_wait_reply_connection_broken, queue)) {
+		/* interesting, the handler was not found when
+		 * requested removal, it means handler was executed or
+		 * it is about to be executed. Then we have to check
+		 * if the handler already pushed the connection broken
+		 * signal but only when frame is not itself that
+		 * signal  */
+		if (PTR_TO_INT (frame) != -3)
+			vortex_async_queue_pop (queue);
+	}
+
 	if (PTR_TO_INT (frame) == -3) {
 		vortex_log (
 			VORTEX_LEVEL_CRITICAL, 
@@ -7939,7 +7952,7 @@ VortexFrame   * vortex_channel_wait_reply              (VortexChannel * channel,
 		vortex_log (
 			VORTEX_LEVEL_CRITICAL, 
 			"received a timeout while waiting performing a 'wait reply'");
-	}else {
+	} else {
 		vortex_log (VORTEX_LEVEL_DEBUG, "received reply, freeing wait reply object");
 
 		/* before releasing check if the wait reply was stored
@@ -7959,8 +7972,7 @@ VortexFrame   * vortex_channel_wait_reply              (VortexChannel * channel,
 		vortex_channel_free_wait_reply (wait_reply);
 	}
 
-	/* uninstall handler */
-	vortex_connection_remove_on_close_full (channel->connection, __vortex_channel_wait_reply_connection_broken, queue);
+	/* unref queue */
 	vortex_async_queue_unref (queue);
 
 	/* release reference */

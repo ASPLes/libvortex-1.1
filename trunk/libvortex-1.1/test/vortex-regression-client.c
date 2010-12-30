@@ -3083,10 +3083,16 @@ axl_bool test_01r (void) {
 
 }
 
+axl_bool test_01s_status_finish = axl_false;
+axl_bool test_01s_status_called = axl_false;
+
 void test_01s_on_close (VortexConnection * conn, axlPointer user_data)
 {
 
 	VortexAsyncQueue * queue = user_data;
+
+	/* notify handler called */
+	test_01s_status_called = axl_true;
 	
 	/* push into the queue to advice */
 	printf ("Test 01-s: blocking forever..\n");
@@ -3097,7 +3103,8 @@ void test_01s_on_close (VortexConnection * conn, axlPointer user_data)
 	printf ("Test 01-s: unlocked (vortex_exit_ctx finished)...\n");
 	vortex_async_queue_push  (queue, INT_TO_PTR (1));
 	vortex_async_queue_unref (queue);
-	printf ("Test 01-s: rogue thread finished..\n");
+	printf ("Test 01-s: ###### rogue thread finished..\n");
+	test_01s_status_finish = axl_true;
 	return;
 }
 
@@ -3117,10 +3124,15 @@ axl_bool test_01s (void) {
 	VortexChannel      * channel;
 	VortexCtx          * ctx;
 	VortexAsyncQueue   * queue = NULL;
+	VortexAsyncQueue   * wait  = NULL;
 	int                  iterator = 0;
 
 	printf ("Test 01-s: checking connection close do not block vortex reader...\n");
 	ctx = vortex_ctx_new ();
+
+	/* reset */
+	test_01s_status_finish = axl_false;
+	test_01s_status_called = axl_false;
 
 	/* init vortex on this context */
 	if (! vortex_init_ctx (ctx)) {
@@ -3137,6 +3149,7 @@ axl_bool test_01s (void) {
 
 	/* set connection close */
 	queue = vortex_async_queue_new ();
+	wait  = vortex_async_queue_new ();
 	vortex_connection_set_on_close_full (conn, test_01s_on_close, queue);
 
 	/* create a channel */
@@ -3152,6 +3165,7 @@ axl_bool test_01s (void) {
 	/* send lot of content */
 	iterator = 0;
 	while (iterator < 10) {
+		printf ("Test 01-s: sending content iterator=%d..\n", iterator);
 		if (! vortex_channel_send_msg (channel, TEST_REGRESION_URI_4_MESSAGE, 4096, NULL)) {
 			printf ("ERROR: expected to be able to send content..\n");
 			return axl_false;
@@ -3166,7 +3180,7 @@ axl_bool test_01s (void) {
 	vortex_connection_set_receive_handler (conn, test_01s_faulty_receive);
 
 	printf ("Test 01-s: waiting to receive content...\n");
-	vortex_async_queue_timedpop (queue, 1000000);
+	vortex_async_queue_timedpop (wait, 1000000);
 
 	/* finish vortex context */
 	printf ("Test 01-s: exiting vortex context...\n");
@@ -3175,16 +3189,69 @@ axl_bool test_01s (void) {
 	/* now wait for queue result */
 	printf ("Test 01-s: vortex_exit_ctx finished, pushing to unlock blocking thread..\n");
 	vortex_async_queue_push (queue, INT_TO_PTR (1));
-	vortex_async_queue_pop (queue); 
+	/* vortex_async_queue_pop (queue); */
 
+	printf ("Test 01-s: closing connection at main thread..\n");
 	vortex_connection_close (conn);
+	printf ("Test 01-s: returned from closing connection at main thread..\n");
 
-	printf ("Test 01-s: wait for rogue thread (2 seconds)...\n");
-	vortex_async_queue_timedpop (queue, 2000000);
+	printf ("Test 01-s: wait for rogue thread (100 ms)...\n");
+	vortex_async_queue_timedpop (wait, 100000);
+
+	while (! test_01s_status_finish && test_01s_status_called) {
+		printf ("Test 01-s: rogue thread still working (100 ms), called: %d..\n", test_01s_status_called);
+		vortex_async_queue_timedpop (wait, 100000);
+	}
+	printf ("Test 01-s: finishing with status_finish=%d, status_called=%d\n", test_01s_status_finish, test_01s_status_called);
+
+	vortex_async_queue_pop (queue);
 
 	/* wait for vortex termination signal */
 	vortex_async_queue_unref (queue);
+	vortex_async_queue_unref (wait);
 
+	
+	return axl_true;
+}
+
+axl_bool test_01s1 (void) {
+
+	VortexConnection   * conn;
+	VortexChannel      * channel;
+	int                  iterator = 0;
+
+	printf ("Test 01-s: checking connection close do not block vortex reader...\n");
+	while (iterator < 10) {
+		/* call to connection close */
+		conn = vortex_connection_new (ctx, listener_host, LISTENER_PORT, NULL, NULL);
+		if (!vortex_connection_is_ok (conn, axl_false)) {
+			vortex_connection_close (conn);
+			return axl_false;
+		} /* end if */
+		
+		/* create a channel */
+		channel = vortex_channel_new (conn, 0,
+					      REGRESSION_URI,
+					      /* no close handling */
+					      NULL, NULL,
+					      /* frame receive async handling */
+					      NULL, NULL,
+					      /* no async channel creation */
+					      NULL, NULL);
+		
+		/* configure a faulty connection receive data handler */
+		printf ("Test 01-s: setting faulty receive..\n");
+		vortex_connection_set_receive_handler (conn, test_01s_faulty_receive);
+		
+		printf ("Test 01-s: closing connection at main thread..\n");
+		vortex_connection_close (conn);
+		printf ("Test 01-s: returned from closing connection at main thread..\n");
+
+		/* next position */
+		iterator++;
+	} /* end while */
+
+	
 	return axl_true;
 }
 
@@ -11586,7 +11653,7 @@ int main (int  argc, char ** argv)
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
 	printf ("**       Test available: test_00, test_00a, test_00b, test_00c, test_00d, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
 	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o,\n");
-	printf ("**                       test_01p, test_01q, test_01r, test_01s\n");
+	printf ("**                       test_01p, test_01q, test_01r, test_01s, test_01s1\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02m3, test_02n, test_02o, test_02p, \n");
@@ -11776,6 +11843,9 @@ int main (int  argc, char ** argv)
 
 		if (axl_cmp (run_test_name, "test_01s"))
 			run_test (test_01s, "Test 01-s", "Check connection close do not block exiting vortex or the vortex reader", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_01s1"))
+			run_test (test_01s1, "Test 01-s1", "Check connection shutdown on read while closing conn", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
@@ -12012,6 +12082,8 @@ int main (int  argc, char ** argv)
 	run_test (test_01r, "Test 01-r", "Terminating vortex from inside its handlers (frame received, connection close)", -1, -1);
 
 	run_test (test_01s, "Test 01-s", "Check connection close do not block exiting vortex or the vortex reader", -1, -1);
+
+	run_test (test_01s1, "Test 01-s1", "Check connection shutdown on read while closing conn", -1, -1);
 
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   
