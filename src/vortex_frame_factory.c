@@ -1831,6 +1831,8 @@ process_buffer:
 	} /* end if */
 #endif
 
+	/* nullify */
+
 	return frame;
 
 }

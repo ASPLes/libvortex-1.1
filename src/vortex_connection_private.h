@@ -79,6 +79,12 @@ struct _VortexConnection {
 	axl_bool     is_connected;
 
 	/** 
+	 * @internal Variable used to track if a
+	 * vortex_connection_close process is already activated.
+	 */
+	axl_bool     close_called;
+
+	/** 
 	 * @brief App level message to report current connection
 	 * status using a textual message.
 	 */

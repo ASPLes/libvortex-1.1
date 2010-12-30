@@ -1171,11 +1171,13 @@ void __vortex_reader_stop_process (VortexCtx     * ctx,
 	vortex_async_queue_unref (ctx->reader_queue);
 
 	/* unref listener connections */
+	vortex_log (VORTEX_LEVEL_DEBUG, "cleaning pending %d listener connections..", axl_list_length (ctx->srv_list));
 	ctx->srv_list = NULL;
 	axl_list_free (axl_list_cursor_list (srv_cursor));
 	axl_list_cursor_free (srv_cursor);
 
 	/* unref initiators connections */
+	vortex_log (VORTEX_LEVEL_DEBUG, "cleaning pending %d peer connections..", axl_list_length (ctx->con_list));
 	ctx->con_list = NULL;
 	axl_list_free (axl_list_cursor_list (con_cursor));
 	axl_list_cursor_free (con_cursor);

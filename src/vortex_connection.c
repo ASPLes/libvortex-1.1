@@ -455,11 +455,10 @@ axl_bool      vortex_connection_close_all_channels (VortexConnection * connectio
 
 	/* block connection operations during channel closing for this
 	 * session */
-	vortex_mutex_lock   (&connection->op_mutex);
 	switch (vortex_hash_size (connection->channels)) {
 	case 0:
 		/* no channels to close, going to close connection */
-		goto close_connection;
+		return axl_true;
 	case 1:
 		/* only the channel 0 is available, close channel
 		 * 0. */
@@ -484,9 +483,7 @@ axl_bool      vortex_connection_close_all_channels (VortexConnection * connectio
 	 * place */
 	if (vortex_hash_size (connection->channels) > 1) {
 
-		/* release lock and free connection resources */
-		vortex_mutex_unlock (&connection->op_mutex);
-
+		/* return */
 		vortex_log (VORTEX_LEVEL_WARNING, "unable to close connection, there are channels still working");
 		return axl_false;
 	}
@@ -501,16 +498,12 @@ axl_bool      vortex_connection_close_all_channels (VortexConnection * connectio
 		if (channel0 && !vortex_channel_close (channel0, NULL)) {
 			/* release lock and free connection
 			 * resources */
-			vortex_mutex_unlock (&connection->op_mutex);
-			
 			vortex_log (VORTEX_LEVEL_WARNING, "unable to close the channel 0..");
 			return axl_false;
 		}
 	}
 	
- close_connection:
 	/* release lock and free connection resources */
-	vortex_mutex_unlock (&connection->op_mutex);
 
 	return axl_true;
 
@@ -2311,6 +2304,17 @@ axl_bool                    vortex_connection_close                  (VortexConn
 	/* get a reference to the ctx */
 	ctx = connection->ctx;
 
+	/* ensure only one call to vortex_connection_close will
+	   progress */
+	vortex_mutex_lock (&connection->op_mutex);
+	if (connection->close_called) {
+		vortex_mutex_unlock (&connection->op_mutex);
+		return axl_true;
+	}
+	/* flag as connection close called */
+	connection->close_called = axl_true;
+	vortex_mutex_unlock (&connection->op_mutex);
+
 	/* close all channel on this connection */
 	if (vortex_connection_is_ok (connection, axl_false)) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "closing a connection id=%d which is already opened with %d channels opened..",
@@ -2337,6 +2341,9 @@ axl_bool                    vortex_connection_close                  (VortexConn
 
 
 			vortex_log (VORTEX_LEVEL_WARNING, "failed while closing all channels");
+
+			/* undo connection close */
+			connection->close_called = axl_false;
 			return axl_false;
 		}
 
@@ -3124,6 +3131,10 @@ void               vortex_connection_free (VortexConnection * connection)
 
 	/* free serverName */
 	axl_free (connection->serverName);
+
+	/* free posible frame and buffer */
+	axl_free (connection->buffer);
+	vortex_frame_free (connection->last_frame);
 
 	/* release reference to context */
 	vortex_ctx_unref (&connection->ctx);
@@ -4255,6 +4266,7 @@ void __vortex_connection_invoke_on_close_do_notify (VortexConnection            
 	vortex_connection_ref_internal (conn, "on-close-notification", axl_false);
 
 	/* call to notify using a thread */
+	vortex_log (VORTEX_LEVEL_DEBUG, "calling to create thread to implement on close notification for=%d", vortex_connection_get_id (conn));
 	if (! vortex_thread_create (&thread_def, (VortexThreadFunc) __vortex_connection_on_close_do_notify, data, 
 				    VORTEX_THREAD_CONF_DETACHED, VORTEX_THREAD_CONF_END)) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to start thread to do connection-id=%d close notify", vortex_connection_get_id (conn));
@@ -4288,7 +4300,7 @@ void __vortex_connection_invoke_on_close (VortexConnection * connection,
 		return;
 
 	/* lock now the op mutex is not blocked */
-	vortex_mutex_lock (&connection->op_mutex);
+	vortex_mutex_lock (&connection->handlers_mutex);
 
 	/* invoke full */
 	if (is_full) {
@@ -4306,7 +4318,7 @@ void __vortex_connection_invoke_on_close (VortexConnection * connection,
 			axl_list_unlink_first (connection->on_close_full);
 
 			/* unlock now the op mutex is not blocked */
-			vortex_mutex_unlock (&connection->op_mutex);
+			vortex_mutex_unlock (&connection->handlers_mutex);
 
 			/* invoke */
 			__vortex_connection_invoke_on_close_do_notify (connection, handler->handler, handler->data, axl_true);
@@ -4315,7 +4327,7 @@ void __vortex_connection_invoke_on_close (VortexConnection * connection,
 			axl_free (handler);
 
 			/* reacquire the mutex */
-			vortex_mutex_lock (&connection->op_mutex);
+			vortex_mutex_lock (&connection->handlers_mutex);
 		} /* end if */
 
 	} else {
@@ -4329,19 +4341,19 @@ void __vortex_connection_invoke_on_close (VortexConnection * connection,
 			axl_list_unlink_first (connection->on_close);
 
 			/* unlock now the op mutex is not blocked */
-			vortex_mutex_unlock (&connection->op_mutex);
+			vortex_mutex_unlock (&connection->handlers_mutex);
 
 			/* invoke */
 			__vortex_connection_invoke_on_close_do_notify (connection, (VortexConnectionOnCloseFull) on_close_handler, NULL, axl_false);
 
 			/* reacquire the mutex */
-			vortex_mutex_lock (&connection->op_mutex);
+			vortex_mutex_lock (&connection->handlers_mutex);
 		} /* end if */
 
 	} /* if */
 
 	/* unlock now the op mutex is not blocked */
-	vortex_mutex_unlock (&connection->op_mutex);
+	vortex_mutex_unlock (&connection->handlers_mutex);
 
 	return;
 } 
