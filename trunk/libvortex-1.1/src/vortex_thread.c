@@ -120,7 +120,7 @@ axl_bool  vortex_thread_create_internal (VortexThread      * thread_def,
 	pthread_attr_t     attr;
 #elif defined(AXL_OS_WIN32)
 	VortexThreadData * data;
-	unsigned           thread_id;
+	/* unsigned           thread_id; */
 #endif
 
 	/* do some basic checks */
@@ -173,7 +173,7 @@ axl_bool  vortex_thread_create_internal (VortexThread      * thread_def,
 		/* no init flags */
 		0,
 		/* provide a reference that we will ignore */
-		&thread_id);
+		&thread_def->id);
 	
 	if (thread_def->handle == NULL) {
 		/* free data because thread wasn't created */

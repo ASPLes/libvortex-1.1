@@ -895,8 +895,9 @@ do {\
 #define __OS_COND_TYPE__   win32_cond_t
 
 typedef struct _win32_thread_t {
-   HANDLE   handle;
-   void*    data;
+	HANDLE    handle;
+	void*     data;
+	unsigned  id;	
 } win32_thread_t;
 
 /** 
