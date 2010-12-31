@@ -82,7 +82,6 @@ vortex_channel_is_opened
 vortex_channel_is_ready
 vortex_channel_is_running_profile
 vortex_channel_is_stalled
-vortex_channel_is_up_to_date
 vortex_channel_lock_to_receive
 vortex_channel_lock_to_update_received
 vortex_channel_new
@@ -264,6 +263,7 @@ vortex_connection_set_data
 vortex_connection_set_data_full
 vortex_connection_set_default_io_handler
 vortex_connection_set_default_next_frame_size_handler
+vortex_connection_set_initial_accept
 vortex_connection_set_next_frame_size_handler
 vortex_connection_set_nonblocking_socket
 vortex_connection_set_on_close
@@ -464,7 +464,6 @@ vortex_mutex_create
 vortex_mutex_destroy
 vortex_mutex_lock
 vortex_mutex_unlock
-vortex_payload_feeder_cancel
 vortex_payload_feeder_file
 vortex_payload_feeder_free
 vortex_payload_feeder_get_content
@@ -473,6 +472,8 @@ vortex_payload_feeder_is_finished
 vortex_payload_feeder_new
 vortex_payload_feeder_pause
 vortex_payload_feeder_ref
+vortex_payload_feeder_set_on_finished
+vortex_payload_feeder_status
 vortex_payload_feeder_unref
 vortex_profiles_acquire
 vortex_profiles_cleanup
