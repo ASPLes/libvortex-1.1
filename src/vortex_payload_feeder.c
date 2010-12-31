@@ -56,8 +56,6 @@
  * required to release it. This is already done by the vortex
  * sequencer thread.
  *
- * @param ctx     The context where the feeder will be created
- *
  * @param handler The feeder handler that will define how this instance will work.
  *
  * @param user_data User defined pointer passed to the feeder handler when it is called.
@@ -65,8 +63,7 @@
  * @return A reference to the payload feeder ready to use or NULL it
  * if fails. 
  */
-VortexPayloadFeeder * vortex_payload_feeder_new (VortexCtx                * ctx,
-						 VortexPayloadFeederHandler handler,
+VortexPayloadFeeder * vortex_payload_feeder_new (VortexPayloadFeederHandler handler,
 						 axlPointer                 user_data)
 {
 	VortexPayloadFeeder * feeder;
@@ -81,9 +78,6 @@ VortexPayloadFeeder * vortex_payload_feeder_new (VortexCtx                * ctx,
 	/* init mutex and reference counting */
 	vortex_mutex_create (&feeder->mutex);
 	feeder->ref_count = 1;
-
-	/* set context */
-	feeder->ctx       = ctx;
 
 	return feeder;
 }
@@ -201,8 +195,7 @@ axl_bool __vortex_payload_feeder_file (VortexCtx               * ctx,
  * hand, as much calls are done to \ref vortex_payload_feeder_ref as much
  * as required to \ref vortex_payload_feeder_unref.
  */
-VortexPayloadFeeder * vortex_payload_feeder_file (VortexCtx  * ctx,
-						  const char * path,
+VortexPayloadFeeder * vortex_payload_feeder_file (const char * path,
 						  axl_bool     add_mime_head)
 {
 	FILE                    * file_to_feed;
@@ -233,7 +226,7 @@ VortexPayloadFeeder * vortex_payload_feeder_file (VortexCtx  * ctx,
 	state->size         = stats.st_size;
 
 	/* ok, now create the feeder */
-	return vortex_payload_feeder_new (ctx, __vortex_payload_feeder_file, state);
+	return vortex_payload_feeder_new (__vortex_payload_feeder_file, state);
 }
 
 /** 
@@ -245,12 +238,12 @@ VortexPayloadFeeder * vortex_payload_feeder_file (VortexCtx  * ctx,
  *
  * @return The pending size. The function must always return > 0.
  */
-int                   vortex_payload_feeder_get_pending_size (VortexPayloadFeeder * feeder, VortexCtx * ctx)
+int                   vortex_payload_feeder_get_pending_size (VortexPayloadFeeder * feeder)
 {
 	int      size = -1;
 	
 	/* call to get pending size */
-	feeder->handler (ctx, PAYLOAD_FEEDER_GET_SIZE, feeder, &size, NULL, feeder->user_data);
+	feeder->handler (feeder->ctx, PAYLOAD_FEEDER_GET_SIZE, feeder, &size, NULL, feeder->user_data);
 	
 	/* return size */
 	return size;
@@ -262,7 +255,6 @@ int                   vortex_payload_feeder_get_pending_size (VortexPayloadFeede
  * moment and the buffer where the content must be placed.
  */
 int                   vortex_payload_feeder_get_content (VortexPayloadFeeder * feeder, 
-							 VortexCtx           * ctx,
 							 int                   size_to_copy, 
 							 char                * buffer)
 {
@@ -272,7 +264,7 @@ int                   vortex_payload_feeder_get_content (VortexPayloadFeeder * f
 					  should continue either because 
 					  it is paused or cancel */
 	/* call to get content */
-	feeder->handler (ctx, PAYLOAD_FEEDER_GET_CONTENT, feeder, &size_to_copy, buffer, feeder->user_data);
+	feeder->handler (feeder->ctx, PAYLOAD_FEEDER_GET_CONTENT, feeder, &size_to_copy, buffer, feeder->user_data);
 	
 	/* accumulate bytes transferred */
 	if (size_to_copy > 0)
@@ -424,7 +416,7 @@ void                  vortex_payload_feeder_status      (VortexPayloadFeeder    
 		
 	/* configure data */
 	status->is_finished       = vortex_payload_feeder_is_finished (feeder);
-	status->total_size        = vortex_payload_feeder_get_pending_size (feeder, feeder->ctx);
+	status->total_size        = vortex_payload_feeder_get_pending_size (feeder);
 	status->bytes_transferred = feeder->bytes_transferred;
 	status->is_paused         = (feeder->status == -1);
 
@@ -471,7 +463,7 @@ void              vortex_payload_feeder_unref       (VortexPayloadFeeder * feede
 		return;
 
 	/* call to current implementation */
-	vortex_payload_feeder_free (feeder, feeder->ctx);
+	vortex_payload_feeder_free (feeder);
 	return;
 }
 
@@ -486,10 +478,8 @@ void              vortex_payload_feeder_unref       (VortexPayloadFeeder * feede
  * (including when the send operation fails).
  *
  * @param feeder The feeder to be released.
- * @param ctx The context where the feeder release will happen. 
  */
-void              vortex_payload_feeder_free (VortexPayloadFeeder * feeder,
-					      VortexCtx           * ctx)
+void              vortex_payload_feeder_free (VortexPayloadFeeder * feeder)
 {
 	if (feeder == NULL)
 		return;
@@ -507,7 +497,7 @@ void              vortex_payload_feeder_free (VortexPayloadFeeder * feeder,
 
 	/* call to get finished status */
 	if (feeder->handler) {
-		feeder->handler (ctx, PAYLOAD_FEEDER_RELEASE, feeder, NULL, NULL, feeder->user_data);
+		feeder->handler (feeder->ctx, PAYLOAD_FEEDER_RELEASE, feeder, NULL, NULL, feeder->user_data);
 		feeder->handler = NULL;
 	} /* end if */
 

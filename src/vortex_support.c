@@ -829,7 +829,7 @@ double   vortex_support_strtod                     (const char * param, char ** 
  * @param buffer Pointer to the buffer that will hold the result.
  * @param buffer_size The size of the buffer that will hold the result.
  *
- * Note the function does not place a \0 at the end of the number
+ * Note the function does not place a NUL char at the end of the number
  * written.
  * 
  * @return The function returns bytes written into the buffer or -1 if
