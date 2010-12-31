@@ -46,19 +46,15 @@
  * @{
  */
 
-VortexPayloadFeeder * vortex_payload_feeder_new (VortexCtx                  * ctx,
-						 VortexPayloadFeederHandler   handler,
+VortexPayloadFeeder * vortex_payload_feeder_new (VortexPayloadFeederHandler   handler,
 						 axlPointer                   user_data);
 
-VortexPayloadFeeder * vortex_payload_feeder_file (VortexCtx  * ctx,
-						  const char * path, 
+VortexPayloadFeeder * vortex_payload_feeder_file (const char * path, 
 						  axl_bool     add_mime_head);
 
-int                   vortex_payload_feeder_get_pending_size (VortexPayloadFeeder * feeder,
-							      VortexCtx           * ctx);
+int                   vortex_payload_feeder_get_pending_size (VortexPayloadFeeder * feeder);
 
-int                   vortex_payload_feeder_get_content (VortexPayloadFeeder * feeder, 
-							 VortexCtx           * ctx,
+int                   vortex_payload_feeder_get_content (VortexPayloadFeeder * feeder,
 							 int                   size_to_copy, 
 							 char                * buffer);
 
@@ -78,8 +74,7 @@ axl_bool              vortex_payload_feeder_ref         (VortexPayloadFeeder * f
 
 void                  vortex_payload_feeder_unref       (VortexPayloadFeeder * feeder);
 
-void                  vortex_payload_feeder_free        (VortexPayloadFeeder * feeder,
-							 VortexCtx           * ctx);
+void                  vortex_payload_feeder_free        (VortexPayloadFeeder * feeder);
 
 #endif
 

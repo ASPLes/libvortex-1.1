@@ -94,7 +94,7 @@ void __vortex_sequencer_unref_and_clear (VortexConnection    * connection,
 		data->channel = NULL;
 
 		/* free feeder if defined */
-		vortex_payload_feeder_free (data->feeder, CONN_CTX (connection));
+		vortex_payload_feeder_free (data->feeder);
 		data->feeder = NULL;
 	
 		/* free node */
@@ -304,7 +304,7 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
 			CHECK_AND_INCREASE_BUFFER (size_to_copy, ctx->sequencer_feeder_buffer, ctx->sequencer_feeder_buffer_size);
 
 			/* get content available at this moment to be sent */
-			size_to_copy = vortex_payload_feeder_get_content (data->feeder, ctx, size_to_copy, ctx->sequencer_feeder_buffer);
+			size_to_copy = vortex_payload_feeder_get_content (data->feeder, size_to_copy, ctx->sequencer_feeder_buffer);
 		} else {
 			vortex_log (VORTEX_LEVEL_DEBUG, "feeder cancelled, close transfer status is: %d", data->feeder->close_transfer);
 			if (! data->feeder->close_transfer) {
@@ -614,7 +614,7 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 	keep_sending:
 		/* if feeder is defined, get pending message size */
 		if (data->feeder)
-			data->message_size = vortex_payload_feeder_get_pending_size (data->feeder, ctx);
+			data->message_size = vortex_payload_feeder_get_pending_size (data->feeder);
 
 		/* refresh all sending data */
 		data->first_seq_no     = vortex_channel_get_next_seq_no (channel);

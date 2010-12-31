@@ -2244,6 +2244,9 @@ check_limit:
 		/* feeder configured, set it */
 		data->feeder = feeder;
 
+		/* set context */
+		feeder->ctx       = ctx;
+
 		/* update its transfer status to ok */
 		if (feeder->status != 0) {
 			/* regrab a reference */
@@ -2673,6 +2676,9 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 	} else {
 		/* set feeder for this send operation */
 		data->feeder = feeder;
+
+		/* set context */
+		feeder->ctx       = ctx;
 
 		/* update its transfer status to ok */
 		if (feeder->status != 0) {
