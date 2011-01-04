@@ -97,3 +97,4 @@ update-dtds:
 update-def:
 	echo "EXPORTS" > libvortex-1.1.def
 	cat .libs/libvortex-1.1.exp | grep -v io_waiting_poll | grep -v io_waiting_epoll | grep -v __vortex >> libvortex-1.1.def
+	echo "__vortex_connection_set_not_connected" >> libvortex-1.1.def
