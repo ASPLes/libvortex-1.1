@@ -577,3 +577,4 @@ vortex_thread_set_destroy
 vortex_timeval_substract
 vortex_writer_data_free
 __vortex_connection_set_not_connected
+gettimeofday
