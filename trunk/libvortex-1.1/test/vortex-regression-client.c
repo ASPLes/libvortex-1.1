@@ -10574,9 +10574,13 @@ axl_bool test_14_b (void)
 	int                channel_num;
 	VortexEventMask  * mask;
 	axlError         * error = NULL;
+	VortexAsyncQueue * sleep;
 
 	/* create an indepenent client context */
 	client_ctx = vortex_ctx_new ();
+
+	/* create the queue */
+	sleep = vortex_async_queue_new ();
 
 	/*******************************/
 	/* activate a client context   */
@@ -10719,6 +10723,9 @@ axl_bool test_14_b (void)
 		return axl_false;
 	} /* end if */
 	vortex_event_unref (event);
+
+	/* wait a bit */
+	vortex_async_queue_timedpop (sleep, 200000);
 	
 	/* check that the channel was removed */
 	if (vortex_connection_channel_exists (conn, channel_num)) {
@@ -10749,6 +10756,8 @@ axl_bool test_14_b (void)
 
 	/* terminate listener context */
 	vortex_exit_ctx (listener_ctx, axl_true);
+
+	vortex_async_queue_unref (sleep);
 
 	return axl_true;
 }
