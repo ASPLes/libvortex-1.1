@@ -162,6 +162,85 @@ VortexConnection * connection_new (void)
 	}
 }
 
+axl_bool file_cmp (const char * file1, const char * file2)
+{
+	FILE * handle1;
+	FILE * handle2;
+
+	struct stat status1;
+	struct stat status2;
+
+	char   buffer1[4096];
+	char   buffer2[4096];
+	int    size1;
+	int    size2;
+	
+	axl_bool result;
+
+
+	/* check parameter received */
+	if (file1 == NULL || file2 == NULL)
+		return axl_false;
+
+	/* get the file size */
+	memset (&status1, 0, sizeof (struct stat));
+	if (stat (file1, &status1) != 0) {
+		/* failed to get file size */
+		fprintf (stderr, "Failed to get file size for %s..\n", file1);
+		return axl_false;
+	} /* end if */
+
+	/* get the file size */
+	memset (&status2, 0, sizeof (struct stat));
+	if (stat (file2, &status2) != 0) {
+		/* failed to get file size */
+		fprintf (stderr, "Failed to get file size for %s..\n", file2);
+		return axl_false;
+	} /* end if */
+
+	/* check size */
+	if (status1.st_size != status2.st_size) {
+		fprintf (stderr, "File differs size (%d != %d)\n", (int) status1.st_size, (int) status2.st_size);
+		return axl_false;
+	} /* end if */
+
+	/* open the files */
+	handle1 = fopen (file1, "r");
+	if (handle1 == NULL) {
+		printf ("Failed to open file: %s\n", file1);
+		return axl_false;
+	}
+	handle2 = fopen (file2, "r");
+	if (handle2 == NULL) {
+		printf ("Failed to open file: %s\n", file2);
+		return axl_false;
+	}
+	
+	while (feof (handle2) == 0) {
+		/* read content */
+		size1 = fread (buffer1, 1, 4096, handle1);
+		size2 = fread (buffer2, 1, 4096, handle2);
+
+		/* check if size differs */
+		if (size1 != size2)
+			return axl_false;
+
+		if (! axl_memcmp (buffer1, buffer2, size1))
+			return axl_false;
+
+		/* next position */
+	}
+
+	/* create result */
+	result = (feof (handle1) != 0) && (feof (handle2) != 0);
+	
+	/* close the file and return the content */
+	fclose (handle1);
+	fclose (handle2);
+
+	return result;
+}
+
 /** 
  * @brief Checks current implementation for async queues.
  *
@@ -3657,7 +3736,7 @@ char * test_04_read_file (const char * file, int * size)
 	handle = fopen (file, "r");
 	if (handle == NULL) {
 		printf ("Failed to open file: %s\n", file);
-		return NULL;
+		return axl_false;
 	}
 
 	/* get the file size */
@@ -3666,7 +3745,7 @@ char * test_04_read_file (const char * file, int * size)
 		/* failed to get file size */
 		fprintf (stderr, "Failed to get file size for %s..\n", file);
 		fclose (handle);
-		return NULL;
+		return axl_false;
 	} /* end if */
 	
 	result = axl_new (char, status.st_size + 1);
@@ -3677,7 +3756,7 @@ char * test_04_read_file (const char * file, int * size)
 			 (int) status.st_size, size_read);
 		axl_free (result);
 		fclose (handle);
-		return NULL;
+		return axl_false;
 	} /* end if */
 	
 	/* close the file and return the content */
@@ -3690,26 +3769,6 @@ char * test_04_read_file (const char * file, int * size)
 	return result;
 }
 
-char * test_04_ab_gen_md5 (const char * file)
-{
-	char * result;
-	char * resultAux = NULL;
-	int    size      = 0;
-	
-	/* read file */
-	result = test_04_read_file (file, &size);
-
-#if defined(ENABLE_TLS_SUPPORT)
-	/* now create the md5 representation */
-	resultAux = vortex_tls_get_digest_sized (VORTEX_MD5, result, size);
-#else
-	printf ("Current build does not have TLS support.\n");
-#endif
-	axl_free (result);
-
-	return resultAux;
-}
-
 
 /** 
  * Common implementation for test_04_ab test
@@ -3720,8 +3779,6 @@ axl_bool  test_04_ab_common (VortexConnection * connection, int window_size, con
 	VortexAsyncQueue * queue;
 	VortexFrame      * frame;
 	char             * file_name;
-	char             * md5;
-	char             * md5Aux;
 	FILE             * file;
 	int                bytes_written;
 	int                iterator = 0;
@@ -3729,11 +3786,6 @@ axl_bool  test_04_ab_common (VortexConnection * connection, int window_size, con
 
 	if (amount_transferred)
 		(*amount_transferred) = 0;
-
-#if ! defined(ENABLE_TLS_SUPPORT)	
-	printf ("--- WARNING: Current build does not have TLS support (UNABLE TO TRANSFER).\n");
-	return axl_true;
-#endif
 
 	/* create the queue */
 	queue = vortex_async_queue_new ();
@@ -3785,10 +3837,6 @@ axl_bool  test_04_ab_common (VortexConnection * connection, int window_size, con
 	file_name = "vortex-regression-client.c";
 
  transfer_file:
-	/* create the md5 to track content transfered */
-	md5       = test_04_ab_gen_md5 (file_name);
-	if (! disable_log)
-		printf ("%sTest 04-ab:   request files: %s (md5: %s)\n", prefix ? prefix : "", file_name, md5);
 	if (! vortex_channel_send_msg (channel, file_name, strlen (file_name), NULL)) {
 		printf ("Failed to send message request to retrieve file: %s..\n", file_name);
 		return axl_false;
@@ -3846,21 +3894,14 @@ axl_bool  test_04_ab_common (VortexConnection * connection, int window_size, con
 	/* close the file */
 	fclose (file);
 
-	/* now check md5 sum */
-	md5Aux = test_04_ab_gen_md5 ("vortex-regression-client-test-04-ab.txt");
-	if (! axl_cmp (md5, md5Aux)) {
-		printf ("Content transfered is not the expected, md5 sum differs: %s != %s",
-			md5, md5Aux);
-		axl_free (md5);
-		axl_free (md5Aux);
+	/* now check if both files are equal */
+	if (! file_cmp (file_name, "vortex-regression-client-test-04-ab.txt")) {
+		printf ("Content transfered is not the expected, both files differs");
 		return axl_false;
 	}
 	
 	if (! disable_log)
 		printf ("%sTest 04-ab:   content transfered for %s ok\n", prefix ? prefix : "", file_name);
-
-	axl_free (md5);
-	axl_free (md5Aux);
 
 	/* check to transfer more files */
 	iterator++;
@@ -8470,8 +8511,6 @@ axl_bool test_04_e (void)
 	VortexAsyncQueue    * queue;
 	VortexPayloadFeeder * feeder;
 	VortexFrame         * frame;
-	char                * md5_1;
-	char                * md5_2;
 	axl_bool              reply_by_feeder = axl_false;
 
 	/* get start, stop and result */
@@ -8572,18 +8611,11 @@ get_reply_and_check:
 	/* relaese frame */
 	vortex_frame_unref (frame);
 
-	/* now check MD5 */
-	md5_1 = test_04_ab_gen_md5 ("vortex-regression-client.c");
-	md5_2 = test_04_ab_gen_md5 ("test_04_e.save");
-
-	/* check md5s..*/
-	if (! axl_cmp (md5_1, md5_2)) {
-		printf ("ERROR (8): found md5 differs..\n");
+	/* now check both files */
+	if (! file_cmp ("vortex-regression-client.c", "test_04_e.save")) {
+		printf ("ERROR (7.1): found files differs..\n");
 		return axl_false;
 	} /* end if */
-
-	axl_free (md5_1);
-	axl_free (md5_2);
 
 	/* now get the reply */
 	if (! reply_by_feeder) {
@@ -8629,7 +8661,6 @@ axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
 {
 	VortexPayloadFeeder         * feeder;
 	VortexPayloadFeederStatus     status;
-	char                        * md5_2, * md5_1;
 	unsigned int                  last_seq_no_sent;
 	VortexFrame                 * frame;
 	int                           file_size;
@@ -8743,18 +8774,11 @@ axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
 		vortex_frame_unref (frame);
 	} 
 
-	/* now check MD5 */
-	md5_1 = test_04_ab_gen_md5 (file_to_send);
-	md5_2 = test_04_ab_gen_md5 ("test_04_e.save");
-
-	/* check md5s..*/
-	if (! axl_cmp (md5_1, md5_2)) {
-		printf ("ERROR (8): found md5 differs..\n");
+	/* now check if both files are equal */
+	if (! file_cmp (file_to_send, "test_04_e.save")) {
+		printf ("ERROR (8): found files differs..\n");
 		return axl_false;
 	} /* end if */
-
-	axl_free (md5_1);
-	axl_free (md5_2);
 
 	/* get status */
 	vortex_payload_feeder_status (feeder, &status);

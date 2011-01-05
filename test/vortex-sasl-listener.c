@@ -23,8 +23,10 @@
 /* include sasl component */
 #include <vortex_sasl.h>
 
+#if defined(ENABLE_TLS_SUPPORT)
 /* include tls component */
 #include <vortex_tls.h>
+#endif
 
 #define COYOTE_PROFILE "http://fact.aspl.es/profiles/coyote_profile"
 
@@ -383,11 +385,13 @@ int  main (int  argc, char  ** argv)
 	return -1;
 #endif
 
+#if defined(ENABLE_TLS_SUPPORT)
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */
 	if (! vortex_tls_accept_negotiation (ctx, NULL, NULL, NULL)) {
 		printf ("Unable to start accepting TLS profile requests");
 	}
+#endif
 
 	/* register a profile */
 	vortex_profiles_register (ctx, COYOTE_PROFILE, 
