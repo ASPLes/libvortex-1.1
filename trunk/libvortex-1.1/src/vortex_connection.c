@@ -42,6 +42,9 @@
 /* private include */
 #include <vortex_ctx_private.h>
 
+/* include connection internal definition */
+#include <vortex_connection_private.h>
+
 #if defined(AXL_OS_UNIX)
 # include <netinet/tcp.h>
 #endif
