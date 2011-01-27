@@ -1,0 +1,352 @@
+      ###################################################
+      ##              Vortex Library 1.1.7             ##
+      ##     "Exogenesis Symphony Part 1: Overture"    ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce Vortex
+  Library 1.1.7 "Exogenesis Symphony Part 1: Overture" release
+  availability: an open source "BEEP Core" protocol implementation
+  written in C, mapped onto TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.aspl.es/vortex/py-vortex/html
+      [PyVortex homepage]
+
+    - http://www.aspl.es/turbulence
+      [Turbulence BEEP server homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+This release in short
+~~~~~~~~~~~~~~~~~~~~~
+
+  - Several improvements to make the library faster while transferring
+    content on a single channel. Used FTP/SMB as reference for LAN
+    host to host transfer. Now the library performs with similar
+    results:
+
+    Using FTP/SMB:                 26,31 secs (11660,50 KB/sec)
+    Using feeder with 32k window:  27.47 secs (11192,55 KB/sec)
+    
+    (test transfers a 300MB binary .avi file)
+
+  - Updated payload feeder API to allow cancel or pause a
+    transfer. Updated payload feeder to allow the user to install a
+    handler called when transfer finish.
+
+  - Many updates and regression tests improvements.
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  None
+
+Thanks to..
+~~~~~~~~~~~
+
+  - Gernot Siedler (reported memory leaks at ALIVE, reported wrong
+    vortex private header inclusion).
+
+  - Benoit Amiaux (Reported and fixed various compilation errors at
+    vortex reg-tests,
+
+  - Ralf Konush (Reported vortex crash on crafted BEEP frames without
+    MIME header and no \n or \r\n at the content, Reported missing
+    symbols at libvortex-1.1.def).
+
+Changes since 1.1.6
+~~~~~~~~~~~~~~~~~~~
+
+* [fix] Fixed memory leak at alive implementation when connection
+  ref count update fails. Reported by Gernot Seidler.
+
+* [fix] Fixed various compilation warnings at vortex regression test
+  suite. Reported and fixed by Benoit Amiaux. 
+
+* [fix] Updated PyVortex sending API to allow providing -1 as content
+  size to allow the function to deduce the content size to send to
+  properly send unicode strings which provides character length size
+  but not byte level size. Added test_25 to reproduce the bug and
+  check the fix introduced.
+
+* [new] Adding initial implementation for a circular blocking support
+  byte buffer which will be used by vortex payload feeder to improve
+  file transfer performance. API added:
+
+   - vortex_cbuffer_new
+   - vortex_cbuffer_is_empty
+   - vortex_cbuffer_size
+   - vortex_cbuffer_available_bytes
+   - vortex_cbuffer_put
+   - vortex_cbuffer_get
+   - vortex_cbuffer_free
+
+* [fix] Many improvements into VortexCBuffer implementation. Added
+  initial working regression test to check its function. Still more
+  work is required.
+
+* [fix] More updates to circular byte buffer (VortexCBuffer). More
+  updates to regression test (test_00d). Still more work is required.
+
+* [fix] More updates to vortex cbuffer implementation. Still more work
+  required.
+
+* [fix] More fixings and updates to vortex cbuffer
+  implementation. Also updated reg test. Still more work required.
+
+* [fix] More fixings to VortexCBuffer structure. Updated regression
+  test test_00-d to include more checks. The structure is not
+  properly working. NICE!
+
+* [fix] Adding initial patches to integrate VortexCBuffer into payload
+  file feeder. API added:
+
+  - vortex_payload_feeder_file_set_buffer
+
+  Still more work is required.
+
+* [fix] Reimplemented vortex_cbuffer_is_empty to use internally
+  vortex_cbuffer_available_bytes.
+
+* [new] Updated VortexPayloadFeeder implementation to support thread
+  safe reference counting. API added:
+
+   - vortex_payload_feeder_ref
+   - vortex_payload_feeder_unref
+
+* [new] Finished initial working support to include a circular buffer
+  (VortexCBuffer) inside the vortex payload feeder from file to allow
+  doing all I/O during the wait until next SEQ frame is received.
+
+* [fix] Updated test_04e regression test to check transferring
+  content.
+
+* [fix] Updated vortex-file-transfer-client.c to allow configuring its
+  different options through command line parameters.
+  
+  Using a payload feeder with an configured buffer. 
+
+* [fix] Several modifications to vortex payload feeder.
+  
+* [fix] Dropping lot of work invested in vortex_cbuffer.[hc]. It is
+  working fast and so, but it does not fix the issue. Updated vortex
+  payload feeder integration with vortex_cbuffer. Regression tests and
+  additional checks shows little or no improvement after
+  integrating VortexCBuffer.
+
+* [fix] Removed call to memset inside epoll initialization at vortex
+  io module.
+
+* [fix] Removing all references to VortexCBuffer.
+
+* [fix] More updates to remove vortex cbuffer.
+
+* [fix] Adding additional #if #endif conditionals to remove debug code
+  that won't be run because it is behind of vortex_log_is_enabled and
+  similar functions.
+
+* [fix] Removing reply_processed code from vortex channel which is now
+  no longer required. Flagged vortex_channel_flag_reply_processed as
+  deprecated. Checked regression test. Everything ok.
+
+* [fix] Some updates to make vortex-file-transfer-server.c 
+  to be able to read binary files on windows platform.
+
+* [fix] Minimal updates to vortex-file-transfer-server.c to allow
+  selecting the file to serve.
+
+* [fix] Moved VortexConnection object definition to
+  vortex_connection_private.h so it can be used internally from other
+  vortex modules.  Updated definition to include reader_unwatch and
+  initial_accept to avoid using vortex_connection_get_data to check
+  those values.
+
+* [fix] Updated vortex_frame_readline implementation to avoid using
+  vortex_connection_get_data to store half read lines but to use a
+  fixed pointer stored associated into the connection. Code updated to
+  not require using memset (0).
+
+* [new] Updated vortex connection API to include a function that
+  reports if a connection is in BEEP half opened state:
+
+   - vortex_connection_half_opened.
+
+* [fix] Removed not required debug message at
+  __vortex_frame_get_next_id.
+
+* [fix] Making internal content allocation for vortex_frame_get_next
+  to use malloc (instead of calloc) to improve performance (by not
+  calling to memset) which is not required since the function returns
+  complete and checked frames.
+
+* [fix] VortexConnection internal implementation updates to use
+  seq_frames_disabled and pre_accept_handler internal variables
+  instead of storing them into the vortex connection data hash.
+
+* [fix] More updates to move internal variables used by
+  vortex_frame_get_next to track status that were using
+  vortex_connection_set/get_data.
+
+* [fix] Updating some calls to axl_new replaced by malloc to avoid
+  memset stuff at channel and thread pool module.
+
+* [fix] General updates applied to
+  vortex_frame_build_up_from_params_s_buffer to avoid using
+  axl_stream_printf_buffer which is too heavy, replacing that call
+  with vortex_frame_build_header which implements the same operation
+  but consuming 40% less time.
+
+* [fix] Updating vortex-file-transfer-client.c to include an ellapsed
+  time for the transfer.
+
+* [fix] Making SEQ frame generation to use vortex_frame_build_header
+  to improve performance.
+
+* [fix] Fixed compilation warnings for test_00d under 32bit platforms.
+
+* [fix] Fixed test_01-r which was finishing a connection twice.
+
+* [fix] Fixed funny bug that was causing to crash mime processing when
+  channel complete flag was disabled and the latest frame do not
+  contains a \n or \r\n causing an internal iterator to read memory
+  not allowed. Reported by Ralf Konush.
+
+* [fix] Added initial code to allow cancelling or pausing a feeder
+  transfer.
+
+* [fix] Updating release..
+
+* [fix] More updates on adding support to cancel and pause feeder.
+
+* [fix] Updated internal call vortex_payload_feeder_is_finish to avoid
+  requiring ctx (which is now provided by the feeder itself).
+
+* [new] Added initial support to get a finish notification by a
+  handler when a feeder transfer is done. API added:
+
+   - VortexPayloadFeederFinishedHandler
+   - vortex_payload_feeder_set_on_finished
+
+* [fix] More updates to cancel and pause support. Added initial
+  regression test (test-04-f) to check this new support.
+
+* [fix] More updates on adding support to cancel or pause payload
+  feeder transfers.
+
+* [fix] Web updates to include cybiet and cybex references.
+
+* [fix] More updates to support payload feeder
+  cancelling/pausing. Removed vortex_payload_feeder_cancel since it
+  provides same function as pause.  Still more work is required.
+
+* [fix] Finished initial working support to pause/cancel a payload
+  feeder transfer.
+
+* [fix] Updated internal vortex channel module code to remove
+  last_message_sent and last_message_received, replacing/updating code
+  to use outstanding_msg list.
+
+* [fix] Removed internal function vortex_channel_is_up_to_date.
+
+* [fix] Updated vortex_payload_feeder_unref to not require a ctx
+  parameter which is already provided at the creation time (and
+  internally stored).
+
+* [fix] Removed code not required at vortex reader which was commented
+  out previously.
+
+* [fix] Fixed bug that was causing vortex to lock forever in the case
+  a vortex_connection_close call is issued and a wrong reply or
+  connection lost happens at the right time when the vortex reader was
+  calling to vortex_frame_get_next and in the case this function was
+  the first to detect a connection failure. Added regression test
+  test_01s1.
+
+* [fix] Added internal call vortex_connection_set_initial_accept to
+  allow turbulence to handle connections on childs.
+
+* [fix] Updated payload feeder implementation to acquire a reference to
+  the channel that was used to do the transfer.
+
+* [new] Added working support to notify feeder finished transfer.  API
+  added:
+
+   - vortex_payload_feeder_set_on_finished
+   - VortexPayloadFeederFinishedHandler
+
+  Updated regression test (test_04f) to check proper notification.
+
+* [new] Updated payload feeder API to include a function to get stats
+  and status for a particular feeder. API added:
+
+   - vortex_payload_feeder_status
+   - VortexPayloadFeederStatus
+
+  Updated regression test (test_04f) to check values returned.
+
+* [fix] Fixed test_01r which was deadlocking on windows. Updated
+  vortex thread win32 implementation to record thread Id to compare
+  this value against current thread id on thread termination.
+
+* [fix] Fixed documentation (vortex payload feeder updates).
+
+* [fix] Updated vortex payload feeder to remove required VortexCtx
+  parameter which now it is set when the feeder is actually used
+  (avoid confusion when several VortexCtx are available).
+
+* [fix] Adding __vortex_connection_set_not_connected to
+  libvortex-1.1.def to allow libvortex-http-1.1 component to compile
+  on windows. Reported by Ralf Konush.
+
+* [fix] Making gettimeofday to be included into libvortex-1.1.def
+  file.  Reported by Ralf Konush.
+
+* [fix] Updated test 14-b to introduce a micro delay to ensure
+  channels not available check to succeed. Reported by Ralf Konush.
+
+* [fix] Several updates to ensure regression tests can run more tests
+  even without having TLS (md5 was used for file checking).
+
+* [fix] Removed private header vortex_connection_private.h to
+  vortex_connection.c Reported by Gernot Seidler.
+
+* [fix] Nullify mutex handler after closing it on windows. Reported
+  and fixed by Thomas Unterleitner.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organizations to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+27th jan 2011, Madrid (Spain)
