@@ -464,12 +464,14 @@ axl_bool  vortex_mutex_destroy (VortexMutex       * mutex_def)
 #if defined(AXL_OS_WIN32)
 	/* close the mutex */
 	CloseHandle (*mutex_def);
+	(*mutex_def) = NULL;
 #elif defined(AXL_OS_UNIX)
 	/* close the mutex */
 	if (pthread_mutex_destroy (mutex_def) != 0) {
 		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to destroy the mutex (system call pthread_mutex_destroy have failed)"); */
 		return axl_false;
 	} /* end if */
+	
 #endif
 	/* mutex closed */
 	return axl_true;
