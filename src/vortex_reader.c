@@ -414,7 +414,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 
 		/* signal vortex sequencer to start re-sequencing
 		 * previous hold messages on the channel updated */
-		vortex_sequencer_signal_update (channel);
+		vortex_sequencer_signal_update (channel, connection);
 		return;
 	default:
 		/* do not make nothing (only checking msgno and

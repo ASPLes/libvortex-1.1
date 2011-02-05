@@ -567,7 +567,7 @@ axl_bool  test_00a (void)
 	/* get started threads */
 	vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
 	if (started_threads != 6) {
-		printf ("ERROR (2): expected to find 26 thread running but found: %d..\n", 
+		printf ("ERROR (2): expected to find 6 thread running but found: %d..\n", 
 			started_threads);
 		return axl_false;
 	} /* end if */
