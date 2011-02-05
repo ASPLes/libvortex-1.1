@@ -491,7 +491,7 @@ axl_bool vortex_sequencer_check_status_and_get_references (VortexCtx            
 	 * operation to avoid unrefering (vortex_connection_unref) a connection not 
 	 * referred (vortex_connection_ref).
 	 */
-	(*connection) = vortex_channel_get_connection ((*channel));
+	(*connection) = data->conn;
 	if ((*connection) != NULL && ! vortex_connection_ref ((*connection), "(vortex sequencer)")) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
 			    "detectd message to be sequenced over a channel installed on a non connected session, dropping message");
@@ -898,7 +898,8 @@ axl_bool      vortex_sequencer_direct_send (VortexConnection * connection,
  * 
  * @param channel The channel to notify
  */
-void     vortex_sequencer_signal_update        (VortexChannel       * channel)
+void     vortex_sequencer_signal_update        (VortexChannel       * channel,
+						VortexConnection    * connection)
 {
 	/* get current context */
 	VortexCtx           * ctx = vortex_channel_get_ctx (channel);
@@ -918,6 +919,7 @@ void     vortex_sequencer_signal_update        (VortexChannel       * channel)
 		data->resequence           = axl_true;
 		data->channel_num          = vortex_channel_get_number (channel);
 		data->channel              = channel;
+		data->conn                 = connection;
 	
 		/* queue data */
 		vortex_log (VORTEX_LEVEL_DEBUG, 

@@ -4345,7 +4345,7 @@ axl_bool            vortex_channel_ref                             (VortexChanne
 	vortex_mutex_unlock (&channel->ref_mutex);
 
 	/* reference increased */
-	return axl_true;
+	return channel->ref_count >= 2;
 }
 
 /** 
