@@ -546,6 +546,26 @@ static PyObject * py_vortex_tls_accept_tls (PyObject * self,
 	return Py_BuildValue ("i", result);
 }
 
+static PyObject * py_vortex_tls_is_enabled (PyObject * self, PyObject * args)
+{
+	PyObject * py_conn = NULL;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "O", &py_conn))
+		return NULL;
+
+	/* check connection object */
+	if (! py_vortex_connection_check (py_conn)) {
+		/* set exception */
+		PyErr_SetString (PyExc_TypeError, "Expected to receive a vortex.Connection object but received something different");
+		return NULL;
+	} /* end if */
+	
+	/* call to return value */
+	return Py_BuildValue ("i", vortex_connection_is_tlsficated (py_vortex_connection_get (py_conn)));
+}
+
+
 static PyMethodDef py_vortex_tls_methods[] = { 
 	/* init */
 	{"init", (PyCFunction) py_vortex_tls_init, METH_VARARGS,
@@ -554,6 +574,8 @@ static PyMethodDef py_vortex_tls_methods[] = {
 	 "Starts TLS process on the provided connection (vortex_tls_start_negotiation wrapper)."},
 	{"accept_tls", (PyCFunction) py_vortex_tls_accept_tls, METH_VARARGS | METH_KEYWORDS,
 	 "Enables accepting incoming TLS requests. This is used by server side BEEP peers to accept incoming TLS requests."},
+	{"is_enabled", (PyCFunction) py_vortex_tls_is_enabled, METH_VARARGS | METH_KEYWORDS,
+	 "Allows to check if the provided connection object has sucessfully started TLS over the session (see vortex_connection_is_tlsficated)."},
 	/* is_authenticated */
 	{NULL, NULL, 0, NULL}   /* sentinel */
 }; 

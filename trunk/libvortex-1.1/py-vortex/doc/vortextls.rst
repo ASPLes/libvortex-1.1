@@ -55,7 +55,6 @@ Module API
    :param tls_notify_data: User defined data that will notified along with corresponding data at tls notify handler.
    :type  tls_notify_data: object
 
-   
 
 .. function:: accept_tls (ctx, [accept_handler], [accept_handler_data], [cert_handler], [cert_handler_data], [key_handler], [key_handler_data])
 
@@ -83,6 +82,11 @@ Module API
    :type  key_handler_data: object
 
    
+.. function:: is_enabled (conn)
 
+   Allows to check if the provided connection has successfully activated TLS profile
+
+   :param conn: the connection to check for TLS activation.
+   :type conn: vortex.Connection
    
 
