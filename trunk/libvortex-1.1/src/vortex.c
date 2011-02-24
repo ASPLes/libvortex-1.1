@@ -689,19 +689,14 @@ void _vortex_log_common (VortexCtx        * ctx,
 	int    use_log_mutex = axl_false;
 	char * log_string;
 
-	if (ctx == NULL) {
-#if defined (__GNUC__)
-		fprintf (stdout, "\e[1;31m!!! CONTEXT NOT DEFINED !!!\e[0m: ");
-#else
-		fprintf (stdout, "!!! CONTEXT NOT DEFINED !!!: ");
-#endif /* __GNUC__ */
-		goto ctx_not_defined;
-	}
-
 	/* if not VORTEX_DEBUG FLAG, do not output anything */
 	if (! vortex_log_is_enabled (ctx)) {
 		return;
 	} /* end if */
+
+	if (ctx == NULL) {
+		goto ctx_not_defined;
+	}
 
 	/* check if debug is filtered */
 	if (vortex_log_filter_is_enabled (ctx)) {
