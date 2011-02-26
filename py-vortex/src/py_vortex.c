@@ -806,6 +806,16 @@ void py_vortex_handle_and_clear_exception (PyObject * py_conn)
 		if (py_vortex_exception_handler) {
 			/* remove trailing \n */
 			str[strlen (str) - 1] = 0;
+
+			/* clear all % to avoid printf problems to the
+			   handler */
+			iterator = 0;
+			while (str[iterator])  {
+				if (str[iterator] == '%')
+					str[iterator] = '#';
+				iterator++;
+			} /* end while */
+
 			py_vortex_exception_handler (str);
 		} else if (_py_vortex_log_enabled) {
 			str[strlen (str) - 1] = 0;
