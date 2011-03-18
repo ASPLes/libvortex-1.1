@@ -1186,7 +1186,16 @@ typedef enum {
 typedef enum {
 	/** 
 	 * @brief Notifies the feed handler that it must return total
-	 * amount of bytes pending to be send.
+	 * amount of bytes pending to be send. 
+	 *
+	 * Currently PAYLOAD_FEEDER_GET_SIZE should return the entire
+	 * message that was meant to be sent...however you can play
+	 * with feeder by "increasing" dynamically this value (always
+	 * increasing) if you want to send more content than the one
+	 * initially expected.
+	 *
+	 * As conclusion, you can always return the entire message or
+	 * a bigger value then the last reported.
 	 */
 	PAYLOAD_FEEDER_GET_SIZE = 1,
 	/** 

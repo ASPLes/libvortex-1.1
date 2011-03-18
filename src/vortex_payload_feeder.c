@@ -56,6 +56,8 @@
  * required to release it. This is already done by the vortex
  * sequencer thread.
  *
+
+ *
  * @param handler The feeder handler that will define how this instance will work.
  *
  * @param user_data User defined pointer passed to the feeder handler when it is called.

@@ -3784,6 +3784,17 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * vortex_payload_feeder_new to create a feeder object governed by
  * that handler.
  *
+ * A VortexPayloadFeeder represents a single message, so, triggering a
+ * single operation with a feeder results into a single message
+ * delivered to the remote peer (that may or may not be fragmented,
+ * see next), which would be the same results as sending a single ANS
+ * with the entire message.
+ *
+ * In the other hand, you might want to check \ref
+ * vortex_channel_set_complete_flag to enable fragmentation (or
+ * disable complete frame delivery) so even if the message is
+ * fragmented, you get all pieces notified at the frame received as
+ * they come.
  *
  * \section vortex_manual_securing_your_session 5.1 Securing a Vortex Connection (or How to use the TLS profile)
  * 
