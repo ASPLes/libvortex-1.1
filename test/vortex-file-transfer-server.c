@@ -25,8 +25,11 @@
 /* profile that sends the big file using a single MSG */
 #define FILE_TRANSFER_URI_WITH_MSG "http://www.aspl.es/vortex/profiles/file-transfer/bigmessage"
 
-/* profile that sends the big file using a single MSG */
+/* profile that sends the big file using a single MSG sent with a feeder */
 #define FILE_TRANSFER_URI_WITH_FEEDER "http://www.aspl.es/vortex/profiles/file-transfer/feeder"
+
+/* profile that sends the big file using a ANS/NUL sent with a feeder */
+#define FILE_TRANSFER_URI_WITH_ANS_FEEDER "http://www.aspl.es/vortex/profiles/file-transfer/ans-feeder"
 
 /* file to transfer */
 const char * file_to_transfer = NULL;
@@ -182,10 +185,42 @@ void frame_received_with_feeder (VortexChannel    * channel,
 	feeder = vortex_payload_feeder_file (file_to_transfer, axl_false);
 
 	/* send rpy */
-	if (! vortex_channel_send_rpy_from_feeder (channel, feeder, vortex_frame_get_msgno (frame))) {
-		printf ("ERROR: failed to send RPY using feeder..\n");
-		return;
-	} /* end if */
+	if (user_data == NULL) {
+		printf ("SERVER: sending with a single feeder RPY...\n");
+		if (! vortex_channel_send_rpy_from_feeder (channel, feeder, vortex_frame_get_msgno (frame))) {
+			printf ("ERROR: failed to send RPY using feeder..\n");
+			return;
+		} /* end if */
+	} else if (axl_cmp (user_data, "ansfeeder")) {
+		printf ("SERVER: sending with a several ANS/NUL RPY...\n");
+
+		printf ("SERVER: ..1/3..\n");
+		if (! vortex_channel_send_ans_rpy_from_feeder (channel, feeder, vortex_frame_get_msgno (frame))) {
+			printf ("ERROR: failed to send ANS using feeder..\n");
+			return;
+		} /* end if */
+
+		/* create the feeder */
+		printf ("SERVER: ..2/3..\n");
+		feeder = vortex_payload_feeder_file (file_to_transfer, axl_false);
+		if (! vortex_channel_send_ans_rpy_from_feeder (channel, feeder, vortex_frame_get_msgno (frame))) {
+			printf ("ERROR: failed to send ANS using feeder..\n");
+			return;
+		} /* end if */
+
+		/* create the feeder */
+		printf ("SERVER: ..3/3..\n");
+		feeder = vortex_payload_feeder_file (file_to_transfer, axl_false);
+		if (! vortex_channel_send_ans_rpy_from_feeder (channel, feeder, vortex_frame_get_msgno (frame))) {
+			printf ("ERROR: failed to send ANS using feeder..\n");
+			return;
+		} /* end if */
+
+		if (! vortex_channel_finalize_ans_rpy (channel, vortex_frame_get_msgno (frame))) {
+			printf ("ERROR: failed to send final NUL reply..\n");
+			return;
+		}
+	}
 
 	return;
 }
@@ -224,7 +259,7 @@ int  main (int  argc, char ** argv)
 	} /* end if */
 
 	if (argc < 2) {
-		printf ("ERROR: Not provided a file to serve..\n");
+		printf ("ERROR: Not provided a file to serve, use:\n    ./vortex-file-transfer-server FILE-TO-SERVE..\n");
 		exit (-1);
 	}
 
@@ -254,6 +289,12 @@ int  main (int  argc, char ** argv)
 				  start_channel, NULL, 
 				  close_channel, NULL,
 				  frame_received_with_feeder, NULL);
+
+	/* register profile */
+	vortex_profiles_register (ctx, FILE_TRANSFER_URI_WITH_ANS_FEEDER,
+				  start_channel, NULL, 
+				  close_channel, NULL,
+				  frame_received_with_feeder, "ansfeeder");
        
 	/* create a vortex server */
 	vortex_listener_new (ctx, "0.0.0.0", "44017", NULL, NULL);

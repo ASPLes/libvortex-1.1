@@ -186,7 +186,7 @@ vortex_file_transfer_server_SOURCES   = vortex-file-transfer-server.c
 vortex_file_transfer_server_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.1.la
 
 vortex_file_transfer_client_SOURCES   = vortex-file-transfer-client.c
-vortex_file_transfer_client_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.1.la
+vortex_file_transfer_client_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.1.la $(TLS_SUPPORT_LIBS)
 
 vortex_pull_listener_SOURCES   = vortex-pull-listener.c
 vortex_pull_listener_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.1.la $(top_builddir)/pull/libvortex-pull-1.1.la

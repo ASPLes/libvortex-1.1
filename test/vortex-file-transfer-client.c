@@ -18,6 +18,10 @@
 
 #include <vortex.h>
 
+#if defined(ENABLE_TLS_SUPPORT)
+#include <vortex_tls.h>
+#endif
+
 /* profile that sends the big file using ANS/NUL reply */
 #define FILE_TRANSFER_URI "http://www.aspl.es/vortex/profiles/file-transfer"
 
@@ -26,6 +30,9 @@
 
 /* profile that sends the big file using a single MSG */
 #define FILE_TRANSFER_URI_WITH_FEEDER "http://www.aspl.es/vortex/profiles/file-transfer/feeder"
+
+/* profile that sends the big file using a ANS/NUL sent with a feeder */
+#define FILE_TRANSFER_URI_WITH_ANS_FEEDER "http://www.aspl.es/vortex/profiles/file-transfer/ans-feeder"
 
 /* the file name to save */
 #define FILE_TO_TRANSFER "/tmp/file.2" 
@@ -38,22 +45,22 @@ FILE      * file;
 /* listener context */
 VortexCtx * ctx = NULL;
 
+axl_bool ansnulfeeder = axl_false;
+axl_bool ansnulfeeder_count = 0;
+
 void frame_received (VortexChannel    * channel,
 		     VortexConnection * connection,
 		     VortexFrame      * frame,
 		     axlPointer         user_data)
 {
 	int    bytes_written;
-/*	char * md5; */
+#if defined(ENABLE_TLS_SUPPORT)
+	char * md5; 
+#endif
 
 	/* check for the last nul frame */
 	if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
-		if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_NUL) {
-			printf ("Expected to find NUL terminator message, but found: %d frame type\n",
-				vortex_frame_get_type (frame));
-			return;
-		} /* end if */
-		
+			
 		/* check size */
 		if (vortex_frame_get_payload_size (frame) != 0) {
 			printf ("Expected to find NUL terminator message, with empty content, but found: %d frame size\n",
@@ -66,13 +73,22 @@ void frame_received (VortexChannel    * channel,
 		return;
 	} /* end if */
 
+	if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ANS) {
+		printf ("ANS RECEIVED (%d)\n", vortex_frame_get_ansno (frame));
+	}
+
 	/* dump content to the file */
-/*	md5           = vortex_tls_get_digest_sized (VORTEX_MD5, vortex_frame_get_payload (frame), vortex_frame_get_payload_size (frame)); */
+#if defined(ENABLE_TLS_SUPPORT)
+	md5           = vortex_tls_get_digest_sized (VORTEX_MD5, vortex_frame_get_payload (frame), vortex_frame_get_payload_size (frame)); 
+	printf ("MD5 CONTENT: %s (from total bytes %d)\n", md5, vortex_frame_get_payload_size (frame));
+#endif
 	bytes_written = fwrite (vortex_frame_get_payload (frame), 1, vortex_frame_get_payload_size (frame), file); 
 /*	printf ("Written frame content: ansno=%d, size=%d, seqno=%u\n", vortex_frame_get_ansno (frame), bytes_written, vortex_frame_get_seqno (frame));   
 	printf ("        Is nul frame: %d\n", vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL); */
 	
-/*	axl_free (md5); */
+#if defined(ENABLE_TLS_SUPPORT)
+	axl_free (md5); 
+#endif
 
 /*	if (vortex_frame_get_seqno (frame) == 1240) {
 		vortex_log_enable (CONN_CTX (connection), axl_true);
@@ -134,7 +150,7 @@ int  main (int  argc, char ** argv)
 	struct timeval    stop;
 	struct timeval    result;
 
-	printf ("Usage:    ./vortex-file-transfer-client [--server=hostname] [bigmsg|feeder|ansnul]\n");
+	printf ("Usage:    ./vortex-file-transfer-client [--server=hostname] [bigmsg|feeder|ansnul|ansnulfeeder]\n");
 	printf ("Usage:                                  [--transfer-count=transfer_count]\n");
 	printf ("Usage:                                  [--window-size=window_size]\n");
 	printf ("Examples: \n");
@@ -172,6 +188,8 @@ int  main (int  argc, char ** argv)
 			format = "feeder";
 		} else if (axl_cmp (argv[iterator], "ansnul")) {
 			format = "ansnul";
+		} else if (axl_cmp (argv[iterator], "ansnulfeeder")) {
+			format = "ansnulfeeder";
 		} else if (axl_memcmp (argv[iterator], "--transfer-count=", 17)) {
 			/* configure transfer count */
 			transfer_count = atoi (argv[iterator] + 17);
@@ -226,6 +244,17 @@ int  main (int  argc, char ** argv)
 		printf ("Creating channel with ANS/NUL pattern..\n");
 		channel = vortex_channel_new (connection, 0,
 					      FILE_TRANSFER_URI,
+					      /* no close handling */
+					      NULL, NULL,
+					      /* frame received */
+					      frame_received, queue,
+					      /* no async channel creation */
+					      NULL, NULL);
+	} else 	if (axl_cmp (format, "ansnulfeeder")) {
+		printf ("Creating channel with ANS/NUL FEEDER pattern..\n");
+		ansnulfeeder = axl_true;
+		channel = vortex_channel_new (connection, 0,
+					      FILE_TRANSFER_URI_WITH_ANS_FEEDER,
 					      /* no close handling */
 					      NULL, NULL,
 					      /* frame received */
