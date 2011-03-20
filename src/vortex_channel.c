@@ -6318,10 +6318,6 @@ axl_bool  vortex_channel_notify_start_internal (const char       * serverName,
 	   reference to be invalid */
 	vortex_channel_ref (new_channel);
 
-	/* notify here channel added */
-	vortex_log (VORTEX_LEVEL_DEBUG, "Calling to notify channel=%d added to connection id=%d", new_channel->channel_num, vortex_connection_get_id (conn));
-	__vortex_connection_check_and_notify (conn, new_channel, axl_true);
-
 	/* build start reply here using the optional content profile
 	 * reply */
 	start_rpy = vortex_frame_get_start_rpy_message (profile, profile_content_reply);
@@ -6332,6 +6328,10 @@ axl_bool  vortex_channel_notify_start_internal (const char       * serverName,
 		vortex_log (VORTEX_LEVEL_DEBUG, "an error have happen while sending start channel reply, closing channel");
 		result = axl_false;
 	} 
+
+	/* notify here channel added */
+	vortex_log (VORTEX_LEVEL_DEBUG, "Calling to notify channel=%d added to connection id=%d", new_channel->channel_num, vortex_connection_get_id (conn));
+	__vortex_connection_check_and_notify (conn, new_channel, axl_true);
 
 	/* free start reply */
 	axl_free (start_rpy);
