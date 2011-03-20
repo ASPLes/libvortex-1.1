@@ -1003,6 +1003,7 @@ void added_channel_fast_send (VortexChannel * channel, axlPointer user_data)
 		}
 		printf ("Messages sent..ok\n");
 	}
+	return;
 }
 
 axl_bool  on_accepted_fast_send (VortexConnection * connection, axlPointer data)
