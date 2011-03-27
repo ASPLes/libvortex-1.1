@@ -1779,8 +1779,57 @@ void            vortex_channel_set_received_handler (VortexChannel * channel,
  *    
  * \endcode
  *
+ * <b>Notes about MIME and how it applies to automatic vortex MIME processing:</b>
+ *
+ * If you disable complete flag, a side effect is that you'll receive
+ * the raw MIME message without any processing. This implies that, if
+ * the sender peer didn't configure any MIME header then you'll
+ * receive an additional \\r\\n along with payload. In the case the
+ * sender peer did configure a set of MIME header, they will be
+ * received along with the payload without automatic MIME header
+ * processing and payload (MIME body) separation.
+ *
+ * This is because any message you send with BEEP should be
+ * MIME. Vortex adds to your message a \\r\\n if you don't configure any
+ * MIME header, so remote BEEP peer finds your message properly
+ * formated (even if you don't care about MIME).
+ * 
+ * Now, at the remote side the BEEP peer should process the message as
+ * MIME and, in the case of vortex, this is done automatically placing
+ * a reference to the MIME body (actually your message if you didn't
+ * configure any mime header) that is returned by \ref
+ * vortex_frame_get_payload, and a reference to the entire message
+ * returned by \ref vortex_frame_get_content (raw MIME header + actual payload).
+ *
+ * However, this don't applies to channels with complete flag set to
+ * false because vortex can't know where to start and finish the MIME
+ * processing because it only has fragments (not the entire message)
+ * so, MIME processing is disabled (also because other security
+ * implications..), causing \ref vortex_frame_get_payload to return the
+ * same as \ref vortex_frame_get_content, that is, the entire message: \\r\\n
+ * + your payload.
+ *
+ * If you still want to process MIME for a particular frame, you can
+ * use \ref vortex_frame_mime_process.
+ *
+ * <b>And, easy solution for people not using MIME to avoid receiving \\r\\n?</b><br>
+ *
+ * You can just skip those bytes by using the following (assuming
+ * empty MIME headers):
+ *
+ * \code
+ * // how to get a reference to payload skipping empty mime headers
+ * value = vortex_frame_get_payload (frame) + 2
+ *
+ * // remember to reduce frame payload size
+ * size  = vortex_frame_get_payload_size (frame) - 2
+ * \endcode
+ * 
+ *
  * @param channel the channel to configure.
- * @param value axl_true activate complete flag, axl_false deactivates it.
+ *
+ * @param value axl_true activate complete flag, axl_false deactivates
+ * it.
  */
 void               vortex_channel_set_complete_flag            (VortexChannel * channel,
 								axl_bool        value)
