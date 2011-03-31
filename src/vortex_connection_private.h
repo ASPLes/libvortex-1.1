@@ -58,6 +58,7 @@ struct _VortexConnection {
 	 * @brief Host name this connection is actually connected to.
 	 */
 	char       * host;
+	char       * host_ip;
 
 	/** 
 	 * @brief Port this connection is actually connected to.

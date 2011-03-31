@@ -225,6 +225,8 @@ void                vortex_connection_remove_channel_common  (VortexConnection *
 
 const char        * vortex_connection_get_host               (VortexConnection * connection);
 
+const char        * vortex_connection_get_host_ip            (VortexConnection * connection);
+
 const char        * vortex_connection_get_port               (VortexConnection * connection);
 
 const char        * vortex_connection_get_local_addr         (VortexConnection * connection);

@@ -3037,6 +3037,7 @@ void               vortex_connection_free (VortexConnection * connection)
 		connection->host       = NULL;
 		connection->local_addr = NULL;
 	}
+	axl_free (connection->host_ip);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing connection port id=%d", connection->id);
 
@@ -4098,6 +4099,46 @@ const char         * vortex_connection_get_host             (VortexConnection * 
 		return NULL;
 
 	return connection->host;
+}
+
+/** 
+ * @brief Allows to get the actual host ip this connection is
+ * connected to.
+ *
+ * This function works like \ref vortex_connection_get_host_ip but
+ * returning the actual ip in the case a name was used.
+ *
+ * @return A reference to the IP or NULL if it fails.
+ */
+const char        * vortex_connection_get_host_ip            (VortexConnection * connection)
+{
+	struct sockaddr_in     sin;
+#if defined(AXL_OS_WIN32)
+	/* windows flavors */
+	int                    sin_size     = sizeof (sin);
+#else
+	/* unix flavors */
+	socklen_t              sin_size     = sizeof (sin);
+#endif
+	/* acquire lock to check if host ip was defined previously */
+	vortex_mutex_lock (&connection->op_mutex);
+	if (connection->host_ip) {
+		vortex_mutex_unlock (&connection->op_mutex);
+		return connection->host_ip;
+	} /* end if */
+
+	/* get actual IP value */
+	if (getpeername (connection->session, (struct sockaddr *) &sin, &sin_size) < -1) {
+		vortex_mutex_unlock (&connection->op_mutex);
+		return NULL;
+	} /* end if */
+
+	/* set local addr and local port */
+	connection->host_ip = vortex_support_inet_ntoa (connection->ctx, &sin);
+
+	/* unlock and return value created */
+	vortex_mutex_unlock (&connection->op_mutex);
+	return connection->host_ip;
 }
 
 /** 
