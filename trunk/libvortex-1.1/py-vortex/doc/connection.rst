@@ -255,6 +255,10 @@ Module API
 
       (Read only attribute) (String) returns the host string the connection is connected to.
 
+   .. attribute:: host_ip
+
+      (Read only attribute) (String) returns the host IP string the connection is connected to.
+
    .. attribute::  port
 
       (Read only attribute) (String) returns the port string the connection is using to connected to.

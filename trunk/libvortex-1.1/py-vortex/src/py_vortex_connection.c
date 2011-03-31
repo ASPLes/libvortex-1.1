@@ -476,6 +476,9 @@ PyObject * py_vortex_connection_get_attr (PyObject *o, PyObject *attr_name) {
 	} else if (axl_cmp (attr, "host")) {
 		/* found host attribute */
 		return Py_BuildValue ("z", vortex_connection_get_host (self->conn));
+	} else if (axl_cmp (attr, "host_ip")) {
+		/* found host attribute */
+		return Py_BuildValue ("z", vortex_connection_get_host_ip (self->conn));
 	} else if (axl_cmp (attr, "port")) {
 		/* found port attribute */
 		return Py_BuildValue ("z", vortex_connection_get_port (self->conn));
