@@ -584,6 +584,12 @@ typedef void     (*VortexConnectionOnCloseFull)  (VortexConnection * connection,
  * notify the application layer if the incoming TUNNEL profile should
  * be accepted. 
  *
+ * Note this handler is called twice on TLS activation: one for the
+ * first connection and one for the connection creation after TLS
+ * activation. This is because both connections are diferent objects
+ * with different states. This also allows to setup or run different
+ * configurations for non TLS or and for TLS enabled clients.
+ *
  * This handler is used by:
  * 
  *  - \ref vortex_listener_set_on_connection_accepted 

@@ -77,6 +77,15 @@ int      start_channel (int  channel_num, VortexConnection * connection, axlPoin
 	return axl_true;
 }
 
+axl_bool conn_accepted (VortexConnection * conn, axlPointer data)
+{
+	printf ("Connection accepted: %s:%s id=%d\n", 
+		vortex_connection_get_host (conn), vortex_connection_get_port (conn), 
+		vortex_connection_get_id (conn));
+
+	return axl_true;
+}
+
 int  main (int  argc, char  ** argv) 
 {
 
@@ -106,6 +115,9 @@ int  main (int  argc, char  ** argv)
 	if (! vortex_tls_accept_negotiation (ctx, NULL, NULL, NULL)) {
 		printf ("Unable to start accepting TLS profile requests");
 	}
+
+	/* configure on connection accepted */
+	vortex_listener_set_on_connection_accepted (ctx, conn_accepted, NULL);
 
 	/* register the plain profile to test data sending before
 	 * TLS-fication */
