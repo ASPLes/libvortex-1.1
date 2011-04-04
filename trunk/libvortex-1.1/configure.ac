@@ -320,7 +320,7 @@ if test "$enable_py_vortex_support" = "yes" ; then
    fi
 
    # get python flags and libs
-   PYTHON_CFLAGS=`$PYTHON_CONFIG --cflags 2>/dev/null`
+   PYTHON_CFLAGS=`$PYTHON_CONFIG --cflags 2>/dev/null | sed -r 's/\-arch (\d|\w)+ //g'`
    PYTHON_LIBS=`$PYTHON_CONFIG --ldflags 2>/dev/null`
    AC_SUBST(PYTHON_CFLAGS)
    AC_SUBST(PYTHON_LIBS)
