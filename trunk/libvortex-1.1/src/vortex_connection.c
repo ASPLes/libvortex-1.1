@@ -169,8 +169,13 @@ const char * vortex_connection_opts_get_serverName (VortexConnection     * conn)
 		return vortex_connection_get_data (conn, CONN_OPTS_SERVERNAME);
 
 	/* check for acquire serverName from current connection host */
-	if (vortex_connection_get_data (conn, CONN_OPTS_SERVERNAME_ACQUIRE))
+	if (vortex_hash_exists (conn->data, CONN_OPTS_SERVERNAME_ACQUIRE)) {
+		if (vortex_connection_get_data (conn, CONN_OPTS_SERVERNAME_ACQUIRE))
+			return vortex_connection_get_host (conn);
+	} else  {
 		return vortex_connection_get_host (conn);
+	} /* end if */
+
 	return NULL;
 }
 						    
@@ -2027,14 +2032,7 @@ VortexConnection * vortex_connection_new (VortexCtx   * ctx,
 					  VortexConnectionNew on_connected,
 					  axlPointer user_data)
 {
-	VortexConnectionOpts options;
-
-	/* clear object */
-	memset (&options, 0, sizeof (VortexConnectionOpts));
-	/* set default values */
-	options.serverName_acquire = axl_true;
-
-	return vortex_connection_new_full (ctx, host, port, &options, on_connected, user_data);
+	return vortex_connection_new_full (ctx, host, port, NULL, on_connected, user_data);
 }
 
 /** 

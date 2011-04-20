@@ -72,6 +72,9 @@ int          vortex_hash_size     (VortexHash   *hash_table);
 axlPointer   vortex_hash_lookup   (VortexHash   *hash_table,
 				   axlPointer    key);
 
+axl_bool     vortex_hash_exists   (VortexHash   *hash_table,
+				   axlPointer    key);
+
 axlPointer   vortex_hash_lookup_and_clear   (VortexHash   *hash_table,
 					     axlPointer    key);
 

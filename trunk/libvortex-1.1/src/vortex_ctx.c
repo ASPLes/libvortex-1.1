@@ -509,13 +509,22 @@ void        vortex_ctx_install_cleanup (VortexCtx * ctx,
 }
 
 /** 
- * @brief Allows to perform a global configuration to enable/disable
- * serverName (or x-serverName) on greetings getting the value from
- * the current connection host name configured. 
+ * @brief Allows to set a global configuration to enable/disable
+ * automatic serverName acquisition from connection host name used.
  * 
- * By default serverName feature is requested based on the current
- * host name. This function allows to disable this feature globally on
- * the provided context.
+ * By default, this feature is enabled causing connection serverName
+ * to be defined to the same value to the connection hostname used,
+ * but it is not applied until first successful channel is created
+ * with serverName parameter to null. 
+ *
+ * In the same direction, if this feature is enabled but the user
+ * still passes a different serverName value for the first successful
+ * channel creation, then this is the value that will be used for
+ * serverName.
+ *
+ * In the case the user does not want to pass any serverName value at
+ * channel creation, then it is required a call to this function with
+ * status set to axl_false.
  *
  * @param ctx The context where the configuration will take place.
  *
@@ -527,6 +536,7 @@ void        vortex_ctx_server_name_acquire       (VortexCtx * ctx,
 						  axl_bool    status)
 {
 	v_return_if_fail (ctx);
+
 	/* update serverName acquire */
 	ctx->serverName_acquire = status;
 	return;
