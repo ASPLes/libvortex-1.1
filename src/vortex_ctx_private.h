@@ -290,7 +290,6 @@ struct _VortexCtx {
 	 * to the function once executed.
 	 */
 	axlPointer              next_frame_size_data;
-
 };
 
 #endif /* __VORTEX_CTX_PRIVATE_H__ */

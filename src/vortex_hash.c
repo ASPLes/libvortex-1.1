@@ -307,7 +307,7 @@ int      vortex_hash_size     (VortexHash *hash_table)
 	return result;
 }
 
-/**
+/** 
  * @brief Perform a lookup using the given key inside the given hash.
  *
  * 
@@ -333,6 +333,36 @@ axlPointer   vortex_hash_lookup   (VortexHash *hash_table,
 	vortex_mutex_unlock (&hash_table->mutex);	
 
 	return data;
+}
+
+/** 
+ * @brief Allows to check if a key exists (without depending on its
+ * actual value).
+ *
+ * @param hash_table the hash table
+ * @param key the key value
+ *
+ * @return axl_true if the key is found, otherwise axl_false is
+ * returned. Note the function returns axl_false in the case a NULL
+ * hash table is received.
+ *
+ **/
+axl_bool   vortex_hash_exists   (VortexHash *hash_table,
+				 axlPointer  key)
+{
+	axl_bool result;
+
+	/* check hash table reference */
+	if (hash_table == NULL)
+		return axl_false;
+
+	vortex_mutex_lock   (&hash_table->mutex);
+	
+	result = axl_hash_exists (hash_table->table, key);
+
+	vortex_mutex_unlock (&hash_table->mutex);	
+
+	return result;
 }
 
 /** 
