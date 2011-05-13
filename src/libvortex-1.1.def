@@ -199,6 +199,7 @@ vortex_connection_get_ctx
 vortex_connection_get_data
 vortex_connection_get_features
 vortex_connection_get_host
+vortex_connection_get_host_ip
 vortex_connection_get_id
 vortex_connection_get_listener
 vortex_connection_get_local_addr
