@@ -24,3 +24,5 @@ usr/include/vortex-1.1/vortex_queue.h
 usr/include/vortex-1.1/vortex_dtds.h
 usr/include/vortex-1.1/vortex_errno.h
 usr/include/vortex-1.1/vortex-listener-conf.dtd.h
+usr/include/vortex-1.1/vortex_payload_feeder.h
+
