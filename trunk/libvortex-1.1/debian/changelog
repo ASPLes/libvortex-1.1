@@ -1,3 +1,9 @@
+libvortex-1.1 (1.1.8-squeeze0) unstable; urgency=low
+
+  * New upstream release (yet not published!)
+
+ -- Francis Brosnan <francis@aspl.es>  Sat, 14 May 2011 15:06:21 +0200
+
 libvortex-1.1 (1.1.7-lenny0) unstable; urgency=low
 
   * New upstream release (exogenesys symphony part 1: overture)
