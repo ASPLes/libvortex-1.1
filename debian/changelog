@@ -1,3 +1,9 @@
+libvortex-1.1 (1.1.8-squeeze1) unstable; urgency=low
+
+  * Adding missing python dependency.
+
+ -- Francis Brosnan <francis@aspl.es>  Sun, 15 May 2011 12:27:06 +0200
+
 libvortex-1.1 (1.1.8-squeeze0) unstable; urgency=low
 
   * New upstream release (yet not published!)
