@@ -111,6 +111,10 @@ PyVortexChannelPoolData * py_vortex_channel_pool_get_data (PyVortexChannelPool *
 	char                    * key;
 	PyVortexChannelPoolData * data;
 
+	/* add internal check */
+	if (py_pool == NULL)
+		return NULL;
+
 	/* return direct reference */
 	if (py_pool->data)
 		return py_pool->data;
@@ -270,7 +274,7 @@ static PyObject * py_vortex_channel_pool_next_ready (PyVortexChannelPool * self,
 	data = py_vortex_channel_pool_get_data (self);
 
 	/* now configure frame received */
-	if (data->received) {
+	if (data && data->received) {
 		py_vortex_log (PY_VORTEX_DEBUG, "setting frame received handler for channel=%d (%p) returned by next_ready()",
 			       vortex_channel_get_number (channel), py_channel);
 		py_vortex_channel_configure_frame_received ((PyVortexChannel *) py_channel, data->received, data->received_data);
@@ -376,6 +380,11 @@ VortexChannel * py_vortex_channel_pool_create_channel (VortexConnection      * c
 	PyObject                * result;
 	VortexChannel           * channel    = NULL;
 
+	if (data == NULL) {
+		py_vortex_log (PY_VORTEX_CRITICAL, "expected PyVortexChannelPoolData diferent from NULL, unable to return a channel created");
+		return NULL;
+	} /* end if */
+
 	/* acquire the GIL */
 	state = PyGILState_Ensure();
 
@@ -453,6 +462,11 @@ void py_vortex_channel_pool_on_created (VortexChannelPool * _pool,
 	PyObject                * args;
 	PyObject                * result;
 	PyGILState_STATE          state;
+
+	if (data == NULL) {
+		py_vortex_log (PY_VORTEX_CRITICAL, "expected PyVortexChannelPoolData diferent from NULL, unable to notify channel created, return NULL");
+		return;
+	}
 
 	/* set internal pool reference */
 	py_pool->pool = _pool;
