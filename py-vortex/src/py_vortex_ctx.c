@@ -300,7 +300,6 @@ axl_bool py_vortex_ctx_bridge_event (VortexCtx * ctx, axlPointer user_data, axlP
 	_result = axl_false;
 	if (! PyArg_Parse (result, "i", &_result)) {
 		py_vortex_log (PY_VORTEX_CRITICAL, "failed to parse result from python event handler, requesting to remove handler");
-		return axl_true;
 	} /* end if */
 
 	/* release tuple and result returned (which may be null) */
