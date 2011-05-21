@@ -4162,11 +4162,10 @@ int                vortex_connection_get_id               (VortexConnection * co
  * @brief Allows to get the serverName under which the remote BEEP
  * peer is working. 
  *
- * During the BEEP session, the first channel created or due to
- * x-serverName feature configured, under a provided serverName
- * attribute is meaningful for the rest of the session. This means
- * that the connection gets flaged with the serverName under which is
- * acting.
+ * During the BEEP session, the first channel created under a provided
+ * serverName attribute is meaningful for the rest of the
+ * session. This means that the connection gets flagged with the
+ * serverName under which is acting.
  * 
  * @param connection The connection that is required to return its
  * server name value.

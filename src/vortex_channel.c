@@ -1278,10 +1278,10 @@ VortexChannel * vortex_channel_new_full (VortexConnection      * connection,
 		return NULL;
 	}
 
-	/* server name data */
-	if (serverName == NULL)
+	/* server name data: set to value requested by user only if null received and current connection */
+	if (serverName == NULL && vortex_connection_get_server_name (connection) == NULL) {
 		data->serverName    = axl_strdup (vortex_connection_opts_get_serverName (connection));
-	else
+	} else
 		data->serverName    = axl_strdup (serverName);
 
 	/* profile stuff */

@@ -598,8 +598,10 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 
 	/* check if the tls ctx was created */
 	tls_ctx = vortex_ctx_get_data (ctx, TLS_CTX);
-	if (tls_ctx == NULL) 
+	if (tls_ctx == NULL)  {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to find tls context, unable to activate TLS. Did you call to init vortex_tls module (vortex_tls_init)?");
 		return axl_false;
+	}
 
 	/* check if the connection have a ctx connection creation or
 	 * the default ctx creation is configured */
@@ -922,9 +924,8 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 	status = vortex_tls_invoke_tls_activation (connection);
 
 	vortex_log (status ? VORTEX_LEVEL_DEBUG : VORTEX_LEVEL_CRITICAL, 
-	       "TLS STAGE[6.1] TLS negotiation status is: %s", status ? "OK" : "*** FAIL ***");
+		    "TLS STAGE[6.1] TLS negotiation status is: %s", status ? "OK" : "*** FAIL ***");
 	
-	vortex_log (VORTEX_LEVEL_DEBUG, "TLS STAGE[7]: TLS voodoo have finished, the connection is created and registered into the vortex writer, sending greetings..");
 	/* check wrong status after TLS negotiation */
 	if (! status) {
 		/* notify that the TLS negotiation have failed
@@ -935,6 +936,8 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 								 "TLS negotiation has failed, unable to procede with BEEP session tuning.", user_data);
 		return NULL;
 	}
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "TLS STAGE[7]: TLS voodoo have finished, the connection is created and registered into the vortex writer, sending greetings..");
 
 	/* reenable seq frame generation */
 	vortex_log (VORTEX_LEVEL_DEBUG, "TLS STATE[7.1]: enable SEQ frame generation on connection=%d",
@@ -1581,7 +1584,7 @@ int      vortex_tls_process_start_msg (const char        * profile,
 	 * holding profile content reply should be dynamically
 	 * allocated because vortex library will deallocate it. */
 	(* profile_content_reply)  = axl_strdup ("<proceed />");
-	vortex_log (VORTEX_LEVEL_DEBUG, "replying peer that TLS negotiation can start");
+	vortex_log (VORTEX_LEVEL_DEBUG, "replying peer that TLS negotiation can start with serverName=%s", serverName);
 	
 	/* Here goes the trick that makes tunning reset at the server
 	 * side to be possible.
@@ -1589,7 +1592,6 @@ int      vortex_tls_process_start_msg (const char        * profile,
 	 * we prepare the socket connection to not be closed even if
 	 * the channel 0 is closed on the given connection. */
 	vortex_connection_set_close_socket (connection, axl_false);
-
 
 	/* now prepare the connection to accept the incoming
 	 * negotiation by using the pre read handler */
