@@ -56,6 +56,15 @@ Module API
    
       Allows to install an event handler, a method that will be called each microseconds, optionally receiving one or two parameters. This method implements python api for vortex_thread_pool_new_event. See also its documentation.
 
+      The following is an example of handler (first parameter is vortex.Ctx, the rest two are the user parameters)::
+
+            def event_handler (ctx, param1, param2):
+      	    	# do some stuff
+		if something:
+	     	   return True # return True to remove the event (no more calls)
+
+	  	return False # make the event to keep on working (more calls to come)
+
    .. attribute:: log
 
       (Read/Write attribute) (True/False) returns or set current debug log. See vortex_log_is_enabled.

@@ -124,6 +124,7 @@ void __vortex_thread_pool_process_events (VortexCtx * ctx, VortexThreadPool * po
 	/* ensure only one thread is processing */
 	if (ctx->vortex_exit || pool->processing_events || axl_list_length (pool->events) == 0)
 		return;
+
 	/* acquire lock */
 	vortex_mutex_lock (&pool->mutex);
 	/* ensure again we can continue */
@@ -140,6 +141,7 @@ void __vortex_thread_pool_process_events (VortexCtx * ctx, VortexThreadPool * po
 	/* get current stamp */
 	gettimeofday (&now, NULL);
 	iterator = 0;
+	vortex_log2 (VORTEX_LEVEL_DEBUG, "Found (%d) events to process: now (%d, %d)..", length, (int) now.tv_sec, (int) now.tv_usec);
 	while (iterator < length) {
 		/* get event reference */
 		vortex_mutex_lock (&pool->mutex);
@@ -328,6 +330,17 @@ void __vortex_thread_pool_terminate_thread (axlPointer _thread)
  * @{
  */
 
+int  __vortex_thread_pool_soon_events_first (axlPointer a, axlPointer b)
+{
+	VortexThreadPoolEvent * event_a = a;
+	VortexThreadPoolEvent * event_b = a;
+
+	/* first a if microseconds is sort */
+	if (event_a->delay < event_b->delay)
+		return -1;
+	return 1;
+}
+
 /**
  * @brief Init the Vortex Thread Pool subsystem.
  * 
@@ -376,7 +389,7 @@ void vortex_thread_pool_init     (VortexCtx * ctx,
 	} /* end if */
 	ctx->thread_pool->threads       = axl_list_new (axl_list_always_return_1, __vortex_thread_pool_terminate_thread);
 	ctx->thread_pool->stopped       = axl_list_new (axl_list_always_return_1, __vortex_thread_pool_terminate_thread);
-	ctx->thread_pool->events        = axl_list_new (axl_list_always_return_1, __vortex_thread_pool_unref_event);
+	ctx->thread_pool->events        = axl_list_new (__vortex_thread_pool_soon_events_first, __vortex_thread_pool_unref_event);
 	ctx->thread_pool->events_cursor = axl_list_cursor_new (ctx->thread_pool->events);
 	ctx->thread_pool->ctx           = ctx;
 
