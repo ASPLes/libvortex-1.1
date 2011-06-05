@@ -392,6 +392,8 @@ int  vortex_tls_ssl_read (VortexConnection * connection, char  * buffer, int  bu
 	case SSL_ERROR_SSL:
 		vortex_log (VORTEX_LEVEL_WARNING, "SSL_read function error (res=%d, ssl_err=%d, errno=%d)",
 			    res, ssl_err, errno);
+ 		/* dump error stack */
+ 		vortex_tls_log_ssl (ctx);
 		return -1;
 	default:
 		/* nothing to handle */
@@ -1265,7 +1267,8 @@ void vortex_tls_initial_accept (VortexConnection * connection)
 		return;
 
 	/* accept the incoming connection */
-	if (SSL_accept (ssl) == -1) {
+	ssl_error = SSL_accept (ssl);
+	if (ssl_error == -1) {
 	 
  		/* get error */
  		ssl_error = SSL_get_error (ssl, -1);
@@ -1292,7 +1295,7 @@ void vortex_tls_initial_accept (VortexConnection * connection)
 		/* TLS-fication done */
 		status = axl_true;
 	}
-	vortex_log (VORTEX_LEVEL_DEBUG, "TLS-fication status was: %s", status ? "OK" : "*** FAIL ***");
+	vortex_log (VORTEX_LEVEL_DEBUG, "TLS-fication status was (ssl_error=%d): %s", ssl_error, status ? "OK" : "*** FAIL ***");
 
 	/* Disable preread handler for the connection. We have finished */
 	vortex_connection_set_preread_handler (connection, NULL);

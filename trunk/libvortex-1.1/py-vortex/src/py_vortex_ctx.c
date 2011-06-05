@@ -309,6 +309,9 @@ axl_bool py_vortex_ctx_bridge_event (VortexCtx * ctx, axlPointer user_data, axlP
 	/* in the case the python code signaled to finish the event,
 	 * terminate content inside ctx */
 	if (_result) {
+		/* call to remove event before returning */
+		vortex_thread_pool_remove_event (ctx, data->id);
+
 		/* we have to remove the event, finish all data */
 		str = axl_strdup_printf ("py:vo:event:%d", data->id);
 		vortex_ctx_set_data (ctx, str, NULL);
@@ -375,7 +378,7 @@ static PyObject * py_vortex_ctx_new_event (PyObject * self, PyObject * args, PyO
 	data->id = vortex_thread_pool_new_event (py_vortex_ctx_get (self),
 						 microseconds,
 						 py_vortex_ctx_bridge_event,
-						 data, NULL);
+						 data, INT_TO_PTR(data->id));
 	vortex_ctx_set_data_full (py_vortex_ctx_get (self), axl_strdup_printf ("py:vo:event:%d", data->id), data, axl_free, (axlDestroyFunc) py_vortex_ctx_event_free);
 
 	/* reply work done */
