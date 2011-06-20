@@ -350,7 +350,7 @@ void xml_rpc_write_c_server_default_service_dispath (axlDoc   * doc,
  * Writes the main function, that starts the xml-rpc listener server.
  * 
  */
-void xml_rpc_write_c_server_main_function ()
+void xml_rpc_write_c_server_main_function (void)
 {
 	/* write the main header */
 	xml_rpc_support_write ("int  main (int  argc, char  ** argv)\n{\n\n");

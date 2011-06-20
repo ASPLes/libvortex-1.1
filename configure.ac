@@ -54,6 +54,14 @@ AC_ISC_POSIX
 AC_HEADER_STDC
 AM_PROG_LIBTOOL
 
+compiler_options=""
+STRICT_PROTOTYPES=""
+if test "$compiler" = "gcc" ; then
+   compiler_options="-Wstrict-prototypes -Wall -Werror -g -ansi"
+   echo "Detected gcc compiler: $compiler, adding options: $compiler_options"
+fi
+AC_SUBST(compiler_options)
+
 dnl
 dnl Thread detection support mostly taken from the apache project 2.2.3.
 dnl
@@ -306,7 +314,7 @@ if test "$enable_py_vortex_support" = "yes" ; then
    # get python includes 
    PYTHON_INCLUDES=`$PYTHON_CONFIG --includes 2>/dev/null`
    old_CPPFLAGS=$CPPFLAGS
-   CPPFLAGS="-Wall -Werror $PYTHON_INCLUDES"
+   CPPFLAGS="$PYTHON_INCLUDES"
    echo "Python includes: $PYTHON_INCLUDES"
    AC_SUBST(PYTHON_INCLUDES)
 

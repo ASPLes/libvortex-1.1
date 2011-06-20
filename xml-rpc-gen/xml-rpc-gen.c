@@ -43,7 +43,7 @@ axlDtd * dtd = NULL;
 VortexCtx * ctx = NULL;
 
 
-void show_tutorial ()
+void show_tutorial (void)
 {
 	printf (HELP_HEADER);
 	printf ("To use xml-rpc-gen-1.1:\n\n");
@@ -56,7 +56,7 @@ void show_tutorial ()
 }
 
 
-void xml_rpc_gen_finish ()
+void xml_rpc_gen_finish (void)
 {
 	/* terminate exarg library */
 	exarg_end ();
@@ -78,7 +78,7 @@ void xml_rpc_gen_finish ()
  * @internal
  * Shows current version.
  */
-void show_version ()
+void show_version (void)
 {
          printf ("%s", (VERSION != NULL && strlen (VERSION) > 0) ? VERSION : "no-version");
 }
@@ -238,7 +238,7 @@ axl_bool      xml_rpc_gen_compile_selected (const char  * selected)
  *
  * Compiles the provided document.
  */
-void xml_rpc_gen_compile ()
+void xml_rpc_gen_compile (void)
 {
 	ExArgument * arg;
 	const char * file;
