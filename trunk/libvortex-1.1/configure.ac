@@ -62,6 +62,11 @@ if test "$compiler" = "gcc" ; then
 fi
 AC_SUBST(compiler_options)
 
+AC_CHECK_PROG(PKG_CONFIG, pkg-config, "yes", "no")
+if test "$PKG_CONFIG" = "no" ; then
+  AC_MSG_ERROR([You need to install pkg-config to compile Vortex 1.1. See: http://pkgconfig.freedesktop.org/releases/])
+fi
+
 dnl
 dnl Thread detection support mostly taken from the apache project 2.2.3.
 dnl
