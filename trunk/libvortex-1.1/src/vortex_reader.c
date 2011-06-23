@@ -86,10 +86,8 @@ axl_bool      __vortex_reader_process_socket_check_nul_frame (VortexCtx        *
 {
 	/* call to update frame MIME status for NUL frame size we
 	 * check the MIME body content to be 0 */
-	if (! vortex_frame_mime_process (frame)) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to update MIME status for the NUL frame (protocol error)");
-		return axl_false;
-	} /* end if */
+	if (! vortex_frame_mime_process (frame)) 
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to update MIME status for the NUL frame");
 	
 	switch (vortex_frame_get_type (frame)) {
 	case VORTEX_FRAME_TYPE_NUL:
