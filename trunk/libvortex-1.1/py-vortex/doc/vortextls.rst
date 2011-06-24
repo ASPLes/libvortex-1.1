@@ -9,6 +9,7 @@
 This modules includes all functions required secure BEEP sessions using TLS.
 
 Here is an example how a client can activate TLS on an established connection::
+
     # now enable tls support on the connection
     if not vortex.tls.init (ctx):
         error ("Expected to find proper authentication initialization, but found an error")
