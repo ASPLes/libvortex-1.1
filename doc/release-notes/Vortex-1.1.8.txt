@@ -1,0 +1,185 @@
+      ###################################################
+      ##              Vortex Library 1.1.8             ##
+      ##                  "Copenhague"                 ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce Vortex
+  Library 1.1.8 "Copenhague" release availability: an open source
+  "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.aspl.es/vortex/py-vortex/html
+      [PyVortex homepage]
+
+    - http://www.aspl.es/turbulence
+      [Turbulence BEEP server homepage]
+ 
+    - http://www.sf.net/projects/vortexlibrary
+      [Sources and Win32 binaries]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+This release in short
+~~~~~~~~~~~~~~~~~~~~~
+
+   Bug fixes and documentation updates.
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  None
+
+Thanks to..
+~~~~~~~~~~~
+
+  - Ralf Konush (reported problems caused by python-config returning
+    -arch options twice).
+
+  - Wimpie Nortje (reported memory race condition at connection new
+    when used with onconnected handler while accessing to connection
+    options).
+
+  - Subrahmanya (reported wrong handling for NUL frames).
+
+Changes since 1.1.7
+~~~~~~~~~~~~~~~~~~~
+
+* [fix] Ensuring connection reference used by vortex sequencer is
+  defined avoiding the sequencer to call to
+  vortex_channel_get_connection.
+
+* [fix] Updated vortex.tls python module to include method to check if
+  the connection has TLS enabled. API added:
+  
+    - is_enabled
+
+  Updated documentation.
+
+* [fix] Removed annoying message "context not defined" when called to
+  logging.
+
+* [fix] Updated PyVortex exception notification to remove all %
+  symbols from string notified to avoid the caller user to pass this
+  string to printf like API, causing wrong memory access under some
+  cases..
+
+* [fix] Updated vortex-file-transfer-{client,server}.c to allow
+  testing ANS/NUL with feeder support. All tests shows it is working..
+
+* [fix] Adding more documentation to payload feeder..
+
+* [fix] Making add channel notification to be done after channel start
+  reply.
+
+* [fix] Adding documentation about disabling channel complete flag
+  implications.
+
+* [fix] Updated documentation to explain on connection accepted and
+  connection state post created are called twice during TLS
+  activation.
+
+* [new] Updated vortex connection API to include a new function to
+  return actual remote peer IP. Unlike vortex_connection_get_host
+  which returns the connecting name (that may be not an IP) this new
+  function ensures returning an IP. Updated PyVortex to also support
+  this addition:
+
+   - vortex_connection_get_host_ip
+   - vortex.Connection.host_ip
+
+* [fix] Making configure.ac to remove -arch options from python-config
+  --cflags command to avoid problems. Bug found at macosx
+  (i386). Reported by Ralf Konush.
+
+* [fix] Wimpie Nortje recently discovered a possible race condition
+  caused at vortex_connection_new used in conjunction with onconnected
+  handler causing the thread started to do the notification to access
+  to connection option object which may be out of the scope, causing
+  release function to be activated depending on memory stack status
+  with variable wrong results. General code update to make server name
+  acquisition to be also governed from associated VortexCtx object,
+  releasing vortex_connection_new function from allocating a variable
+  on the function stack to signal this configuration.
+
+* [fix] Increasing revision and updating libvortex-1.1.def file.
+
+* [fix] General changes to prepare libvortex-1.1 packages for squeeze.
+
+* [fix] Updated debian files to prepare debian squeeze packages.
+  Fixed missing files from debian packages.
+
+* [fix] Adding missing dependency for debian packages..
+
+* [fix] Fixed wrong null pointer handling at PyVortexChannelPool
+  implementation..
+
+* [fix] Making PyVortex bridge events to release GIL if a failure is
+  found.
+
+* [fix] Making vortex channel new to avoid setting serverName
+  attribute if the connection already has a serverName negotiated even
+  when the user asks to do so.
+
+* [fix] Improved vortex tls module error reporting to advise the user when
+  it is detected vortex_tls_init was not called.
+
+* [fix] Added vortex.tls client code examples into PyVortex docs...
+
+* [fix] Making PyVortex ctx.new_event handler to remove the handler
+  internally via vortex_thread_pool_remove_event before waiting to
+  return false, to avoid race with deallocating event metadata.
+
+* [fix] Updated PyVortex ctx.new_event handler to provide a working handler
+  example.
+
+* [fix] Making vortex_tls listener handling to provide more debug info.
+
+* [fix] Making vortex_thread_pool_new_event to queue soon events first.
+
+* [fix] Updated vortex Makefile.am to remove all gcc specific code
+  which is now detected at configure.ac and provide view
+  compiler_options variable. This fixes building vortex on unix
+  platforms where gcc is not available..
+
+* [fix] Adding check for pkg-config into configure.ac to warn the
+  user..
+
+* [fix] Making MIME processing for NUL frames to be optional
+  generating an log error message instead of dropping the frame. Bug
+  reported by Subrahmanya.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organizations to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+24th jun 2011, Madrid (Spain)
