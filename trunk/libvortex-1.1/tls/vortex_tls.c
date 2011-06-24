@@ -335,9 +335,7 @@ int  vortex_tls_ssl_read (VortexConnection * connection, char  * buffer, int  bu
 {
 	SSL         * ssl;
 	VortexMutex * mutex;
-#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx   * ctx = vortex_connection_get_ctx (connection);
-#endif
 	int    res;
 	int    ssl_err;
 
