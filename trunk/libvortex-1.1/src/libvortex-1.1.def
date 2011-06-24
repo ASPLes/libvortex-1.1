@@ -395,6 +395,7 @@ vortex_hash_clear
 vortex_hash_clear_allways_true
 vortex_hash_delete
 vortex_hash_destroy
+vortex_hash_exists
 vortex_hash_foreach
 vortex_hash_foreach2
 vortex_hash_foreach3

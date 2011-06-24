@@ -55,6 +55,8 @@ EXTRA_DIST = vortex-1.1.pc.in VERSION libvortex.sln get-python-config Makefile.w
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = vortex-1.1.pc $(PULL_PKGCONFIG) $(TUNNEL_PKGCONFIG) $(XML_RPC_PKGCONFIG) $(SASL_PKGCONFIG) $(TLS_PKGCONFIG) $(HTTP_PKGCONFIG) $(ALIVE_PKGCONFIG)
 
+all-local: update-defs
+
 update-defs:
 	cd src; make update-def; cd ..
 	cd tls; make update-def; cd ..
