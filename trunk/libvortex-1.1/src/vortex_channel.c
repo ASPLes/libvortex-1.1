@@ -999,8 +999,17 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 					vortex_frame_unref (frame);
 			}
 		} else {
-			/* notify null reference received */
-			data->on_channel_created (-1, NULL, data->connection, data->user_data);
+			/* acquire a connection reference during
+			 * notification because the channel that owns
+			 * the reference has disapeared */
+			if (vortex_connection_ref (data->connection, "channel-create-null")) {
+
+				/* notify null reference received */
+				data->on_channel_created (-1, NULL, data->connection, data->user_data);
+
+				/* release reference */
+				vortex_connection_unref (data->connection, "channel-create-null");
+			} /* end if */
 		} /* end if */
 
 		/* free no longer needed data */
