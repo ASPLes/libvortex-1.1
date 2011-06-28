@@ -978,8 +978,10 @@ void	vortex_sequencer_drop_connection_messages (VortexConnection * conn)
 	vortex_log (VORTEX_LEVEL_DEBUG, 
 		    "calling to discard messages pending to be sequenced for connection id=%d",
 		    vortex_connection_get_id (conn));
+	vortex_async_queue_ref (ctx->sequencer_queue);
 	vortex_async_queue_foreach (ctx->sequencer_queue,
 				    vortex_sequencer_drop_connections_foreach,
 				    conn);
+	vortex_async_queue_unref (ctx->sequencer_queue);
 	return;
 }
