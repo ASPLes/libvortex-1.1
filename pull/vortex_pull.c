@@ -312,7 +312,7 @@ int                vortex_pull_pending_events_num (VortexCtx * ctx)
 }
 
 
-/**
+/** 
  * @brief Allows to get next pending event. The function will block
  * the caller in the case no event is available. 
  *
@@ -328,7 +328,10 @@ int                vortex_pull_pending_events_num (VortexCtx * ctx)
  * vortex_event_get_type, the event has particular data
  * associated. See \ref VortexEventType for more information. In the
  * case a limited wait (milliseconds_to_wait) is configured, the
- * function can return NULL, which means timeout reached.
+ * function can return NULL, which means timeout reached. 
+ *
+ * After processing event returned, you must call to \ref
+ * vortex_event_unref to release resources allocaetd by this event.
  */
 VortexEvent      * vortex_pull_next_event         (VortexCtx * ctx,
 						   int         milliseconds_to_wait)
