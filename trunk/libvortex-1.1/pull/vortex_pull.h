@@ -121,6 +121,12 @@ typedef enum {
 	 *
 	 * This event has the following especific references defined:
 	 * - \ref vortex_event_get_channel : the channel that was added.
+	 *
+	 * Note the connection associated to the channel may be null
+	 * due to vortex engine function. Vortex engine nullify the
+	 * connection reference if its found nobody owns a
+	 * reference. This way it is avoided providing a pointer to
+	 * trash on the event (and vortex handlers).
 	 */
 	VORTEX_EVENT_CHANNEL_REMOVED     = 1 << 3,
 
