@@ -332,6 +332,25 @@ int                vortex_pull_pending_events_num (VortexCtx * ctx)
  *
  * After processing event returned, you must call to \ref
  * vortex_event_unref to release resources allocaetd by this event.
+ *
+ * <b>Note about events that are returned by this function:</b><br>
+ *
+ * <i>Important note: don't assume a particular order for events pulled from the queue (this function).</i>
+ *
+ * The pull API is designed to serialize handler activations, queuing
+ * those events so the user can pull them via vortex_pull_next_event.
+ * 
+ * However, because those handler activations are run by threads, it
+ * may happen that the thread that should queue the \ref
+ * VORTEX_EVENT_CONNECTION_CLOSED may be stopped (by the thread
+ * planner) giving priority to the thread that handles the \ref
+ * VORTEX_EVENT_CHANNEL_CLOSE (even having that thread activated before
+ * \ref VORTEX_EVENT_CONNECTION_CLOSED).
+ * 
+ * As a consequence, you may find events on the queue that aren't
+ * ordered in an expected way (especially for connection close because
+ * that activation runs on a separated thread, as oppose to other
+ * events that are run with threads from the pool).
  */
 VortexEvent      * vortex_pull_next_event         (VortexCtx * ctx,
 						   int         milliseconds_to_wait)
