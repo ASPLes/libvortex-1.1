@@ -42,12 +42,12 @@
 
 BEGIN_C_DECLS
 
-/**
+/** 
  * \addtogroup vortex_pull
  * @{
  */
 
-/**
+/** 
  * @brief Type representation for an event notification from the PULL
  * API. 
  *
@@ -60,7 +60,7 @@ BEGIN_C_DECLS
  */
 typedef struct _VortexEvent      VortexEvent;
 
-/**
+/** 
  * @brief List of events that can happen/pulled from the vortex pull
  * API. This list not only describes the event but also provides a
  * reference of all references that are associated to a particular
@@ -76,12 +76,12 @@ typedef struct _VortexEvent      VortexEvent;
  * - \ref vortex_event_get_conn : the connection where the event happend.
  */
 typedef enum {
-	/**
+	/** 
 	 * @brief Undefined event. This type is used to report errors
 	 * found while using pull API.
 	 */
 	VORTEX_EVENT_UNKNOWN              = 0,
-	/**
+	/** 
 	 * @brief Even type that represents a frame received. You must
 	 * call to vortex_pull_get_frame to get the reference to the
 	 * frame received. 
@@ -91,7 +91,7 @@ typedef enum {
 	 * - \ref vortex_event_get_channel : the channel where the frame was received.
 	 */
 	VORTEX_EVENT_FRAME_RECEIVED       = 1 << 0,
-	/**
+	/** 
 	 * @brief This event signals that a channel close request has
 	 * been received. The peer must respond to the close request
 	 * as soon as possible since the block channel 0 for futher
@@ -106,7 +106,7 @@ typedef enum {
 	 */
 	VORTEX_EVENT_CHANNEL_CLOSE       = 1 << 1, 
 
-	/**
+	/** 
 	 * @brief Event used to signal that a channel has been added
 	 * to a connection. This happens when a channel is created.
 	 *
@@ -115,7 +115,7 @@ typedef enum {
 	 */
 	VORTEX_EVENT_CHANNEL_ADDED       = 1 << 2,
 
-	/**
+	/** 
 	 * @brief Event used to signal that a channel has been removed
 	 * to a connection. This happens when a channel is closed
 	 *
@@ -130,7 +130,7 @@ typedef enum {
 	 */
 	VORTEX_EVENT_CHANNEL_REMOVED     = 1 << 3,
 
-	/**
+	/** 
 	 * @brief Event notification that a particular connection has
 	 * been closed. This event is also useful to detect connection
 	 * broken.
@@ -140,14 +140,14 @@ typedef enum {
 	 */
 	VORTEX_EVENT_CONNECTION_CLOSED   = 1 << 4,
 
-	/**
+	/** 
 	 * @brief Event notificaiton that a new incoming connection
 	 * has been accepted due to a listener started (\ref
 	 * vortex_listener_new or similar).
 	 */
 	VORTEX_EVENT_CONNECTION_ACCEPTED  = 1 << 5,
 
-	/**
+	/** 
 	 * @brief Event notification to signal that a channel start
 	 * request has been received.
 	 *

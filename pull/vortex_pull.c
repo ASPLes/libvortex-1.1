@@ -335,7 +335,8 @@ int                vortex_pull_pending_events_num (VortexCtx * ctx)
  *
  * <b>Note about events that are returned by this function:</b><br>
  *
- * <i>Important note: don't assume a particular order for events pulled from the queue (this function).</i>
+ * <i>Important note: don't assume a particular order for events
+ * pulled from the queue (this function).</i>
  *
  * The pull API is designed to serialize handler activations, queuing
  * those events so the user can pull them via vortex_pull_next_event.
