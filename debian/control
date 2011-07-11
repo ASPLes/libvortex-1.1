@@ -165,7 +165,7 @@ Package: python-vortex
 Section: libs
 Architecture: any
 Depends: libvortex-1.1 (= ${Source-Version}), python,
-  libpython2.6
+  libpython2.6 | python2.5
 Description: Python bindings for Vortex Library
  Python bindings for Vortex Library (base library)
 
