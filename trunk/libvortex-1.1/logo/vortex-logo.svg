@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   id="svg4701"
+   version="1.1"
+   inkscape:version="0.47 r22583"
+   width="347.82129"
+   height="347.82129"
+   sodipodi:docname="vortex-logo.svg"
+   inkscape:export-filename="/tmp/logo-vortex.png"
+   inkscape:export-xdpi="16.559999"
+   inkscape:export-ydpi="16.559999">
+  <metadata
+     id="metadata4707">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs4705">
+    <inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="0 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       id="perspective4709" />
+    <inkscape:perspective
+       id="perspective4817"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective5349"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective5371"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective5401"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+  </defs>
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1280"
+     inkscape:window-height="953"
+     id="namedview4703"
+     showgrid="false"
+     inkscape:zoom="1.0266448"
+     inkscape:cx="127.65046"
+     inkscape:cy="123.39517"
+     inkscape:window-x="0"
+     inkscape:window-y="23"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg4701" />
+  <rect
+     style="fill:#001b45;fill-opacity:1;fill-rule:evenodd;stroke:none"
+     id="rect5385"
+     width="347.82129"
+     height="347.82129"
+     x="0"
+     y="0" />
+  <rect
+     style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none"
+     id="rect5387"
+     width="90.915665"
+     height="321.64859"
+     x="8.9538155"
+     y="13.086349" />
+  <path
+     style="fill:#d8001d;stroke:none"
+     d="M 11.890292,107.8859 C 45.341099,20.154953 174.94972,-38.227093 194.03703,131.75004 182.07348,50.402832 107.65376,-0.62665958 38.189553,149.28289 74.017089,26.877526 32.504536,82.756609 11.890292,107.8859 z"
+     id="path4823"
+     sodipodi:nodetypes="cccc" />
+  <path
+     style="fill:#555753;fill-opacity:1;stroke:none"
+     d="M 65.949883,169.73787 C 72.670109,130.32906 77.85588,120.89992 96.145331,186.29666 90.036352,75.961134 135.4674,83.038086 175.53014,120.06148 124.95026,51.240261 59.646807,82.178631 65.949883,169.73787 z"
+     id="path4825"
+     sodipodi:nodetypes="cccc" />
+  <path
+     style="fill:#729fcf;fill-opacity:1;stroke:none"
+     d="m 187.70572,75.011824 c 12.34492,-4.882682 25.91468,-8.111665 9.49696,-16.558794 45.26161,6.294147 17.46361,54.85966 3.40916,64.04357 9.06282,-8.10763 30.96797,-47.363488 -12.90612,-47.484776 z"
+     id="path5337"
+     sodipodi:nodetypes="cccc" />
+  <path
+     style="fill:#ffffff;fill-opacity:1;stroke:none"
+     d="m 166.76372,136.13325 c 70.75764,146.80296 97.4455,-0.7131 113.47644,-41.884004 -3.85127,91.100964 17.94797,77.490054 46.02371,15.828264 -43.13024,172.29642 -132.91272,113.20132 -159.50015,26.05574 z"
+     id="path5339"
+     sodipodi:nodetypes="cccc" />
+  <path
+     style="fill:#ffffff;fill-opacity:1;stroke:none"
+     d="m 162.8361,129.05744 c -77.698686,24.18643 -6.79219,48.18391 12.36818,59.12066 -44.71549,-8.58153 -39.59086,3.18376 -11.19245,21.57218 -81.940843,-33.93574 -46.16918,-73.94967 -1.17573,-80.69284 z"
+     id="path5339-5"
+     sodipodi:nodetypes="cccc" />
+  <path
+     style="fill:#ffffff;fill-opacity:1;stroke:none"
+     d="m 187.85519,137.11653 c 73.65998,61.9698 43.19709,-31.7686 38.51765,-60.692238 24.43833,53.825418 30.24014,38.954028 25.04282,-5.673422 30.25359,113.33331 -26.70041,108.11303 -63.56047,66.36566 z"
+     id="path5339-5-4"
+     sodipodi:nodetypes="cccc" />
+  <text
+     xml:space="preserve"
+     style="font-size:56.05378723px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;fill:#001b45;fill-opacity:1;stroke:none;font-family:Impact;-inkscape-font-specification:Impact Bold"
+     x="18.121828"
+     y="310.57556"
+     id="text5389"><tspan
+       sodipodi:role="line"
+       id="tspan5391"
+       x="18.121828"
+       y="310.57556">the</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-size:72.1207428px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Impact;-inkscape-font-specification:Impact Bold"
+     x="116.90926"
+     y="310.0351"
+     id="text5389-9"><tspan
+       sodipodi:role="line"
+       id="tspan5391-6"
+       x="116.90926"
+       y="310.0351">VORTEX</tspan></text>
+</svg>
