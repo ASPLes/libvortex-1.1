@@ -98,6 +98,8 @@ void        vortex_ctx_ref                       (VortexCtx  * ctx);
 
 void        vortex_ctx_unref                     (VortexCtx ** ctx);
 
+int         vortex_ctx_ref_count                 (VortexCtx  * ctx);
+
 void        vortex_ctx_free                      (VortexCtx * ctx);
 
 void        vortex_ctx_set_on_finish        (VortexCtx              * ctx,
@@ -106,7 +108,13 @@ void        vortex_ctx_set_on_finish        (VortexCtx              * ctx,
 
 void        vortex_ctx_check_on_finish      (VortexCtx * ctx);
 
+void        vortex_ctx_set_client_conn_created (VortexCtx * ctx, 
+						VortexClientConnCreated conn_created,
+						axlPointer              user_data);
+
 void        vortex_ctx_reinit (VortexCtx * ctx);
+
+void        __vortex_ctx_set_cleanup (VortexCtx * ctx);
 
 END_C_DECLS
 

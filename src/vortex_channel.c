@@ -813,21 +813,47 @@ axl_bool  __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _p
 
 
 /** 
+ * @internal Function only called when a fork() happens during channel
+ * start operation.
+ */
+void __vortex_channel_free_wait_reply_aux (axlPointer _wait_reply)
+{
+	WaitReplyData * wait_reply = _wait_reply;
+	
+	/* check queue reference to normalize */
+	vortex_async_queue_release (wait_reply->queue);
+ 
+	vortex_mutex_destroy (&wait_reply->mutex);
+	axl_free (wait_reply);
+	return;
+}
+
+/** 
  * @internal
  *
  * Helper function for \ref vortex_channel_new.
  */
 axlPointer __vortex_channel_new (VortexChannelData * data) 
 {
-	VortexChannel    * channel    = NULL;
-	VortexChannel    * channel0   = NULL;
-	VortexFrame      * frame      = NULL;
+	VortexChannel    * channel     = NULL;
+	VortexChannel    * channel0    = NULL;
+	VortexFrame      * frame       = NULL;
 	VortexCtx        * ctx         = vortex_connection_get_ctx (data->connection);
-	WaitReplyData    * wait_reply = NULL;
-	char             * start_msg  = NULL;
+	WaitReplyData    * wait_reply  = NULL;
+	char             * start_msg   = NULL;
+	char             * start_msg_p = NULL;
 	int                msg_no;
 	axl_bool           check_profiles = axl_false;
-	
+
+	/* get all reference to release soon data */
+	char             * serverName   = data->serverName;
+	VortexConnection * conn         = data->connection;
+	int                channel_num  = data->channel_num;
+	axl_bool           threaded     = data->threaded;
+
+	/* handlers */
+	VortexOnChannelCreated  on_channel_created = data->on_channel_created;
+	axlPointer              user_data          = data->user_data;
 
 	/* check if remote peer support actual profile */
 	if (! vortex_conf_get (ctx, VORTEX_ENFORCE_PROFILES_SUPPORTED, &check_profiles)) {
@@ -837,41 +863,46 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 
 	/* according to previous configuration, check or not remote
 	 * profiles supported */
-	if (check_profiles && !vortex_connection_is_profile_supported (data->connection, data->profile)) {
+	if (check_profiles && !vortex_connection_is_profile_supported (conn, data->profile)) {
 		vortex_log (VORTEX_LEVEL_WARNING, "channel profile not supported by remote peer, channel can't be created");
 		goto __vortex_channel_new_invoke_caller;
 	} 
 
 	/* check if channel to be created already exists */
-	if ((data->channel_num != 0) && 
-	    vortex_connection_channel_exists (data->connection, data->channel_num)) {
+	if ((channel_num != 0) && 
+	    vortex_connection_channel_exists (conn, channel_num)) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "creating a channel identified by %d that already exists",
-		       data->channel_num);
+		       channel_num);
 		goto __vortex_channel_new_invoke_caller;
 	}
 
 	/* check if user wants to create a new channel and
 	 * automatically allocate a channel number */
-	if (data->channel_num == 0) {
-		data->channel_num      = vortex_connection_get_next_channel (data->connection);
-		if (data->channel_num == -1) {
+	if (channel_num == 0) {
+		channel_num      = vortex_connection_get_next_channel (conn);
+		if (channel_num == -1) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
 			       "vortex connection get next channel have failed, this could be bad, I mean, really bad..");
 			goto __vortex_channel_new_invoke_caller;
 		}
 
 	}
-	vortex_log (VORTEX_LEVEL_DEBUG, "channel num returned=%d", data->channel_num);
+	vortex_log (VORTEX_LEVEL_DEBUG, "channel num returned=%d", channel_num);
 
 	/* creates the channel */
-	channel = vortex_channel_empty_new (data->channel_num, data->profile, data->connection);
+	channel = vortex_channel_empty_new (channel_num, data->profile, conn);
 
 	/* set default handlers */
 	vortex_channel_set_close_handler    (channel, data->close, data->close_user_data);
 	vortex_channel_set_received_handler (channel, data->received, data->received_user_data);
-	
+
+	/* set requested serverName value */
+	serverName = data->serverName;
+	data->serverName = NULL;
+	vortex_channel_set_data_full (channel, "vo:chan:srvName", serverName, NULL, axl_free);
+
 	/* get the channel 0 */
-	channel0 = vortex_connection_get_channel (data->connection, 0);
+	channel0 = vortex_connection_get_channel (conn, 0);
 	if (channel0 == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "internal vortex error: unable to get channel 0 for a session");
 
@@ -902,28 +933,50 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 	vortex_channel_ref (channel);
 	
 	/* add the channel created to the connection */
-	vortex_connection_add_channel (data->connection, channel);
+	vortex_connection_add_channel (conn, channel);
 
 	/* create wait reply object. */
 	wait_reply = vortex_channel_create_wait_reply ();
 
+	/* store into the channel hash to have this reference
+	 * available in the case of a fork operation */
+	vortex_channel_set_data_full (channel, "vo:ch:cr:wr", wait_reply, 
+				      /* key and value destroy functions */
+				      NULL, (axlDestroyFunc) __vortex_channel_free_wait_reply_aux);
+
 	/* build up the frame to send */
 	start_msg  = vortex_frame_get_start_message (vortex_channel_get_number (channel),
-						     data->serverName,
+						     serverName,
 						     data->profile,
 						     data->encoding,
 						     data->profile_content,
 						     data->profile_content_size);
+
+	/* release data before launching start channel request */
+	vortex_channel_data_free (data);
+
+	/* record start message for later removal */
+	start_msg_p = axl_strdup_printf ("%p", start_msg);
+	vortex_channel_set_data_full (channel, 
+				      /* key and value */
+				      start_msg_p, start_msg, 
+				      /* destroy methods */
+				      axl_free, axl_free);
 
 	/* send start message */
 	if (!vortex_channel_send_msg_and_wait (channel0, 
 					       start_msg,
 					       strlen (start_msg),
 					       &msg_no, wait_reply)) {
-		axl_free (start_msg);
+		/* delete start msg */
+		vortex_hash_remove (channel->data, start_msg_p);
+
+		/* remove reference to wait reply without calling to
+		 * vortex_channel_free_wait_reply */
+		vortex_hash_delete (channel->data, "vo:ch:cr:wr");
 
 		/* remove the channel and nullify */
-		vortex_connection_remove_channel (data->connection, channel);
+		vortex_connection_remove_channel (conn, channel);
 		vortex_channel_unref (channel);
 		channel = NULL;
 		
@@ -934,11 +987,17 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 		       vortex_channel_get_profile (channel));
 		goto __vortex_channel_new_invoke_caller;
 	}
-	axl_free (start_msg);
+	/* delete start msg */
+	vortex_hash_remove (channel->data, start_msg_p);
 
 	/* now, remote peer must accept channel creation or deny it
 	 * this operation will block us until frame is received */
 	frame      = vortex_channel_wait_reply (channel0, msg_no, wait_reply);
+
+	/* remove reference to wait reply without calling to
+	 * vortex_channel_free_wait_reply */
+	vortex_hash_delete (channel->data, "vo:ch:cr:wr");
+
 	if (frame == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
 			    "something have failed while receiving start message reply for channel %d under profile %s",
@@ -948,7 +1007,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 		vortex_channel_free_wait_reply (wait_reply);
 
 		/* remove the channel and nullify */
-		vortex_connection_remove_channel (data->connection, channel);
+		vortex_connection_remove_channel (conn, channel);
 		vortex_channel_unref (channel);
 		channel = NULL;
 		goto __vortex_channel_new_invoke_caller;
@@ -971,22 +1030,22 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 	if (channel != NULL && channel->is_opened) {
 		/* set the server name for the connection if not set
 		 * before */
-		vortex_connection_set_server_name (data->connection, data->serverName);
+		vortex_connection_set_server_name (conn, serverName);
 	} /* end if */
 
 	__vortex_channel_new_invoke_caller:
 	/* log a message if */
 	if (channel == NULL) 
-		vortex_log (VORTEX_LEVEL_CRITICAL, "channel=%d creation have failed", data->channel_num);
+		vortex_log (VORTEX_LEVEL_CRITICAL, "channel=%d creation have failed", channel_num);
 	
 	/* finally, invoke caller with channel result */
-	if (data->threaded) {
+	if (threaded) {
 		if (channel) {
 			/* invoke the channel created handler */
-			data->on_channel_created (channel->channel_num,
-						  channel, 
-						  data->connection,
-						  data->user_data);
+			on_channel_created (channel_num,
+					    channel, 
+					    conn,
+					    user_data);
 			
 			/* if piggyback is defined, invoke the frame received
 			 * using the piggyback */
@@ -995,32 +1054,30 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 				frame = vortex_channel_get_piggyback (channel);
 				
 				/* invoke the frame received */
-				if (! vortex_channel_invoke_received_handler (data->connection, channel, frame))
+				if (! vortex_channel_invoke_received_handler (conn, channel, frame))
 					vortex_frame_unref (frame);
 			}
 		} else {
 			/* acquire a connection reference during
 			 * notification because the channel that owns
 			 * the reference has disapeared */
-			if (vortex_connection_ref (data->connection, "channel-create-null")) {
+			if (vortex_connection_ref (conn, "channel-create-null")) {
 
 				/* notify null reference received */
-				data->on_channel_created (-1, NULL, data->connection, data->user_data);
+				on_channel_created (-1, NULL, conn, user_data);
 
 				/* release reference */
-				vortex_connection_unref (data->connection, "channel-create-null");
+				vortex_connection_unref (conn, "channel-create-null");
 			} /* end if */
 		} /* end if */
 
 		/* free no longer needed data */
 		vortex_channel_unref (channel);
-		vortex_channel_data_free (data);
 		return NULL;
 	} /* end if */
 
 	/* free no longer needed data */
 	vortex_channel_unref (channel);
-	vortex_channel_data_free (data);
 	return channel;
 }
 
@@ -1147,7 +1204,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
  *
  *
  * @param connection           session where channel will be created.
- * @param channel_num          the channel number. Using 0 automatically assigns the next channel number free.
+ * @param channel_num          the channel number. Using 0 automatically set the next channel number free.
  * @param profile              the profile under the channel will be created.
  * @param close                handler to manage channel closing.
  * @param close_user_data      user data to be passed in to close handler.
@@ -1475,8 +1532,8 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 		return NULL;
 	}
 
-	if (profile == NULL || ! vortex_connection_is_ok (connection, axl_false)) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to create channel, received NULL profile or a non-connected BEEP session");
+	if (profile == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to create channel, received NULL profile");
 		return NULL;
 	}
 
@@ -5784,6 +5841,9 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 	int               channel_num   = data->channel_num;
 	VortexCtx       * ctx           = vortex_channel_get_ctx (channel);
 
+	/* release data soon */
+	axl_free (data);
+
 #if defined(ENABLE_VORTEX_LOG)	
  	if (vortex_log_is_enabled (ctx)) {
  		/* get type */
@@ -5829,8 +5889,6 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 
 	/* check to enforce serialize */
 	if (vortex_channel_check_serialize (ctx, connection, channel, frame)) {
-		/* free received data */
-		axl_free (data);
 
 		/* if the function returns axl_true, we must return
 		 * because the message was stored for later
@@ -5911,7 +5969,6 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 	vortex_connection_unref (connection, "second level handler (frame received)");
 
 	vortex_frame_unref (frame);
-	axl_free           (data);
 
 	return NULL;
 }
@@ -6648,7 +6705,7 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 		return;
 	}
 
-	/* check if the connection have masked the profile recevied */
+	/* check if the connection have masked the profile received */
 	if (vortex_connection_is_profile_filtered (connection, channel_num, profile, profile_content, encoding, serverName, frame, &aux)) {
 
 		/* free no longer used data */
@@ -7991,6 +8048,7 @@ VortexFrame   * vortex_channel_wait_reply              (VortexChannel * channel,
 	 * locked for an event that will never come */
 	queue = wait_reply->queue;
 	vortex_async_queue_ref (queue);
+
 	/* insert the on close notification first to avoid calling
 	   user defined on close handlers and execute our handler as
 	   soon as possible */
@@ -8292,6 +8350,7 @@ void               vortex_channel_wait_until_sent                (VortexChannel 
 {
 	VortexAsyncQueue * queue;
 	char             * rpy;
+	VortexCtx        * ctx;
 
 	/* get channel profile */
 	if (channel == NULL)
@@ -8306,8 +8365,22 @@ void               vortex_channel_wait_until_sent                (VortexChannel 
 	if (queue == NULL)
 		return;
 
+	/* insert close notification to detect connection broken
+	 * during wait operation */
+	vortex_connection_set_on_close_full2 (channel->connection, __vortex_channel_wait_reply_connection_broken, axl_false, queue);
+
 	/* wait until message is sent */
-	vortex_async_queue_pop   (queue);
+	if (PTR_TO_INT (vortex_async_queue_pop (queue)) == -3) {
+		ctx = CONN_CTX (channel->connection);
+		vortex_log (VORTEX_LEVEL_WARNING, "Found connection id=%d close during wait until sent operation for channel=%d", 
+			    vortex_connection_get_id (channel->connection), channel->channel_num);
+	} /* end if */
+
+	/* remove installed handler */
+	if (! vortex_connection_remove_on_close_full (channel->connection, __vortex_channel_wait_reply_connection_broken, queue)) {
+		/* handler was called during wait operation, get value from queue */
+		vortex_async_queue_pop (queue);
+	}
 	vortex_async_queue_unref (queue);
 	
 	return;
@@ -8468,8 +8541,11 @@ void              __vortex_channel_release_pending_messages (VortexChannel * cha
 		return;
 	
 	/* update reference counting during operation: due to reference from connection */
-	if (! vortex_channel_ref (channel)) 
+	if (! vortex_channel_ref (channel))  {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to release pending channel messages for channel=%d, failed to acquire reference",
+			    channel->channel_num);
 		return;
+	} /* end if */
 
 	/* get context */
 	ctx = vortex_channel_get_ctx (channel);

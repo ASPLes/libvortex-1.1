@@ -260,6 +260,9 @@ void                vortex_connection_set_data_full          (VortexConnection *
 							      axlDestroyFunc     key_destroy,
 							      axlDestroyFunc     value_destroy);
 
+void                vortex_connection_delete_key_data        (VortexConnection * connection,
+							      const char       * key);
+
 void                vortex_connection_set_connection_actions (VortexCtx              * ctx,
 							      VortexConnectionStage    stage,
 							      VortexConnectionAction   action_handler,
@@ -357,9 +360,9 @@ void                vortex_connection_remove_handler               (VortexConnec
 								    VortexConnectionHandler           handler_type,
 								    axlPointer                        handler_id);
 
-void                vortex_connection_set_receive_stamp            (VortexConnection * conn, long bytes);
+void                vortex_connection_set_receive_stamp            (VortexConnection * conn, long bytes_received, long bytes_sent);
 
-void                vortex_connection_get_receive_stamp            (VortexConnection * conn, long * bytes, long * last_idle_stamp);
+void                vortex_connection_get_receive_stamp            (VortexConnection * conn, long * bytes_received, long * bytes_sent, long * last_idle_stamp);
 
 void                vortex_connection_check_idle_status            (VortexConnection * conn, VortexCtx * ctx, long time_stamp);
 

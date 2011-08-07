@@ -37,7 +37,7 @@ export enable_gcc_debug = -g
 export MODE        = windows
 
 # AXL location:
-AXL_BUILD_DIR = "../../axl-0.6.5.b4686.g4692"
+AXL_BUILD_DIR = "../../axl-0.6.5.b4711.g4715"
 
 # Flags to compile OPENSSL
 # Uncomment the following lines, placing the libraries following the path

@@ -349,6 +349,8 @@ axl_bool vortex_init_check           (VortexCtx * ctx);
 void     vortex_exit_ctx             (VortexCtx * ctx, 
 				      axl_bool    free_ctx);
 
+axl_bool vortex_is_exiting           (VortexCtx * ctx);
+
 axl_bool vortex_log_is_enabled       (VortexCtx * ctx);
 
 axl_bool vortex_log2_is_enabled      (VortexCtx * ctx);

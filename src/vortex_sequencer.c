@@ -971,7 +971,7 @@ void	vortex_sequencer_drop_connection_messages (VortexConnection * conn)
 	/* check context and queue. Also check if the reader is
 	   re-initializing which means we are in the middle of some
 	   sort of process creation (fork ()) */
-	if (ctx == NULL || ctx->sequencer_queue == NULL || ctx->reader_cleanup)
+	if (ctx == NULL || ctx->sequencer_queue == NULL || ctx->reader_cleanup || ctx->vortex_exit)
 		return;
 
 	/* call to discard pending messages */

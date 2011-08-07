@@ -1269,8 +1269,8 @@ int         vortex_frame_receive_raw  (VortexConnection * connection, char  * bu
 	}
 
 	if (nread > 0) {
-		/* notify here frame received (content receieved) */
-		vortex_connection_set_receive_stamp (connection, (long) nread);
+		/* notify here frame received (content received) */
+		vortex_connection_set_receive_stamp (connection, (long) nread, 0);
 	}
 
 	/* ensure we don't access outside the array */
@@ -1373,6 +1373,10 @@ int          vortex_frame_readline (VortexConnection * connection, char  * buffe
 			return (-1);
 		}
 	}
+
+	/* notify here frame received (content received) */
+	vortex_connection_set_receive_stamp (connection, (long) (n + desp), 0);
+
 	*ptr = 0;
 	return (n + desp);
 
@@ -1426,7 +1430,7 @@ unsigned int  get_unsigned_int_value (char  * string, int  * position)
  * never overflows beep header length received.
  */
 #define CHECK_INDEX_AND_RETURN(value) do{               \
-   if (value == -2 || position > (header_length -1)) {	\
+   if (value == -2 || (position > (header_length -1))) {	\
 	   return -2;                                   \
    }                                                    \
 } while(0)
@@ -1446,17 +1450,16 @@ unsigned int  get_unsigned_int_value (char  * string, int  * position)
  * 
  * @return Returns the number of bytes read from the beep header line.
  */
-int  vortex_frame_get_header_data (VortexCtx * ctx, VortexConnection * connection, char  * beep_header, VortexFrame * frame)
+int  vortex_frame_get_header_data (VortexCtx * ctx, VortexConnection * connection, char  * beep_header, int header_length, VortexFrame * frame)
 {
 	int  position      = 0;
-	int  header_length;
 
 	/* check for null frame reader */
 	if (beep_header == NULL)
 		return 0;
 	
 	/* check for empty header */
-	header_length = strlen (beep_header);
+/*	header_length = strlen (beep_header); */
 	if (header_length == 0)
 		return -2;
 	vortex_log (VORTEX_LEVEL_DEBUG, "processing beep header: '%s' (length: %d)..",
@@ -1681,7 +1684,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	}
 
 	/* get the next frame according to the expected values */
-	bytes_read = vortex_frame_get_header_data (ctx, connection, &(line[4]), frame);
+	bytes_read = vortex_frame_get_header_data (ctx, connection, &(line[4]), bytes_read - 4, frame);
 	if (bytes_read == -2) {
 		/* free frame no longer needed */
 		axl_free (frame);
@@ -1957,6 +1960,9 @@ axl_bool             vortex_frame_send_raw     (VortexConnection * connection, c
 
  	/* sum total amount of data */
  	if (bytes > 0) {
+		/* notify content written (content received) */
+		vortex_connection_set_receive_stamp (connection, 0, bytes);
+
  		total += bytes;
 	}
 

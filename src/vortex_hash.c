@@ -484,8 +484,6 @@ axl_bool     vortex_hash_remove   (VortexHash *hash_table,
 
  	was_removed = axl_hash_remove (hash_table->table, key);
  	
-	axl_hash_remove (hash_table->table, key);
-	
 	vortex_mutex_unlock (&hash_table->mutex);
 
  	if (was_removed) {

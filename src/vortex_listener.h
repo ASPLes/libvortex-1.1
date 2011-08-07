@@ -63,6 +63,13 @@ VortexConnection * vortex_listener_new_full        (VortexCtx                * c
 						    VortexListenerReadyFull    on_ready_full, 
 						    axlPointer                 user_data);
 
+VortexConnection * vortex_listener_new_full2       (VortexCtx                * ctx,
+						    const char               * host,
+						    const char               * port,
+						    axl_bool                   register_conn,
+						    VortexListenerReadyFull    on_ready_full, 
+						    axlPointer                 user_data);
+
 VORTEX_SOCKET     vortex_listener_sock_listen      (VortexCtx   * ctx,
 						    const char  * host,
 						    const char  * port,

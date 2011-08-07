@@ -119,6 +119,7 @@ void      vortex_ctx_reinit (VortexCtx * ctx)
 	vortex_mutex_create (&ctx->ref_mutex);
 
 	/* the rest of mutexes are initialized by vortex_init_ctx. */
+	ctx->ref_count = 1;
 
 	return;
 }
@@ -447,7 +448,7 @@ axlPointer __vortex_ctx_notify_idle (VortexConnection * conn)
 		    vortex_connection_get_id (conn));
 
 	/* reset idle state to current time and notify idle notification finished */
-	vortex_connection_set_receive_stamp (conn, 0);
+	vortex_connection_set_receive_stamp (conn, 0, 0);
 	vortex_connection_set_data (conn, "vo:co:idle", NULL);
 
 	vortex_connection_unref (conn, "notify-idle");
@@ -557,9 +558,34 @@ void        vortex_ctx_ref                       (VortexCtx  * ctx)
 	/* acquire the mutex */
 	vortex_mutex_lock (&ctx->ref_mutex);
 	ctx->ref_count++;
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "increased references to VortexCtx %p (refs: %d)", ctx, ctx->ref_count);
+
 	vortex_mutex_unlock (&ctx->ref_mutex);
 
 	return;
+}
+
+/** 
+ * @brief Allows to get current reference counting state from provided
+ * vortex context.
+ *
+ * @param ctx The vortex context to get reference counting
+ *
+ * @return Reference counting or -1 if it fails.
+ */
+int         vortex_ctx_ref_count                 (VortexCtx  * ctx)
+{
+	int result;
+	if (ctx == NULL)
+		return -1;
+	
+	/* acquire the mutex */
+	/* vortex_mutex_lock (&ctx->ref_mutex); */
+	result = ctx->ref_count;
+	/* vortex_mutex_unlock (&ctx->ref_mutex); */
+
+	return result;
 }
 
 /** 
@@ -579,8 +605,18 @@ void        vortex_ctx_unref                     (VortexCtx ** ctx)
 	if (ctx == NULL || (*ctx) == NULL)
 		return;
 
-	/* check if we have to nullify after unref */
+	/* get local reference */
 	_ctx = (*ctx);
+
+	/* do sanity check */
+	if (_ctx->ref_count <= 0) {
+		_vortex_log (NULL, __AXL_FILE__, __AXL_LINE__, VORTEX_LEVEL_CRITICAL, "attempting to unref VortexCtx %p object more times than references supported", _ctx);
+		/* nullify */
+		(*ctx) = NULL;
+		return;
+	}
+
+	/* check if we have to nullify after unref */
 	vortex_mutex_lock (&_ctx->ref_mutex);
 	nullify =  (_ctx->ref_count == 1);
 	vortex_mutex_unlock (&_ctx->ref_mutex);
@@ -614,6 +650,8 @@ void        vortex_ctx_free (VortexCtx * ctx)
 	ctx->ref_count--;
 
 	if (ctx->ref_count != 0) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "decreased references to VortexCtx %p (refs: %d)", ctx, ctx->ref_count);
+
 		/* release mutex */
 		vortex_mutex_unlock (&ctx->ref_mutex);
 		return;
@@ -642,6 +680,8 @@ void        vortex_ctx_free (VortexCtx * ctx)
 	vortex_hash_destroy (ctx->data);
 	ctx->data = NULL;
 
+	vortex_log (VORTEX_LEVEL_DEBUG, "finishing VortexCtx %p", ctx);
+
 	/* release log mutex */
 	vortex_mutex_destroy (&ctx->log_mutex);
 	
@@ -652,6 +692,29 @@ void        vortex_ctx_free (VortexCtx * ctx)
 	/* free the context */
 	axl_free (ctx);
 	
+	return;
+}
+
+/** 
+ * @internal Function that allows to configure VortexClientConnCreated
+ * handler.
+ */
+void        vortex_ctx_set_client_conn_created (VortexCtx * ctx, 
+						VortexClientConnCreated conn_created,
+						axlPointer              user_data)
+{
+	if (ctx == NULL)
+		return;
+	ctx->conn_created = conn_created;
+	ctx->conn_created_data = user_data;
+	return;
+}
+
+void        __vortex_ctx_set_cleanup (VortexCtx * ctx)
+{
+	if (ctx == NULL)
+		return;
+	ctx->reader_cleanup = axl_true;
 	return;
 }
 

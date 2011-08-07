@@ -67,10 +67,20 @@ axl_bool  vortex_reader_invoke_frame_received       (VortexCtx        * ctx,
 
 /* internal API */
 typedef void (*VortexForeachFunc) (VortexConnection * conn, axlPointer user_data);
+typedef void (*VortexForeachFunc3) (VortexConnection * conn, 
+				    axlPointer         user_data, 
+				    axlPointer         user_data2,
+				    axlPointer         user_data3);
 
 VortexAsyncQueue * vortex_reader_foreach       (VortexCtx            * ctx,
 						VortexForeachFunc      func,
 						axlPointer             user_data);
+
+void               vortex_reader_foreach_offline (VortexCtx           * ctx,
+						  VortexForeachFunc3    func,
+						  axlPointer            user_data,
+						  axlPointer            user_data2,
+						  axlPointer            user_data3);
 
 void               vortex_reader_restart (VortexCtx * ctx);
 

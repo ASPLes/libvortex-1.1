@@ -664,7 +664,7 @@ axl_bool   vortex_reader_register_watch (VortexReaderData * data, axlList * con_
 		/* check the connection */
 		if (!vortex_connection_is_ok (connection, axl_false)) {
 			/* check if we can free this connection */
-			vortex_connection_unref (connection, "vortex reader (process)");
+			vortex_connection_unref (connection, "vortex reader (watch)");
 			vortex_log (VORTEX_LEVEL_DEBUG, "received a non-valid connection, ignoring it");
 
 			/* release data */
@@ -957,11 +957,14 @@ VORTEX_SOCKET __vortex_reader_build_set_to_watch_aux (VortexCtx     * ctx,
 		/* check ok status */
 		if (! vortex_connection_is_ok (connection, axl_false)) {
 
-			/* connection isn't ok, unref it */
-			vortex_connection_unref (connection, "vortex reader (process)");
-
-			/* and remove current cursor */
+			/* FIRST: remove current cursor to ensure the
+			 * connection is out of our handling before
+			 * finishing the reference the reader owns */
 			axl_list_cursor_unlink (cursor);
+
+			/* connection isn't ok, unref it */
+			vortex_connection_unref (connection, "vortex reader (build set)");
+
 			continue;
 		} /* end if */
 
@@ -970,19 +973,22 @@ VORTEX_SOCKET __vortex_reader_build_set_to_watch_aux (VortexCtx     * ctx,
 			/* remove the unwatch flag from the connection */
 			connection->reader_unwatch = axl_false;
 
+			/* FIRST: remove current cursor to ensure the
+			 * connection is out of our handling before
+			 * finishing the reference the reader owns */
+			axl_list_cursor_unlink (cursor);
+
 			/* connection isn't ok, unref it */
 			vortex_connection_unref (connection, "vortex reader (process: unwatch)");
 
-			/* and remove current cursor */
-			axl_list_cursor_unlink (cursor);
 			continue;
 		} /* end if */
 
 		/* check if the connection is blocked (no I/O read to
 		 * perform on it) */
 		if (vortex_connection_is_blocked (connection)) {
-			vortex_log (VORTEX_LEVEL_DEBUG, "connection id=%d has I/O read blocked (vortex_connection_block)", 
-				    vortex_connection_get_id (connection));
+			/* vortex_log (VORTEX_LEVEL_DEBUG, "connection id=%d has I/O read blocked (vortex_connection_block)", 
+			   vortex_connection_get_id (connection)); */
 			/* get the next */
 			axl_list_cursor_next (cursor);
 			continue;
@@ -1000,13 +1006,16 @@ VORTEX_SOCKET __vortex_reader_build_set_to_watch_aux (VortexCtx     * ctx,
 			vortex_log (VORTEX_LEVEL_WARNING, 
 				    "unable to add the connection to the vortex reader watching set. This could mean you did reach the I/O waiting mechanism limit.");
 
+			/* FIRST: remove current cursor to ensure the
+			 * connection is out of our handling before
+			 * finishing the reference the reader owns */
+			axl_list_cursor_unlink (cursor);
+
 			/* set it as not connected */
 			if (vortex_connection_is_ok (connection, axl_false))
-				__vortex_connection_set_not_connected (connection, "vortex reader (process)", VortexError);
-			vortex_connection_unref (connection, "vortex reader (process)");
+				__vortex_connection_set_not_connected (connection, "vortex reader (add fail)", VortexError);
+			vortex_connection_unref (connection, "vortex reader (add fail)");
 
-			/* and remove current cursor */
-			axl_list_cursor_unlink (cursor);
 			continue;
 		} /* end if */
 
@@ -1061,11 +1070,13 @@ void __vortex_reader_check_connection_list (VortexCtx     * ctx,
 		 * connection */
 		connection = axl_list_cursor_get (con_cursor);
 		if (!vortex_connection_is_ok (connection, axl_false)) {
-			/* connection isn't ok, unref it */
-			vortex_connection_unref (connection, "vortex reader (process)");
-
-			/* and remove current cursor */
+			/* FIRST: remove current cursor to ensure the
+			 * connection is out of our handling before
+			 * finishing the reference the reader owns */
 			axl_list_cursor_unlink (con_cursor);
+
+			/* connection isn't ok, unref it */
+			vortex_connection_unref (connection, "vortex reader (check list)");
 			continue;
 		}
 		
@@ -1113,11 +1124,13 @@ int  __vortex_reader_check_listener_list (VortexCtx     * ctx,
 			vortex_log (VORTEX_LEVEL_DEBUG, "vortex reader found listener id=%d not operational, unreference",
 				    vortex_connection_get_id (connection));
 
+			/* FIRST: remove current cursor to ensure the
+			 * connection is out of our handling before
+			 * finishing the reference the reader owns */
+			axl_list_cursor_unlink (srv_cursor);
+
 			/* connection isn't ok, unref it */
 			vortex_connection_unref (connection, "vortex reader (process), listener closed");
-
-			/* and remove current cursor */
-			axl_list_cursor_unlink (srv_cursor);
 
 			/* update checked connections */
 			checked++;
@@ -1348,6 +1361,7 @@ int  vortex_reader_connections_watched         (VortexCtx        * ctx)
 {
 	if (ctx == NULL || ctx->con_list == NULL || ctx->srv_list == NULL)
 		return 0;
+	
 	/* return list */
 	return axl_list_length (ctx->con_list) + axl_list_length (ctx->srv_list);
 }
@@ -1389,7 +1403,7 @@ void vortex_reader_watch_connection (VortexCtx        * ctx,
 	}
 
 	/* increase reference counting */
-	if (! vortex_connection_ref (connection, "vortex reader (process)")) {
+	if (! vortex_connection_ref (connection, "vortex reader (watch)")) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to increase connection reference count, dropping connection");
 		return;
 	}
@@ -1457,6 +1471,8 @@ axl_bool  vortex_reader_run (VortexCtx * ctx)
 	/* check connection list to be previously created to terminate
 	   it without closing sockets associated to each connection */
 	if (ctx->con_list != NULL) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "releasing previous client connections, installed: %d",
+			    axl_list_length (ctx->con_list));
 		ctx->reader_cleanup = axl_true;
 		axl_list_lookup (ctx->con_list, __vortex_reader_configure_conn, NULL);
 		axl_list_cursor_free (ctx->con_cursor);
@@ -1465,12 +1481,14 @@ axl_bool  vortex_reader_run (VortexCtx * ctx)
 		ctx->con_cursor = NULL;
 	} /* end if */
 	if (ctx->srv_list != NULL) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "releasing previous listener connections, installed: %d",
+			    axl_list_length (ctx->srv_list));
 		ctx->reader_cleanup = axl_true;
 		axl_list_lookup (ctx->srv_list, __vortex_reader_configure_conn, NULL);
 		axl_list_cursor_free (ctx->srv_cursor);
 		axl_list_free (ctx->srv_list);
 		ctx->srv_list   = NULL;
-		ctx->con_cursor = NULL;
+		ctx->srv_cursor = NULL;
 	} /* end if */
 
 	/* clear reader cleanup flag */
@@ -1634,6 +1652,45 @@ VortexAsyncQueue * vortex_reader_foreach                     (VortexCtx         
 	/* return a reference */
 	return queue;
 }
+
+/** 
+ * @internal Iterate over all connections currently stored on the
+ * provided context associated to the vortex reader. This function is
+ * only usable when the context is stopped.
+ */
+void               vortex_reader_foreach_offline (VortexCtx           * ctx,
+						  VortexForeachFunc3    func,
+						  axlPointer            user_data,
+						  axlPointer            user_data2,
+						  axlPointer            user_data3)
+{
+	/* first iterate over all client connextions */
+	axl_list_cursor_first (ctx->con_cursor);
+	while (axl_list_cursor_has_item (ctx->con_cursor)) {
+
+		/* notify connection */
+		func (axl_list_cursor_get (ctx->con_cursor), user_data, user_data2, user_data3);
+
+		/* next item */
+		axl_list_cursor_next (ctx->con_cursor);
+	} /* end while */
+
+	/* now iterate over all server connections */
+	axl_list_cursor_first (ctx->srv_cursor);
+	while (axl_list_cursor_has_item (ctx->srv_cursor)) {
+
+		/* notify connection */
+		func (axl_list_cursor_get (ctx->srv_cursor), user_data, user_data2, user_data3);
+
+		/* next item */
+		axl_list_cursor_next (ctx->srv_cursor);
+	} /* end while */
+
+	return;
+}
+
+
+
 
 /** 
  * @internal Allows to restart the vortex reader module, locking the

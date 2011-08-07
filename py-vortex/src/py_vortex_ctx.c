@@ -185,6 +185,9 @@ PyObject * py_vortex_ctx_get_attr (PyObject *o, PyObject *attr_name) {
 	} else if (axl_cmp (attr, "color_log")) {
 		/* color_log attribute */
 		return Py_BuildValue ("i", vortex_color_log_is_enabled (self->ctx));
+	} else if (axl_cmp (attr, "ref_count")) {
+		/* ref counting */
+		return Py_BuildValue ("i", vortex_ctx_ref_count (self->ctx));
 	} /* end if */
 
 	/* first implement generic attr already defined */
@@ -273,8 +276,21 @@ axl_bool py_vortex_ctx_bridge_event (VortexCtx * ctx, axlPointer user_data, axlP
 	axl_bool             _result;
 	PyVortexEventData  * data       = user_data;
 	char               * str;
+	
+	/* check if vortex engine is existing */
+	if (vortex_is_exiting (ctx))
+		return axl_true;
+
+	/* check to skip events */
+	if (PTR_TO_INT (vortex_ctx_get_data (ctx, "py:vo:ctx:de"))) {
+		py_vortex_log (PY_VORTEX_DEBUG, "disabled bridged event into python code, vortex exiting=%d..",
+			       vortex_is_exiting (ctx));
+		return axl_true;
+	}
 
 	/* acquire the GIL */
+	/* py_vortex_log (PY_VORTEX_DEBUG, "bridging event to python code (getting GIL) vortex exiting=%d..",
+	   vortex_is_exiting (ctx)); */
 	state = PyGILState_Ensure();
 
 	/* create a tuple to contain arguments */
@@ -293,7 +309,7 @@ axl_bool py_vortex_ctx_bridge_event (VortexCtx * ctx, axlPointer user_data, axlP
 	/* now invoke */
 	result = PyObject_Call (data->handler, args, NULL);
 
-	py_vortex_log (PY_VORTEX_DEBUG, "event notification finished, checking for exceptions and result..");
+	/* py_vortex_log (PY_VORTEX_DEBUG, "event notification finished, checking for exceptions and result.."); */
 	py_vortex_handle_and_clear_exception (NULL);
 
 	/* now get result value */
@@ -308,7 +324,10 @@ axl_bool py_vortex_ctx_bridge_event (VortexCtx * ctx, axlPointer user_data, axlP
 
 	/* in the case the python code signaled to finish the event,
 	 * terminate content inside ctx */
-	if (_result) {
+	if (_result || vortex_is_exiting (ctx)) {
+		py_vortex_log (PY_VORTEX_DEBUG, "removing bridged event vortex exiting=%d _result=%d..",
+			       vortex_is_exiting (ctx), _result);
+
 		/* call to remove event before returning */
 		vortex_thread_pool_remove_event (ctx, data->id);
 
@@ -465,7 +484,6 @@ PyObject * py_vortex_ctx_create (VortexCtx * ctx)
 
 			obj->ctx = ctx;
 			vortex_ctx_ref (ctx);
-			
 		} 
 
 		/* flag to not exit once the ctx is deallocated */
