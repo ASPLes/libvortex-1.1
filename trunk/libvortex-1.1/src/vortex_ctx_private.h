@@ -290,6 +290,12 @@ struct _VortexCtx {
 	 * to the function once executed.
 	 */
 	axlPointer              next_frame_size_data;
+
+	/** 
+	 * @internal References to client connection created handler.
+	 */
+	VortexClientConnCreated conn_created;
+	axlPointer              conn_created_data;
 };
 
 #endif /* __VORTEX_CTX_PRIVATE_H__ */

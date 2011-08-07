@@ -208,16 +208,20 @@ void __vortex_thread_pool_process_events (VortexCtx * ctx, VortexThreadPool * po
  * 
  * This helper function dispatch the work to the right handler
  **/
-axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * data)
+axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * _data)
 {
 	/* get current context */
 	VortexThreadPoolTask * task;
-	VortexThread         * thread = data->thread;
-	VortexThreadPool     * pool   = data->pool;
+	VortexThread         * thread = _data->thread;
+	VortexThreadPool     * pool   = _data->pool;
 	VortexCtx            * ctx    = pool->ctx;
 	VortexAsyncQueue     * queue  = pool->queue;
 
-	axl_free (data);
+	/* local pointers to release soon data object */
+	VortexThreadFunc       func;
+	axlPointer             data;
+
+	axl_free (_data);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "thread from pool started");
 
@@ -278,12 +282,14 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * data)
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "--> thread from pool processing new job");
 
-		/* at this point we already are executing inside a thread */
-		if (! ctx->thread_pool_being_stopped && ! ctx->vortex_exit)
-			task->func (task->data);
-
-		/* free the task */
+		/* grab references to release before call */
+		func = task->func;
+		data = task->data;
 		axl_free (task);
+
+		/* at this point we already are executing inside a thread */
+		if (! ctx->thread_pool_being_stopped && ! ctx->vortex_exit) 
+			func (data);
 
 		/* call to process events after finishing tasks */
 		__vortex_thread_pool_process_events (ctx, pool);
@@ -596,6 +602,7 @@ void vortex_thread_pool_new_task (VortexCtx * ctx, VortexThreadFunc func, axlPoi
 
 	/* create the task data */
 	task       = malloc (sizeof (VortexThreadPoolTask));
+
 	/* check allocated result */
 	if (task == NULL)
 		return;

@@ -170,10 +170,11 @@ axl_bool           vortex_alive_init                       (VortexCtx * ctx)
 axl_bool __vortex_alive_found_activity (VortexCtx * ctx, VortexConnection * conn, VortexAliveData * data)
 {
 	long              bytes_received;
+	long              bytes_sent;
 	long              last_idle_stamp;
 
 	/* get current stamp and bytes received */
-	vortex_connection_get_receive_stamp (conn, &bytes_received, &last_idle_stamp);
+	vortex_connection_get_receive_stamp (conn, &bytes_received, &bytes_sent, &last_idle_stamp);
 
 	/* check against values previously recorded */
 	if (bytes_received > data->bytes_received || last_idle_stamp > data->last_idle_stamp) {
@@ -493,7 +494,7 @@ axl_bool           vortex_alive_enable_check               (VortexConnection * c
 	vortex_connection_set_on_close_full (conn, __vortex_alive_connection_closed, data);
 
 	/* record current bytes received and idle stamp */
-	vortex_connection_get_receive_stamp (conn, &data->bytes_received, &data->last_idle_stamp);
+	vortex_connection_get_receive_stamp (conn, &data->bytes_received, NULL, &data->last_idle_stamp);
 
 	/* install event to create the channel */
 	data->event_id = vortex_thread_pool_new_event (ctx, check_period > 40000 ? check_period : 40000, __vortex_alive_create_channel, data, NULL);

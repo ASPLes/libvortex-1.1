@@ -1196,6 +1196,23 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
 	return;
 }
 
+/** 
+ * @brief Allows to check if vortex engine started on the provided
+ * context is finishing (a call to \ref vortex_ctx_exit was done).
+ *
+ * @param ctx The context to check if it is exiting.
+ *
+ * @return axl_true in the case the context is finished, otherwise
+ * axl_false is returned. The function also returns axl_false when
+ * NULL reference is received.
+ */
+axl_bool vortex_is_exiting           (VortexCtx * ctx)
+{
+	if (ctx == NULL)
+		return axl_false;
+	return (ctx->vortex_exit);
+}
+
 /* @} */
 
 
@@ -3205,22 +3222,14 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * vortex_channel_send_msg (channel, "request B", 9, NULL);
  * \endcode
  *
- * Obviously, this seems to be pretty clear if you place the problem
- * at a very few lines. However, previous interactions are usually
- * produced by a function called, in your code that is likely to be
- * named as <b>make_invocation</b>, which calls to \ref
- * vortex_channel_set_received_handler and then to \ref
- * vortex_channel_send_msg, which starts to be not so obvious.
- *
- * The key concept here is to ensure that every message reply to be
- * received must be processed by the right frame receive handler. This
- * could be accomplish using several techniques:
+ * The key concept here is to ensure that every message reply is
+ * processed by the right frame receive handler. This could be
+ * accomplish using several techniques:
  *
  * <ul>
  * <li>If you are using a request/response pattern, you have to know
- * that several request/response patterns could not be under the same
- * channel without having blocking problems usually called
- * <b>head-of-line</b>. 
+ * that several request/response interactions can be under the same
+ * channel but each one will block the next (causing <b>head-of-line</b>). 
  * 
  * You are likely to be interested in using a different channel to
  * perform the request/response invocation or to wait to use an
@@ -3253,8 +3262,9 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  * The alternative is to create a channel and close it for each
  * request/response performed. This will allow to have a clear
  * implementation, with a particular frame receive handler for each
- * channel. The question is that this have a really great performance
- * impact. Using this technique your program will do for every request:
+ * channel. The question is that this have a really poor
+ * performance. Using this technique your program will do for every
+ * request:
  *
  *  - Create a channel (sending a channel request and make your program wait for its reply).
  *  - Perform the request/response pattern (sending the request and waiting for the response).
@@ -3274,13 +3284,11 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  *
  * </ul>
  *
- * At any case it is recommended, while using the request/response
- * pattern, to use the \ref vortex_channel_pool "Channel Pool" feature
- * which will allow you to avoid race conditions while getting a
- * channel that is ready but being asked by several threads at the
- * same time. It will also negotiate for you a new channel to be
- * created if the channel pool doesn't have any channel in the ready
- * state.
+ * In this context it is recommended to use the \ref
+ * vortex_channel_pool "Channel Pool" feature which will allow you to
+ * avoid race conditions while getting a channel that is ready. It will also
+ * negotiate for you a new channel to be created if the channel pool
+ * doesn't have any channel in the ready state.
  * 
  * It is really easy to change current code implemented to use vortex
  * channel pool. Here is an example:

@@ -1299,6 +1299,31 @@ void               vortex_async_queue_ref       (VortexAsyncQueue * queue)
 }
 
 /** 
+ * @brief Returns current reference counting for the provided queue.
+ *
+ * @param queue The async queue to get reference counting from.
+ *
+ * @return The reference counting or -1 if it fails.
+ */
+int                vortex_async_queue_ref_count (VortexAsyncQueue * queue)
+{
+	int result;
+
+	v_return_val_if_fail (queue, -1);
+
+	/* get the mutex */
+	vortex_mutex_lock (&queue->mutex);
+
+	/* update reference */
+	result = queue->reference;
+
+	/* unlock the mutex */
+	vortex_mutex_unlock (&queue->mutex);
+
+	return result;
+}
+
+/** 
  * @brief Decrease the reference counting deallocating all resources
  * associated with the queue if such counting reach zero.
  * 

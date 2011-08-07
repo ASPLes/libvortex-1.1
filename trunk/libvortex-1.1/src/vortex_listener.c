@@ -80,6 +80,8 @@ void vortex_listener_accept_connection    (VortexConnection * connection, axl_bo
 	int                          iterator;
 	VortexListenerOnAcceptData * data;
 	VortexConnection           * listener;
+	VortexOnAcceptedConnection   on_accept;
+	axlPointer                   on_accept_data;
 
 	/* check received reference */
 	if (connection == NULL)
@@ -105,22 +107,34 @@ void vortex_listener_accept_connection    (VortexConnection * connection, axl_bo
 			result = axl_false;
 			break;
 		} /* end if */
-			
+
+		/* get safe references to handlers */
+		on_accept      = data->on_accept;
+		on_accept_data = data->on_accept_data;
+
+		/* unlock during notification */
+		vortex_mutex_unlock (&ctx->listener_mutex);
 
 		/* check if the following handler accept the incoming
 		 * connection */
 		vortex_log (VORTEX_LEVEL_DEBUG, "calling to accept connection, handler: %p, data: %p",
 			    data->on_accept, data->on_accept_data);
-		if (! data->on_accept (connection, data->on_accept_data)) {
+		if (! on_accept (connection, on_accept_data)) {
+
+			/* init lock */
+			vortex_mutex_lock (&ctx->listener_mutex);
 
 			vortex_log (VORTEX_LEVEL_DEBUG, "on accept handler have denied to accept the connection, handler: %p, data: %p",
-				    data->on_accept, data->on_accept_data);
+				    on_accept, on_accept_data);
 
 			/* found that at least one handler do not
 			 * accept the incoming connection, dropping */
 			result = axl_false;
 			break;
 		}
+
+		/* init lock */
+		vortex_mutex_lock (&ctx->listener_mutex);
 		
 		/* next iterator */
 		iterator++;
@@ -204,6 +218,13 @@ void          vortex_listener_complete_register    (VortexConnection     * conne
 	return;
 }
 
+void __vortex_listener_release_master_ref (axlPointer ptr)
+{
+	/* release master reference */
+	vortex_connection_unref ((VortexConnection *) ptr, "master release");
+	return;
+}
+
 /** 
  * @internal
  *
@@ -264,7 +285,8 @@ void __vortex_listener_initial_accept (VortexCtx        * ctx,
 
 	/* configure the relation between this connection and the
 	 * master listener connection */
-	vortex_connection_set_data (connection, "_vo:li:master", listener);
+	if (vortex_connection_ref (listener, "master ref"))
+		vortex_connection_set_data_full (connection, "_vo:li:master", listener, NULL, __vortex_listener_release_master_ref);
 
 	/*
 	 * Perform an initial accept, flagging the connection to be
@@ -471,6 +493,7 @@ typedef struct _VortexListenerData {
 	VortexListenerReadyFull    on_ready_full;
 	axlPointer                 user_data;
 	axl_bool                   threaded;
+	axl_bool                   register_conn;
 	VortexCtx                * ctx;
 }VortexListenerData;
 
@@ -589,16 +612,17 @@ VORTEX_SOCKET     vortex_listener_sock_listen      (VortexCtx   * ctx,
 
 axlPointer __vortex_listener_new (VortexListenerData * data)
 {
-	char               * host      = data->host;
-	axl_bool             threaded  = data->threaded;
-	char               * str_port  = axl_strdup_printf ("%d", data->port);
-	axlPointer           user_data = data->user_data;
-	const char         * message   = NULL;
-	VortexConnection   * listener  = NULL;
-	VortexCtx          * ctx       = data->ctx;
-	VortexStatus         status    = VortexOk;
+	char               * host          = data->host;
+	axl_bool             threaded      = data->threaded;
+	axl_bool             register_conn = data->register_conn;
+	char               * str_port      = axl_strdup_printf ("%d", data->port);
+	axlPointer           user_data     = data->user_data;
+	const char         * message       = NULL;
+	VortexConnection   * listener      = NULL;
+	VortexCtx          * ctx           = data->ctx;
+	VortexStatus         status        = VortexOk;
 	char               * host_used;
-	axlError           * error     = NULL;
+	axlError           * error         = NULL;
 	VORTEX_SOCKET        fd;
 	struct sockaddr_in   sin;
 
@@ -645,7 +669,8 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 		break;
 	default:
 		/* register the listener socket at the Vortex Reader process.  */
-		vortex_reader_watch_listener (ctx, listener);
+		if (register_conn)
+			vortex_reader_watch_listener (ctx, listener);
 		if (threaded) {
 			vortex_log (VORTEX_LEVEL_DEBUG, "doing listener notification (threaded mode)");
 			/* notify listener created */
@@ -703,6 +728,7 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
 						  const char              * host,
 						  int                       port,
+						  axl_bool                  register_conn,
 						  VortexListenerReady       on_ready, 
 						  VortexListenerReadyFull   on_ready_full,
 						  axlPointer                user_data)
@@ -724,6 +750,7 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
 	data->on_ready_full = on_ready_full;
 	data->user_data     = user_data;
 	data->ctx           = ctx;
+	data->register_conn = register_conn;
 	data->threaded      = (on_ready != NULL) || (on_ready_full != NULL);
 	
 	/* make request */
@@ -938,7 +965,7 @@ VortexConnection * vortex_listener_new (VortexCtx           * ctx,
 					axlPointer            user_data)
 {
 	/* call to int port API */
-	return __vortex_listener_new_common (ctx, host, __vortex_listener_get_port (port), on_ready, NULL, user_data);
+	return __vortex_listener_new_common (ctx, host, __vortex_listener_get_port (port), axl_true, on_ready, NULL, user_data);
 }
 
 /** 
@@ -989,7 +1016,49 @@ VortexConnection * vortex_listener_new_full  (VortexCtx   * ctx,
 					      axlPointer user_data)
 {
 	/* call to int port API */
-	return __vortex_listener_new_common (ctx, host, __vortex_listener_get_port (port), NULL, on_ready_full, user_data);
+	return __vortex_listener_new_common (ctx, host, __vortex_listener_get_port (port), axl_true, NULL, on_ready_full, user_data);
+}
+
+/** 
+ * @brief Allows to create a BEEP listener optionally not registering
+ * it on vortex reader. See \ref vortex_listener_new_full for more
+ * details.
+ *
+ * @param ctx The context where the operation will be performed.
+ * 
+ * @param host The host to listen on.
+ *
+ * @param port The port to listen on.
+ *
+ * @param register_conn axl_true makes the function to work like \ref
+ * vortex_listener_new_full. Otherwise, axl_false makes the listener
+ * created to be not registered on vortex reader process.
+ *
+ * @param on_ready_full A optional callback to get a notification when
+ * vortex listener is ready to accept requests.
+ *
+ * @param user_data A user defined pointer to be passed in to
+ * <i>on_ready</i> handler.
+ *
+ * @return The listener connection created, or NULL if the optional
+ * handler is provided (on_ready).
+ *
+ * <b>IMPORTANT NOTE:</b>
+ *
+ * All vortex_listener_new* functions have a common behavior which is
+ * reference returned is owned by the vortex engine. In this case, if
+ * the caller passes register_conn = axl_false makes the reference
+ * returned or notified to be owned by the caller.
+ */
+VortexConnection * vortex_listener_new_full2       (VortexCtx                * ctx,
+						    const char               * host,
+						    const char               * port,
+						    axl_bool                   register_conn,
+						    VortexListenerReadyFull    on_ready_full, 
+						    axlPointer                 user_data)
+{
+	/* call to int port API */
+	return __vortex_listener_new_common (ctx, host, __vortex_listener_get_port (port), register_conn, NULL, on_ready_full, user_data);
 }
 
 /** 
@@ -1035,7 +1104,7 @@ VortexConnection * vortex_listener_new2    (VortexCtx   * ctx,
 {
 
 	/* call to common API */
-	return __vortex_listener_new_common (ctx, host, port, on_ready, NULL, user_data);
+	return __vortex_listener_new_common (ctx, host, port, axl_true, on_ready, NULL, user_data);
 }
 
 

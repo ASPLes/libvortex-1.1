@@ -118,9 +118,9 @@ typedef void (*VortexListenerReadyFull)           (char  * host, int  port, Vort
  *  - \ref vortex_connection_new 
  * 
  * Optional handler defined to report the final status for a \ref
- * vortex_connection_new process. This handler allows you to create a
- * new connection to a vortex server (BEEP enabled peer) in a
- * non-blocking (or asynchronously way). 
+ * vortex_connection_new process. This handler allows to create a new
+ * connection to a vortex server (BEEP enabled peer) in a non-blocking
+ * way.
  * 
  * Once the connection creation process have finished, no matter which
  * is the final result, the handler is invoked.
@@ -294,7 +294,7 @@ typedef void (*VortexOnNotifyCloseChannel) (VortexChannel * channel,
  *   - \ref vortex_channel_pool_new
  *   - \ref vortex_channel_queue_reply
  * 
- * This handler allows you to control received frames from remote
+ * This handler allows to control received frames from remote
  * peers. <b>channel</b> parameter is the channel where the
  * <b>frame</b> was received. <b>connection</b> parameter represent
  * the connection where the channel is running. Finally,
@@ -323,7 +323,7 @@ typedef  void     (*VortexOnFrameReceived)     (VortexChannel    * channel,
  * Function using this handler:
  *  - \ref vortex_channel_new
  *
- * This handler allows you to define a notify function that will be
+ * This handler allows to define a notify function that will be
  * called once the channel is created or something have failed with
  * errors such as timeout reached or channel creation process
  * failures.
@@ -433,7 +433,7 @@ typedef VortexChannel * (* VortexChannelPoolCreate) (VortexConnection     * conn
  * VortexOnClosedNotification but without requiring an optional user
  * data pointer. See also \ref vortex_channel_close.
  *
- * This handler allows you to defined a notify function that will be
+ * This handler allows to defined a notify function that will be
  * called once the channel close indication is received. This is
  * mainly used by \ref vortex_channel_close to avoid caller get
  * blocked by calling that function.
@@ -468,7 +468,7 @@ typedef void     (*VortexOnClosedNotificationFull) (VortexConnection * connectio
  * close function you can try \ref vortex_channel_close_full (and its
  * handler \ref VortexOnClosedNotificationFull).
  *
- * This handler allows you to defined a notify function that will be
+ * This handler allows to defined a notify function that will be
  * called once the channel close indication is received. This is
  * mainly used by \ref vortex_channel_close to avoid caller get
  * blocked by calling that function.
@@ -1177,7 +1177,12 @@ typedef void (* VortexPayloadFeederFinishedHandler) (VortexChannel        * chan
 						     VortexPayloadFeeder  * feeder,
 						     axlPointer             user_data);
 				      
-
+/** 
+ * @internal Handler used for debugging. Not really useful for end user application.
+ */
+typedef void (* VortexClientConnCreated) (VortexCtx        * ctx,
+					  VortexConnection * conn,
+					  axlPointer         user_data);
 #endif
 
 /* @} */

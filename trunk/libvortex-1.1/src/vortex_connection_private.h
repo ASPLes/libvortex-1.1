@@ -323,9 +323,10 @@ struct _VortexConnection {
 
 	/** 
 	 * @internal Value to track now many bytes has being received
-	 * on this connection.
+	 * and sent on this connection.
 	 */
 	long                    bytes_received;
+	long                    bytes_sent;
 
 	/** 
 	 * @internal Value that makes the connection to be

@@ -77,9 +77,9 @@ Module API
 
       (Read only attribute) (True/False) returns or set current debug log colourification. See vortex_color_log_is_enabled.
 
-   .. attribute:: conn
+   .. attribute:: ref_count
 
-      (Read only attribute) (vortex.Connection) returns a reference to the connection where the channel is working.
+      (Read only attribute) (Number) returns current vortex.Ctx reference counting state.
 
    .. attribute:: set_serialize
 

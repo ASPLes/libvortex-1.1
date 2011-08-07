@@ -1032,6 +1032,7 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 	/* local variable declarations for this function */
 	VortexChannel        * channel;
 	VortexAsyncQueue     * queue;
+	char                 * queue_p;
 	char                 * base64_blob;
 	char                 * status_msg = "SASL error not defined!";
 
@@ -1051,8 +1052,14 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 		return;
 	}
 
-	/* create the channel */
 	queue   = vortex_async_queue_new ();
+	/* store reference inside connection */
+	queue_p = axl_strdup_printf ("%p", queue);
+	vortex_connection_set_data_full (connection,
+					 queue_p, queue, 
+					 axl_free, (axlDestroyFunc) vortex_async_queue_unref);
+
+	/* create the channel */
 	channel = vortex_channel_new_fullv (/* the connection where the SASL profile will be negotiated */
 		                            connection,   
 					    /* use the next free channel to be used */
@@ -1089,7 +1096,7 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 	vortex_log (VORTEX_LEVEL_DEBUG, "SASL channel creation reply received");
 	if (channel == NULL) {
 		/* unref queue */
-		vortex_async_queue_unref (queue);
+		vortex_connection_set_data (connection, queue_p, NULL);
 		
 		/* notify user space  */
 		__vortex_sasl_notify (process_status, connection, VortexError, 
@@ -1105,7 +1112,7 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 	 * race condition */
 	if (! vortex_connection_ref (connection, "vortex-sasl-next")) {
 		/* unref queue */
-		vortex_async_queue_unref (queue);
+		vortex_connection_set_data (connection, queue_p, NULL);
 		
 		/* notify user space  */
 		__vortex_sasl_notify (process_status, connection, VortexError, 
@@ -1118,7 +1125,7 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 					       connection, process_status, &status_msg, user_data)) {
 		
 		/* unref queue */
-		vortex_async_queue_unref (queue);
+		vortex_connection_set_data (connection, queue_p, NULL);
 		
 		/* because the SASL profile negotiation have failed,
 		 * close the channel only if the connection is ok */
@@ -1138,7 +1145,7 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 	} /* end if */
 
 	/* unref queue */
-	vortex_async_queue_unref (queue);
+	vortex_connection_set_data (connection, queue_p, NULL);
 
 	/* SASL operation is OK */
 
@@ -1405,6 +1412,7 @@ void               vortex_sasl_start_auth_sync           (VortexConnection     *
 {
 	/* timeout object */
 	axlPointer         _status;
+	char             * queue_p;
 
 	/* create an async queue and increase queue reference so the
 	 * function could unref it without worry about race conditions
@@ -1414,6 +1422,12 @@ void               vortex_sasl_start_auth_sync           (VortexConnection     *
 
 	/* ref the queue (due to previous comment) */
 	vortex_async_queue_ref (queue);
+
+	/* store reference inside connection */
+	queue_p = axl_strdup_printf ("%p", queue);
+	vortex_connection_set_data_full (connection,
+					 queue_p, queue, 
+					 axl_free, (axlDestroyFunc) vortex_async_queue_unref);
 
 	/* start SASL negotiation */
 	vortex_sasl_start_auth (connection,  profile, __vortex_sasl_start_auth_sync_process,
@@ -1438,8 +1452,8 @@ void               vortex_sasl_start_auth_sync           (VortexConnection     *
 	else
 		vortex_async_queue_pop (queue);
 
-	/* unref the queue */
-	vortex_async_queue_unref (queue);
+	/* unref queue */
+	vortex_connection_set_data (connection, queue_p, NULL);
 
 	return;
 }
