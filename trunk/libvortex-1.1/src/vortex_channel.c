@@ -8539,6 +8539,9 @@ void              __vortex_channel_release_pending_messages (VortexChannel * cha
 	/* do nothing if the channel reference is NULL */
 	if (channel == NULL)
 		return;
+
+	/* get context */
+	ctx = vortex_channel_get_ctx (channel);
 	
 	/* update reference counting during operation: due to reference from connection */
 	if (! vortex_channel_ref (channel))  {
@@ -8548,7 +8551,6 @@ void              __vortex_channel_release_pending_messages (VortexChannel * cha
 	} /* end if */
 
 	/* get context */
-	ctx = vortex_channel_get_ctx (channel);
 	vortex_log (VORTEX_LEVEL_DEBUG, "releasing pending message on channel=%d, ref count=%d, pending=%d",
 		    channel->channel_num, channel->ref_count, axl_list_length (channel->pending_messages));
 	
