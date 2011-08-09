@@ -91,6 +91,9 @@ void        vortex_ctx_notify_idle               (VortexCtx                     
 void        vortex_ctx_install_cleanup           (VortexCtx * ctx,
 						  axlDestroyFunc cleanup);
 
+void        vortex_ctx_remove_cleanup            (VortexCtx * ctx,
+						  axlDestroyFunc cleanup);
+
 void        vortex_ctx_server_name_acquire       (VortexCtx * ctx,
 						  axl_bool    status);
 

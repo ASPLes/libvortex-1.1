@@ -1093,6 +1093,9 @@ axl_bool vortex_init_check (VortexCtx * ctx)
  */
 void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
 {
+	int            iterator;
+	axlDestroyFunc func;
+
 	/* check context is initialized */
 	if (! vortex_init_check (ctx))
 		return;
@@ -1188,6 +1191,33 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
 	vortex_mutex_lock  (&ctx->exit_mutex);
 	vortex_mutex_unlock  (&ctx->exit_mutex);
 	vortex_mutex_destroy (&ctx->exit_mutex);
+
+	/* call to activate ctx cleanups */
+	if (ctx->cleanups) {
+		/* acquire lock */
+		vortex_mutex_lock (&ctx->ref_mutex);
+
+		iterator = 0;
+		while (iterator < axl_list_length (ctx->cleanups)) {
+			/* get clean up function */
+			func = axl_list_get_nth (ctx->cleanups, iterator);
+
+			/* call to clean */
+			vortex_mutex_unlock (&ctx->ref_mutex);
+			func (ctx);
+			vortex_mutex_lock (&ctx->ref_mutex);
+
+			/* next iterator */
+			iterator++;
+		} /* end while */
+
+		/* terminate list */
+		axl_list_free (ctx->cleanups);
+		ctx->cleanups = NULL; 
+
+		/* release lock */
+		vortex_mutex_unlock (&ctx->ref_mutex);
+	} /* end if */
    
 	/* release the ctx */
 	if (free_ctx)

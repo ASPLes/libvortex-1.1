@@ -11130,6 +11130,176 @@ axl_bool test_14_d (void)
 	return axl_true;
 }
 
+/**
+ * @brief Allows to check PULL API with SASL.
+ *
+ * @return axl_true if all tests are ok, otherwise axl_false is
+ * returned.
+ */ 
+axl_bool test_14_e (void)
+{
+	VortexCtx        * client_ctx;
+	VortexConnection * conn;
+
+	/* create an indepenent client context */
+	client_ctx = vortex_ctx_new ();
+
+	/*******************************/
+	/* activate a client context   */
+	/*******************************/
+	if (! vortex_init_ctx (client_ctx)) {
+		printf ("ERROR: failed to init client vortex context for PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	/* now activate PULL api on this context */
+	if (! vortex_pull_init (client_ctx)) {
+		printf ("ERROR: failed to activate PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 14-e: pull API activated (client context)..\n");
+
+	/* now create a connection */
+	conn = vortex_connection_new (client_ctx, listener_host, LISTENER_PORT, NULL, NULL);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Expected to find proper connection with regression test listener..\n");
+		return axl_false;
+	} /* end if */
+
+	/* ok, close the connection */
+	vortex_connection_close (conn);
+
+	/* terminate listener context */
+	vortex_exit_ctx (client_ctx, axl_true);
+
+	return axl_true;
+}
+
+/**
+ * @brief Allows to check PULL API with SASL.
+ *
+ * @return axl_true if all tests are ok, otherwise axl_false is
+ * returned.
+ */ 
+axl_bool test_14_f (void)
+{
+	VortexCtx        * client_ctx;
+	VortexConnection * conn;
+	VortexStatus       status;
+	char             * status_message = NULL;
+
+	/* create an indepenent client context */
+	client_ctx = vortex_ctx_new ();
+
+	/*******************************/
+	/* activate a client context   */
+	/*******************************/
+	if (! vortex_init_ctx (client_ctx)) {
+		printf ("ERROR: failed to init client vortex context for PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	/* check and initialize  SASL support */
+	if (! vortex_sasl_init (client_ctx)) {
+		printf ("--- WARNING: Unable to begin SASL negotiation. Current Vortex Library doesn't support SASL");
+		return axl_true;
+	}
+
+	/* now activate PULL api on this context */
+	if (! vortex_pull_init (client_ctx)) {
+		printf ("ERROR: failed to activate PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 14-f: pull API activated (client context)..\n");
+
+	/* now create a connection */
+	conn = vortex_connection_new (client_ctx, listener_host, LISTENER_PORT, NULL, NULL);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Expected to find proper connection with regression test listener..\n");
+		return axl_false;
+	} /* end if */
+
+	/* now enable SASL */
+	printf ("Test 14-f: SASL ANONYMOUS profile support ");
+
+	/* begin SASL ANONYMOUS negotiation */ 
+	vortex_sasl_set_propertie (conn, VORTEX_SASL_ANONYMOUS_TOKEN,
+				   "test-fail@aspl.es", NULL);
+	
+	vortex_sasl_start_auth_sync (conn, VORTEX_SASL_ANONYMOUS, &status, &status_message);
+
+	if (status != VortexError) {
+		printf ("Expected failed anonymous SASL login..\n");
+		return axl_false;
+	} /* end if */
+
+	/* begin SASL ANONYMOUS negotiation */ 
+	vortex_sasl_set_propertie (conn, VORTEX_SASL_ANONYMOUS_TOKEN,
+				   "test@aspl.es", NULL);
+	
+	vortex_sasl_start_auth_sync (conn, VORTEX_SASL_ANONYMOUS, &status, &status_message);
+
+	if (status != VortexOk) {
+		printf ("Failed to authenticate expected anonymous to work..\n");
+		return axl_false;
+	} /* end if */
+	printf (" OK\n");
+
+	/* close connection */
+	vortex_connection_close (conn);
+
+	/* now create a connection a new connection */
+	conn = vortex_connection_new (client_ctx, listener_host, LISTENER_PORT, NULL, NULL);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Expected to find proper connection with regression test listener..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 14-f: SASL PLAIN profile support ");
+
+	/* set plain properties */
+	vortex_sasl_set_propertie (conn, VORTEX_SASL_AUTH_ID,
+				   "bob", NULL);
+
+	/* set plain properties (BAD password) */
+	vortex_sasl_set_propertie (conn,  VORTEX_SASL_PASSWORD,
+				   "secret1", NULL);
+
+	/* begin plain auth */
+	vortex_sasl_start_auth_sync (conn, VORTEX_SASL_PLAIN, &status, &status_message);
+
+	if (status != VortexError) {
+		printf ("Expected to find a PLAIN mechanism failure but it wasn't found.\n");
+		return axl_false;
+	} /* end if */
+
+	/* set plain properties */
+	vortex_sasl_set_propertie (conn, VORTEX_SASL_AUTH_ID,
+				   "bob", NULL);
+
+	/* set plain properties (GOOD password) */
+	vortex_sasl_set_propertie (conn,  VORTEX_SASL_PASSWORD,
+				   "secret", NULL);
+
+	/* begin plain auth */
+	vortex_sasl_start_auth_sync (conn, VORTEX_SASL_PLAIN, &status, &status_message);
+
+	if (status != VortexOk) {
+		printf ("Expected to find a success PLAIN mechanism but it wasn't found.\n");
+		return axl_false;
+	} /* end if */
+
+	/* ok, close the conn */
+	vortex_connection_close (conn);
+
+	/* terminate listener context */
+	vortex_exit_ctx (client_ctx, axl_true);
+
+	return axl_true;
+}
+
 /** 
  * @brief Allows to check HTTP CONNECT implementation.
  * 
@@ -12087,6 +12257,12 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_14d"))
 			run_test (test_14_d, "Test 14-d", "Check PULL API implementation (channel start handling)", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_14e"))
+			run_test (test_14_e, "Test 14-e", "Check PULL API (check bug close close not masked, followed by end)", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_14f"))
+			run_test (test_14_f, "Test 14-f", "Check PULL API with SASL", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_15"))
 			run_test (test_15, "Test 15", "Check HTTP CONNECT implementation", -1, -1);
 
@@ -12271,6 +12447,10 @@ int main (int  argc, char ** argv)
 	run_test (test_14_c, "Test 14-c", "Check PULL API implementation (connection close/accepted)", -1, -1);
 
 	run_test (test_14_d, "Test 14-d", "Check PULL API implementation (channel start handling)", -1, -1);
+
+	run_test (test_14_e, "Test 14-e", "Check PULL API (check bug close close not masked, followed by end)", -1, -1);
+
+	run_test (test_14_f, "Test 14-f", "Check PULL API with SASL", -1, -1);
 
 	run_test (test_16, "Test 15", "Check ALIVE profile", -1, -1);
 
