@@ -256,11 +256,16 @@ void           vortex_pull_cleanup            (VortexCtx * ctx)
 	vortex_ctx_set_frame_received (ctx, NULL, NULL);
 	vortex_ctx_set_close_notify_handler (ctx, NULL, NULL);
 	vortex_ctx_set_channel_start_handler (ctx, NULL, NULL);
+	vortex_ctx_set_channel_added_handler (ctx, NULL, NULL);
+	vortex_ctx_set_channel_removed_handler (ctx, NULL, NULL);
 
 	/* remove all pending items */
+	vortex_log (VORTEX_LEVEL_DEBUG, "calling to cleanup queue (%d items)", vortex_async_queue_items (pull_pending_events));
 	while (vortex_async_queue_items (pull_pending_events) > 0) {
 		/* next event */
 		event = vortex_async_queue_pop (pull_pending_events);
+
+		vortex_log (VORTEX_LEVEL_DEBUG, "releasing unread event %p (type: %d)", event, event->type);
 
 		/* unref */
 		vortex_event_unref (event);
@@ -888,14 +893,15 @@ VortexEvent *      vortex_pull_event_marshaller   (VortexCtx        * ctx,
 	event->msgno = msg_no;
 
 	/* drop a log */
-	vortex_log (VORTEX_LEVEL_DEBUG, "(PULL API) event: %s, connection-id=%d, channel-num=%d",
+	vortex_log (VORTEX_LEVEL_DEBUG, "(PULL API) event: %s, connection-id=%d, channel-num=%d, queue-event=%d",
 		    event_description,
 		    /* connection */
 		    conn ? vortex_connection_get_id (conn) : -1, 
-		    channel ? vortex_channel_get_number (channel) : -1);
+		    channel ? vortex_channel_get_number (channel) : -1,
+		    queue_event);
 
 	/* queue pending event to process */
-	if (queue_event)
+	if (queue_event) 
 		vortex_async_queue_push (pull_pending_events, event);
 	
 	/* return a reference to the event created */

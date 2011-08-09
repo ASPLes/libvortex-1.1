@@ -498,6 +498,8 @@ void        vortex_ctx_install_cleanup (VortexCtx * ctx,
 {
 	v_return_if_fail (ctx);
 	v_return_if_fail (cleanup);
+
+	vortex_mutex_lock (&ctx->ref_mutex);
 	
 	/* init the list in the case it isn't */
 	if (ctx->cleanups == NULL) 
@@ -505,6 +507,36 @@ void        vortex_ctx_install_cleanup (VortexCtx * ctx,
 	
 	/* add the cleanup function */
 	axl_list_append (ctx->cleanups, cleanup);
+
+	vortex_mutex_unlock (&ctx->ref_mutex);
+
+	return;
+}
+
+/** 
+ * @brief Allows to remove a cleanup function installed previously
+ * with vortex_ctx_install_cleanup.
+ *
+ * @param ctx The context where the cleanup function will be
+ * uninstalled.
+ *
+ * @param cleanup The cleanup function to be uninstalled.
+ */
+void        vortex_ctx_remove_cleanup            (VortexCtx * ctx,
+						  axlDestroyFunc cleanup)
+{
+	v_return_if_fail (ctx);
+	v_return_if_fail (cleanup);
+
+	if (ctx->cleanups == NULL) 
+		return;
+
+	vortex_mutex_lock (&ctx->ref_mutex);
+	
+	/* add the cleanup function */
+	axl_list_remove_ptr (ctx->cleanups, cleanup);
+
+	vortex_mutex_unlock (&ctx->ref_mutex);
 
 	return;
 }
@@ -638,9 +670,6 @@ void        vortex_ctx_unref                     (VortexCtx ** ctx)
  */
 void        vortex_ctx_free (VortexCtx * ctx)
 {
-	axlDestroyFunc func;
-	int            iterator;
-
 	/* do nothing */
 	if (ctx == NULL)
 		return;
@@ -655,25 +684,6 @@ void        vortex_ctx_free (VortexCtx * ctx)
 		/* release mutex */
 		vortex_mutex_unlock (&ctx->ref_mutex);
 		return;
-	} /* end if */
-	
-	/* call to cleanup functions defined */
-	if (ctx->cleanups) {
-		iterator = 0;
-		while (iterator < axl_list_length (ctx->cleanups)) {
-			/* get clean up function */
-			func = axl_list_get_nth (ctx->cleanups, iterator);
-
-			/* call to clean */
-			func (ctx);
-
-			/* next iterator */
-			iterator++;
-		} /* end while */
-
-		/* terminate list */
-		axl_list_free (ctx->cleanups);
-		ctx->cleanups = NULL; 
 	} /* end if */
 
 	/* clear the hash */
