@@ -298,6 +298,7 @@ vortex_ctx_notify_idle
 vortex_ctx_ref
 vortex_ctx_ref_count
 vortex_ctx_reinit
+vortex_ctx_remove_cleanup
 vortex_ctx_server_name_acquire
 vortex_ctx_set_channel_added_handler
 vortex_ctx_set_channel_removed_handler

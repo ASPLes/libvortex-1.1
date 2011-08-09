@@ -1,5 +1,3 @@
-* Check PUll+SASL and PULL+TLS (test_14f). 
-
 * Check and remove code associated to channel->last_message_sent and
   channel->last_reply_received. See vortex_channe.c:4839
 
