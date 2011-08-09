@@ -637,9 +637,16 @@ axl_bool      vortex_profiles_invoke_start (const char       * uri,
 		return axl_false;
 	}
 
+	/* check for a start extended */
+	if (profile->start_extended != NULL)
+		return profile->start_extended (uri, channel_num, connection, serverName, 
+						profile_content, profile_content_reply, encoding,
+						profile->start_extended_user_data);
+
 	/* check if we have configure a global start channel
-	 * handler */
-	if (ctx->global_channel_start_extended) {
+	 * handler (but check that start handler is the the default one) */
+	if (profile->start == __vortex_profiles_default_start && 
+	    ctx->global_channel_start_extended) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "calling global start handler for channel=%d, connection-id=%d",
 			    channel_num, vortex_connection_get_id (connection));
 		return ctx->global_channel_start_extended (
@@ -648,16 +655,13 @@ axl_bool      vortex_profiles_invoke_start (const char       * uri,
 			ctx->global_channel_start_extended_data);
 	} /* end if */
 
-	/* check for a start extended */
-	if (profile->start_extended != NULL)
-		return profile->start_extended (uri, channel_num, connection, serverName, 
-						profile_content, profile_content_reply, encoding,
-						profile->start_extended_user_data);
-
 	/* if no defined, exec start handler (no check is required
 	 * because it has, at least, the default start handler
 	 * defined) */
-	return profile->start (channel_num, connection, profile->start_user_data);
+	if (profile->start)
+		return profile->start (channel_num, connection, profile->start_user_data);
+
+	return axl_false; /* never reached */
 }
 
 /** 

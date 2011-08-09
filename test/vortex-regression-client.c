@@ -11057,7 +11057,8 @@ axl_bool test_14_d (void)
 		printf ("Expected to find proper connection with regression test listener..\n");
 		return axl_false;
 	} /* end if */
-	printf ("Test 14-d: checking PULL API for channel start event, creating clieng channel..\n");
+	printf ("Test 14-d: checking PULL API for channel start event, creating client channel..\n");
+
 	/* now start a thread where the client context request to
 	 * create a channel and the listener accept it by handling the
 	 * VORTEX_EVENT_CHANNEL_START */
@@ -11176,6 +11177,18 @@ axl_bool test_14_e (void)
 	return axl_true;
 }
 
+axlPointer test_14f_auth_handler (VortexConnection * conn, 
+				  VortexSaslProps  * props,
+				  axlPointer         user_data)
+{
+	if (axl_cmp (props->mech, VORTEX_SASL_PLAIN)) {
+		return INT_TO_PTR (axl_cmp (props->auth_id, "aspl") && axl_cmp (props->password, "test"));
+	}
+
+	/* failure */
+	return 0;
+}
+
 /**
  * @brief Allows to check PULL API with SASL.
  *
@@ -11185,9 +11198,12 @@ axl_bool test_14_e (void)
 axl_bool test_14_f (void)
 {
 	VortexCtx        * client_ctx;
-	VortexConnection * conn;
+	VortexConnection * conn, * listener;
 	VortexStatus       status;
 	char             * status_message = NULL;
+	VortexEventMask  * mask;
+	axlError         * err = NULL;
+
 
 	/* create an indepenent client context */
 	client_ctx = vortex_ctx_new ();
@@ -11257,7 +11273,7 @@ axl_bool test_14_f (void)
 		return axl_false;
 	} /* end if */
 
-	printf ("Test 14-f: SASL PLAIN profile support ");
+	printf ("Test 14-f: SASL PLAIN profile support \n");
 
 	/* set plain properties */
 	vortex_sasl_set_propertie (conn, VORTEX_SASL_AUTH_ID,
@@ -11291,6 +11307,180 @@ axl_bool test_14_f (void)
 		return axl_false;
 	} /* end if */
 
+	printf ("Test 14-f: SASL PLAIN profile support OK \n");
+
+	/* check auth status */
+	if (! vortex_sasl_is_authenticated (conn)) {
+		printf ("Expected to find proper auth status, but found unauth connection..\n");
+		return axl_false;
+	}
+
+	/* ok, close the conn */
+	vortex_connection_close (conn);
+
+	/* start a listener */
+	printf ("Test 14-f: SASL PLAIN profile support at server side\n");
+	listener = vortex_listener_new (client_ctx, 
+					"localhost", "44012",
+					NULL, NULL);
+
+	/* now create a connection */
+	conn = vortex_connection_new (client_ctx, "localhost", "44012", NULL, NULL);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Expected to find proper connection with regression test listener..\n");
+		return axl_false;
+	} /* end if */
+
+	/* clear queue */
+	while (vortex_pull_pending_events (client_ctx))
+		vortex_event_unref (vortex_pull_next_event (client_ctx, 0));
+
+	/* now serve sasl auth */
+	vortex_sasl_accept_negotiation_common (client_ctx, VORTEX_SASL_PLAIN, test_14f_auth_handler, NULL);
+
+	/* now enable auth */
+	printf ("Test 14-f: starting SASL PLAIN auth \n");
+
+	/* set plain properties */
+	vortex_sasl_set_propertie (conn, VORTEX_SASL_AUTH_ID,
+				   "bob", NULL);
+
+	/* set plain properties (BAD password) */
+	vortex_sasl_set_propertie (conn,  VORTEX_SASL_PASSWORD,
+				   "secret1", NULL);
+
+	/* begin plain auth */
+	vortex_sasl_start_auth_sync (conn, VORTEX_SASL_PLAIN, &status, &status_message);
+
+	if (status != VortexError) {
+		printf ("Expected to find a PLAIN mechanism failure but it wasn't found.\n");
+		return axl_false;
+	} /* end if */
+
+	/* set plain properties */
+	vortex_sasl_set_propertie (conn, VORTEX_SASL_AUTH_ID,
+				   "aspl", NULL);
+
+	/* set plain properties (GOOD password) */
+	vortex_sasl_set_propertie (conn,  VORTEX_SASL_PASSWORD,
+				   "test", NULL);
+
+	/* begin plain auth */
+	vortex_sasl_start_auth_sync (conn, VORTEX_SASL_PLAIN, &status, &status_message);
+
+	if (status != VortexOk) {
+		printf ("Expected to find a success PLAIN mechanism but it wasn't found.\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 14-f: SASL PLAIN profile support OK at server side \n");
+
+	/* check auth status */
+	if (! vortex_sasl_is_authenticated (conn)) {
+		printf ("Expected to find proper auth status, but found unauth connection..\n");
+		return axl_false;
+	}
+
+	printf ("Test 14-f: SASL PLAIN profile support OK at server side (checked) \n");
+
+	/* install mask to avoid handling some events */
+	mask = vortex_event_mask_new ("listener mask", 
+				      VORTEX_EVENT_CHANNEL_CLOSE,
+				      axl_true);
+	if (! vortex_pull_set_event_mask (client_ctx, mask, &err)) {
+		printf ("ERROR: failed to install listener event mask, error reported (code: %d): %s\n",
+			axl_error_get_code (err), axl_error_get (err));
+		return axl_false;
+	} /* end if */
+
+	/* ok, close the conn */
+	vortex_connection_close (conn);
+
+	/* terminate listener context */
+	vortex_exit_ctx (client_ctx, axl_true);
+
+	return axl_true;
+}
+
+/**
+ * @brief Allows to check PULL API with TLS.
+ *
+ * @return axl_true if all tests are ok, otherwise axl_false is
+ * returned.
+ */ 
+axl_bool test_14_g (void)
+{
+	VortexCtx        * client_ctx;
+	VortexConnection * conn, * listener;
+	VortexStatus       status;
+	char             * status_message = NULL;
+	VortexEventMask  * mask;
+	axlError         * err = NULL;
+
+	/* create an indepenent client context */
+	client_ctx = vortex_ctx_new ();
+
+	/*******************************/
+	/* activate a client context   */
+	/*******************************/
+	if (! vortex_init_ctx (client_ctx)) {
+		printf ("ERROR: failed to init client vortex context for PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	/* check and initialize  TLS support */
+	if (! vortex_tls_init (client_ctx)) {
+		printf ("--- WARNING: Unable to begin SASL negotiation. Current Vortex Library doesn't support SASL");
+		return axl_true;
+	}
+
+	/* now activate PULL api on this context */
+	if (! vortex_pull_init (client_ctx)) {
+		printf ("ERROR: failed to activate PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	/* start a listener */
+	printf ("Test 14-g: starting listener to serve TLS\n");
+	listener = vortex_listener_new (client_ctx, 
+					"localhost", "44012",
+					NULL, NULL);
+
+	/* enable accepting incoming tls connections, this step could
+	 * also be read as register the TLS profile */
+	if (! vortex_tls_accept_negotiation (client_ctx, NULL, NULL, NULL)) {
+		printf ("Unable to start accepting TLS profile requests");
+		return -1;
+	}
+
+	/* now create a connection */
+	conn = vortex_connection_new (client_ctx, "localhost", "44012", NULL, NULL);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Expected to find proper connection with regression test listener..\n");
+		return axl_false;
+	} /* end if */
+
+	/* clear queue */
+	while (vortex_pull_pending_events (client_ctx))
+		vortex_event_unref (vortex_pull_next_event (client_ctx, 0));
+
+	/* now enable TLS */
+	conn = vortex_tls_start_negotiation_sync (conn, NULL, 
+						  &status,
+						  &status_message);
+
+	if (status != VortexOk) {
+		printf ("Test 14-g: Failed to activate TLS support: %s\n", status_message);
+		/* return axl_false */
+		return axl_false;
+	}
+
+	/* check connection status at this point */
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Test 14-g: Connection status after TLS activation is not ok, message: %s", vortex_connection_get_message (conn));
+		return axl_false;
+	}
+	
 	/* ok, close the conn */
 	vortex_connection_close (conn);
 
@@ -12263,6 +12453,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_14f"))
 			run_test (test_14_f, "Test 14-f", "Check PULL API with SASL", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_14g"))
+			run_test (test_14_g, "Test 14-g", "Check PULL API with TLS", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_15"))
 			run_test (test_15, "Test 15", "Check HTTP CONNECT implementation", -1, -1);
 
@@ -12451,6 +12644,8 @@ int main (int  argc, char ** argv)
 	run_test (test_14_e, "Test 14-e", "Check PULL API (check bug close close not masked, followed by end)", -1, -1);
 
 	run_test (test_14_f, "Test 14-f", "Check PULL API with SASL", -1, -1);
+
+	run_test (test_14_g, "Test 14-g", "Check PULL API with TLS", -1, -1);
 
 	run_test (test_16, "Test 15", "Check ALIVE profile", -1, -1);
 
