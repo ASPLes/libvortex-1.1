@@ -2788,7 +2788,9 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 
 		/* copy application level message */
 		memcpy (data->message + mime_header_size, message, message_size);
-	} else {
+
+	} else if (feeder != NULL) {
+
 		/* set feeder for this send operation */
 		data->feeder = feeder;
 

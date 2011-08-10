@@ -7296,6 +7296,71 @@ axl_bool  test_02l (void) {
 	return axl_true;
 }
 
+axl_bool  test_02l1 (void) {
+
+	VortexConnection * connection;
+	VortexChannel    * channel;
+	VortexFrame      * frame; 
+	VortexAsyncQueue * queue;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		vortex_connection_close (connection);
+		return axl_false;
+		
+	} /* end if */
+
+	/* create a channel */
+	queue   = vortex_async_queue_new ();
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* no frame received */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+
+	if (channel == NULL) {
+		printf ("ERROR: unable to create channel to check connection close after ANS..NUL reply\n");
+		return axl_false;
+	} /* end if */
+
+	/* send content */
+	/* send the hug message */
+	printf ("Test 02-l1: sending content..\n");
+	if (! vortex_channel_send_msg (channel, "disable-automatic-mime-and-reply-nul", 36, NULL)) {
+		printf ("ERROR: expected to properly send message but found an error..\n");
+		return axl_false;
+	}
+
+
+	/* get a reply */
+	printf ("Test 02-l1: waiting NUL reply..\n");
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL) {
+		printf ("ERROR: expected reply from remote side while running mixed replies tests..\n");
+		return axl_false;
+	}
+
+	/* release frame */
+	vortex_frame_unref (frame);
+	
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return axl_false;
+	} /* end if */
+
+	/* terminate queue */
+	vortex_async_queue_unref (queue);
+
+	/* operation completed */
+	return axl_true;
+}
+
+
 /** 
  * @brief Checking TLS profile support.
  * 
@@ -12132,15 +12197,15 @@ int main (int  argc, char ** argv)
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
 	printf ("**       Test available: test_00, test_00a, test_00b, test_00c, test_00d, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
 	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o,\n");
-	printf ("**                       test_01p, test_01q, test_01r, test_01s, test_01s1\n");
+	printf ("**                       test_01p, test_01q, test_01r, test_01s, test_01s1, test_01t\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
- 	printf ("**                       test_02l, test_02m, test_02m1, test_02m2, test_02m3, test_02n, test_02o, test_02p, \n");
+ 	printf ("**                       test_02l, test_02l1, test_02m, test_02m1, test_02m2, test_02m3, test_02n, test_02o, test_02p, \n");
  	printf ("**                       test_03, test_03a, test_03b, test_03d, test_03c, test_04, test_04a, \n");
  	printf ("**                       test_04b, test_04c, test_04d, test_04e, test_04f, test_05, test_05a, test_05b, test_05c, \n");
 	printf ("**                       test_05d, ctest_06, test_06a, \n");
  	printf ("**                       test_07, test_08, test_09, test_10, test_11, test_12, test_13, test_14, \n");
- 	printf ("**                       test_14a, test_14b, test_14ctest_14d, test_15, test_15a, test_16\n");
+ 	printf ("**                       test_14a, test_14b, test_14c, test_14d, test_14e, test_14f, test_14g, test_15, test_15a, test_16\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -12373,6 +12438,9 @@ int main (int  argc, char ** argv)
 
 		if (axl_cmp (run_test_name, "test_02l"))
 			run_test (test_02l, "Test 02-l", "detect last reply written when using ANS/NUL reply.", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_02l1"))
+			run_test (test_02l1, "Test 02-l1", "NUL frame replies with MIME disabled", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02m"))
 			run_test (test_02m, "Test 02-m", "blocking close after ANS/NUL replies.", -1, -1);
@@ -12607,6 +12675,8 @@ int main (int  argc, char ** argv)
 	run_test (test_02k, "Test 02-k", "mixing replies to messages received in the same channel (ANS..NUL, RPY)", -1, -1);
 
 	run_test (test_02l, "Test 02-l", "detect last reply written when using ANS/NUL reply.", -1, -1);
+
+	run_test (test_02l1, "Test 02-l1", "NUL frame replies with MIME disabled", -1, -1);
 
 	run_test (test_02m, "Test 02-m", "blocking close after ANS/NUL replies.", -1, -1);
 
