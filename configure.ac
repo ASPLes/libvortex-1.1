@@ -316,6 +316,10 @@ if test "$enable_py_vortex_support" = "yes" ; then
    # find python-config
    PYTHON_CONFIG=`./get-python-config`
 
+   # get site_packages
+   python_install_dir=`./get-python-site-packages.py`
+   AC_SUBST(python_install_dir)
+
    # get python includes 
    PYTHON_INCLUDES=`$PYTHON_CONFIG --includes 2>/dev/null`
    old_CPPFLAGS=$CPPFLAGS
@@ -341,6 +345,16 @@ if test "$enable_py_vortex_support" = "yes" ; then
    dnl get site dinamic library extension
    SHARED_EXTENSION=$shrext_cmds
    AC_SUBST(SHARED_EXTENSION)
+
+   # check python_install_dir and pythondir maches
+   python_dir_temp=`eval echo ${pythondir}`
+   echo "Python: checking if directory ${python_dir_temp} exists.."
+   if test ! -d "$python_dir_temp" ; then 
+      AC_MSG_WARN([WARNING: pythondir ${python_dir_temp} do not exists])
+   fi
+   if test "$python_dir_temp" != "$python_install_dir" ; then
+      AC_MSG_ERROR([ERROR: pythondir variable is poiting to an unusable location: $python_dir_temp, where it should be $python_install_dir. Fix your autoconf install or disable python building, for that, pass --disable-py-vortex to configure. This usually indicates a problem with automake package which provides the _AM_PATH_PYTHON_ macro.])
+   fi
 fi
 
 dnl check for console log
@@ -548,6 +562,10 @@ else
 fi
 if test x$enable_py_vortex_support = xyes ; then
    echo "   Build PyVortex support:                   enabled"
+   echo "     python install dir: ${python_install_dir}"
+   echo "     python dir: ${pythondir}"
+   echo "     python cflags:      ${PYTHON_CFLAGS}"
+   echo "     python libs:        ${PYTHON_LIBSp}"
 else
    echo "   Build PyVortex support:                   disabled"
    echo 
