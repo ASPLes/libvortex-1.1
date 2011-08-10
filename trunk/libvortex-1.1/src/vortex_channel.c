@@ -6345,7 +6345,7 @@ axl_bool      __vortex_channel_0_frame_received_get_start_param (VortexFrame    
 	vortex_log (VORTEX_LEVEL_DEBUG, "profile received %s", (* profile));
 
 	/* get current encoding */
-	enc        = axl_node_get_attribute_value (start, "encoding");
+	enc        = axl_node_get_attribute_value (profile_node, "encoding");
 	if (enc == NULL) 
 		(* encoding) = EncodingNone;
 	else if (axl_cmp (enc, "none"))

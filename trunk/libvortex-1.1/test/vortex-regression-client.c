@@ -3334,6 +3334,46 @@ axl_bool test_01s1 (void) {
 	return axl_true;
 }
 
+axl_bool test_01t (void) {
+
+	VortexConnection   * conn;
+	VortexChannel      * channel;
+
+	/* call to connection close */
+	conn = vortex_connection_new (ctx, listener_host, LISTENER_PORT, NULL, NULL);
+	if (!vortex_connection_is_ok (conn, axl_false)) {
+		vortex_connection_close (conn);
+		return axl_false;
+	} /* end if */
+		
+	/* create a channel */
+	printf ("Test 01-t: creating channel with profile content set to base64 content..\n");
+	channel = vortex_channel_new_full (conn, 0,
+					   NULL,
+					   REGRESSION_URI,
+					   EncodingBase64,
+					   "aGV5IGR1ZGUsIHRoaXMgaXMgYmFzZTY0",
+					   32,
+					   /* no close handling */
+					   NULL, NULL,
+					   /* frame receive async handling */
+					   NULL, NULL,
+					   /* no async channel creation */
+					   NULL, NULL);
+	
+	if (channel == NULL) {
+		printf ("ERROR: expected proper channel creation bug NULL was found..\n");
+		return axl_false;
+	}
+		
+	printf ("Test 01-t: channel created ok..\n");
+	vortex_connection_close (conn);
+	
+	return axl_true;
+}
+
+
+
 #define TEST_02_MAX_CHANNELS 24
 
 void test_02_channel_created (int                channel_num, 
@@ -11414,8 +11454,6 @@ axl_bool test_14_g (void)
 	VortexConnection * conn, * listener;
 	VortexStatus       status;
 	char             * status_message = NULL;
-	VortexEventMask  * mask;
-	axlError         * err = NULL;
 
 	/* create an indepenent client context */
 	client_ctx = vortex_ctx_new ();
@@ -12288,6 +12326,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_01s1"))
 			run_test (test_01s1, "Test 01-s1", "Check connection shutdown on read while closing conn", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_01t"))
+			run_test (test_01t, "Test 01-t", "Check channel profile encoding reply", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
 
@@ -12534,6 +12575,8 @@ int main (int  argc, char ** argv)
 	run_test (test_01s, "Test 01-s", "Check connection close do not block exiting vortex or the vortex reader", -1, -1);
 
 	run_test (test_01s1, "Test 01-s1", "Check connection shutdown on read while closing conn", -1, -1);
+
+	run_test (test_01t, "Test 01-t", "Check channel profile encoding reply", -1, -1);
 
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   
