@@ -241,6 +241,14 @@ void frame_received (VortexChannel    * channel,
 		} /* end if */
 
 		return;
+	} else if (axl_memcmp (vortex_frame_get_payload (frame), "disable-automatic-mime-and-reply-nul", 36)) {
+		/* disable mime at all levels */
+		vortex_channel_set_automatic_mime (channel, 2);
+		
+		/* now send the reply */
+		vortex_channel_finalize_ans_rpy (channel, vortex_frame_get_msgno (frame));
+
+		return;
 	} /* end if */
 
 	/* DEFAULT REPLY, JUST ECHO */
@@ -1385,10 +1393,10 @@ axl_bool regression_uri_start_handler (const char        * profile,
 				       VortexEncoding      encoding,
 				       axlPointer          user_data)
 {
-	if (profile_content) {
+	if (profile_content && strlen (profile_content) > 0) {
 		/* check for particular base 64 encoding */
 		if (! axl_cmp (profile_content, "aGV5IGR1ZGUsIHRoaXMgaXMgYmFzZTY0")) {
-			printf ("ERROR: found wrong profile content, found %s, but expected %s\n",
+			printf ("ERROR: found wrong profile content, found '%s', but expected '%s'\n",
 				profile_content, "aGV5IGR1ZGUsIHRoaXMgaXMgYmFzZTY0");
 			return axl_false;
 		}

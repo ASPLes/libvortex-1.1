@@ -274,9 +274,14 @@ axl_bool  vortex_sequencer_if_channel_stalled_queue_message (VortexCtx          
 
 int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * channel, VortexSequencerData * data, VortexWriterData * packet)
 {
- 	int          size_to_copy;
+ 	int          size_to_copy        = 0;
  	unsigned int max_seq_no_accepted = vortex_channel_get_max_seq_no_remote_accepted (channel);
-	char       * payload;
+	char       * payload             = NULL;
+
+	/* check particular case where an empty message is to be sent
+	 * and the message is NUL */
+	if (data->message_size == 0 && data->type == VORTEX_FRAME_TYPE_NUL) 
+		goto build_frame;
   
 	/* calculate how many bytes to copy from the payload
 	 * according to max_seq_no */
@@ -344,6 +349,7 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
 	}
 	
 	/* we have the payload on buffer */
+build_frame:
 	vortex_log (VORTEX_LEVEL_DEBUG, "sequencing next message: type=%d, channel num=%d, msgno=%d, more=%d, next seq=%u size=%d ansno=%d",
 		    data->type, data->channel_num, data->msg_no, !(data->message_size == size_to_copy), 
 		    data->first_seq_no, size_to_copy, data->ansno);
