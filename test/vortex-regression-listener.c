@@ -1376,6 +1376,34 @@ axl_bool  close_channel_connection (int channel_num, VortexConnection * conn, ax
 	return axl_true;
 }
 
+axl_bool regression_uri_start_handler (const char        * profile,
+				       int                 channel_num,
+				       VortexConnection  * connection,
+				       const char        * serverName,
+				       const char        * profile_content,
+				       char             ** profile_content_reply,
+				       VortexEncoding      encoding,
+				       axlPointer          user_data)
+{
+	if (profile_content) {
+		/* check for particular base 64 encoding */
+		if (! axl_cmp (profile_content, "aGV5IGR1ZGUsIHRoaXMgaXMgYmFzZTY0")) {
+			printf ("ERROR: found wrong profile content, found %s, but expected %s\n",
+				profile_content, "aGV5IGR1ZGUsIHRoaXMgaXMgYmFzZTY0");
+			return axl_false;
+		}
+
+		/* check also encoding is properly configured */
+		if (encoding != EncodingBase64) {
+			printf ("ERROR: found wrong encoding indication, expected base64..\n");
+			return axl_false;
+		}
+	}
+
+	/* the rest just accept */
+	return axl_true;
+}
+
 int process_greetings_features (VortexCtx               * ctx, 
 				VortexConnection        * conn,
 				VortexConnection       ** new_conn,
@@ -1423,6 +1451,9 @@ int main (int  argc, char ** argv)
 				  NULL, NULL, 
 				  NULL, NULL,
 				  frame_received, NULL);
+	vortex_profiles_register_extended_start (ctx, REGRESSION_URI, 
+						 regression_uri_start_handler,
+						 NULL);
 
 	/* register a extended start */
 	vortex_profiles_register_extended_start (ctx, REGRESSION_URI_2,
