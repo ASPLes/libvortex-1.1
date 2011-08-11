@@ -104,13 +104,7 @@ void __vortex_alive_free_reference (VortexAliveData * data)
 	/* nullify reference */
 	data->conn = NULL;
 
-	/* call to remove reference from connection: the following
-	   call will remove VortexAliveData from the connection
-	   without calling to unref the connection. */
-	vortex_connection_set_data (data->conn, VORTEX_ALIVE_CHECK_ENABLED, NULL);
-
 	/* now unref here */
-	
 	vortex_log (VORTEX_LEVEL_DEBUG, "releasing alive conn-id=%d ref (current: %d)", 
 		    vortex_connection_get_id (conn), vortex_connection_ref_count (conn));
 	vortex_connection_unref (conn, "alive-check");
@@ -200,8 +194,10 @@ axl_bool __vortex_alive_trigger_failure (VortexAliveData * data)
 	/* get ctx */
 	VortexCtx * ctx = CONN_CTX (data->conn);
 #endif
+	axl_bool    release_ref;
+
 	/* remove on close */
-	vortex_connection_remove_on_close_full (data->conn, __vortex_alive_connection_closed, data);
+	release_ref = vortex_connection_remove_on_close_full (data->conn, __vortex_alive_connection_closed, data);
 
 	/* check if we have a handler defined */
 	if (data->failure_handler) {
@@ -215,7 +211,8 @@ axl_bool __vortex_alive_trigger_failure (VortexAliveData * data)
 		data->failure_handler (data->conn, data->check_period, data->max_unreply_count);
 		
 		/* remove check alive data */
-		__vortex_alive_free_reference (data);
+		if (release_ref)
+			__vortex_alive_free_reference (data);
 		
 		/* request to remove this event */
 		return axl_true;
@@ -231,7 +228,8 @@ axl_bool __vortex_alive_trigger_failure (VortexAliveData * data)
 	}
 
  	/* remove check alive data */
-	__vortex_alive_free_reference (data);
+	if (release_ref)
+		__vortex_alive_free_reference (data);
 
 	return axl_true;
 }
