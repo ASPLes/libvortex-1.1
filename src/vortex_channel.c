@@ -440,8 +440,6 @@ void vortex_channel_data_free (VortexChannelData * data)
 		axl_free (data->profile); 
 	if (data->profile_content)
 		axl_free (data->profile_content);
-	if (data->connection)
-		vortex_connection_unref (data->connection, "channel-create");
 	axl_free (data);
 	
 	return;
@@ -724,7 +722,7 @@ axl_bool  __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _p
 				/* the code to report */
 				(int) (ATTR_VALUE (node, "code") != NULL ? vortex_support_strtod (ATTR_VALUE (node, "code"), NULL) : 0),
 				/* the content to report */
-				axl_node_get_content (node, NULL) != NULL ? axl_node_get_content_copy (node, NULL) : axl_strdup ("No error message reported by remote peer"));
+				axl_node_get_content (node, NULL) != NULL ? axl_node_get_content (node, NULL) : "No error message reported by remote peer");
 		} /* end if */
 
 		/* free resources */
@@ -1017,6 +1015,13 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 	/* check start reply data */
 	if (!__vortex_channel_validate_start_reply (frame, channel->profile, channel)) {
 		/* remove the channel and nullify */
+		vortex_log (VORTEX_LEVEL_DEBUG, "removing channel num=%d from connection id=%d (channels: %d) due to channel deny",
+			    channel->channel_num, vortex_connection_get_id (conn),
+			    vortex_connection_channels_count (conn));
+		vortex_connection_remove_channel (conn, channel);
+		vortex_log (VORTEX_LEVEL_DEBUG, "after channel num=%d from connection id=%d (channels: %d) due to channel deny",
+			    channel->channel_num, vortex_connection_get_id (conn),
+			    vortex_connection_channels_count (conn));
 		vortex_channel_unref (channel);
 		channel = NULL;
 		goto __vortex_channel_new_invoke_caller;
@@ -1034,6 +1039,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 	} /* end if */
 
 	__vortex_channel_new_invoke_caller:
+
 	/* log a message if */
 	if (channel == NULL) 
 		vortex_log (VORTEX_LEVEL_CRITICAL, "channel=%d creation have failed", channel_num);
@@ -1058,26 +1064,23 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 					vortex_frame_unref (frame);
 			}
 		} else {
-			/* acquire a connection reference during
-			 * notification because the channel that owns
-			 * the reference has disapeared */
-			if (vortex_connection_ref (conn, "channel-create-null")) {
-
-				/* notify null reference received */
-				on_channel_created (-1, NULL, conn, user_data);
-
-				/* release reference */
-				vortex_connection_unref (conn, "channel-create-null");
-			} /* end if */
+			/* notify null reference received */
+			on_channel_created (-1, NULL, conn, user_data);
 		} /* end if */
 
 		/* free no longer needed data */
 		vortex_channel_unref (channel);
+
+		/* release reference */
+		vortex_connection_unref (conn, "channel-create");
 		return NULL;
 	} /* end if */
 
 	/* free no longer needed data */
 	vortex_channel_unref (channel);
+
+	/* release reference */
+	vortex_connection_unref (conn, "channel-create");
 	return channel;
 }
 
