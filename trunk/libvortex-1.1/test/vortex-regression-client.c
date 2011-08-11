@@ -3373,6 +3373,59 @@ axl_bool test_01t (void) {
 }
 
 
+void test_01u_created (int channel_num, VortexChannel *channel, VortexConnection *conn, axlPointer user_data)
+{
+	VortexAsyncQueue * queue = user_data;
+
+	/* access connection estructure and reference counting */
+	printf ("Test 01-u: reference counting %d (waiting 500ms to force dealloc distance)..\n", vortex_connection_ref_count (conn));
+
+	/* notify caller */
+	vortex_async_queue_timedpop (queue, 500000);
+	vortex_async_queue_push (queue, INT_TO_PTR (1));
+	return;
+}
+
+axl_bool test_01u (void) {
+
+	VortexConnection   * conn;
+	VortexAsyncQueue   * queue;
+
+	/* call to connection close */
+	conn = vortex_connection_new (ctx, listener_host, LISTENER_PORT, NULL, NULL);
+	if (!vortex_connection_is_ok (conn, axl_false)) {
+		vortex_connection_close (conn);
+		return axl_false;
+	} /* end if */
+
+	/* create the queue */
+	queue = vortex_async_queue_new ();
+		
+	/* create a channel */
+	printf ("Test 01-u: creating channel that should fail and checking references..\n");
+	vortex_channel_new (conn, 0,
+			    REGRESSION_URI_DENY_SUPPORTED,
+			    /* no close handling */
+			    NULL, NULL,
+			    /* frame receive async handling */
+			    NULL, NULL,
+			    /* no async channel creation */
+			    test_01u_created, queue);
+
+	
+	printf ("**\n**Test 01-u: reply received ok, closing conn..\n**\n");
+	vortex_connection_close (conn);
+
+	/* wait for reply */
+	vortex_async_queue_pop (queue);
+
+	/* unref queue */
+	vortex_async_queue_unref (queue);
+	
+	return axl_true;
+}
+
+
 
 #define TEST_02_MAX_CHANNELS 24
 
@@ -11598,7 +11651,7 @@ axl_bool test_14_g (void)
  * 
  * @return axl_true if all test pass, otherwise axl_false is returned.
  */
-axl_bool  test_15 (void)
+axl_bool  test_16 (void)
 {
 	VortexHttpSetup  * setup;
 	VortexConnection * conn;
@@ -11639,7 +11692,7 @@ axl_bool  test_15 (void)
  * 
  * @return axl_true if all test pass, otherwise axl_false is returned.
  */
-axl_bool  test_15a (void)
+axl_bool  test_16a (void)
 {
 	VortexConnection * conn;
 	
@@ -11732,7 +11785,7 @@ axl_bool  test_15a (void)
 }
 
 
-void test_16_on_close_full (VortexConnection * conn,
+void test_15_on_close_full (VortexConnection * conn,
 			    axlPointer         _queue)
 {
 	/* close connection */
@@ -11744,7 +11797,7 @@ void test_16_on_close_full (VortexConnection * conn,
 	return;
 }
 
-axl_bool test_16_aux (VortexCtx * ctx, long check_period, int unreply_count, VortexAsyncQueue * queue, axl_bool enable_check_after)
+axl_bool test_15_aux (VortexCtx * ctx, long check_period, int unreply_count, VortexAsyncQueue * queue, axl_bool enable_check_after)
 {
 	VortexConnection * conn;
 	VortexChannel    * channel;
@@ -11787,7 +11840,7 @@ axl_bool test_16_aux (VortexCtx * ctx, long check_period, int unreply_count, Vor
 	} /* end if */
 
 	/* configure close connection to be triggered by the alive check */
-	vortex_connection_set_on_close_full (conn, test_16_on_close_full, queue);
+	vortex_connection_set_on_close_full (conn, test_15_on_close_full, queue);
 
 	if (! vortex_channel_send_msg (channel, "block-connection", 16, NULL)) {
 		printf ("Test 16: failed to send block connection message..\n");
@@ -11814,7 +11867,7 @@ axl_bool test_16_aux (VortexCtx * ctx, long check_period, int unreply_count, Vor
 	return axl_true;
 }
 
-void test_16_wait_until_channel_closed (VortexConnection * connection,
+void test_15_wait_until_channel_closed (VortexConnection * connection,
 					int                channel_num,
 					axl_bool           was_closed,
 					const char       * code,
@@ -11831,7 +11884,7 @@ void test_16_wait_until_channel_closed (VortexConnection * connection,
 	return;
 }
 
-void test_16_failure_handler (VortexConnection * conn, long check_period, int unreply_count)
+void test_15_failure_handler (VortexConnection * conn, long check_period, int unreply_count)
 {
 	VortexAsyncQueue * queue;
 
@@ -11845,7 +11898,7 @@ void test_16_failure_handler (VortexConnection * conn, long check_period, int un
 /** 
  * @brief Check alive profile support 
  */
-axl_bool  test_16 (void)
+axl_bool  test_15 (void)
 {
 
 	VortexAsyncQueue * queue;
@@ -11867,11 +11920,11 @@ axl_bool  test_16 (void)
 	/* configure close connection to be triggered by the alive check */
 	queue = vortex_async_queue_new ();
 
-	if (! test_16_aux (ctx, 20000, 0, queue, axl_false))
+	if (! test_15_aux (ctx, 20000, 0, queue, axl_false))
 		return axl_false;
-	if (! test_16_aux (ctx, 10000, 4, queue, axl_false))
+	if (! test_15_aux (ctx, 10000, 4, queue, axl_false))
 		return axl_false;
-	if (! test_16_aux (ctx, 10000, 4, queue, axl_true))
+	if (! test_15_aux (ctx, 10000, 4, queue, axl_true))
 		return axl_false;
 
 	/* now check channel alive report after alive cancel */
@@ -11991,7 +12044,7 @@ axl_bool  test_16 (void)
 	} /* end if */
 
 	/* close alive channel */
-	vortex_channel_close_full (channel, test_16_wait_until_channel_closed, queue);
+	vortex_channel_close_full (channel, test_15_wait_until_channel_closed, queue);
 
 	/* wait channel alive to be created */
 	result = PTR_TO_INT (vortex_async_queue_pop (queue));
@@ -12073,7 +12126,7 @@ axl_bool  test_16 (void)
 	} /* end if */
 
 	vortex_connection_set_data (conn, "test_16:queue", queue);
-	if (! vortex_alive_enable_check (conn, 20000, 5, test_16_failure_handler)) {
+	if (! vortex_alive_enable_check (conn, 20000, 5, test_15_failure_handler)) {
 		printf ("ERROR: failed to install connection check..\n");
 		return axl_false;
 	} /* end if */
@@ -12106,10 +12159,94 @@ axl_bool  test_16 (void)
 
 	vortex_async_queue_unref (queue);
 
-	
-
 	return axl_true;
 
+}
+
+void test_15_a_failure_handler_wait (VortexConnection * conn, long check_period, int unreply_count)
+{
+	VortexAsyncQueue * queue;
+
+	/* called close */
+	printf ("Test 15-a: received failure handler conn-id=%d (calling to close)\n", vortex_connection_get_id (conn));
+	vortex_connection_shutdown (conn);
+
+	/* get the queue */
+	queue = vortex_connection_get_data (conn, "test_16:queue");
+
+	/* notify to unlock */
+	printf ("Test 15-a: pushing connection into queue: %p\n", queue);
+	vortex_async_queue_push (queue, conn);
+	return;
+}
+
+/** 
+ * @brief Check alive profile support 
+ */
+axl_bool  test_15_a (void)
+{
+
+	VortexAsyncQueue * queue;
+	VortexConnection * conn;
+	VortexCtx        * ctx;
+	int                iterator;
+
+	/* init vortex here */
+	ctx = vortex_ctx_new ();
+	if (! vortex_init_ctx (ctx)) {
+		printf ("Test 00-a: failed to init VortexCtx reference..\n");
+		return axl_false;
+	}
+
+	/* configure close connection to be triggered by the alive check */
+	queue = vortex_async_queue_new ();
+
+	
+	printf ("Test 15-a: checking failure handler (close triggered at the sime time than failure failure)..\n");
+	iterator = 0;
+	while (iterator < 1) {
+		/* create connection */
+		conn = connection_new ();
+		if (! vortex_connection_is_ok (conn, axl_false)) {
+			printf ("ERROR: failed to create connection under HTTP CONNECT..\n");
+			return axl_false;
+		} /* end if */
+
+		/* set queue reference */
+		vortex_connection_set_data (conn, "test_16:queue", queue);
+
+		/* enable alive */
+		if (! vortex_alive_enable_check (conn, 10000, 5, test_15_a_failure_handler_wait)) {
+			printf ("ERROR: failed to install connection check..\n");
+			return axl_false;
+		} /* end if */
+
+		/* wait a bit (100 ms) */
+		printf ("Test 15-a: waiting to let alive be installed..\n");
+		vortex_async_queue_timedpop (queue, 100000);
+
+		/* block connection */
+		printf ("Test 15-a: blocking connection I/O to force failure..\n");
+		vortex_connection_block (conn, axl_true);
+
+		/* block until failure handler is called */
+		printf ("Test 15-a: waiting reply..\n");
+		vortex_async_queue_pop (queue);
+
+		/* close connection */
+		vortex_connection_close (conn);
+
+		/* next position */
+		iterator++;
+	} /* end if */
+	
+	/* terminate context */
+	vortex_exit_ctx (ctx, axl_true);
+	
+	vortex_async_queue_unref (queue);
+
+
+	return axl_true;
 }
 
 
@@ -12393,6 +12530,9 @@ int main (int  argc, char ** argv)
 
 		if (axl_cmp (run_test_name, "test_01t"))
 			run_test (test_01t, "Test 01-t", "Check channel profile encoding reply", -1, -1);
+		
+		if (axl_cmp (run_test_name, "test_01u"))
+			run_test (test_01u, "Test 01-u", "Check on channel created connection reference when channel create fails", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
@@ -12566,13 +12706,16 @@ int main (int  argc, char ** argv)
 			run_test (test_14_g, "Test 14-g", "Check PULL API with TLS", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_15"))
-			run_test (test_15, "Test 15", "Check HTTP CONNECT implementation", -1, -1);
+			run_test (test_15, "Test 15", "Check ALIVE profile", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_15a"))
-			run_test (test_15a, "Test 15-a", "Check HTTP CONNECT implementation (run tests under HTTP CONNECT)", -1, -1);
+			run_test (test_15_a, "Test 15-a", "Check ALIVE profile (close and failure handler running at the same time)", -1, -1);
 
 		if (axl_cmp (run_test_name, "test_16"))
-			run_test (test_16, "Test 16", "Check ALIVE profile", -1, -1);
+			run_test (test_16, "Test 16", "Check HTTP CONNECT implementation", -1, -1);
+
+		if (axl_cmp (run_test_name, "test_16a"))
+			run_test (test_16a, "Test 16-a", "Check HTTP CONNECT implementation (run tests under HTTP CONNECT)", -1, -1);
 
 		goto finish;
 	}
@@ -12645,6 +12788,8 @@ int main (int  argc, char ** argv)
 	run_test (test_01s1, "Test 01-s1", "Check connection shutdown on read while closing conn", -1, -1);
 
 	run_test (test_01t, "Test 01-t", "Check channel profile encoding reply", -1, -1);
+
+	run_test (test_01u, "Test 01-u", "Check on channel created connection reference when channel create fails", -1, -1);
 
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   
@@ -12760,11 +12905,13 @@ int main (int  argc, char ** argv)
 
 	run_test (test_14_g, "Test 14-g", "Check PULL API with TLS", -1, -1);
 
-	run_test (test_16, "Test 15", "Check ALIVE profile", -1, -1);
+	run_test (test_15, "Test 15", "Check ALIVE profile", -1, -1);
 
-	run_test (test_15, "Test 16", "Check HTTP CONNECT implementation", -1, -1);
+	run_test (test_15_a, "Test 15-a", "Check ALIVE profile (close and failure handler running at the same time)", -1, -1);
 
-	run_test (test_15a, "Test 16-a", "Check HTTP CONNECT implementation (run tests under HTTP CONNECT)", -1, -1);
+	run_test (test_16, "Test 16", "Check HTTP CONNECT implementation", -1, -1);
+
+	run_test (test_16a, "Test 16-a", "Check HTTP CONNECT implementation (run tests under HTTP CONNECT)", -1, -1);
 
 #if defined(AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/**

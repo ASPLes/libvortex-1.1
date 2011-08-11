@@ -402,8 +402,13 @@ axl_bool  __vortex_connection_close_list_channels (axlPointer key, axlPointer va
 {
 	
 	VortexChannel             * channel = value;
+
 	/* save channel */
 	axl_list_append ((axlList *) user_data, channel);
+
+	/* get a reference and will be finalized by __close_channel_aux to avoid races */
+	if (vortex_channel_get_number (channel) != 0)
+		vortex_channel_ref (channel);
 
 	return axl_false;
 }
@@ -425,6 +430,9 @@ void __close_channel_aux (axlPointer _channel)
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to close a channel=%d during vortex connection closing",
 			    vortex_channel_get_number (channel));
 	} /* end if */
+
+	/* release reference acquired during close */
+	vortex_channel_unref (channel);
 	
 	return;
 }
@@ -2422,7 +2430,7 @@ axl_bool               vortex_connection_ref_internal                    (Vortex
 	/* increase and log the connection increased */
 	connection->ref_count++;
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "%d increased connection id=%d (%p) reference to %d by %s",
+	vortex_log (VORTEX_LEVEL_DEBUG, "%d increased connection id=%d (%p) reference to %d by %s\n",
 		    vortex_getpid (),
 		    connection->id, connection,
 		    connection->ref_count, who ? who : "??" ); 
@@ -2540,10 +2548,10 @@ void               vortex_connection_unref                  (VortexConnection * 
 	/* decrease reference counting */
 	connection->ref_count--;
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "%d decreased connection id=%d (%p) reference count to %d decreased by %s", 
-		     vortex_getpid (),
-		     connection->id, connection,
-		     connection->ref_count, who ? who : "??");  
+	vortex_log (VORTEX_LEVEL_DEBUG, "%d decreased connection id=%d (%p) reference count to %d decreased by %s\n", 
+		vortex_getpid (),
+		connection->id, connection,
+		connection->ref_count, who ? who : "??");  
 		
 	/* get current count */
 	count = connection->ref_count;
@@ -2934,7 +2942,7 @@ axl_bool            vortex_connection_pop_channel_error      (VortexConnection  
  */
 void                vortex_connection_push_channel_error     (VortexConnection  * connection, 
 							      int                 code,
-							      char              * msg)
+							      const char        * msg)
 {
 	VortexChannelError * error;
 
@@ -2958,7 +2966,7 @@ void                vortex_connection_push_channel_error     (VortexConnection  
 	error       = axl_new (VortexChannelError, 1);
 	if (error != NULL) {
 		error->code = code;
-		error->msg  = msg;
+		error->msg  = axl_strdup (msg);
 
 		/* push the data */
 		axl_stack_push (connection->pending_errors, error);
@@ -3118,6 +3126,7 @@ void               vortex_connection_free (VortexConnection * connection)
 		} /* end if */
 		/* free the stack */
 		axl_stack_free (connection->pending_errors);
+		connection->pending_errors = NULL;
 	} /* end if */
 	vortex_mutex_destroy (&connection->pending_errors_mutex);
 
@@ -4011,7 +4020,8 @@ void                vortex_connection_remove_channel_common  (VortexConnection *
 	/* get channel number */
 	channel_num = vortex_channel_get_number (channel);
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "removing channel id=%d", channel_num);
+	vortex_log (VORTEX_LEVEL_DEBUG, "removing channel id=%d (conn refs: %d, channels: %d)", channel_num,
+		    connection->ref_count, vortex_connection_channels_count (connection));
 
 	/* check and notify the channel to be removed. */
 	if (do_notify)
@@ -4019,6 +4029,11 @@ void                vortex_connection_remove_channel_common  (VortexConnection *
 
 	/* remove the channel */
 	vortex_hash_remove (connection->channels, INT_TO_PTR (channel_num));
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "after channel id=%d remove (conn refs: %d, channels: %d)", channel_num,
+		    connection->ref_count, vortex_connection_channels_count (connection));
+
+	
 	
 	return;
 }

@@ -343,7 +343,7 @@ void vortex_greetings_manage_error_greetings (VortexConnection * connection, Vor
 	if (doc == NULL) {
 		vortex_connection_push_channel_error (connection,
 						      550,
-						      axl_strdup ("Local error, unable to parse error greetings reply. Received ERR frame but content is unparseable"));
+						      "Local error, unable to parse error greetings reply. Received ERR frame but content is unparseable");
 		__vortex_connection_set_not_connected (connection,
 						       "Local error, unable to parse error greetings reply. Received ERR frame but content is unparseable",
 						       VortexConnectionError);
@@ -360,7 +360,7 @@ void vortex_greetings_manage_error_greetings (VortexConnection * connection, Vor
 			/* the code to report */
 			(int) (ATTR_VALUE (node, "code") != NULL ? vortex_support_strtod (ATTR_VALUE (node, "code"), NULL) : 0),
 			/* the content to report */
-			axl_node_get_content (node, NULL) != NULL ? axl_node_get_content_copy (node, NULL) : axl_strdup ("No error message reported by remote peer"));
+			axl_node_get_content (node, NULL) != NULL ? axl_node_get_content (node, NULL) : "No error message reported by remote peer");
 
 		/* set not connected error */
 		__vortex_connection_set_not_connected (connection,
@@ -374,7 +374,7 @@ void vortex_greetings_manage_error_greetings (VortexConnection * connection, Vor
 			/* the code to report */
 			550,
 			/* the content to report */
-			axl_strdup ("Received ERR frame as greetings reply. Unable to connect. BEEP peer replied with XML content but unparseable"));
+			"Received ERR frame as greetings reply. Unable to connect. BEEP peer replied with XML content but unparseable");
 
 		/* set not connected error */
 		__vortex_connection_set_not_connected (connection,

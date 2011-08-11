@@ -158,7 +158,7 @@ axl_bool            vortex_connection_pop_channel_error      (VortexConnection  
 
 void                vortex_connection_push_channel_error     (VortexConnection  * connection, 
 							      int                 code,
-							      char              * msg);
+							      const char        * msg);
 
 void                vortex_connection_free                   (VortexConnection * connection);
 
