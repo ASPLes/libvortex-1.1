@@ -250,9 +250,6 @@ axl_bool __vortex_alive_do_check        (VortexCtx  * ctx,
 		vortex_log (VORTEX_LEVEL_DEBUG, "finishing alive check on connection id=%d, found closed", 
 			    vortex_connection_get_id (data->conn));
 
-		/* call to remove data associated */
-		__vortex_alive_free_reference (data);
-		
 		/* request system to remove this task */
 		return axl_true;
 	} /* end if */
@@ -276,9 +273,6 @@ axl_bool __vortex_alive_do_check        (VortexCtx  * ctx,
 		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to send check alive message on connection id=%d, removing check alive event",
 			    vortex_connection_get_id (data->conn));
 
-		/* call to remove data associated */
-		__vortex_alive_free_reference (data);
-		
 		return axl_true; /* request to remove event */
 	} /* end ok */
 
@@ -352,9 +346,6 @@ axl_bool   __vortex_alive_create_channel        (VortexCtx  * ctx,
 		vortex_log (VORTEX_LEVEL_DEBUG, "finishing alive check on connection id=%d, found closed", 
 			    vortex_connection_get_id (data->conn));
 
-		/* call to remove data associated */
-		__vortex_alive_free_reference (data);
-		
 		/* request system to remove this task */
 		return axl_true;
 	} /* end if */
