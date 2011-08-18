@@ -143,6 +143,7 @@ void __vortex_thread_pool_process_events (VortexCtx * ctx, VortexThreadPool * po
 	iterator = 0;
 	vortex_log2 (VORTEX_LEVEL_DEBUG, "Found (%d) events to process: now (%d, %d)..", length, (int) now.tv_sec, (int) now.tv_usec);
 	while (iterator < length) {
+
 		/* get event reference */
 		vortex_mutex_lock (&pool->mutex);
 		event = axl_list_get_nth (pool->events, iterator);
@@ -169,11 +170,18 @@ void __vortex_thread_pool_process_events (VortexCtx * ctx, VortexThreadPool * po
 			/* call to notify event */
 			if (func (ctx, data, data2)) {
 				vortex_mutex_lock (&pool->mutex);
+
+				/* remove event using the pointer not
+				 * the position because it may be
+				 * pointing to a different location
+				 * (i.e: someone removed or added an
+				 * event durint the last func()
+				 * call) */
+				axl_list_remove_ptr (pool->events, event);
+
 				/* decrease local reference */
 				__vortex_thread_pool_unref_event (event);
 
-				/* remove event */
-				axl_list_remove_at (pool->events, iterator);
 				vortex_mutex_unlock (&pool->mutex);
 
 				/* don't update iterator to manage next position */
@@ -690,6 +698,7 @@ int  vortex_thread_pool_new_event           (VortexCtx              * ctx,
 
 	/* (un)lock the thread pool */
 	vortex_mutex_unlock (&(ctx->thread_pool->mutex));
+
 	/* in case of failure */
 	if (event == NULL)
 		return PTR_TO_INT (-1);
@@ -702,12 +711,16 @@ int  vortex_thread_pool_new_event           (VortexCtx              * ctx,
  *
  * @param ctx The context where the event was created.
  * @param event_id The event id to remove.
+ *
+ * @return axl_true if the event was removed, otherwise axl_false is
+ * returned. Note the function also returns axl_false when ctx == NULL
+ * is received.
  */
-void vortex_thread_pool_remove_event        (VortexCtx              * ctx,
-					     int                      event_id)
+axl_bool vortex_thread_pool_remove_event        (VortexCtx              * ctx,
+						 int                      event_id)
 {
 	VortexThreadPoolEvent * event;
-	v_return_if_fail (ctx);
+	v_return_val_if_fail (ctx, axl_false);
 
 	/* lock the thread pool */
 	vortex_mutex_lock (&(ctx->thread_pool->mutex));
@@ -722,7 +735,14 @@ void vortex_thread_pool_remove_event        (VortexCtx              * ctx,
 		if (PTR_TO_INT (event) == event_id) {
 			/* found event to remove */
 			axl_list_cursor_remove (ctx->thread_pool->events_cursor);
-			break;
+
+			vortex_log (VORTEX_LEVEL_DEBUG, "Removing event id %d, total events registered after removal: %d",
+				    PTR_TO_INT (event_id), axl_list_length (ctx->thread_pool->events));
+
+			/* unlock the thread pool */
+			vortex_mutex_unlock (&(ctx->thread_pool->mutex));
+
+			return axl_true; /* event removed */
 		} /* end if */
 		
 		/* next position */
@@ -731,7 +751,7 @@ void vortex_thread_pool_remove_event        (VortexCtx              * ctx,
 
 	/* unlock the thread pool */
 	vortex_mutex_unlock (&(ctx->thread_pool->mutex));
-	return;
+	return axl_false; /* not removed */
 }
 
 /** 
