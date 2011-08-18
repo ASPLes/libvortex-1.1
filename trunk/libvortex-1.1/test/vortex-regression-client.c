@@ -699,11 +699,42 @@ axl_bool test_00c_event_2 (VortexCtx * ctx, axlPointer data, axlPointer data2)
 	return axl_false;
 }
 
+axl_bool test_00c_event_remove_and_add_second_step (VortexCtx * ctx, axlPointer data, axlPointer data2) {
+	
+
+	printf ("Test 00-c:   running second step..\n");
+
+	/* push data */
+	vortex_async_queue_push (data2, INT_TO_PTR (37));
+
+	return axl_true; /* call to remove */
+}
+
+axl_bool test_00c_event_remove_and_add (VortexCtx * ctx, axlPointer data, axlPointer data2) {
+
+	int event_id;
+
+	/* get event id from main thread */
+	event_id = PTR_TO_INT (vortex_async_queue_pop (data2));
+
+	/* call to add event */
+	vortex_thread_pool_new_event (ctx, 100, test_00c_event_remove_and_add_second_step, data, data2);
+
+	/* calling to remove ourselves */
+	printf ("Test 00-c: calling to remove event id %d from inside its handler..\n", event_id);
+	vortex_thread_pool_remove_event (ctx, event_id);
+	printf ("Test 00-c:   ...removed, now running second step..\n");
+
+	return axl_true; /* call to remove */
+}
+
 axl_bool test_00c (void) {
 	VortexCtx        * test_ctx;
 	VortexAsyncQueue * queue;
+	VortexAsyncQueue * wait_queue;
 	int                count, count2, count3;
 	int                iterator;
+	int                event_id;
 
 	/* create a test context */
 	test_ctx = vortex_ctx_new ();
@@ -804,7 +835,25 @@ axl_bool test_00c (void) {
 		printf ("Test 00-c: expected to find 0 events installed, but found: %d\n", count);
 		return axl_false;
 	}
-	
+
+	/* now check for events that adds a new event, and removes itself */
+	printf ("Test 00-c: checking adding handlers when removal was requested..\n");
+	event_id = vortex_thread_pool_new_event (test_ctx, 100, test_00c_event_remove_and_add, &count2, queue);
+
+	/* send event id to handler */
+	printf ("Test 00-c: sending event id %d to handler..\n", event_id);
+	vortex_async_queue_push (queue, INT_TO_PTR (event_id));
+
+	/* wait a bit */
+	wait_queue = vortex_async_queue_new ();
+	vortex_async_queue_timedpop (wait_queue, 100000);
+	vortex_async_queue_unref (wait_queue);
+
+	/* now wait for second handler to be executed */
+	if (PTR_TO_INT (vortex_async_queue_pop (queue)) != 37) {
+		printf ("ERROR: expected to find 37 but found something different..\n");
+	}
+
 	/* terminate context */
 	vortex_async_queue_unref (queue);
 	vortex_exit_ctx (test_ctx, axl_true);
