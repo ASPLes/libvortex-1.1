@@ -274,23 +274,26 @@ axl_bool py_vortex_ctx_bridge_event (VortexCtx * ctx, axlPointer user_data, axlP
 	PyGILState_STATE     state;
 	PyObject           * result;
 	axl_bool             _result;
+	axl_bool             removed;
 	PyVortexEventData  * data       = user_data;
 	char               * str;
 	
 	/* check if vortex engine is existing */
-	if (vortex_is_exiting (ctx))
-		return axl_true;
-
-	/* check to skip events */
-	if (PTR_TO_INT (vortex_ctx_get_data (ctx, "py:vo:ctx:de"))) {
+	if (vortex_is_exiting (ctx)) {
 		py_vortex_log (PY_VORTEX_DEBUG, "disabled bridged event into python code, vortex exiting=%d..",
 			       vortex_is_exiting (ctx));
 		return axl_true;
 	}
 
+	/* check to skip events */
+	if (PTR_TO_INT (vortex_ctx_get_data (ctx, "py:vo:ctx:de"))) {
+		py_vortex_log (PY_VORTEX_DEBUG, "disabled bridged event into python code, vortex exiting=%d due to key..",
+			       vortex_is_exiting (ctx));
+		return axl_true;
+	}
+
 	/* acquire the GIL */
-	/* py_vortex_log (PY_VORTEX_DEBUG, "bridging event to python code (getting GIL) vortex exiting=%d..",
-	   vortex_is_exiting (ctx)); */
+	/* py_vortex_log (PY_VORTEX_DEBUG, "bridging event id=%d into python code (getting GIL) vortex exiting=%d..", data->id, vortex_is_exiting (ctx));  */
 	state = PyGILState_Ensure();
 
 	/* create a tuple to contain arguments */
@@ -325,11 +328,12 @@ axl_bool py_vortex_ctx_bridge_event (VortexCtx * ctx, axlPointer user_data, axlP
 	/* in the case the python code signaled to finish the event,
 	 * terminate content inside ctx */
 	if (_result || vortex_is_exiting (ctx)) {
-		py_vortex_log (PY_VORTEX_DEBUG, "removing bridged event vortex exiting=%d _result=%d..",
-			       vortex_is_exiting (ctx), _result);
 
 		/* call to remove event before returning */
-		vortex_thread_pool_remove_event (ctx, data->id);
+		removed = vortex_thread_pool_remove_event (ctx, data->id);
+
+		py_vortex_log (PY_VORTEX_DEBUG, "removing bridged event %d because vortex exiting=%d or event_result=%d..removal result: %d",
+			       data->id, vortex_is_exiting (ctx), _result, removed);
 
 		/* we have to remove the event, finish all data */
 		str = axl_strdup_printf ("py:vo:event:%d", data->id);
