@@ -1,0 +1,243 @@
+      ###################################################
+      ##              Vortex Library 1.1.9             ##
+      ##                  "Jupiter Room"               ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce Vortex
+  Library 1.1.9 "Jupiter Room" release availability: an open source
+  "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.aspl.es/vortex/py-vortex/html
+      [PyVortex homepage]
+
+    - http://www.aspl.es/turbulence
+      [Turbulence BEEP server homepage]
+ 
+    - http://code.google.com/p/vortexlibrary/downloads/list
+      [Sources and Win32 binaries]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+This release in short
+~~~~~~~~~~~~~~~~~~~~~
+
+  Several bug fixes and regression tests were added, specially for
+  PULL API (which now has SASL and TLS available).
+ 
+  Some API updates to include functions to query object ref counting
+  state or if a particular vortex context is in process of finishing..
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+  None
+
+Thanks to..
+~~~~~~~~~~~
+
+  - Gernot Seidler (Several fixes and comments for ALIVE
+    implementation).
+
+  - Dexter (documentation advices on vortex_pull_next_event).
+
+  - Subrahmanya (reported and provided a fix for wrong profile content
+    encoding on server side and wrong handling of NUL frames when MIME
+    processing is disabled).
+
+
+Changes since 1.1.8
+~~~~~~~~~~~~~~~~~~~
+
+* [fix] Added ref/unref pair to sequencer foreach code to avoid
+  races. Bug showed by test_01r.
+
+* [fix] Fixed wrong reference counting handling at channel on created
+  handler when a failure is found, causing the user to access to a
+  connection pointer for which he has no reference owned. Making
+  channel on creation code to acquire/release a reference to the
+  connection during on channel created if it is found channel creation
+  failed.  (Bug reported by Gernot Seidler).
+
+* [fix] Added a note to advise that a call to vortex_event_unref is
+  required after a call to vortex_pull_next_event. Note reported by
+  Dexter..
+
+* [fix] Adding some notes to pull API about event serialization..
+
+* [fix] Adding comments to PULL API to explain that the user must not
+  assume any order while pulling events from the queue..
+
+* [fix] Minor documentation update on pull api.
+
+* [fix] Updating debian files..
+
+* [fix] Updated test certificate used by reg test to remove accent.
+
+* [new] Updated vortex listener API to allow creating a BEEP listener
+  without registering the object created into the vortex reader. API
+  added:
+
+   - vortex_listener_new_full2
+
+* [fix] Making vortex_sequencer_drop_connection_messages to also check
+  for connection exit status to avoid iterating over internal
+  sequencer structures releasing connection pending messages.
+
+* [fix] Updated channel added/removed notification, inside vortex
+  connection module, to release and re-acquire mutex before jumping
+  into user handler. Added code to get safe references to handlers
+  that will be called to avoid races.
+
+* [fix] Updated vortex internal data tracking to also record bytes
+  sent. Also fixed missed tracking for bytes received at readline
+  functions (BEEP header).
+
+* [new] Updated vortex connection API to include a method that allows
+  removing keys/values installed with
+  vortex_connection_set_data/data_full wihtout calling registered
+  destroy functions. API added:
+
+   - vortex_connection_delete_key_data
+
+* [new] Updated thread API to include a function that return current
+  reference counting state for a VortexAsyncQueue. API added:
+
+  - vortex_async_queue_ref_count
+
+* [fix] Updated channel wait reply code to detect connection close
+  when the synchronous wait is started.
+
+* [new] Updated vortex API to include a function that allows checking
+  if current vortex context is finishing. API added:
+
+  - vortex_is_exiting
+
+* [new] Updated vortex Ctx API to include a function that allows
+  getting current reference counting state. Added internal check to
+  avoid running dealloc operation when ref count bellow or equal to 0
+  is detected. API added:
+   
+  - vortex_ctx_ref_count
+
+* [fix] Fixed vortex_hash_remove which was calling to remove
+  twice. ???
+
+* [fix] Updated vortex listener on accepted handler to acquire
+  references to handlers about being executed before releasing lock.
+
+* [fix] Making vortex listener module to acquire a reference to the
+  listener that created the new connection so the function
+  vortex_connection_get_listener returns a valid reference.
+
+* [fix] Updated PyVortexCtx object to support an attribute that
+  returns current reference counting. API added:
+
+  - vortex.Ctx.ref_count
+
+* [fix] Updated PyVortexCtx module to stop firing vortex events into
+  python user code when it is detected vortex is finishing.
+
+* [fix] Moved ctx configuration before first vortex_log call inside
+  __vortex_channel_release_pending_messages..
+
+* [fix] Moved vortex ctx cleanup code to be run at vortex_exit_ctx to
+  avoid circular references problems (calling that releases references
+  is not run until the last vortex_ctx_unref which will never happen).
+  Checked regression tests to ensure everything keeps working
+  (especially pull api).
+
+* [new] Added new function to allow uninstall ctx cleanup function
+  from vortex ctx API.
+
+* [fix] Fixed bug at pull API which was causing to not release all
+  events once finished vortex context (vortex_exit_ctx). Added
+  regression test to reproduce bug and check fix introduced
+  (test-14-e).
+
+* [fix] Updated vortex_profiles_invoke_start to only use global start
+  handler (used by pull API) when it is found start handler and
+  extended start handler is not defined (which indicates a profile
+  with a particular handlers).
+
+* [fix] Fixed wrong profile content indication on channel start
+  received (was always notifying none). Added regression test to
+  reproduce the bug and check the fix introduced (test-01-t).  Bug
+  reported and fix provided by Subrahmanya.
+
+* [fix] Making vortex intenal reply handling to check for feeder
+  reference when message size is 0 to avoid accessing null reference.
+  Also updated vortex sequencer internals to detect this situation.
+  Added regression test to reproduce the bug and check the fix
+  introduced.
+
+* [fix] Several updates to configure process to allow detecting site
+  package installation for python modules to use this value to check
+  what proposes AM_PATH_PYTHON macro, to check if it is wrong, warning
+  the user to upgrade or fix its autoconf install.
+
+* [fix] Several updates to channel create process to acquire
+  internally some additional references to avoid breaking when channel
+  start thread takes too long and in the middle the connection is
+  closed. Added regression test to reproduce the bug and check the fix
+  introduced (test_01-u).
+
+* [fix] Making internal vortex alive trigger failure to release
+  internal data only when vortex_connection_remove_on_close_full
+  returns ok. Bug and fix reported by Gernot Seidler.
+  
+* [fix] Removed calls to __vortex_alive_free_reference when failure is
+  detected inside __vortex_alive_do_check and
+  __vortex_alive_create_channel as recommended by Gernot. Thanks!
+
+* [fix] Making vortex_thread_pool_remove_event to return a boolean
+  value indicating if the event was removed or not.
+
+* [fix] Making automatic event handler removal when handler returns
+  axl_true to use the internal reference instead of the list position
+  to avoid removing other events in the case the event list changes
+  during handler execution.
+
+* [fix] Updated vortex regression test 00-c to allow checking support
+  to remove an event handler from the handler itself..checked that
+  removing fix introduced previously reproduces the bug.
+  
+* [fix] Updated python dir checking on configure.ac process to
+  avoid guessing the directory but checking the directory detected
+  by autotools..
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organizations to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+23th aug 2011, Madrid (Spain)

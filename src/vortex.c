@@ -1228,7 +1228,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
 
 /** 
  * @brief Allows to check if vortex engine started on the provided
- * context is finishing (a call to \ref vortex_ctx_exit was done).
+ * context is finishing (a call to \ref vortex_exit_ctx was done).
  *
  * @param ctx The context to check if it is exiting.
  *
