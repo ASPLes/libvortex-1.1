@@ -141,7 +141,7 @@ void __vortex_thread_pool_process_events (VortexCtx * ctx, VortexThreadPool * po
 	/* get current stamp */
 	gettimeofday (&now, NULL);
 	iterator = 0;
-	vortex_log2 (VORTEX_LEVEL_DEBUG, "Found (%d) events to process: now (%d, %d)..", length, (int) now.tv_sec, (int) now.tv_usec);
+	/* vortex_log2 (VORTEX_LEVEL_DEBUG, "Found (%d) events to process: now (%d, %d)..", length, (int) now.tv_sec, (int) now.tv_usec); */
 	while (iterator < length) {
 
 		/* get event reference */
