@@ -4,22 +4,13 @@
 /* strong grey for some backgrounds:   #b0b0b0; */
 
 body { 
-   margin: 0px; 
-   background: #c9c9c9;
-   font-family: Arial, FreeSans, Sans, Sans-Serif, Helvetica;
 }
 
 h1, h2, h3, a { 
    color: #172e4b;
-   font-family: Arial, FreeSans, Sans, Sans-Serif, Helvetica;
 }
 
 p, b, ul, li, i {
-   font-family: Arial, FreeSans, Sans, Sans-Serif, Helvetica;
-}
-
-.tabs span { 
-        color: #172e4b;
 }
 
 a:visited {

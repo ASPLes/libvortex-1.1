@@ -28,6 +28,7 @@ initial_build_doc:
 	@test -e doc.stamp || touch doc.stamp
 
 build_doc:
+	rm -rf html/
 	@echo "Generating module documentation..";
 	(cd $(top_builddir)/xml-rpc-gen; ./xml-rpc-gen-1.1 $(top_srcdir)/xml-rpc-gen/reg-test01.idl;)
 	doxygen vortex-doc.doxygen
