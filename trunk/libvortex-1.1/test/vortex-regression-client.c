@@ -11052,11 +11052,18 @@ axl_bool test_14_c (void)
 				  NULL, NULL,
 				  /* no frame received */
 				  NULL, NULL);
-	
+
 	/* start a listener */
 	listener = vortex_listener_new (listener_ctx, 
 					"localhost", "44012",
 					NULL, NULL);
+
+	if (! vortex_connection_is_ok (listener, axl_false)) {
+		printf ("ERROR: failed to create listener on localhost:44012...\n");
+		return axl_false;
+	}
+
+	printf ("Test 14-c: Listener created, now connect..\n");
 
 	/* now create a connection */
 	conn = vortex_connection_new (client_ctx, "localhost", "44012", NULL, NULL);
@@ -11065,6 +11072,8 @@ axl_bool test_14_c (void)
 		return axl_false;
 	} /* end if */
 
+	printf ("Test 14-c: client connected..getting events..\n");
+
 	/* now receive at the listener the close request */
 	event = vortex_pull_next_event (listener_ctx, 0);
 	if (event == NULL) {
@@ -11072,18 +11081,28 @@ axl_bool test_14_c (void)
 		return axl_false;
 	} /* end if */
 
+	printf ("Test 14-c: got event..\n");
+
 	if (vortex_event_get_type (event) != VORTEX_EVENT_CONNECTION_ACCEPTED) {
 		printf ("ERROR: Expected to find connection accepted event but found: %d..\n",
 			vortex_event_get_type (event));
 		return axl_false;
 	} /* end if */
 
+	printf ("Test 14-c: creating second connection..and shutting down\n");
+
+	/* wait a bit here until connection on close is installed */
+	vortex_regression_common_wait (100000);
+
 	/* close the connection without negotiation */
 	conn2 = vortex_connection_get_id (vortex_event_get_conn (event));
+	printf ("Test 14-c: closing conn id: %d\n", vortex_connection_get_id (vortex_event_get_conn (event)));
 	vortex_connection_shutdown (vortex_event_get_conn (event));
 
 	/* terminate event */
 	vortex_event_unref (event);
+
+	printf ("Test 14-c: getting event..\n");
 
 	/* now wait for connection closed at the client */
 	event = vortex_pull_next_event (client_ctx, 0);
