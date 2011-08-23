@@ -39,6 +39,24 @@
 #include <vortex-regression-common.h>
 
 /** 
+ * @brief Implements a subsecond wait
+ */
+void vortex_regression_common_wait (long microseconds)
+{
+	VortexAsyncQueue * temp;
+
+	/* create the queue */
+	temp = vortex_async_queue_new ();
+
+	/* finish queue */
+	vortex_async_queue_timedpop (temp, microseconds);
+	vortex_async_queue_unref (temp);
+
+	return;
+	
+}
+
+/** 
  * @brief Reads the content of the file identified the string
  * provided, filling the size in the integer reference received.
  * 
