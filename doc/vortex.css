@@ -147,6 +147,8 @@ pre.fragment {
 .aspl-logo-header { 
   padding: 0px;
   margin: 0px;
+  padding-top: 6px;
+  padding-right: 10px;
   position: absolute;
   top: 0px;
   right: 0px;
