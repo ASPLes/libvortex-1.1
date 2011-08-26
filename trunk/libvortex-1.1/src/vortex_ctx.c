@@ -178,11 +178,14 @@ void        vortex_ctx_check_on_finish      (VortexCtx * ctx)
  * context, which can later retrieved using a particular key. 
  * 
  * @param ctx The ctx where the data will be stored.
- * @param key The key to index the value stored.
+ *
+ * @param key The key to index the value stored. The key must be a
+ * string.
+ *
  * @param value The value to be stored. 
  */
 void        vortex_ctx_set_data (VortexCtx       * ctx, 
-				 axlPointer        key, 
+				 const char      * key, 
 				 axlPointer        value)
 {
 	v_return_if_fail (ctx && key);
@@ -202,13 +205,13 @@ void        vortex_ctx_set_data (VortexCtx       * ctx,
  * replaced by a new one.
  * 
  * @param ctx The ctx where the data will be stored.
- * @param key The key to index the value stored.
+ * @param key The key to index the value stored. The key must be a string.
  * @param value The value to be stored. If the value to be stored is NULL, the function calls to remove previous content stored on the same key.
  * @param key_destroy Optional key destroy function (use NULL to set no destroy function).
  * @param value_destroy Optional value destroy function (use NULL to set no destroy function).
  */
 void        vortex_ctx_set_data_full (VortexCtx       * ctx, 
-				      axlPointer        key, 
+				      const char      * key, 
 				      axlPointer        value,
 				      axlDestroyFunc    key_destroy,
 				      axlDestroyFunc    value_destroy)
@@ -218,14 +221,14 @@ void        vortex_ctx_set_data_full (VortexCtx       * ctx,
 	/* check if the value is not null. It it is null, remove the
 	 * value. */
 	if (value == NULL) {
-		vortex_hash_remove (ctx->data, key);
+		vortex_hash_remove (ctx->data, (axlPointer) key);
 		return;
 	} /* end if */
 
 	/* store the data */
 	vortex_hash_replace_full (ctx->data, 
 				  /* key and function */
-				  key, key_destroy,
+				  (axlPointer) key, key_destroy,
 				  /* value and function */
 				  value, value_destroy);
 	return;
@@ -242,12 +245,12 @@ void        vortex_ctx_set_data_full (VortexCtx       * ctx,
  * @return A reference to the pointer stored or NULL if it fails.
  */
 axlPointer  vortex_ctx_get_data (VortexCtx       * ctx,
-				 axlPointer        key)
+				 const char      * key)
 {
 	v_return_val_if_fail (ctx && key, NULL);
 
 	/* lookup */
-	return vortex_hash_lookup (ctx->data, key);
+	return vortex_hash_lookup (ctx->data, (axlPointer) key);
 }
 
 /** 

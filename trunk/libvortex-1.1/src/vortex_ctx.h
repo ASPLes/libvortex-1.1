@@ -46,17 +46,17 @@ BEGIN_C_DECLS
 VortexCtx * vortex_ctx_new                       (void);
 
 void        vortex_ctx_set_data                  (VortexCtx       * ctx, 
-						  axlPointer        key, 
+						  const char      * key, 
 						  axlPointer        value);
 
 void        vortex_ctx_set_data_full             (VortexCtx       * ctx, 
-						  axlPointer        key, 
+						  const char      * key, 
 						  axlPointer        value,
 						  axlDestroyFunc    key_destroy,
 						  axlDestroyFunc    value_destroy);
 
 axlPointer  vortex_ctx_get_data                  (VortexCtx       * ctx,
-						  axlPointer        key);
+						  const char      * key);
 
 /*** global event notificaitons ***/
 void        vortex_ctx_set_frame_received        (VortexCtx             * ctx,
