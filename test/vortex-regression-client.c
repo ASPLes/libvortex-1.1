@@ -6500,6 +6500,119 @@ axl_bool  test_02p (void) {
 	return axl_true;
 }
 
+void test_02q_queue_reply (VortexChannel    * channel,
+			   VortexConnection * connection,
+			   VortexFrame      * frame,
+			   axlPointer         user_data)
+{
+	VortexAsyncQueue * queue = user_data;
+
+	printf ("Test 02-q: received frame reference: %p\n", frame);
+	vortex_frame_ref (frame);
+	vortex_async_queue_push (queue, frame);
+	
+	return;
+}
+
+axl_bool  test_02q (void) {
+	VortexConnection  * connection;
+	VortexChannel     * channel;
+	VortexAsyncQueue  * queue;
+	VortexFrame       * frame;
+	int                 iterator;
+	VortexCtx         * ctx;
+	VortexAsyncQueue  * wait_queue;
+
+	/* init vortex here */
+	ctx = vortex_ctx_new ();
+	if (! vortex_init_ctx (ctx)) {
+		printf ("Test 02-q: failed to init VortexCtx reference..\n");
+		return axl_false;
+	}
+
+	/* creates a new connection against localhost:44000 */
+	connection = vortex_connection_new (ctx, "localhost", "44010", NULL, NULL);
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+
+	/* create the queue */
+	queue      = vortex_async_queue_new ();
+	wait_queue = vortex_async_queue_new ();
+
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      test_02q_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return axl_false;
+	}
+
+	printf ("Test 02-q: sending messages...\n");
+	iterator = 0;
+	while (iterator < 10) {
+		/* send content */
+		if (! vortex_channel_send_msg (channel, "This is a test..", 16, NULL)) {
+			printf ("ERROR (1): failed to send empty MSG..\n");
+			return axl_false;
+		} /* end if */
+
+		/* next position */
+		iterator++;
+	}
+
+	/* wait a bit until all messages are received */
+	printf ("Test 02-q: waiting to receive all messages (100ms)..\n");
+	vortex_async_queue_timedpop (wait_queue, 100000);
+
+	/* free connection */
+	vortex_connection_close (connection);
+
+	/* finish vortex ctx */
+	vortex_exit_ctx (ctx, axl_true);
+
+	printf ("Test 02-q: finished vortex context and connection, now access frames..\n");
+
+	iterator = 0;
+	while (iterator < 10) {
+
+		/* get reply */
+		frame = vortex_async_queue_pop (queue);
+		
+		if (vortex_frame_get_payload_size (frame) != 16) {
+			printf ("ERROR (2): iterator=%d, expected frame content length equal to 16 but found: %d..\n", 
+				iterator, vortex_frame_get_payload_size (frame));
+			return axl_false;
+		} /* end if */
+
+		/* check frame content */
+		if (! axl_cmp (vortex_frame_get_payload (frame), "This is a test..")) {
+			printf ("ERROR (3): iterator=%d, expected to find frame content 'This is a test..' but found: '%s'\n", 
+				iterator, (const char *) vortex_frame_get_payload (frame));
+			return axl_false;
+		}
+		
+		/* free frame */
+		vortex_frame_unref (frame);
+
+		/* next position */
+		iterator++;
+	} /* end while */
+
+	/* free queue */
+	vortex_async_queue_unref (queue);
+	vortex_async_queue_unref (wait_queue);
+
+	return axl_true;
+}
+
 /** 
  * @brief Checks BEEP support to send large messages that goes beyond
  * default window size advertised.
@@ -12405,7 +12518,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_01p, test_01q, test_01r, test_01s, test_01s1, test_01t\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
- 	printf ("**                       test_02l, test_02l1, test_02m, test_02m1, test_02m2, test_02m3, test_02n, test_02o, test_02p, \n");
+ 	printf ("**                       test_02l, test_02l1, test_02m, test_02m1, test_02m2, test_02m3, test_02n, test_02o, test_02p, test_02q, \n");
  	printf ("**                       test_03, test_03a, test_03b, test_03d, test_03c, test_04, test_04a, \n");
  	printf ("**                       test_04b, test_04c, test_04d, test_04e, test_04f, test_05, test_05a, test_05b, test_05c, \n");
 	printf ("**                       test_05d, ctest_06, test_06a, \n");
@@ -12671,6 +12784,9 @@ int main (int  argc, char ** argv)
 		if (axl_cmp (run_test_name, "test_02p"))
 			run_test (test_02p, "Test 02-p", "Check empty RPY", -1, -1);
 
+		if (axl_cmp (run_test_name, "test_02q"))
+			run_test (test_02q, "Test 02-q", "Check frame manipulation after vortex context finalization", -1, -1);
+
 		if (axl_cmp (run_test_name, "test_03"))
 			run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
 
@@ -12904,6 +13020,8 @@ int main (int  argc, char ** argv)
  	run_test (test_02o, "Test 02-o", "Checking support for seqno transfers over 4GB (MAX SEQ NO: 4294967295)", -1, -1);
 
 	run_test (test_02p, "Test 02-p", "Check empty RPY", -1, -1);
+
+	run_test (test_02q, "Test 02-q", "Check frame manipulation after vortex context finalization", -1, -1);
  
  	run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
   
