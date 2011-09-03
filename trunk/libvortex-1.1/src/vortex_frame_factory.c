@@ -1029,6 +1029,9 @@ VortexFrame * vortex_frame_create_full          (VortexCtx       * ctx,
 	/* build base object */
 	result = axl_new (VortexFrame, 1);
 	VORTEX_CHECK_REF (result, NULL);
+
+	/* acquire a reference to the context */
+	vortex_ctx_ref (ctx);
 	
 	result->id           = __vortex_frame_get_next_id (ctx, "create-full");
 	result->ctx          = ctx;
@@ -1125,6 +1128,9 @@ VortexFrame * vortex_frame_create_full_ref      (VortexCtx       * ctx,
 	/* create base object */
 	result = axl_new (VortexFrame, 1);
 	VORTEX_CHECK_REF (result, NULL);
+
+	/* acquire a reference to the context */
+	vortex_ctx_ref (ctx);
 	
 	result->id           = __vortex_frame_get_next_id (ctx, "create-full");
 	result->ctx          = ctx;
@@ -1651,6 +1657,9 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 		return NULL;
 	} /* end if */
 
+	/* acquire a reference to the context */
+	vortex_ctx_ref (ctx);
+
 	/* set initial ref count */
 	frame->ref_count = 1;
 
@@ -2100,6 +2109,9 @@ void          vortex_frame_free (VortexFrame * frame)
 	else if (frame->payload != NULL)
 		axl_free (frame->payload);
 
+	/* release reference to the context */
+	vortex_ctx_unref (&frame->ctx);
+
 	/* free the frame node itself */
 	axl_free (frame);
 	return;
@@ -2116,6 +2128,9 @@ VortexFrame * __vortex_frame_join_common (VortexFrame * a, VortexFrame * b, axl_
 	/* copy current frame values */
 	result                    = axl_new (VortexFrame, 1);
 	VORTEX_CHECK_REF (result, NULL);
+
+	/* acquire a reference to the context */
+	vortex_ctx_ref (a->ctx);
 
 	/* set initial ref counting */
 	result->ref_count         = 1;

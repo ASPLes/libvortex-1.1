@@ -528,7 +528,7 @@ VortexChannelPool * vortex_channel_pool_new_full       (VortexConnection        
 	/* check input data */
 	v_return_val_if_fail (connection,             NULL);
 	v_return_val_if_fail (profile && (* profile), NULL);
-	v_return_val_if_fail (init_num > 0,            NULL);
+	v_return_val_if_fail (init_num > 0,           NULL);
 
 	/* prepare data */
 	data                           = axl_new (VortexChannelPoolData, 1);

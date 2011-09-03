@@ -58,8 +58,8 @@ Module API
 
    .. attribute:: payload
 
-      (Read only attribute) (Number) returns frame content without including MIME headers
+      (Read only attribute) (String) returns frame content without including MIME headers
 
    .. attribute:: content
 
-      (Read only attribute) (Number) returns frame content including MIME headers
+      (Read only attribute) (String) returns frame content including MIME headers
