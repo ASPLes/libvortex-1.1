@@ -528,6 +528,9 @@ axlPointer __vortex_io_waiting_epoll_create (VortexCtx * ctx, VortexIoWaitingFor
 			    vortex_errno_get_last_error ());
 		return NULL;
 	} /* end if */
+
+	/* set the epoll socket as closable on exec */
+	fcntl (set, F_SETFD, fcntl(set, F_GETFD) | FD_CLOEXEC);
 		
 	epoll              = axl_new (VortexEPoll, 1);
 	epoll->ctx         = ctx;
@@ -573,6 +576,10 @@ void    __vortex_io_waiting_epoll_clear (axlPointer __fd_group)
 	 * that were added but not removed by the kernel */
 	close (epoll->set);
 	epoll->set    = epoll_create (epoll->max);
+
+	/* set the epoll socket as closable on exec */
+	fcntl (epoll->set, F_SETFD, fcntl(epoll->set, F_GETFD) | FD_CLOEXEC);
+
 	epoll->length = 0;
 	return;
 }
