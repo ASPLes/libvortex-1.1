@@ -798,7 +798,7 @@ VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx       
 	VORTEX_CHECK_REF (connection, NULL);
 
 	connection->ctx                = ctx;
-	vortex_ctx_ref (ctx); /* acquire a reference to context */
+	vortex_ctx_ref2 (ctx, "new connection"); /* acquire a reference to context */
 	connection->id                 = __vortex_connection_get_next_id (ctx);
 
 	connection->message            = axl_strdup ("session established and ready");
@@ -1942,7 +1942,7 @@ VortexConnection  * vortex_connection_new_full               (VortexCtx         
 	} /* end if */
 	data->connection->id                  = __vortex_connection_get_next_id (ctx);
 	data->connection->ctx                 = ctx;
-	vortex_ctx_ref (ctx); /* acquire a reference to context */
+	vortex_ctx_ref2 (ctx, "new connection"); /* acquire a reference to context */
 	data->connection->host                = axl_strdup (host);
 	data->connection->port                = axl_strdup (port);
 	data->connection->channels            = vortex_hash_new_full (axl_hash_int, axl_hash_equal_int,
@@ -3162,7 +3162,7 @@ void               vortex_connection_free (VortexConnection * connection)
 	vortex_frame_free (connection->last_frame);
 
 	/* release reference to context */
-	vortex_ctx_unref (&connection->ctx);
+	vortex_ctx_unref2 (&connection->ctx, "end connection");
 
 	/* free connection */
 	axl_free (connection);

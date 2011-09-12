@@ -1408,6 +1408,11 @@ void vortex_reader_watch_connection (VortexCtx        * ctx,
 		return;
 	}
 
+	vortex_log (VORTEX_LEVEL_DEBUG, "Accepting conn-id=%d into reader queue %p, library status: %d", 
+		    vortex_connection_get_id (connection),
+		    ctx->reader_queue,
+		    vortex_is_exiting (ctx));
+
 	/* prepare data to be queued */
 	data             = axl_new (VortexReaderData, 1);
 	data->type       = CONNECTION;

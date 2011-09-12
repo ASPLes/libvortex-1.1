@@ -291,11 +291,13 @@ vortex_connection_unlock_channel_pool
 vortex_connection_unref
 vortex_ctx_check_on_finish
 vortex_ctx_free
+vortex_ctx_free2
 vortex_ctx_get_data
 vortex_ctx_install_cleanup
 vortex_ctx_new
 vortex_ctx_notify_idle
 vortex_ctx_ref
+vortex_ctx_ref2
 vortex_ctx_ref_count
 vortex_ctx_reinit
 vortex_ctx_remove_cleanup
@@ -311,6 +313,7 @@ vortex_ctx_set_frame_received
 vortex_ctx_set_idle_handler
 vortex_ctx_set_on_finish
 vortex_ctx_unref
+vortex_ctx_unref2
 vortex_dtds_cleanup
 vortex_dtds_get_channel_dtd
 vortex_dtds_init

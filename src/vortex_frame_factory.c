@@ -297,6 +297,8 @@ int  __vortex_frame_get_next_id (VortexCtx * ctx, char  * from)
 	result = ctx->frame_id;
 	ctx->frame_id++;
 
+	vortex_log (VORTEX_LEVEL_DEBUG, "Created frame id=%d", result);
+
 	vortex_mutex_unlock (&ctx->frame_id_mutex);
 
 	return result;
@@ -1031,7 +1033,7 @@ VortexFrame * vortex_frame_create_full          (VortexCtx       * ctx,
 	VORTEX_CHECK_REF (result, NULL);
 
 	/* acquire a reference to the context */
-	vortex_ctx_ref (ctx);
+	vortex_ctx_ref2 (ctx, "new frame");
 	
 	result->id           = __vortex_frame_get_next_id (ctx, "create-full");
 	result->ctx          = ctx;
@@ -1130,7 +1132,7 @@ VortexFrame * vortex_frame_create_full_ref      (VortexCtx       * ctx,
 	VORTEX_CHECK_REF (result, NULL);
 
 	/* acquire a reference to the context */
-	vortex_ctx_ref (ctx);
+	vortex_ctx_ref2 (ctx, "new frame");
 	
 	result->id           = __vortex_frame_get_next_id (ctx, "create-full");
 	result->ctx          = ctx;
@@ -1658,7 +1660,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	} /* end if */
 
 	/* acquire a reference to the context */
-	vortex_ctx_ref (ctx);
+	vortex_ctx_ref2 (ctx, "new frame");
 
 	/* set initial ref count */
 	frame->ref_count = 1;
@@ -1684,7 +1686,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 
 	if (frame->type == VORTEX_FRAME_TYPE_UNKNOWN) {
 		/* unref frame value */
-		axl_free (frame);
+		vortex_frame_free (frame);
 		vortex_log (VORTEX_LEVEL_CRITICAL, "poorly-formed frame: message type not defined, line=%s",
 			    line);
 		__vortex_connection_set_not_connected (connection, "poorly-formed frame: message type not defined",
@@ -1696,7 +1698,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	bytes_read = vortex_frame_get_header_data (ctx, connection, &(line[4]), bytes_read - 4, frame);
 	if (bytes_read == -2) {
 		/* free frame no longer needed */
-		axl_free (frame);
+		vortex_frame_free (frame);
 
 		vortex_log (VORTEX_LEVEL_CRITICAL, "wrong BEEP header found, closing connection..");
 		__vortex_connection_set_not_connected (connection, "wrong BEEP header found, closing connection..", VortexProtocolError);
@@ -1710,7 +1712,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 			    frame->channel);
 		__vortex_connection_set_not_connected (connection, "received a frame header pointing to a channel that do not exists, closing connection",
 						       VortexProtocolError);
-		axl_free (frame);
+		vortex_frame_free (frame);
 		return NULL;
 	}
 	
@@ -1726,7 +1728,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 						       VortexProtocolError);
 
 		/* unref frame node allocated */
-		axl_free (frame);
+		vortex_frame_free (frame);
 		return NULL;
 	}
 
@@ -1737,7 +1739,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 						       VortexProtocolError);
 
 		/* unref frame node allocated */
-		axl_free (frame);
+		vortex_frame_free (frame);
 		return NULL;
 	}
 
@@ -1756,7 +1758,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 						       VortexProtocolError);
 
 		/* unref frame node allocated */
-		axl_free (frame);
+		vortex_frame_free (frame);
 		return NULL;
 	}
 
@@ -1772,7 +1774,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 						       VortexProtocolError);
 
 		/* unref frame node allocated */
-		axl_free (frame);
+		vortex_frame_free (frame);
 
 		/* unref buffer allocated */
 		axl_free (buffer);
@@ -1818,7 +1820,7 @@ process_buffer:
 						       VortexProtocolError);
 
 		/* unref frame node allocated */
-		axl_free (frame);
+		vortex_frame_free (frame);
 
 		/* unref buffer allocated */
 		axl_free (buffer);
@@ -2110,7 +2112,7 @@ void          vortex_frame_free (VortexFrame * frame)
 		axl_free (frame->payload);
 
 	/* release reference to the context */
-	vortex_ctx_unref (&frame->ctx);
+	vortex_ctx_unref2 (&frame->ctx, "end frame");
 
 	/* free the frame node itself */
 	axl_free (frame);
@@ -2130,7 +2132,7 @@ VortexFrame * __vortex_frame_join_common (VortexFrame * a, VortexFrame * b, axl_
 	VORTEX_CHECK_REF (result, NULL);
 
 	/* acquire a reference to the context */
-	vortex_ctx_ref (a->ctx);
+	vortex_ctx_ref2 (a->ctx, "new frame");
 
 	/* set initial ref counting */
 	result->ref_count         = 1;

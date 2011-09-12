@@ -1648,6 +1648,7 @@ int vortex_sasl_handle_cram_md5_request (VortexCtx        * ctx,
 	if (password != NULL) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "CRAM-MD5 handler defined and password returned from it");
 		gsasl_property_set (sctx, GSASL_PASSWORD, password);
+
 		/* Cram md5 accepted, configure current data for the connection. 
 		   Here, at this point there is a problem. Because the connection 
 		   isn't still validated, because the password returned must be checked
@@ -2408,10 +2409,13 @@ void           vortex_sasl_set_digest_md5_validation  (VortexCtx * ctx, VortexSa
 }
 
 /** 
- * @brief Allows to set current auth validation handler for the the SASL DIGEST-MD5 profile.
+ * @brief Allows to set current auth validation handler for the the
+ * SASL DIGEST-MD5 profile.
  *
  * @param ctx The context where the operation will be performed.
- * @param auth_handler Auth handler to be executed when a query for DIGEST-MD5 authentication is received.
+ *
+ * @param auth_handler Auth handler to be executed when a query for
+ * DIGEST-MD5 authentication is received.
  */
 void           vortex_sasl_set_digest_md5_validation_full  (VortexCtx * ctx, VortexSaslAuthDigestMd5Full auth_handler)
 {

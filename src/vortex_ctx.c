@@ -79,34 +79,35 @@
  */
 VortexCtx * vortex_ctx_new (void)
 {
-	VortexCtx * result;
+	VortexCtx * ctx;
 
 	/* create a new context */
-	result           = axl_new (VortexCtx, 1);
-	VORTEX_CHECK_REF (result, NULL);
+	ctx           = axl_new (VortexCtx, 1);
+	VORTEX_CHECK_REF (ctx, NULL);
+	vortex_log (VORTEX_LEVEL_DEBUG, "created VortexCtx reference %p", ctx);
 
 	/* create the hash to store data */
-	result->data     = vortex_hash_new (axl_hash_string, axl_hash_equal_string);
-	VORTEX_CHECK_REF2 (result->data, NULL, result, axl_free);
+	ctx->data     = vortex_hash_new (axl_hash_string, axl_hash_equal_string);
+	VORTEX_CHECK_REF2 (ctx->data, NULL, ctx, axl_free);
 
 	/**** vortex_frame_factory.c: init module ****/
-	result->frame_id = 1;
+	ctx->frame_id = 1;
 
 	/* init mutex for the log */
-	vortex_mutex_create (&result->log_mutex);
+	vortex_mutex_create (&ctx->log_mutex);
 
 	/**** vortex_thread_pool.c: init ****/
-	result->thread_pool_exclusive = axl_true;
+	ctx->thread_pool_exclusive = axl_true;
 
 	/* init reference counting */
-	vortex_mutex_create (&result->ref_mutex);
-	result->ref_count = 1;
+	vortex_mutex_create (&ctx->ref_mutex);
+	ctx->ref_count = 1;
 
 	/* set default serverName acquire value */
-	result->serverName_acquire = axl_true;
+	ctx->serverName_acquire = axl_true;
 
 	/* return context created */
-	return result;
+	return ctx;
 }
 
 /** 
@@ -586,6 +587,20 @@ void        vortex_ctx_server_name_acquire       (VortexCtx * ctx,
  */
 void        vortex_ctx_ref                       (VortexCtx  * ctx)
 {
+	vortex_ctx_ref2 (ctx, "begin ref");
+	return;
+}
+
+/** 
+ * @brief Allows to increase reference count to the VortexCtx
+ * instance.
+ *
+ * @param ctx The reference to update its reference count.
+ *
+ * @param who An string that identifies this ref. Useful for debuging.
+ */
+void        vortex_ctx_ref2                       (VortexCtx  * ctx, const char * who)
+{
 	/* do nothing */
 	if (ctx == NULL)
 		return;
@@ -594,7 +609,7 @@ void        vortex_ctx_ref                       (VortexCtx  * ctx)
 	vortex_mutex_lock (&ctx->ref_mutex);
 	ctx->ref_count++;
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "increased references to VortexCtx %p (refs: %d)", ctx, ctx->ref_count);
+	vortex_log (VORTEX_LEVEL_DEBUG, "%s: increased references to VortexCtx %p (refs: %d)", who, ctx, ctx->ref_count);
 
 	vortex_mutex_unlock (&ctx->ref_mutex);
 
@@ -633,6 +648,23 @@ int         vortex_ctx_ref_count                 (VortexCtx  * ctx)
  */
 void        vortex_ctx_unref                     (VortexCtx ** ctx)
 {
+
+	vortex_ctx_unref2 (ctx, "unref");
+	return;
+}
+
+/** 
+ * @brief Decrease reference count and nullify caller's pointer in the
+ * case the count reaches 0.
+ *
+ * @param ctx The context to decrement reference count. In the case 0
+ * is reached the VortexCtx instance is deallocated and the callers
+ * reference is nullified.
+ *
+ * @param who An string that identifies this ref. Useful for debuging.
+ */
+void        vortex_ctx_unref2                     (VortexCtx ** ctx, const char * who)
+{
 	VortexCtx * _ctx;
 	axl_bool   nullify;
 
@@ -657,7 +689,7 @@ void        vortex_ctx_unref                     (VortexCtx ** ctx)
 	vortex_mutex_unlock (&_ctx->ref_mutex);
 
 	/* call to unref */
-	vortex_ctx_free (*ctx);
+	vortex_ctx_free2 (*ctx, who);
 	
 	/* check to nullify */
 	if (nullify)
@@ -673,6 +705,20 @@ void        vortex_ctx_unref                     (VortexCtx ** ctx)
  */
 void        vortex_ctx_free (VortexCtx * ctx)
 {
+	vortex_ctx_free2 (ctx, "end ref");
+	return;
+}
+
+/** 
+ * @brief Releases the memory allocated by the provided \ref
+ * VortexCtx.
+ * 
+ * @param ctx A reference to the context to deallocate.
+ *
+ * @param who An string that identifies this ref. Useful for debuging.
+ */
+void        vortex_ctx_free2 (VortexCtx * ctx, const char * who)
+{
 	/* do nothing */
 	if (ctx == NULL)
 		return;
@@ -682,7 +728,7 @@ void        vortex_ctx_free (VortexCtx * ctx)
 	ctx->ref_count--;
 
 	if (ctx->ref_count != 0) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "decreased references to VortexCtx %p (refs: %d)", ctx, ctx->ref_count);
+		vortex_log (VORTEX_LEVEL_DEBUG, "%s: decreased references to VortexCtx %p (refs: %d)", who, ctx, ctx->ref_count);
 
 		/* release mutex */
 		vortex_mutex_unlock (&ctx->ref_mutex);
@@ -701,6 +747,8 @@ void        vortex_ctx_free (VortexCtx * ctx)
 	/* release and clean mutex */
 	vortex_mutex_unlock (&ctx->ref_mutex);
 	vortex_mutex_destroy (&ctx->ref_mutex);
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "about.to.free VortexCtx %p", ctx);
 
 	/* free the context */
 	axl_free (ctx);

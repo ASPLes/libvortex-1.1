@@ -248,6 +248,9 @@ void           vortex_pull_cleanup            (VortexCtx * ctx)
 	axlList          * list                = vortex_ctx_get_data (ctx, VORTEX_PULL_EVENT_MASKS);
 	VortexEvent      * event;
 
+	/* nullify queue */
+	vortex_ctx_set_data (ctx, VORTEX_PULL_QUEUE_KEY, NULL);
+
 	if (ctx == NULL || pull_pending_events == NULL) {
 		return;
 	} /* end if */

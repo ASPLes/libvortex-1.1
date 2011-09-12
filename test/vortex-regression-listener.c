@@ -188,6 +188,7 @@ void frame_received (VortexChannel    * channel,
 	int                   bytes;
 	char                * content;
 	VortexPayloadFeeder * feeder;
+	int                 * reference;
 
 	/* check some commands */
 	if (axl_cmp (vortex_frame_get_payload (frame), "GET serverName")) {
@@ -217,7 +218,9 @@ void frame_received (VortexChannel    * channel,
 		return;
 	} else if (axl_memcmp (vortex_frame_get_payload (frame), "enable-idle-handling", 20)) {
 		/* but not send more content, check if the remote side closes our connection */
-		vortex_ctx_set_idle_handler (CONN_CTX (connection), test_01p_idle_handler, 1, axl_new (int, 1), INT_TO_PTR (10));
+		reference = axl_new (int, 1);
+		vortex_ctx_set_idle_handler (CONN_CTX (connection), test_01p_idle_handler, 1, reference, INT_TO_PTR (10));
+		vortex_ctx_set_data_full (CONN_CTX(connection), axl_strdup_printf ("%p", reference), reference, axl_free, axl_free);
 
 		/* uninstall idle handler when connection is removed */
 		vortex_connection_set_on_close (connection, test_01p_remove_idle_handler);
@@ -624,7 +627,7 @@ char  * sasl_cram_md5_validation (VortexConnection * connection,
 				  const char  * auth_id)
 {
 	if (axl_cmp (auth_id, "bob"))
-		return axl_strdup ("secret");
+		return "secret";
 	return NULL;
 }
 
@@ -782,6 +785,7 @@ void __terminate_vortex_listener (int value)
 	vortex_mutex_unlock (&doing_exit_mutex);
 
 	/* unlocking listener */
+	printf ("Calling to unlock listener due to signal received: VortexCtx %p", ctx);
 	vortex_listener_unlock (ctx);
 
 	return;
@@ -968,7 +972,8 @@ axl_bool  regression_tls_handle_query (VortexConnection * connection, const char
 #if defined(ENABLE_TLS_SUPPORT)
 	VortexAsyncQueue * queue;
 
-	printf ("Receiving request to start tls auth, with status=%d..\n", enable_block_tls_queries);
+	printf ("TLS: Receiving request to start tls auth, with status=%d (conn id=%d)..\n", 
+		enable_block_tls_queries, vortex_connection_get_id (connection));
 	if (enable_block_tls_queries) {
 		/* return to not accept TLS query but revert state for
 		 * the next query */
@@ -1810,6 +1815,7 @@ int main (int  argc, char ** argv)
 
 	/* terminate process */
 	vortex_exit_ctx (ctx, axl_true);
+
 #if defined(ENABLE_SASL_SUPPORT)
 	vortex_exit_ctx (ctx2, axl_true);
 #endif
