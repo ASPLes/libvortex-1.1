@@ -99,11 +99,17 @@ void        vortex_ctx_server_name_acquire       (VortexCtx * ctx,
 
 void        vortex_ctx_ref                       (VortexCtx  * ctx);
 
+void        vortex_ctx_ref2                      (VortexCtx  * ctx, const char * who);
+
 void        vortex_ctx_unref                     (VortexCtx ** ctx);
+
+void        vortex_ctx_unref2                    (VortexCtx ** ctx, const char * who);
 
 int         vortex_ctx_ref_count                 (VortexCtx  * ctx);
 
 void        vortex_ctx_free                      (VortexCtx * ctx);
+
+void        vortex_ctx_free2                     (VortexCtx * ctx, const char * who);
 
 void        vortex_ctx_set_on_finish        (VortexCtx              * ctx,
 					     VortexOnFinishHandler    finish_handler,

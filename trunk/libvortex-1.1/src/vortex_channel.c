@@ -5853,7 +5853,8 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
  	if (vortex_log_is_enabled (ctx)) {
  		/* get type */
  		type = vortex_frame_get_type (frame);
- 		vortex_log (VORTEX_LEVEL_DEBUG, "STARTED the frame received handler invocation (new task): %s%s%s%s%s %d %d %s %u %d",
+ 		vortex_log (VORTEX_LEVEL_DEBUG, "STARTED the frame received handler invocation, VortexCtx %p, conn-id=%d, channel-num=%d (new task): %s%s%s%s%s %d %d %s %u %d",
+			    ctx, vortex_connection_get_id (connection), channel->channel_num,
  			    (type == VORTEX_FRAME_TYPE_MSG) ? "MSG" : "",
  			    (type == VORTEX_FRAME_TYPE_RPY) ? "RPY" : "",
  			    (type == VORTEX_FRAME_TYPE_ERR) ? "ERR" : "",
@@ -5910,7 +5911,8 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
  		if (vortex_log_is_enabled (ctx)) {
  			/* get type */
  			type = vortex_frame_get_type (frame);
- 			vortex_log (VORTEX_LEVEL_DEBUG, "frame received invocation for second level FINISHED (new task): %s%s%s%s%s %d %d %s %u %d (ansno: %d)",
+ 			vortex_log (VORTEX_LEVEL_DEBUG, "frame received invocation for second level FINISHED, VortexCtx %p, conn-id=%d, channel-num=%d (new task): %s%s%s%s%s %d %d %s %u %d (ansno: %d)",
+				    ctx, vortex_connection_get_id (connection), channel->channel_num,
  				    (type == VORTEX_FRAME_TYPE_MSG) ? "MSG" : "",
  				    (type == VORTEX_FRAME_TYPE_RPY) ? "RPY" : "",
  				    (type == VORTEX_FRAME_TYPE_ERR) ? "ERR" : "",
@@ -6445,13 +6447,18 @@ axl_bool  vortex_channel_notify_start_internal (const char       * serverName,
 	/* send rpy and then create the channel */
 	if (!vortex_channel_send_rpy (channel0, 
 				      start_rpy, strlen (start_rpy), msg_no)) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "an error have happen while sending start channel reply, closing channel");
-		result = axl_false;
-	} 
+		vortex_log (VORTEX_LEVEL_CRITICAL, "an error have happen while sending start channel reply, closing channel");
 
-	/* notify here channel added */
-	vortex_log (VORTEX_LEVEL_DEBUG, "Calling to notify channel=%d added to connection id=%d", new_channel->channel_num, vortex_connection_get_id (conn));
-	__vortex_connection_check_and_notify (conn, new_channel, axl_true);
+		/* deallocate the channel created */
+		vortex_connection_remove_channel_common (conn, new_channel, axl_false); 
+
+		result = axl_false;
+	} else {
+
+		/* notify here channel added */
+		vortex_log (VORTEX_LEVEL_DEBUG, "Calling to notify channel=%d added to connection id=%d", new_channel->channel_num, vortex_connection_get_id (conn));
+		__vortex_connection_check_and_notify (conn, new_channel, axl_true);
+	}
 
 	/* free start reply */
 	axl_free (start_rpy);
@@ -6798,6 +6805,7 @@ axl_bool vortex_channel_0_handle_start_msg_reply (VortexCtx        * ctx,
 	if (error_msg) {
 		channel0 = vortex_connection_get_channel (connection, 0);
 		vortex_channel_send_err (channel0, error_msg, strlen (error_msg), vortex_frame_get_msgno (frame));
+		axl_free (error_msg);
 		return axl_false; /* send channel error reply */
 	} /* end if */
 

@@ -1104,7 +1104,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
 	if (ctx == NULL || ctx->vortex_exit)
 		return;
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "shutting down vortex library");
+	vortex_log (VORTEX_LEVEL_DEBUG, "shutting down vortex library, VortexCtx %p", ctx);
 
 	vortex_mutex_lock (&ctx->exit_mutex);
 	if (ctx->vortex_exit) {
@@ -1221,7 +1221,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
    
 	/* release the ctx */
 	if (free_ctx)
-		vortex_ctx_free (ctx);
+		vortex_ctx_free2 (ctx, "end ctx");
 
 	return;
 }

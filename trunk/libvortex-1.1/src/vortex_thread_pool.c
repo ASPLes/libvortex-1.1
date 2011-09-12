@@ -234,7 +234,7 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * _data)
 	vortex_log (VORTEX_LEVEL_DEBUG, "thread from pool started");
 
 	/* acquire a reference to the context */
-	vortex_ctx_ref (ctx);
+	vortex_ctx_ref2 (ctx, "begin pool dispatcher");
 
 	/* get a reference to the queue, waiting for the next work */
 	while (axl_true) {
@@ -273,7 +273,7 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * _data)
 			vortex_async_queue_unref (queue);
 
 			/* unref ctx */
-			vortex_ctx_unref (&ctx);
+			vortex_ctx_unref2 (&ctx, "end pool dispatcher");
 			return NULL;
 		} /* end if */
 
@@ -284,7 +284,7 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * _data)
 			/* unref the queue and return */
 			vortex_async_queue_unref (queue);
 			
-			vortex_ctx_unref (&ctx);
+			vortex_ctx_unref2 (&ctx, "end pool dispatcher");
 			return NULL;
 		} /* end if */
 
@@ -307,7 +307,7 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * _data)
 	} /* end if */
 		
 	/* That's all! */
-	vortex_ctx_unref (&ctx);
+	vortex_ctx_unref2 (&ctx, "end pool dispatcher");
 	return NULL;
 }
 

@@ -144,6 +144,9 @@ axl_bool      vortex_tls_init (VortexCtx * ctx)
 	/* init ssl ciphers and engines */
 	SSL_library_init ();
 
+	/* install cleanup */
+	vortex_ctx_install_cleanup (ctx, (axlDestroyFunc) vortex_tls_cleanup);
+
 	return axl_true;
 }
 
@@ -689,7 +692,7 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 	server_cert = SSL_get_peer_certificate (ssl);
 	if (server_cert == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "server side didn't set a certificate for this session, these are bad news");
-		vortex_support_free (2, ssl, SSL_free, ctx, SSL_CTX_free);
+		/* vortex_support_free (2, ssl, SSL_free, ctx, SSL_CTX_free); */
 		return axl_false;
 	}
 	X509_free (server_cert);
@@ -1546,7 +1549,8 @@ int      vortex_tls_process_start_msg (const char        * profile,
 	if (tls_ctx->tls_default_ctx_creation == NULL && 
 	    vortex_connection_get_data (connection, CTX_CREATION) == NULL) {
 		
-		vortex_log (VORTEX_LEVEL_DEBUG, "application level seems to accept negotiate the TLS profile, getting certificate");
+		vortex_log (VORTEX_LEVEL_DEBUG, "application level seems to accept negotiate the TLS profile over conn-id=%d, getting certificate",
+			    vortex_connection_get_id (connection));
 
 		/* get TLS certificate file */
 		certificate_file = tls_ctx->tls_certificate_handler (connection, serverName);
@@ -1585,7 +1589,8 @@ int      vortex_tls_process_start_msg (const char        * profile,
 	 * holding profile content reply should be dynamically
 	 * allocated because vortex library will deallocate it. */
 	(* profile_content_reply)  = axl_strdup ("<proceed />");
-	vortex_log (VORTEX_LEVEL_DEBUG, "replying peer that TLS negotiation can start with serverName=%s", serverName);
+	vortex_log (VORTEX_LEVEL_DEBUG, "replying peer that TLS negotiation can start with serverName=%s over conn-id=%d (VortexCtx %p)", 
+		    serverName, vortex_connection_get_id (connection), ctx);
 	
 	/* Here goes the trick that makes tunning reset at the server
 	 * side to be possible.
@@ -2137,7 +2142,9 @@ void               vortex_tls_cleanup (VortexCtx * ctx)
 {
 	/* remove all cyphers */
 	EVP_cleanup ();
-
+	CRYPTO_cleanup_all_ex_data ();
+	ERR_free_strings ();
+	COMP_zlib_cleanup ();
 	return;
 }
 

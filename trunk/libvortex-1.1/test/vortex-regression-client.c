@@ -12470,7 +12470,35 @@ void run_test (VortexRegressionTest test, const char * test_name, const char * m
  	}
  	return;
 }
-  
+
+axl_bool check_and_run_test (const char * test_list, const char * test_name) 
+{
+	char ** tests;
+	int     iterator;
+
+	if (strstr (test_list, ",")) {
+		/* passed test list */
+		tests    = axl_split (test_list, 1, ",");
+		if (tests == NULL)
+			return axl_false;
+		iterator = 0;
+		while (tests[iterator]) {
+			/* check if the user provided the test and if it matches with test_name */
+			if (axl_cmp (tests[iterator], test_name)) {
+				axl_freev (tests);
+				return axl_true;
+			}
+
+			/* next position */
+			iterator++;
+		}
+		axl_freev (tests);
+		return axl_false;
+	} 
+
+	/* single test passed */
+	return axl_cmp (test_list, test_name);
+}
 
 int main (int  argc, char ** argv)
 {
@@ -12555,6 +12583,7 @@ int main (int  argc, char ** argv)
 		run_test_name  = argv[1] + 11;
 		iterator       = 1;
 		argc--;
+
 		printf ("INFO: running test=%s\n", run_test_name);
 		while (iterator <= argc) {
 			argv[iterator] = argv[iterator+1];
@@ -12637,268 +12666,268 @@ int main (int  argc, char ** argv)
 	if (run_test_name) {
 		printf ("INFO: Checking to run test: %s..\n", run_test_name);
 
-		if (axl_cmp (run_test_name, "test_00"))
+		if (check_and_run_test (run_test_name, "test_00"))
 			run_test (test_00, "Test 00", "Async Queue support", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_00a"))
+		if (check_and_run_test (run_test_name, "test_00a"))
 			run_test (test_00a, "Test 00-a", "Thread pool stats", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_00b"))
+		if (check_and_run_test (run_test_name, "test_00b"))
 			run_test (test_00b, "Test 00-b", "Thread pool stats (change number)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_00c"))
+		if (check_and_run_test (run_test_name, "test_00c"))
 			run_test (test_00c, "Test 00-c", "Thread pool events", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_00d"))
+		if (check_and_run_test (run_test_name, "test_00d"))
 			run_test (test_00d, "Test 00-d", "(unsigned) Int to string conversion", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01"))
+		if (check_and_run_test (run_test_name, "test_01"))
 			run_test (test_01, "Test 01", "basic BEEP support", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01a"))
+		if (check_and_run_test (run_test_name, "test_01a"))
 			run_test (test_01a, "Test 01-a", "transfer zeroed binary frames", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01b"))
+		if (check_and_run_test (run_test_name, "test_01b"))
 			run_test (test_01b, "Test 01-b", "channel close inside created notification (31/03/2008)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01c"))
+		if (check_and_run_test (run_test_name, "test_01c"))
 			run_test (test_01c, "Test 01-c", "check immediately send (31/03/2008)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01d"))
+		if (check_and_run_test (run_test_name, "test_01d"))
 			run_test (test_01d, "Test 01-d", "MIME support", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01e"))
+		if (check_and_run_test (run_test_name, "test_01e"))
 			run_test (test_01e, "Test 01-e", "Check listener douple port allocation", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01f"))
+		if (check_and_run_test (run_test_name, "test_01f"))
 			run_test (test_01f, "Test 01-f", "Check connection with no greetings showed (or registerered)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01g"))
+		if (check_and_run_test (run_test_name, "test_01g"))
 			run_test (test_01g, "Test 01-g", "Check connection serverName feature on greetings", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01h"))
+		if (check_and_run_test (run_test_name, "test_01h"))
 			run_test (test_01h, "Test 01-h", "BEEP wrong header attack..", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01i"))
+		if (check_and_run_test (run_test_name, "test_01i"))
 			run_test (test_01i, "Test 01-i", "BEEP connect to (usually) unreachable address..", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01j"))
+		if (check_and_run_test (run_test_name, "test_01j"))
 			run_test (test_01j, "Test 01-j", "Log handling with prepared strings", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01k"))
+		if (check_and_run_test (run_test_name, "test_01k"))
 			run_test (test_01k, "Test 01-k", "Limitting channel send operations (memory consuption)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01l"))
+		if (check_and_run_test (run_test_name, "test_01l"))
 			run_test (test_01l, "Test 01-l", "Memory consuption with channel serialize", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01o"))
+		if (check_and_run_test (run_test_name, "test_01o"))
 			run_test (test_01o, "Test 01-o", "Memory consuption with channel pool acquire/release API", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01p"))
+		if (check_and_run_test (run_test_name, "test_01p"))
 			run_test (test_01p, "Test 01-p", "Check upper limits for window sizes and idle handling (bug fix)", -1, -1);
 		
-		if (axl_cmp (run_test_name, "test_01q"))
+		if (check_and_run_test (run_test_name, "test_01q"))
 			run_test (test_01q, "Test 01-q", "Closing connection after vortex termination", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01r"))
+		if (check_and_run_test (run_test_name, "test_01r"))
 			run_test (test_01r, "Test 01-r", "Terminating vortex from inside its handlers (frame received, connection close)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01s"))
+		if (check_and_run_test (run_test_name, "test_01s"))
 			run_test (test_01s, "Test 01-s", "Check connection close do not block exiting vortex or the vortex reader", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01s1"))
+		if (check_and_run_test (run_test_name, "test_01s1"))
 			run_test (test_01s1, "Test 01-s1", "Check connection shutdown on read while closing conn", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_01t"))
+		if (check_and_run_test (run_test_name, "test_01t"))
 			run_test (test_01t, "Test 01-t", "Check channel profile encoding reply", -1, -1);
 		
-		if (axl_cmp (run_test_name, "test_01u"))
+		if (check_and_run_test (run_test_name, "test_01u"))
 			run_test (test_01u, "Test 01-u", "Check on channel created connection reference when channel create fails", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02"))
+		if (check_and_run_test (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02a"))
+		if (check_and_run_test (run_test_name, "test_02a"))
 			run_test (test_02a, "Test 02-a", "connection close notification", -1, -1);
 		
-		if (axl_cmp (run_test_name, "test_02a1"))
+		if (check_and_run_test (run_test_name, "test_02a1"))
 			run_test (test_02a1, "Test 02-a1", "connection close notification with handlers removed", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02a2"))
+		if (check_and_run_test (run_test_name, "test_02a2"))
 			run_test (test_02a2, "Test 02-a2", "send content to an unopened channel", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02b"))
+		if (check_and_run_test (run_test_name, "test_02b"))
 			run_test (test_02b, "Test 02-b", "small message followed by close", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02c"))
+		if (check_and_run_test (run_test_name, "test_02c"))
 			run_test (test_02c, "Test 02-c", "huge amount of small message followed by close", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02d"))
+		if (check_and_run_test (run_test_name, "test_02d"))
 			run_test (test_02d, "Test 02-d", "close after large reply", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02e"))
+		if (check_and_run_test (run_test_name, "test_02e"))
 			run_test (test_02e, "Test 02-e", "check wait reply support", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02f"))
+		if (check_and_run_test (run_test_name, "test_02f"))
 			run_test (test_02f, "Test 02-f", "check vortex performance under packet delay scenarios", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02g"))
+		if (check_and_run_test (run_test_name, "test_02g"))
 			run_test (test_02g, "Test 02-g", "check basic BEEP support with different frame sizes", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02h"))
+		if (check_and_run_test (run_test_name, "test_02h"))
 			run_test (test_02h, "Test 02-h", "check bandwith performance with different window and segmentator sizes", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02i"))
+		if (check_and_run_test (run_test_name, "test_02i"))
 			run_test (test_02i, "Test 02-i", "check enforced ordered delivery at server side", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02j"))
+		if (check_and_run_test (run_test_name, "test_02j"))
 			run_test (test_02j, "Test 02-j", "suddently connection close while operating", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02k"))
+		if (check_and_run_test (run_test_name, "test_02k"))
 			run_test (test_02k, "Test 02-k", "mixing replies to messages received in the same channel (ANS..NUL, RPY)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02l"))
+		if (check_and_run_test (run_test_name, "test_02l"))
 			run_test (test_02l, "Test 02-l", "detect last reply written when using ANS/NUL reply.", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02l1"))
+		if (check_and_run_test (run_test_name, "test_02l1"))
 			run_test (test_02l1, "Test 02-l1", "NUL frame replies with MIME disabled", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02m"))
+		if (check_and_run_test (run_test_name, "test_02m"))
 			run_test (test_02m, "Test 02-m", "blocking close after ANS/NUL replies.", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02m1"))
+		if (check_and_run_test (run_test_name, "test_02m1"))
 			run_test (test_02m1, "Test 02-m1", "Transfer with big frame sizes.", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02m2"))
+		if (check_and_run_test (run_test_name, "test_02m2"))
 			run_test (test_02m2, "Test 02-m2", "Dealloc pending queued replies on connection shutdown.", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02m3"))
+		if (check_and_run_test (run_test_name, "test_02m3"))
 			run_test (test_02m3, "Test 02-m3", "Check receiving frames during connection close.", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02n"))
+		if (check_and_run_test (run_test_name, "test_02n"))
 			run_test (test_02n, "Test 02-n", "Checking MSG number reusing", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02o"))
+		if (check_and_run_test (run_test_name, "test_02o"))
 			run_test (test_02o, "Test 02-o", "Checking support for seqno transfers over 4GB (MAX SEQ NO: 4294967295)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02p"))
+		if (check_and_run_test (run_test_name, "test_02p"))
 			run_test (test_02p, "Test 02-p", "Check empty RPY", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_02q"))
+		if (check_and_run_test (run_test_name, "test_02q"))
 			run_test (test_02q, "Test 02-q", "Check frame manipulation after vortex context finalization", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_03"))
+		if (check_and_run_test (run_test_name, "test_03"))
 			run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_03a"))
+		if (check_and_run_test (run_test_name, "test_03a"))
 			run_test (test_03a, "Test 03-a", "vortex channel pool support", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_03b"))
+		if (check_and_run_test (run_test_name, "test_03b"))
 			run_test (test_03b, "Test 03-b", "vortex channel pool support (ANS/NUL reply check)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_03c"))
+		if (check_and_run_test (run_test_name, "test_03c"))
 			run_test (test_03c, "Test 03-c", "vortex ANS/NUL replies with serialize not attended", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_03d"))
+		if (check_and_run_test (run_test_name, "test_03d"))
 			run_test (test_03d, "Test 03-d", "vortex channel pool support (auxiliar pointers)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_04"))
+		if (check_and_run_test (run_test_name, "test_04"))
 			run_test (test_04, "Test 04", "Handling many connections support", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_04a"))
+		if (check_and_run_test (run_test_name, "test_04a"))
 			run_test (test_04_a, "Test 04-a", "Check ANS/NUL support, sending large content", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_04ab"))
+		if (check_and_run_test (run_test_name, "test_04ab"))
 			run_test (test_04_ab, "Test 04-ab", "Check ANS/NUL support, sending different files", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_04c"))
+		if (check_and_run_test (run_test_name, "test_04c"))
 			run_test (test_04_c, "Test 04-c", "check client adviced profiles", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_04d"))
+		if (check_and_run_test (run_test_name, "test_04d"))
 			run_test (test_04_d, "Test 04-d", "check channel window size reduction", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_04e"))
+		if (check_and_run_test (run_test_name, "test_04e"))
 			run_test (test_04_e, "Test 04-e", "check payload feeder support", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_04f"))
+		if (check_and_run_test (run_test_name, "test_04f"))
 			run_test (test_04_f, "Test 04-f", "check payload feeder support (pause/cancel)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_05"))
+		if (check_and_run_test (run_test_name, "test_05"))
 			run_test (test_05, "Test 05", "TLS profile support", -1, -1);
 		
-		if (axl_cmp (run_test_name, "test_05a"))
+		if (check_and_run_test (run_test_name, "test_05a"))
 			run_test (test_05_a, "Test 05-a", "Check auto-tls on fail fix (24/03/2008)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_05b"))
+		if (check_and_run_test (run_test_name, "test_05b"))
 			run_test (test_05_b, "Test 05-b", "TLS client blocked during connection close (14/12/2009)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_05c"))
+		if (check_and_run_test (run_test_name, "test_05c"))
 			run_test (test_05_c, "Test 05-c", "TLS client serverName after success (09/08/2010)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_05d"))
+		if (check_and_run_test (run_test_name, "test_05d"))
 			run_test (test_05_d, "Test 05-d", "TLS sync timeout (09/09/2010)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_06"))
+		if (check_and_run_test (run_test_name, "test_06"))
 			run_test (test_06, "Test 06", "SASL profile support", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_06a"))
+		if (check_and_run_test (run_test_name, "test_06a"))
 			run_test (test_06a, "Test 06-a", "SASL profile support (common handler)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_07"))
+		if (check_and_run_test (run_test_name, "test_07"))
 			run_test (test_07, "Test 07", "XML-RPC profile support", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_08"))
+		if (check_and_run_test (run_test_name, "test_08"))
 			run_test (test_08, "Test 08", "serverName configuration", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_09"))		
+		if (check_and_run_test (run_test_name, "test_09"))		
 			run_test (test_09, "Test 09", "close in transit support", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_10"))
+		if (check_and_run_test (run_test_name, "test_10"))
 			run_test (test_10, "Test 10", "default channel close action", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_11"))
+		if (check_and_run_test (run_test_name, "test_11"))
 			run_test (test_11, "Test 11", "reply to multiple messages in a wrong order without blocking", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_12"))
+		if (check_and_run_test (run_test_name, "test_12"))
 			run_test (test_12, "Test 12", "check connection creation timeout", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_13"))
+		if (check_and_run_test (run_test_name, "test_13"))
 			run_test (test_13, "Test 13", "test TUNNEL implementation", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_14"))
+		if (check_and_run_test (run_test_name, "test_14"))
 			run_test (test_14, "Test 14", "Check PULL API event masks", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_14a"))
+		if (check_and_run_test (run_test_name, "test_14a"))
 			run_test (test_14_a, "Test 14-a", "Check PULL API implementation (frame receieved event)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_14b"))
+		if (check_and_run_test (run_test_name, "test_14b"))
 			run_test (test_14_b, "Test 14-b", "Check PULL API implementation (close channel request event)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_14c"))
+		if (check_and_run_test (run_test_name, "test_14c"))
 			run_test (test_14_c, "Test 14-c", "Check PULL API implementation (connection close/accepted)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_14d"))
+		if (check_and_run_test (run_test_name, "test_14d"))
 			run_test (test_14_d, "Test 14-d", "Check PULL API implementation (channel start handling)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_14e"))
+		if (check_and_run_test (run_test_name, "test_14e"))
 			run_test (test_14_e, "Test 14-e", "Check PULL API (check bug close close not masked, followed by end)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_14f"))
+		if (check_and_run_test (run_test_name, "test_14f"))
 			run_test (test_14_f, "Test 14-f", "Check PULL API with SASL", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_14g"))
+		if (check_and_run_test (run_test_name, "test_14g"))
 			run_test (test_14_g, "Test 14-g", "Check PULL API with TLS", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_15"))
+		if (check_and_run_test (run_test_name, "test_15"))
 			run_test (test_15, "Test 15", "Check ALIVE profile", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_15a"))
+		if (check_and_run_test (run_test_name, "test_15a"))
 			run_test (test_15_a, "Test 15-a", "Check ALIVE profile (close and failure handler running at the same time)", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_16"))
+		if (check_and_run_test (run_test_name, "test_16"))
 			run_test (test_16, "Test 16", "Check HTTP CONNECT implementation", -1, -1);
 
-		if (axl_cmp (run_test_name, "test_16a"))
+		if (check_and_run_test (run_test_name, "test_16a"))
 			run_test (test_16a, "Test 16-a", "Check HTTP CONNECT implementation (run tests under HTTP CONNECT)", -1, -1);
 
 		goto finish;
