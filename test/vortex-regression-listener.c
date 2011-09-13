@@ -174,7 +174,10 @@ void test_01p_remove_idle_handler (VortexConnection * connection)
 
 axl_bool __close_connection (VortexCtx * ctx, axlPointer  user_data, axlPointer  user_data2)
 {
-	vortex_connection_shutdown ((VortexConnection *) user_data);
+	VortexConnection * conn = (VortexConnection *) user_data;
+
+	vortex_connection_shutdown (conn);
+	vortex_connection_unref (conn, "close event");
 	/* request system to remove this handler once finished */
 	return axl_true;
 }
@@ -228,6 +231,7 @@ void frame_received (VortexChannel    * channel,
 		/* lock the connection */
 		vortex_connection_block (connection, axl_true);
 		/* install an event handler to remove this connection between 100ms */
+		vortex_connection_ref (connection, "close event");
 		vortex_thread_pool_new_event (CONN_CTX (connection), 100000, __close_connection, connection, NULL);
 	} else if (axl_memcmp (vortex_frame_get_payload (frame), "set_serial", 10)) {
 		/* enable channel serialization */
@@ -547,9 +551,9 @@ axl_bool      filter_server_names (VortexConnection * connection,
 
 axl_bool      on_accepted (VortexConnection * connection, axlPointer data)
 {
-	printf ("New connection accepted from: %s:%s\n", 
+	/* printf ("New connection accepted from: %s:%s\n", 
 		vortex_connection_get_host (connection),
-		vortex_connection_get_port (connection));
+		vortex_connection_get_port (connection)); */
 
 	/* configure profile mask */
 	vortex_connection_set_profile_mask (connection, filter_server_names, NULL);
