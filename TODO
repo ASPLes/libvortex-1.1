@@ -1,8 +1,1 @@
-* Check and remove code associated to channel->last_message_sent and
-  channel->last_reply_received. See vortex_channe.c:4839
-
-* Add regression test that send a message that is splitted in a way
-  that second frame fragment is flagged as complete but not having any
-  \n causing MIME to fail. This is already fixed but a reg test will
-  be fine.
 
