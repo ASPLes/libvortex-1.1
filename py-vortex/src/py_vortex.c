@@ -784,6 +784,12 @@ void py_vortex_handle_and_clear_exception (PyObject * py_conn)
 			Py_INCREF (Py_None);
 		} /* end if */
 
+		/* check pvalue */
+		if (pvalue == NULL) {
+			pvalue = Py_None;
+			Py_INCREF (Py_None);
+		} /* end if */
+
 		list     = PyObject_CallMethod (mod, "format_exception", "OOO", ptype,  pvalue, ptraceback);
 		iterator = 0;
 		if (py_vortex_exception_handler)
