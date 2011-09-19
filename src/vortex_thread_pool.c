@@ -441,6 +441,9 @@ void vortex_thread_pool_add                 (VortexCtx        * ctx,
 
 	/* lock the thread pool */
 	vortex_mutex_lock (&(ctx->thread_pool->mutex));
+	
+	vortex_log (VORTEX_LEVEL_DEBUG, "adding %d threads to the pool %p, current threads are=%d",
+		    threads, ctx, axl_list_length (ctx->thread_pool->threads));
 
 	iterator = 0;
 	while (iterator < threads) {
