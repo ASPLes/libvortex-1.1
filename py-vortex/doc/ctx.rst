@@ -81,10 +81,6 @@ Module API
 
       (Read only attribute) (Number) returns current vortex.Ctx reference counting state.
 
-   .. attribute:: set_serialize
-
-      (Write only attribute) (True/False) Allows to configure channel delivery serialization. See also vortex_channel_set_serialize.
-
 
  
       
