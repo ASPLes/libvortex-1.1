@@ -287,6 +287,10 @@ void frame_received (VortexChannel    * channel,
 			stats->waiting_threads = 0;
 
 			vortex_thread_pool_setup (CONN_CTX (connection), 30, 1, 1, axl_true);
+
+		} else if (axl_cmp (vortex_frame_get_payload (frame), "disable automatic resize")) {
+
+			vortex_thread_pool_setup (CONN_CTX (connection), -1, 1, 1, axl_true);
 			
 		} /* end if */
 	}
