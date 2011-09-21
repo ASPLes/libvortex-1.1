@@ -188,6 +188,11 @@
  */
 #define REGRESSION_URI_SASL_UNIFIED "http://iana.org/beep/transient/vortex-regression/unified-sasl"
 
+/** 
+ * Profile use to identify the regression test server.
+ */
+#define REGRESSION_URI_STATS "http://iana.org/beep/transient/vortex-regression/stats"
+
 #include <vortex.h>
 
 char * vortex_regression_common_read_file (const char * file, int * size);

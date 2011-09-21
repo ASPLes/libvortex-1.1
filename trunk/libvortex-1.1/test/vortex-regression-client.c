@@ -860,6 +860,177 @@ axl_bool test_00c (void) {
 	return axl_true;
 }
 
+void test_00_c1_send_messages (VortexChannel * channel, VortexAsyncQueue * queue)
+{
+	int           iterator;
+	VortexFrame * frame;
+
+	/* now send same content but with details */
+	iterator = 0;
+	while (iterator < 100) {
+		/* send messages as fast as possible */
+		if (! vortex_channel_send_msg (channel, "block", 5, 0)) {
+			printf ("ERROR: failed to send test message..\n");
+			exit (-1);
+		} /* end if */
+
+		/* next iterator */
+		iterator++;
+	} /* end while */
+
+	iterator = 0;
+	while (iterator < 100) {
+
+		/* get frame */
+		frame = vortex_async_queue_pop (queue);
+
+		/* unref */
+		vortex_frame_unref (frame);
+
+		/* next iterator */
+		iterator++;
+	} /* end if */
+
+	return;
+}
+
+axl_bool test_00c1 (void) {
+	VortexCtx        * test_ctx;
+	VortexAsyncQueue * queue;
+	VortexConnection * connection;
+	VortexChannel    * channel;
+	VortexFrame      * frame;
+	int                iterator;
+
+	/* create a test context */
+	test_ctx = vortex_ctx_new ();
+
+	/* call to init vortex */
+	if (! vortex_init_ctx (test_ctx)) {
+		return axl_false;
+	}
+
+	printf ("Test 00-c: vortex ctx started..doing test..\n");
+
+	queue = vortex_async_queue_new ();
+
+	/* request the server to setup automatic thread pool resize */
+	connection = vortex_connection_new (test_ctx, 
+					    listener_host, 
+					    LISTENER_PORT,
+					    NULL, NULL);
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		printf ("ERROR: failed to connect to  listener located at: %s:%s..\n",
+			listener_host, LISTENER_PORT);
+		return axl_false;
+	}
+
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_STATS,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return axl_false;
+	}
+
+	/* send messages */
+	test_00_c1_send_messages (channel, queue);
+
+	printf ("Test 00-c1: now getting stats..\n");
+	/* send messages as fast as possible */
+	if (! vortex_channel_send_msg (channel, "GET stats", 9, 0)) {
+		printf ("ERROR: failed to send test message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* get frame */
+	frame = vortex_async_queue_pop (queue);
+	printf ("Test 00-c1: stats received: %s\n", (char *) vortex_frame_get_payload (frame));
+
+	if (! axl_memcmp (vortex_frame_get_payload (frame), "5,4", 3)) {
+		printf ("ERROR: expected to find 5 threads running, 4 waiting threads and 94 pending tasks at peak..\n");
+		return axl_false;
+	}
+	vortex_frame_unref (frame);
+
+	printf ("Test 00-c1: now enable automatic thread creation\n");
+	/* send messages as fast as possible */
+	if (! vortex_channel_send_msg (channel, "enable automatic resize", 23, 0)) {
+		printf ("ERROR: failed to send test message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* unref */
+	frame = vortex_async_queue_pop (queue);
+	vortex_frame_unref (frame);
+
+	/* send messages */
+	iterator = 0;
+	while (iterator < 60) {
+
+		switch (iterator) {
+		case 10:
+		case 20:
+		case 30:
+		case 40:
+		case 50:
+		case 60:
+			printf ("Test 00-c1: sending messages again (round: %d)..\n", iterator);
+			break;
+		}
+		test_00_c1_send_messages (channel, queue);
+
+		iterator++;
+	}
+
+	printf ("Test 00-c1: now getting stats..\n");
+	/* send messages as fast as possible */
+	if (! vortex_channel_send_msg (channel, "GET stats", 9, 0)) {
+		printf ("ERROR: failed to send test message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* get frame */
+	frame = vortex_async_queue_pop (queue);
+	printf ("Test 00-c1: stats received: %s\n", (char *) vortex_frame_get_payload (frame));
+	vortex_frame_unref (frame);
+
+	printf ("Test 00-c1: now waiting for threads to get to 5 threads..\n");
+	iterator = 0;
+	while (iterator < 60) {
+		/* wait a bit */
+		vortex_async_queue_timedpop (queue, 1000000);
+
+		/* send messages as fast as possible */
+		if (! vortex_channel_send_msg (channel, "GET real stats", 14, 0)) {
+			printf ("ERROR: failed to send test message..\n");
+			return axl_false;
+		} /* end if */
+
+		/* get frame */
+		frame = vortex_async_queue_pop (queue);
+		printf ("Test 00-c1: stats received: %s\n", (char *) vortex_frame_get_payload (frame));
+		vortex_frame_unref (frame);
+
+		/* next iterator */
+		iterator++;
+	}
+
+	/* close the connection */
+	vortex_connection_close (connection);
+	
+	/* terminate context */
+	vortex_async_queue_unref (queue);
+	vortex_exit_ctx (test_ctx, axl_true);
+	return axl_true;
+}
+
 axl_bool test_00d_check (int value, int expected_value_size, const char * expected_str_value)
 {
 	char buffer[10];
@@ -12541,7 +12712,7 @@ int main (int  argc, char ** argv)
         printf ("**       valgrind or similar tools.\n");
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
-	printf ("**       Test available: test_00, test_00a, test_00b, test_00c, test_00d, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
+	printf ("**       Test available: test_00, test_00a, test_00b, test_00c, test_00c1, test_00d, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
 	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o,\n");
 	printf ("**                       test_01p, test_01q, test_01r, test_01s, test_01s1, test_01t\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02b, test_02c, test_02d, test_02e, \n"); 
@@ -12677,6 +12848,9 @@ int main (int  argc, char ** argv)
 
 		if (check_and_run_test (run_test_name, "test_00c"))
 			run_test (test_00c, "Test 00-c", "Thread pool events", -1, -1);
+
+		if (check_and_run_test (run_test_name, "test_00c1"))
+			run_test (test_00c1, "Test 00-c1", "Thread pool automatic resize", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_00d"))
 			run_test (test_00d, "Test 00-d", "(unsigned) Int to string conversion", -1, -1);
@@ -12959,6 +13133,8 @@ int main (int  argc, char ** argv)
 	run_test (test_00b, "Test 00-b", "Thread pool stats (change number)", -1, -1);
 
 	run_test (test_00c, "Test 00-c", "Thread pool events", -1, -1);
+
+	run_test (test_00c1, "Test 00-c1", "Thread pool automatic resize", -1, -1);
 
 	run_test (test_00d, "Test 00-d", "(unsigned) Int to string conversion", -1, -1);
 

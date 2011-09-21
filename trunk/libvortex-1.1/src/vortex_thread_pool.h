@@ -48,6 +48,12 @@ void vortex_thread_pool_init                (VortexCtx * ctx, int  max_threads);
 
 void vortex_thread_pool_add                 (VortexCtx * ctx, int threads);
 
+void vortex_thread_pool_setup               (VortexCtx * ctx, 
+					     int         thread_max_limit, 
+					     int         thread_add_step,
+					     int         thread_add_period, 
+					     axl_bool    auto_remove);
+
 void vortex_thread_pool_remove              (VortexCtx * ctx, int threads);
 
 void vortex_thread_pool_exit                (VortexCtx * ctx);

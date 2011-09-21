@@ -182,6 +182,33 @@ axl_bool __close_connection (VortexCtx * ctx, axlPointer  user_data, axlPointer 
 	return axl_true;
 }
 
+typedef struct _VortexStats {
+	int running_threads;
+	int waiting_threads;
+	int pending_tasks;
+} VortexStats;
+
+axl_bool init_stats (int                channel_num,
+		     VortexConnection * conn,
+		     axlPointer         user_data)
+{
+	/* init a mutex */
+	VortexMutex * mutex = axl_new (VortexMutex, 1);
+	VortexStats * stats;
+	vortex_mutex_create (mutex);
+
+	/* add to the connection */
+	vortex_connection_set_data_full (conn, "stats:mutex", mutex, NULL, axl_free);
+
+	/* add initial tasks */
+	stats = axl_new (VortexStats, 1);
+
+	/* add to the connection */
+	vortex_connection_set_data_full (conn, "stats:stats", stats, NULL, axl_free);
+
+	return axl_true;
+}
+
 void frame_received (VortexChannel    * channel,
 		     VortexConnection * connection,
 		     VortexFrame      * frame,
@@ -192,6 +219,77 @@ void frame_received (VortexChannel    * channel,
 	char                * content;
 	VortexPayloadFeeder * feeder;
 	int                 * reference;
+	VortexMutex         * mutex;
+	VortexStats         * stats;
+	int                   running_threads;
+	int                   pending_tasks;
+	int                   waiting_threads;
+	VortexAsyncQueue    * queue;
+
+	/* check for REGRESSION_URI_STATS */
+	if (axl_cmp (vortex_channel_get_profile (channel), REGRESSION_URI_STATS)) {
+
+		/* get mutex and record stats */
+		mutex = vortex_connection_get_data (connection, "stats:mutex");
+		vortex_mutex_lock (mutex);
+
+		/* get stats */
+		stats = vortex_connection_get_data (connection, "stats:stats");
+
+		/* update values */
+		vortex_thread_pool_stats (CONN_CTX (connection), &running_threads, &waiting_threads, &pending_tasks);
+		printf ("Pending tasks now is: %d\n", pending_tasks);
+		if (running_threads > stats->running_threads)
+			stats->running_threads = running_threads;
+		if (pending_tasks > stats->pending_tasks)
+			stats->pending_tasks = pending_tasks;
+		if (waiting_threads > stats->waiting_threads)
+			stats->waiting_threads = waiting_threads;
+		
+		/* unlock */
+		vortex_mutex_unlock (mutex);
+
+		/* check specific commands */
+		if (axl_cmp (vortex_frame_get_payload (frame), "GET stats")) {
+			printf ("Received request to return stats..\n");
+		
+			/* reply the peer client with server name */
+			content = axl_strdup_printf ("%d,%d,%d", stats->running_threads, stats->waiting_threads, stats->pending_tasks);
+			vortex_channel_send_rpy (channel,
+						 content,
+						 strlen (content),
+						 vortex_frame_get_msgno (frame));
+			axl_free (content);
+			return;
+		} else 	if (axl_cmp (vortex_frame_get_payload (frame), "GET real stats")) {
+			printf ("Received request to return real stats..\n");
+		
+			/* reply the peer client with server name */
+			content = axl_strdup_printf ("%d,%d,%d", running_threads, waiting_threads, pending_tasks);
+			vortex_channel_send_rpy (channel,
+						 content,
+						 strlen (content),
+						 vortex_frame_get_msgno (frame));
+			axl_free (content);
+			return;
+		} else if (axl_cmp (vortex_frame_get_payload (frame), "block")) {
+			/* blocking for 20ms */
+			queue = vortex_async_queue_new ();
+			vortex_async_queue_timedpop (queue, 20000);
+			vortex_async_queue_unref (queue);
+
+		} else if (axl_cmp (vortex_frame_get_payload (frame), "enable automatic resize")) {
+			/* enable automatic theread resize */
+			printf ("Received request to enable automatic thread pool resize..\n"); 
+
+			/* reset stats */
+			stats->pending_tasks = 0;
+			stats->waiting_threads = 0;
+
+			vortex_thread_pool_setup (CONN_CTX (connection), 30, 1, 1, axl_true);
+			
+		} /* end if */
+	}
 
 	/* check some commands */
 	if (axl_cmp (vortex_frame_get_payload (frame), "GET serverName")) {
@@ -1471,6 +1569,11 @@ int main (int  argc, char ** argv)
 	vortex_profiles_register_extended_start (ctx, REGRESSION_URI, 
 						 regression_uri_start_handler,
 						 NULL);
+
+	vortex_profiles_register (ctx, REGRESSION_URI_STATS,
+				  init_stats, NULL, 
+				  NULL, NULL,
+				  frame_received, NULL);
 
 	/* register a extended start */
 	vortex_profiles_register_extended_start (ctx, REGRESSION_URI_2,
