@@ -901,6 +901,7 @@ axl_bool test_00c1 (void) {
 	VortexChannel    * channel;
 	VortexFrame      * frame;
 	int                iterator;
+	axl_bool           found;
 
 	/* create a test context */
 	test_ctx = vortex_ctx_new ();
@@ -1003,6 +1004,7 @@ axl_bool test_00c1 (void) {
 
 	printf ("Test 00-c1: now waiting for threads to get to 5 threads..\n");
 	iterator = 0;
+	found    = axl_false;
 	while (iterator < 60) {
 		/* wait a bit */
 		vortex_async_queue_timedpop (queue, 1000000);
@@ -1016,11 +1018,34 @@ axl_bool test_00c1 (void) {
 		/* get frame */
 		frame = vortex_async_queue_pop (queue);
 		printf ("Test 00-c1: stats received: %s\n", (char *) vortex_frame_get_payload (frame));
+
+		if (axl_cmp (vortex_frame_get_payload (frame), "5,4,0")) {
+			found = axl_true;
+			vortex_frame_unref (frame);
+			break;
+		} /* end if */
+
 		vortex_frame_unref (frame);
 
 		/* next iterator */
 		iterator++;
 	}
+
+	if (! found) {
+		printf ("ERROR: expected to find 5,4,0 as threading status, but found something different..\n");
+		return axl_false;
+	}
+
+	/* send messages as fast as possible */
+	printf ("Test 00-c1: now disable thread pool automatic resize..\n");
+	if (! vortex_channel_send_msg (channel, "disable automatic resize", 24, 0)) {
+		printf ("ERROR: failed to send test message..\n");
+		return axl_false;
+	} /* end if */
+	
+	/* get frame */
+	frame = vortex_async_queue_pop (queue);
+	vortex_frame_unref (frame);
 
 	/* close the connection */
 	vortex_connection_close (connection);
