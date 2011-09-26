@@ -238,7 +238,7 @@ void frame_received (VortexChannel    * channel,
 
 		/* update values */
 		vortex_thread_pool_stats (CONN_CTX (connection), &running_threads, &waiting_threads, &pending_tasks);
-		printf ("Pending tasks now is: %d\n", pending_tasks);
+		/* printf ("Pending tasks now is: %d\n", pending_tasks); */
 		if (running_threads > stats->running_threads)
 			stats->running_threads = running_threads;
 		if (pending_tasks > stats->pending_tasks)

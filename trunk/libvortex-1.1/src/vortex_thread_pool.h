@@ -90,6 +90,12 @@ int  vortex_thread_pool_get_num             (void);
 void vortex_thread_pool_set_exclusive_pool  (VortexCtx        * ctx,
 					     axl_bool           value);
 
+/* internal API */
+void vortex_thread_pool_add_internal        (VortexCtx        * ctx, 
+					     int                threads);
+void vortex_thread_pool_remove_internal     (VortexCtx        * ctx, 
+					     int                threads);
+
 END_C_DECLS
 
 #endif

@@ -264,10 +264,8 @@ void __vortex_thread_pool_automatic_resize (VortexCtx * ctx)
 		vortex_log (VORTEX_LEVEL_DEBUG, "Adding %d threads because there are pending tasks %d and limit was not reached %d",
 			    ctx->thread_pool->thread_add_step, pending_tasks, ctx->thread_pool->thread_max_limit);
 
-		/* add a thread to the pool */
-		vortex_mutex_unlock (&(ctx->thread_pool->mutex));
-		vortex_thread_pool_add (ctx, ctx->thread_pool->thread_add_step);
-		vortex_mutex_lock (&(ctx->thread_pool->mutex));
+		/* add a thread to the pool (call internal unlocked) */
+		vortex_thread_pool_add_internal (ctx, ctx->thread_pool->thread_add_step);
 		gettimeofday (&(ctx->thread_pool->last), NULL);
 
 	} else if (ctx->thread_pool->auto_remove && 
@@ -284,9 +282,7 @@ void __vortex_thread_pool_automatic_resize (VortexCtx * ctx)
 			    ctx->thread_pool->thread_add_step, waiting_threads, ctx->thread_pool->base_thread_num);
 		   
 		/* remove a thread from the pool */
-		vortex_mutex_unlock (&(ctx->thread_pool->mutex));
-		vortex_thread_pool_remove (ctx, ctx->thread_pool->thread_add_step);
-		vortex_mutex_lock (&(ctx->thread_pool->mutex));
+		vortex_thread_pool_remove_internal (ctx, ctx->thread_pool->thread_add_step);
 		gettimeofday (&(ctx->thread_pool->last), NULL);
 
 	} /* end if */
@@ -586,15 +582,14 @@ void vortex_thread_pool_setup               (VortexCtx * ctx,
 }
 
 /** 
- * @brief Allows to increase the thread pool running on the provided
- * context with the provided amount of threads.
+ * @internal Unlocked thread add implementation.
  *
  * @param ctx The context where the thread pool to be increased.
  * @param threads The amount of threads to add into the pool.
  *
  */
-void vortex_thread_pool_add                 (VortexCtx        * ctx, 
-					     int                threads)
+void vortex_thread_pool_add_internal                 (VortexCtx        * ctx, 
+						      int                threads)
 {
 	int                       iterator;
 	VortexThread            * thread;
@@ -603,9 +598,6 @@ void vortex_thread_pool_add                 (VortexCtx        * ctx,
 	v_return_if_fail (ctx);
 	v_return_if_fail (threads > 0);
 
-	/* lock the thread pool */
-	vortex_mutex_lock (&(ctx->thread_pool->mutex));
-	
 	vortex_log (VORTEX_LEVEL_DEBUG, "adding %d threads to the pool %p, current threads are=%d",
 		    threads, ctx, axl_list_length (ctx->thread_pool->threads));
 
@@ -632,9 +624,6 @@ void vortex_thread_pool_add                 (VortexCtx        * ctx,
 			/* free the reference */
 			vortex_thread_destroy (thread, axl_true);
 
-			/* (un)lock the thread pool */
-			vortex_mutex_unlock (&(ctx->thread_pool->mutex));
-			
 			vortex_log (VORTEX_LEVEL_CRITICAL, "unable to create a thread required for the pool");
 			return;
 		} /* end if */
@@ -651,8 +640,62 @@ void vortex_thread_pool_add                 (VortexCtx        * ctx,
 
 	} /* end if */	
 
+	return;
+}
+
+/** 
+ * @brief Allows to increase the thread pool running on the provided
+ * context with the provided amount of threads.
+ *
+ * @param ctx The context where the thread pool to be increased.
+ * @param threads The amount of threads to add into the pool.
+ *
+ */
+void vortex_thread_pool_add                 (VortexCtx        * ctx, 
+					     int                threads)
+{
+
+	v_return_if_fail (ctx);
+	v_return_if_fail (threads > 0);
+
+	/* lock the thread pool */
+	vortex_mutex_lock (&(ctx->thread_pool->mutex));
+	
+	/* call internal unlocked implementation */
+	vortex_thread_pool_add_internal (ctx, threads);
+
 	/* (un)lock the thread pool */
 	vortex_mutex_unlock (&(ctx->thread_pool->mutex));
+	return;
+}
+
+/** 
+ * @internal Unlocked Implementation that allows to decrease the
+ * thread pool running on the provided context with the provided
+ * amount of threads.
+ *
+ * @param ctx The context where the thread pool will be decreased.
+ * @param threads The amount of threads to remove from the pool.
+ * 
+ * The amount of threads can't be lower than current available threads
+ * from the pool and, the thread pool must have at minimum one thread
+ * running.
+ */
+void vortex_thread_pool_remove_internal        (VortexCtx        * ctx, 
+						int                threads)
+{
+	int threads_running;
+	if (ctx == NULL || threads <= 0)
+		return;
+
+	threads_running = axl_list_length (ctx->thread_pool->threads);
+	while (threads > 0 && threads_running > 1) {
+		/* push a task to stop one thread */
+		vortex_async_queue_push (ctx->thread_pool->queue, INT_TO_PTR (2));
+		threads--;
+		threads_running--;
+	} /* end if */
+
 	return;
 }
 
@@ -667,23 +710,17 @@ void vortex_thread_pool_add                 (VortexCtx        * ctx,
  * from the pool and, the thread pool must have at minimum one thread
  * running.
  */
-void vortex_thread_pool_remove                 (VortexCtx        * ctx, 
-						int                threads)
+void vortex_thread_pool_remove        (VortexCtx        * ctx, 
+				       int                threads)
 {
-	int threads_running;
 	if (ctx == NULL || threads <= 0)
 		return;
 
 	/* lock the mutex and get current started threads */
 	vortex_mutex_lock (&ctx->thread_pool->mutex);
 
-	threads_running = axl_list_length (ctx->thread_pool->threads);
-	while (threads > 0 && threads_running > 1) {
-		/* push a task to stop one thread */
-		vortex_async_queue_push (ctx->thread_pool->queue, INT_TO_PTR (2));
-		threads--;
-		threads_running--;
-	} /* end if */
+	/* call unlocked internal */
+	vortex_thread_pool_remove_internal (ctx, threads);
 
 	vortex_mutex_unlock (&ctx->thread_pool->mutex);
 	return;

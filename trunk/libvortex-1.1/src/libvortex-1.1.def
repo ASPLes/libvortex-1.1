@@ -572,6 +572,7 @@ vortex_thread_create_internal
 vortex_thread_destroy
 vortex_thread_destroy_internal
 vortex_thread_pool_add
+vortex_thread_pool_add_internal
 vortex_thread_pool_being_closed
 vortex_thread_pool_event_stats
 vortex_thread_pool_exit
@@ -582,6 +583,7 @@ vortex_thread_pool_new_event
 vortex_thread_pool_new_task
 vortex_thread_pool_remove
 vortex_thread_pool_remove_event
+vortex_thread_pool_remove_internal
 vortex_thread_pool_set_exclusive_pool
 vortex_thread_pool_set_num
 vortex_thread_pool_setup
