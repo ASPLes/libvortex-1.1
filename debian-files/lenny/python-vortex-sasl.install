@@ -1,6 +1,6 @@
-usr/lib/python2.6/dist-packages/vortex/sasl.py
-usr/lib/python2.6/dist-packages/vortex/libpy_vortex_sasl_11.a
-usr/lib/python2.6/dist-packages/vortex/libpy_vortex_sasl_11.la
-usr/lib/python2.6/dist-packages/vortex/libpy_vortex_sasl_11.so
-usr/lib/python2.6/dist-packages/vortex/libpy_vortex_sasl_11.so.0
-usr/lib/python2.6/dist-packages/vortex/libpy_vortex_sasl_11.so.0.0.0
+usr/lib/python2.5/site-packages/vortex/sasl.py
+usr/lib/python2.5/site-packages/vortex/libpy_vortex_sasl_11.a
+usr/lib/python2.5/site-packages/vortex/libpy_vortex_sasl_11.la
+usr/lib/python2.5/site-packages/vortex/libpy_vortex_sasl_11.so
+usr/lib/python2.5/site-packages/vortex/libpy_vortex_sasl_11.so.0
+usr/lib/python2.5/site-packages/vortex/libpy_vortex_sasl_11.so.0.0.0

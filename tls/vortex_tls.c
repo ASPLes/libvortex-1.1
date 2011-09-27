@@ -2144,7 +2144,7 @@ void               vortex_tls_cleanup (VortexCtx * ctx)
 	EVP_cleanup ();
 	CRYPTO_cleanup_all_ex_data ();
 	ERR_free_strings ();
-	COMP_zlib_cleanup ();
+/*	COMP_zlib_cleanup (); */
 	return;
 }
 
