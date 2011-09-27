@@ -564,6 +564,10 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 			/* signal the stop function that the vortex
 			 * sequencer was stoped */
 			QUEUE_PUSH (ctx->sequencer_stopped, INT_TO_PTR (1));
+
+			/* release reference acquired here */
+			vortex_ctx_unref (&ctx);
+
 			return NULL;
 		}
 		
@@ -790,6 +794,10 @@ axl_bool  vortex_sequencer_run (VortexCtx * ctx)
 	if (ctx->sequencer_send_buffer == NULL)
 		ctx->sequencer_send_buffer = axl_new (char, ctx->sequencer_send_buffer_size);
 
+	/* acquire a reference to the context to avoid loosing it
+	 * during a log running sequencer not stopped */
+	vortex_ctx_ref (ctx);
+
 	/* starts the vortex sequencer */
 	if (! vortex_thread_create (&ctx->sequencer_thread,
 				    (VortexThreadFunc) __vortex_sequencer_run,
@@ -829,6 +837,7 @@ void vortex_sequencer_stop (VortexCtx * ctx)
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "vortex sequencer completely stopped");
 		vortex_async_queue_unref    (ctx->sequencer_stopped);
+
 	} else {
 		vortex_log (VORTEX_LEVEL_WARNING, "timeout while waiting vortex sequencer thread to stop..");
 	}
