@@ -3671,6 +3671,74 @@ axl_bool test_01u (void) {
 }
 
 
+axl_bool test_01v (void) {
+
+	VortexConnection   * conn;
+	VortexChannel      * channel;
+
+	/* call to connection close */
+	conn = vortex_connection_new (ctx, listener_host, LISTENER_PORT, NULL, NULL);
+	if (!vortex_connection_is_ok (conn, axl_false)) {
+		vortex_connection_close (conn);
+		return axl_false;
+	} /* end if */
+
+	/* create a channel */
+	printf ("Test 01-v: creating channel that should fail and checking references..\n");
+	channel = vortex_channel_new (conn, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+
+	if (channel == NULL) {
+		printf ("ERROR: expected to find channel reference different to NULL\n");
+		return axl_false;
+	} /* end if */
+
+	/* send a message to unregister regression_uri */
+	printf ("Test 01-v: sending unregister profile..\n");
+	if (! vortex_channel_send_msg (channel, "unregister profile", 18, 0)) {
+		printf ("ERROR: failed to send test message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* ok, now close the channel */
+	printf ("Test 01-v: now close the channel..\n");
+	vortex_channel_close (channel, NULL);
+
+	/* check connection is still working */
+	printf ("Test 01-v: check connection status..\n");
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: expected to find proper connection status..\n");
+		return axl_false;
+	}
+
+	/* reopen channel */
+	printf ("Test 01-v: now reopen channel..\n");
+	channel = vortex_channel_new (conn, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel != NULL) {
+		printf ("ERROR: expected to not find channel proper creation..\n");
+		return axl_false;
+	} /* end if */
+	
+	printf ("**\n**Test 01-v: reply received ok, closing conn..\n**\n");
+	vortex_connection_close (conn);
+
+	return axl_true;
+}
+
+
 
 #define TEST_02_MAX_CHANNELS 24
 
@@ -12943,6 +13011,9 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_01u"))
 			run_test (test_01u, "Test 01-u", "Check on channel created connection reference when channel create fails", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_01v"))
+			run_test (test_01v, "Test 01-v", "Check profile unregistering", -1, -1);
+
 		if (check_and_run_test (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
 
@@ -13204,6 +13275,8 @@ int main (int  argc, char ** argv)
 	run_test (test_01t, "Test 01-t", "Check channel profile encoding reply", -1, -1);
 
 	run_test (test_01u, "Test 01-u", "Check on channel created connection reference when channel create fails", -1, -1);
+
+	run_test (test_01v, "Test 01-v", "Check profile unregistering", -1, -1);
 
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   
