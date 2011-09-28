@@ -71,6 +71,7 @@ libvortex_1_1_include_HEADERS = vortex.h \
 	vortex_reader.h \
 	vortex_dtds.h \
 	vortex_hash.h \
+	vortex_hash_private.h \
 	vortex_queue.h \
 	vortex_sequencer.h \
 	vortex_thread_pool.h \

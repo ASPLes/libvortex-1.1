@@ -2380,7 +2380,13 @@ check_limit:
 				update_msg_no = axl_false;
 			}
 		} else { /* status == 0 */
-			vortex_channel_ref (channel);
+			if (! vortex_channel_ref (channel)) {
+				axl_free (data);
+
+				/* unlock send mutex */
+				vortex_mutex_unlock (&channel->send_mutex);
+				return axl_false;
+			}
 			feeder->channel = channel;
 		} /* end if */
 	} 
@@ -2807,7 +2813,13 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 			/* set status to ok */
 			feeder->status = 0;
 		} else { /* status == 0 */
-			vortex_channel_ref (channel);
+			if (! vortex_channel_ref (channel)) {
+				axl_free (data);
+
+				/* unlock send mutex */
+				vortex_mutex_unlock (&channel->send_mutex);
+				return axl_false;
+			}
 			feeder->channel = channel;
 		}
 
