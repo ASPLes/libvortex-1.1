@@ -1,0 +1,48 @@
+
+       #####################################
+       ####     Change notification     ####
+       #####################################
+
+    Change Id: vortex-ctx-data-01
+ Project name: Vortex Library
+  Included in: already included and to be shipped with next stable release
+               1.1.10
+       Status: NOTIFY
+       Author: Francis Brosnan Blázquez
+
+Motivation
+~~~~~~~~~~
+
+Functions vortex_ctx_set_data, vortex_ctx_set_data_full,
+vortex_ctx_get_data provides a string key oriented hash storage
+associated for vortex context, but key parameter's type is an
+axlPointer which allows passing keys which aren't string, causing
+obvious runtime problems which aren't detected by c/c++ compilers.
+
+Change Description
+~~~~~~~~~~~~~~~~~~
+
+These tree functions has being updated to receive a const char * for
+the key parameter, like showed for vortex_ctx_set_data:
+
+  void        vortex_ctx_set_data                  (VortexCtx       * ctx, 
+						    const char      * key, 
+						    axlPointer        value);
+
+Solution to incompatibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In many cases this API change won't cause problems. However, because
+"const" declaration, you may need to cast references (const char *),
+especially for those buildings that flags compile warnings as errors.
+
+References
+~~~~~~~~~~
+[1] Project link: 
+    http://vortex.aspl.es
+
+[2] Change notification published by the project:
+    http://vortex.aspl.es/doc.html
+
+[3] Change notification definition
+    http://www.aspl.es/change/change-notification.txt
