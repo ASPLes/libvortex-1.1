@@ -36,24 +36,8 @@
  *         info@aspl.es - http://www.aspl.es/vortex
  */
 #include <vortex.h>
+#include <vortex_hash_private.h>
 #define LOG_DOMAIN "vortex-hash"
-
-struct _VortexHash {
-	axlHash          * table;
-	VortexMutex        mutex;
-	int                ref_count;
-
-	/* configuration functions */
-	axlHashFunc        hash_func;
-	axlEqualFunc       key_equal_func;
-
-	/* destroy functions */
-	axlDestroyFunc     key_destroy;
-	axlDestroyFunc     value_destroy;
-	
-	/* watchers */
-	VortexAsyncQueue * changed_queue;
-};
 
 /** 
  * \defgroup vortex_hash VortexHash: Thread Safe Hash table used inside Vortex Library.

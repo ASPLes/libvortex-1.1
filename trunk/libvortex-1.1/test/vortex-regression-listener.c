@@ -78,17 +78,17 @@ void frame_received_fake_listeners  (VortexChannel    * channel,
 	if (axl_cmp (vortex_frame_get_payload (frame), "create-listener")) {
 		/* create listener command received */
 
-		printf ("RECEIVED: create-listener request..creating at 0.0.0.0:44012\n");
+		/* printf ("RECEIVED: create-listener request..creating at 0.0.0.0:44012\n");*/
 
 		/* create the listener */
 		listener = vortex_listener_new (ctx, "0.0.0.0", "44012", NULL, NULL);
 		if (! vortex_connection_is_ok (listener, axl_false)) {
-			printf ("Test 12 (8): failed to start fake listener..\n");
+			/* printf ("Test 12 (8): failed to start fake listener..\n"); */
 			vortex_channel_send_err (channel, "failed to create listener", 25, vortex_frame_get_msgno (frame));
 			return;
 		} /* end if */
 
-		printf ("CALLING: to block listener created..\n");
+		/* printf ("CALLING: to block listener created..\n"); */
 		vortex_connection_block (listener, axl_true);
 
 		/* associate listener to the channel */
@@ -103,12 +103,12 @@ void frame_received_fake_listeners  (VortexChannel    * channel,
 		/* unlock listener command received */
 		listener = vortex_channel_get_data (channel, "listener");
 		if (listener == NULL) {
-			printf ("Test 12 (9): failed to unlock listener, unable to find reference..\n");
+			/* printf ("Test 12 (9): failed to unlock listener, unable to find reference..\n"); */
 			vortex_channel_send_err (channel, "failed to unlock listener", 25, vortex_frame_get_msgno (frame));
 			return;
 		} /* end if */
 
-		printf ("CALLING: to unblock listener created..\n");
+		/* printf ("CALLING: to unblock listener created..\n"); */
 		vortex_connection_block (listener, axl_false);
 
 		/* reply the peer client with the same content */
@@ -120,12 +120,12 @@ void frame_received_fake_listeners  (VortexChannel    * channel,
 		/* close listener command received */
 		listener = vortex_channel_get_data (channel, "listener");
 		if (listener == NULL) {
-			printf ("Test 12 (9): failed to close listener, unable to find reference..\n");
+			/* printf ("Test 12 (9): failed to close listener, unable to find reference..\n"); */
 			vortex_channel_send_err (channel, "failed to close listener", 24, vortex_frame_get_msgno (frame));
 			return;
 		} /* end if */
 
-		printf ("CALLING: to close listener created..\n");
+		/* printf ("CALLING: to close listener created..\n");*/
 		vortex_listener_shutdown (listener, axl_true);
 
 		/* reply the peer client with the same content */
@@ -151,11 +151,11 @@ void test_01p_idle_handler (VortexCtx * ctx, VortexConnection * conn, axlPointer
 	
 	/* update count */
 	(*count)++;
-	printf ("Test 01-p: idle handler called for connection id=%d, count=%d\n", vortex_connection_get_id (conn), *count);
+	/* printf ("Test 01-p: idle handler called for connection id=%d, count=%d\n", vortex_connection_get_id (conn), *count); */
 
 	/* check initial state */
 	if (vortex_connection_half_opened (conn)) {
-		printf ("Test 01-p: found idle connection at connection stage, killing..\n");
+		/* printf ("Test 01-p: found idle connection at connection stage, killing..\n");*/
 		vortex_connection_shutdown (conn);
 		return;
 	}
@@ -251,7 +251,7 @@ void frame_received (VortexChannel    * channel,
 
 		/* check specific commands */
 		if (axl_cmp (vortex_frame_get_payload (frame), "GET stats")) {
-			printf ("Received request to return stats..\n");
+			/* printf ("Received request to return stats..\n"); */
 		
 			/* reply the peer client with server name */
 			content = axl_strdup_printf ("%d,%d,%d", stats->running_threads, stats->waiting_threads, stats->pending_tasks);
@@ -262,7 +262,7 @@ void frame_received (VortexChannel    * channel,
 			axl_free (content);
 			return;
 		} else 	if (axl_cmp (vortex_frame_get_payload (frame), "GET real stats")) {
-			printf ("Received request to return real stats..\n");
+			/* printf ("Received request to return real stats..\n");*/
 		
 			/* reply the peer client with server name */
 			content = axl_strdup_printf ("%d,%d,%d", running_threads, waiting_threads, pending_tasks);
@@ -280,7 +280,7 @@ void frame_received (VortexChannel    * channel,
 
 		} else if (axl_cmp (vortex_frame_get_payload (frame), "enable automatic resize")) {
 			/* enable automatic theread resize */
-			printf ("Received request to enable automatic thread pool resize..\n"); 
+			/* printf ("Received request to enable automatic thread pool resize..\n"); */
 
 			/* reset stats */
 			stats->pending_tasks = 0;
@@ -297,7 +297,7 @@ void frame_received (VortexChannel    * channel,
 
 	/* check some commands */
 	if (axl_cmp (vortex_frame_get_payload (frame), "GET serverName")) {
-		printf ("Received request to return serverName=%s..\n", vortex_connection_get_server_name (connection));
+		/* printf ("Received request to return serverName=%s..\n", vortex_connection_get_server_name (connection));*/
 		
 		/* reply the peer client with server name */
 		vortex_channel_send_rpy (channel,
@@ -306,8 +306,8 @@ void frame_received (VortexChannel    * channel,
 					 vortex_frame_get_msgno (frame));
 		return;
 	} else if (axl_memcmp (vortex_frame_get_payload (frame), "window_size=", 12)) {
-		printf ("Received request to change window size to: %s..\n", 
-			(char *) vortex_frame_get_payload (frame) + 12);
+		/* printf ("Received request to change window size to: %s..\n", 
+		   (char *) vortex_frame_get_payload (frame) + 12); */
 		window_size = atoi ((char *) vortex_frame_get_payload (frame) + 12);
 		/* changing window size */
 		vortex_channel_set_window_size (channel, window_size);
@@ -317,7 +317,7 @@ void frame_received (VortexChannel    * channel,
 		return;
 	} else if (axl_memcmp (vortex_frame_get_payload (frame), "count bytes: ", 13)) {
 		bytes = strlen ((char*) vortex_frame_get_payload (frame) + 12);
-		printf ("Content received: %s (bytes: %d)\n", (char*) vortex_frame_get_payload (frame) + 12, bytes);
+		/* printf ("Content received: %s (bytes: %d)\n", (char*) vortex_frame_get_payload (frame) + 12, bytes); */
 		content = axl_strdup_printf ("%d", bytes);
 		vortex_channel_send_rpy (channel, content, strlen (content), vortex_frame_get_msgno (frame));
 		return;
@@ -343,7 +343,7 @@ void frame_received (VortexChannel    * channel,
 		feeder = vortex_payload_feeder_file ("vortex-regression-client.c", axl_true);
 		
 		/* send content */
-		printf ("Test 04-e: sending RPY using feeder..\n");
+		/* printf ("Test 04-e: sending RPY using feeder..\n"); */
 		if (! vortex_channel_send_rpy_from_feeder (channel, feeder, vortex_frame_get_msgno (frame))) {
 			printf ("ERROR: failed to send content via feeder using RPY..\n");
 			return;
@@ -379,8 +379,8 @@ void simple_ans_nul_reply (VortexChannel    * channel,
 	VortexAsyncQueue * queue;
 
 	if (axl_memcmp (vortex_frame_get_payload (frame), "window_size=", 12)) {
-		printf ("Received request to change window size to: %s..\n", 
-			(char *) vortex_frame_get_payload (frame) + 12);
+		/* printf ("Received request to change window size to: %s..\n", 
+		   (char *) vortex_frame_get_payload (frame) + 12); */
 		window_size = atoi ((char *) vortex_frame_get_payload (frame) + 12);
 		/* changing window size */
 		vortex_channel_set_window_size (channel, window_size);
@@ -390,7 +390,7 @@ void simple_ans_nul_reply (VortexChannel    * channel,
 		return;
 	}
 
-	printf ("%d: Replying with 30 ANS messages with a final NUL..\n", vortex_frame_get_msgno (frame));
+	/* printf ("%d: Replying with 30 ANS messages with a final NUL..\n", vortex_frame_get_msgno (frame)); */
 
 	if (vortex_frame_get_msgno (frame) == 0) {
 		/* introduce a micro delay */
@@ -413,7 +413,7 @@ void simple_ans_nul_reply (VortexChannel    * channel,
 					     vortex_frame_get_payload (frame),
 					     vortex_frame_get_payload_size (frame),
 					     vortex_frame_get_msgno (frame));
-		printf ("   %d: Sending ANS reply: %d\n", vortex_frame_get_msgno (frame), iterator);
+		/* printf ("   %d: Sending ANS reply: %d\n", vortex_frame_get_msgno (frame), iterator); */
 		/* next reply */
 		iterator++;
 	} /* end if */
@@ -466,15 +466,15 @@ void frame_received_ans_replies (VortexChannel    * channel,
 
 	/* ack message received */
 	if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_MSG) {
-		printf ("Sending content (ANS/NUL test: %s)\n", REGRESSION_URI_4);
+		/* printf ("Sending content (ANS/NUL test: %s)\n", REGRESSION_URI_4); */
 
 		/* parse message received */
 		values     = axl_split (vortex_frame_get_payload (frame), 1, ",");
 		block_size = atoi (values[1]);
 		block_num  = atoi (values[2]);
 		axl_freev (values);
-		printf ("Sending content (ANS/NUL test: %s, block size: %d, block num: %d)\n", 
-			REGRESSION_URI_4, block_size, block_num);
+		/* printf ("Sending content (ANS/NUL test: %s, block size: %d, block num: %d)\n", 
+		   REGRESSION_URI_4, block_size, block_num); */
 
 		/* reply with a file (simulating it) */ 
 		iterator = 0;
@@ -501,12 +501,12 @@ void frame_received_ans_replies (VortexChannel    * channel,
 		/* finaly transmission */
 		if (!vortex_channel_finalize_ans_rpy (channel, vortex_frame_get_msgno (frame))) {
 			/* well, we have found an error while sending a message */
-				printf ("Regression test for URI %s is failed, unable finalize ANS/NUL transmission\n",
-					REGRESSION_URI_4);
-				return;
+			/* printf ("Regression test for URI %s is failed, unable finalize ANS/NUL transmission\n",
+			   REGRESSION_URI_4); */
+			   return;
 		} /* end if */
 
-		printf ("Finished sending content (ANS/NUL test: %s)\n", REGRESSION_URI_4);
+		/* printf ("Finished sending content (ANS/NUL test: %s)\n", REGRESSION_URI_4); */
 	} /* end if */
 
 	return;
@@ -543,8 +543,8 @@ void frame_received_ans_transfer_selected_file (VortexChannel    * channel,
 								       limit_transfer_frame_size, INT_TO_PTR (vortex_connection_get_mss (connection) - 60));
 			
 			/* send reply */
-			printf ("Request to change frame segmentator to up %d bytes (TCP MSS(%d) - BEEP HEADERS(60)\n",
-				vortex_connection_get_mss (connection) - 60, vortex_connection_get_mss (connection));
+			/* printf ("Request to change frame segmentator to up %d bytes (TCP MSS(%d) - BEEP HEADERS(60)\n",
+			   vortex_connection_get_mss (connection) - 60, vortex_connection_get_mss (connection)); */
 			vortex_channel_send_rpy (channel, 
 						 vortex_frame_get_payload (frame), 
 						 vortex_frame_get_payload_size (frame), 
@@ -552,7 +552,7 @@ void frame_received_ans_transfer_selected_file (VortexChannel    * channel,
 			return;
 		}
 		
-		printf ("Sending content (ANS/NUL test: %s)\n", REGRESSION_URI_5);
+		/* printf ("Sending content (ANS/NUL test: %s)\n", REGRESSION_URI_5); */
 		/* reply with a file (simulating it) */ 
 		
 		file = fopen ((char *) vortex_frame_get_payload (frame), "r");
@@ -564,7 +564,7 @@ void frame_received_ans_transfer_selected_file (VortexChannel    * channel,
 						 vortex_frame_get_msgno (frame));
 			return;
 		} /* end if */
-		printf ("Sending file: %s\n", (char*) vortex_frame_get_payload (frame));
+		/* printf ("Sending file: %s\n", (char*) vortex_frame_get_payload (frame)); */
 		
 		/* reply the peer client with the same content 10 times */
 		total_bytes = 0;
@@ -597,12 +597,12 @@ void frame_received_ans_transfer_selected_file (VortexChannel    * channel,
 		/* finaly transmission */
 		if (!vortex_channel_finalize_ans_rpy (channel, vortex_frame_get_msgno (frame))) {
 			/* well, we have found an error while sending a message */
-				printf ("Regression test for URI %s is failed, unable finalize ANS/NUL transmission for: %s\n",
-					REGRESSION_URI_5, (char *) vortex_frame_get_payload (frame));
-				return;
+			/* printf ("Regression test for URI %s is failed, unable finalize ANS/NUL transmission for: %s\n",
+			   REGRESSION_URI_5, (char *) vortex_frame_get_payload (frame)); */
+			return;
 		} /* end if */
 
-		printf ("Finished sending content (ANS/NUL test: %s)\n", REGRESSION_URI_4);
+		/* printf ("Finished sending content (ANS/NUL test: %s)\n", REGRESSION_URI_4); */
 		
 	} /* end if */
 
@@ -668,7 +668,7 @@ axl_bool      sasl_anonymous_validation (VortexConnection * connection,
 					 const char       * anonymous_token)
 {
 	if (axl_cmp ("test@aspl.es", anonymous_token)) {
-		printf ("Received anonymous validation for: test@aspl.es, replying OK\n");
+		/* printf ("Received anonymous validation for: test@aspl.es, replying OK\n"); */
 		return axl_true;
 	}
 	return axl_false;
@@ -681,7 +681,7 @@ axl_bool      sasl_external_validation (VortexConnection * connection,
 		return axl_true;
 	}
 	
-	printf ("Received external validation for: %s, replying FAILED\n", auth_id);
+	/* printf ("Received external validation for: %s, replying FAILED\n", auth_id); */
 	return axl_false;
 }
 
@@ -694,8 +694,8 @@ axl_bool      sasl_external_validation_full (VortexConnection * connection,
 		return sasl_external_validation (connection, auth_id);
 	}
 
-	printf ("Received external validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.",
-		 auth_id);
+	/* printf ("Received external validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.",
+	   auth_id);*/
 	return axl_false;
 }
 
@@ -725,7 +725,7 @@ axl_bool      sasl_plain_validation_full  (VortexConnection * connection,
 	if (axl_cmp ("plain!", (char*)user_data )) {
 		return sasl_plain_validation (connection, auth_id, auth_proxy_id, password);
 	}
-	printf ("Received PLAIN validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.", auth_id);
+	/* printf ("Received PLAIN validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.", auth_id);*/
 	return axl_false;
 }
 
@@ -744,7 +744,7 @@ char  * sasl_cram_md5_validation_full (VortexConnection * connection,
 	if (axl_cmp ("cram md5!", (char*)user_data )) {
 		return sasl_cram_md5_validation (connection, auth_id);
 	}
-	printf ("Received cram md5 validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.", auth_id);
+	/* printf ("Received cram md5 validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.", auth_id);*/
 	return NULL;
 }
 
@@ -767,7 +767,7 @@ char  * sasl_digest_md5_validation_full (VortexConnection * connection,
 		return sasl_digest_md5_validation (connection, auth_id, authorization_id, realm);
 	}
 
-	printf ("Received digest md5 validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.", auth_id);
+	/* printf ("Received digest md5 validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.", auth_id); */
 	return NULL;
 }
 
@@ -779,7 +779,7 @@ axlPointer  common_auth_handler  (VortexConnection * conn,
 				  VortexSaslProps  * props,
 				  axlPointer         user_data)
 {
-	printf ("Received request to handle profile %s (common sasl handler)\n", props->mech);
+	/* printf ("Received request to handle profile %s (common sasl handler)\n", props->mech); */
 
 	/* check to validate for serverName=test_06a.server */
 	if (axl_cmp (props->serverName, "test_06a.server")) {
@@ -886,12 +886,12 @@ void __terminate_vortex_listener (int value)
 
 		return;
 	}
-	printf ("Terminating vortex regression listener..\n");
+	/* printf ("Terminating vortex regression listener..\n");*/
 	__doing_exit = axl_true;
 	vortex_mutex_unlock (&doing_exit_mutex);
 
 	/* unlocking listener */
-	printf ("Calling to unlock listener due to signal received: VortexCtx %p", ctx);
+	/* printf ("Calling to unlock listener due to signal received: VortexCtx %p", ctx); */
 	vortex_listener_unlock (ctx);
 
 	return;
@@ -911,7 +911,7 @@ void close_in_transit_received (VortexChannel    * channel,
 	
 	/* now close the channel */
 	if (! vortex_channel_close (channel, NULL)) {
-		fprintf (stderr, "FAILED TO CLOSE CHANNEL (close in transit profile)");
+		/* fprintf (stderr, "FAILED TO CLOSE CHANNEL (close in transit profile)"); */
 		return;
 	}
 	return;
@@ -971,12 +971,12 @@ axl_bool  check_profiles_adviced (int channel_num, VortexConnection *connection,
 	const char * uri;
 
 	
-	printf ("Check profiles announced: %d\n", axl_list_length (profiles));
+	/* printf ("Check profiles announced: %d\n", axl_list_length (profiles));*/
 	iterator = 0;
 	while (iterator < axl_list_length (profiles)) {
 		/* get uri */
 		uri = (const char *) axl_list_get_nth (profiles, iterator);
-		printf ("  uri found: %s\n", uri);
+		/* printf ("  uri found: %s\n", uri); */
 
 		/* next position */
 		iterator++;
@@ -1058,7 +1058,7 @@ axl_bool  enable_block_tls_queries = axl_false;
 
 axl_bool  start_channel_block_tls (int channel_num, VortexConnection * connection, axlPointer user_data)
 {
-	printf ("Received request to block TLS query..\n");
+	/* printf ("Received request to block TLS query..\n");*/
 
 	/* block next tls query */
 	enable_block_tls_queries = axl_true;
@@ -1068,7 +1068,7 @@ axl_bool  start_channel_block_tls (int channel_num, VortexConnection * connectio
 axlPointer block_ctx_creation (VortexConnection * connection, axlPointer user_data)
 {
 	/* simulate a failure creating the SSL context.. */
-	printf ("Simulate a SSL context creation failure..\n");
+	/* printf ("Simulate a SSL context creation failure..\n");*/
 	return NULL;
 }
 
@@ -1078,8 +1078,8 @@ axl_bool  regression_tls_handle_query (VortexConnection * connection, const char
 #if defined(ENABLE_TLS_SUPPORT)
 	VortexAsyncQueue * queue;
 
-	printf ("TLS: Receiving request to start tls auth, with status=%d (conn id=%d)..\n", 
-		enable_block_tls_queries, vortex_connection_get_id (connection));
+	/* printf ("TLS: Receiving request to start tls auth, with status=%d (conn id=%d)..\n", 
+	   enable_block_tls_queries, vortex_connection_get_id (connection)); */
 	if (enable_block_tls_queries) {
 		/* return to not accept TLS query but revert state for
 		 * the next query */
@@ -1120,7 +1120,7 @@ void added_channel_fast_send (VortexChannel * channel, axlPointer user_data)
 		if (! vortex_channel_send_msg (channel, "message 2", 9, NULL)) {
 			printf ("FAILED TO SEND MESSAGE 2 at fast send..\n");
 		}
-		printf ("Messages sent..ok\n");
+		/* printf ("Messages sent..ok\n");*/
 	}
 	return;
 }
@@ -1137,7 +1137,7 @@ void added_channel_ans_nul_reply_close (VortexChannel * channel, axlPointer user
 {
 	/* check if the channel is running the fast send profile */
 	if (vortex_channel_is_running_profile (channel, REGRESSION_URI_ANS_NUL_REPLY_CLOSE)) {
-		printf ("Found channel running %s..sending message\n", REGRESSION_URI_ANS_NUL_REPLY_CLOSE);
+		/* printf ("Found channel running %s..sending message\n", REGRESSION_URI_ANS_NUL_REPLY_CLOSE);*/
 
 		/* send message */
 		if (! vortex_channel_send_msg (channel, "message 1", 9, NULL)) {
@@ -1145,8 +1145,8 @@ void added_channel_ans_nul_reply_close (VortexChannel * channel, axlPointer user
 		}		
 
 		/* report */
-		printf ("Reply sent for uri %s, 2 ANS followed by 1 NUL..\n",
-			REGRESSION_URI_ANS_NUL_REPLY_CLOSE);
+		/* printf ("Reply sent for uri %s, 2 ANS followed by 1 NUL..\n",
+		   REGRESSION_URI_ANS_NUL_REPLY_CLOSE); */
 	} /* end if */
 }
 
@@ -1181,7 +1181,7 @@ void frame_received_close_after_large_reply (VortexChannel    * channel,
 	/* check message that only requires a reply followed by a message */
 	if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_MSG &&
 	    axl_cmp (vortex_frame_get_payload (frame), "send-message")) {
-		printf ("Test-02d: received request to reply and send a new message..\n");
+		/* printf ("Test-02d: received request to reply and send a new message..\n"); */
 		if (! vortex_channel_send_rpy (channel, "", 0, vortex_frame_get_msgno (frame))) {
 			printf ("!!!!! ERROR: found error while sending reply, unable to complete test-02d..\n");
 			return;
@@ -1190,12 +1190,12 @@ void frame_received_close_after_large_reply (VortexChannel    * channel,
 			printf ("!!!!! ERROR: found error while sending reply, unable to complete test-02d..\n");
 			return;
 		}
-		printf ("Test-02d: received a request to reply and send a new message..ok\n");
+		/* printf ("Test-02d: received a request to reply and send a new message..ok\n");*/
 		return;
 	} /* end if */
 
 	if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_MSG) {
-		printf ("Test-02d: received request, sending reply: '%s...\n", (char*) vortex_frame_get_payload (frame));
+		/* printf ("Test-02d: received request, sending reply: '%s...\n", (char*) vortex_frame_get_payload (frame));*/
 		/* send big reply */
 		message = axl_new (char, 32767);
 		if (! vortex_channel_send_rpy (channel, message, 32767, vortex_frame_get_msgno (frame))) {
@@ -1205,14 +1205,14 @@ void frame_received_close_after_large_reply (VortexChannel    * channel,
 		axl_free (message);
 
 		/* wait a bit to allow sending all pending content */
-		printf ("Test-02d: waiting to flush all content..\n");
+		/* printf ("Test-02d: waiting to flush all content..\n"); */
 		if (! vortex_channel_block_until_replies_are_sent (channel, -1)) {
 			printf ("!!!!! ERROR: found error while checking if all replies were sent..\n");
 			return;
 		}
 
 		/* now close the connection */
-		printf ("Test-02d: sent!..now close the connection...\n");
+		/* printf ("Test-02d: sent!..now close the connection...\n"); */
 		if (! vortex_connection_close (connection)) {
 			printf ("!!!!! ERROR: failed to close connection, unable to complete test-02d..\n");
 			return;
@@ -1222,7 +1222,7 @@ void frame_received_close_after_large_reply (VortexChannel    * channel,
 		return;
 	} /* end if */
 
-	printf ("Test-02d: received unhandled frame type..\n");
+	/* printf ("Test-02d: received unhandled frame type..\n"); */
 
 	return;
 }
@@ -1232,9 +1232,9 @@ void frame_received_mime_support (VortexChannel    * channel,
 				  VortexFrame      * frame,
 				  axlPointer           user_data)
 {
-	printf ("MIME message received (size %d): \n'%s'\n",
+	/* printf ("MIME message received (size %d): \n'%s'\n",
 		vortex_frame_get_content_size (frame),
-		vortex_frame_get_content (frame));
+		vortex_frame_get_content (frame));*/
 
 	/* before sending the content, reconfigure channel to not
 	 * append CR+LF to the message */
@@ -1304,7 +1304,7 @@ void frame_channel_connection (VortexChannel    * channel,
 
 	/* check the signal to close the connection */
 	if (close_channel_connection_delay == 3) {
-		printf ("suddently-close(%d): close connection on receive data\n", close_channel_connection_delay);
+		/* printf ("suddently-close(%d): close connection on receive data\n", close_channel_connection_delay);*/
 
 		/* close the connection */
 		vortex_connection_shutdown (connection);
@@ -1322,11 +1322,11 @@ void      frame_received_mix_replies (VortexChannel    * channel,
 
 	if (frame_received_mix_replies_state) {
 		/* reply with RPY */
-		printf ("Test-02k: sending RPY type...\n");
+		/* printf ("Test-02k: sending RPY type...\n"); */
 		vortex_channel_send_rpy (channel, "a reply", 7, vortex_frame_get_msgno (frame));
 	} else {
 		/* reply with ANS .. NUL */
-		printf ("Test-02k: sending ANS..NUL type...\n");
+		/* printf ("Test-02k: sending ANS..NUL type...\n"); */
 		vortex_channel_send_ans_rpy (channel, "a reply 1", 9, vortex_frame_get_msgno (frame));
 		vortex_channel_send_ans_rpy (channel, "a reply 2", 9, vortex_frame_get_msgno (frame));
 		vortex_channel_finalize_ans_rpy (channel, vortex_frame_get_msgno (frame));
@@ -1348,7 +1348,7 @@ void send_ans_replies_and_close (VortexChannel    * channel,
 
 	if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_MSG) {
 		/* send replies and close */
-		printf ("Test 02-m: sending replies..\n");
+		/* printf ("Test 02-m: sending replies..\n"); */
 		while (iterator < 10000) {
 			/* send reply */
 			if (! vortex_channel_send_ans_rpy (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), vortex_frame_get_msgno (frame))) {
@@ -1362,7 +1362,7 @@ void send_ans_replies_and_close (VortexChannel    * channel,
 		} /* end while */
 
 		/* finalize send */
-		printf ("Test 02-m: terminate sending with NUL frame..\n");
+		/* printf ("Test 02-m: terminate sending with NUL frame..\n");*/
 		if (! vortex_channel_finalize_ans_rpy (channel, vortex_frame_get_msgno (frame))) {
 			printf ("ERROR: failed to send NUL terminating frame..closing connection..\n");
 			vortex_connection_shutdown (connection);
@@ -1370,12 +1370,12 @@ void send_ans_replies_and_close (VortexChannel    * channel,
 		} /* end if */
 
 		/* close channel */
-		printf ("Test 02-m: closing channel=%d..\n", vortex_channel_get_number (channel));
+		/* printf ("Test 02-m: closing channel=%d..\n", vortex_channel_get_number (channel)); */
 		if (! vortex_channel_close (channel, NULL)) {
 			printf ("ERROR: Test 02-m: failed to close channel..\n");
 			return;
 		} /* end if */
-		printf ("Test 02-m: channel closed..\n");
+		/* printf ("Test 02-m: channel closed..\n");*/
 
 	} /* end if */
 
@@ -1453,14 +1453,14 @@ axl_bool  start_suddently_closed (
 		/* get failure count configuration */
 		close_channel_connection_delay = atoi (profile_content);
 
-		printf ("Connection delay failure: %d..\n", close_channel_connection_delay);
+		/* printf ("Connection delay failure: %d..\n", close_channel_connection_delay);*/
 		vortex_connection_set_data (connection, FAILURE_KEY_COUNT, INT_TO_PTR (close_channel_connection_delay));
 
 	} /* end if */
 
 	/* check the signal to close the connection */
 	if (close_channel_connection_delay == 2) {
-		printf ("suddently-close(%d): close connection on start operation\n", close_channel_connection_delay);
+		/* printf ("suddently-close(%d): close connection on start operation\n", close_channel_connection_delay); */
 		/* close the connection */
 		vortex_connection_shutdown (connection);
 	} /* end if */
