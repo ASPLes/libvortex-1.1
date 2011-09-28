@@ -2336,7 +2336,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  *   <li>Create the listener using \ref vortex_listener_new, specifying the hostname to be used to listen
  *      incoming connection and the port. If hostname used is 0.0.0.0 all
  *      hostname found will be used. If 0 is used as port, an automatic
- *      port assigned by the SO will be used.</li>
+ *      port assigned by the OS's tcp stack will be used.</li>
  *
  *   <li>Finally, call to wait listener created using \ref vortex_listener_wait.</li>
  *   </ul>
