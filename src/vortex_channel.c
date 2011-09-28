@@ -7018,6 +7018,10 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 	if (channel->channel_num == 0) 
 		close_value = axl_true;
 
+	/* check for unregistered profiles */
+	if (! vortex_profiles_is_registered (ctx, channel->profile)) 
+		close_value = axl_true;
+
 	vortex_log (VORTEX_LEVEL_WARNING, "no close handler defined for any level, assuming=%d", close_value);
  end:
 	/* now we have executed close handler for all levels and we

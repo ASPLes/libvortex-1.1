@@ -358,6 +358,10 @@ void frame_received (VortexChannel    * channel,
 		vortex_channel_finalize_ans_rpy (channel, vortex_frame_get_msgno (frame));
 
 		return;
+
+	} else if (axl_memcmp (vortex_frame_get_payload (frame), "unregister profile", 18)) {
+		/* call to unregister profile */
+		vortex_profiles_unregister (CONN_CTX (connection), vortex_channel_get_profile (channel));
 	} /* end if */
 
 	/* DEFAULT REPLY, JUST ECHO */
@@ -651,8 +655,45 @@ axl_bool      filter_server_names (VortexConnection * connection,
 	return axl_false;
 }
 
+axl_bool regression_uri_start_handler (const char        * profile,
+				       int                 channel_num,
+				       VortexConnection  * connection,
+				       const char        * serverName,
+				       const char        * profile_content,
+				       char             ** profile_content_reply,
+				       VortexEncoding      encoding,
+				       axlPointer          user_data)
+{
+	if (profile_content && strlen (profile_content) > 0) {
+		/* check for particular base 64 encoding */
+		if (! axl_cmp (profile_content, "aGV5IGR1ZGUsIHRoaXMgaXMgYmFzZTY0")) {
+			printf ("ERROR: found wrong profile content, found '%s', but expected '%s'\n",
+				profile_content, "aGV5IGR1ZGUsIHRoaXMgaXMgYmFzZTY0");
+			return axl_false;
+		}
+
+		/* check also encoding is properly configured */
+		if (encoding != EncodingBase64) {
+			printf ("ERROR: found wrong encoding indication, expected base64..\n");
+			return axl_false;
+		}
+	}
+
+	/* the rest just accept */
+	return axl_true;
+}
+
 axl_bool      on_accepted (VortexConnection * connection, axlPointer data)
 {
+	/* register a profile */
+	vortex_profiles_register (CONN_CTX(connection), REGRESSION_URI,
+				  NULL, NULL, 
+				  NULL, NULL,
+				  frame_received, NULL);
+	vortex_profiles_register_extended_start (CONN_CTX(connection), REGRESSION_URI, 
+						 regression_uri_start_handler,
+						 NULL);
+
 	/* printf ("New connection accepted from: %s:%s\n", 
 		vortex_connection_get_host (connection),
 		vortex_connection_get_port (connection)); */
@@ -1495,34 +1536,6 @@ axl_bool  close_channel_connection (int channel_num, VortexConnection * conn, ax
 	return axl_true;
 }
 
-axl_bool regression_uri_start_handler (const char        * profile,
-				       int                 channel_num,
-				       VortexConnection  * connection,
-				       const char        * serverName,
-				       const char        * profile_content,
-				       char             ** profile_content_reply,
-				       VortexEncoding      encoding,
-				       axlPointer          user_data)
-{
-	if (profile_content && strlen (profile_content) > 0) {
-		/* check for particular base 64 encoding */
-		if (! axl_cmp (profile_content, "aGV5IGR1ZGUsIHRoaXMgaXMgYmFzZTY0")) {
-			printf ("ERROR: found wrong profile content, found '%s', but expected '%s'\n",
-				profile_content, "aGV5IGR1ZGUsIHRoaXMgaXMgYmFzZTY0");
-			return axl_false;
-		}
-
-		/* check also encoding is properly configured */
-		if (encoding != EncodingBase64) {
-			printf ("ERROR: found wrong encoding indication, expected base64..\n");
-			return axl_false;
-		}
-	}
-
-	/* the rest just accept */
-	return axl_true;
-}
-
 int process_greetings_features (VortexCtx               * ctx, 
 				VortexConnection        * conn,
 				VortexConnection       ** new_conn,
@@ -1564,15 +1577,6 @@ int main (int  argc, char ** argv)
 		vortex_log_enable (ctx, axl_true);
 		vortex_log2_enable (ctx, axl_true);
 	}
-
-	/* register a profile */
-	vortex_profiles_register (ctx, REGRESSION_URI,
-				  NULL, NULL, 
-				  NULL, NULL,
-				  frame_received, NULL);
-	vortex_profiles_register_extended_start (ctx, REGRESSION_URI, 
-						 regression_uri_start_handler,
-						 NULL);
 
 	vortex_profiles_register (ctx, REGRESSION_URI_STATS,
 				  init_stats, NULL, 
