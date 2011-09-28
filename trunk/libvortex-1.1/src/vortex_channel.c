@@ -212,6 +212,8 @@ struct _VortexChannel {
 	int                     desired_window_size;
 	
 	axl_bool                complete_flag;
+	int                     complete_frame_limit;
+	int                     complete_current_bytes;
 	axlList               * previous_frame;
 
 	/* connection associated to the channel */
@@ -1804,6 +1806,8 @@ void            vortex_channel_set_received_handler (VortexChannel * channel,
 /** 
  * @brief Allows to set complete frames flag
  *
+ * (Please, read security notes below)
+ *
  * BEEP protocol defines that an application level message must be
  * splitted into pieces equal to or less than the channel window
  * size. Those pieces are called frames.
@@ -1847,6 +1851,12 @@ void            vortex_channel_set_received_handler (VortexChannel * channel,
  *       -----------------
  *    
  * \endcode
+ *
+ * <b>Security considerations:</b>
+ *
+ * When using this function, you should consider using also this
+ * function \ref vortex_channel_set_complete_frame_limit to place a
+ * limit.
  *
  * <b>Notes about MIME and how it applies to automatic vortex MIME processing:</b>
  *
@@ -1913,6 +1923,34 @@ void               vortex_channel_set_complete_flag            (VortexChannel * 
 }
 
 /** 
+ * @brief Allows to configure the max complete frame size that can be
+ * received having complete flag enabled.
+ *
+ * If you have complete flag enabled (\ref
+ * vortex_channel_set_complete_flag) to can call this function to
+ * stablish a limit. Although it is handy, having complete flag
+ * enabled may cause a security risk because is a mechanism that run
+ * in background, and may allow an attacker to send a very large
+ * message (never completes) until all BEEP peer memory is exhausted. 
+ *
+ *
+ * @param channel The channel to be configured the complete frame limit.
+ *
+ * @param max_payload_size The maximum payload this peer will accept
+ * for this channel until closing the connection if the limit is
+ * reached without having a complete message. Use 0 to disable the
+ * limit.
+ */
+void               vortex_channel_set_complete_frame_limit     (VortexChannel * channel,
+								int             max_payload_size)
+{
+	if (channel == NULL)
+		return;
+	channel->complete_frame_limit = max_payload_size;
+	return;
+}
+
+/** 
  * @internal
  * @brief Returns if the given channel have stored a previous channel.
  *
@@ -1966,12 +2004,28 @@ VortexFrame      * vortex_channel_get_previous_frame           (VortexChannel * 
 void               vortex_channel_store_previous_frame           (VortexChannel * channel, 
 								  VortexFrame   * new_frame)
 {
+	VortexCtx * ctx = NULL;
+
 	/* check reference */
 	if (channel == NULL || new_frame == NULL)
 		return;
+
 	
+	/* update current bytes */
+	channel->complete_current_bytes += vortex_frame_get_payload_size (new_frame);
+
 	/* configure new previous frame */
 	axl_list_append (channel->previous_frame, new_frame);
+
+	/* check limit and close the connection if reached */
+	if (channel->complete_frame_limit > 0 && channel->complete_current_bytes > channel->complete_frame_limit) {
+		/* get a reference to the context */
+		ctx = channel->ctx;
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Reached complete frame limit=%d for channel=%d, closing conection id=%d",
+			    channel->complete_frame_limit, channel->channel_num, vortex_connection_get_id (channel->connection));
+		vortex_connection_shutdown (channel->connection);
+		return;
+	} /* end if */
 
 	return;
 }
@@ -2075,6 +2129,9 @@ VortexFrame      * vortex_channel_build_single_pending_frame   (VortexChannel * 
 		axl_list_cursor_remove (cursor);
 	} /* end while */
 	axl_list_cursor_free (cursor);
+
+	/* reset current bytes */
+	channel->complete_current_bytes = 0;
 
 	if (axl_list_length (channel->previous_frame) != 0) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "internal vortex engine error..");

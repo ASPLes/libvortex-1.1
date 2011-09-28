@@ -3684,7 +3684,7 @@ axl_bool test_01v (void) {
 	} /* end if */
 
 	/* create a channel */
-	printf ("Test 01-v: creating channel that should fail and checking references..\n");
+	printf ("Test 01-v: creating channel..\n");
 	channel = vortex_channel_new (conn, 0,
 				      REGRESSION_URI,
 				      /* no close handling */
@@ -3733,6 +3733,79 @@ axl_bool test_01v (void) {
 	} /* end if */
 	
 	printf ("**\n**Test 01-v: reply received ok, closing conn..\n**\n");
+	vortex_connection_close (conn);
+
+	return axl_true;
+}
+
+axl_bool test_01w (void) {
+
+	VortexConnection   * conn;
+	VortexChannel      * channel;
+	char               * message;
+	VortexAsyncQueue   * queue;
+	int                  iterator;
+
+	/* call to connection close */
+	conn = connection_new ();
+	if (!vortex_connection_is_ok (conn, axl_false)) {
+		vortex_connection_close (conn);
+		return axl_false;
+	} /* end if */
+
+	/* create a channel */
+	printf ("Test 01-w: creating channel..\n");
+	channel = vortex_channel_new (conn, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+
+	if (channel == NULL) {
+		printf ("ERROR: expected to find channel reference different to NULL\n");
+		return axl_false;
+	} /* end if */
+
+	/* send a message to unregister regression_uri */
+	printf ("Test 01-w: sending request to limit channel..\n");
+	if (! vortex_channel_send_msg (channel, "complete flag limit=10000", 25, 0)) {
+		printf ("ERROR: failed to send test message..\n");
+		return axl_false;
+	} /* end if */
+
+	/* now send a message bigger */
+	message = axl_new (char, 10010);
+	if (! vortex_channel_send_msg (channel, message, 10010, 0)) {
+		printf ("ERROR: failed to send test message..\n");
+		return axl_false;
+	} /* end if */
+	axl_free (message);
+
+	/* check connection status */
+	queue    = vortex_async_queue_new ();
+	iterator = 0;
+	while (axl_true) {
+		/* wait */
+		vortex_async_queue_timedpop (queue, 10000);
+			
+		/* check connection status */
+		if (! vortex_connection_is_ok (conn, axl_false))
+			break;
+		/* continue */
+		iterator++;
+
+		if (iterator == 200) {
+			printf ("ERROR: expected to find connection closed due to complete flag limit reached, but connection is still working..\n");
+			return axl_false;
+		} /* end if */
+	} /* end while */
+		
+	/* unref queue */
+	vortex_async_queue_unref (queue);
+
 	vortex_connection_close (conn);
 
 	return axl_true;
@@ -13014,6 +13087,9 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_01v"))
 			run_test (test_01v, "Test 01-v", "Check profile unregistering", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_01w"))
+			run_test (test_01w, "Test 01-w", "Check complete flag limit", -1, -1);
+
 		if (check_and_run_test (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
 
@@ -13277,6 +13353,8 @@ int main (int  argc, char ** argv)
 	run_test (test_01u, "Test 01-u", "Check on channel created connection reference when channel create fails", -1, -1);
 
 	run_test (test_01v, "Test 01-v", "Check profile unregistering", -1, -1);
+
+	run_test (test_01w, "Test 01-w", "Check complete flag limit", -1, -1);
 
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   
