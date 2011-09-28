@@ -362,6 +362,9 @@ void frame_received (VortexChannel    * channel,
 	} else if (axl_memcmp (vortex_frame_get_payload (frame), "unregister profile", 18)) {
 		/* call to unregister profile */
 		vortex_profiles_unregister (CONN_CTX (connection), vortex_channel_get_profile (channel));
+	} else if (axl_memcmp (vortex_frame_get_payload (frame), "complete flag limit=10000", 25)) {
+		/* set channel limit */
+		vortex_channel_set_complete_frame_limit (channel, 10000);
 	} /* end if */
 
 	/* DEFAULT REPLY, JUST ECHO */

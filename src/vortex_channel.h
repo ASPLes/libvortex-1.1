@@ -122,6 +122,9 @@ void               vortex_channel_set_received_handler         (VortexChannel * 
 void               vortex_channel_set_complete_flag            (VortexChannel * channel,
 								axl_bool        value);
 
+void               vortex_channel_set_complete_frame_limit     (VortexChannel * channel,
+								int             max_payload_size);
+
 axl_bool           vortex_channel_have_previous_frame          (VortexChannel * channel);
 
 VortexFrame      * vortex_channel_get_previous_frame           (VortexChannel * channel);
