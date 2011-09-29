@@ -377,7 +377,7 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 
 	/* if parse greetins ok, notify to process features and and
 	   localize */
-	if (! vortex_connection_actions_notify (&connection, CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES)) {
+	if (! vortex_connection_actions_notify (ctx, &connection, CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES)) {
 		/* release_frame */
 		vortex_frame_unref (frame);
 
@@ -423,7 +423,7 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 	vortex_connection_set_data (connection, "vo:greetings-sent", NULL);
 
 	/* call to notify connection created */
-	if (! vortex_connection_actions_notify (&connection, CONNECTION_STAGE_POST_CREATED)) {
+	if (! vortex_connection_actions_notify (ctx, &connection, CONNECTION_STAGE_POST_CREATED)) {
 		/* action reporting failure, unref the connection */
 		vortex_log (VORTEX_LEVEL_CRITICAL, "vortex listener do to action failure = CONNECTION_STAGE_POST_CREATED, connection closed id=%d",
 			    vortex_connection_get_id (connection));
@@ -686,7 +686,7 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 		} /* end if */
 
 		/* call to notify connection created */
-		if (! vortex_connection_actions_notify (&listener, CONNECTION_STAGE_POST_CREATED)) {
+		if (! vortex_connection_actions_notify (ctx, &listener, CONNECTION_STAGE_POST_CREATED)) {
 			/* action reporting failure, unref the connection */
 			__vortex_connection_set_not_connected (listener, "vortex master listener post created action failed", VortexConnectionFiltered);
 		} /* end if */

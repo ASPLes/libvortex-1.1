@@ -269,7 +269,8 @@ void                vortex_connection_set_connection_actions (VortexCtx         
 							      axlPointer               handler_data);
 
 
-int                 vortex_connection_actions_notify         (VortexConnection        ** caller_conn,
+int                 vortex_connection_actions_notify         (VortexCtx                * ctx,
+							      VortexConnection        ** caller_conn,
 							      VortexConnectionStage      stage);
 
 axlPointer          vortex_connection_get_data               (VortexConnection * connection,

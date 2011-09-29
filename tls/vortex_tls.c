@@ -139,7 +139,7 @@ axl_bool      vortex_tls_init (VortexCtx * ctx)
 	/* install connection action */
 	vortex_connection_set_connection_actions (ctx,
 						  CONNECTION_STAGE_POST_CREATED,
-						  vortex_tls_auto_tlsfixate_conection,
+						  vortex_tls_auto_tlsfixate_connection,
 						  NULL);
 	/* init ssl ciphers and engines */
 	SSL_library_init ();
@@ -999,6 +999,10 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 	 * status is ok */
 	if (status) {
 		vortex_connection_set_tlsfication_status (connection, axl_true);
+
+		/* call to notify CONECTION_STAGE_POST_CREATED */
+		vortex_log (VORTEX_LEVEL_DEBUG, "doing post creation notification for connection id=%d", vortex_connection_get_id (connection));
+		vortex_connection_actions_notify (ctx, &connection, CONNECTION_STAGE_POST_CREATED);
 	}
 
 	/* 8. finally, report current TLS negotiation status to the
@@ -1010,6 +1014,7 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 				(status) ? "TLS negotiation finished, now we can talk using the cyphered way!" :
 				"TLS negotiation have failed!",  user_data);
 	}
+
 	return NULL;
 }
 
@@ -2148,7 +2153,7 @@ void               vortex_tls_cleanup (VortexCtx * ctx)
 	return;
 }
 
-int vortex_tls_auto_tlsfixate_conection (VortexCtx               * ctx,
+int vortex_tls_auto_tlsfixate_connection (VortexCtx               * ctx,
 					 VortexConnection        * connection,
 					 VortexConnection       ** new_conn,
 					 VortexConnectionStage    stage,
@@ -2157,7 +2162,9 @@ int vortex_tls_auto_tlsfixate_conection (VortexCtx               * ctx,
 	VortexTlsCtx * tls_ctx = vortex_ctx_get_data (ctx, TLS_CTX);
 
 	/* check for auto TLS negotiation */
-	if (tls_ctx != NULL && tls_ctx->connection_auto_tls) {
+	if (tls_ctx != NULL && 
+	    tls_ctx->connection_auto_tls && 
+	    ! vortex_connection_is_tlsficated (connection)) {
 		/* seems that current Vortex Library have TLS
 		 * profile built-in support and auto TLS is
 		 * activated */
