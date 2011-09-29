@@ -1138,6 +1138,14 @@ void vortex_listener_wait (VortexCtx * ctx)
 	/* check and init listener_wait_lock if it wasn't: init
 	   lock */
 	vortex_mutex_lock (&ctx->listener_mutex);
+
+	if (PTR_TO_INT (vortex_ctx_get_data (ctx, "vo:listener:skip:wait"))) {
+		/* seems someone called to unlock before we get
+		 * here */
+		/* unlock */
+		vortex_mutex_unlock (&ctx->listener_mutex);
+		return;
+	} /* end if */
 	
 	/* create listener locker */
 	if (ctx->listener_wait_lock == NULL) 
@@ -1164,29 +1172,15 @@ void vortex_listener_wait (VortexCtx * ctx)
 }
 
 /** 
- * @brief Signals to unblock the listener blocked at the \ref vortex_listener_wait.
+ * @brief Unlock the the listener thread blocked at the \ref
+ * vortex_listener_wait.
  * 
- * Under normal circumstances, this function must not be called
- * directly from user space. This function actually unblock waiting
- * listeners on vortex_listener_wait function.
- *
- * Vortex already call to this function once the \ref vortex_exit_ctx
- * function is called.
- *
- * Because some designs could require to control how memory is
- * released once the listener is unblocked from the \ref
- * vortex_listener_wait, this function could help to control an
- * trigger that unblock operation.
- *
- * Futher calls to this function will cause no operation. This
- * function is thread safe.
- *
  * @param ctx The context where the operation will be performed.
  **/
 void vortex_listener_unlock (VortexCtx * ctx)
 {
 	/* check reference received */
-	if (ctx == NULL || ctx->listener_wait_lock == NULL)
+	if (ctx == NULL || ctx->ref_count < 1)
 		return;
 
 	/* unlock listener */
@@ -1209,6 +1203,11 @@ void vortex_listener_unlock (VortexCtx * ctx)
 
 		vortex_mutex_unlock (&ctx->listener_unlock);
 		return;
+	} else {
+		/* flag this context to unlock vortex_listener_wait
+		 * caller because he still didn't reached */
+		vortex_log (VORTEX_LEVEL_DEBUG, "vortex_listener_wait was not called, signalling to do fast unlock");
+		vortex_ctx_set_data (ctx, "vo:listener:skip:wait", INT_TO_PTR (axl_true));
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "(un)Locking listener: already unlocked..");

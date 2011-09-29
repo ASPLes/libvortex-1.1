@@ -2381,6 +2381,33 @@ axl_bool test_01e (void) {
 	return axl_true;
 }
 
+axl_bool test_01e1 (void) {
+	VortexCtx * ctx1;
+
+	/* create context */
+	printf ("Test 01-e1: creating empty context..\n");
+	ctx1 = vortex_ctx_new ();
+
+	/* init this context */
+	if (! vortex_init_ctx (ctx1)) {
+		printf ("ERROR: expected proper initialization..\n");
+		return axl_false;
+	}
+
+	/* call to unlock */
+	printf ("Test 01-e1: unlocking listener..\n");
+	vortex_listener_unlock (ctx1);
+
+	/* call to wait */
+	printf ("Test 01-e1: calling to wait, (should not block)..\n");
+	vortex_listener_wait (ctx1);
+
+	/* finish */
+	vortex_exit_ctx (ctx1, axl_true);
+
+	return axl_true;
+}
+
 axl_bool test_01f (void) {
 
 	VortexConnection * listener;
@@ -13211,6 +13238,9 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_01e"))
 			run_test (test_01e, "Test 01-e", "Check listener douple port allocation", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_01e1"))
+			run_test (test_01e1, "Test 01-e1", "Check listener first unlock then wait", -1, -1);
+
 		if (check_and_run_test (run_test_name, "test_01f"))
 			run_test (test_01f, "Test 01-f", "Check connection with no greetings showed (or registerered)", -1, -1);
 
@@ -13496,6 +13526,8 @@ int main (int  argc, char ** argv)
  	run_test (test_01d, "Test 01-d", "MIME support", -1, -1);
 
  	run_test (test_01e, "Test 01-e", "Check listener douple port allocation", -1, -1);
+
+ 	run_test (test_01e1, "Test 01-e1", "Check listener first unlock then wait", -1, -1);
 
  	run_test (test_01f, "Test 01-f", "Check connection with no greetings showed (or registerered)", -1, -1);
 
