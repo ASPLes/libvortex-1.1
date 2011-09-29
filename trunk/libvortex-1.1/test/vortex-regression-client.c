@@ -3789,7 +3789,7 @@ axl_bool test_01w (void) {
 	iterator = 0;
 	while (axl_true) {
 		/* wait */
-		vortex_async_queue_timedpop (queue, 10000);
+		vortex_async_queue_timedpop (queue, 100000);
 			
 		/* check connection status */
 		if (! vortex_connection_is_ok (conn, axl_false))
@@ -7959,6 +7959,7 @@ axl_bool  test_05_a (void)
 	}
 
 	/* enable TLS negotiation but get the connection id first */
+	printf ("Test 05-a: starting TLS negotiation sync (should fail)..\n");
 	connection_id = vortex_connection_get_id (connection);
 	connection    = vortex_tls_start_negotiation_sync (connection, NULL, 
 							   &status,
@@ -7988,6 +7989,7 @@ axl_bool  test_05_a (void)
 
 	/* now, do the same text to force a TLS error at the remote
 	 * side (activated due to previous exchange) */
+	printf ("Test 05-a: starting TLS negotiation sync (should not fail)..\n");
 	connection_id = vortex_connection_get_id (connection);
 	connection    = vortex_tls_start_negotiation_sync (connection, NULL, 
 							   &status,
@@ -8013,6 +8015,7 @@ axl_bool  test_05_a (void)
 	vortex_connection_close (connection);
 
 	/* now check autotls */
+	printf ("Test 05-a: creating a new connection..\n");
 	connection = connection_new ();
 
 	/* create a channel to block tls negotiation */
@@ -8050,6 +8053,7 @@ axl_bool  test_05_a (void)
 	vortex_connection_close (connection);
 
 	/* now create a connection with auto tls activated */
+	printf ("Test 05-a: creating a new connection with auto tls enabled..\n");
 	connection2 = connection_new ();
 
 	if (connection2 == NULL) {
@@ -12180,6 +12184,158 @@ axl_bool test_14_g (void)
 #endif /* ENABLE_TLS_SUPPORT */
 }
 
+/**
+ * @brief Allows to check connection close with PULL API with TLS.
+ *
+ * @return axl_true if all tests are ok, otherwise axl_false is
+ * returned.
+ */ 
+axl_bool test_14_h (void)
+{
+#if defined(ENABLE_TLS_SUPPORT)
+	VortexCtx        * client_ctx;
+	VortexConnection * conn, * listener;
+	VortexStatus       status;
+	char             * status_message = NULL;
+	VortexEvent      * event;
+	int                conn_id_before;
+	int                iterator;
+
+	/* create an indepenent client context */
+	client_ctx = vortex_ctx_new ();
+
+	/*******************************/
+	/* activate a client context   */
+	/*******************************/
+	if (! vortex_init_ctx (client_ctx)) {
+		printf ("ERROR: failed to init client vortex context for PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	/* check and initialize  TLS support */
+	if (! vortex_tls_init (client_ctx)) {
+		printf ("--- WARNING: Unable to begin SASL negotiation. Current Vortex Library doesn't support SASL");
+		return axl_true;
+	}
+
+	/* now activate PULL api on this context */
+	if (! vortex_pull_init (client_ctx)) {
+		printf ("ERROR: failed to activate PULL API..\n");
+		return axl_false;
+	} /* end if */
+
+	/* start a listener */
+	printf ("Test 14-h: starting listener to serve TLS\n");
+	listener = vortex_listener_new (client_ctx, 
+					"localhost", "44012",
+					NULL, NULL);
+
+	/* enable accepting incoming tls connections, this step could
+	 * also be read as register the TLS profile */
+	if (! vortex_tls_accept_negotiation (client_ctx, NULL, NULL, NULL)) {
+		printf ("Unable to start accepting TLS profile requests");
+		return -1;
+	}
+
+	/* now create a connection */
+	conn = vortex_connection_new (client_ctx, "localhost", "44012", NULL, NULL);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Expected to find proper connection with regression test listener..\n");
+		return axl_false;
+	} /* end if */
+
+	/* get connection id before activating TLS */
+	conn_id_before = vortex_connection_get_id (conn);
+	printf ("Test 14-h: current connection id before activating TLS is: %d\n", conn_id_before);
+
+	/* clear queue */
+	while (vortex_pull_pending_events (client_ctx))
+		vortex_event_unref (vortex_pull_next_event (client_ctx, 0));
+
+	/* now enable TLS */
+	printf ("Test 14-h: enabling TLS connection..\n");
+	conn = vortex_tls_start_negotiation_sync (conn, NULL, 
+						  &status,
+						  &status_message);
+
+	if (status != VortexOk) {
+		printf ("Test 14-h: Failed to activate TLS support: %s\n", status_message);
+		/* return axl_false */
+		return axl_false;
+	}
+
+	/* check connection status at this point */
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Test 14-h: Connection status after TLS activation is not ok, message: %s", vortex_connection_get_message (conn));
+		return axl_false;
+	}
+
+	printf ("Test 14-h: cleaning all events (waiting 1seg)..\n");
+
+	/* clear queue */
+	iterator = 0;
+	while (iterator < 7) {
+		printf ("Test 14-h: getting events, iterator=%d\n", iterator);
+		event = vortex_pull_next_event (client_ctx, 0);
+		printf ("Test 14-h: event received: %d (%d)\n", vortex_event_get_type (event), VORTEX_EVENT_CHANNEL_ADDED);
+
+		/* check event is for this connection */
+		if (vortex_event_get_type (event) == VORTEX_EVENT_CONNECTION_CLOSED) {
+			printf ("Test 14-h: Connection close received: %d\n", vortex_connection_get_id (vortex_event_get_conn (event)));
+		} /* end if */
+
+		vortex_event_unref (event);
+
+		iterator++;
+	}
+
+	printf ("Test 14-h: all events cleared..\n");
+
+	/* now close connection */
+	printf ("Test 14-h: shutting down connection, this should generate a connection close..\n");
+	vortex_connection_shutdown (conn);
+
+	/* clear queue */
+	printf ("Test 14-h: ---> getting connection close event <---..\n");
+	/* clear queue */
+	iterator = 0;
+	while (iterator < 7) {
+		printf ("Test 14-h: getting events, iterator=%d\n", iterator);
+		event = vortex_pull_next_event (client_ctx, 0);
+		printf ("Test 14-h: event received: %d (%d)\n", vortex_event_get_type (event), VORTEX_EVENT_CHANNEL_ADDED);
+
+		/* check event is for this connection */
+		if (vortex_event_get_type (event) == VORTEX_EVENT_CONNECTION_CLOSED) {
+			printf ("Test 14-h: Connection close received: %d, checking with: %d\n", 
+				vortex_connection_get_id (vortex_event_get_conn (event)),
+				vortex_connection_get_id (conn));
+			if (vortex_connection_get_id (conn) == vortex_connection_get_id (vortex_event_get_conn (event))) {
+				printf ("Test 14-h: found client connection close..\n");
+				vortex_event_unref (event);
+				break;
+			} else {
+				printf ("Test 14-h: is not the connection close we are waiting....\n");
+			}
+		} /* end if */
+
+		vortex_event_unref (event);
+
+		iterator++;
+	}
+
+	/* ok, close the conn */
+	vortex_connection_close (conn);
+
+	/* terminate listener context */
+	vortex_exit_ctx (client_ctx, axl_true);
+
+	return axl_true;
+#else 
+	printf ("Test 14-h: no support for TLS, doing nothing..\n");
+	return axl_true;
+#endif /* ENABLE_TLS_SUPPORT */
+}
+
 /** 
  * @brief Allows to check HTTP CONNECT implementation.
  * 
@@ -13280,6 +13436,9 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_14g"))
 			run_test (test_14_g, "Test 14-g", "Check PULL API with TLS", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_14h"))
+			run_test (test_14_h, "Test 14-h", "Check connection close with PULL API with TLS", -1, -1);
+
 		if (check_and_run_test (run_test_name, "test_15"))
 			run_test (test_15, "Test 15", "Check ALIVE profile", -1, -1);
 
@@ -13487,6 +13646,8 @@ int main (int  argc, char ** argv)
 	run_test (test_14_f, "Test 14-f", "Check PULL API with SASL", -1, -1);
 
 	run_test (test_14_g, "Test 14-g", "Check PULL API with TLS", -1, -1);
+
+	run_test (test_14_h, "Test 14-h", "Check connection close with PULL API with TLS", -1, -1);
 
 	run_test (test_15, "Test 15", "Check ALIVE profile", -1, -1);
 

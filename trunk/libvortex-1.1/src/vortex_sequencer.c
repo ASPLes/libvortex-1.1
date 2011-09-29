@@ -478,8 +478,8 @@ axl_bool vortex_sequencer_check_status_and_get_references (VortexCtx            
 							   VortexConnection     ** connection, 
 							   VortexChannel        ** channel)
 {
-	/* new message to be sent */
-	(*channel) = data->channel;
+	/* nullify channel reference */
+	(*channel) = NULL;
 
 	/* check to drop the sequence */
 	if (data->discard) {
@@ -506,6 +506,9 @@ axl_bool vortex_sequencer_check_status_and_get_references (VortexCtx            
 		__vortex_sequencer_unref_and_clear (NULL, data, axl_false);
 		return axl_false;
 	}
+
+	/* new message to be sent */
+	(*channel) = data->channel;
 	
 	/* check if the channel exists on the connection */
 	if (vortex_connection_get_channel ((*connection), data->channel_num) == NULL) {

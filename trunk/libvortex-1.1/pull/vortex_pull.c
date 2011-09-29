@@ -1050,6 +1050,8 @@ int                vortex_pull_register_close_connection   (VortexCtx           
 {
 	/* configure connection closed, and set VortexCtx (user_data)
 	 * as optional user defined data*/
+	vortex_log (VORTEX_LEVEL_DEBUG, "Setting connection close handler, context=%p, conn-id=%d", 
+		    ctx, vortex_connection_get_id (conn));
 	vortex_connection_set_on_close_full (conn, vortex_pull_connection_closed, user_data);
 	return 1;
 }

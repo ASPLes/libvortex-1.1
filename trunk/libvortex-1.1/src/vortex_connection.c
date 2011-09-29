@@ -1720,7 +1720,7 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 
 			/* call to notify CONECTION_STAGE_POST_CREATED */
 			vortex_log (VORTEX_LEVEL_DEBUG, "doing post creation notification for connection id=%d", connection->id);
-			vortex_connection_actions_notify (&connection, CONNECTION_STAGE_POST_CREATED);
+			vortex_connection_actions_notify (ctx, &connection, CONNECTION_STAGE_POST_CREATED);
 		} /* end if */
 	} /* end if */
 
@@ -4971,16 +4971,18 @@ VortexChannelFrameSize  vortex_connection_set_default_next_frame_size_handler (V
  *
  * @return An error was found during the processing.
  */
-axl_bool            vortex_connection_actions_notify   (VortexConnection        ** caller_conn,
+axl_bool            vortex_connection_actions_notify   (VortexCtx                * ctx,
+							VortexConnection        ** caller_conn,
 							VortexConnectionStage      stage)
 {
 	/* get current context */
 	VortexConnection           * conn = (*caller_conn);
-	VortexCtx                  * ctx;
 	int                          iterator;
 	int                          result;
 	VortexConnectionActionData * data;
 	VortexConnection           * new_conn;
+	VortexConnectionAction       action;
+	axlPointer                   action_data;
 
 	/* do not notify if the connection is not running */
 	if (! vortex_connection_is_ok (conn, axl_false))
@@ -5001,8 +5003,17 @@ axl_bool            vortex_connection_actions_notify   (VortexConnection        
 
 		/* call to notify if the stage matches */
 		if (data->stage == stage) {
-			new_conn = NULL;
-			result    = data->action (ctx, conn, &new_conn, stage, data->action_data);
+			new_conn    = NULL;
+			action      = data->action;
+			action_data = data->action_data;
+
+			/* unlock during execution */
+			vortex_mutex_unlock (&ctx->connection_actions_mutex);
+
+			result   = action (ctx, conn, &new_conn, stage, action_data);
+
+			/* (re)lock during execution */
+			vortex_mutex_lock (&ctx->connection_actions_mutex);
 
 			switch (result) {
 			case -1:

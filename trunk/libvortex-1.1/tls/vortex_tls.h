@@ -373,11 +373,11 @@ char             * vortex_tls_get_digest_sized           (VortexDigestMethod   m
 void               vortex_tls_cleanup                    (VortexCtx * ctx);
 
 /* internal API */
-axl_bool           vortex_tls_auto_tlsfixate_conection   (VortexCtx               * ctx,
-							  VortexConnection        * connection,
-							  VortexConnection       ** new_conn,
-							  VortexConnectionStage    stage,
-							  axlPointer               user_data);
+axl_bool           vortex_tls_auto_tlsfixate_connection   (VortexCtx               * ctx,
+							   VortexConnection        * connection,
+							   VortexConnection       ** new_conn,
+							   VortexConnectionStage    stage,
+							   axlPointer               user_data);
 
 END_C_DECLS
 
