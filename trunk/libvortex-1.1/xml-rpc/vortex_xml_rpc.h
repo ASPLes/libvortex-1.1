@@ -39,13 +39,13 @@
 /* include main header */
 #include <vortex.h>
 
-BEGIN_C_DECLS
-
 /* include types */
 #include <vortex_xml_rpc_types.h>
 
 #ifndef __VORTEX_XML_RPC_H__
 #define __VORTEX_XML_RPC_H__
+
+BEGIN_C_DECLS
 
 /**
  * \addtogroup vortex_xml_rpc  
