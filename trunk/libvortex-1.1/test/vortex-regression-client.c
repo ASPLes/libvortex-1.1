@@ -4215,7 +4215,7 @@ char * test_04_read_file (const char * file, int * size)
 	handle = fopen (file, "r");
 	if (handle == NULL) {
 		printf ("Failed to open file: %s\n", file);
-		return axl_false;
+		return NULL;
 	}
 
 	/* get the file size */
@@ -4224,7 +4224,7 @@ char * test_04_read_file (const char * file, int * size)
 		/* failed to get file size */
 		fprintf (stderr, "Failed to get file size for %s..\n", file);
 		fclose (handle);
-		return axl_false;
+		return NULL;
 	} /* end if */
 	
 	result = axl_new (char, status.st_size + 1);
@@ -4235,7 +4235,7 @@ char * test_04_read_file (const char * file, int * size)
 			 (int) status.st_size, size_read);
 		axl_free (result);
 		fclose (handle);
-		return axl_false;
+		return NULL;
 	} /* end if */
 	
 	/* close the file and return the content */
@@ -6741,6 +6741,10 @@ axl_bool  test_02o (void) {
 
 	/* read file content */
 	file_content = test_04_read_file ("vortex-regression-client.o", &file_size);
+	if (NULL == file_content){
+		printf ("Failed to read file content..\n");
+		return axl_false;
+	}
 
 	/* now update internal counters to simulate we have
 	   transferred until now 4294867295 */
@@ -11780,7 +11784,7 @@ axl_bool test_14_d (void)
 	
 	/* terminate thread */
 	vortex_thread_destroy (&thread, axl_false);
-
+	
 	/* ok, close the connection */
 	vortex_connection_close (conn);
 
@@ -11853,6 +11857,7 @@ axl_bool test_14_e (void)
 	return axl_true;
 }
 
+#if defined(ENABLE_SASL_SUPPORT)
 axlPointer test_14f_auth_handler (VortexConnection * conn, 
 				  VortexSaslProps  * props,
 				  axlPointer         user_data)
@@ -11864,6 +11869,7 @@ axlPointer test_14f_auth_handler (VortexConnection * conn,
 	/* failure */
 	return 0;
 }
+#endif /* ENABLE_SASL_SUPPORT */
 
 /**
  * @brief Allows to check PULL API with SASL.
@@ -11873,6 +11879,7 @@ axlPointer test_14f_auth_handler (VortexConnection * conn,
  */ 
 axl_bool test_14_f (void)
 {
+#if defined(ENABLE_SASL_SUPPORT)
 	VortexCtx        * client_ctx;
 	VortexConnection * conn, * listener;
 	VortexStatus       status;
@@ -12076,6 +12083,10 @@ axl_bool test_14_f (void)
 	vortex_exit_ctx (client_ctx, axl_true);
 
 	return axl_true;
+#else
+	printf ("Test 14-f: no SASL support, doing nothing..\n");
+	return axl_true;
+#endif /* ENABLE_SASL_SUPPORT */
 }
 
 /**
@@ -12086,6 +12097,7 @@ axl_bool test_14_f (void)
  */ 
 axl_bool test_14_g (void)
 {
+#if defined(ENABLE_TLS_SUPPORT)
 	VortexCtx        * client_ctx;
 	VortexConnection * conn, * listener;
 	VortexStatus       status;
@@ -12162,6 +12174,10 @@ axl_bool test_14_g (void)
 	vortex_exit_ctx (client_ctx, axl_true);
 
 	return axl_true;
+#else 
+	printf ("Test 14-g: no support for TLS, doing nothing..\n");
+	return axl_true;
+#endif /* ENABLE_TLS_SUPPORT */
 }
 
 /** 

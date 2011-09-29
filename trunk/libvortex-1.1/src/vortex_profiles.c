@@ -892,11 +892,12 @@ typedef struct _VortexProfileReceivedData {
 	int                channel_num;
 	VortexConnection * connection;
 	VortexFrame      * frame;
-}VortexProfileReceivedData;
+} VortexProfileReceivedData;
 
 axlPointer __vortex_profiles_invoke_frame_received (axlPointer __data)
 {
-	VortexProfileReceivedData * data         = __data;
+	int                         channel_num;
+	VortexProfileReceivedData * data         = (VortexProfileReceivedData *) __data;
 	VortexProfile             * profile      = data->profile;
 	VortexOnFrameReceived       received     = NULL;
 	axlPointer                  user_data    = NULL;
@@ -923,7 +924,7 @@ axlPointer __vortex_profiles_invoke_frame_received (axlPointer __data)
 	 * frame received handler if the channel have been closed.
 	 * Once the frame received have finished this will help us to
 	 * know if application space have issued a close channel. */
-	int                       channel_num  = data->channel_num;
+	channel_num  = data->channel_num;
 
 	/* free paramters data */
 	axl_free (data);
