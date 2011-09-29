@@ -1,6 +1,6 @@
 EXPORTS
 vortex_tls_accept_negotiation
-vortex_tls_auto_tlsfixate_conection
+vortex_tls_auto_tlsfixate_connection
 vortex_tls_cleanup
 vortex_tls_default_accept
 vortex_tls_default_certificate

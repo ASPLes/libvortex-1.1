@@ -1096,7 +1096,7 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
  * associated socket. This means that the connection provided to this
  * function must be no longer used, closed or unrefered. No transfer
  * operation must take place during the TLS activation.
- * 
+ *
  * The connection provided at \ref VortexTlsActivation
  * "process_status" handler is the one to be used once the TLS process
  * have finished properly.
@@ -1134,11 +1134,18 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
  * <b>NOTE:</b> As part of the TLS negotiation, all channels inside
  * the given connection will be closed.
  *
- * <b>NOTE:</b> The connection provided will be unrefered and a new
+ * <b>NOTE2:</b> The connection provided will be unrefered and a new
  * connection will be provided by this function, but using the same
  * associated transport descriptor (socket). This means the connection
  * passed to this function and the connection created by this function
  * will both link to the same peer but being different instances.
+ *
+ * <b>NOTE3:</b> Note also that any data configured with \ref
+ * vortex_connection_set_data and \ref vortex_connection_set_data_full
+ * is transferred transparently from the old to the new connection so
+ * this application level data is available into the new
+ * connection. Consider that this internal storage is also used by the
+ * vortex engine itself so it is required to do this transfer.
  * 
  * @param connection The connection where the secure transport will be
  * started.
