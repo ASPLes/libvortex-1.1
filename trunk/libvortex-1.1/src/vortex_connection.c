@@ -82,15 +82,11 @@ struct _VortexConnectionOpts {
 };
 
 /** 
- * @brief Allows to create a connection options object.
- *
- * The object returned is used to signal a list of options and values
- * to be used by \ref vortex_connection_new_full. See \ref
- * VortexConnectionOptItem for more information.
+ * @internal Process all options found in args, assuming opt_item is
+ * the first option to process.
  */
-VortexConnectionOpts * vortex_connection_opts_new (VortexConnectionOptItem opt_item, ...)
+VortexConnectionOpts * __vortex_connection_opts_process (VortexConnectionOptItem opt_item, va_list args)
 {
-	va_list                args;
 	VortexConnectionOpts * opts;
 
 	/* create connection options */
@@ -100,8 +96,6 @@ VortexConnectionOpts * vortex_connection_opts_new (VortexConnectionOptItem opt_i
 	/* set default values */
 	opts->serverName_acquire = axl_true;
 
-	va_start (args, opt_item);
-	
 	/* according to each opt_item, do: */
 	while (opt_item) {
 		/* check to finish option list */
@@ -131,9 +125,62 @@ VortexConnectionOpts * vortex_connection_opts_new (VortexConnectionOptItem opt_i
 		/* get next option */
 		opt_item = va_arg (args, VortexConnectionOptItem);
 
-	} /* end while */
+	} /* end while */	
+
+	return opts;
+}
+
+/** 
+ * @brief Allows to create a connection options object.
+ *
+ * The object returned is used to signal a list of options and values
+ * to be used by \ref vortex_connection_new_full. See \ref
+ * VortexConnectionOptItem for more information.
+ *
+ * @param opt_item First option item to be configured.
+ *
+ * @return A newly created \ref VortexConnectionOpts object.
+ */
+VortexConnectionOpts * vortex_connection_opts_new (VortexConnectionOptItem opt_item, ...)
+{
+	va_list                args;
+	VortexConnectionOpts * opts;
+
+	va_start (args, opt_item);
+
+	/* process options */
+	opts = __vortex_connection_opts_process (opt_item, args);
 
 	va_end (args);
+
+	/* return created option */
+	return opts;
+}
+
+/** 
+ * @brief Allows to create a connection options object with default
+ * settings.
+ *
+ * Current default options enable \ref VORTEX_OPTS_RELEASE.
+ *
+ * See \ref vortex_connection_opts_new for more info. 
+ *
+ * @return A newly created \ref VortexConnectionOpts object.
+ */
+VortexConnectionOpts * vortex_connection_opts_default (VortexConnectionOptItem opt_item, ...)
+{
+	va_list                args;
+	VortexConnectionOpts * opts;
+
+	va_start (args, opt_item);
+
+	/* process options */
+	opts = __vortex_connection_opts_process (opt_item, args);
+
+	va_end (args);
+
+	/* set up automatic release */
+	opts->release_opts = axl_true;
 
 	/* return created option */
 	return opts;

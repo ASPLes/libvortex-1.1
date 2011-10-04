@@ -2544,7 +2544,7 @@ axl_bool test_01g (void) {
 
 	/* now connect asking for a particular servername */
 	connection = vortex_connection_new_full (ctx, listener_host, LISTENER_PORT, 
-						 CONN_OPTS (VORTEX_SERVERNAME_FEATURE, "reg-test.local"),
+						 CONN_OPTS (VORTEX_SERVERNAME_FEATURE, "reg-test.local", VORTEX_OPTS_END),
 						 NULL, NULL);
 	
 	/* check connection status */
@@ -2599,7 +2599,7 @@ axl_bool test_01g (void) {
 
 	/* now connect asking for a particular servername not allowed */
 	connection = vortex_connection_new_full (ctx, listener_host, LISTENER_PORT, 
-						 CONN_OPTS (VORTEX_SERVERNAME_FEATURE, "reg-test.wrong.local"),
+						 CONN_OPTS (VORTEX_SERVERNAME_FEATURE, "reg-test.wrong.local", VORTEX_OPTS_END),
 						 NULL, NULL); 
 
 	/* now check servername configured at serverSide */
@@ -9873,7 +9873,7 @@ axl_bool test_06a (void) {
 	/* do a connection */
 	printf ("Test 06-a: Testing SASL serverName on auth request..\n");
 	connection = vortex_connection_new_full (ctx, listener_host, LISTENER_UNIFIED_SASL_PORT, 
-						 CONN_OPTS (VORTEX_SERVERNAME_FEATURE, "test_06a.server"),
+						 CONN_OPTS (VORTEX_SERVERNAME_FEATURE, "test_06a.server", VORTEX_OPTS_END),
 						 NULL, NULL);
 	/* check connection created */
 	if (! vortex_connection_is_ok (connection, axl_false)) {
