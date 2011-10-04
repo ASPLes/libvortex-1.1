@@ -464,7 +464,7 @@ void                vortex_connection_set_initial_accept     (VortexConnection *
  * The macro receives a list of connection options, separated by (,)
  * and returns a newly created \ref VortexConnectionOpts.
  */
-#define CONN_OPTS(...) (vortex_connection_opts_new (VORTEX_OPTS_RELEASE, axl_true, ##__VA_ARGS__, 0))
+#define CONN_OPTS(...) (vortex_connection_opts_new (VORTEX_OPTS_RELEASE, axl_true, __VA_ARGS__, 0))
 
 VortexConnectionOpts * vortex_connection_opts_new (VortexConnectionOptItem opt_item, ...);
 
