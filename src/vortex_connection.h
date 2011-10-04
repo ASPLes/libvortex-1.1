@@ -458,15 +458,25 @@ void                vortex_connection_set_initial_accept     (VortexConnection *
 /** 
  * @brief Allows to easily signal connection features with a simple
  * macro that already signals to finish connection option once
- * connection is created and it also provides latest NULL value to
- * terminate connection options.
+ * connection is created.
  *
  * The macro receives a list of connection options, separated by (,)
  * and returns a newly created \ref VortexConnectionOpts.
+ *
+ * <b>IMPORTANT NOTE: you must end that list with VORTEX_OPTS_END.</b>
+ *
+ * See next examples:
+ * \code
+ * // create default options 
+ * opts = CONN_OPTS (VORTEX_SERVERNAME_FEATURE, "some-server-name.local", VORTEX_OPTS_END);
+ * \endcode
+ *
  */
-#define CONN_OPTS(...) (vortex_connection_opts_new (VORTEX_OPTS_RELEASE, axl_true, __VA_ARGS__, 0))
+#define CONN_OPTS vortex_connection_opts_default
 
 VortexConnectionOpts * vortex_connection_opts_new (VortexConnectionOptItem opt_item, ...);
+
+VortexConnectionOpts * vortex_connection_opts_default (VortexConnectionOptItem opt_item, ...);
 
 const char * vortex_connection_opts_get_serverName (VortexConnection     * conn);
 

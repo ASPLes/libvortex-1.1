@@ -232,6 +232,12 @@ void __vortex_thread_pool_automatic_resize (VortexCtx * ctx)
 	int              pending_tasks;
 	int              running_threads;
 
+	/* check before acquiring the look if the user changed during
+	 * our lock */
+	if (! ctx->thread_pool->automatic_resize_status || 
+	    ctx->thread_pool_being_stopped || ctx->vortex_exit) 
+		return;
+
 	/* lock thread pool */
 	vortex_mutex_lock (&ctx->thread_pool->mutex);
 

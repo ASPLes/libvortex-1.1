@@ -1318,6 +1318,9 @@ axlPointer __vortex_reader_run (VortexCtx * ctx)
 
 		/* check for each listener */
 		if (result > 0) {
+			/* do automatic thread pool resize here */
+			__vortex_thread_pool_automatic_resize (ctx);
+
 			/* check if the mechanism have automatic
 			 * dispatch */
 			if (vortex_io_waiting_invoke_have_dispatch (ctx, ctx->on_reading)) {

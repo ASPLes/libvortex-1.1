@@ -96,6 +96,8 @@ void vortex_thread_pool_add_internal        (VortexCtx        * ctx,
 void vortex_thread_pool_remove_internal     (VortexCtx        * ctx, 
 					     int                threads);
 
+void __vortex_thread_pool_automatic_resize  (VortexCtx * ctx);
+
 END_C_DECLS
 
 #endif
