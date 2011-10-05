@@ -183,10 +183,12 @@ static PyObject * py_vortex_channel_pool_new (PyTypeObject *type, PyObject *args
  */
 static void py_vortex_channel_pool_dealloc (PyVortexChannelPool* self)
 {
+#if defined(ENABLE_PY_VORTEX_LOG)
 	int pool_id = vortex_channel_pool_get_id (self->pool);
 
 	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortexChannelPool id: %d (%p)", 
 		       pool_id, self);
+#endif
 
 	/* finish connection */
 	Py_DECREF (self->py_conn);
