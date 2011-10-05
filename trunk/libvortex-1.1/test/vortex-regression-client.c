@@ -11068,7 +11068,7 @@ void __block_test (int value)
 	VortexAsyncQueue * queue;
 
 	printf ("******\n");
-	printf ("****** Received a signal (the regression test is failing)!!!\n");
+	printf ("****** Received a signal (client regression test is failing)..locking!!!\n");
 	printf ("******\n");
 
 	/* block the caller */
