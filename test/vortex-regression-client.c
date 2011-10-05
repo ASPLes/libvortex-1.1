@@ -162,6 +162,23 @@ VortexConnection * connection_new (void)
 	}
 }
 
+void show_conn_errros (VortexConnection * conn)
+{
+	char * msg;
+	int    code;
+
+	/* close operation have failed */
+	while (vortex_connection_pop_channel_error (conn, &code, &msg)) {
+		/* drop a error message */
+		printf ("ERROR: code=%d, %s\n",
+			code, msg);
+		/* dealloc resources */
+		axl_free (msg);
+	} /* end while */
+
+	return;
+}
+
 axl_bool file_cmp (const char * file1, const char * file2)
 {
 	FILE * handle1;
@@ -12309,6 +12326,7 @@ axl_bool test_14_g (void)
 	conn = vortex_connection_new (client_ctx, "localhost", "44012", NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("Expected to find proper connection with regression test listener..\n");
+		show_conn_errros (conn);
 		return axl_false;
 	} /* end if */
 
