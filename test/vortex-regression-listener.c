@@ -225,6 +225,7 @@ void frame_received (VortexChannel    * channel,
 	int                   pending_tasks;
 	int                   waiting_threads;
 	VortexAsyncQueue    * queue;
+	VortexAsyncQueue    * blocking_queue;
 
 	/* check for REGRESSION_URI_STATS */
 	if (axl_cmp (vortex_channel_get_profile (channel), REGRESSION_URI_STATS)) {
@@ -245,6 +246,18 @@ void frame_received (VortexChannel    * channel,
 			stats->pending_tasks = pending_tasks;
 		if (waiting_threads > stats->waiting_threads)
 			stats->waiting_threads = waiting_threads;
+
+		
+		/* get blocking queue and create if it is not found */
+		blocking_queue = vortex_connection_get_data (connection, "stats:blocking-queue");
+		if (blocking_queue == NULL) {
+			/* create blocking queue */
+			blocking_queue = vortex_async_queue_new ();
+
+			/* store blocking queue */
+			vortex_connection_set_data_full (connection, "stats:blocking-queue", blocking_queue, 
+							 NULL, (axlDestroyFunc) vortex_async_queue_unref);
+		} /* end if */
 		
 		/* unlock */
 		vortex_mutex_unlock (mutex);
@@ -262,8 +275,6 @@ void frame_received (VortexChannel    * channel,
 			axl_free (content);
 			return;
 		} else 	if (axl_cmp (vortex_frame_get_payload (frame), "GET real stats")) {
-			/* printf ("Received request to return real stats..\n");*/
-		
 			/* reply the peer client with server name */
 			content = axl_strdup_printf ("%d,%d,%d", running_threads, waiting_threads, pending_tasks);
 			vortex_channel_send_rpy (channel,
@@ -277,6 +288,18 @@ void frame_received (VortexChannel    * channel,
 			queue = vortex_async_queue_new ();
 			vortex_async_queue_timedpop (queue, 20000);
 			vortex_async_queue_unref (queue);
+
+		} else if (axl_cmp (vortex_frame_get_payload (frame), "long-running-block")) {
+			
+			/* blocking for 20ms */
+			printf ("Test 00-c2: blocking until signal received..\n");
+			vortex_async_queue_pop (blocking_queue);
+
+		} else if (axl_cmp (vortex_frame_get_payload (frame), "unlock-long-running-block")) {
+			
+			/* blocking for 20ms */
+			printf ("Test 00-c2: unlocking thread..\n");
+			vortex_async_queue_push (blocking_queue, INT_TO_PTR (1));
 
 		} else if (axl_cmp (vortex_frame_get_payload (frame), "enable automatic resize")) {
 			/* enable automatic theread resize */

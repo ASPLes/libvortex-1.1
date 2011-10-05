@@ -1291,6 +1291,9 @@ axlPointer __vortex_reader_run (VortexCtx * ctx)
 		/* perform IO blocking wait for read operation */
 		result = vortex_io_waiting_invoke_wait (ctx, ctx->on_reading, max_fds, READ_OPERATIONS);
 
+		/* do automatic thread pool resize here */
+		__vortex_thread_pool_automatic_resize (ctx);  
+
 		/* check for timeout error */
 		if (result == -1 || result == -2)
 			goto process_pending;
@@ -1318,9 +1321,6 @@ axlPointer __vortex_reader_run (VortexCtx * ctx)
 
 		/* check for each listener */
 		if (result > 0) {
-			/* do automatic thread pool resize here */
-			__vortex_thread_pool_automatic_resize (ctx);
-
 			/* check if the mechanism have automatic
 			 * dispatch */
 			if (vortex_io_waiting_invoke_have_dispatch (ctx, ctx->on_reading)) {
