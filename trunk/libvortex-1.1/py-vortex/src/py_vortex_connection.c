@@ -206,7 +206,9 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
  */
 static void py_vortex_connection_dealloc (PyVortexConnection* self)
 {
+#if defined(ENABLE_PY_VORTEX_LOG)
 	int conn_id = vortex_connection_get_id (self->conn);
+#endif
 	int ref_count;
 
 	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortexConnection id: %d (%p, role: %s, close-ref: %d)", 

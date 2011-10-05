@@ -317,9 +317,7 @@ void __vortex_listener_initial_accept (VortexCtx        * ctx,
 void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection * connection)
 {
 	VortexFrame   * pending;
-#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx = vortex_connection_get_ctx (connection);
-#endif
 	vortex_log (VORTEX_LEVEL_DEBUG, "called listener second step accept..");
 
 	/* check if the connection have a pending frame (get the reference) */

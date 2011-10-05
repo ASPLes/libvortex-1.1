@@ -543,6 +543,7 @@ PyMODINIT_FUNC  initlibpy_vortex_11 (void)
  */
 axl_bool py_vortex_log_is_enabled (void)
 {
+#if defined(ENABLE_PY_VORTEX_LOG)
 	/* if log is not checked, check environment variables */
 	if (! _py_vortex_log_checked) {
 		_py_vortex_log_checked = axl_true;
@@ -555,6 +556,9 @@ axl_bool py_vortex_log_is_enabled (void)
 	} /* end if */
 
 	return _py_vortex_log_enabled;
+#else
+	return axl_false;
+#endif
 }
 
 /** 
@@ -823,9 +827,11 @@ void py_vortex_handle_and_clear_exception (PyObject * py_conn)
 			} /* end while */
 
 			py_vortex_exception_handler (str);
+#if defined(ENABLE_PY_VORTEX_LOG)
 		} else if (_py_vortex_log_enabled) {
 			str[strlen (str) - 1] = 0;
 			py_vortex_log (PY_VORTEX_CRITICAL, str);
+#endif
 		} else {
 			fprintf (stdout, "%s", str);
 		}
