@@ -260,11 +260,11 @@ void __vortex_thread_pool_automatic_resize (VortexCtx * ctx)
 		    running_threads, ctx->thread_pool->base_thread_num, waiting_threads, pending_tasks, ctx->thread_pool->thread_max_limit, diff.tv_sec, ctx->thread_pool->thread_add_period);
 
 	/* if we have waiting threads equal to 0 and our last update
-	 * was thread_pool->last seconds ago and there are more than 2
+	 * was thread_pool->last seconds ago and there is at least 1
 	 * pending_tasks do */
 	if (running_threads < ctx->thread_pool->thread_max_limit &&
 	    waiting_threads == 0 && 
-	    pending_tasks > 2 && 
+	    pending_tasks > 0 && 
 	    diff.tv_sec > ctx->thread_pool->thread_add_period){
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "Adding %d threads because there are pending tasks %d and limit was not reached %d",
