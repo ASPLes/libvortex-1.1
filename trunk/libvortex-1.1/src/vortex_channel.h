@@ -357,7 +357,7 @@ VortexFrame      * vortex_channel_wait_reply                     (VortexChannel 
 
 WaitReplyData *    vortex_channel_create_wait_reply              (void);
 
-void               vortex_channel_wait_reply_ref                 (WaitReplyData * wait_reply);
+axl_bool           vortex_channel_wait_reply_ref                 (WaitReplyData * wait_reply);
 
 void               vortex_channel_free_wait_reply                (WaitReplyData * wait_reply);
 

@@ -6991,7 +6991,7 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 		
 		/* get the reference for the wait reply */
 		wait_reply = vortex_channel_get_data (channel, VORTEX_CHANNEL_WAIT_REPLY);
-		if (wait_reply != NULL) {
+		if (wait_reply != NULL && vortex_channel_wait_reply_ref (wait_reply)) {
 			vortex_log (VORTEX_LEVEL_DEBUG, "creating a fake ok reply (translated the incomming close request into close accept)");
 			ok_frame = vortex_frame_create (ctx, 
 							VORTEX_FRAME_TYPE_RPY, 
@@ -7008,6 +7008,9 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 			/* queue frame received */
 			QUEUE_PUSH (wait_reply->queue, ok_frame);
  			vortex_channel_unref (channel);
+
+			/* unref wait reply */
+			vortex_channel_free_wait_reply (wait_reply);
 
 			return;
 		} /* end if */
@@ -7520,18 +7523,21 @@ void vortex_channel_free (VortexChannel * channel)
  * 
  * @param wait_reply The wait reply to increase its ref count
  */
-void vortex_channel_wait_reply_ref (WaitReplyData * wait_reply)
+axl_bool vortex_channel_wait_reply_ref (WaitReplyData * wait_reply)
 {
+	axl_bool result;
+
 	/* lock */
 	vortex_mutex_lock (&wait_reply->mutex);
 
 	/* oper */
 	wait_reply->refcount++;
+	result = (wait_reply->refcount > 1);
 
 	/* unlock */
 	vortex_mutex_unlock (&wait_reply->mutex);
 	
-	return;
+	return result;
 }
 
 /** 

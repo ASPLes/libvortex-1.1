@@ -9510,6 +9510,7 @@ axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
 	int                           file_size;
 	struct stat                   stats;
 	VortexAsyncQueue            * finish_q;
+	VortexConnection            * conn = vortex_channel_get_connection (channel);
 
 	/* build feeder to be sent */
 	printf ("Test 04-f: creating feeder...\n");
@@ -9532,7 +9533,8 @@ axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
 	/* send feeder */
 	printf ("Test 04-f: sending content..\n");
 	if (! vortex_channel_send_msg_from_feeder (channel, feeder)) {
-		printf ("ERROR (4): expected to find proper send using feeder..\n");
+		printf ("ERROR (4): expected to find proper send using feeder, channel=%p, feeder=%p, conn status=%d..\n",
+			channel, feeder, vortex_connection_is_ok (conn, axl_false));
 		return axl_false;
 	}
 
@@ -9599,7 +9601,9 @@ axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
 		frame = vortex_channel_get_reply (channel, queue);
 
 		if (frame == NULL) {
-			printf ("ERROR (7.1): received NULL frame ..\n");
+			printf ("ERROR (7.1): received NULL frame, connection status: %d, %s ..\n", 
+				vortex_connection_is_ok (conn, axl_false), vortex_connection_get_message (conn));
+			show_conn_errros (conn);
 			return axl_false;
 		} /* end if */
 
@@ -11291,7 +11295,8 @@ axl_bool test_14_a (void)
 	/* now do connect to the test server */
 	conn = vortex_connection_new (client_ctx, listener_host, LISTENER_PORT, NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
-		printf ("Expected to find proper connection with regression test listener..\n");
+		printf ("Expected to find proper connection with regression test listener: %s..\n", vortex_connection_get_message (conn));
+		show_conn_errros (conn);
 		return axl_false;
 	} /* end if */
 
@@ -11518,15 +11523,21 @@ axl_bool test_14_b (void)
 	
 	/* start a listener */
 	listener = vortex_listener_new (listener_ctx, 
-					"localhost", "44012",
+					"localhost", "0",
 					NULL, NULL);
+
+	if (! vortex_connection_is_ok (listener, axl_false)) {
+		printf ("ERROR: failed to start listener for test..\n");
+		return axl_false;
+	}
 	
 	printf ("Test 14-b: pull API activated (listener ctx)..\n");
 
 	/* now create a connection */
-	conn = vortex_connection_new (client_ctx, "localhost", "44012", NULL, NULL);
+	conn = vortex_connection_new (client_ctx, "localhost", vortex_connection_get_port (listener), NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
-		printf ("Expected to find proper connection with regression test listener..\n");
+		printf ("Expected to find proper connection with regression test listener: %s..\n", vortex_connection_get_message (conn));
+		show_conn_errros (conn);
 		return axl_false;
 	} /* end if */
 
@@ -11692,20 +11703,22 @@ axl_bool test_14_c (void)
 
 	/* start a listener */
 	listener = vortex_listener_new (listener_ctx, 
-					"localhost", "44012",
+					"localhost", "0",
 					NULL, NULL);
 
+
 	if (! vortex_connection_is_ok (listener, axl_false)) {
-		printf ("ERROR: failed to create listener on localhost:44012...\n");
+		printf ("ERROR: failed to create listener on localhost:0...\n");
 		return axl_false;
 	}
 
 	printf ("Test 14-c: Listener created, now connect..\n");
 
 	/* now create a connection */
-	conn = vortex_connection_new (client_ctx, "localhost", "44012", NULL, NULL);
+	conn = vortex_connection_new (client_ctx, "localhost", vortex_connection_get_port (listener), NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
-		printf ("Expected to find proper connection with regression test listener..\n");
+		printf ("Expected to find proper connection with regression test listener: %s..\n", vortex_connection_get_message (conn));
+		show_conn_errros (conn);
 		return axl_false;
 	} /* end if */
 
@@ -11911,13 +11924,19 @@ axl_bool test_14_d (void)
 	
 	/* start a listener */
 	listener = vortex_listener_new (listener_ctx, 
-					"localhost", "44012",
+					"localhost", "0",
 					NULL, NULL);
 
+	if (! vortex_connection_is_ok (listener, axl_false)) {
+		printf ("ERROR: failed to start listener for test..\n");
+		return axl_false;
+	}
+
 	/* now create a connection */
-	conn = vortex_connection_new (client_ctx, "localhost", "44012", NULL, NULL);
+	conn = vortex_connection_new (client_ctx, "localhost", vortex_connection_get_port (listener), NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
-		printf ("Expected to find proper connection with regression test listener..\n");
+		printf ("Expected to find proper connection with regression test listener: %s..\n", vortex_connection_get_message (conn));
+		show_conn_errros (conn);
 		return axl_false;
 	} /* end if */
 	printf ("Test 14-d: checking PULL API for channel start event, creating client channel..\n");
@@ -12027,7 +12046,8 @@ axl_bool test_14_e (void)
 	/* now create a connection */
 	conn = vortex_connection_new (client_ctx, listener_host, LISTENER_PORT, NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
-		printf ("Expected to find proper connection with regression test listener..\n");
+		printf ("Expected to find proper connection with regression test listener: %s..\n", vortex_connection_get_message (conn));
+		show_conn_errros (conn);
 		return axl_false;
 	} /* end if */
 
@@ -12187,11 +12207,16 @@ axl_bool test_14_f (void)
 	/* start a listener */
 	printf ("Test 14-f: SASL PLAIN profile support at server side\n");
 	listener = vortex_listener_new (client_ctx, 
-					"localhost", "44012",
+					"localhost", "0",
 					NULL, NULL);
 
+	if (! vortex_connection_is_ok (listener, axl_false)) {
+		printf ("ERROR: failed to start listener for test..\n");
+		return axl_false;
+	}
+
 	/* now create a connection */
-	conn = vortex_connection_new (client_ctx, "localhost", "44012", NULL, NULL);
+	conn = vortex_connection_new (client_ctx, "localhost", vortex_connection_get_port (listener), NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("Expected to find proper connection with regression test listener..\n");
 		return axl_false;
@@ -12312,8 +12337,13 @@ axl_bool test_14_g (void)
 	/* start a listener */
 	printf ("Test 14-g: starting listener to serve TLS\n");
 	listener = vortex_listener_new (client_ctx, 
-					"localhost", "44012",
+					"localhost", "0",
 					NULL, NULL);
+
+	if (! vortex_connection_is_ok (listener, axl_false)) {
+		printf ("ERROR: failed to start listener for test..\n");
+		return axl_false;
+	}
 
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */
@@ -12322,10 +12352,14 @@ axl_bool test_14_g (void)
 		return -1;
 	}
 
+	printf ("Test 14-g: listener started at %s:%s, status: %d\n", 
+		vortex_connection_get_host (listener), vortex_connection_get_port (listener),
+		vortex_connection_is_ok (listener, axl_false));
+
 	/* now create a connection */
-	conn = vortex_connection_new (client_ctx, "localhost", "44012", NULL, NULL);
+	conn = vortex_connection_new (client_ctx, "localhost", vortex_connection_get_port (listener), NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
-		printf ("Expected to find proper connection with regression test listener..\n");
+		printf ("Expected to find proper connection with regression test listener: %s..\n", vortex_connection_get_message (conn));
 		show_conn_errros (conn);
 		return axl_false;
 	} /* end if */
@@ -12407,8 +12441,13 @@ axl_bool test_14_h (void)
 	/* start a listener */
 	printf ("Test 14-h: starting listener to serve TLS\n");
 	listener = vortex_listener_new (client_ctx, 
-					"localhost", "44012",
+					"localhost", "0",
 					NULL, NULL);
+
+	if (! vortex_connection_is_ok (listener, axl_false)) {
+		printf ("ERROR: failed to start listener for test..\n");
+		return axl_false;
+	}
 
 	/* enable accepting incoming tls connections, this step could
 	 * also be read as register the TLS profile */
@@ -12418,9 +12457,10 @@ axl_bool test_14_h (void)
 	}
 
 	/* now create a connection */
-	conn = vortex_connection_new (client_ctx, "localhost", "44012", NULL, NULL);
+	conn = vortex_connection_new (client_ctx, "localhost", vortex_connection_get_port (listener), NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("Expected to find proper connection with regression test listener..\n");
+		show_conn_errros (conn);
 		return axl_false;
 	} /* end if */
 
