@@ -1,0 +1,63 @@
+
+       #####################################
+       ####     Change notification     ####
+       #####################################
+
+    Change Id: vortex-conn-opts-01
+ Project name: Vortex Library
+  Included in: already included and to be shipped with next stable release
+               1.1.10
+       Status: NOTIFY
+       Author: Francis Brosnan Blázquez
+
+Motivation
+~~~~~~~~~~
+
+Vortex provides a way to setup connection options before the connect
+operation takes place using vortex_connection_opts_new. 
+
+In this context, vortex also provides a macro called CONN_OPTS that
+eases the process. However, this macro was using a definition
+__VA_ARGS__ not available in many compilers (namely visual studio
+ones).
+
+Change Description
+~~~~~~~~~~~~~~~~~~
+
+Now the macro has been rewritten in a way it provides same features
+but now the programmer must provide the last VORTEX_OPTS_END to
+finalize the variadic macro.
+
+So, before we were writing:
+
+  opts = CONN_OPTS (VORTEX_SERVERNAME_FEATURE, "some-server-name.local");
+
+Now, we do so like:
+
+  opts = CONN_OPTS (VORTEX_SERVERNAME_FEATURE, "some-server-name.local", VORTEX_OPTS_END);
+
+Solution to incompatibility
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Any application that were using this macro will have to add
+VORTEX_OPTS_END to avoid wrong memory access (because variadic
+argument list is not ended).
+
+However, any application that were compiled with old headers, will
+keep working without any problem even with newer libvortex-1.1
+compiled (because the macro expanded in the past adding
+VORTEX_OPTS_END automatically).
+
+To recap, the change is only required in the case the application is
+recompiled against newer vortex versions (starting from 1.1.10).
+
+References
+~~~~~~~~~~
+[1] Project link: 
+    http://vortex.aspl.es
+
+[2] Change notification published by the project:
+    http://vortex.aspl.es/doc.html
+
+[3] Change notification definition
+    http://www.aspl.es/change/change-notification.txt
