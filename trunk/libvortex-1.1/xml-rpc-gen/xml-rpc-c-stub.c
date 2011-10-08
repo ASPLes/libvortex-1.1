@@ -820,9 +820,9 @@ void xml_rpc_c_stub_write_struct_def (char  * out_dir,
 		else if (axl_cmp (type, "double"))
 			xml_rpc_support_sl_write ("XML_RPC_DOUBLE_VALUE, &(ref->%s)));\n", _name);
 		else if (axl_cmp (type, "string"))
-			xml_rpc_support_sl_write ("XML_RPC_STRING_VALUE, ref->%s ? ref->%s : \"\"));\n", _name, _name);
+			xml_rpc_support_sl_write ("XML_RPC_STRING_VALUE, ref->%s ? ref->%s : (void*)\"\"));\n", _name, _name);
 		else if (axl_cmp (type, "base64"))
-			xml_rpc_support_sl_write ("XML_RPC_BASE64_VALUE, ref->%s ? ref->%s : \"\"));\n", _name, _name);
+			xml_rpc_support_sl_write ("XML_RPC_BASE64_VALUE, ref->%s ? ref->%s : (void*)\"\"));\n", _name, _name);
 
 		else {
 			type_lower = xml_rpc_support_to_lower (type);

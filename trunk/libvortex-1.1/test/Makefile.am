@@ -192,5 +192,7 @@ vortex_pull_listener_SOURCES   = vortex-pull-listener.c
 vortex_pull_listener_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.1.la $(top_builddir)/pull/libvortex-pull-1.1.la
 
 # build xml-rpc source files required by the regression test.
+refresh_xml_rpc:
+	$(top_builddir)/xml-rpc-gen/xml-rpc-gen-1.1 --out-server-dir . --out-stub-dir .  vortex-regression-client.idl --disable-autoconf --disable-main-file
 test_types.h:
 	$(top_builddir)/xml-rpc-gen/xml-rpc-gen-1.1 --out-server-dir . --out-stub-dir .  vortex-regression-client.idl --disable-autoconf --disable-main-file
