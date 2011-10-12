@@ -86,7 +86,7 @@ static PyObject * py_vortex_sasl_is_authenticated (PyObject * self, PyObject * a
 /** 
  * @internal Allows to check and configure the string as the propertie provided.
  */
-#define	PY_VOTEX_SASL_CHECK_AND_CONFIGURE(py_conn, string, prop) do {                                                 \
+#define	PY_VORTEX_SASL_CHECK_AND_CONFIGURE(py_conn, string, prop) do {                                                 \
 	if (string != NULL) {                                                                                         \
                /* set the property */                                                                                 \
                vortex_sasl_set_propertie (py_vortex_connection_get (py_conn), prop, axl_strdup (string), axl_free);   \
@@ -239,11 +239,11 @@ static PyObject * py_vortex_sasl_start_auth (PyObject * self, PyObject * args, P
 		auth_notify_data = Py_None;
 
 	/* now check each parameter to configure it */
-	PY_VOTEX_SASL_CHECK_AND_CONFIGURE(py_conn, auth_id, VORTEX_SASL_AUTH_ID);
-	PY_VOTEX_SASL_CHECK_AND_CONFIGURE(py_conn, authorization_id, VORTEX_SASL_AUTHORIZATION_ID);
-	PY_VOTEX_SASL_CHECK_AND_CONFIGURE(py_conn, password, VORTEX_SASL_PASSWORD);
-	PY_VOTEX_SASL_CHECK_AND_CONFIGURE(py_conn, realm, VORTEX_SASL_REALM);
-	PY_VOTEX_SASL_CHECK_AND_CONFIGURE(py_conn, anonymous_token, VORTEX_SASL_ANONYMOUS_TOKEN);
+	PY_VORTEX_SASL_CHECK_AND_CONFIGURE(py_conn, auth_id, VORTEX_SASL_AUTH_ID);
+	PY_VORTEX_SASL_CHECK_AND_CONFIGURE(py_conn, authorization_id, VORTEX_SASL_AUTHORIZATION_ID);
+	PY_VORTEX_SASL_CHECK_AND_CONFIGURE(py_conn, password, VORTEX_SASL_PASSWORD);
+	PY_VORTEX_SASL_CHECK_AND_CONFIGURE(py_conn, realm, VORTEX_SASL_REALM);
+	PY_VORTEX_SASL_CHECK_AND_CONFIGURE(py_conn, anonymous_token, VORTEX_SASL_ANONYMOUS_TOKEN);
 
 	/* ok, now begin auth setting a notification handler if the
 	 * user defined it */
