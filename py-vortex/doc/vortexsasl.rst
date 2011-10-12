@@ -6,7 +6,7 @@
 .. moduleauthor:: Advanced Software Production Line, S.L.
 
 
-This modules includes all functions required authenticate a BEEP connection.
+This modules includes all functions required to authenticate a BEEP connection.
 
 ==========
 Module API

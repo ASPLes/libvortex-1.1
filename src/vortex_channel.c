@@ -58,7 +58,7 @@
  * to be easily bindable.
  *
  * If you modify this structure you are likely to be interested on \ref
- * vortex_channel_new_emtpy.
+ * vortex_channel_empty_new.
  */
 struct _VortexChannel {
 	/**
@@ -1548,6 +1548,8 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 		return NULL;
 	} /* end if */
 	channel->ctx                            = ctx;
+	vortex_ctx_ref (ctx);
+
 	channel->channel_num                    = channel_num;
 	channel->last_message_received          = -1;
 	channel->next_proposed_msgno            = -1;
@@ -7511,6 +7513,9 @@ void vortex_channel_free (VortexChannel * channel)
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing channel node");
 
+	/* release context */
+	vortex_ctx_unref (&channel->ctx);
+
 	/* free channel */
 	axl_free (channel);
 
@@ -8574,6 +8579,8 @@ VortexCtx         * vortex_channel_get_ctx                        (VortexChannel
 	if (channel == NULL) {
 		return NULL;
 	} /* end if */
+
+	/* check connection reference */
 	
 	/* call to get the context associated to the cnonection */
 	ctx = channel->ctx;
