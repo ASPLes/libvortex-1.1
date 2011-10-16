@@ -360,6 +360,28 @@ AC_ARG_ENABLE(py-vortex-log, [  --enable-py-vortex-log       Enable building PyV
 	      enable_py_vortex_log=yes)
 AM_CONDITIONAL(ENABLE_PY_VORTEX_LOG, test "x$enable_py_vortex_log" = "xyes")
 
+dnl check for lua-vortex support
+AC_ARG_ENABLE(lua-vortex,   [   --disable-lua-vortex       Makes Vortex Library to be build without LuaVortex: lua bindings support],
+              enable_lua_vortex_support="$enableval",
+	      enable_lua_vortex_support=yes)
+AM_CONDITIONAL(ENABLE_LUA_VORTEX_SUPPORT, test "x$enable_lua_vortex_support" = "xyes")
+if test "$enable_lua_vortex_support" = "yes" ; then
+    dnl lua support
+    PKG_CHECK_MODULES(LUA, lua5.1)
+    AC_SUBST(LUA_CFLAGS)
+    AC_SUBST(LUA_LIBS)
+
+    # installation directory
+    LUA_INSTALL_DIR=`pkg-config lua5.1 --variable=INSTALL_CMOD`
+    AC_SUBST(LUA_INSTALL_DIR)
+
+    dnl check for console log
+    AC_ARG_ENABLE(lua-vortex-log, [  --enable-lua-vortex-log       Enable building LuaVortex console debug log support [default=yes]], 
+    	          enable_lua_vortex_log="$enableval", 
+	          enable_lua_vortex_log=yes)
+    AM_CONDITIONAL(ENABLE_LUA_VORTEX_LOG, test "x$enable_lua_vortex_log" = "xyes")
+fi
+
 
 dnl general libries subsitution
 dnl AC_SUBST(LIBRARIES_CFLAGS)
@@ -422,6 +444,7 @@ xml-rpc/Makefile
 sasl/Makefile
 tls/Makefile
 http/Makefile
+alive/Makefile
 py-vortex/Makefile
 py-vortex/src/Makefile
 py-vortex/test/Makefile
@@ -430,7 +453,11 @@ py-vortex/py-vortex-sasl.pc
 py-vortex/py-vortex-tls.pc
 py-vortex/doc/conf.py
 py-vortex/doc/Makefile
-alive/Makefile
+lua-vortex/Makefile
+lua-vortex/src/Makefile
+lua-vortex/test/Makefile
+lua-vortex/doc/conf.py
+lua-vortex/doc/Makefile
 doc/Makefile
 doc/vortex-doc.doxygen
 test/Makefile
@@ -562,12 +589,23 @@ if test x$enable_py_vortex_support = xyes ; then
    echo "     python install dir: ${python_install_dir}"
    echo "     python dir: ${pythondir}"
    echo "     python cflags:      ${PYTHON_CFLAGS}"
-   echo "     python libs:        ${PYTHON_LIBSp}"
+   echo "     python libs:        ${PYTHON_LIBS}"
 else
    echo "   Build PyVortex support:                   disabled"
    echo 
    echo "     NOTE: To enable PyVortex support you have to install python development headers and "
    echo "           use --enable-py-vortex option."
+fi
+if test x$enable_lua_vortex_support = xyes ; then
+   echo "   Build LuaVortex support:                   enabled"
+   echo "     lua install dir: ${luathon_install_dir}"
+   echo "     lua cflags:      ${LUA_CFLAGS}"
+   echo "     lua libs:        ${LUA_LIBS}"
+else
+   echo "   Build LuaVortex support:                   disabled"
+   echo 
+   echo "     NOTE: To enable LuaVortex support you have to install luathon development headers and "
+   echo "           use --enable-lua-vortex option."
 fi
 if test x$DOXYGEN = xyes ; then
    echo "   Build Vortex Library doc:                 enabled"
