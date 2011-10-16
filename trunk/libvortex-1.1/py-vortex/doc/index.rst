@@ -1,13 +1,13 @@
 PyVortex's documentation center!
 ================================
 
-PyVortex is a python binding for the Vortex Library 1.1 that includes
-full support to write client/listener BEEP applications
-written entirely in python. 
+PyVortex is a python binding for the Vortex Library 1.1, maintained
+and supported by ASPL, that includes full support to write
+client/listener BEEP applications written entirely in python.
 
-Currently it is supported vortex base module (:mod:`vortex`), vortex TLS and vortex SASL (:mod:`vortex.sasl`)
-extensions. As with Vortex Library 1.1, PyVortex development is being
-driven and checked with a regression test suite.
+Because quality matters, as with Vortex Library 1.1, PyVortex
+development is being driven and checked with a regression test suite
+to ensure each realease is ready for production environment.
 
 PyVortex execution model for async notifications is really similar to
 Vortex Library because the binding makes use of the GIL feature

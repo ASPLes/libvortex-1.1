@@ -102,14 +102,8 @@ Module API
       :param handler: The handler to configure
       :type  handler:  :ref:`frame-received-handler`.
 
-      :param size: The content size
-      :type  size: Integer > 0
-
-      :param msg_no: The frame msgno that identifies the frame  MSG we are replying
-      :type  msg_no: Integer > 0
-
-      :rtype: Returns True if the reply operation was done, otherwise False is returned. 
- 
+      :param data: User defined data passed to the frame received handler.
+      :type  data: Object
       
    .. method:: get_reply (queue)
    
