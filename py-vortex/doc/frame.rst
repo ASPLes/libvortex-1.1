@@ -46,7 +46,7 @@ Module API
 
    .. attribute:: more_flag
 
-      (Read only attribute) (True/Flag) returns more flag status on the frame
+      (Read only attribute) (True/False) returns more flag status on the frame
 
    .. attribute:: payload_size
 
