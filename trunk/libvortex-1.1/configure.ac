@@ -309,9 +309,8 @@ dnl check for py-vortex support
 AC_ARG_ENABLE(py-vortex,   [   --disable-py-vortex       Makes Vortex Library to be build without PyVortex: python bindings support],
               enable_py_vortex_support="$enableval",
 	      enable_py_vortex_support=yes)
-AM_CONDITIONAL(ENABLE_PY_VORTEX_SUPPORT, test "x$enable_py_vortex_support" = "xyes")
 if test "$enable_py_vortex_support" = "yes" ; then
-   AM_PATH_PYTHON([2.3])
+   AM_PATH_PYTHON([2.3], enable_py_vortex_support="yes", enable_py_vortex_support="no")
 
    # find python-config
    PYTHON_CONFIG=`./get-python-config`
@@ -327,32 +326,33 @@ if test "$enable_py_vortex_support" = "yes" ; then
    AC_SUBST(PYTHON_INCLUDES)
 
    AC_TRY_COMPILE([#include <Python.h>],
-      [Py_InitModule3(NULL, NULL, NULL);],
-      python_devel_found=yes,
-      python_devel_found=no)
-   AC_MSG_RESULT([Python development headers status: $python_devel_found])
-   if test "x$python_devel_found" = "xno"; then
-       AC_MSG_ERROR([Cannot find Python.h header or current python development environment do not compile symbols required. On debian try to install python-dev package.])
+          [Py_InitModule3(NULL, NULL, NULL);],
+          enable_py_vortex_support="yes",
+          enable_py_vortex_support="no")
+   AC_MSG_RESULT([Python development headers status: $enable_py_vortex_support])
+
+   if test "$enable_py_vortex_support" = "yes" ; then
+
+      # get python flags and libs
+      PYTHON_CFLAGS=`$PYTHON_CONFIG --cflags 2>/dev/null | sed -r 's/\-arch (\d|\w)+ //g'`
+      PYTHON_LIBS=`$PYTHON_CONFIG --ldflags 2>/dev/null`
+      AC_SUBST(PYTHON_CFLAGS)
+      AC_SUBST(PYTHON_LIBS)
+
+      dnl get site dinamic library extension
+      SHARED_EXTENSION=$shrext_cmds
+      AC_SUBST(SHARED_EXTENSION)
+
+      # check python_install_dir and pythondir maches
+      python_dir_temp=`eval echo ${pythondir}`
+      # check python_install_dir and pythondir maches
+      if test "$python_dir_check" != "ok" ; then
+          AC_MSG_ERROR([ERROR: pythondir variable is poiting to an unusable location: $python_dir_temp. Error detected: $python_dir_check. Fix your autoconf install or disable python building, for that, pass --disable-py-vortex to configure. This usually indicates a problem with automake package which provides the _AM_PATH_PYTHON_ macro.])
+      fi
+      echo "Python install dir OK: $python_dir_temp"
    fi
-
-   # get python flags and libs
-   PYTHON_CFLAGS=`$PYTHON_CONFIG --cflags 2>/dev/null | sed -r 's/\-arch (\d|\w)+ //g'`
-   PYTHON_LIBS=`$PYTHON_CONFIG --ldflags 2>/dev/null`
-   AC_SUBST(PYTHON_CFLAGS)
-   AC_SUBST(PYTHON_LIBS)
-
-   dnl get site dinamic library extension
-   SHARED_EXTENSION=$shrext_cmds
-   AC_SUBST(SHARED_EXTENSION)
-
-   # check python_install_dir and pythondir maches
-   python_dir_temp=`eval echo ${pythondir}`
-   # check python_install_dir and pythondir maches
-   if test "$python_dir_check" != "ok" ; then
-      AC_MSG_ERROR([ERROR: pythondir variable is poiting to an unusable location: $python_dir_temp. Error detected: $python_dir_check. Fix your autoconf install or disable python building, for that, pass --disable-py-vortex to configure. This usually indicates a problem with automake package which provides the _AM_PATH_PYTHON_ macro.])
-   fi
-   echo "Python install dir OK: $python_dir_temp"
 fi
+AM_CONDITIONAL(ENABLE_PY_VORTEX_SUPPORT, test "x$enable_py_vortex_support" = "xyes")
 
 dnl check for console log
 AC_ARG_ENABLE(py-vortex-log, [  --enable-py-vortex-log       Enable building PyVortex console debug log support [default=yes]], 
@@ -364,23 +364,26 @@ dnl check for lua-vortex support
 AC_ARG_ENABLE(lua-vortex,   [   --disable-lua-vortex       Makes Vortex Library to be build without LuaVortex: lua bindings support],
               enable_lua_vortex_support="$enableval",
 	      enable_lua_vortex_support=yes)
-AM_CONDITIONAL(ENABLE_LUA_VORTEX_SUPPORT, test "x$enable_lua_vortex_support" = "xyes")
 if test "$enable_lua_vortex_support" = "yes" ; then
     dnl lua support
-    PKG_CHECK_MODULES(LUA, lua5.1)
-    AC_SUBST(LUA_CFLAGS)
-    AC_SUBST(LUA_LIBS)
+    PKG_CHECK_MODULES(LUA, lua5.1, enable_lua_vortex_support="yes", enable_lua_vortex_support=="no")
 
-    # installation directory
-    LUA_INSTALL_DIR=`pkg-config lua5.1 --variable=INSTALL_CMOD`
-    AC_SUBST(LUA_INSTALL_DIR)
+    if test "$enable_lua_vortex_support" = "yes" ; then
+       AC_SUBST(LUA_CFLAGS)
+       AC_SUBST(LUA_LIBS)
 
-    dnl check for console log
-    AC_ARG_ENABLE(lua-vortex-log, [  --enable-lua-vortex-log       Enable building LuaVortex console debug log support [default=yes]], 
-    	          enable_lua_vortex_log="$enableval", 
-	          enable_lua_vortex_log=yes)
-    AM_CONDITIONAL(ENABLE_LUA_VORTEX_LOG, test "x$enable_lua_vortex_log" = "xyes")
+       # installation directory
+       LUA_INSTALL_DIR=`pkg-config lua5.1 --variable=INSTALL_CMOD`
+       AC_SUBST(LUA_INSTALL_DIR)
+
+       dnl check for console log
+       AC_ARG_ENABLE(lua-vortex-log, [  --enable-lua-vortex-log       Enable building LuaVortex console debug log support [default=yes]], 
+     	             enable_lua_vortex_log="$enableval", 
+	             enable_lua_vortex_log=yes)
+    fi
 fi
+AM_CONDITIONAL(ENABLE_LUA_VORTEX_SUPPORT, test "x$enable_lua_vortex_support" = "xyes")
+AM_CONDITIONAL(ENABLE_LUA_VORTEX_LOG, test "x$enable_lua_vortex_log" = "xyes")
 
 
 dnl general libries subsitution
