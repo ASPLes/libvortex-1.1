@@ -82,6 +82,8 @@ liblua_vortex_alive_11_la_LDFLAGS = $(LUA_LIBS) $(top_srcdir)/src/libvortex-1.1.
 all-local:
 
 install-exec-hook:
+	@echo "create site installation ${DESTDIR}${LUA_INSTALL_DIR} if it does not exists"
+	test -d ${DESTDIR}${LUA_INSTALL_DIR} || install -d ${DESTDIR}${LUA_INSTALL_DIR}
 	@echo "site installation ${DESTDIR}${LUA_INSTALL_DIR}/vortex.so"
 	test -e ${DESTDIR}${LUA_INSTALL_DIR}/vortex.so || ln -s ${DESTDIR}${prefix}/lib/liblua_vortex_11.so ${DESTDIR}${LUA_INSTALL_DIR}/vortex.so
 	test -d ${DESTDIR}${LUA_INSTALL_DIR}/vortex || mkdir ${DESTDIR}${LUA_INSTALL_DIR}/vortex
