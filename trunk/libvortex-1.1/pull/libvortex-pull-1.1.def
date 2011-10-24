@@ -5,6 +5,7 @@ vortex_event_get_ctx
 vortex_event_get_encoding
 vortex_event_get_frame
 vortex_event_get_msgno
+vortex_event_get_name
 vortex_event_get_profile_content
 vortex_event_get_server_name
 vortex_event_get_type
@@ -29,6 +30,6 @@ vortex_pull_init
 vortex_pull_next_event
 vortex_pull_pending_events
 vortex_pull_pending_events_num
-vortex_pull_register_close_connection
+vortex_pull_register_new_connection
 vortex_pull_set_event_mask
 vortex_pull_start_handler

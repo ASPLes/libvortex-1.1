@@ -145,6 +145,159 @@ VortexEvent * __vortex_event_new_empty (VortexEventType    type,
 }
 
 /**
+ * @internal Function that allows to check if the provided even type
+ * is filtered by context event masks installed.
+ *
+ * @param ctx The context where the PULL API, and optionally event
+ * masks are installed.
+ *
+ * @param type The event type to check if it is filtered.
+ *
+ * @return axl_true if the event is filtered, otherwise axl_false is returned.
+ */
+axl_bool vortex_pull_event_is_filtered (VortexCtx        * ctx,
+					VortexEventType    type)
+{
+	axlList         * list     = vortex_ctx_get_data (ctx, VORTEX_PULL_EVENT_MASKS);
+	int               iterator = 0;
+	VortexEventMask * mask;
+
+	/* no mask installed, no event filtered */
+	if (axl_list_length (list) < 1)
+		return axl_false;
+	
+	/* for each mask installed, check for the first filtering the
+	 * event */
+	while (iterator < axl_list_length (list)) {
+
+		/* get mask and check */
+		mask = axl_list_get_nth (list, iterator);
+		
+		/* check if it's filtered */
+		if (vortex_event_mask_is_set (mask, type)) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "event type=%d filtered by event mask %s",
+				    type, mask->mask_id);
+			return axl_true;
+		} /* end if */
+
+		/* next iterator */
+		iterator++;
+	} /* end while */
+
+	/* event type not filtered */
+	return axl_false;
+}
+
+/* @internal generic marshaller */
+VortexEvent *      vortex_pull_event_marshaller   (VortexCtx        * ctx,
+						   const char       * event_description,
+						   VortexEventType    type,
+						   VortexChannel    * channel,
+						   VortexConnection * conn,
+						   axl_bool           checked_conn_ref,
+						   VortexFrame      * frame,
+						   int                msg_no,
+						   axl_bool           queue_event)
+{
+	VortexEvent      * event;
+	VortexAsyncQueue * pull_pending_events;
+
+	/* check if the event is fileted */
+	if (vortex_pull_event_is_filtered (ctx, type))
+		return NULL;
+
+	/* get the reference to the queue and return if it is found to
+	 * be not defined */
+	pull_pending_events = vortex_ctx_get_data (ctx, VORTEX_PULL_QUEUE_KEY);
+	if (pull_pending_events == NULL) 
+		return NULL;
+
+	/* create an empty event */
+	event = __vortex_event_new_empty (
+		/* type */
+		type,
+		/* context */
+		ctx,
+		/* connection */
+		conn,
+		/* should check connection ref */
+		checked_conn_ref, 
+		/* channel */
+		channel,
+		/* frame */
+		frame);
+
+	/* configure msgno */
+	event->msgno = msg_no;
+
+	/* drop a log */
+	vortex_log (VORTEX_LEVEL_DEBUG, "(PULL API) event: %s, connection-id=%d, channel-num=%d, queue-event=%d",
+		    event_description,
+		    /* connection */
+		    conn ? vortex_connection_get_id (conn) : -1, 
+		    channel ? vortex_channel_get_number (channel) : -1,
+		    queue_event);
+
+	/* queue pending event to process */
+	if (queue_event) 
+		vortex_async_queue_push (pull_pending_events, event);
+	
+	/* return a reference to the event created */
+	return event;
+}
+						   
+				
+
+void vortex_pull_connection_closed (VortexConnection * connection, axlPointer user_data)
+{
+	/* call to generic implementation to marshall async
+	 * notification into a pulled event */
+	vortex_pull_event_marshaller (
+		(VortexCtx *) user_data,
+		"connection closed",
+		VORTEX_EVENT_CONNECTION_CLOSED,
+		/* null channel */
+		NULL,
+		/* connection ref and signal unchecked ref */
+		connection, axl_false,
+		/* null frame and msgno = -1 */
+		NULL, -1,
+		/* queue event */
+		axl_true);
+	return;
+}
+
+/* @internal handler to install connection closed handler: VORTEX_EVENT_CONNECTION_CLOSED */
+int                vortex_pull_register_new_connection   (VortexCtx               * ctx,
+							  VortexConnection        * conn,
+							  VortexConnection       ** new_conn,
+							  VortexConnectionStage     state,
+							  axlPointer                user_data)
+{
+	/* emit an event that a new connection was completely
+	 * accepted */
+	vortex_pull_event_marshaller (
+		ctx,
+		"connection ready",
+		VORTEX_EVENT_CONNECTION_READY,
+		/* null channel */
+		NULL,
+		/* connection ref and signal checked ref */
+		conn, axl_true,
+		/* null frame and msgno = -1 */
+		NULL, -1,
+		/* queue event */
+		axl_true);
+
+	/* configure connection closed, and set VortexCtx (user_data)
+	 * as optional user defined data*/
+	vortex_log (VORTEX_LEVEL_DEBUG, "Setting connection close handler, context=%p, conn-id=%d", 
+		    ctx, vortex_connection_get_id (conn));
+	vortex_connection_set_on_close_full (conn, vortex_pull_connection_closed, user_data);
+	return 1;
+}
+
+/**
  * @brief Activates the pull based event notification. This interface
  * allows single threaded applications to better interface with vortex
  * API. Due to is threading nature, this pull API allows single
@@ -220,7 +373,7 @@ axl_bool           vortex_pull_init               (VortexCtx * ctx)
 
 	/* VORTEX_EVENT_CONNECTION_CLOSED */
 	vortex_connection_set_connection_actions (ctx, CONNECTION_STAGE_POST_CREATED, 
-						  vortex_pull_register_close_connection, ctx);
+						  vortex_pull_register_new_connection, ctx);
 
 	/* VORTEX_EVENT_CONNECTION_ACCEPTED */
 	vortex_listener_set_on_connection_accepted (ctx, vortex_pull_connection_accepted, ctx);
@@ -587,6 +740,40 @@ const char       * vortex_event_get_profile_content        (VortexEvent * event)
 	return event->profile_content;
 }
 
+/** 
+ * @brief Allows to get an unique constant string that represents this
+ * event.
+ * @param event The event to generate an identifier string.
+ *
+ * @return A constant string identifying the event or "unknown" if it
+ * fails.
+ */
+const char       * vortex_event_get_name                   (VortexEventType event_type)
+{
+	switch (event_type) {
+	case VORTEX_EVENT_UNKNOWN:
+		return "VORTEX_EVENT_UNKNOWN";
+	case VORTEX_EVENT_FRAME_RECEIVED:
+		return "VORTEX_EVENT_FRAME_RECEIVED";
+	case VORTEX_EVENT_CHANNEL_CLOSE:
+		return "VORTEX_EVENT_CHANNEL_CLOSE";
+	case VORTEX_EVENT_CHANNEL_ADDED:
+		return "VORTEX_EVENT_CHANNEL_ADDED";
+	case VORTEX_EVENT_CHANNEL_REMOVED:
+		return "VORTEX_EVENT_CHANNEL_REMOVED";
+	case VORTEX_EVENT_CONNECTION_CLOSED:
+		return "VORTEX_EVENT_CONNECTION_CLOSED";
+	case VORTEX_EVENT_CONNECTION_ACCEPTED:
+		return "VORTEX_EVENT_CONNECTION_ACCEPTED";
+	case VORTEX_EVENT_CHANNEL_START:
+		return "VORTEX_EVENT_CHANNEL_START";
+	case VORTEX_EVENT_CONNECTION_READY:
+		return "VORTEX_EVENT_CONNECTION_READY";
+	}
+
+	return "unknown";
+}
+
 /**
  * @brief Allows to get the profile encoding defined on the channel
  * start request received (\ref VORTEX_EVENT_CHANNEL_START).
@@ -797,50 +984,6 @@ axl_bool           vortex_pull_set_event_mask     (VortexCtx        * ctx,
 }
 
 /**
- * @internal Function that allows to check if the provided even type
- * is filtered by context event masks installed.
- *
- * @param ctx The context where the PULL API, and optionally event
- * masks are installed.
- *
- * @param type The event type to check if it is filtered.
- *
- * @return axl_true if the event is filtered, otherwise axl_false is returned.
- */
-axl_bool vortex_pull_event_is_filtered (VortexCtx        * ctx,
-					VortexEventType    type)
-{
-	axlList         * list     = vortex_ctx_get_data (ctx, VORTEX_PULL_EVENT_MASKS);
-	int               iterator = 0;
-	VortexEventMask * mask;
-
-	/* no mask installed, no event filtered */
-	if (axl_list_length (list) < 1)
-		return axl_false;
-	
-	/* for each mask installed, check for the first filtering the
-	 * event */
-	while (iterator < axl_list_length (list)) {
-
-		/* get mask and check */
-		mask = axl_list_get_nth (list, iterator);
-		
-		/* check if it's filtered */
-		if (vortex_event_mask_is_set (mask, type)) {
-			vortex_log (VORTEX_LEVEL_DEBUG, "event type=%d filtered by event mask %s",
-				    type, mask->mask_id);
-			return axl_true;
-		} /* end if */
-
-		/* next iterator */
-		iterator++;
-	} /* end while */
-
-	/* event type not filtered */
-	return axl_false;
-}
-
-/**
  * @brief Release resources allocated pointed by the mask reference.
  * @param mask The reference to terminate.
  */
@@ -852,66 +995,6 @@ void               vortex_event_mask_free         (VortexEventMask * mask)
 	axl_free (mask);
 	return;
 }
-
-/* @internal generic marshaller */
-VortexEvent *      vortex_pull_event_marshaller   (VortexCtx        * ctx,
-						   const char       * event_description,
-						   VortexEventType    type,
-						   VortexChannel    * channel,
-						   VortexConnection * conn,
-						   axl_bool           checked_conn_ref,
-						   VortexFrame      * frame,
-						   int                msg_no,
-						   axl_bool           queue_event)
-{
-	VortexEvent      * event;
-	VortexAsyncQueue * pull_pending_events;
-
-	/* check if the event is fileted */
-	if (vortex_pull_event_is_filtered (ctx, type))
-		return NULL;
-
-	/* get the reference to the queue and return if it is found to
-	 * be not defined */
-	pull_pending_events = vortex_ctx_get_data (ctx, VORTEX_PULL_QUEUE_KEY);
-	if (pull_pending_events == NULL) 
-		return NULL;
-
-	/* create an empty event */
-	event = __vortex_event_new_empty (
-		/* type */
-		type,
-		/* context */
-		ctx,
-		/* connection */
-		conn,
-		/* should check connection ref */
-		checked_conn_ref, 
-		/* channel */
-		channel,
-		/* frame */
-		frame);
-
-	/* configure msgno */
-	event->msgno = msg_no;
-
-	/* drop a log */
-	vortex_log (VORTEX_LEVEL_DEBUG, "(PULL API) event: %s, connection-id=%d, channel-num=%d, queue-event=%d",
-		    event_description,
-		    /* connection */
-		    conn ? vortex_connection_get_id (conn) : -1, 
-		    channel ? vortex_channel_get_number (channel) : -1,
-		    queue_event);
-
-	/* queue pending event to process */
-	if (queue_event) 
-		vortex_async_queue_push (pull_pending_events, event);
-	
-	/* return a reference to the event created */
-	return event;
-}
-						   
-						   
 
 /**
  * @internal Frame received handler for PULL API.
@@ -1020,40 +1103,6 @@ void               vortex_pull_channel_removed    (VortexChannel * channel,
 		/* queue event */
 		axl_true);
 	return;
-}
-
-void vortex_pull_connection_closed (VortexConnection * connection, axlPointer user_data)
-{
-	/* call to generic implementation to marshall async
-	 * notification into a pulled event */
-	vortex_pull_event_marshaller (
-		(VortexCtx *) user_data,
-		"connection closed",
-		VORTEX_EVENT_CONNECTION_CLOSED,
-		/* null channel */
-		NULL,
-		/* connection ref and signal unchecked ref */
-		connection, axl_false,
-		/* null frame and msgno = -1 */
-		NULL, -1,
-		/* queue event */
-		axl_true);
-	return;
-}
-
-/* @internal handler to install connection closed handler: VORTEX_EVENT_CONNECTION_CLOSED */
-int                vortex_pull_register_close_connection   (VortexCtx               * ctx,
-							    VortexConnection        * conn,
-							    VortexConnection       ** new_conn,
-							    VortexConnectionStage     state,
-							    axlPointer                user_data)
-{
-	/* configure connection closed, and set VortexCtx (user_data)
-	 * as optional user defined data*/
-	vortex_log (VORTEX_LEVEL_DEBUG, "Setting connection close handler, context=%p, conn-id=%d", 
-		    ctx, vortex_connection_get_id (conn));
-	vortex_connection_set_on_close_full (conn, vortex_pull_connection_closed, user_data);
-	return 1;
 }
 
 /* @intenal handler for VORTEX_EVENT_CONNECTION_ACCEPTED */

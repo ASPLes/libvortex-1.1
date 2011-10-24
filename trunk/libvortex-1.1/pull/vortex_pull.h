@@ -144,6 +144,14 @@ typedef enum {
 	 * @brief Event notificaiton that a new incoming connection
 	 * has been accepted due to a listener started (\ref
 	 * vortex_listener_new or similar).
+	 *
+	 * Noce that this event is generated before starting the beep
+	 * greeting process so the connection is still not ready. This
+	 * event is emited to provided an early notification method to
+	 * reject a connection or to init some particular data
+	 * associated to the connection.
+	 *
+	 * See also \ref VORTEX_EVENT_CONNECTION_READY.
 	 */
 	VORTEX_EVENT_CONNECTION_ACCEPTED  = 1 << 5,
 
@@ -167,6 +175,27 @@ typedef enum {
 	 * vortex_channel_notify_start. 
 	 */
 	VORTEX_EVENT_CHANNEL_START        = 1 << 6,
+
+	/** 
+	 * @brief Event notification to signal that a new BEEP
+	 * connection was successfully accepted (notifies when a
+	 * connection is ready to use or its setup is ready, like
+	 * listeners connection).
+	 *
+	 * This event is emitted after the BEEP greetings takes
+	 * place. At the listener side is received when a BEEP
+	 * connection was successfully accepted. Note it is received
+	 * twice in the case TLS is enabled after this event (this is
+	 * because a new connection is created).
+	 *
+	 * A BEEP client receives this event just after completing
+	 * connection new operation.
+	 *
+	 * Note that this event is also fired when a listener
+	 * connection is created with \ref vortex_listener_new (or
+	 * similar) and this listener connection is ready.
+	 */
+	VORTEX_EVENT_CONNECTION_READY     = 1 << 7
 
 } VortexEventType;
 
@@ -227,6 +256,8 @@ const char       * vortex_event_get_server_name            (VortexEvent * event)
 
 const char       * vortex_event_get_profile_content        (VortexEvent * event);
 
+const char       * vortex_event_get_name                   (VortexEventType event_type);
+
 VortexEncoding     vortex_event_get_encoding               (VortexEvent * event);
 
 VortexEventMask  * vortex_event_mask_new                   (const char  * identifier,
@@ -266,12 +297,6 @@ void               vortex_pull_channel_added               (VortexChannel * chan
 
 void               vortex_pull_channel_removed             (VortexChannel * channel,
 							    axlPointer      user_data);
-
-int                vortex_pull_register_close_connection   (VortexCtx               * ctx,
-							    VortexConnection        * conn,
-							    VortexConnection       ** new_conn,
-							    VortexConnectionStage     state,
-							    axlPointer                user_data);
 
 axl_bool           vortex_pull_connection_accepted         (VortexConnection * connection, 
 							    axlPointer         user_data);
