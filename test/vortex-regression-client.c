@@ -11190,6 +11190,27 @@ axl_bool  test_13 (void)
 	return axl_true;
 }
 
+axl_bool get_event_and_check (VortexCtx * ctx, VortexEventType event_type, const char * label)
+{
+	VortexEvent * event;
+
+	/* now receive at the listener the close request */
+	event = vortex_pull_next_event (ctx, 0);
+	if (event == NULL) {
+		printf ("%s: expected to find event but found NULL reference..\n", label);
+		return axl_false; 
+	}
+
+	if (vortex_event_get_type (event) != event_type) {
+		printf ("%s: expected to find event %s but found %s..\n", label,
+			vortex_event_get_name (event_type), vortex_event_get_name (vortex_event_get_type (event)));
+		return axl_false;
+	}
+	vortex_event_unref (event);
+
+	return axl_true;
+}
+
 /**
  * @brief Allows to check PULL API support.
  *
@@ -11300,6 +11321,19 @@ axl_bool test_14_a (void)
 		return axl_false;
 	} /* end if */
 
+	event = vortex_pull_next_event (client_ctx, 0);
+	if (event == NULL) {
+		printf ("ERROR: expected to find channel added event, but found NULL reference..\n");
+		return axl_false;
+	}
+
+	if (vortex_event_get_type (event) != VORTEX_EVENT_CONNECTION_READY) {
+		printf ("ERROR: expected to find channel added event, but found %d (%s)..\n", 
+			vortex_event_get_type (event), vortex_event_get_name (vortex_event_get_type (event)));
+		return axl_false;
+	}
+	vortex_event_unref (event);
+
 	/* create a channel */
 	channel = vortex_channel_new (conn, 0,
 				      REGRESSION_URI,
@@ -11321,9 +11355,10 @@ axl_bool test_14_a (void)
 		printf ("ERROR: expected to find channel added event, but found NULL reference..\n");
 		return axl_false;
 	}
+
 	if (vortex_event_get_type (event) != VORTEX_EVENT_CHANNEL_ADDED) {
-		printf ("ERROR: expected to find channel added event, but found %d..\n", 
-			vortex_event_get_type (event));
+		printf ("ERROR: expected to find channel added event, but found %d (%s)..\n", 
+			vortex_event_get_type (event), vortex_event_get_name (vortex_event_get_type (event)));
 		return axl_false;
 	}
 	/* check frame reference */
@@ -11471,7 +11506,7 @@ axl_bool test_14_b (void)
 
 	/* install mask to avoid handling some events */
 	mask = vortex_event_mask_new ("client mask", 
-				      VORTEX_EVENT_CHANNEL_ADDED | VORTEX_EVENT_CONNECTION_CLOSED,
+				      VORTEX_EVENT_CHANNEL_ADDED | VORTEX_EVENT_CONNECTION_CLOSED | VORTEX_EVENT_CONNECTION_READY,
 				      axl_true);
 	if (! vortex_pull_set_event_mask (client_ctx, mask, &error)) {
 		printf ("ERROR: failed to install client event mask, error reported (code: %d): %s\n",
@@ -11504,7 +11539,8 @@ axl_bool test_14_b (void)
 				      VORTEX_EVENT_CHANNEL_ADDED | 
 				      VORTEX_EVENT_CONNECTION_CLOSED |
 				      VORTEX_EVENT_CONNECTION_ACCEPTED |
-				      VORTEX_EVENT_CHANNEL_START,
+				      VORTEX_EVENT_CHANNEL_START | 
+				      VORTEX_EVENT_CONNECTION_READY,
 				      axl_true);
 	if (! vortex_pull_set_event_mask (listener_ctx, mask, &error)) {
 		printf ("ERROR: failed to install listener event mask, error reported (code: %d): %s\n",
@@ -11712,6 +11748,10 @@ axl_bool test_14_c (void)
 		return axl_false;
 	}
 
+	/* consume connection ready */
+	if (! get_event_and_check (listener_ctx, VORTEX_EVENT_CONNECTION_READY, "Test 14-c:")) 
+		return axl_false;
+
 	printf ("Test 14-c: Listener created, now connect..\n");
 
 	/* now create a connection */
@@ -11721,6 +11761,10 @@ axl_bool test_14_c (void)
 		show_conn_errros (conn);
 		return axl_false;
 	} /* end if */
+
+	/* consume connection ready */
+	if (! get_event_and_check (client_ctx, VORTEX_EVENT_CONNECTION_READY, "Test 14-c:")) 
+		return axl_false;
 
 	printf ("Test 14-c: client connected..getting events..\n");
 
@@ -11734,10 +11778,14 @@ axl_bool test_14_c (void)
 	printf ("Test 14-c: got event..\n");
 
 	if (vortex_event_get_type (event) != VORTEX_EVENT_CONNECTION_ACCEPTED) {
-		printf ("ERROR: Expected to find connection accepted event but found: %d..\n",
-			vortex_event_get_type (event));
+		printf ("ERROR: Expected to find connection accepted event but found: %d (%s)..\n",
+			vortex_event_get_type (event), vortex_event_get_name (vortex_event_get_type (event)));
 		return axl_false;
 	} /* end if */
+
+	/* consuming connection ready at listener */
+	if (! get_event_and_check (listener_ctx, VORTEX_EVENT_CONNECTION_READY, "Test 14-c:")) 
+		return axl_false;
 
 	printf ("Test 14-c: creating second connection..and shutting down\n");
 
@@ -11759,9 +11807,8 @@ axl_bool test_14_c (void)
 
 	if (event == NULL || vortex_event_get_type (event) != VORTEX_EVENT_CONNECTION_CLOSED ||
 	    vortex_connection_get_id (conn) != vortex_connection_get_id (vortex_event_get_conn (event))) {
-		printf ("ERROR: expected to find event type for connection closed, but found NULL or different event type (%d != %d) or different connection (%d != %d)\n",
-			vortex_event_get_type (event), VORTEX_EVENT_CONNECTION_CLOSED,
-			vortex_connection_get_id (conn), vortex_connection_get_id (vortex_event_get_conn (event)));
+		printf ("ERROR: expected to find event type for connection closed, but found %s\n",
+			vortex_event_get_name (vortex_event_get_type (event)));
 		return axl_false;
 	} /* end if */
 	vortex_event_unref (event);
@@ -11774,9 +11821,8 @@ axl_bool test_14_c (void)
 
 	if (event == NULL || vortex_event_get_type (event) != VORTEX_EVENT_CONNECTION_CLOSED ||
 	    conn2 != vortex_connection_get_id (vortex_event_get_conn (event))) {
-		printf ("ERROR: expected to find event type for connection closed, but found NULL or different event type (%d != %d) or different connection (%d != %d)\n",
-			vortex_event_get_type (event), VORTEX_EVENT_CONNECTION_CLOSED,
-			conn2, vortex_connection_get_id (vortex_event_get_conn (event)));
+		printf ("ERROR: expected to find event type for connection closed, but found %d:%s\n",
+			vortex_event_get_type (event), vortex_event_get_name (vortex_event_get_type (event)));
 		return axl_false;
 	} /* end if */
 	vortex_event_unref (event);
@@ -11872,6 +11918,7 @@ axl_bool test_14_d (void)
 				      VORTEX_EVENT_CHANNEL_REMOVED | 
 				      VORTEX_EVENT_CHANNEL_ADDED | 
 				      VORTEX_EVENT_CONNECTION_CLOSED |
+				      VORTEX_EVENT_CONNECTION_READY |
 				      VORTEX_EVENT_CONNECTION_ACCEPTED,
 				      axl_true);
 	if (! vortex_pull_set_event_mask (client_ctx, mask, &error)) {
@@ -11905,6 +11952,7 @@ axl_bool test_14_d (void)
 				      VORTEX_EVENT_CHANNEL_ADDED | 
 				      VORTEX_EVENT_CHANNEL_CLOSE |
 				      VORTEX_EVENT_CONNECTION_CLOSED |
+				      VORTEX_EVENT_CONNECTION_READY |
 				      VORTEX_EVENT_CONNECTION_ACCEPTED,
 				      axl_true);
 	if (! vortex_pull_set_event_mask (listener_ctx, mask, &error)) {
