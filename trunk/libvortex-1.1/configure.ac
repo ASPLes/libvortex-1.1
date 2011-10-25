@@ -587,6 +587,9 @@ else
    echo "     NOTE: To enable ALIVE profile check you have to"
    echo "           use --enable-alive-support option."
 fi
+echo
+echo "   Bindings: "
+echo
 if test x$enable_py_vortex_support = xyes ; then
    echo "   Build PyVortex support:                   enabled"
    echo "     python install dir: ${python_install_dir}"

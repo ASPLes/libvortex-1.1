@@ -743,7 +743,8 @@ const char       * vortex_event_get_profile_content        (VortexEvent * event)
 /** 
  * @brief Allows to get an unique constant string that represents this
  * event.
- * @param event The event to generate an identifier string.
+ *
+ * @param event_type The event type to generate an identifier string from.
  *
  * @return A constant string identifying the event or "unknown" if it
  * fails.
