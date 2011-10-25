@@ -1,3 +1,4 @@
+EXTRA_DIST = vortex-regression-client.lua vortex-regression-listener.lua test.crt test.key copy-if-exists.sh
 all-local:
         # prepare content from src dir
 	cd ..; cd src; make; cd ../test

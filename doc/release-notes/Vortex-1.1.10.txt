@@ -1,0 +1,325 @@
+      ###################################################
+      ##              Vortex Library 1.1.10            ##
+      ##                "Escape velocity"              ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce Vortex
+  Library 1.1.10 "Escape velocity" release availability: an open
+  source "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.aspl.es/vortex/py-vortex/html
+      [PyVortex homepage]
+
+    - http://www.aspl.es/turbulence
+      [Turbulence BEEP server homepage]
+ 
+    - http://code.google.com/p/vortexlibrary/downloads/list
+      [Sources and Win32 binaries]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+This release in short
+~~~~~~~~~~~~~~~~~~~~~
+
+  LUA: Now Vortex Library officially support Lua through LuaVortex
+  binding. See documentation to get ready building Lua BEEP
+  applications:
+
+    http://www.aspl.es/vortex/lua-vortex/html
+
+  SERVER SIDE: Added support for automatic thread pool resize, through
+  vortex_thread_pool_setup, which allows a BEEP vortex peer to react
+  to working peaks adding threads, reducing them automatically when
+  working load decreases.
+
+  SECURITY: added support to limit frame size that could be received
+  when automatic frame joining is enabled.
+
+  CODE MORE ROBUST: now frame objects acquire a reference to the
+  context to allow them to live after a vortex context was
+  finished. Updated vortex profiles module to support changing profile
+  settings in a thread safe manner (including removing registered
+  profiles).
+  
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+
+  - vortex-conn-opts-01
+    http://lists.aspl.es/pipermail/vortex/2011-October/001085.html
+
+  - vortex-ctx-data-01
+    http://lists.aspl.es/pipermail/vortex/2011-September/001081.html
+
+Thanks to..
+~~~~~~~~~~~
+
+  - Ralf Konusch (Reported thread safety problems at vortex profiles
+    module, reported and fixed problems at reg tests when TLS and SASL
+    aren't available, reported problems with CONN_OPTS due to
+    __VA_ARGS__ in Microsoft Visual Studio)
+
+  - Dwnam (Reported inconsistencies at vortex ctx data API which
+    caused vortex-ctx-data-01 change notify).
+
+  - Dexter (Reported missing notify actions on TLS module when used in
+    conjunction with PULL API).
+
+  - Scott Zhang (Reported and fixed problems with headers at xml-rpc
+    module and xml-rpc-gen tool when used with c++ compilers).
+
+Changes since 1.1.9
+~~~~~~~~~~~~~~~~~~~
+
+* [fix] Updated API for vortex_set_data_full, vortex_ctx_set_data and
+  vortex_ctx_get_data to make the key parameter to be const char *
+  instead of axlPointer which is consistent with current implementation
+  and avoid problems while passing other types (specially numbers or
+  pointers) when a string it is in fact expected.
+
+* [fix] Updated vortex frame module to acquire a reference to the
+  VortexCtx to allow using frame references even after vortex ctx is
+  finalized. This will simplify bindings..
+
+* [fix] Setting close on exec flag on file descriptors created by
+  epoll_create.
+
+* [fix] Fixed leak inside channel start handling when an error reply
+  is generated with a custom user message.
+
+* [fix] Making channel start reply handling to remove the channel reference
+  in case of error instead of waiting for the connection to finish.
+
+* [fix] Replaced several calls to axl_free with vortex_frame_unref
+  inside __vortex_frame_get_next.
+
+* [fix] Added missing cleanup functions inside vortex tls module.
+
+* [fix] Removed deallocation of ssl contexts (inside vortex tls) when
+  a certificate failure is found (those objects are already removed by
+  connection finish handlers).
+
+* [fix] Updated regression tests to allow selecting the set of tests
+  to execute.
+
+* [fix] Nullified queue reference at pull API module (ctx was holding
+  a reference to a deallocated queue).
+
+* [fix] Updated TODO..
+
+* [fix] Fixed wrong memory access inside vortex listener regression
+  test.
+
+* [fix] Fixed PyVortex handling to detect pvalue == NULL after calling
+  PyErr_Fetch, so it points to Py_None.
+
+* [fix] Added a debug log into vortex_thread_pool.c code...
+
+* [fix] Removed wrong PyVortex documentation reference (set_serialize)
+  from vortex.Ctx .
+
+* [fix] Updating changelog..
+
+* [new] Added initial support for automatic thread pool resizing,
+  allowing a server to adapt its thread pool adding/removing working
+  workers according to working peaks. API added:
+
+    - vortex_thread_pool_setup
+
+  Added regression test to check its function (test-00-c1).
+
+* [fix] More updates to regression test (test-00-c1).
+
+* [fix] Minor updates to VERSION files..
+
+* [fix] Making vortex thread pool automatic resize to not have to
+  release locks to add or remove thread from the pool to avoid races
+  with the state and the number of threads added.
+
+* [fix] Updating version files..
+
+* [fix] Making vortex sequencer to acquire a reference to the vortex
+  ctx and to release it when stop beacon is detected. Solves possible
+  race condition when sequencer loop takes longer than 60 seconds stop
+  during a call to vortex_exit_ctx.
+
+* [fix] Reorganizing debian package files..
+
+* [fix] Removed call to COMP_zlib_cleanup which seems to
+  be not available in older distributions..
+
+* [fix] Updating debian files..
+
+* [fix] Adding change notification vortex-ctx-data-01.txt and fixed
+  manual type (Reported by Dwnam).
+
+* [fix] Version updates..
+
+* [fix] Updated vortex profiles module to implement reference counting
+  internally which allows to unregister profiles at run time. Also
+  updated the module to acquire references to handlers and data to
+  make the check and the execution to play with the same references
+  (avoid races).  Also fixes when a frame received was unset from a
+  profile during a heavy load frame received call (Reported by Ralf
+  Konusch).
+
+* [fix] Making vortex channel send operations to check result from
+  vortex_channel_ref before configuring vortex payload feeder.
+
+* [fix] Updated version files..
+
+* [fix] Added regression test test_01-v to check support for dynamic
+  profile unregistering. Also fixed channel close request to always
+  accept in the case no handler is found and the profile is not
+  registered.
+  
+* [fix] Updating version files.
+
+* [new] Added support to limit max incoming message size when complete
+  frame flag is enabled. Updated documentation to explain security
+  risks (vortex_channel_set_complete_flag). Added regression test
+  test-01w to check support added. API added:
+
+   - vortex_channel_set_complete_frame_limit
+
+* [fix] Applied some changes to disable TLS and SASL reg tests when
+  these components aren't available. Fixed variable declaration after
+  code inside vortex profiles module. (Fixed and reported by Ralf
+  Konusch).
+
+* [fix] Fixed possible race at vortex sequencer that may provide
+  access to a channel reference inside a connection that is not
+  working.
+
+* [fix] Updated vortex connection actions notify to be reetrant
+  (required for auto tls and fix introduced by test-14-h).
+
+* [fix] Fixed vortex tls module which wasn't creating notify actions
+  for TLS connection created. This was also causing problems at the
+  PULL api because connection close event was not triggered for TLS
+  connections (Reported by Dexter). Added regtest test-14-h to
+  reproduce the bug and check fix introduced.
+
+* [fix] Updated documentation to explain what happens with content
+  configured with vortex_connection_set_data during a tls activation..
+
+* [fix] Fixed xml-rpc headers when used with g++. Moved BEGIN_C_DECLS
+  inside ifdef (reported by Scott Zhang).
+
+* [fix] Added regtest (test-01-e1) to check vortex_listener_unlock
+  before vortex_listener_wait support..
+
+* [fix] Removed ## declaration in front of __VA_ARGS__ inside
+  vortex_connection.h headers.
+
+* [fix] Added a new function to create default connection options
+  object. Fixed CONN_OPTS macro to use this new function (fixed using
+  __VA_ARGS__ which is not supported in visual studio). Reported by
+  Ralf Konush.
+
+* [fix] Making vortex reader loop to also check for automatic thread
+  pool resize to avoid having all threads in the pool blocking due to
+  long running tasks, causing the thread pool to be not resized.
+
+* [fix] Fixed several compilation errors inside vortex core and
+  PyVortex when debug log is not enabled. Reported by Ralf Konusch.
+
+* [fix] Reorganized automatic thread pool resizing code to be checked
+  from inside vortex reader to ensure we can resize even in those
+  cases where all the pool is busy for a long time. Added regression
+  test to reproduce the bug and check fix introduced
+  (test-00-c2). 
+
+* [fix] Adding show connection errors to regression tests..
+
+* [fix] Minor changes..
+
+* [fix] Making vortex_channel_reply_ref to return axl_bool signaling
+  if the ref process was ok. Used this to fix close in transit bug
+  found on systems heavy loaded with low memory.
+
+* [fix] Updated regression tests that creates local listeners to use
+  "0" to allocate a random port to avoid problem with port reuse in
+  low memory or slow systems running the reg test.
+
+* [fix] Added change notification..
+
+* [fix] Fixed problem with g++ compilers when used code generated by
+  xml-rpc-gen (strings marshalled for xml-rpc c stub). Reported and
+  fixed by Scott Zhang.
+
+* [fix] Making VortexChannel to acquire its own reference to VortexCtx
+  instead of relying on VortexConnection's reference (which can be
+  nullified on connection close, but channel reference may remain
+  because the user acquired additional references). Checked reg
+  tests. All fine.
+
+* [fix] Importing latest checked lua-vortex
+  implementation. Reorganized compilation infrastructure to fit into
+  current libvortex-1.1 building system. Everything keeps
+  working. Nice!
+
+* [fix] Adding missing files to build documentation..
+
+* [fix] Improved configure.ac process to check if indeed there is a
+  python and a lua suitable installation to create py-vortex and
+  lua-vortex bindings (even in the case the user requests it).  Added
+  some fixings to lua-vortex testing to not break when sasl or tls
+  modules aren't enabled.
+
+* [fix] Making installation to detect if lua install dir announced by
+  pkg-config really exists to create it if is not the case.
+
+* [fix] Updated Vortex pull API to include a new event to notify when
+  a connection is ready to use or its setup is ready (like listeners
+  connection). Event added:
+
+   - VORTEX_EVENT_CONNECTION_READY
+
+  Updated pull API to include a function to easily print event type
+  names. API added:
+
+   - vortex_event_get_type
+
+  Updated regression tests to check this new event to ensure everything
+  is working. 
+
+* [fix] (minor change) Changed debug message from thread pool to
+  level2...
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organizations to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+25th oct 2011, Madrid (Spain)
