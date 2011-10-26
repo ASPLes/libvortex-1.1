@@ -3217,7 +3217,7 @@ axl_bool test_01p (void) {
 	/* socket close after incomplete frame */
 	printf ("Test 01-p: Now check close after incomplete frame..\n");
 	socket = vortex_connection_sock_connect (ctx, listener_host, LISTENER_PORT, NULL, NULL);
-	printf ("Test 01-p: Socket created: %d\n", socket);
+	printf ("Test 01-p: Socket created: %d\n", (int) socket);
 
 	/* injet content */
 	if (send (socket, "RPY 0 0 . 0 20\r\n", 16, 0) != 16) {
@@ -3239,7 +3239,7 @@ axl_bool test_01p (void) {
 	/* window size under flow */
 	printf ("Test 01-p: Now check sending frame fragments..\n");
 	socket = vortex_connection_sock_connect (ctx, listener_host, LISTENER_PORT, NULL, NULL);
-	printf ("Test 01-p: Socket created: %d\n", socket);
+	printf ("Test 01-p: Socket created: %d\n", (int) socket);
 
 	/* injet content */
 	if (send (socket, "RPY 0 0 . 0 10\r\n", 16, 0) != 16) {
@@ -3268,7 +3268,7 @@ axl_bool test_01p (void) {
 	/* window size overflow */
 	printf ("Test 01-p: Now checking I can't push more content that the window size expected at the remote BEEP peer\n");
 	socket = vortex_connection_sock_connect (ctx, listener_host, LISTENER_PORT, NULL, NULL);
-	printf ("Test 01-p: Socket created: %d\n", socket);
+	printf ("Test 01-p: Socket created: %d\n", (int) socket);
 
 	/* injet content */
 	if (send (socket, "RPY 0 0 . 0 65535\r\n", 19, 0) != 19) {
@@ -3316,7 +3316,7 @@ axl_bool test_01p (void) {
 	/* window size overflow with frame fragmentation */
 	printf ("Test 01-p: Now check if we can keep a half opened connection...\n");
 	socket = vortex_connection_sock_connect (ctx, listener_host, LISTENER_PORT, NULL, NULL);
-	printf ("Test 01-p: Socket created: %d\n", socket);
+	printf ("Test 01-p: Socket created: %d\n", (int) socket);
 
 	/* injet content */
 	if (send (socket, "RPY 0 0 . 0 353\r\n", 19, 0) != 19) {
@@ -10823,7 +10823,7 @@ axl_bool  test_12 (void) {
 	vortex_connection_close (connection);
 	if ((stamp + 3) > time (NULL)) {
 		printf ("Test 12 (9.1): supposed to perform a connection failed, with a timeout about of 3 seconds but only consumed: %ld seconds..\n",
-			(time (NULL)) - stamp);
+			(long int) (time (NULL)) - stamp);
 		return axl_false;
 	}
 
