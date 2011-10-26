@@ -20,6 +20,9 @@
  */
 
 #include <xml-rpc.h>
+#if defined(AXL_OS_WIN32)
+#include <direct.h>
+#endif
 
 axlList      * __xml_rpc_support_search_path    = NULL;
 FILE         * opened_file                      = NULL;
