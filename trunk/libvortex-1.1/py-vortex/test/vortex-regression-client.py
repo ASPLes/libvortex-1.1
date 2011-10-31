@@ -1133,7 +1133,7 @@ def test_10_e ():
         error ("Expected to find '%s' but found '%s'" % ("This is a test", frame.payload))
         return False
 
-    info ("Test 10-e: Found expected content!")
+    info ("Found expected content!")
 
     # NOTE: the test do not close conn or channe (this is intentional)
     return True
@@ -1195,13 +1195,16 @@ def test_11 ():
 
     return True
 
-def test_12_on_close_a (conn, queue):
+def test_12_on_close_a (conn, queue2):
+    queue = queue2.pop ()
     queue.push (1)
 
-def test_12_on_close_b (conn, queue):
+def test_12_on_close_b (conn, queue2):
+    queue = queue2.pop ()
     queue.push (2)
 
-def test_12_on_close_c (conn, queue):
+def test_12_on_close_c (conn, queue2):
+    queue = queue2.pop ()
     queue.push (3)
 
 def test_12():
@@ -1222,32 +1225,37 @@ def test_12():
         return False
 
     # create a queue
-    queue = vortex.AsyncQueue ()
+    queue  = vortex.AsyncQueue ()
+    queue2 = vortex.AsyncQueue ()
 
-    # configure on close 
-    conn.set_on_close (test_12_on_close_a, queue)
-    conn.set_on_close (test_12_on_close_b, queue)
-    conn.set_on_close (test_12_on_close_c, queue)
+    # configure on close
+    queue_list = []
+    conn.set_on_close (test_12_on_close_a, queue2)
+    conn.set_on_close (test_12_on_close_b, queue2)
+    conn.set_on_close (test_12_on_close_c, queue2)
 
     # now shutdown 
     conn.shutdown ()
 
-    # wait for replies 
+    # wait for replies
+    queue2.push (queue)
     value = queue.pop ()
     if value != 1:
-        error ("Expected to find 1 but found" + str (value))
+        error ("Expected to find 1 but found (0001): " + str (value))
         return False
 
-    # wait for replies 
+    # wait for replies
+    queue2.push (queue)
     value = queue.pop ()
     if value != 2:
-        error ("Expected to find 2 but found" + str (value))
+        error ("Expected to find 2 but found (0002): " + str (value))
         return False
 
-    # wait for replies 
+    # wait for replies
+    queue2.push (queue)
     value = queue.pop ()
     if value != 3:
-        error ("Expected to find 3 but found" + str (value))
+        error ("Expected to find 3 but found (0003): " + str (value))
         return False
 
     # re-connect 
@@ -1258,30 +1266,33 @@ def test_12():
         error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
         return False
 
-    # configure on close 
-    conn.set_on_close (test_12_on_close_a, queue)
-    conn.set_on_close (test_12_on_close_a, queue)
-    conn.set_on_close (test_12_on_close_a, queue)
+    # configure on close
+    conn.set_on_close (test_12_on_close_a, queue2)
+    conn.set_on_close (test_12_on_close_a, queue2)
+    conn.set_on_close (test_12_on_close_a, queue2)
 
     # now shutdown 
     conn.shutdown ()
 
-    # wait for replies 
+    # wait for replies
+    queue2.push (queue)
     value = queue.pop ()
     if value != 1:
-        error ("Expected to find 1 but found" + str (value))
+        error ("Expected to find 1 but found (0004): " + str (value))
         return False
 
-    # wait for replies 
+    # wait for replies
+    queue2.push (queue)
     value = queue.pop ()
     if value != 1:
-        error ("Expected to find 1 but found" + str (value))
+        error ("Expected to find 1 but found (0005): " + str (value))
         return False
 
-    # wait for replies 
+    # wait for replies
+    queue2.push (queue)
     value = queue.pop ()
     if value != 1:
-        error ("Expected to find 1 but found" + str (value))
+        error ("Expected to find 1 but found (0006): " + str (value))
         return False
 
     return True
@@ -1345,7 +1356,7 @@ def test_12_b ():
     iterator = 3
     while iterator > 0:
         # call to create a connection
-        info ("Test 12-b: registering connection to be closed...")
+        info ("registering connection to be closed...")
         conn = vortex.Connection (ctx, host, port)
 
         # check connection status after if 
@@ -1362,20 +1373,20 @@ def test_12_b ():
         # start a channel to notify the connection to shutdown on next start
         channel = conn.open_channel (0, REGRESSION_URI_RECORD_CONN)
         if not channel:
-            error ("Test 12-b: (1) Expected proper channel creation..")
+            error ("(1) Expected proper channel creation..")
             return False
 
         # ok, now create a second different content and start a
         # channel that will fail and will also close previous
         # connection
-        info ("Test 12-b: creating second connection...")
+        info ("creating second connection...")
         conn2 = vortex.Connection (ctx, host, port)
         if not conn2.is_ok ():
             error ("Expected proper second connection creation..")
             return False
 
         # start a channel that will be closed by listener
-        info ("Test 12-b: opening second channel......")
+        info ("opening second channel......")
         channel = conn2.open_channel (0, REGRESSION_URI_CLOSE_RECORDED_CONN)
         if channel:
             error ("Expected to find channel error creation, but found proper reference")

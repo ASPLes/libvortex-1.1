@@ -786,14 +786,14 @@ PyObject * py_vortex_connection_set_on_close (PyObject * self, PyObject * args, 
 	} /* end if */
 
 	/* configure an on close handler to bridge into python */
-	on_close_obj                = axl_new (PyVortexConnectionSetOnCloseData, 1);
+	on_close_obj = axl_new (PyVortexConnectionSetOnCloseData, 1);
 
 	/* acquire a reference to the connection */
-	on_close_obj->py_conn       = self;
+	on_close_obj->py_conn = self;
 	Py_INCREF (self);
 
 	/* configure on_close handler */
-	on_close_obj->on_close      = on_close;
+	on_close_obj->on_close = on_close;
 	Py_INCREF (on_close);
 
 	/* configure on_close_data handler data */
@@ -1195,11 +1195,10 @@ void py_vortex_connection_find_reference_close_conn (VortexConnection * conn, ax
  * @param py_ctx The vortex.Ctx object where to lookup for an already
  * created vortex.Connection reference.
  */
-PyObject * py_vortex_connection_find_reference (VortexConnection * conn,
-						PyObject         * py_ctx)
+PyObject * py_vortex_connection_find_reference (VortexConnection * conn)
 {
 	PyObject  * py_conn;
-	VortexCtx * ctx = py_vortex_ctx_get (py_ctx);
+	VortexCtx * ctx = CONN_CTX (conn);
 	char      * key;
 
 	/* check if the connection reference was created previosly */
