@@ -63,6 +63,8 @@ struct _PyVortexChannelPool {
 	 * @internal Reference to data handler pointers.
 	 */
 	PyVortexChannelPoolData * data;
+
+	
 };
 
 void py_vortex_channel_pool_release_data (PyVortexChannelPoolData * data)
@@ -179,10 +181,7 @@ static PyObject * py_vortex_channel_pool_new (PyTypeObject *type, PyObject *args
 static void py_vortex_channel_pool_dealloc (PyVortexChannelPool* self)
 {
 #if defined(ENABLE_PY_VORTEX_LOG)
-	int pool_id = vortex_channel_pool_get_id (self->pool);
-
-	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortexChannelPool id: %d (%p)", 
-		       pool_id, self);
+	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortexChannelPool: (%p)", self);
 #endif
 
 	/* release reference to the connection */

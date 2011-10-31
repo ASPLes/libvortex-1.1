@@ -697,14 +697,14 @@ void __vortex_channel_pool_remove (VortexChannelPool * pool, int  num)
 	int             iterator;
 	int             init_num;	
 
-	if (pool == NULL || num <= 0)
+	if (pool == NULL || num <= 0) 
 		return;
 
 	init_num  = axl_list_length (pool->channels);
 	iterator = 0;
 
 	/* do not perform any operation if no channel is available */
-	if (init_num == 0)
+	if (init_num == 0) 
 		return;
 
 	cursor = axl_list_cursor_new (pool->channels);
@@ -800,9 +800,11 @@ void           __vortex_channel_pool_close_common (VortexChannelPool * pool,
 {
 	int                 channels;
 	VortexConnection  * connection;
+	VortexChannel     * channel;
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx         * ctx                     = pool ? vortex_connection_get_ctx (pool->connection) : NULL;
 #endif
+	axlListCursor     * cursor;
 	
 	if (pool == NULL)
 		return;
@@ -823,8 +825,29 @@ void           __vortex_channel_pool_close_common (VortexChannelPool * pool,
 	channels = axl_list_length (pool->channels);
 	if (channels > 0) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "channel pool id=%d has %d channels, closing them..", 
-		       pool->id, channels);
+			    pool->id, channels);
+		/* remove all channels from the pool */
 		__vortex_channel_pool_remove (pool, channels);
+
+		/* nullify references to pending (not removed) channels */
+		cursor = axl_list_cursor_new (pool->channels);
+		while (axl_list_cursor_has_item (cursor)) {
+			/* get the channel reference */
+			channel = axl_list_cursor_get (cursor);
+
+			/* nullify references on channel to removed by
+			 * the pool (implicit deattach) */
+			vortex_log (VORTEX_LEVEL_DEBUG, "channel pool id=%d doing implicit deattach on channel=%d..", 
+				    pool->id, vortex_channel_get_number (channel));
+			vortex_channel_set_pool (channel, NULL);
+
+			/* get the next cursor */
+			axl_list_cursor_next (cursor);
+		} /* end if */
+
+		/* free the cursor */
+		axl_list_cursor_free (cursor);
+
 	}else 
 		vortex_log (VORTEX_LEVEL_DEBUG, "channel pool id=%d is empty..",  pool->id);
 

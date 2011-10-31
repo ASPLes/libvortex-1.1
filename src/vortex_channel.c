@@ -7429,6 +7429,8 @@ void vortex_channel_free (VortexChannel * channel)
 
 	/* check if this channel belongs to a pool to remove it */
 	if (channel->pool) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "freeing detaching channel pool(%p) for %d", channel->pool, channel->channel_num);
+
 		/* it seems this channel belongs to a pool remove it
 		 * from the pool */
 		vortex_channel_pool_deattach (channel->pool, channel);

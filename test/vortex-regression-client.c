@@ -7751,6 +7751,66 @@ axl_bool  test_03d (void) {
 	return axl_true;
 }
 
+axl_bool  test_03e (void) {
+	
+	VortexConnection   * connection;
+	VortexChannelPool  * pool;
+	VortexChannel      * channel;
+	VortexAsyncQueue   * sleep;
+
+	/* creates a new connection against localhost:44000 */
+	connection = connection_new ();
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+
+	/* create the channel pool */
+	pool = vortex_channel_pool_new_full (connection,
+					     REGRESSION_URI,
+					     1,
+					     /* create handler */
+					     NULL,
+					     /* pointer */
+					     NULL,
+					     /* no close handling */
+					     NULL, NULL,
+					     /* frame receive async handling */
+					     NULL, NULL,
+					     /* no async channel creation */
+					     NULL, NULL);
+
+	/* ask for a channel */
+	channel = vortex_channel_pool_get_next_ready (pool, axl_true);
+
+	if (channel == NULL) {
+		printf ("ERROR: expected to find proper references..\n");
+		return axl_false;
+	} /* end if */
+	
+	/* check channel is ready at this point */
+	if (! vortex_channel_is_ready (channel)) {
+		printf ("ERROR: expected to find channel to be ready, but found it isn't..\n");
+		return axl_false;
+	} /* end if */
+
+	/* now acquire a reference */
+	vortex_channel_ref (channel);
+
+	/* ok, close the connection */
+	vortex_connection_close (connection);
+
+	sleep = vortex_async_queue_new ();
+	vortex_async_queue_timedpop (sleep, 200000);
+	vortex_async_queue_unref (sleep);
+
+	/* now close the channel */
+	vortex_channel_unref (channel);
+
+	/* return axl_true */
+	return axl_true;
+}
+
 /* constant for test_04 */
 #define MAX_NUM_CON 1000
 
@@ -13325,7 +13385,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02l1, test_02m, test_02m1, test_02m2, test_02m3, test_02n, test_02o, test_02p, test_02q, \n");
- 	printf ("**                       test_03, test_03a, test_03b, test_03d, test_03c, test_04, test_04a, \n");
+ 	printf ("**                       test_03, test_03a, test_03b, test_03c, test_03d, test_03e, test_04, test_04a, \n");
  	printf ("**                       test_04b, test_04c, test_04d, test_04e, test_04f, test_05, test_05a, test_05b, test_05c, \n");
 	printf ("**                       test_05d, ctest_06, test_06a, \n");
  	printf ("**                       test_07, test_08, test_09, test_10, test_11, test_12, test_13, test_14, \n");
@@ -13624,6 +13684,9 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_03d"))
 			run_test (test_03d, "Test 03-d", "vortex channel pool support (auxiliar pointers)", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_03e"))
+			run_test (test_03e, "Test 03-e", "closing channel after connection with pool closed", -1, -1);
+
 		if (check_and_run_test (run_test_name, "test_04"))
 			run_test (test_04, "Test 04", "Handling many connections support", -1, -1);
 
@@ -13867,6 +13930,8 @@ int main (int  argc, char ** argv)
  	run_test (test_03c, "Test 03-c", "vortex ANS/NUL replies with serialize not attended", -1, -1);
 
  	run_test (test_03d, "Test 03-d", "vortex channel pool support (auxiliar pointers)", -1, -1);
+
+ 	run_test (test_03e, "Test 03-e", "closing channel after connection with pool closed", -1, -1);
   
  	run_test (test_04, "Test 04", "Handling many connections support", -1, -1);
   
