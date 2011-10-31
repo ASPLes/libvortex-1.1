@@ -234,13 +234,13 @@ axl_bool  py_vortex_profile_start  (int                channel_num,
 {
 	PyGILState_STATE     state;
 	PyObject           * py_conn;
-	PyObject           * py_ctx = user_data;
 	PyObject           * start;
 	PyObject           * start_data;
 	VortexChannel      * channel;
 	PyObject           * args;
 	PyObject           * result;
 	axl_bool             _result;
+	VortexCtx          * ctx = CONN_CTX (conn);
 	
 
 	/* acquire the GIL */
@@ -250,19 +250,15 @@ axl_bool  py_vortex_profile_start  (int                channel_num,
 	channel  = vortex_connection_get_channel (conn, channel_num);
 
 	/* get references to handlers */
-	start      = py_vortex_ctx_register_get (py_ctx, "%s_start", vortex_channel_get_profile (channel));
-	start_data = py_vortex_ctx_register_get (py_ctx, "%s_start", vortex_channel_get_profile (channel));
+	start      = py_vortex_ctx_register_get (ctx, "%s_start", vortex_channel_get_profile (channel));
+	start_data = py_vortex_ctx_register_get (ctx, "%s_start", vortex_channel_get_profile (channel));
 
 	/* provide a default value */
 	if (start_data == NULL)
 		start_data = Py_None;
 
 	/* create a PyVortexConnection instance */
-	py_conn  = py_vortex_connection_find_reference (
-		/* connection to wrap */
-		conn, 
-		/* context: create a copy */
-		py_ctx);
+	py_conn  = py_vortex_connection_find_reference (conn);
 
 	/* create a tuple to contain arguments */
 	args = PyTuple_New (3);
@@ -326,33 +322,30 @@ void py_vortex_profile_frame_received (VortexChannel    * channel,
 	PyGILState_STATE     state;
 	PyObject           * py_frame;
 	PyObject           * py_channel;
-	PyObject           * py_ctx = user_data;
 	PyObject           * py_conn;
 	PyObject           * frame_received;
 	PyObject           * frame_received_data;
 	PyObject           * args;
 	PyObject           * result;
-	
+	VortexCtx          * ctx = CONN_CTX (conn);
+
 	/* acquire the GIL */
 	state = PyGILState_Ensure();
 
 	/* create a PyVortexFrame instance */
 	py_frame = py_vortex_frame_create (frame, axl_true);
-	
+
 	/* get references to handlers */
-	frame_received      = py_vortex_ctx_register_get (py_ctx, "%s_frame_received", vortex_channel_get_profile (channel));
-	frame_received_data = py_vortex_ctx_register_get (py_ctx, "%s_frame_received_data", vortex_channel_get_profile (channel));
+	frame_received      = py_vortex_ctx_register_get (ctx, "%s_frame_received", vortex_channel_get_profile (channel));
+	frame_received_data = py_vortex_ctx_register_get (ctx, "%s_frame_received_data", vortex_channel_get_profile (channel));
 	py_vortex_log (PY_VORTEX_DEBUG, "frame received handler %p, data %p", frame_received, frame_received_data);
 
 	/* set to none rather than NULL */
 	if (frame_received_data == NULL)
 		frame_received_data = Py_None;
 
-	py_conn  = py_vortex_connection_find_reference (
-		/* connection to wrap */
-		conn, 
-		/* context: create a copy */
-		py_ctx);
+	/* create a connection, acquire_ref=axl_true, close_ref=axl_false */
+	py_conn  = py_vortex_connection_create (conn, axl_true, axl_false);
 
 	/* create the channel */
 	py_channel = py_vortex_channel_create (channel);
@@ -408,6 +401,7 @@ static PyObject * py_vortex_register_profile (PyObject * self, PyObject * args, 
 
 	PyObject           * frame_received       = NULL;
 	PyObject           * frame_received_data  = NULL;
+	VortexCtx          * ctx = NULL;
 
 	/* now parse arguments */
 	static char *kwlist[] = {"ctx", "uri", "start", "start_data", "close", "close_data", "frame_received", "frame_received_data", NULL};
@@ -421,20 +415,28 @@ static PyObject * py_vortex_register_profile (PyObject * self, PyObject * args, 
 		return NULL;
 
 	py_vortex_log (PY_VORTEX_DEBUG, "received request to register profile %s", uri);
+	/* check object received is a py_vortex_ctx */
+	if (! py_vortex_ctx_check (py_vortex_ctx)) {
+		py_vortex_log (PY_VORTEX_CRITICAL, "Expected to receive vortex.Ctx object but found something else..");
+		return NULL;
+	}
+
+	/* get the VortexCtx */
+	ctx = py_vortex_ctx_get (py_vortex_ctx);
 
 	/* check handlers defined */
 	if (start != NULL && ! PyCallable_Check (start)) {
-		py_vortex_log (PY_VORTEX_DEBUG, "defined start handler but received a non callable object, unable to register %s", uri);
+		py_vortex_log (PY_VORTEX_CRITICAL, "defined start handler but received a non callable object, unable to register %s", uri);
 		return NULL;
 	} /* end if */
 
 	if (close != NULL && ! PyCallable_Check (close)) {
-		py_vortex_log (PY_VORTEX_DEBUG, "defined start handler but received a non callable object, unable to register %s", uri);
+		py_vortex_log (PY_VORTEX_CRITICAL, "defined start handler but received a non callable object, unable to register %s", uri);
 		return NULL;
 	} /* end if */
 
 	if (frame_received != NULL && ! PyCallable_Check (frame_received)) {
-		py_vortex_log (PY_VORTEX_DEBUG, "defined start handler but received a non callable object, unable to register %s", uri);
+		py_vortex_log (PY_VORTEX_CRITICAL, "defined start handler but received a non callable object, unable to register %s", uri);
 		return NULL;
 	} /* end if */
 
@@ -442,27 +444,27 @@ static PyObject * py_vortex_register_profile (PyObject * self, PyObject * args, 
 		       frame_received, frame_received_data);
 
 	/* acquire a reference to the register content */
-	py_vortex_ctx_register (py_vortex_ctx, start, "%s_start", uri);
-	py_vortex_ctx_register (py_vortex_ctx, start_data, "%s_start_data", uri);
+	py_vortex_ctx_register (ctx, start, "%s_start", uri);
+	py_vortex_ctx_register (ctx, start_data, "%s_start_data", uri);
 
-	py_vortex_ctx_register (py_vortex_ctx, close, "%s_close", uri);
-	py_vortex_ctx_register (py_vortex_ctx, close_data, "%s_close_data", uri);
+	py_vortex_ctx_register (ctx, close, "%s_close", uri);
+	py_vortex_ctx_register (ctx, close_data, "%s_close_data", uri);
 
-	py_vortex_ctx_register (py_vortex_ctx, frame_received, "%s_frame_received", uri);
-	py_vortex_ctx_register (py_vortex_ctx, frame_received_data, "%s_frame_received_data", uri);
+	py_vortex_ctx_register (ctx, frame_received, "%s_frame_received", uri);
+	py_vortex_ctx_register (ctx, frame_received_data, "%s_frame_received_data", uri);
 	
 	/* call to register */
-	if (! vortex_profiles_register (py_vortex_ctx_get (py_vortex_ctx),
+	if (! vortex_profiles_register (ctx,
 					uri,
 					/* start */
 					start ? py_vortex_profile_start : NULL, 
-					start ? py_vortex_ctx : NULL,
+					NULL,
 					/* close */
 					close ? py_vortex_profile_close : NULL, 
-					close ? py_vortex_ctx : NULL,
+					NULL,
 					/* frame_received */
 					frame_received ? py_vortex_profile_frame_received : NULL, 
-					frame_received ? py_vortex_ctx : NULL)) {
+					NULL)) {
 		py_vortex_log (PY_VORTEX_CRITICAL, "failure found while registering %s at vortex_profiles_register", uri);
 		return NULL;
 	} /* end if */

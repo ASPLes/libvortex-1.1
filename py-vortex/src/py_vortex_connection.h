@@ -75,8 +75,7 @@ PyObject           * py_vortex_connection_register_get (PyObject * py_conn,
 							const char * key,
 							...);
 
-PyObject           * py_vortex_connection_find_reference (VortexConnection * conn,
-							  PyObject         * py_ctx);
+PyObject           * py_vortex_connection_find_reference (VortexConnection * conn);
 
 #define PY_CONN_GET(py_obj) (((PyVortexConnection*)self)->conn)
 

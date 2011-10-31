@@ -509,7 +509,7 @@ PyObject * py_vortex_ctx_create (VortexCtx * ctx)
  * object, incrementing the reference count. The object is
  * automatically removed when the vortex.Ctx reference is collected.
  */
-void        py_vortex_ctx_register (PyObject   * py_vortex_ctx, 
+void        py_vortex_ctx_register (VortexCtx  * ctx,
 				    PyObject   * data,
 				    const char * key,
 				    ...)
@@ -518,7 +518,7 @@ void        py_vortex_ctx_register (PyObject   * py_vortex_ctx,
 	char     * full_key;
 
 	/* check data received */
-	if (key == NULL || py_vortex_ctx == NULL)
+	if (key == NULL || ctx == NULL)
 		return;
 
 	va_start (args, key);
@@ -527,16 +527,16 @@ void        py_vortex_ctx_register (PyObject   * py_vortex_ctx,
 
 	/* check to remove */
 	if (data == NULL) {
-		vortex_ctx_set_data (((PyVortexCtx *)py_vortex_ctx)->ctx, full_key, NULL);
+		vortex_ctx_set_data (ctx, full_key, NULL);
 		axl_free (full_key);
 		return;
 	} /* end if */
 	
 	/* now register the data received into the key created */
 	py_vortex_log (PY_VORTEX_DEBUG, "registering key %s = %p on vortex.Ctx %p",
-		       full_key, data, py_vortex_ctx);
+		       full_key, data, ctx);
 	Py_INCREF (data);
-	vortex_ctx_set_data_full (((PyVortexCtx *)py_vortex_ctx)->ctx, full_key, data, axl_free, (axlDestroyFunc) py_vortex_decref);
+	vortex_ctx_set_data_full (ctx, full_key, data, axl_free, (axlDestroyFunc) py_vortex_decref);
 	return;
 }
 
@@ -546,7 +546,7 @@ void        py_vortex_ctx_register (PyObject   * py_vortex_ctx,
  * reference returned is still owned by the internal hash. Use
  * Py_INCREF in the case a new reference must owned by the caller.
  */
-PyObject  * py_vortex_ctx_register_get (PyObject * py_vortex_ctx,
+PyObject  * py_vortex_ctx_register_get (VortexCtx  * ctx,
 					const char * key,
 					...)
 {
@@ -555,9 +555,9 @@ PyObject  * py_vortex_ctx_register_get (PyObject * py_vortex_ctx,
 	PyObject * data;
 
 	/* check data received */
-	if (key == NULL || py_vortex_ctx == NULL) {
+	if (key == NULL || ctx == NULL) {
 		py_vortex_log (PY_VORTEX_CRITICAL, "Failed to register data, key %p or vortex.Ctx %p reference is null",
-			       key, py_vortex_ctx);
+			       key, ctx);
 		return NULL;
 	} /* end if */
 
@@ -566,9 +566,9 @@ PyObject  * py_vortex_ctx_register_get (PyObject * py_vortex_ctx,
 	va_end   (args);
 	
 	/* now register the data received into the key created */
-	data = __PY_OBJECT (vortex_ctx_get_data (((PyVortexCtx *)py_vortex_ctx)->ctx, full_key));
+	data = __PY_OBJECT (vortex_ctx_get_data (ctx, full_key));
 	py_vortex_log (PY_VORTEX_DEBUG, "returning key %s = %p on vortex.Ctx %p",
-		       full_key, data, py_vortex_ctx);
+		       full_key, data, ctx);
 	axl_free (full_key);
 	return data;
 }

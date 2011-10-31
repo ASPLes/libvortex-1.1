@@ -51,12 +51,12 @@ VortexCtx * py_vortex_ctx_get    (PyObject * py_vortex_ctx);
 
 PyObject  * py_vortex_ctx_create (VortexCtx * ctx);
 
-void        py_vortex_ctx_register (PyObject   * py_vortex_ctx, 
+void        py_vortex_ctx_register (VortexCtx  * ctx,
 				    PyObject   * data,
 				    const char * key,
 				    ...);
 
-PyObject  * py_vortex_ctx_register_get (PyObject * py_vortex_ctx,
+PyObject  * py_vortex_ctx_register_get (VortexCtx  * ctx,
 					const char * key,
 					...);
 

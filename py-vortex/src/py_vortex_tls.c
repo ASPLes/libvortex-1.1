@@ -283,11 +283,7 @@ axl_bool  py_vortex_tls_accept_handler_bridge (VortexConnection * connection,
 	data = vortex_ctx_get_data (ctx, PY_VORTEX_TLS_DATA);
 
 	/* create the connection */
-	py_conn = py_vortex_connection_find_reference (
-		/* the connection */
-		connection,
-		/* the context */
-		data->ctx);
+	py_conn = py_vortex_connection_find_reference (connection);
 
 	/* create a tuple to contain arguments */
 	args = PyTuple_New (3);
@@ -343,11 +339,7 @@ char * py_vortex_tls_cert_handler_bridge (VortexConnection * connection,
 	data = vortex_ctx_get_data (ctx, PY_VORTEX_TLS_DATA);
 
 	/* create the connection */
-	py_conn = py_vortex_connection_find_reference (
-		/* the connection */
-		connection,
-		/* the context */
-		data->ctx);
+	py_conn = py_vortex_connection_find_reference (connection);
 
 	/* create a tuple to contain arguments */
 	args = PyTuple_New (3);
@@ -403,11 +395,7 @@ char * py_vortex_tls_key_handler_bridge (VortexConnection * connection,
 	data = vortex_ctx_get_data (ctx, PY_VORTEX_TLS_DATA);
 
 	/* create the connection */
-	py_conn = py_vortex_connection_find_reference (
-		/* the connection */
-		connection,
-		/* the context */
-		data->ctx);
+	py_conn = py_vortex_connection_find_reference (connection);
 
 	/* create a tuple to contain arguments */
 	args = PyTuple_New (3);

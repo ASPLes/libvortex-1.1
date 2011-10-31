@@ -349,11 +349,7 @@ axlPointer py_vortex_sasl_auth_handler_bridge (VortexConnection * conn,
 	state = PyGILState_Ensure();
 
 	/* create a PyVortexConnection */
-	py_conn  = py_vortex_connection_find_reference (
-		/* connection to wrap */
-		conn, 
-		/* context: create a copy */
-		data->py_ctx);
+	py_conn  = py_vortex_connection_find_reference (conn);
 
 	/* create auth_items */
 	auth_items = PyDict_New ();

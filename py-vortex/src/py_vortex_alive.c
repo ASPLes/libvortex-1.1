@@ -70,7 +70,6 @@ void py_vortex_alive_failure_handler (VortexConnection * conn,
 				      long               check_period,
 				      int                unreply_count)
 {
-	PyObject          * py_ctx;
 	PyObject          * py_conn;
 	PyGILState_STATE    state;
 	PyObject          * _result;
@@ -82,9 +81,7 @@ void py_vortex_alive_failure_handler (VortexConnection * conn,
 	state = PyGILState_Ensure();
 
 	/* build references */
-	py_ctx  = py_vortex_ctx_create (CONN_CTX (conn));
-	py_conn = py_vortex_connection_find_reference (conn, py_ctx);
-	Py_DECREF (py_ctx);
+	py_conn = py_vortex_connection_find_reference (conn);
 
 	/* now implementuser code notification */
 	args = PyTuple_New (3);
