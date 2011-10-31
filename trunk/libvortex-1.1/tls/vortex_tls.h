@@ -320,6 +320,40 @@ typedef axl_bool  (*VortexTlsPostCheck) (VortexConnection * connection,
 					 axlPointer         ctx);
 
 
+/** 
+ * @brief Handler called when a failure is found during TLS
+ * handshake. 
+ *
+ * The function receives the connection where the failure * found an
+ * error message and a pointer configured by the user at \ref *
+ * vortex_tls_set_failure_handler.
+ *
+ * @param connection The connection where the failure was found.
+ *
+ * @param error_message The error message describing the problem found.
+ *
+ * @param user_data Optional user defined pointer.
+ *
+ * To get particular SSL info, you can use the following code inside the handler:
+ * \code
+ * // error variables
+ * char          log_buffer [512];
+ * unsigned long err;
+ *
+ * // show errors found
+ * while ((err = ERR_get_error()) != 0) {
+ *     ERR_error_string_n (err, log_buffer, sizeof (log_buffer));
+ *     printf ("tls stack: %s (find reason(code) at openssl/ssl.h)", log_buffer);
+ * }
+ * \endcode
+ * 
+ *
+ */
+typedef void      (*VortexTlsFailureHandler) (VortexConnection * connection,
+					      const char       * error_message,
+					      axlPointer         user_data);
+
+
 axl_bool           vortex_tls_init                       (VortexCtx            * ctx);
 
 void               vortex_tls_set_ctx_creation           (VortexConnection     * connection,
@@ -337,6 +371,10 @@ void               vortex_tls_set_post_check             (VortexConnection     *
 void               vortex_tls_set_default_post_check     (VortexCtx            * ctx, 
 							  VortexTlsPostCheck     post_check,
 							  axlPointer             user_data);
+
+void               vortex_tls_set_failure_handler        (VortexCtx               * ctx,
+							  VortexTlsFailureHandler   failure_handler,
+							  axlPointer                user_data);
 
 void               vortex_tls_start_negotiation          (VortexConnection     * connection,
 							  const char           * serverName,

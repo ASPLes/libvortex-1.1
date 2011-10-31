@@ -93,6 +93,10 @@ typedef struct _VortexTlsCtx {
 	VortexTlsPostCheck                 tls_default_post_check;
 	axlPointer                         tls_default_post_check_user_data;
 
+	/* failure handler */
+	VortexTlsFailureHandler            failure_handler;
+	axlPointer                         failure_handler_user_data;
+
 	/** 
 	 * @internal
 	 * @brief Auto TLS profile negotiation internal support variables.
@@ -102,6 +106,38 @@ typedef struct _VortexTlsCtx {
 	char  *                            connection_auto_tls_server_name;
 
 } VortexTlsCtx;
+
+/** 
+ * @internal Calls to the failure handler if it is defined with the
+ * provided error message.
+ */
+void vortex_tls_notify_failure_handler (VortexCtx * ctx, 
+					VortexConnection * conn, 
+					const char * error_message)
+{
+	VortexTlsCtx * tls_ctx;
+
+	/* check parameters received */
+	if (ctx == NULL)
+		return;
+
+	/* check if the tls ctx was created */
+	tls_ctx = vortex_ctx_get_data (ctx, TLS_CTX);
+	if (tls_ctx == NULL)  {
+		/* dump stack */
+		vortex_tls_log_ssl (ctx);
+		return;
+	}
+
+	/* configure the handler */
+	if (tls_ctx->failure_handler) 
+		tls_ctx->failure_handler (conn, error_message, tls_ctx->failure_handler_user_data);
+	else {
+		/* dump stack if no failure handler */
+		vortex_tls_log_ssl (ctx);
+	}
+	return;
+}
 
 
 
@@ -323,6 +359,44 @@ void               vortex_tls_set_default_post_check     (VortexCtx            *
 }
 
 /** 
+ * @brief Allows to configure a failure handler that will be called
+ * when a failure is found at SSL level or during the handshake with
+ * the particular function failing.
+ *
+ * @param ctx The context that will be configured with the failure handler.
+ *
+ * @param failure_handler The failure handler to be called when an
+ * error is found.
+ *
+ * @param user_data Optional user pointer to be passed into the
+ * function when the handler is called.
+ */
+void               vortex_tls_set_failure_handler        (VortexCtx               * ctx,
+							  VortexTlsFailureHandler   failure_handler,
+							  axlPointer                user_data)
+{
+	VortexTlsCtx * tls_ctx;
+
+	/* check parameters received */
+	if (ctx == NULL)
+		return;
+
+	/* check if the tls ctx was created */
+	tls_ctx = vortex_ctx_get_data (ctx, TLS_CTX);
+	if (tls_ctx == NULL) 
+		return;
+
+	/* configure the handler */
+	tls_ctx->failure_handler           = failure_handler;
+	if (failure_handler)
+		tls_ctx->failure_handler_user_data = user_data;
+	else
+		tls_ctx->failure_handler_user_data = NULL;
+
+	return;
+}
+
+/** 
  * @internal
  *
  * @brief Default handlers used to actually read from underlying
@@ -394,7 +468,8 @@ int  vortex_tls_ssl_read (VortexConnection * connection, char  * buffer, int  bu
 		vortex_log (VORTEX_LEVEL_WARNING, "SSL_read function error (res=%d, ssl_err=%d, errno=%d)",
 			    res, ssl_err, errno);
  		/* dump error stack */
- 		vortex_tls_log_ssl (ctx);
+		vortex_tls_notify_failure_handler (ctx, connection, "SSL_read function error");
+		
 		return -1;
 	default:
 		/* nothing to handle */
@@ -655,10 +730,6 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
  		/* get ssl error */
   		ssl_error = SSL_get_error (ssl, -1);
  
- 		vortex_log (VORTEX_LEVEL_WARNING, "accept function have failed (for initiator side) : dumping error stack..");
- 		/* dump error stack */
- 		vortex_tls_log_ssl (ctx);
-
 		switch (ssl_error) {
 		case SSL_ERROR_WANT_READ:
 			vortex_log (VORTEX_LEVEL_WARNING, "still not prepared to continue because read wanted");
@@ -676,6 +747,8 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 			 * possible to recover previous BEEP state */
 			__vortex_connection_set_not_connected (connection, "tls handshake failed",
 							       VortexProtocolError);
+
+			vortex_tls_notify_failure_handler (ctx, connection, "syscall error while doing TLS handshake, ssl error (SSL_ERROR_SYSCALL)");
 			return axl_false;
 		default:
 			vortex_log (VORTEX_LEVEL_CRITICAL, "there was an error with the TLS negotiation, ssl error (code:%d) : %s",
@@ -1287,8 +1360,6 @@ void vortex_tls_initial_accept (VortexConnection * connection)
  		ssl_error = SSL_get_error (ssl, -1);
  
  		vortex_log (VORTEX_LEVEL_WARNING, "accept function have failed (for listener side) ssl_error=%d : dumping error stack..", ssl_error);
- 		/* dump error stack */
- 		vortex_tls_log_ssl (ctx);
  
 		switch (ssl_error) {
 		case SSL_ERROR_WANT_READ:
@@ -1303,6 +1374,9 @@ void vortex_tls_initial_accept (VortexConnection * connection)
 			
 			/* restor default IO handlers  */
 			vortex_connection_set_default_io_handler (connection);
+
+			/* notify error */
+			vortex_tls_notify_failure_handler (ctx, connection, "there was an error while accepting TLS connection");
 		}
 	}else {
 		/* TLS-fication done */
@@ -1330,6 +1404,9 @@ void vortex_tls_initial_accept (VortexConnection * connection)
 		if (post_check != NULL) {
 			/* post check function found, call it */
 			if (! post_check (connection, post_check_data, ssl, ssl_ctx)) {
+				/* found post checks failure */
+				vortex_tls_notify_failure_handler (ctx, connection, "post checks failed");
+
 				/* found that the connection didn't pass post checks */
 				__vortex_connection_set_not_connected (connection, "post checks failed",
 								       VortexProtocolError);
@@ -1420,7 +1497,9 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 		vortex_log (VORTEX_LEVEL_DEBUG, "Using certificate: %s\n", certificate_file);
 		if (SSL_CTX_use_certificate_file (ssl_ctx, certificate_file, SSL_FILETYPE_PEM) <= 0) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
-				    "there was an error while setting certificate file into the SSl context, unable to start TLS profile");
+				    "there was an error while setting certificate file into the SSl context, unable to start TLS profile. Failure found at SSL_CTX_use_certificate_file function.");
+			/* dump error stack */
+			vortex_tls_notify_failure_handler (ctx, connection, "there was an error while setting certificate file into the SSl context, unable to start TLS profile. Failure found at SSL_CTX_use_certificate_file function.");
 			vortex_connection_set_close_socket (connection, axl_true);
 			vortex_connection_shutdown (connection);
 			return;
@@ -1430,7 +1509,9 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 		private_file    = vortex_connection_get_data (connection, "tls:private-file");
 		if (SSL_CTX_use_PrivateKey_file (ssl_ctx, private_file, SSL_FILETYPE_PEM) <= 0) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
-				    "there was an error while setting private file into the SSl context, unable to start TLS profile");
+				    "there was an error while setting private file into the SSl context, unable to start TLS profile. Failure found at SSL_CTX_use_PrivateKey_file function.");
+			/* dump error stack */
+			vortex_tls_notify_failure_handler (ctx, connection, "there was an error while setting private file into the SSl context, unable to start TLS profile. Failure found at SSL_CTX_use_PrivateKey_file function.");
 			vortex_connection_set_close_socket (connection, axl_true);
 			vortex_connection_shutdown (connection);
 			return;
@@ -1439,7 +1520,9 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 		/* check for private key and certificate file to match. */
 		if (!SSL_CTX_check_private_key(ssl_ctx)) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
-				    "seems that certificate file and private key doesn't match!, unable to start TLS profile");
+				    "seems that certificate file and private key doesn't match!, unable to start TLS profile. Failure found at SSL_CTX_check_private_key function.");
+			/* dump error stack */
+			vortex_tls_notify_failure_handler (ctx, connection, "there was an error while setting private file into the SSl context, unable to start TLS profile. Failure found at SSL_CTX_use_PrivateKey_file function.");
 			vortex_connection_set_close_socket (connection, axl_true);
 			vortex_connection_shutdown (connection);
 			return;
@@ -1452,6 +1535,7 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 	ssl = SSL_new (ssl_ctx);       
 	if (ssl == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "error while creating TLS transport");
+		vortex_tls_notify_failure_handler (ctx, connection, "error while creating TLS transport");
 		vortex_connection_set_close_socket (connection, axl_true);
 		vortex_connection_shutdown (connection);
 		return;
@@ -1468,7 +1552,6 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 	__vortex_connection_set_not_connected (connection, 
 					       "connection instance being closed, without closing session, due to TLS negotiation",
 					       VortexConnectionCloseCalled);
-
 
 	/* set default handlers to write/read and default objects to
 	 * be used */
