@@ -45,10 +45,9 @@ typedef struct _PyVortexChannel PyVortexChannel;
 
 void              init_vortex_channel      (PyObject * module);
 
-PyObject      * py_vortex_channel_create (VortexChannel * channel,
-					  PyObject      * py_conn);
+PyObject      * py_vortex_channel_create (VortexChannel * channel);
 
-PyObject      * py_vortex_channel_create_empty (PyObject * py_conn);
+PyObject      * py_vortex_channel_create_empty (void);
 
 VortexChannel * py_vortex_channel_get    (PyObject        * channel);
 
@@ -65,7 +64,7 @@ void            py_vortex_channel_received     (VortexChannel    * channel,
 						VortexFrame      * frame,
 						axlPointer         user_data);
 
-axl_bool        py_vortex_channel_configure_frame_received (PyVortexChannel * self, 
+axl_bool        py_vortex_channel_configure_frame_received (VortexChannel   * channel,
 							    PyObject        * handler, 
 							    PyObject        * data);
 

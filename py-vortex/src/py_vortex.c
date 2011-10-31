@@ -137,8 +137,6 @@ static PyObject * py_vortex_create_listener (PyObject * self, PyObject * args, P
 	py_listener =  py_vortex_connection_create (
 			/* connection reference wrapped */
 			listener, 
-			/* context */
-			py_vortex_ctx,
 			/* acquire a reference */
 			axl_true,
 			/* close ref on variable collect */
@@ -357,7 +355,7 @@ void py_vortex_profile_frame_received (VortexChannel    * channel,
 		py_ctx);
 
 	/* create the channel */
-	py_channel = py_vortex_channel_create (channel, py_conn);
+	py_channel = py_vortex_channel_create (channel);
 	py_vortex_log (PY_VORTEX_DEBUG, "notifying frame received over channel: %d", vortex_channel_get_number (channel));
 
 	/* create a tuple to contain arguments */

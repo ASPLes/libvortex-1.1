@@ -45,7 +45,6 @@ struct _PyVortexFrame {
 
 	/* pointer to the VortexFrame object */
 	VortexFrame * frame;
-	VortexCtx   * ctx;
 };
 
 static int py_vortex_frame_init_type (PyVortexFrame *self, PyObject *args, PyObject *kwds)
@@ -76,7 +75,6 @@ static void py_vortex_frame_dealloc (PyVortexFrame* self)
 	/* unref the frame */
 	vortex_frame_unref (self->frame);
 	self->frame = NULL;
-	vortex_ctx_unref   (&(self->ctx));
 
 	/* free the node it self */
 	self->ob_type->tp_free ((PyObject*)self);
@@ -237,10 +235,6 @@ PyObject * py_vortex_frame_create (VortexFrame * frame, axl_bool acquire_ref)
 	if (obj && frame) {
 		/* increase reference counting */
 		vortex_frame_ref (frame);
-
-		/* acquire a reference to the ctx */
-		obj->ctx = vortex_frame_get_ctx (frame);
-		vortex_ctx_ref (obj->ctx);
 
 		/* acquire reference */
 		obj->frame = frame;
