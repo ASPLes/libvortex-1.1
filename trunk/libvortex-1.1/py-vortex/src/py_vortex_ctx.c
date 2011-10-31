@@ -88,6 +88,7 @@ static PyObject * py_vortex_ctx_new (PyTypeObject *type, PyObject *args, PyObjec
 
 	/* create the context */
 	self->ctx = vortex_ctx_new ();
+	py_vortex_log (PY_VORTEX_DEBUG, "created PyVortexCtx referece %p (VortexCtx %p)", self, self->ctx);
 
 	return (PyObject *)self;
 }
@@ -97,7 +98,7 @@ static PyObject * py_vortex_ctx_new (PyTypeObject *type, PyObject *args, PyObjec
  */
 static void py_vortex_ctx_dealloc (PyVortexCtx* self)
 {
-	py_vortex_log (PY_VORTEX_DEBUG, "collecting vortex.Ctx ref: %p (self->ctx: %p)", self, self->ctx);
+	py_vortex_log (PY_VORTEX_DEBUG, "collecting vortex.Ctx ref: %p (self->ctx: %p, count: %d)", self, self->ctx, vortex_ctx_ref_count (self->ctx));
 
 	/* check for pending exit */
 	if (self->exit_pending) {

@@ -60,11 +60,6 @@ struct _PyVortexChannelPool {
 	VortexChannelPool * pool;
 
 	/** 
-	 * @brief Reference to the python connection.
-	 */
-	PyObject       * py_conn;
-
-	/** 
 	 * @internal Reference to data handler pointers.
 	 */
 	PyVortexChannelPoolData * data;
@@ -121,7 +116,7 @@ PyVortexChannelPoolData * py_vortex_channel_pool_get_data (PyVortexChannelPool *
 
 	/* if not find it */
 	key  = axl_strdup_printf ("py:vo:ch:pool-data:%d", vortex_channel_pool_get_id (py_pool->pool));
-	data = vortex_connection_get_data (py_vortex_connection_get (py_pool->py_conn), key);
+	data = vortex_connection_get_data (vortex_channel_pool_get_connection (py_pool->pool), key);
 	axl_free (key);
 	return data;
 }
@@ -129,7 +124,7 @@ PyVortexChannelPoolData * py_vortex_channel_pool_get_data (PyVortexChannelPool *
 void py_vortex_channel_pool_set_data (PyVortexChannelPool * py_pool)
 {
 	/* store data */
-	vortex_connection_set_data_full (py_vortex_connection_get (py_pool->py_conn),
+	vortex_connection_set_data_full (vortex_channel_pool_get_connection (py_pool->pool),
 					 /* key */
 					 axl_strdup_printf ("py:vo:ch:pool-data:%d", vortex_channel_pool_get_id (py_pool->pool)),
 					 /* data */
@@ -190,8 +185,9 @@ static void py_vortex_channel_pool_dealloc (PyVortexChannelPool* self)
 		       pool_id, self);
 #endif
 
-	/* finish connection */
-	Py_DECREF (self->py_conn);
+	/* release reference to the connection */
+	vortex_connection_unref (vortex_channel_pool_get_connection (self->pool), "py channel pool");
+	self->pool = NULL;
 
 	/* free the node it self */
 	self->ob_type->tp_free ((PyObject*)self);
@@ -208,6 +204,7 @@ PyObject * py_vortex_channel_pool_get_attr (PyObject *o, PyObject *attr_name) {
 	const char          * attr = NULL;
 	PyObject            * result;
 	PyVortexChannelPool * self = (PyVortexChannelPool *) o;
+	VortexConnection    * conn;
 
 	/* now implement other attributes */
 	if (! PyArg_Parse (attr_name, "s", &attr))
@@ -217,14 +214,13 @@ PyObject * py_vortex_channel_pool_get_attr (PyObject *o, PyObject *attr_name) {
 		/* found error_msg attribute */
 		return Py_BuildValue ("i", vortex_channel_pool_get_id (self->pool));
 	} else if (axl_cmp (attr, "ctx")) {
+		/* get reference to the connection */
+		conn = vortex_channel_pool_get_connection (self->pool);
 		/* found ctx attribute */
-		result = py_vortex_connection_get_ctx (self->py_conn);
-		Py_XINCREF (result);
-		return result;
+		return py_vortex_ctx_create (CONN_CTX (conn));
 	} else if (axl_cmp (attr, "conn")) {
 		/* found conn attribute */
-		Py_XINCREF (self->py_conn);
-		return self->py_conn;
+		return py_vortex_connection_create (vortex_channel_pool_get_connection (self->pool), axl_true, axl_false);
 	} else if (axl_cmp (attr, "channel_count")) {
 		return Py_BuildValue ("i", vortex_channel_pool_get_num (self->pool));
 	} else if (axl_cmp (attr, "channel_available")) {
@@ -270,7 +266,7 @@ static PyObject * py_vortex_channel_pool_next_ready (PyVortexChannelPool * self,
 	} /* end if */
 
 	/* create the python channel reference */
-	py_channel = py_vortex_channel_create (channel, (PyObject *) self->py_conn);
+	py_channel = py_vortex_channel_create (channel);
 
 	/* get data */
 	data = py_vortex_channel_pool_get_data (self);
@@ -279,7 +275,7 @@ static PyObject * py_vortex_channel_pool_next_ready (PyVortexChannelPool * self,
 	if (data && data->received) {
 		py_vortex_log (PY_VORTEX_DEBUG, "setting frame received handler for channel=%d (%p) returned by next_ready()",
 			       vortex_channel_get_number (channel), py_channel);
-		py_vortex_channel_configure_frame_received ((PyVortexChannel *) py_channel, data->received, data->received_data);
+		py_vortex_channel_configure_frame_received (channel, data->received, data->received_data);
 	} else {
 		py_vortex_log (PY_VORTEX_DEBUG, "not setting frame received handler for channel=%d (%p) returned by next_ready()",
 			       vortex_channel_get_number (channel), py_channel);
@@ -376,7 +372,7 @@ VortexChannel * py_vortex_channel_pool_create_channel (VortexConnection      * c
 	PyVortexChannelPool     * pool       = user_data;
 	PyVortexChannelPoolData * data       = py_vortex_channel_pool_get_data (pool);
 	PyObject                * _next_data = get_next_data;
-	PyObject                * py_conn    = pool->py_conn;
+	PyObject                * py_conn;
 	PyObject                * args;
 	PyGILState_STATE          state;
 	PyObject                * result;
@@ -399,7 +395,7 @@ VortexChannel * py_vortex_channel_pool_create_channel (VortexConnection      * c
 	 * responsible of calling to Py_DECREF when required. */
 	py_vortex_log (PY_VORTEX_DEBUG, "requesting user space to create channel num %d, with profile %s",
 		       channel_num, profile);
-	Py_INCREF (py_conn);
+	py_conn = py_vortex_connection_create (connection, axl_true, axl_false);
 	PyTuple_SetItem (args, 0, py_conn);
 	PyTuple_SetItem (args, 1, Py_BuildValue ("i", channel_num));
 	PyTuple_SetItem (args, 2, Py_BuildValue ("s", profile));
@@ -492,8 +488,8 @@ void py_vortex_channel_pool_on_created (VortexChannelPool * _pool,
 	/* now invoke */
 	result = PyObject_Call (data->on_channel_pool_created, args, NULL);
 
-	py_vortex_log (PY_VORTEX_DEBUG, "on channel pool created notification finished, checking for exceptions %p %p (conn id: %d)..",
-		       py_pool, py_pool->py_conn, vortex_connection_get_id (py_vortex_connection_get (py_pool->py_conn)));
+	py_vortex_log (PY_VORTEX_DEBUG, "on channel pool created notification finished, checking for exceptions %p (conn id: %d)..",
+		       py_pool, vortex_connection_get_id (vortex_channel_pool_get_connection (py_pool->pool)));
 	
 	py_vortex_handle_and_clear_exception (NULL); 
 
@@ -512,7 +508,6 @@ void py_vortex_channel_pool_on_created (VortexChannelPool * _pool,
  * reference it represents.
  */
 PyObject * py_vortex_channel_pool_create   (PyObject           * py_conn,
-					    PyObject           * ctx,
 					    const char         * profile,
 					    int                  init_num,
 					    PyObject           * create_channel,
@@ -542,7 +537,7 @@ PyObject * py_vortex_channel_pool_create   (PyObject           * py_conn,
 	} /* end if */
 
 	/* create the empty object here */
-	obj = (PyVortexChannelPool *) py_vortex_channel_pool_empty (py_conn, ctx);
+	obj = (PyVortexChannelPool *) py_vortex_channel_pool_empty (py_vortex_connection_get (py_conn));
 
 	/* create data structure */
 	obj->data = axl_new (PyVortexChannelPoolData, 1);
@@ -600,8 +595,7 @@ PyObject * py_vortex_channel_pool_create   (PyObject           * py_conn,
  * @brief Allows to create an empty vortex.ChannelPool object (still
  * without internal VortexChannelPool reference).
  */
-PyObject            * py_vortex_channel_pool_empty    (PyObject           * py_conn,
-						       PyObject           * ctx)
+PyObject            * py_vortex_channel_pool_empty    (VortexConnection * conn)
 {
 	/* return a new instance */
 	PyVortexChannelPool * obj = (PyVortexChannelPool *) PyObject_CallObject ((PyObject *) &PyVortexChannelPoolType, NULL); 
@@ -612,42 +606,32 @@ PyObject            * py_vortex_channel_pool_empty    (PyObject           * py_c
 		return NULL;
 	} /* end if */
 
-	/* set context reference */
-	obj->py_conn       = py_conn;
-	Py_INCREF (py_conn);
+	/* acquire a reference to the connection */
+	if (! vortex_connection_ref (conn, "py vortex channel pool")) {
+		Py_DECREF (obj);
+
+		py_vortex_log (PY_VORTEX_CRITICAL, "Failed to create PyVortexChannelPool object, failed to acquire reference to the connection..");
+		return NULL;
+	}
 
 	/* return object */
 	return (PyObject *) obj;
 }
 
-PyObject            * py_vortex_channel_pool_find_reference (VortexChannelPool * pool,
-							     PyObject          * _py_conn,
-							     PyObject          * py_ctx)
+PyObject            * py_vortex_channel_pool_find_reference (VortexChannelPool * pool)
 {
-	PyVortexChannelPool * py_pool = (PyVortexChannelPool *) py_vortex_channel_pool_empty (_py_conn, py_ctx);
+	PyVortexChannelPool * py_pool;
+	VortexConnection    * conn = vortex_channel_pool_get_connection (pool);
+
+	/* create reference and check result */
+	py_pool = (PyVortexChannelPool *) py_vortex_channel_pool_empty (conn);
+	if (py_pool == NULL)
+		return NULL;
 
 	py_pool->pool = pool;
 	py_pool->data = py_vortex_channel_pool_get_data (py_pool);
 	
 	return __PY_OBJECT (py_pool);
-}
-
-/** 
- * @brief Allows to get a reference to the PyVortexCtx reference used
- * by the provided PyVortexChannelPool.
- * 
- * @param py_conn A reference to PyVortexChannelPool object.
- */
-PyObject           * py_vortex_channel_pool_get_ctx  (PyObject         * py_pool)
-{
-	PyVortexChannelPool * _py_pool = (PyVortexChannelPool *) py_pool;
-
-	/* check object received */
-	if (! py_vortex_channel_pool_check (py_pool))
-		return NULL;
-
-	/* return context */
-	return py_vortex_connection_get_ctx (_py_pool->py_conn);
 }
 
 /** 

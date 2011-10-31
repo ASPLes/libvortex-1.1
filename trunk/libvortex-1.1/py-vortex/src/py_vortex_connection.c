@@ -54,15 +54,6 @@ struct _PyVortexConnection {
 	axl_bool           close_ref;
 
 	/** 
-	 * @brief Reference to the PyVortexCtx that was used to create
-	 * the connection. In may be null because some function inside
-	 * the PyVortex API may create a connection
-	 * (PyVortexConnection) reusing a VortexConnection
-	 * reference. See \ref py_vortex_connection_create.
-	 */ 
-	PyObject       * py_vortex_ctx;
-	
-	/** 
 	 * @brief Allows to skip the automatic connection close when
 	 * python object is collected.
 	 */
@@ -176,10 +167,6 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 		/* end threads */
 		Py_END_ALLOW_THREADS
 
-		/* own a copy of py_vortex_ctx */
-		self->py_vortex_ctx = py_vortex_ctx;
-		Py_INCREF (__PY_OBJECT (py_vortex_ctx) );
-
 		/* signal this instance as a master copy to be closed
 		 * if the reference is collected and the connection is
 		 * working */
@@ -240,13 +227,6 @@ static void py_vortex_connection_dealloc (PyVortexConnection* self)
 
 	/* nullify */
 	self->conn = NULL;
-
-	/* decrease reference on PyVortexCtx used */
-	if (self->py_vortex_ctx) {
-		py_vortex_log (PY_VORTEX_DEBUG, "unref PyVortexCtx associated: %p", self->py_vortex_ctx);
-		Py_DECREF (__PY_OBJECT (self->py_vortex_ctx));
-		self->py_vortex_ctx = NULL;
-	} /* endif */
 
 	/* free the node it self */
 	self->ob_type->tp_free ((PyObject*)self);
@@ -508,8 +488,7 @@ PyObject * py_vortex_connection_get_attr (PyObject *o, PyObject *attr_name) {
 		return Py_BuildValue ("s", "unknown");
 	} else if (axl_cmp (attr, "ctx")) {
 		/* found ctx attribute */
-		Py_XINCREF (self->py_vortex_ctx);
-		return self->py_vortex_ctx;
+		return py_vortex_ctx_create (CONN_CTX (self->conn));
 	} else if (axl_cmp (attr, "id")) {
 		/* return integer value */
 		return Py_BuildValue ("i", vortex_connection_get_id (self->conn));
@@ -574,19 +553,7 @@ static PyObject * py_vortex_connection_open_channel (PyObject * self, PyObject *
 	}
 
 	/* create an empty channel reference */
-	py_channel = py_vortex_channel_create_empty (self);
-
-	/* call to set the handler */
-	if (frame_received && 
-	    ! py_vortex_channel_configure_frame_received ((PyVortexChannel *) py_channel, 
-							  frame_received, 
-							  frame_received_data)) {
-		PyErr_Format (PyExc_ValueError, "failed to configure frame received handler, unable to create channel");
-		
-		/* decrease py ref created */
-		Py_DECREF (py_channel);
-		return NULL;
-	} /* end if */
+	py_channel = py_vortex_channel_create_empty ();
 
 	/* set on channel created handler if defined */
 	if (on_channel && 
@@ -616,12 +583,24 @@ static PyObject * py_vortex_connection_open_channel (PyObject * self, PyObject *
 		/* close handler */
 		NULL, NULL, 
 		/* frame received handler */
-		frame_received ? py_vortex_channel_received : NULL, py_channel,
+		frame_received ? py_vortex_channel_received : NULL, NULL,
 		/* on channel created */
 		on_channel ? py_vortex_channel_create_notify : NULL, py_channel);
 
 	/* reacquire again thread execution */
 	Py_END_ALLOW_THREADS;
+
+	/* call to set the handler */
+	if (frame_received && channel &&
+	    ! py_vortex_channel_configure_frame_received (channel, 
+							  frame_received, 
+							  frame_received_data)) {
+		PyErr_Format (PyExc_ValueError, "failed to configure frame received handler, unable to create channel");
+		
+		/* decrease py ref created */
+		Py_DECREF (py_channel);
+		return NULL;
+	} /* end if */
 
 	/* check for async channel creati on notification */
 	if (on_channel != NULL) {
@@ -683,7 +662,7 @@ static PyObject * py_vortex_connection_channel_pool_new (PyObject * self, PyObje
 
 	
 	/* create an empty pool */
-	return py_vortex_channel_pool_create (self, py_vortex_connection_get_ctx (self),
+	return py_vortex_channel_pool_create (self,
 					      profile,
 					      init_num,
 					      create_channel,
@@ -723,7 +702,7 @@ static PyObject * py_vortex_connection_get_pool (PyObject * self, PyObject *args
 	} /* end if */
 	
 	/* return wrapped reference */
-	return py_vortex_channel_pool_find_reference (pool, self, ((PyVortexConnection *) self)->py_vortex_ctx);
+	return py_vortex_channel_pool_find_reference (pool);
 }
 
 /** 
@@ -895,7 +874,7 @@ axl_bool  py_vortex_connection_find_by_uri_select_channels (VortexChannel * chan
 		py_vortex_log (PY_VORTEX_DEBUG, "found channel=%s running the profile, adding to the result", 
 			       data->profile);
 		/* found, add it to the list */
-		py_channel = py_vortex_channel_create (channel, data->conn);
+		py_channel = py_vortex_channel_create (channel);
 		if (PyList_Append (data->list, py_channel) == -1) {
 			py_vortex_log (PY_VORTEX_CRITICAL, "failed to add channel %p into the list");
 			py_vortex_handle_and_clear_exception (data->conn);
@@ -1152,7 +1131,6 @@ static PyTypeObject PyVortexConnectionType = {
  * @return A newly created PyVortexConnection reference.
  */
 PyObject * py_vortex_connection_create   (VortexConnection * conn, 
-					  PyObject         * ctx,
 					  axl_bool           acquire_ref,
 					  axl_bool           close_ref)
 {
@@ -1172,18 +1150,14 @@ PyObject * py_vortex_connection_create   (VortexConnection * conn,
 	if (obj && conn) {
 		/* check to acquire a ref */
 		if (acquire_ref) {
-			py_vortex_log (PY_VORTEX_DEBUG, "acquiring a reference to conn: %p, ctx: %p (role: %s)",
-				       conn, ctx, __py_vortex_connection_stringify_role (conn));
+			py_vortex_log (PY_VORTEX_DEBUG, "acquiring a reference to conn: %p (role: %s)",
+				       conn, __py_vortex_connection_stringify_role (conn));
 			/* check ref */
 			if (! vortex_connection_ref_internal (conn, "py_vortex_connection_create", axl_false)) {
 				py_vortex_log (PY_VORTEX_CRITICAL, "failed to acquire reference, unable to create connection");
 				Py_DECREF (obj);
 				return NULL;
 			}
-
-			/* configure the ctx received */
-			obj->py_vortex_ctx = ctx;
-			Py_XINCREF (__PY_OBJECT (obj->py_vortex_ctx));
 		} /* end if */
 
 		/* configure the reference */
@@ -1246,8 +1220,6 @@ PyObject * py_vortex_connection_find_reference (VortexConnection * conn,
 	py_conn  = py_vortex_connection_create (
 		/* connection to wrap */
 		conn, 
-		/* context: create a copy */
-		py_ctx,
 		/* acquire a reference to the connection */
 		axl_true,  
 		/* do not close the connection when the reference is collected, close_ref=axl_false */
@@ -1263,23 +1235,6 @@ PyObject * py_vortex_connection_find_reference (VortexConnection * conn,
 	/* now increase to return it */
 	Py_INCREF (py_conn);
 	return py_conn;
-}
-
-/** 
- * @brief Allows to get a reference to the PyVortexCtx reference used
- * by the provided PyVortexConnection.
- * 
- * @param py_conn A reference to PyVortexConnection object.
- */
-PyObject           * py_vortex_connection_get_ctx  (PyObject         * py_conn)
-{
-	PyVortexConnection * _py_conn = (PyVortexConnection *) py_conn;
-	/* check object received */
-	if (! py_vortex_connection_check (py_conn))
-		return NULL;
-
-	/* return context */
-	return  _py_conn->py_vortex_ctx;
 }
 
 /** 

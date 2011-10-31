@@ -80,7 +80,6 @@ void py_vortex_tls_do_notify           (VortexConnection * connection,
 	PyObject               * _result;
 	PyGILState_STATE         state;
 	PyObject               * py_conn;
-	PyObject               * py_ctx;
 
 	py_vortex_log (PY_VORTEX_DEBUG, "received request to notify TLS termination status");
 
@@ -89,12 +88,9 @@ void py_vortex_tls_do_notify           (VortexConnection * connection,
 	state = PyGILState_Ensure();
 
 	/* create the connection wrapper */
-	py_ctx  = py_vortex_connection_get_ctx (data->py_conn);
 	py_conn = py_vortex_connection_create (
 		/* connection */
 		connection,
-		/* the context */
-		py_ctx, 
 		/* acquire ref */
 		axl_true,
 		/* close the connection when finished */
@@ -213,7 +209,6 @@ static PyObject * py_vortex_tls_start_tls (PyObject * self, PyObject * args, PyO
 		Py_INCREF (py_conn);
 	} else {
 		py_conn = py_vortex_connection_create (conn, 
-						       py_vortex_connection_get_ctx (py_conn),
 						       /* acquire reference */
 						       axl_true,
 						       /* close connection on deallocation */

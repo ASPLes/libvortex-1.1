@@ -57,7 +57,6 @@ void                  init_vortex_channel_pool        (PyObject           * modu
 VortexChannelPool   * py_vortex_channel_pool_get      (PyObject           * py_pool);
 
 PyObject            * py_vortex_channel_pool_create   (PyObject           * py_conn,
-						       PyObject           * ctx,
 						       const char         * profile,
 						       int                  init_num,
 						       PyObject           * create_channel,
@@ -69,16 +68,11 @@ PyObject            * py_vortex_channel_pool_create   (PyObject           * py_c
 						       PyObject           * on_channel_pool_created,
 						       PyObject           * user_data);
 
-PyObject            * py_vortex_channel_pool_empty    (PyObject           * py_conn,
-						       PyObject           * ctx);
+PyObject            * py_vortex_channel_pool_empty    (VortexConnection   * conn);
 
 axl_bool              py_vortex_channel_pool_check    (PyObject           * py_pool);
 
-PyObject            * py_vortex_channel_pool_get_ctx  (PyObject           * py_pool);
-
-PyObject            * py_vortex_channel_pool_find_reference (VortexChannelPool * pool,
-							     PyObject          * _py_conn,
-							     PyObject          * py_ctx);
+PyObject            * py_vortex_channel_pool_find_reference (VortexChannelPool * pool);
 
 #define PY_CHANNEL_POOL_GET(py_obj) (((PyVortexChannelPool*)self)->pool)
 
