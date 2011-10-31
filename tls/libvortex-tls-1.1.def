@@ -13,6 +13,7 @@ vortex_tls_init
 vortex_tls_initial_accept
 vortex_tls_invoke_tls_activation
 vortex_tls_log_ssl
+vortex_tls_notify_failure_handler
 vortex_tls_prepare_listener
 vortex_tls_process_start_msg
 vortex_tls_set_auto_tls
@@ -20,6 +21,7 @@ vortex_tls_set_common_data
 vortex_tls_set_ctx_creation
 vortex_tls_set_default_ctx_creation
 vortex_tls_set_default_post_check
+vortex_tls_set_failure_handler
 vortex_tls_set_post_check
 vortex_tls_ssl_read
 vortex_tls_ssl_write
