@@ -407,8 +407,22 @@ static PyObject * py_vortex_ctx_new_event (PyObject * self, PyObject * args, PyO
 
 	/* reply work done */
 	py_vortex_log (PY_VORTEX_DEBUG, "event registered with id %d", data->id);
-	Py_INCREF (Py_None);
-	return Py_None;
+	return Py_BuildValue ("i", data->id);
+}
+
+/** 
+ * @brief Allows to register a new callable event.
+ */
+static PyObject * py_vortex_ctx_remove_event (PyObject * self, PyObject * args, PyObject * kwds)
+{
+	int handle_id;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "i", &handle_id))
+		return NULL;	
+
+	/* call to remove handle */
+	return Py_BuildValue ("i", vortex_thread_pool_remove_event (py_vortex_ctx_get (self), handle_id));
 }
 
 static PyMethodDef py_vortex_ctx_methods[] = { 
@@ -421,6 +435,9 @@ static PyMethodDef py_vortex_ctx_methods[] = {
 	/* new_event */
 	{"new_event", (PyCFunction) py_vortex_ctx_new_event, METH_VARARGS | METH_KEYWORDS,
 	 "Function that allows to configure an asynchronous event calling to the handler defined, between the intervals defined. This function is the interface to vortex_thread_pool_event_new."},
+	/* remove_event */
+	{"remove_event", (PyCFunction) py_vortex_ctx_remove_event, METH_VARARGS | METH_KEYWORDS,
+	 "Allows to remove an event installed with new_event() method using the handle id returned from that function. This function is the interface to vortex_thread_pool_event_remove."},
  	{NULL}  
 }; 
 
