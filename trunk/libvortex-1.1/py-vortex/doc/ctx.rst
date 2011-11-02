@@ -65,6 +65,14 @@ Module API
 
 	  	return False # make the event to keep on working (more calls to come)
 
+      :rtype: Returns a handle id representing the event installed. This handle id can be used to remove the event from outside the handler. Use :mod:`remove_event` to do so.
+
+   .. method:: remove_event (handle_id)
+   
+      Allows to remove an event installed using :mod:`new_event` providing the handle_id representing the event. This value is the unique identifier returned by :mod:`new_event` every time a new event is installed.
+
+      :rtype: Returns True if the event was found and removed, otherwise False is returned.
+
    .. attribute:: log
 
       (Read/Write attribute) (True/False) returns or set current debug log. See vortex_log_is_enabled.
