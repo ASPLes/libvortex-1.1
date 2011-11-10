@@ -741,9 +741,6 @@ void __vortex_channel_pool_remove (VortexChannelPool * pool, int  num)
 			continue;
 		} /* end if */
 
-		/* remove channel reference */
-		vortex_channel_unref (channel);
-
 		/* get the next */
 		axl_list_cursor_next (cursor);
 		
@@ -826,6 +823,7 @@ void           __vortex_channel_pool_close_common (VortexChannelPool * pool,
 	if (channels > 0) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "channel pool id=%d has %d channels, closing them..", 
 			    pool->id, channels);
+
 		/* remove all channels from the pool */
 		__vortex_channel_pool_remove (pool, channels);
 
@@ -840,6 +838,9 @@ void           __vortex_channel_pool_close_common (VortexChannelPool * pool,
 			vortex_log (VORTEX_LEVEL_DEBUG, "channel pool id=%d doing implicit deattach on channel=%d..", 
 				    pool->id, vortex_channel_get_number (channel));
 			vortex_channel_set_pool (channel, NULL);
+
+			/* release channel */
+			vortex_channel_unref (channel);
 
 			/* get the next cursor */
 			axl_list_cursor_next (cursor);
