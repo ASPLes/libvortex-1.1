@@ -99,7 +99,8 @@ noinst_PROGRAMS = \
 	vortex-client-without-cbs \
 	vortex-close-listeners \
 	vortex-file-transfer-server vortex-file-transfer-client \
-	vortex-pull-listener
+	vortex-pull-listener \
+	vortex-client-echo
 
 INCLUDES = -I$(top_srcdir)/src -I$(top_srcdir)/tunnel -I$(top_srcdir)/pull -I$(top_srcdir)/alive \
 	-I$(top_srcdir)/xml-rpc -I$(top_srcdir)/http $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
@@ -141,6 +142,9 @@ vortex_simple_listener_LDADD   = $(LIBS) $(top_builddir)/src/libvortex-1.1.la
 
 vortex_simple_client_SOURCES   = vortex-simple-client.c
 vortex_simple_client_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.1.la
+
+vortex_client_echo_SOURCES   = vortex-client-echo.c
+vortex_client_echo_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.1.la
 
 vortex_client_connections_SOURCES   = vortex-client-connections.c
 vortex_client_connections_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.1.la $(top_builddir)/tunnel/libvortex-tunnel-1.1.la 

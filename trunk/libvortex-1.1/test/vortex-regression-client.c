@@ -7811,6 +7811,91 @@ axl_bool  test_03e (void) {
 	return axl_true;
 }
 
+axl_bool  test_03f (void) {
+	
+	VortexConnection   * conn;
+	VortexChannel      * channel;
+	int                  iterator;
+	VortexAsyncQueue   * queue;
+	VortexChannelPool  * pool;
+	VortexFrame        * frame;
+
+	/* create connection */
+	conn = connection_new ();
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		return axl_false;
+	}
+
+	/* create the queue */
+	queue = vortex_async_queue_new ();
+
+	/* create a channel */
+	pool = vortex_channel_pool_new (conn, 
+					REGRESSION_URI,
+					1, /* one channel */
+					/* no close handling */
+					NULL, NULL,
+					/* frame receive async handling */
+					NULL, NULL,
+					/* no async channel creation */
+					NULL, NULL);
+	if (pool == NULL) {
+		printf ("ERROR: failed to create channel pool..\n");
+		exit (-1);
+	} /* end if */
+
+	iterator = 0;
+	while (iterator < 3) {
+
+		/* create a channel */
+		channel = vortex_channel_pool_get_next_ready (pool, axl_true);
+		if (channel == NULL) {
+			printf ("ERROR: failed to get channel from the pool..\n");
+			return axl_false;
+		} /* end if */
+
+		/* set serialize */
+		vortex_channel_set_serialize (channel, axl_true);
+		vortex_channel_set_received_handler (channel, vortex_channel_queue_reply, queue);
+
+		/* send message */
+		if (! vortex_channel_send_msg (channel, "This is a test..", 16, NULL)) {
+			printf ("ERROR: failed send content..\n");
+			exit (-1);
+		}
+
+		/* get frame reply */
+		frame = vortex_channel_get_reply (channel, queue);
+		if (frame == NULL) {
+			printf ("ERROR: expected to receive frame but found NULL reply..\n");
+			exit (-1);
+		}
+
+		/* check content */
+		if (! axl_cmp (vortex_frame_get_payload (frame), "This is a test..")) {
+			printf ("ERROR: expected to receive frame content...\n");
+			exit (-1);
+		} /* end if */
+
+		/* release channel */
+		vortex_channel_pool_release_channel (pool, channel);
+
+		vortex_frame_unref (frame);
+
+		/* next */
+		iterator++;
+	}
+
+	/* close connection */
+	vortex_connection_close (conn);
+
+	/* release queue */
+	vortex_async_queue_unref (queue);
+
+	/* return axl_true */
+	return axl_true;
+}
+
 /* constant for test_04 */
 #define MAX_NUM_CON 1000
 
@@ -13385,7 +13470,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02l1, test_02m, test_02m1, test_02m2, test_02m3, test_02n, test_02o, test_02p, test_02q, \n");
- 	printf ("**                       test_03, test_03a, test_03b, test_03c, test_03d, test_03e, test_04, test_04a, \n");
+ 	printf ("**                       test_03, test_03a, test_03b, test_03c, test_03d, test_03e, test_03f, test_04, test_04a, \n");
  	printf ("**                       test_04b, test_04c, test_04d, test_04e, test_04f, test_05, test_05a, test_05b, test_05c, \n");
 	printf ("**                       test_05d, ctest_06, test_06a, \n");
  	printf ("**                       test_07, test_08, test_09, test_10, test_11, test_12, test_13, test_14, \n");
@@ -13687,6 +13772,9 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_03e"))
 			run_test (test_03e, "Test 03-e", "closing channel after connection with pool closed", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_03f"))
+			run_test (test_03f, "Test 03-f", "vortex channel pool closed by connection close", -1, -1);
+
 		if (check_and_run_test (run_test_name, "test_04"))
 			run_test (test_04, "Test 04", "Handling many connections support", -1, -1);
 
@@ -13932,6 +14020,8 @@ int main (int  argc, char ** argv)
  	run_test (test_03d, "Test 03-d", "vortex channel pool support (auxiliar pointers)", -1, -1);
 
  	run_test (test_03e, "Test 03-e", "closing channel after connection with pool closed", -1, -1);
+
+	run_test (test_03f, "Test 03-f", "vortex channel pool closed by connection close", -1, -1);
   
  	run_test (test_04, "Test 04", "Handling many connections support", -1, -1);
   
