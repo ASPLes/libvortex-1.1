@@ -225,6 +225,20 @@ void frame_received_with_feeder (VortexChannel    * channel,
 	return;
 }
 
+void echo_content (VortexChannel    * channel,
+		   VortexConnection * conn,
+		   VortexFrame      * frame,
+		   axlPointer         user_data)
+{
+	/* reply content received */
+	if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_MSG)
+		vortex_channel_send_rpy (channel, 
+					 vortex_frame_get_payload (frame), 
+					 vortex_frame_get_payload_size (frame), 
+					 vortex_frame_get_msgno (frame));
+	return;
+}
+
 axl_bool      start_channel (int                channel_num, 
 			     VortexConnection * connection, 
 			     axlPointer           user_data)
@@ -295,6 +309,12 @@ int  main (int  argc, char ** argv)
 				  start_channel, NULL, 
 				  close_channel, NULL,
 				  frame_received_with_feeder, "ansfeeder");
+
+	/* register profile */
+	vortex_profiles_register (ctx, "urn:aspl.es:beep:profiles:echo",
+				  NULL, NULL,
+				  NULL, NULL,
+				  echo_content, NULL);
        
 	/* create a vortex server */
 	vortex_listener_new (ctx, "0.0.0.0", "44017", NULL, NULL);
