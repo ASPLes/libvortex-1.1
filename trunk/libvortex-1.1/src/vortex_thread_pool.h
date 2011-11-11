@@ -74,7 +74,7 @@ axl_bool vortex_thread_pool_remove_event        (VortexCtx              * ctx,
 						 int                      event_id);
 
 void vortex_thread_pool_stats               (VortexCtx        * ctx,
-					     int              * runnin_threads,
+					     int              * running_threads,
 					     int              * waiting_threads,
 					     int              * pending_tasks);
 
