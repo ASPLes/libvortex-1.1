@@ -41,6 +41,7 @@
 
 /* private include */
 #include <vortex_ctx_private.h>
+#include <vortex_hash_private.h>
 
 /* include connection internal definition */
 #include <vortex_connection_private.h>
@@ -518,7 +519,7 @@ axl_bool      vortex_connection_close_all_channels (VortexConnection * connectio
 
 	/* block connection operations during channel closing for this
 	 * session */
-	switch (vortex_hash_size (connection->channels)) {
+	switch (axl_hash_items (connection->channels->table)) {
 	case 0:
 		/* no channels to close, going to close connection */
 		return axl_true;
@@ -544,7 +545,7 @@ axl_bool      vortex_connection_close_all_channels (VortexConnection * connectio
 	/* check if all channels were closed, without including the
 	 * channel 0, that is, at least one channel must be in
 	 * place */
-	if (vortex_hash_size (connection->channels) > 1) {
+	if (axl_hash_items (connection->channels->table) > 1) {
 
 		/* return */
 		vortex_log (VORTEX_LEVEL_WARNING, "unable to close connection, there are channels still working");
@@ -2386,7 +2387,7 @@ axl_bool                    vortex_connection_close                  (VortexConn
 	/* close all channel on this connection */
 	if (vortex_connection_is_ok (connection, axl_false)) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "closing a connection id=%d which is already opened with %d channels opened..",
-			    connection->id, vortex_hash_size (connection->channels));
+			    connection->id, axl_hash_items (connection->channels->table));
 
 		/* update the connection reference to avoid race
 		 * conditions caused by deallocations */
@@ -3561,7 +3562,7 @@ int                 vortex_connection_channels_count         (VortexConnection *
 		return -1;
 	
 	/* return number of channels */
-	return vortex_hash_size (connection->channels);
+	return axl_hash_items (connection->channels->table);
 }
 
 /** 
@@ -5773,7 +5774,7 @@ int                 vortex_connection_get_opened_channels    (VortexConnection *
 		return 0;
 
 	/* return number of channels */
-	return vortex_hash_size (connection->channels);
+	return axl_hash_items (connection->channels->table);
 }
 
 /** 

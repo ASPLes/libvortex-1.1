@@ -73,7 +73,12 @@ void vortex_sequencer_queue_data (VortexCtx * ctx, VortexSequencerData * data)
 	data->conn = vortex_channel_get_connection (data->channel);
 
 	/* queue data */
-	QUEUE_PUSH (ctx->sequencer_queue, data);
+	if (! vortex_async_queue_push (ctx->sequencer_queue, data)) {
+		/* data not queued, unref */
+		vortex_channel_unref (data->channel);
+		axl_free (data->message);
+		axl_free (data);
+	} /* end if */
 
 	return;
 }
@@ -90,7 +95,8 @@ void __vortex_sequencer_unref_and_clear (VortexConnection    * connection,
 		data->message = NULL;
 
 		/* unref channel */
-		vortex_channel_unref (data->channel);
+		if (! data->resequence)
+			vortex_channel_unref (data->channel);
 		data->channel = NULL;
 
 		/* free feeder if defined */
@@ -937,10 +943,6 @@ void     vortex_sequencer_signal_update        (VortexChannel       * channel,
 		data->resequence           = axl_true;
 		data->channel_num          = vortex_channel_get_number (channel);
 		data->channel              = channel;
-		if (! vortex_channel_ref (channel)) {
-			axl_free (data);
-			return;
-		} /* end if */
 		data->conn                 = connection;
 	
 		/* queue data */

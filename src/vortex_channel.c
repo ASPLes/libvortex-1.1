@@ -4523,15 +4523,24 @@ axlPointer         vortex_channel_get_data                        (VortexChannel
  */
 axl_bool            vortex_channel_ref                             (VortexChannel * channel)
 {
+#if defined(ENABLE_VORTEX_LOG)
+	VortexCtx * ctx;
+#endif
+
 	/* check channel received */
 	v_return_val_if_fail (channel,                axl_false);
 	v_return_val_if_fail (channel->ref_count > 0, axl_false);
 	
 	/* lock ref/unref operations over this connection */
 	vortex_mutex_lock   (&channel->ref_mutex);
-	
+
+	ctx = channel->ctx;
+
 	/* increase the channel reference counting */
 	channel->ref_count++;
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "channel=%d ref called, ref count status after calling=%d", 
+		    channel->channel_num, channel->ref_count);
 
 	vortex_mutex_unlock (&channel->ref_mutex);
 

@@ -976,12 +976,15 @@ VortexAsyncQueue * vortex_async_queue_new       (void)
  *
  * @param data A reference to the data to be pushed. It is not allowed
  * to push null references.
+ *
+ * @return axl_true In the case the item was pushed into the queue,
+ * otherwise axl_false is returned.
  */
-void               vortex_async_queue_push      (VortexAsyncQueue * queue,
+axl_bool           vortex_async_queue_push      (VortexAsyncQueue * queue,
 						 axlPointer         data)
 {
-	v_return_if_fail (queue);
-	v_return_if_fail (data);
+	v_return_val_if_fail (queue, axl_false);
+	v_return_val_if_fail (data, axl_false);
 	
 	/* get the mutex */
 	vortex_mutex_lock (&queue->mutex);
@@ -996,7 +999,7 @@ void               vortex_async_queue_push      (VortexAsyncQueue * queue,
 	/* unlock the mutex */
 	vortex_mutex_unlock (&queue->mutex);
 	
-	return;
+	return axl_true;
 }
 
 /** 
@@ -1008,18 +1011,21 @@ void               vortex_async_queue_push      (VortexAsyncQueue * queue,
  *
  * @param data A reference to the data to be pushed. It is not allowed
  * to push null references.
+ *
+ * @return axl_true In the case the item was pushed into the queue,
+ * otherwise axl_false is returned.
  */
-void               vortex_async_queue_unlocked_push  (VortexAsyncQueue * queue,
+axl_bool           vortex_async_queue_unlocked_push  (VortexAsyncQueue * queue,
 						      axlPointer         data)
 {
 
-	v_return_if_fail (queue);
-	v_return_if_fail (data);
+	v_return_val_if_fail (queue, axl_false);
+	v_return_val_if_fail (data, axl_false);
 
 	/* push the data */
 	axl_list_prepend (queue->data, data);
 	
-	return;
+	return axl_true;
 }
 
 /** 
@@ -1033,12 +1039,15 @@ void               vortex_async_queue_unlocked_push  (VortexAsyncQueue * queue,
  *
  * @param data A reference to the data to be pushed. It is not allowed
  * to push null references.
+ *
+ * @return axl_true In the case the item was pushed into the queue,
+ * otherwise axl_false is returned.
  */
-void               vortex_async_queue_priority_push  (VortexAsyncQueue * queue,
+axl_bool           vortex_async_queue_priority_push  (VortexAsyncQueue * queue,
 						      axlPointer         data)
 {
-	v_return_if_fail (queue);
-	v_return_if_fail (data);
+	v_return_val_if_fail (queue, axl_false);
+	v_return_val_if_fail (data, axl_false);
 	
 	/* get the mutex */
 	vortex_mutex_lock (&queue->mutex);
@@ -1053,7 +1062,7 @@ void               vortex_async_queue_priority_push  (VortexAsyncQueue * queue,
 	/* unlock the mutex */
 	vortex_mutex_unlock (&queue->mutex);
 	
-	return;
+	return axl_true;
 }
 
 /** 

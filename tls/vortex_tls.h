@@ -325,8 +325,7 @@ typedef axl_bool  (*VortexTlsPostCheck) (VortexConnection * connection,
  * handshake. 
  *
  * The function receives the connection where the failure * found an
- * error message and a pointer configured by the user at \ref *
- * vortex_tls_set_failure_handler.
+ * error message and a pointer configured by the user at \ref vortex_tls_set_failure_handler.
  *
  * @param connection The connection where the failure was found.
  *

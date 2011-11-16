@@ -391,7 +391,7 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * _data)
 		__vortex_thread_pool_process_events (ctx, pool);
 
 		/* do automatic reasize */
-		if (ctx->thread_pool->automatic_resize_status) 
+		if (! ctx->vortex_exit && ctx->thread_pool && ctx->thread_pool->automatic_resize_status) 
 			__vortex_thread_pool_automatic_resize (ctx);
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "--> thread from pool waiting for jobs");
@@ -775,6 +775,7 @@ void vortex_thread_pool_exit (VortexCtx * ctx)
 
 	/* free the node itself */
 	axl_free (ctx->thread_pool);
+	ctx->thread_pool = NULL;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "thread pool is stopped..");
 	return;

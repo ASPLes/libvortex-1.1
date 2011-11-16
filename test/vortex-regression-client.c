@@ -9828,6 +9828,8 @@ axl_bool test_04_f (void) {
 	/* configure serialize */
 	vortex_channel_set_serialize (channel, axl_true);
 
+	printf ("Test 04-f: CHANNEL REFERENCE %d (after create)\n", vortex_channel_ref_count (channel));
+
 	if (channel == NULL) {
 		printf ("ERROR (1): expected to find proper channel creation..\n");
 		return axl_false;
@@ -9837,17 +9839,25 @@ axl_bool test_04_f (void) {
 	if (! test_04_f_send_pause_and_check ("mime.example.body.1.txt", axl_true, channel, wait, queue))
 		return axl_false;  
 
+	printf ("Test 04-f: CHANNEL REFERENCE %d (after first send/pause)\n", vortex_channel_ref_count (channel));
+
 	/* text sending content and pause */
 	if (! test_04_f_send_pause_and_check ("vortex-regression-client.c", axl_true, channel, wait, queue))
 		return axl_false; 
+
+	printf ("Test 04-f: CHANNEL REFERENCE %d (after second send/pause)\n", vortex_channel_ref_count (channel));
 
 	/* text sending content and pause */
 	if (! test_04_f_send_pause_and_check ("mime.example.body.1.txt", axl_false, channel, wait, queue))
 		return axl_false;  
 
+	printf ("Test 04-f: CHANNEL REFERENCE %d (after third send/pause)\n", vortex_channel_ref_count (channel));
+
 	/* text sending content and pause */
 	if (! test_04_f_send_pause_and_check ("vortex-regression-client.c", axl_false, channel, wait, queue))
 		return axl_false; 
+
+	printf ("Test 04-f: CHANNEL REFERENCE %d (after fourth send/pause)\n", vortex_channel_ref_count (channel));
 
 	/* finish queues */
 	vortex_async_queue_unref (wait);
