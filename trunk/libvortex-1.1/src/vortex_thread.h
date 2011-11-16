@@ -111,13 +111,13 @@ void               vortex_cond_destroy    (VortexCond        * cond);
 
 VortexAsyncQueue * vortex_async_queue_new       (void);
 
-void               vortex_async_queue_push      (VortexAsyncQueue * queue,
+axl_bool           vortex_async_queue_push      (VortexAsyncQueue * queue,
 						 axlPointer         data);
 
-void               vortex_async_queue_priority_push  (VortexAsyncQueue * queue,
+axl_bool           vortex_async_queue_priority_push  (VortexAsyncQueue * queue,
 						      axlPointer         data);
 
-void               vortex_async_queue_unlocked_push  (VortexAsyncQueue * queue,
+axl_bool           vortex_async_queue_unlocked_push  (VortexAsyncQueue * queue,
 						      axlPointer         data);
 
 axlPointer         vortex_async_queue_pop          (VortexAsyncQueue * queue);

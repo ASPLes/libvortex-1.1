@@ -1355,7 +1355,7 @@ axlPointer __vortex_reader_run (VortexCtx * ctx)
 }
 
 /** 
- * @internal Function that returns the number of connections that are
+ * @brief Function that returns the number of connections that are
  * currently watched by the reader.
  * @param ctx The context where the reader loop is located.
  * @return Number of connections watched. 
