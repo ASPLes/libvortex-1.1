@@ -4534,7 +4534,9 @@ axl_bool            vortex_channel_ref                             (VortexChanne
 	/* lock ref/unref operations over this connection */
 	vortex_mutex_lock   (&channel->ref_mutex);
 
+#if defined(ENABLE_VORTEX_LOG)
 	ctx = channel->ctx;
+#endif
 
 	/* increase the channel reference counting */
 	channel->ref_count++;
