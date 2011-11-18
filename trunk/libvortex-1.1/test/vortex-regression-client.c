@@ -601,7 +601,7 @@ axl_bool  test_00a (void)
 			break;
 
 		/* wait for some time */
-		vortex_async_queue_timedpop (temp, 10000);
+		vortex_async_queue_timedpop (temp, 100000);
 		iterator++;
 	}
 
@@ -611,7 +611,7 @@ axl_bool  test_00a (void)
 
 	/* check that there is at least one thread running */
 	if (started_threads != 1) {
-		printf ("ERROR (3): expected to find one thread running but found %d..\n", started_threads);
+		printf ("ERROR (3): expected to find 1 thread running but found %d..\n", started_threads);
 		return axl_false;
 	} /* end if */
 
@@ -958,6 +958,7 @@ axl_bool test_00c1 (void) {
 	}
 
 	/* send messages */
+	printf ("Test 00-c1: sending messages..\n");
 	test_00_c1_send_messages (channel, queue);
 
 	printf ("Test 00-c1: now getting stats..\n");
@@ -969,10 +970,10 @@ axl_bool test_00c1 (void) {
 
 	/* get frame */
 	frame = vortex_async_queue_pop (queue);
-	printf ("Test 00-c1: stats received: %s\n", (char *) vortex_frame_get_payload (frame));
+	printf ("Test 00-c1: stats received (running threads, waiting threads, pending tasks): %s\n", (char *) vortex_frame_get_payload (frame));
 
 	if (! axl_memcmp (vortex_frame_get_payload (frame), "5,4", 3)) {
-		printf ("ERROR: expected to find 5 threads running, 4 waiting threads and 94 pending tasks at peak..\n");
+		printf ("ERROR: expected to find 5 threads running, 4 waiting threads at peak..\n");
 		return axl_false;
 	}
 	vortex_frame_unref (frame);
@@ -1016,13 +1017,13 @@ axl_bool test_00c1 (void) {
 
 	/* get frame */
 	frame = vortex_async_queue_pop (queue);
-	printf ("Test 00-c1: stats received: %s\n", (char *) vortex_frame_get_payload (frame));
+	printf ("Test 00-c1: stats received (running threads, waiting threads, pending tasks): %s\n", (char *) vortex_frame_get_payload (frame));
 	vortex_frame_unref (frame);
 
 	printf ("Test 00-c1: now waiting for threads to get to 5 threads..\n");
 	iterator = 0;
 	found    = axl_false;
-	while (iterator < 60) {
+	while (iterator < 100) {
 		/* wait a bit */
 		vortex_async_queue_timedpop (queue, 1000000);
 
@@ -1034,7 +1035,7 @@ axl_bool test_00c1 (void) {
 
 		/* get frame */
 		frame = vortex_async_queue_pop (queue);
-		printf ("Test 00-c1: stats received: %s\n", (char *) vortex_frame_get_payload (frame));
+		printf ("Test 00-c1: stats received (running threads, waiting threads, pending tasks): %s\n", (char *) vortex_frame_get_payload (frame));
 
 		if (axl_cmp (vortex_frame_get_payload (frame), "5,4,0")) {
 			found = axl_true;
@@ -1080,6 +1081,7 @@ axl_bool test_00c2 (void) {
 	VortexChannel    * channel;
 	VortexFrame      * frame;
 	int                iterator;
+	axl_bool           found;
 
 	/* create a test context */
 	test_ctx = vortex_ctx_new ();
@@ -1161,7 +1163,7 @@ axl_bool test_00c2 (void) {
 	
 	/* get frame */
 	frame = vortex_async_queue_pop (queue);
-	printf ("Test 00-c2: stats received: %s\n", (char *) vortex_frame_get_payload (frame));
+	printf ("Test 00-c2: stats received (running threads, waiting threads, pending tasks): %s\n", (char *) vortex_frame_get_payload (frame));
 
 	/* free frame */
 	vortex_frame_unref (frame);
@@ -1180,6 +1182,43 @@ axl_bool test_00c2 (void) {
 	}
 	
 
+	printf ("Test 00-c2: Normalizing threads at the server..\n");
+	iterator = 0;
+	found    = axl_false;
+	while (iterator < 100) {
+		/* wait a bit */
+		frame = vortex_async_queue_timedpop (queue, 1000000);
+		if (frame) {
+			vortex_frame_unref (frame);
+		} /* end if */
+
+		/* send messages as fast as possible */
+		if (! vortex_channel_send_msg (channel, "GET real stats", 14, 0)) {
+			printf ("ERROR: failed to send test message..\n");
+			return axl_false;
+		} /* end if */
+
+		/* get frame */
+		frame = vortex_async_queue_pop (queue);
+		printf ("Test 00-c2: stats received (running threads, waiting threads, pending tasks): %s\n", (char *) vortex_frame_get_payload (frame));
+
+		if (axl_cmp (vortex_frame_get_payload (frame), "5,4,0")) {
+			found = axl_true;
+			vortex_frame_unref (frame);
+			break;
+		} /* end if */
+
+		vortex_frame_unref (frame);
+
+		/* next iterator */
+		iterator++;
+	}
+
+	if (! found) {
+		printf ("ERROR: expected to find 5,4,0 as threading status, but found something different..\n");
+		return axl_false;
+	}
+
 	/* send messages as fast as possible */
 	printf ("Test 00-c2: now disable thread pool automatic resize..\n");
 	if (! vortex_channel_send_msg (channel, "disable automatic resize", 24, 0)) {
@@ -1187,21 +1226,14 @@ axl_bool test_00c2 (void) {
 		return axl_false;
 	} /* end if */
 
-	/* consume all messages */
-	iterator = 0;
-	while (iterator < 11) {
-		/* get frame */
-		frame = vortex_async_queue_pop (queue);
-	
-		/* free frame */
-		vortex_frame_unref (frame);
-
-		iterator++;
-	}
+	/* get frame */
+	frame = vortex_async_queue_pop (queue);
+	/* free frame */
+	vortex_frame_unref (frame);
 		
 	/* close the connection */
 	vortex_connection_close (connection);
-	
+
 	/* terminate context */
 	vortex_async_queue_unref (queue);
 	vortex_exit_ctx (test_ctx, axl_true);
@@ -1254,6 +1286,67 @@ axl_bool test_00d (void) {
 
 	return axl_true;
 }
+
+axl_bool call_enable_server_log (axl_bool enable_server_log) {
+	VortexConnection  * conn;
+	VortexChannel     * channel;
+	VortexAsyncQueue  * queue;
+	VortexCtx         * ctx;
+
+	/* create new context */
+	ctx = vortex_ctx_new ();
+
+	/* init this context */
+	if (! vortex_init_ctx (ctx)) {
+		printf ("ERROR: expected proper initialization..\n");
+		return axl_false;
+	}
+
+	/* creates a new connection against localhost:44000 */
+	conn = connection_new ();
+
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Test 01: failed to create connection..");
+		vortex_connection_close (conn);
+		return axl_false;
+	}
+
+	/* create the queue */
+	queue   = vortex_async_queue_new ();
+
+	/* create a channel */
+	channel = vortex_channel_new (conn, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return axl_false;
+	}
+
+	/* send message */
+	if (! vortex_channel_send_msg (channel, enable_server_log ? "enable-server-log" : "disable-server-log", enable_server_log ? 17 : 18, NULL)) {
+		printf ("ERROR (2): expected to find prper send operation");
+		return axl_false;
+	} /* end if */
+
+	/* ok, close the channel */
+	vortex_channel_close (channel, NULL);
+
+	vortex_connection_close (conn);
+
+	/* finish */
+	vortex_exit_ctx (ctx, axl_true);
+
+	/* return axl_true */
+	return axl_true;
+
+};
+
 
 axl_bool  test_01_real (VortexConnection * connection, axl_bool close_conn) {
 	VortexChannel     * channel;
@@ -1433,7 +1526,7 @@ void test_01b_created (int                channel_num,
 
 	/* close the channel here */
 	if (! vortex_channel_close (channel, NULL)) {
-		printf ("Failed to close the channel...\n");
+		printf ("Test 01-b: Failed to close the channel...\n");
 
 		/* push a notification */
 		vortex_async_queue_push (queue, INT_TO_PTR(0));
@@ -13445,6 +13538,8 @@ int main (int  argc, char ** argv)
 	/* if epoll(2) mechanism is available, check it */
 	axl_bool  epoll_tested = axl_true;
 #endif
+	axl_bool  enable_server_log = axl_false;
+	axl_bool  disable_server_log = axl_false;
 
 	printf ("** Vortex Library: A BEEP core implementation.\n");
 	printf ("** Copyright (C) 2010 Advanced Software Production Line, S.L.\n**\n");
@@ -13457,7 +13552,7 @@ int main (int  argc, char ** argv)
 	printf ("**     >> libtool --mode=execute valgrind --leak-check=yes --error-limit=no ./vortex-regression-client --disable-time-checks\n**\n");
 	printf ("** Additional settings:\n");
 	printf ("**\n");
-	printf ("**     >> ./vortex-regression-client [--disable-time-checks] [--run-test=NAME] \n");
+	printf ("**     >> ./vortex-regression-client [--disable-time-checks] [--run-test=NAME] [--enable-server-log] [--disable-server-log] \n");
 	printf ("**                                   [listener-host [TUNNEL-proxy-host [proxy-host [proxy-port]]]]\n");
 	printf ("**\n");
 	printf ("**       If no listener-host value is provided, it is used \"localhost\". \n");
@@ -13518,6 +13613,32 @@ int main (int  argc, char ** argv)
 		argc--;
 
 		printf ("INFO: running test=%s\n", run_test_name);
+		while (iterator <= argc) {
+			argv[iterator] = argv[iterator+1];
+			iterator++;
+		} /* end while */
+	} /* end if */
+
+	/* check for enable serverlog */
+	if (argc > 1 && axl_cmp (argv[1], "--enable-server-log")) {
+		iterator       = 1;
+		argc--;
+
+		printf ("INFO: calling to enable server log\n");
+		enable_server_log = axl_true;
+		while (iterator <= argc) {
+			argv[iterator] = argv[iterator+1];
+			iterator++;
+		} /* end while */
+	} /* end if */
+
+	/* check for disable serverlog */
+	if (argc > 1 && axl_cmp (argv[1], "--disable-server-log")) {
+		iterator       = 1;
+		argc--;
+
+		printf ("INFO: calling to disable server log\n");
+		disable_server_log = axl_true;
 		while (iterator <= argc) {
 			argv[iterator] = argv[iterator+1];
 			iterator++;
@@ -13585,6 +13706,14 @@ int main (int  argc, char ** argv)
 		listener_host, listener_tunnel_host);
 	printf ("INFO: HTTP proxy located at: %s:%s..\n",
 		http_proxy_host, http_proxy_port);
+
+	if (enable_server_log || disable_server_log) {
+		if (enable_server_log)
+			call_enable_server_log (axl_true);
+		if (disable_server_log)
+			call_enable_server_log (axl_false);
+		return 0;
+	}
 
 	/* init vortex library */
 	if (! vortex_init_ctx (ctx)) {
