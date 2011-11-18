@@ -739,7 +739,7 @@ void _vortex_log_common (VortexCtx        * ctx,
 		gettimeofday (&stamp, NULL);
 
 		/* print the message */
-		vsnprintf (buffer, 1024, message, args);
+		vsnprintf (buffer, 1023, message, args);
 				
 	/* drop a log according to the level */
 #if defined (__GNUC__)

@@ -312,7 +312,7 @@ void frame_received (VortexChannel    * channel,
 			vortex_thread_pool_setup (CONN_CTX (connection), 30, 1, 1, axl_true);
 
 		} else if (axl_cmp (vortex_frame_get_payload (frame), "disable automatic resize")) {
-
+			printf ("Test 00-c1: disabling automatic resize..");
 			vortex_thread_pool_setup (CONN_CTX (connection), -1, 1, 1, axl_true);
 			
 		} /* end if */
@@ -388,6 +388,18 @@ void frame_received (VortexChannel    * channel,
 	} else if (axl_memcmp (vortex_frame_get_payload (frame), "complete flag limit=10000", 25)) {
 		/* set channel limit */
 		vortex_channel_set_complete_frame_limit (channel, 10000);
+
+	} else if (axl_memcmp (vortex_frame_get_payload (frame), "enable-server-log", 17)) {
+		vortex_log_enable (CONN_CTX(connection), axl_true);
+		vortex_color_log_enable (CONN_CTX(connection), axl_true);
+		vortex_log2_enable (CONN_CTX(connection), axl_true);
+
+		printf ("REGRESSION: server log enabled..\n");
+	} else if (axl_memcmp (vortex_frame_get_payload (frame), "disable-server-log", 18)) {
+		vortex_log_enable (CONN_CTX(connection), axl_false);
+		vortex_color_log_enable (CONN_CTX(connection), axl_false);
+		vortex_log2_enable (CONN_CTX(connection), axl_false);
+		printf ("REGRESSION: server log disabled..\n");
 	} /* end if */
 
 	/* DEFAULT REPLY, JUST ECHO */

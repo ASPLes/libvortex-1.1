@@ -234,15 +234,15 @@ void __vortex_thread_pool_automatic_resize (VortexCtx * ctx)
 
 	/* check before acquiring the look if the user changed during
 	 * our lock */
-	if (! ctx->thread_pool->automatic_resize_status || 
-	    ctx->thread_pool_being_stopped || ctx->vortex_exit) 
+	if (! ctx->thread_pool || ! ctx->thread_pool->automatic_resize_status || 
+	    ctx->thread_pool_being_stopped || ctx->vortex_exit)  
 		return;
 
 	/* lock thread pool */
 	vortex_mutex_lock (&ctx->thread_pool->mutex);
 
 	/* check if the user changed during our lock */
-	if (! ctx->thread_pool->automatic_resize_status || 
+	if (! ctx->thread_pool || ! ctx->thread_pool->automatic_resize_status || 
 	    ctx->thread_pool_being_stopped || ctx->vortex_exit) {
 		vortex_mutex_unlock (&ctx->thread_pool->mutex);
 		return;
@@ -256,8 +256,10 @@ void __vortex_thread_pool_automatic_resize (VortexCtx * ctx)
 	gettimeofday (&now, NULL);
 	vortex_timeval_substract (&now, &(ctx->thread_pool->last), &diff);
 
-	vortex_log2 (VORTEX_LEVEL_DEBUG, "Checking thread pool resize: running_threads=%d, base threads=%d, waiting_threads=%d, pending_tasks=%d, thread_max_limit=%d diff=%ld, add_period=%d\n",
-		    running_threads, ctx->thread_pool->base_thread_num, waiting_threads, pending_tasks, ctx->thread_pool->thread_max_limit, diff.tv_sec, ctx->thread_pool->thread_add_period);
+	vortex_log2 (VORTEX_LEVEL_DEBUG, 
+		     "Checking thread pool resize: running_threads=%d, base threads=%d, waiting_threads=%d, pending_tasks=%d, thread_max_limit=%d diff=%ld, add_period=%d, auto_remove=%d\n",
+		    running_threads, ctx->thread_pool->base_thread_num, waiting_threads, pending_tasks, ctx->thread_pool->thread_max_limit, diff.tv_sec, 
+		     ctx->thread_pool->thread_add_period, ctx->thread_pool->auto_remove);
 
 	/* if we have waiting threads equal to 0 and our last update
 	 * was thread_pool->last seconds ago and there is at least 1
@@ -276,7 +278,7 @@ void __vortex_thread_pool_automatic_resize (VortexCtx * ctx)
 
 	} else if (ctx->thread_pool->auto_remove && 
 		   pending_tasks == 0 && 
-		   (waiting_threads + 1) > ctx->thread_pool->base_thread_num && 
+		   (waiting_threads + 2) > ctx->thread_pool->base_thread_num && 
 		   diff.tv_sec > (ctx->thread_pool->thread_add_period * 2)) {
 
 		/* remove threads if no pending task is found, and
@@ -333,6 +335,10 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * _data)
 		if (task == NULL) {
 			/* call to process events */
 			__vortex_thread_pool_process_events (ctx, pool);
+
+			/* do automatic reasize */
+			__vortex_thread_pool_automatic_resize (ctx);
+
 			continue;
 		}
 
@@ -391,8 +397,7 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * _data)
 		__vortex_thread_pool_process_events (ctx, pool);
 
 		/* do automatic reasize */
-		if (! ctx->vortex_exit && ctx->thread_pool && ctx->thread_pool->automatic_resize_status) 
-			__vortex_thread_pool_automatic_resize (ctx);
+		__vortex_thread_pool_automatic_resize (ctx);
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "--> thread from pool waiting for jobs");
 
@@ -574,6 +579,8 @@ void vortex_thread_pool_setup               (VortexCtx * ctx,
 	ctx->thread_pool->thread_add_step         = thread_add_step;
 	ctx->thread_pool->thread_add_period       = thread_add_period;
 	ctx->thread_pool->auto_remove             = auto_remove;
+
+	vortex_log2 (VORTEX_LEVEL_DEBUG, "Automatic thread pool resize status: %d", ctx->thread_pool->automatic_resize_status);
 
 	/* get current thread number to use it as reference */
 	ctx->thread_pool->base_thread_num         = axl_list_length (ctx->thread_pool->threads);
