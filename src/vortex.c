@@ -45,6 +45,16 @@
 
 #define LOG_DOMAIN "vortex"
 
+/* Ugly hack to have access to vsnprintf function (secure form of
+ * vsprintf where the output buffer is limited) but unfortunately is
+ * not available in ANSI C. This is only required when compile vortex
+ * with log support */
+#if defined(ENABLE_VORTEX_LOG)
+#if  defined(__VORTEX_ADD_VSNPRINTF__)
+int vsnprintf(char *str, size_t size, const char *format, va_list ap);
+#endif
+#endif
+
 /**
  * @internal
  *
@@ -688,6 +698,8 @@ void _vortex_log_common (VortexCtx        * ctx,
 	/* log with mutex */
 	int    use_log_mutex = axl_false;
 	char * log_string;
+	struct timeval stamp;
+	char   buffer[1024];
 
 	/* if not VORTEX_DEBUG FLAG, do not output anything */
 	if (! vortex_log_is_enabled (ctx)) {
@@ -724,53 +736,49 @@ void _vortex_log_common (VortexCtx        * ctx,
 	} else {
 		/* printout the process pid */
 	ctx_not_defined:
-#if defined (__GNUC__)
-		if (vortex_color_log_is_enabled (ctx)) 
-			fprintf (stdout, "\e[1;36m(proc %d)\e[0m: ", getpid ());
-		else 
-#endif /* __GNUC__ */
-			fprintf (stdout, "(proc %d): ", getpid ());
-		
-		
+
+		/* get current stamp */
+		gettimeofday (&stamp, NULL);
+
+		/* print the message */
+		vsnprintf (buffer, 1024, message, args);
+				
 	/* drop a log according to the level */
 #if defined (__GNUC__)
 		if (vortex_color_log_is_enabled (ctx)) {
 			switch (log_level) {
 			case VORTEX_LEVEL_DEBUG:
-				fprintf (stdout, "(\e[1;32mdebug\e[0m) ");
+				fprintf (stdout, "\e[1;36m(%d.%d proc %d)\e[0m: (\e[1;32mdebug\e[0m) %s:%d %s\n", 
+					 (int) stamp.tv_sec, (int) stamp.tv_usec, getpid (), file ? file : "", line, buffer);
 				break;
 			case VORTEX_LEVEL_WARNING:
-				fprintf (stdout, "(\e[1;33mwarning\e[0m) ");
+				fprintf (stdout, "\e[1;36m(%d.%d proc %d)\e[0m: (\e[1;33mwarning\e[0m) %s:%d %s\n", 
+					 (int) stamp.tv_sec, (int) stamp.tv_usec, getpid (), file ? file : "", line, buffer);
 				break;
 			case VORTEX_LEVEL_CRITICAL:
-				fprintf (stdout, "(\e[1;31mcritical\e[0m) ");
+				fprintf (stdout, "\e[1;36m(%d.%d proc %d)\e[0m: (\e[1;31mcritical\e[0m) %s:%d %s\n", 
+					 (int) stamp.tv_sec, (int) stamp.tv_usec, getpid (), file ? file : "", line, buffer);
 				break;
 			}
 		}else {
 #endif /* __GNUC__ */
 			switch (log_level) {
 			case VORTEX_LEVEL_DEBUG:
-				fprintf (stdout, "(debug) ");
+				fprintf (stdout, "(%d.%d proc %d): (debug) %s:%d %s\n", 
+					 (int) stamp.tv_sec, (int) stamp.tv_usec, getpid (), file ? file : "", line, buffer);
 				break;
 			case VORTEX_LEVEL_WARNING:
-				fprintf (stdout, "(warning) ");
+				fprintf (stdout, "(%d.%d proc %d): (warning) %s:%d %s\n", 
+					 (int) stamp.tv_sec, (int) stamp.tv_usec, getpid (), file ? file : "", line, buffer);
 				break;
 			case VORTEX_LEVEL_CRITICAL:
-				fprintf (stdout, "(critical) ");
+				fprintf (stdout, "(%d.%d proc %d): (critical) %s:%d %s\n", 
+					 (int) stamp.tv_sec, (int) stamp.tv_usec, getpid (), file ? file : "", line, buffer);
 				break;
 			}
 #if defined (__GNUC__)
 		} /* end if */
 #endif
-
-		/* drop a log according to the domain */
-		(file != NULL) ? fprintf (stdout, "%s:%d ", file, line) : fprintf (stdout, ": ");
-		
-		/* print the message */
-		vfprintf (stdout, message, args);
-		
-		fprintf (stdout, "\n");
-
 		/* ensure that the log is dropped to the console */
 		fflush (stdout);
 		
