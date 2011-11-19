@@ -461,6 +461,8 @@ def test_05 ():
     if frame.payload_size != 14:
         error ("Expected to find payload size equal to 14 but found: " + frame.payload_size)
 
+    # now test to remove frame received
+    channel.set_frame_received ()
 
     # now close the connection (already shutted down)
     conn.close ()
