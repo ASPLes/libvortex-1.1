@@ -262,6 +262,15 @@ void     py_vortex_channel_received     (VortexChannel    * channel,
 axl_bool  py_vortex_channel_configure_frame_received  (VortexChannel * channel, PyObject * handler, PyObject * data)
 {
 
+	if (handler == NULL && channel) {
+		/* remove frame received */
+		vortex_channel_set_received_handler (channel, NULL, NULL);
+		vortex_channel_set_data (channel, "py:vo:ch:fr", NULL);
+		/* remove old data */
+		vortex_channel_set_data (channel, "py:vo:ch:frd", NULL);
+		return axl_true;
+	}
+
 	/* check values received */
 	if (! PyCallable_Check (handler) || channel == NULL) 
 		return axl_false;
@@ -366,7 +375,7 @@ static PyObject * py_vortex_channel_set_frame_received (PyVortexChannel * self, 
 	static char *kwlist[] = {"handler", "data", NULL};
 
 	/* parse and check result */
-	if (! PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &handler, &data))
+	if (! PyArg_ParseTupleAndKeywords(args, kwds, "|OO", kwlist, &handler, &data))
 		return NULL;
 
 	/* configure frame received */
