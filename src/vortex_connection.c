@@ -3558,7 +3558,7 @@ axl_bool                vortex_connection_channel_exists       (VortexConnection
  */
 int                 vortex_connection_channels_count         (VortexConnection * connection)
 {
-	if (connection == NULL)
+	if (connection == NULL || connection->channels == NULL)
 		return -1;
 	
 	/* return number of channels */
