@@ -673,8 +673,8 @@ axl_bool   vortex_reader_register_watch (VortexReaderData * data, axlList * con_
 		}
 			
 		/* now we have a first connection, we can start to wait */
-		vortex_log (VORTEX_LEVEL_DEBUG, "new connection to be watched (%d)", 
-		       vortex_connection_get_socket (connection));
+		vortex_log (VORTEX_LEVEL_DEBUG, "new connection (conn-id=%d) to be watched (%d)", 
+			    vortex_connection_get_id (connection), vortex_connection_get_socket (connection));
 		axl_list_append (con_list, connection);
 
 		break;

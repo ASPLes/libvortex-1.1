@@ -1837,8 +1837,9 @@ process_buffer:
 #if defined(ENABLE_VORTEX_LOG)
 	/* log frame on channel received */
 	if (vortex_log_is_enabled (ctx)) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "Frame received on channel %d, content type=%s, transfer encoding=%s, payload size=%d, mime content size=%d", 
+		vortex_log (VORTEX_LEVEL_DEBUG, "Frame received on channel %d, conn-id=%d, content type=%s, transfer encoding=%s, payload size=%d, mime content size=%d", 
  			    frame->channel,
+			    vortex_connection_get_id (connection),
  			    (vortex_frame_get_content_type (frame) != NULL) ? vortex_frame_get_content_type (frame) : "" ,
  			    (vortex_frame_get_transfer_encoding (frame) != NULL) ? vortex_frame_get_transfer_encoding (frame) : "",
  			    frame->size, frame->mime_headers_size);

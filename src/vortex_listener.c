@@ -179,7 +179,8 @@ void vortex_listener_accept_connection    (VortexConnection * connection, axl_bo
 	vortex_listener_complete_register (connection);
 	
 	/* close connection and free resources */
-	vortex_log (VORTEX_LEVEL_DEBUG, "worker ended, connection registered on manager (initial accept)");
+	vortex_log (VORTEX_LEVEL_DEBUG, "worker ended, connection (conn-id=%d) registered on manager (initial accept)",
+		    vortex_connection_get_id (connection));
 
 	return;
 }
@@ -279,9 +280,10 @@ void __vortex_listener_initial_accept (VortexCtx        * ctx,
 
 	/* before doing anything, we have to create a connection */
 	connection = vortex_connection_new_empty (ctx, client_socket, VortexRoleListener);
-	vortex_log (VORTEX_LEVEL_DEBUG, "received connection from: %s:%s", 
+	vortex_log (VORTEX_LEVEL_DEBUG, "received connection from: %s:%s (conn-id=%d)", 
 		    vortex_connection_get_host (connection),
-		    vortex_connection_get_port (connection));
+		    vortex_connection_get_port (connection),
+		    vortex_connection_get_id (connection));
 
 	/* configure the relation between this connection and the
 	 * master listener connection */
@@ -318,7 +320,8 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 {
 	VortexFrame   * pending;
 	VortexCtx     * ctx = vortex_connection_get_ctx (connection);
-	vortex_log (VORTEX_LEVEL_DEBUG, "called listener second step accept..");
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "called listener second step accept for conn-id=%d..", vortex_connection_get_id (connection));
 
 	/* check if the connection have a pending frame (get the reference) */
 	pending = vortex_connection_get_data (connection,
@@ -360,7 +363,7 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 		return;
 	}
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "received initiator peer greetings...checking..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "received initiator peer greetings (conn-id=%d)...checking..", vortex_connection_get_id (connection));
 
 	/* because the greeting is ok, parse it */
 	if (!__vortex_connection_parse_greetings (connection, frame)) {
@@ -368,7 +371,8 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 		 * deallocation, unref it*/
 		vortex_frame_unref (frame);
 		
-		vortex_log (VORTEX_LEVEL_CRITICAL, "wrong greetings received, closing session");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "wrong greetings received, closing session (conn-id=%d)",
+			    vortex_connection_get_id (connection));
 		__vortex_connection_set_not_connected (connection, "wrong greetings received, closing session", VortexProtocolError);
 		return;
 	}
@@ -387,11 +391,10 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 		return;
 	} /* end if */
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "greetings ok, sending listener greetings..");
+	vortex_log (VORTEX_LEVEL_DEBUG, "greetings ok, sending listener greetings for conn-id=%d..", vortex_connection_get_id (connection));
 
 	/* send greetings, get actual profile installation and report
 	 * it to init peer */
-	vortex_log (VORTEX_LEVEL_DEBUG, "sending greetings for a new connection..");
 	if ((! vortex_greetings_send (connection, NULL))) {
 		/* release frame */
 		vortex_frame_unref (frame);
@@ -409,7 +412,8 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 	} /* end if */
 
 	/* frame accepted */
-	vortex_log (VORTEX_LEVEL_DEBUG, "accepting connection on vortex_reader (second accept step)");
+	vortex_log (VORTEX_LEVEL_DEBUG, "accepting connection id=%d on vortex_reader (second accept step)",
+		    vortex_connection_get_id (connection));
 	
 	/* free the last frame and watch connection on changes */
 	vortex_frame_unref (frame);
@@ -417,6 +421,7 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 	/*** CONNECTION COMPLETELY ACCEPTED ***/
 	/* flag the connection to be totally accepted. */
 	connection->initial_accept = axl_false;
+
 	/* flag that the greetings message was already sent */
 	vortex_connection_set_data (connection, "vo:greetings-sent", NULL);
 

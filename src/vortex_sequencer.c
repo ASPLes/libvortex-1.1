@@ -232,13 +232,12 @@ axl_bool  vortex_sequencer_if_channel_stalled_queue_message (VortexCtx          
 			    vortex_channel_get_max_seq_no_remote_accepted (data->channel), 
 			    vortex_channel_get_number (data->channel));
 		/** 
-		 * seems that this channel is stale, we can't
-		 * do nothing more than queue the message and
-		 * skip over to manage next message to
-		 * sequence. But, do not queue anything if the
-		 * message that is actually being checked is
-		 * being managed as a resequence operation,
-		 * which means that it is already queue.
+		 * seems that this channel is stalled, we can't do
+		 * nothing more than queue the message and skip over
+		 * to manage next message to sequence. But, do not
+		 * queue anything if the message that is actually
+		 * being checked is being managed as a resequence
+		 * operation, which means that it is already queue.
 		 */
 		if (! resequence) {
 			vortex_log (VORTEX_LEVEL_DEBUG, "queueing the message, because it is not a resequencing operation..");
@@ -340,8 +339,9 @@ int vortex_sequencer_build_packet_to_send (VortexCtx * ctx, VortexChannel * chan
 		} /* end if */
 	} /* end if */
 	
-	vortex_log (VORTEX_LEVEL_DEBUG, "the channel is not stalled, continue with sequencing, about to send (size_to_copy:%d) bytes as payload (buffer:%d)...",
- 		    size_to_copy, ctx->sequencer_send_buffer_size);
+	vortex_log (VORTEX_LEVEL_DEBUG, "the channel=%d (on conn-id=%d) is not stalled, continue with sequencing, about to send (size_to_copy:%d) bytes as payload (buffer:%d)...",
+ 		    vortex_channel_get_number (channel), 
+		    vortex_connection_get_id (vortex_channel_get_connection (channel)), size_to_copy, ctx->sequencer_send_buffer_size);
  	vortex_log (VORTEX_LEVEL_DEBUG, "channel remote max seq no accepted: %u (proposed: %u)...",
  		    vortex_channel_get_max_seq_no_remote_accepted (channel), max_seq_no_accepted);
 	
@@ -693,7 +693,8 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		 * the channel queue. At this point, we have prepared
 		 * the rest to be sequenced message. */
 		/* now, perform a send operation for the frame built */
-		vortex_log (VORTEX_LEVEL_DEBUG, "frame built, send the frame directly"); 
+		vortex_log (VORTEX_LEVEL_DEBUG, "frame built, send the frame directly (over channel=%d, conn-id=%d)",
+			    vortex_channel_get_number (channel), vortex_connection_get_id (connection));
 		if (! vortex_sequencer_direct_send (connection, channel, &packet)) {
 			vortex_log (VORTEX_LEVEL_WARNING, "unable to send data at this moment");
 			
@@ -914,6 +915,13 @@ axl_bool      vortex_sequencer_direct_send (VortexConnection * connection,
 	return result;
 }
 
+axl_bool vortex_sequencer_check_to_signal_resequence_signal (VortexSequencerData *  queue_item, VortexChannel * channel)
+{
+	/* check if the queue item is a resequence operation and that
+	 * it applies to the same channel */
+	return (queue_item->resequence && queue_item->channel == channel && queue_item->channel_num == vortex_channel_get_number (channel));
+}
+
 /** 
  * @internal
  *
@@ -938,6 +946,16 @@ void     vortex_sequencer_signal_update        (VortexChannel       * channel,
 	/* check if we have data to be resequenced */
 	if (vortex_channel_next_pending_message (channel)) {
 
+		/* ensure we don't have previous requesence
+		 * notifications (to avoid filling the queue with
+		 * data) */
+		if (vortex_async_queue_lookup (ctx->sequencer_queue, (axlLookupFunc) vortex_sequencer_check_to_signal_resequence_signal, channel)) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "Skipping resequence signal for channel=%d and connection id=%d because there is another notification in the queue (items=%d)",
+				    vortex_channel_get_number (channel), vortex_connection_get_id (connection),
+				    vortex_async_queue_items (ctx->sequencer_queue));
+			return;
+		} /* end if */
+
 		/* prepare data, flagging re-sequencing .. */
 		data                       = axl_new (VortexSequencerData, 1);
 		data->resequence           = axl_true;
@@ -947,9 +965,14 @@ void     vortex_sequencer_signal_update        (VortexChannel       * channel,
 	
 		/* queue data */
 		vortex_log (VORTEX_LEVEL_DEBUG, 
-			    "doing PRIORITY push to skip current stored items=%d (it seems that we have pending messages not sequenced, re-sequence them)",
+			    "notify signal to resequence, sequencer current stored items=%d (it seems that we have pending messages not sequenced, re-sequence them)",
 			    vortex_async_queue_items (ctx->sequencer_queue));
-		QUEUE_PRIORITY_PUSH (ctx->sequencer_queue, data);
+		if (! vortex_async_queue_push (ctx->sequencer_queue, data)) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to queue resequence signal, queue operation failed, discarding data..");
+			axl_free (data);
+			return;
+		}
+		/* QUEUE_PRIORITY_PUSH (ctx->sequencer_queue, data); */
 	}else {
 		vortex_log (VORTEX_LEVEL_DEBUG, "there is no messages pending to be sequenced, over the channel=%d",
 		       vortex_channel_get_number (channel));
