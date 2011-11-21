@@ -1488,6 +1488,62 @@ void               vortex_async_queue_foreach   (VortexAsyncQueue         * queu
 }
 
 /** 
+ * @brief Allows to iterate over queue elements applying a lookup
+ * function to select one.
+ *
+ * @param queue The queue where the lookup operation will take place.
+ *
+ * @param lookup_func The looking up function to call over each item.
+ *
+ * @param user_data User defined data to be passed to the lookup
+ * function along with the queue item.
+ *
+ * @return The first queue element that was found (lookup function
+ * returns axl_true for the queue item) or NULL if no items are in the
+ * queue or no item was selected by the lookup_func. Note the pointer
+ * returned is still owned by the queue.
+ */
+axlPointer         vortex_async_queue_lookup    (VortexAsyncQueue         * queue,
+						 axlLookupFunc              lookup_func,
+						 axlPointer                 user_data)
+{
+	axlListCursor * cursor;
+	axlPointer      ref = NULL;
+
+	v_return_val_if_fail (queue, NULL);
+	v_return_val_if_fail (lookup_func, NULL);
+
+	/* get the mutex */
+	vortex_mutex_lock (&queue->mutex);
+
+	/* create a cursor */
+	cursor   = axl_list_cursor_new (queue->data);
+	while (axl_list_cursor_has_item (cursor)) {
+		
+		/* call to the function */
+		ref = axl_list_cursor_get (cursor);
+		if (lookup_func (ref, user_data))
+			break;
+		
+		/* next item */
+		axl_list_cursor_next (cursor);
+	} /* end while */
+
+	/* signal the item was found if all items were iterated by no
+	 * item was found */
+	if (! axl_list_cursor_has_item (cursor))
+		ref = NULL;
+
+	/* free cursor */
+	axl_list_cursor_free (cursor);
+
+	/* unlock the mutex */
+	vortex_mutex_unlock (&queue->mutex);
+
+	return ref;
+}
+
+/** 
  * @brief Allows to lock the queue, making the caller the only thread
  * owning the queue. This function should be used in conjuntion with
  * vortex_async_queue_unlocked_push. Call to vortex_async_queue_push

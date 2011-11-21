@@ -147,6 +147,10 @@ void               vortex_async_queue_foreach   (VortexAsyncQueue         * queu
 						 VortexAsyncQueueForeach    foreach_func,
 						 axlPointer                 user_data);
 
+axlPointer         vortex_async_queue_lookup    (VortexAsyncQueue         * queue,
+						 axlLookupFunc              lookup_func,
+						 axlPointer                 user_data);
+
 void               vortex_async_queue_lock      (VortexAsyncQueue * queue);
 
 void               vortex_async_queue_unlock    (VortexAsyncQueue * queue);
