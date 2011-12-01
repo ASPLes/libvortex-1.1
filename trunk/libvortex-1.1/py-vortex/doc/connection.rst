@@ -91,12 +91,12 @@ Module API
 
           if not channel:
 	      print ("ERROR: failed to start channel, error found:")
-	      (err_code, err_msg) = conn.pop_channel_error ()
-	      while (err_code):
-	          print ("ERROR: error found: " + err_msg)
+	      err = conn.pop_channel_error ()
+	      while err:
+	          print ("ERROR: error code found: " + err[0] + ", message: " + err[1])
 
 		  # next error found
-		  (err_code, err_msg) = conn.pop_channel_error ()
+		  err = conn.pop_channel_error ()
 
    .. method:: channel_pool_new (profile, init_num, [create_channel],[create_channel_data],[received],[received_data],[close],[close_data],[on_created],[user_data])
    
