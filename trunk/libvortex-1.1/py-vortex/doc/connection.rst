@@ -93,7 +93,7 @@ Module API
 	      print ("ERROR: failed to start channel, error found:")
 	      err = conn.pop_channel_error ()
 	      while err:
-	          print ("ERROR: error code found: " + err[0] + ", message: " + err[1])
+	          print ("ERROR: error code found: %d:%s" % (err[0], err[1]))
 
 		  # next error found
 		  err = conn.pop_channel_error ()
