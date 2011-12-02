@@ -54,8 +54,6 @@ axl_bool vortex_sequencer_direct_send              (VortexConnection * connectio
 void     vortex_sequencer_signal_update            (VortexChannel       * channel, 
 						    VortexConnection    * connection);
 
-void  	 vortex_sequencer_drop_connection_messages (VortexConnection * conn);
-
 void     vortex_sequencer_remove_channel           (VortexCtx        * ctx,
 						    VortexChannel    * channel);
 

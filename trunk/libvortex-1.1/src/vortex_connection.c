@@ -3059,10 +3059,6 @@ void               vortex_connection_free (VortexConnection * connection)
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing connection id=%d", connection->id);
 
-	/* notify sequencer to drop all packages only if we are not exiting */
-	if (! ctx->vortex_exit)
-		vortex_sequencer_drop_connection_messages (connection);
-
 	/*
 	 * NOTE: The order in which the channels and the channel pools
 	 * are closed must be this way: first channels and the channel
@@ -5191,8 +5187,6 @@ void           __vortex_connection_set_not_connected (VortexConnection * connect
 			vortex_log (VORTEX_LEVEL_DEBUG, "closing session id=%d and set to be not connected",
 			       connection->id);
 
-			/* notify sequencer to drop all packages */
-			vortex_sequencer_drop_connection_messages (connection);
  	        } /* end if */
 
 		/* finish reference acquired after unlocking and doing
