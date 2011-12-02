@@ -717,12 +717,6 @@ axl_bool  __vortex_cond_common_wait_win32 (VortexCond * cond, VortexMutex * mute
 	else
 		result = SignalObjectAndWait (*mutex, cond->sema_, milliseconds, FALSE);
 
-	/* vortex_log (VORTEX_LEVEL_DEBUG, "SignalObjectAndWait finished, because: %s%s%s%s",
-		    (result == WAIT_ABANDONED) ? "WAIT_ABANDONED" : "",
-		    (result == WAIT_IO_COMPLETION) ? "WAIT_IO_COMPLETION" : "",
-		    (result == WAIT_OBJECT_0) ? "WAIT_OBJECT_0" : "",
-		    (result == WAIT_TIMEOUT) ? "WAIT_TIMEOUT" : ""); */
-
 
 	/* Reacquire lock to avoid race conditions. */
 	EnterCriticalSection (&cond->waiters_count_lock_);
