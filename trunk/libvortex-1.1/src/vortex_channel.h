@@ -217,6 +217,8 @@ axl_bool           vortex_channel_is_empty_pending_message     (VortexChannel * 
 
 axlPointer         vortex_channel_next_pending_message         (VortexChannel * channel);
 
+int                vortex_channel_pending_messages             (VortexChannel * channel);
+
 void               vortex_channel_remove_pending_message       (VortexChannel * channel);
 								 
 
@@ -229,8 +231,6 @@ VortexConnection * vortex_channel_get_connection               (VortexChannel * 
 
 axl_bool           vortex_channel_queue_frame                     (VortexChannel * channel, 
 								   VortexWriterData * data);
-
-axl_bool           vortex_channel_queue_is_empty                  (VortexChannel * channel);
 
 VortexWriterData * vortex_channel_queue_next_msg                  (VortexChannel * channel);
 
