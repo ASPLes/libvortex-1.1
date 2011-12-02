@@ -2487,7 +2487,11 @@ check_limit:
 	} /* end if */
 
 	/* queue request */
-	vortex_sequencer_queue_data (ctx, data);
+	if (! vortex_sequencer_queue_data (ctx, data)) {
+		/* unlock send mutex */
+		vortex_mutex_unlock (&channel->send_mutex);
+		return axl_false;
+	}
 
 	/* unlock send mutex */
 	vortex_mutex_unlock (&channel->send_mutex);
@@ -2992,8 +2996,8 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 
 	/* do sending reply operation */
  send_reply:
-	vortex_log (VORTEX_LEVEL_DEBUG, "sending reply for message %d (size: %d, sequencer queue status: %d, channel queue status: %d)\n", 
- 		    msg_no_rpy, message_size, vortex_async_queue_items (ctx->sequencer_queue), axl_list_length (channel->pending_messages));
+	vortex_log (VORTEX_LEVEL_DEBUG, "sending reply for message %d (size: %d, channel queue status: %d)\n", 
+ 		    msg_no_rpy, message_size, axl_list_length (channel->pending_messages));
 
 	switch (type) {
 	case VORTEX_FRAME_TYPE_NUL:
@@ -3026,8 +3030,12 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 		axl_hash_delete (channel->stored_replies, INT_TO_PTR (msg_no_rpy));
 	} /* end if */
 
-	/* send data to sequencer */
-	vortex_sequencer_queue_data (ctx, data);
+	/* queue request */
+	if (! vortex_sequencer_queue_data (ctx, data)) {
+		/* unlock send mutex */
+		vortex_mutex_unlock (&channel->send_mutex);
+		return axl_false;
+	}
 
 	/* update next msg_no_rpy */
 	msg_no_rpy = vortex_channel_get_next_reply_no (channel);
@@ -4211,6 +4219,12 @@ axlPointer         vortex_channel_next_pending_message          (VortexChannel *
 	return axl_list_get_first (channel->pending_messages);
 }
 
+int                vortex_channel_pending_messages             (VortexChannel * channel)
+{
+	/* pending messages */
+	return axl_list_length (channel->pending_messages);
+}
+
 /** 
  * @brief Allows to check if the provided channel has pending channels
  * to be sent (they are queued due to performance reasons like remote
@@ -4541,8 +4555,8 @@ axl_bool            vortex_channel_ref                             (VortexChanne
 	/* increase the channel reference counting */
 	channel->ref_count++;
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "channel=%d ref called, ref count status after calling=%d", 
-		    channel->channel_num, channel->ref_count);
+	vortex_log (VORTEX_LEVEL_DEBUG, "VortexChannel=%d (%p) ref called, ref count status after calling=%d", 
+		    channel->channel_num, channel, channel->ref_count);
 
 	vortex_mutex_unlock (&channel->ref_mutex);
 
@@ -4575,8 +4589,8 @@ void               vortex_channel_unref                           (VortexChannel
 
 	ctx = vortex_channel_get_ctx (channel);
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "channel=%d unref called, ref count status after calling=%d", 
-		    channel->channel_num, channel->ref_count);
+	vortex_log (VORTEX_LEVEL_DEBUG, "VortexChannel=%d (%p) unref called, ref count status after calling=%d", 
+		    channel->channel_num, channel, channel->ref_count);
 
 	/* check reference counting */
 	if (channel->ref_count == 0) {

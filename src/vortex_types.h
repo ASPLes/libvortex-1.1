@@ -791,14 +791,6 @@ typedef struct _VortexSequencerData {
 	unsigned int     step;
 
 	/** 
-	 * @brief Signal value used by the vortex reader to instruct
-	 * vortex sequencer that a new SEQ frame was received and the
-	 * maximum number of bytes to be able to receive remote peer
-	 * has been increased.
-	 */
-	axl_bool         resequence;
-
-	/** 
 	 * @brief The ansno value to be used.
 	 */
 	int              ansno;

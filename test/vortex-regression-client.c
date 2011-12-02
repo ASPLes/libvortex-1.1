@@ -883,6 +883,7 @@ void test_00_c1_send_messages (VortexChannel * channel, VortexAsyncQueue * queue
 	VortexFrame * frame;
 
 	/* now send same content but with details */
+	/* printf ("Test 00-c1: sending 100 small messages..\n");*/
 	iterator = 0;
 	while (iterator < 100) {
 		/* send messages as fast as possible */
@@ -895,11 +896,15 @@ void test_00_c1_send_messages (VortexChannel * channel, VortexAsyncQueue * queue
 		iterator++;
 	} /* end while */
 
+	/* printf ("Test 00-c1: done, now receive all replies..\n"); */
+
 	iterator = 0;
 	while (iterator < 100) {
 
 		/* get frame */
 		frame = vortex_async_queue_pop (queue);
+
+		/* printf ("Test 00-c1: reply received: %d\n", iterator); */
 
 		/* unref */
 		vortex_frame_unref (frame);
@@ -907,6 +912,8 @@ void test_00_c1_send_messages (VortexChannel * channel, VortexAsyncQueue * queue
 		/* next iterator */
 		iterator++;
 	} /* end if */
+
+	/* printf ("Test 00-c1: all replies received..\n"); */
 
 	return;
 }
@@ -3023,12 +3030,16 @@ axl_bool test_01k (void) {
 	VortexAsyncQueue * queue;
 	VortexFrame      * frame;
 
+	printf ("Test 01-k: creating connection..\n");
+
 	/* do a connection */
 	conn = connection_new ();
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("ERROR (1): expected proper connection..\n");
 		return axl_false;
 	}
+
+	printf ("Test 01-k: connection created..\n");
 
 	/* create the queue */
 	queue   = vortex_async_queue_new ();
@@ -3047,11 +3058,15 @@ axl_bool test_01k (void) {
 		return axl_false;
 	}
 
+	printf ("Test 01-k: created connection and channel..\n");
+
 	/* set channel serialize */
 	vortex_channel_set_serialize (channel, axl_true);
 
 	/* set a pending outstanding message limit */
 	vortex_channel_set_outstanding_limit (channel, 10, axl_false);  
+
+	printf ("Test 01-k: sending messages....\n");
 
 	/* now send 10000 messages */
 	iterator = 0;
@@ -3061,16 +3076,24 @@ axl_bool test_01k (void) {
 			printf ("ERROR (2): expected proper channel send operation for iterator=%d..\n", iterator);
 			return axl_false;
 		} /* end if */
+
+		if (iterator == 2500 || iterator == 5000 || iterator == 7500 || iterator == 1000)
+			printf ("Test 01-k: sent %d messages..\n", iterator);
 		
 		/* next position */
 		iterator++;
 	}
+
+	printf ("Test 01-k: receiving messages..\n");
 
 	/* now get all replies */
 	iterator = 0;
 	while (iterator < 10000) {
 		/* next frame */
 		frame = vortex_channel_get_reply (channel, queue);
+
+		if (iterator == 2500 || iterator == 5000 || iterator == 7500 || iterator == 1000)
+			printf ("Test 01-k: received %d messages..\n", iterator);
 
 		/* unref frame */
 		vortex_frame_unref (frame);
@@ -3081,6 +3104,8 @@ axl_bool test_01k (void) {
 
 	/* remove queue */
 	vortex_async_queue_unref (queue);
+
+	printf ("Test 01-k: closing connection..\n");
 
 	vortex_connection_close (conn);
 	return axl_true;
@@ -3475,6 +3500,8 @@ axl_bool test_01q (void) {
 	/* terminate ctx */
 	printf ("Test 01-q: done, now terminate ctx..\n");
 	vortex_exit_ctx (ctx, axl_true);
+
+	printf ("Test 01-q: vortex context finished, now waiting a bit..\n");
 
 	/* now a bit */
 	vortex_async_queue_timedpop (wait_queue, 20000);
@@ -4613,7 +4640,7 @@ axl_bool  test_04_ab_common (VortexConnection * connection, int window_size, con
 		/* get the next message, blocking at this call. */
 		frame = vortex_channel_get_reply (channel, queue);
 		if (frame == NULL) {
-			printf ("Timeout received for regression test: %s\n", REGRESSION_URI_4);
+			printf ("Timeout received for regression test (1): %s\n", REGRESSION_URI_4);
 			continue;
 		}
 
@@ -8844,7 +8871,7 @@ axl_bool  test_04_a_common (int block_size, int num_blocks, int num_times) {
 			frame = vortex_channel_get_reply (channel, queue);
 			
 			if (frame == NULL) {
-				printf ("Timeout received for regression test: %s\n", REGRESSION_URI_4);
+				printf ("Timeout received for regression test (2): %s\n", REGRESSION_URI_4);
 				continue;
 			}
 			

@@ -40,7 +40,7 @@
 
 #include <vortex.h>
 
-void     vortex_sequencer_queue_data               (VortexCtx           * ctx,
+axl_bool vortex_sequencer_queue_data               (VortexCtx           * ctx,
 						    VortexSequencerData * data);
 
 axl_bool vortex_sequencer_run                      (VortexCtx * ctx);
@@ -55,6 +55,9 @@ void     vortex_sequencer_signal_update            (VortexChannel       * channe
 						    VortexConnection    * connection);
 
 void  	 vortex_sequencer_drop_connection_messages (VortexConnection * conn);
+
+void     vortex_sequencer_remove_channel           (VortexCtx        * ctx,
+						    VortexChannel    * channel);
 
 #endif
 

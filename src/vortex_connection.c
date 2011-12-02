@@ -4075,6 +4075,9 @@ void                vortex_connection_remove_channel_common  (VortexConnection *
 	if (do_notify)
 		__vortex_connection_check_and_notify (connection, channel, axl_false);
 
+	/* remove channel from sequencer (if registered) */
+	vortex_sequencer_remove_channel (ctx, channel);
+
 	/* remove the channel */
 	vortex_hash_remove (connection->channels, INT_TO_PTR (channel_num));
 

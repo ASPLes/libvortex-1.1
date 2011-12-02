@@ -43,6 +43,16 @@
 #include <axl.h>
 #include <vortex.h>
 
+typedef struct _VortexSequencerState {
+	axlHash       * ready;
+	axlHashCursor * ready_cursor;
+
+	VortexMutex     mutex;
+	VortexCond      cond;
+
+	axl_bool        exit;
+} VortexSequencerState;
+
 struct _VortexCtx {
 
 	VortexMutex          ref_mutex;
@@ -245,8 +255,7 @@ struct _VortexCtx {
 	axlList                 * support_search_path;
 
 	/**** vortex sequender module state ****/
-	VortexAsyncQueue        * sequencer_queue;
-	VortexAsyncQueue        * sequencer_stopped;
+	VortexSequencerState    * sequencer_state;
 	/* @internal Definition for the thread created for the sequencer.
 	 */
 	VortexThread              sequencer_thread;
