@@ -2488,6 +2488,9 @@ check_limit:
 
 	/* queue request */
 	if (! vortex_sequencer_queue_data (ctx, data)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to send message over channel=%d (conn-id=%d), unable to queue message into sequencer",
+			    channel->channel_num, vortex_connection_get_id (channel->connection));
+
 		/* unlock send mutex */
 		vortex_mutex_unlock (&channel->send_mutex);
 		return axl_false;
@@ -3032,6 +3035,9 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 
 	/* queue request */
 	if (! vortex_sequencer_queue_data (ctx, data)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to send message over channel=%d (conn-id=%d), unable to queue message into sequencer",
+			    channel->channel_num, vortex_connection_get_id (channel->connection));
+
 		/* unlock send mutex */
 		vortex_mutex_unlock (&channel->send_mutex);
 		return axl_false;
@@ -5308,8 +5314,11 @@ axlPointer __vortex_channel_close (VortexChannelCloseData * data)
 			 * same sentence cause the same effect on other
 			 * channels. */
 			vortex_connection_set_data (connection, "being_closed", NULL);
-			vortex_log (VORTEX_LEVEL_DEBUG, "unable to send close channel message");
-			result = axl_false;
+			vortex_log (VORTEX_LEVEL_CRITICAL, "unable to send close channel=%d message over channel 0, on conn-id=%d (conn status: %d)",
+				    channel->channel_num, vortex_connection_get_id (connection), vortex_connection_is_ok (connection, axl_false));
+
+			/* flag the result according to exit */
+			result = ctx->vortex_exit;
 			vortex_channel_free_wait_reply (wait_reply);
 
 			/* push a channel error */
@@ -8699,6 +8708,7 @@ void              __vortex_channel_release_pending_messages (VortexChannel * cha
 		vortex_channel_unref (channel);
 		
 		/* free message and node itself */
+		vortex_payload_feeder_unref (next_data->feeder);
 		axl_free (next_data->message);
 		axl_free (next_data);
 		

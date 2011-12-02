@@ -3624,13 +3624,14 @@ axl_bool test_01r (void) {
 
 	/* init queue */
 	queue = vortex_async_queue_new ();
-
+	
 	/* create a new connection */
 	conn = vortex_connection_new (ctx, listener_host, LISTENER_PORT, NULL, NULL);
 	if (!vortex_connection_is_ok (conn, axl_false)) {
 		vortex_connection_close (conn);
 		return axl_false;
 	} /* end if */
+	printf ("Test 01-r: connection id=%d (%p) created..\n", vortex_connection_get_id (conn), conn);
 
 	/* create a channel */
 	printf ("Test 01-r: check calling to vortex_exit_ctx when received at the frame received..\n");
@@ -3710,6 +3711,8 @@ axl_bool test_01r (void) {
 			vortex_connection_close (conn);
 			return axl_false;
 		} /* end if */
+
+		printf ("Test 01-r: created connection id=%d (%p)\n", vortex_connection_get_id (conn), conn);
 
 		channel = vortex_channel_new (conn, 0,
 					      REGRESSION_URI,

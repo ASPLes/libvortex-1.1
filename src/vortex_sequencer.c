@@ -137,6 +137,7 @@ axl_bool vortex_sequencer_queue_data (VortexCtx * ctx, VortexSequencerData * dat
 
 	/* check state before handling this message with the sequencer */
 	if (ctx->vortex_exit || ctx->sequencer_state == NULL || ctx->sequencer_state->exit) {
+		vortex_payload_feeder_unref (data->feeder);
 		axl_free (data->message);
 		axl_free (data);
 		return axl_false;
@@ -145,6 +146,7 @@ axl_bool vortex_sequencer_queue_data (VortexCtx * ctx, VortexSequencerData * dat
 	/* update channel reference */
 	if (! vortex_channel_ref (data->channel)) {
 		vortex_log (VORTEX_LEVEL_WARNING, "trying to queue a message to be sent over a channel not opened (vortex_channel_ref failed)");
+		vortex_payload_feeder_unref (data->feeder);
 		axl_free (data->message);
 		axl_free (data);
 		return axl_false;
@@ -202,6 +204,9 @@ int vortex_sequencer_build_packet_to_send (VortexCtx           * ctx,
  	int          size_to_copy        = 0;
  	unsigned int max_seq_no_accepted = vortex_channel_get_max_seq_no_remote_accepted (channel);
 	char       * payload             = NULL;
+
+	/* flag as not complete until something different is set */
+	packet->is_complete = axl_false;
 
 	/* check particular case where an empty message is to be sent
 	 * and the message is NUL */
@@ -446,6 +451,9 @@ axl_bool vortex_sequencer_remove_message_sent (VortexCtx * ctx, VortexChannel * 
 	/* release a reference */
 	vortex_channel_unref (channel);
 
+	/* release feeder */
+	vortex_payload_feeder_unref (data->feeder);
+
 	/* release data */
 	axl_free (data->message);
 	axl_free (data);
@@ -688,9 +696,6 @@ axl_bool      vortex_sequencer_direct_send (VortexConnection * connection,
 	VortexCtx * ctx    = vortex_connection_get_ctx (connection);
 #endif
 
-	/* reference the channel during the transmission */
-	vortex_channel_ref (channel);
-
 #if defined(ENABLE_VORTEX_LOG)
 	/* send the frame */
 	if (vortex_log2_is_enabled (ctx))
@@ -725,9 +730,6 @@ axl_bool      vortex_sequencer_direct_send (VortexConnection * connection,
 		vortex_channel_signal_rpy_sent (channel, packet->msg_no);
 	}
 
-	/* unref the channel now finished the operation */
-	vortex_channel_unref (channel);
-	
 	/* nothing more */
 	return result;
 }
