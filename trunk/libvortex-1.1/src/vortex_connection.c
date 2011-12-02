@@ -3057,7 +3057,7 @@ void               vortex_connection_free (VortexConnection * connection)
 	/* get a reference to the context reference */
 	ctx = connection->ctx;
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "freeing connection id=%d", connection->id);
+	vortex_log (VORTEX_LEVEL_DEBUG, "freeing connection id=%d (%p)", connection->id, connection);
 
 	/*
 	 * NOTE: The order in which the channels and the channel pools
