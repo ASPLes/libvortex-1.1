@@ -326,6 +326,49 @@ axl_bool  test_00 (void)
 	return axl_true;
 }
 
+/** 
+ * @brief Checks current implementation for async queues.
+ *
+ * @return axl_true if checks runs ok, otherwise axl_false is returned.
+ */
+axl_bool  test_001 (void) 
+{
+	VortexMutex mutex;
+	VortexCond  cond;
+
+	/* init mutex and cond */
+	vortex_mutex_create (&mutex);
+	vortex_cond_create (&cond);
+
+	/* lock the mutex */
+	vortex_mutex_lock (&mutex);
+
+
+	printf ("Test 00-1: waiting in conditional var and releasing mutex (1)..\n");
+	vortex_cond_timedwait (&cond, &mutex, 1000);
+
+	printf ("Test 00-1: waiting in conditional var and releasing mutex (2)..\n");
+	vortex_cond_timedwait (&cond, &mutex, 1000);
+
+	printf ("Test 00-1: waiting in conditional var and releasing mutex (3)..\n");
+	vortex_cond_timedwait (&cond, &mutex, 1000);
+
+	printf ("Test 00-1: unlocking mutex..\n");
+
+	/* unlock the mutex */
+	vortex_mutex_unlock (&mutex);
+
+	printf ("Test 00-1: destroying mutex..\n");
+
+	/* destroy */
+	vortex_mutex_destroy (&mutex);
+	vortex_cond_destroy (&cond);
+
+	printf ("Test 00-1: done..\n");
+
+	return axl_true;
+}
+
 void test_00a_block (VortexAsyncQueue * queue)
 {
 	/* wait master thread */
@@ -615,12 +658,18 @@ axl_bool  test_00a (void)
 		return axl_false;
 	} /* end if */
 
+	printf ("Test 00-a: releasing queues..\n");
+
 	/* lock until no waiter is reading */
 	vortex_async_queue_unref (queue);
 	vortex_async_queue_unref (temp);
 
+	printf ("Test 00-a: finishing vortex context..\n");
+
 	/* finish context */
 	vortex_exit_ctx (ctx, axl_true);
+
+	printf ("Test 00-a: done..\n");
 
 	return axl_true;
 }
@@ -6084,10 +6133,13 @@ axl_bool  test_02m (void) {
 	printf ("Test 02m: bytes transferred %d..\n", count);
 
 	/* get a reply */
-	frame = vortex_channel_get_reply (channel, queue);
-	if (frame == NULL) {
-		printf ("ERROR: expected reply from remote side while running mixed replies tests..\n");
-		return axl_false;
+	while (axl_true) {
+		frame = vortex_channel_get_reply (channel, queue);
+		if (frame == NULL) {
+			printf ("ERROR: expected reply from remote side while running mixed replies tests..\n");
+			continue;
+		}
+		break;
 	}
 	
 	/* check reply type */
@@ -13595,7 +13647,7 @@ int main (int  argc, char ** argv)
         printf ("**       valgrind or similar tools.\n");
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
-	printf ("**       Test available: test_00, test_00a, test_00b, test_00c, test_00c1, test_00c2,\n");
+	printf ("**       Test available: test_00, test_001, test_00a, test_00b, test_00c, test_00c1, test_00c2,\n");
 	printf ("**                       test_00d, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
 	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o,\n");
 	printf ("**                       test_01p, test_01q, test_01r, test_01s, test_01s1, test_01t\n");
@@ -13757,6 +13809,9 @@ int main (int  argc, char ** argv)
 
 		if (check_and_run_test (run_test_name, "test_00"))
 			run_test (test_00, "Test 00", "Async Queue support", -1, -1);
+
+		if (check_and_run_test (run_test_name, "test_001"))
+			run_test (test_001, "Test 00-1", "Conditional mutexes", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_00a"))
 			run_test (test_00a, "Test 00-a", "Thread pool stats", -1, -1);
@@ -14066,6 +14121,8 @@ int main (int  argc, char ** argv)
 	printf ("**\n");
 
  	run_test (test_00, "Test 00", "Async Queue support", -1, -1);
+
+	run_test (test_001, "Test 00-1", "Conditional mutexes", -1, -1);
 
  	run_test (test_00a, "Test 00-a", "Thread pool stats", -1, -1);
 
