@@ -3739,6 +3739,7 @@ axl_bool test_01r (void) {
 		}
 		
 		/* call to shutdown */
+		printf ("Test 01-r: shutting down connection id=%d\n", vortex_connection_get_id (conn));
 		vortex_connection_shutdown (conn);
 
 		/* wait for vortex termination signal */
