@@ -131,7 +131,7 @@ void __vortex_thread_pool_process_events (VortexCtx * ctx, VortexThreadPool * po
 	axlPointer               data2;
 
 	/* ensure only one thread is processing */
-	if (ctx->vortex_exit || pool->processing_events || axl_list_length (pool->events) == 0)
+	if (pool->processing_events || axl_list_length (pool->events) == 0 || vortex_is_exiting (ctx))
 		return;
 
 	/* acquire lock */
@@ -234,8 +234,7 @@ void __vortex_thread_pool_automatic_resize (VortexCtx * ctx)
 
 	/* check before acquiring the look if the user changed during
 	 * our lock */
-	if (! ctx->thread_pool || ! ctx->thread_pool->automatic_resize_status || 
-	    ctx->thread_pool_being_stopped || ctx->vortex_exit)  
+	if (! ctx->thread_pool || vortex_is_exiting (ctx))  
 		return;
 
 	/* lock thread pool */
@@ -243,7 +242,7 @@ void __vortex_thread_pool_automatic_resize (VortexCtx * ctx)
 
 	/* check if the user changed during our lock */
 	if (! ctx->thread_pool || ! ctx->thread_pool->automatic_resize_status || 
-	    ctx->thread_pool_being_stopped || ctx->vortex_exit) {
+	    ctx->thread_pool_being_stopped || vortex_is_exiting (ctx)) {
 		vortex_mutex_unlock (&ctx->thread_pool->mutex);
 		return;
 	}
@@ -269,7 +268,7 @@ void __vortex_thread_pool_automatic_resize (VortexCtx * ctx)
 	    pending_tasks > 0 && 
 	    diff.tv_sec > ctx->thread_pool->thread_add_period){
 
-		vortex_log (VORTEX_LEVEL_DEBUG, "Adding %d threads because there are pending tasks %d and limit was not reached %d",
+		vortex_log (VORTEX_LEVEL_DEBUG, "Adding %d threads because there are pending tasks %d and limit was not reached %d\n",
 			    ctx->thread_pool->thread_add_step, pending_tasks, ctx->thread_pool->thread_max_limit);
 
 		/* add a thread to the pool (call internal unlocked) */
@@ -278,6 +277,7 @@ void __vortex_thread_pool_automatic_resize (VortexCtx * ctx)
 
 	} else if (ctx->thread_pool->auto_remove && 
 		   pending_tasks == 0 && 
+		   running_threads > ctx->thread_pool->base_thread_num &&
 		   (waiting_threads + 2) > ctx->thread_pool->base_thread_num && 
 		   diff.tv_sec > (ctx->thread_pool->thread_add_period * 2)) {
 
@@ -286,7 +286,7 @@ void __vortex_thread_pool_automatic_resize (VortexCtx * ctx)
 		   number and that no reduce operation had happend
 		   during last thread_add_period * 2. */
 
-		vortex_log (VORTEX_LEVEL_DEBUG, "Removing %d threads because there are no pending tasks, and there are more waiting threads %d than base number %d",
+		vortex_log (VORTEX_LEVEL_DEBUG, "Removing %d threads because there are no pending tasks, and there are more waiting threads %d than base number %d\n",
 			    ctx->thread_pool->thread_add_step, waiting_threads, ctx->thread_pool->base_thread_num);
 		   
 		/* remove a thread from the pool */
@@ -357,7 +357,12 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * _data)
 			/* do not lock because this is already done by
 			 * vortex_thread_pool_remove .. */
 			vortex_mutex_lock (&(ctx->thread_pool->stopped_mutex));
+
+			/* remove thread from the pool */
+			vortex_mutex_lock (&pool->mutex);
 			axl_list_unlink_ptr (pool->threads, thread);
+			vortex_mutex_unlock (&pool->mutex);
+
 			axl_list_append (pool->stopped, thread);
 			vortex_mutex_unlock (&(ctx->thread_pool->stopped_mutex));
 
@@ -754,7 +759,9 @@ void vortex_thread_pool_exit (VortexCtx * ctx)
 	vortex_log (VORTEX_LEVEL_DEBUG, "stopping thread pool..");
 
 	/* flag the queue to be stoping */
+	vortex_mutex_lock (&ctx->thread_pool->mutex);
 	ctx->thread_pool_being_stopped = axl_true;
+	vortex_mutex_unlock (&ctx->thread_pool->mutex);
 
 	/* push beacons to notify eacy thread created to stop */
 	iterator = 0;
@@ -797,8 +804,13 @@ void vortex_thread_pool_being_closed        (VortexCtx * ctx)
 	if (ctx == NULL)
 		return;
 
-	/* flag the queue to be stoping */
+	/* lock thread pool */
+	vortex_mutex_lock (&ctx->thread_pool->mutex);
+
 	ctx->thread_pool_being_stopped = axl_true;
+
+	/* unlock thread pool */
+	vortex_mutex_unlock (&ctx->thread_pool->mutex);
 	
 	return;
 }

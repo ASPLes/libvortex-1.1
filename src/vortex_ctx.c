@@ -631,9 +631,9 @@ int         vortex_ctx_ref_count                 (VortexCtx  * ctx)
 		return -1;
 	
 	/* acquire the mutex */
-	/* vortex_mutex_lock (&ctx->ref_mutex); */
+	vortex_mutex_lock (&ctx->ref_mutex); 
 	result = ctx->ref_count;
-	/* vortex_mutex_unlock (&ctx->ref_mutex); */
+	vortex_mutex_unlock (&ctx->ref_mutex); 
 
 	return result;
 }
@@ -675,16 +675,19 @@ void        vortex_ctx_unref2                     (VortexCtx ** ctx, const char 
 	/* get local reference */
 	_ctx = (*ctx);
 
+	/* check if we have to nullify after unref */
+	vortex_mutex_lock (&_ctx->ref_mutex);
+
 	/* do sanity check */
 	if (_ctx->ref_count <= 0) {
+		vortex_mutex_unlock (&_ctx->ref_mutex);
+
 		_vortex_log (NULL, __AXL_FILE__, __AXL_LINE__, VORTEX_LEVEL_CRITICAL, "attempting to unref VortexCtx %p object more times than references supported", _ctx);
 		/* nullify */
 		(*ctx) = NULL;
 		return;
 	}
 
-	/* check if we have to nullify after unref */
-	vortex_mutex_lock (&_ctx->ref_mutex);
 	nullify =  (_ctx->ref_count == 1);
 	vortex_mutex_unlock (&_ctx->ref_mutex);
 

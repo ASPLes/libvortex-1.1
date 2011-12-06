@@ -490,6 +490,9 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 	/* get the state */
 	state = ctx->sequencer_state;
 
+	/* lock mutex (acquire) */
+	vortex_mutex_lock (&state->mutex);
+
 	while (axl_true) {
 		/* block until receive a new message to be sent (but
 		 * only if there are no ready events) */
@@ -505,6 +508,10 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 		/* check if it was requested to stop the vortex
 		 * sequencer operation */
 		if (state->exit) {
+
+			/* release unlock now we are finishing */
+			vortex_mutex_unlock (&state->mutex);
+			
 			vortex_log (VORTEX_LEVEL_DEBUG, "exiting vortex sequencer thread ..");
 
 			/* release reference acquired here */

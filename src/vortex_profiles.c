@@ -74,8 +74,9 @@ axl_bool __vortex_profiles_ref (VortexProfile * profile, const char * label)
 {
 	axl_bool result;
 
-	if (profile == NULL || profile->ref_count < 1)
+	if (profile == NULL)
 		return axl_false;
+
 	/* lock and ref */
 	vortex_mutex_lock (&profile->mutex);
 
@@ -151,7 +152,7 @@ void __vortex_profiles_destroy_profile_item (axlPointer data)
 
 void __vortex_profiles_unref (VortexProfile * profile, const char * label)
 {
-	if (profile == NULL || profile->ref_count < 1)
+	if (profile == NULL)
 		return;
 
 	/* lock and ref */
