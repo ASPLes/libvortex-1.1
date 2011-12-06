@@ -2212,12 +2212,14 @@ void vortex_channel_update_status (VortexChannel * channel, unsigned int  frame_
 
 	/* update seqno */
 	if ((update & UPDATE_SEQ_NO) == UPDATE_SEQ_NO) {
-		channel->last_seq_no        = ((channel->last_seq_no + frame_size) % (MAX_SEQ_NO));
+		vortex_mutex_lock (&channel->ref_mutex);
+		channel->last_seq_no = ((channel->last_seq_no + frame_size) % (MAX_SEQ_NO));
+		vortex_mutex_unlock (&channel->ref_mutex);
 	}
 
 	/* update ansno */
 	if ((update & UPDATE_ANS_NO) == UPDATE_ANS_NO) {
-		channel->last_ansno_sent   += 1;
+		channel->last_ansno_sent += 1;
 	}
 
 	/* update last reply written */
@@ -2351,6 +2353,14 @@ axl_bool    vortex_channel_send_msg_common (VortexChannel       * channel,
 		return axl_false;
 	}
 
+	/* acquire reference to the channel during the send
+	 * operation */
+	if (! vortex_channel_ref2 (channel, "send-msg")) {
+		vortex_log (VORTEX_LEVEL_WARNING, "received a reply request but failed to acquire a reference to the channel object (%p)",
+			    channel);
+		return axl_false;
+	} /* end if */
+
 	/* lock send mutex */
 	vortex_mutex_lock (&channel->send_mutex);
 
@@ -2364,6 +2374,10 @@ check_limit:
 				vortex_log (VORTEX_LEVEL_WARNING, "unable to send MSG request, channel outstanding limit reached (%d)",
 					    channel->outstanding_limit);
 				vortex_mutex_unlock (&channel->send_mutex);
+
+				/* release channel */
+				vortex_channel_unref2 (channel, "send-msg");
+
 				return axl_false;
 			} /* end if */
 
@@ -2383,6 +2397,10 @@ check_limit:
 	if (data == NULL) {
 		/* unlock send mutex */
 		vortex_mutex_unlock (&channel->send_mutex);
+
+		/* release channel */
+		vortex_channel_unref2 (channel, "send-msg");
+
 		return axl_false;
 	} /* end if */
 	data->channel          = channel;
@@ -2410,6 +2428,10 @@ check_limit:
 			axl_free (data);
 			/* unlock send mutex */
 			vortex_mutex_unlock (&channel->send_mutex);
+
+			/* release channel */
+			vortex_channel_unref2 (channel, "send-msg");
+
 			return axl_false;
 		}
 
@@ -2446,6 +2468,10 @@ check_limit:
 
 				/* unlock send mutex */
 				vortex_mutex_unlock (&channel->send_mutex);
+
+				/* release channel */
+				vortex_channel_unref2 (channel, "send-msg");
+
 				return axl_false;
 			}
 			feeder->channel = channel;
@@ -2495,11 +2521,18 @@ check_limit:
 
 		/* unlock send mutex */
 		vortex_mutex_unlock (&channel->send_mutex);
+
+		/* release channel */
+		vortex_channel_unref2 (channel, "send-msg");
+
 		return axl_false;
 	}
 
 	/* unlock send mutex */
 	vortex_mutex_unlock (&channel->send_mutex);
+
+	/* release channel */
+	vortex_channel_unref2 (channel, "send-msg");
 
 	return axl_true;
 }
@@ -2815,7 +2848,15 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 		v_return_val_if_fail (message,    axl_false);
 	} /* end if */
 	v_return_val_if_fail (channel->is_opened, axl_false);
-	
+
+	/* acquire reference to the channel during the send
+	 * operation */
+	if (! vortex_channel_ref2 (channel, "send-rpy")) {
+		vortex_log (VORTEX_LEVEL_WARNING, "received a reply request but failed to acquire a reference to the channel object (%p)",
+			    channel);
+		return axl_false;
+	} /* end if */
+
 	/* lock send mutex */
 	vortex_mutex_lock (&channel->send_mutex);
 	
@@ -2825,6 +2866,10 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 
 		/* flag the channels non being sending */
 		vortex_mutex_unlock (&channel->send_mutex);
+
+		/* release channel */
+		vortex_channel_unref2 (channel, "send-rpy");
+
 		return axl_false;
 	}
 
@@ -2833,6 +2878,10 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 	if (data == NULL) {
 		/* flag the channels non being sending */
 		vortex_mutex_unlock (&channel->send_mutex);
+
+		/* release channel */
+		vortex_channel_unref2 (channel, "send-rpy");
+
 		return axl_false;
 	}
 	data->channel         = channel;
@@ -2857,6 +2906,10 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 			axl_free (data);
 			/* flag the channels non being sending */
 			vortex_mutex_unlock (&channel->send_mutex);
+
+			/* release channel */
+			vortex_channel_unref2 (channel, "send-rpy");
+
 			return axl_false;
 		} /* end if */
 
@@ -2886,6 +2939,10 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 
 				/* unlock send mutex */
 				vortex_mutex_unlock (&channel->send_mutex);
+
+				/* release channel */
+				vortex_channel_unref2 (channel, "send-rpy");
+
 				return axl_false;
 			}
 			feeder->channel = channel;
@@ -2909,6 +2966,10 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 
 			/* free data to be sent */
 			__vortex_channel_free_sequencer_data (data);
+
+			/* release channel */
+			vortex_channel_unref2 (channel, "send-rpy");
+
 			return axl_false;
 		} /* end if */
 
@@ -2932,6 +2993,10 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 					/* free, unlock and return failure */
 					__vortex_channel_free_sequencer_data (data);
 					vortex_mutex_unlock (&channel->send_mutex);
+
+					/* release channel */
+					vortex_channel_unref2 (channel, "send-rpy");
+
 					return axl_false;
 				} /* end if */
 
@@ -2942,6 +3007,10 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 				/* free, unlock and return failure */
 				__vortex_channel_free_sequencer_data (data);
 				vortex_mutex_unlock (&channel->send_mutex);
+
+				/* release channel */
+				vortex_channel_unref2 (channel, "send-rpy");
+
 				return axl_false;
 			} /* end if */
 
@@ -2963,6 +3032,10 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 				/* free, unlock and return failure */
 				__vortex_channel_free_sequencer_data (data);
 				vortex_mutex_unlock (&channel->send_mutex);
+
+				/* release channel */
+				vortex_channel_unref2 (channel, "send-rpy");
+
 				return axl_false;
 			} /* end if */
 
@@ -2973,6 +3046,10 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 			if (axl_hash_get (channel->stored_replies, INT_TO_PTR (msg_no_rpy)) != NULL) {
 				/* list already created and inserted into the stored replies hash */
 				vortex_mutex_unlock (&channel->send_mutex);
+
+				/* release channel */
+				vortex_channel_unref2 (channel, "send-rpy");
+
 				return axl_true;
 			} /* end if */
 
@@ -2996,13 +3073,17 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 
 		/* unlock */
 		vortex_mutex_unlock (&channel->send_mutex);
+
+		/* release channel */
+		vortex_channel_unref2 (channel, "send-rpy");
+
 		return axl_true;
 	}
 
 	/* do sending reply operation */
  send_reply:
 	vortex_log (VORTEX_LEVEL_DEBUG, "sending reply for message %d (size: %d, channel queue status: %d)\n", 
- 		    msg_no_rpy, message_size, axl_list_length (channel->pending_messages));
+ 		    msg_no_rpy, message_size, vortex_channel_pending_messages (channel));
 
 	switch (type) {
 	case VORTEX_FRAME_TYPE_NUL:
@@ -3042,6 +3123,10 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 
 		/* unlock send mutex */
 		vortex_mutex_unlock (&channel->send_mutex);
+
+		/* release channel */
+		vortex_channel_unref2 (channel, "send-rpy");
+
 		return axl_false;
 	}
 
@@ -3078,6 +3163,9 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 
 	/* unlock send mutex */
 	vortex_mutex_unlock   (&channel->send_mutex);
+
+	/* release channel */
+	vortex_channel_unref2 (channel, "send-rpy");
 
 	return axl_true;
 }
@@ -3788,8 +3876,10 @@ void vortex_channel_update_remote_incoming_buffer (VortexChannel * channel,
   		    max_remote_seq_no, (ackno + window -1));
 	
  	/* update size allowed */
+	vortex_mutex_lock (&channel->ref_mutex);
 	channel->remote_consumed_seq_no = ackno;
 	channel->remote_window          = window;
+	vortex_mutex_unlock   (&channel->ref_mutex);
  
 	return;
 }
@@ -3814,11 +3904,18 @@ void vortex_channel_update_remote_incoming_buffer (VortexChannel * channel,
  */
 unsigned int  vortex_channel_get_max_seq_no_remote_accepted (VortexChannel * channel)
 {
+	unsigned int result;
+
 	/* check reference */
 	if (channel == NULL)
 		return -1;
 
-	return (channel->remote_consumed_seq_no + channel->remote_window - 1);
+	/* get status */
+	vortex_mutex_lock (&channel->ref_mutex);
+	result = (channel->remote_consumed_seq_no + channel->remote_window - 1);
+	vortex_mutex_unlock (&channel->ref_mutex);
+
+	return result;
 }
 
 /** 
@@ -4183,12 +4280,13 @@ void               vortex_channel_queue_pending_message         (VortexChannel *
 	if (channel == NULL || message == NULL)
 		return;
 
+	/* lock the message */
+	vortex_mutex_lock (&channel->pending_messages_m);
+
 	vortex_log (VORTEX_LEVEL_DEBUG, "queueing a new message pending to be sent: %d messages already queued on channel=%d",
 		    axl_list_length (channel->pending_messages),
 		    channel->channel_num);
 
-	/* lock the message */
-	vortex_mutex_lock (&channel->pending_messages_m);
 	axl_list_append (channel->pending_messages, message);
 	vortex_mutex_unlock (&channel->pending_messages_m);
 	return;
@@ -4220,11 +4318,12 @@ axlPointer         vortex_channel_next_pending_message          (VortexChannel *
  		return NULL;
 		} */
 	
-	vortex_log (VORTEX_LEVEL_DEBUG, "returning the first pending message: current length=%d for channel=%d",
-		    axl_list_length (channel->pending_messages), channel->channel_num);
-	
 	/* no pending messages, return NULL */
 	vortex_mutex_lock (&channel->pending_messages_m);
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "returning the first pending message: current length=%d for channel=%d",
+		    axl_list_length (channel->pending_messages), channel->channel_num);
+
 	if (axl_list_length (channel->pending_messages) == 0) {
 		vortex_mutex_unlock (&channel->pending_messages_m);
 		return NULL;
@@ -4609,10 +4708,10 @@ axl_bool            vortex_channel_ref2                             (VortexChann
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
 #endif
+	axl_bool    result;
 
 	/* check channel received */
 	v_return_val_if_fail (channel,                axl_false);
-	v_return_val_if_fail (channel->ref_count > 0, axl_false);
 	
 	/* lock ref/unref operations over this connection */
 	vortex_mutex_lock   (&channel->ref_mutex);
@@ -4627,10 +4726,13 @@ axl_bool            vortex_channel_ref2                             (VortexChann
 	vortex_log (VORTEX_LEVEL_DEBUG, "VortexChannel=%d (%p) ref called %s, ref count status after calling=%d", 
 		    channel->channel_num, channel, label, channel->ref_count);
 
+	/* return channel reference counting */
+	result = channel->ref_count >= 2;
+
 	vortex_mutex_unlock (&channel->ref_mutex);
 
 	/* reference increased */
-	return channel->ref_count >= 2;
+	return result;
 }
 
 /** 
@@ -4650,7 +4752,6 @@ void               vortex_channel_unref2                           (VortexChanne
 
 	/* check reference */
 	v_return_if_fail (channel);
-	v_return_if_fail (channel->ref_count > 0);
 
 	/* lock the channel */
 	vortex_mutex_lock (&channel->ref_mutex);
@@ -5247,14 +5348,14 @@ axl_bool      vortex_channel_block_until_replies_are_sent (VortexChannel * chann
 
 	/* unlock */
 	vortex_mutex_unlock (&channel->pending_mutex);
-	
+
 	vortex_log (VORTEX_LEVEL_DEBUG, 
 		    "we have sent the last reply over the the channel %d (RPY %d = MSG %d), pending messages: %d", 
 		    channel->channel_num, 
 		    channel->last_reply_written,
 		    channel->last_message_received,
-		    axl_list_length (channel->pending_messages));
-
+		    vortex_channel_pending_messages (channel));
+	
 	return result;
 }
 
@@ -6138,7 +6239,7 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 	/* log a message */
 	vortex_log (VORTEX_LEVEL_DEBUG, 
 		    "invocation frame received handler for channel %d finished (second level: channel), ref count: channel=%d connection=%d", 
-		    channel_num, channel->ref_count, vortex_connection_ref_count (connection));
+		    channel_num, vortex_channel_ref_count (channel), vortex_connection_ref_count (connection));
 	
 	/* update channel reference */
 	vortex_channel_unref2 (channel, "frame received");
@@ -8754,7 +8855,7 @@ void              __vortex_channel_release_pending_messages (VortexChannel * cha
 
 	/* get context */
 	vortex_log (VORTEX_LEVEL_DEBUG, "releasing pending message on channel=%d, ref count=%d, pending=%d",
-		    channel->channel_num, channel->ref_count, axl_list_length (channel->pending_messages));
+		    channel->channel_num, vortex_channel_ref_count (channel), vortex_channel_pending_messages (channel));
 	
 	/* get first pending message */
 	next_data = vortex_channel_remove_pending_message (channel);
@@ -8764,7 +8865,7 @@ void              __vortex_channel_release_pending_messages (VortexChannel * cha
 		vortex_log (VORTEX_LEVEL_WARNING, "Detected pending message discard, finishing reference %p (channel=%d, ref count=%d, pending=%d)", 
 			    next_data, vortex_channel_get_number (channel), 
 			    vortex_channel_ref_count (channel),
-			    axl_list_length (channel->pending_messages));
+			    vortex_channel_pending_messages (channel));
 		
 		if (vortex_channel_ref_count (channel) == 1) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "Found channel reference counting reaching 0 during a release operation that should have, at least 2");
@@ -8961,7 +9062,14 @@ axl_bool            vortex_channel_check_incoming_seqno            (VortexChanne
  */
 axl_bool            vortex_channel_is_stalled                      (VortexChannel  * channel)
 {
-	return channel->last_seq_no == (channel->remote_consumed_seq_no + channel->remote_window);
+	axl_bool result;
+
+	/* get consistent value */
+	vortex_mutex_lock (&channel->ref_mutex);
+	result = (channel->last_seq_no == (channel->remote_consumed_seq_no + channel->remote_window));
+	vortex_mutex_unlock (&channel->ref_mutex);
+
+	return result;
 }
 
 /** 

@@ -2163,7 +2163,7 @@ void __vortex_connection_check_and_notify (VortexConnection * connection,
 					    vortex_channel_get_number (channel),
 					    vortex_channel_ref_count (channel),
 					    is_added ? "addition" : "removal",
-					    connection->id, connection->ref_count);
+					    connection->id, vortex_connection_ref_count (connection));
 
 				/* get references to the handler and data before releasing the mutex */
 				handler      = statusUpdate->handler;
@@ -2633,12 +2633,17 @@ void               vortex_connection_unref                  (VortexConnection * 
  */
 int                 vortex_connection_ref_count              (VortexConnection * connection)
 {
+	int result;
+
 	/* check reference received */
 	if (connection == NULL)
 		return -1;
 
 	/* return the reference count */
-	return connection->ref_count;
+	vortex_mutex_lock     (&(connection->ref_mutex));
+	result = connection->ref_count;
+	vortex_mutex_unlock     (&(connection->ref_mutex));
+	return result;
 }
 
 /** 
@@ -2838,7 +2843,9 @@ axl_bool                vortex_connection_is_ok (VortexConnection * connection,
 		return axl_false;
 
 	/* check for the socket this connection has */
+	vortex_mutex_lock  (&(connection->ref_mutex));
 	result = (connection->session < 0) || (! connection->is_connected);
+	vortex_mutex_unlock  (&(connection->ref_mutex));
 
 	/* implement free_on_fail flag */
 	if (free_on_fail && result) {
@@ -4070,7 +4077,7 @@ void                vortex_connection_remove_channel_common  (VortexConnection *
 	channel_num = vortex_channel_get_number (channel);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "removing channel id=%d (conn refs: %d, channels: %d)", channel_num,
-		    connection->ref_count, vortex_connection_channels_count (connection));
+		    vortex_connection_ref_count (connection), vortex_connection_channels_count (connection));
 
 	/* check and notify the channel to be removed. */
 	if (do_notify)
@@ -4099,9 +4106,11 @@ void                vortex_connection_remove_channel_common  (VortexConnection *
 void                vortex_connection_set_receive_stamp            (VortexConnection * conn, long bytes_received, long bytes_sent)
 {
 	/* set that content was received */
+	vortex_mutex_lock (&conn->ref_mutex);
 	conn->last_idle_stamp  = (long) time (NULL);
 	conn->bytes_received  += bytes_received;
 	conn->bytes_sent      += bytes_sent;
+	vortex_mutex_unlock (&conn->ref_mutex);
 
 	return;
 }
@@ -5151,7 +5160,11 @@ void           __vortex_connection_set_not_connected (VortexConnection * connect
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "flagging the connection as non-connected: %s (close-session?: %d)", message ? message : "",
 			    connection->close_session);
+
+		/* set value consistently */
+		vortex_mutex_lock  (&(connection->ref_mutex));
 		connection->is_connected = axl_false;
+		vortex_mutex_unlock  (&(connection->ref_mutex));
 
 		/* renew the message */
 		if (connection->message)
@@ -5186,7 +5199,12 @@ void           __vortex_connection_set_not_connected (VortexConnection * connect
 				    axl_check_undef (connection->port));
 			shutdown (connection->session, SHUT_RDWR); 
 			vortex_close_socket (connection->session);  
+
+			/* set session value */
+			vortex_mutex_lock (&(connection->ref_mutex));
 			connection->session      = -1;
+			vortex_mutex_unlock (&(connection->ref_mutex));
+
 			vortex_log (VORTEX_LEVEL_DEBUG, "closing session id=%d and set to be not connected",
 			       connection->id);
 
@@ -6180,10 +6198,9 @@ int                 vortex_connection_invoke_send            (VortexConnection *
 							      const char       * buffer,
 							      int                buffer_len)
 {
-	if (connection == NULL || ! connection->is_connected ||
-	    buffer     == NULL || ! connection->send)
+	if (connection == NULL || buffer == NULL || ! vortex_connection_is_ok (connection, axl_false))
 		return -1;
-	    
+
 	return connection->send (connection, buffer, buffer_len);
 }
 

@@ -1183,7 +1183,7 @@ void vortex_listener_wait (VortexCtx * ctx)
 void vortex_listener_unlock (VortexCtx * ctx)
 {
 	/* check reference received */
-	if (ctx == NULL || ctx->ref_count < 1)
+	if (ctx == NULL || vortex_ctx_ref_count (ctx) < 1)
 		return;
 
 	/* unlock listener */

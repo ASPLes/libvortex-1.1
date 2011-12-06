@@ -1118,7 +1118,9 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
 		return;
 	}
 	/* flag other waiting functions to do nothing */
+	vortex_mutex_lock (&ctx->ref_mutex);
 	ctx->vortex_exit = axl_true;
+	vortex_mutex_unlock (&ctx->ref_mutex);
 	
 	/* unlock */
 	vortex_mutex_unlock  (&ctx->exit_mutex);
@@ -1244,9 +1246,13 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  */
 axl_bool vortex_is_exiting           (VortexCtx * ctx)
 {
+	axl_bool result;
 	if (ctx == NULL)
 		return axl_false;
-	return (ctx->vortex_exit);
+	vortex_mutex_lock (&ctx->ref_mutex);
+	result = ctx->vortex_exit;
+	vortex_mutex_unlock (&ctx->ref_mutex);
+	return result;
 }
 
 /* @} */
