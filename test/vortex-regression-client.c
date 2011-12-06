@@ -4097,6 +4097,7 @@ axl_bool test_01w (void) {
 	char               * message;
 	VortexAsyncQueue   * queue;
 	int                  iterator;
+	VortexFrame        * frame;
 
 	/* call to connection close */
 	conn = connection_new ();
@@ -4105,6 +4106,8 @@ axl_bool test_01w (void) {
 		return axl_false;
 	} /* end if */
 
+	queue    = vortex_async_queue_new ();
+
 	/* create a channel */
 	printf ("Test 01-w: creating channel..\n");
 	channel = vortex_channel_new (conn, 0,
@@ -4112,7 +4115,7 @@ axl_bool test_01w (void) {
 				      /* no close handling */
 				      NULL, NULL,
 				      /* frame receive async handling */
-				      NULL, NULL,
+				      vortex_channel_queue_reply, queue,
 				      /* no async channel creation */
 				      NULL, NULL);
 
@@ -4128,7 +4131,17 @@ axl_bool test_01w (void) {
 		return axl_false;
 	} /* end if */
 
+	/* get frame reply */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL) {
+		printf ("ERROR: expected to find proper frame reply but found NULL reference..\n");
+		return axl_false;
+	}
+	vortex_frame_unref (frame);
+	vortex_channel_set_received_handler (channel, NULL, NULL);
+
 	/* now send a message bigger */
+	printf ("Test 01-w: now sending message bigger than frame limit set..\n");
 	message = axl_new (char, 10010);
 	if (! vortex_channel_send_msg (channel, message, 10010, 0)) {
 		printf ("ERROR: failed to send test message..\n");
@@ -4137,7 +4150,7 @@ axl_bool test_01w (void) {
 	axl_free (message);
 
 	/* check connection status */
-	queue    = vortex_async_queue_new ();
+	printf ("Test 01-w: now wait the connection to be closed..\n");
 	iterator = 0;
 	while (axl_true) {
 		/* wait */
@@ -4148,6 +4161,8 @@ axl_bool test_01w (void) {
 			break;
 		/* continue */
 		iterator++;
+
+		printf ("Test 01-w: waiting for connection to be closed..(channel pending messages: %d)\n", vortex_channel_pending_messages (channel));
 
 		if (iterator == 200) {
 			printf ("ERROR: expected to find connection closed due to complete flag limit reached, but connection is still working..\n");
@@ -4224,7 +4239,7 @@ axl_bool  test_02_common (VortexConnection * connection)
 		}
 
 		/* update reference counting */
-		vortex_channel_ref (channel[iterator]);
+		vortex_channel_ref2 (channel[iterator], "test_02_common");
 
 		/* enable serialize */
 		vortex_channel_set_serialize (channel[iterator], axl_true);
@@ -4341,7 +4356,7 @@ axl_bool  test_02_common (VortexConnection * connection)
 		}
 
 		/* unref the channel */
-		vortex_channel_unref (channel[iterator]);
+		vortex_channel_unref2 (channel[iterator], "test_02_common");
 
 		/* update the iterator */
 		iterator++;
@@ -6081,7 +6096,7 @@ axl_bool  test_02m (void) {
 
 	/* get a reference to the channel to avoid close conditions
 	 * because remote side will send a close operation */
-	vortex_channel_ref (channel);
+	vortex_channel_ref2 (channel, "test_02m");
 
 	/* send a message to start retrieval */
 	if (! vortex_channel_send_msg (channel, "get-content", 11, NULL)) {
@@ -6183,7 +6198,7 @@ axl_bool  test_02m (void) {
 	vortex_async_queue_unref (queue);
 
 	/* ..and channel reference */
-	vortex_channel_unref (channel);
+	vortex_channel_unref2 (channel, "test_02m");
 
 	/* operation completed */
 	return axl_true;
@@ -7971,7 +7986,7 @@ axl_bool  test_03e (void) {
 	} /* end if */
 
 	/* now acquire a reference */
-	vortex_channel_ref (channel);
+	vortex_channel_ref2 (channel, "test_03e");
 
 	/* ok, close the connection */
 	vortex_connection_close (connection);
@@ -7981,7 +7996,7 @@ axl_bool  test_03e (void) {
 	vortex_async_queue_unref (sleep);
 
 	/* now close the channel */
-	vortex_channel_unref (channel);
+	vortex_channel_unref2 (channel, "test_03e");
 
 	/* return axl_true */
 	return axl_true;
@@ -9809,8 +9824,8 @@ void test_04f_on_finished (VortexChannel       * channel,
 			   axlPointer            user_data)
 {
 	vortex_channel_get_number (channel);
-	vortex_channel_ref (channel);
-	vortex_channel_unref (channel);
+	vortex_channel_ref2 (channel, "test_04f");
+	vortex_channel_unref2 (channel, "test_04f");
 
 	/* push finish notifier */
 	vortex_async_queue_push (user_data, INT_TO_PTR (-4));
@@ -11320,7 +11335,7 @@ axl_bool  test_09 (void)
 					      NULL, NULL,
 					      /* no async channel creation */
 					      NULL, NULL);
-		vortex_channel_ref (channel);
+		vortex_channel_ref2 (channel, "test_09");
 		
 		/* send a message and close */
 		vortex_channel_send_msg (channel, "", 0, NULL);
@@ -11332,7 +11347,7 @@ axl_bool  test_09 (void)
 		}
 
 		/* unref the channel */
-		vortex_channel_unref (channel);
+		vortex_channel_unref2 (channel, "test_09");
 
 		/* check channels */
 		if (vortex_connection_channels_count (conn) != 1) {
@@ -11359,7 +11374,7 @@ axl_bool  test_09 (void)
 					      NULL, NULL,
 					      /* no async channel creation */
 					      NULL, NULL);
-		vortex_channel_ref (channel);
+		vortex_channel_ref2 (channel, "test_09");
 		
 		/* send a message and close */
 		vortex_channel_send_msg (channel, "", 0, NULL);
@@ -11376,7 +11391,7 @@ axl_bool  test_09 (void)
 		}
 
 		/* unref the channel */
-		vortex_channel_unref (channel);
+		vortex_channel_unref2 (channel, "test_09");
 
 		/* check channels */
 		if (vortex_connection_channels_count (conn) != 1) {
@@ -14124,7 +14139,7 @@ int main (int  argc, char ** argv)
 	} /* end if */
 	printf ("**\n");
 
- 	run_test (test_00, "Test 00", "Async Queue support", -1, -1);
+	run_test (test_00, "Test 00", "Async Queue support", -1, -1);
 
 	run_test (test_001, "Test 00-1", "Conditional mutexes", -1, -1);
 
@@ -14138,7 +14153,7 @@ int main (int  argc, char ** argv)
 
 	run_test (test_00c2, "Test 00-c2", "Thread pool automatic resize (long running tasks)", -1, -1);
 
-	run_test (test_00d, "Test 00-d", "(unsigned) Int to string conversion", -1, -1);
+	run_test (test_00d, "Test 00-d", "(unsigned) Int to string conversion", -1, -1); 
 
  	run_test (test_01, "Test 01", "basic BEEP support", -1, -1);
   
@@ -14235,7 +14250,7 @@ int main (int  argc, char ** argv)
 	run_test (test_02p, "Test 02-p", "Check empty RPY", -1, -1);
 
 	run_test (test_02q, "Test 02-q", "Check frame manipulation after vortex context finalization", -1, -1);
- 
+
  	run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
   
  	run_test (test_03a, "Test 03-a", "vortex channel pool support", -1, -1);
@@ -14249,7 +14264,7 @@ int main (int  argc, char ** argv)
  	run_test (test_03e, "Test 03-e", "closing channel after connection with pool closed", -1, -1);
 
 	run_test (test_03f, "Test 03-f", "vortex channel pool closed by connection close", -1, -1);
-  
+
  	run_test (test_04, "Test 04", "Handling many connections support", -1, -1);
   
  	run_test (test_04_a, "Test 04-a", "Check ANS/NUL support, sending large content", -1, -1);
@@ -14263,7 +14278,7 @@ int main (int  argc, char ** argv)
 	run_test (test_04_e, "Test 04-e", "check payload feeder support", -1, -1);
 
 	run_test (test_04_f, "Test 04-f", "check payload feeder support (pause/cancel)", -1, -1); 
-  
+
  	run_test (test_05, "Test 05", "TLS profile support", -1, -1);
   	
  	run_test (test_05_a, "Test 05-a", "Check auto-tls on fail fix (24/03/2008)", -1, -1);
@@ -14283,7 +14298,7 @@ int main (int  argc, char ** argv)
  	run_test (test_08, "Test 08", "serverName configuration", -1, -1);
   
  	run_test (test_09, "Test 09", "close in transit support", -1, -1);
-  
+
  	run_test (test_10, "Test 10", "default channel close action", -1, -1);
   
  	run_test (test_11, "Test 11", "reply to multiple messages in a wrong order without blocking", -1, -1);
@@ -14316,7 +14331,7 @@ int main (int  argc, char ** argv)
 
 	run_test (test_16, "Test 16", "Check HTTP CONNECT implementation", -1, -1);
 
-	run_test (test_16a, "Test 16-a", "Check HTTP CONNECT implementation (run tests under HTTP CONNECT)", -1, -1);
+	run_test (test_16a, "Test 16-a", "Check HTTP CONNECT implementation (run tests under HTTP CONNECT)", -1, -1); 
 
 #if defined(AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/**

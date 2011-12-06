@@ -1629,15 +1629,15 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 		}
 	
 		/* check if we have a non-blocking connection */
-		vortex_log (VORTEX_LEVEL_CRITICAL, "client have disconnected without closing properly this session id=%d",
+		vortex_log (VORTEX_LEVEL_CRITICAL, "remote side have disconnected without closing properly this session id=%d",
 			    vortex_connection_get_id (connection));
-		__vortex_connection_set_not_connected (connection, "client have disconnected without closing session",
+		__vortex_connection_set_not_connected (connection, "remote side have disconnected without closing session",
 						       VortexProtocolError);
 		return NULL;
 	}
 	if (bytes_read == -1) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "an error have ocurred while reading socket");
-		__vortex_connection_set_not_connected (connection, "client have disconnected without closing session",
+		__vortex_connection_set_not_connected (connection, "remote side have disconnected without closing session",
 						       VortexProtocolError);
 		return NULL;
 	}

@@ -190,7 +190,7 @@ VortexChannel * __vortex_channel_pool_add_channels (VortexChannelPool * pool, in
 		/* increase the reference to the channel */
 		
 		/* so the channel have been created  */
-		vortex_channel_ref (channel);
+		vortex_channel_ref2 (channel, "channel pool");
 		axl_list_append (pool->channels, channel);
 
 		/* set a reference to the pool this channel belongs to */
@@ -736,7 +736,7 @@ void __vortex_channel_pool_remove (VortexChannelPool * pool, int  num)
 			vortex_channel_close (channel, NULL);
 
 			/* remove channel reference */
-			vortex_channel_unref (channel);
+			vortex_channel_unref2 (channel, "channel pool");
 
 			continue;
 		} /* end if */
@@ -840,8 +840,7 @@ void           __vortex_channel_pool_close_common (VortexChannelPool * pool,
 			vortex_channel_set_pool (channel, NULL);
 
 			/* release channel */
-			vortex_channel_unref (channel);
-
+			vortex_channel_unref2 (channel, "channel pool");
 			/* get the next cursor */
 			axl_list_cursor_next (cursor);
 		} /* end if */
@@ -1016,7 +1015,7 @@ void                vortex_channel_pool_attach         (VortexChannelPool * pool
 	
 	/* it seems the channel wasn't found on the channel pool. Add
 	 * the channel. */
-	vortex_channel_ref (channel);
+	vortex_channel_ref2 (channel, "channel pool");
 	axl_list_append (pool->channels, channel);
 
 	vortex_connection_unlock_channel_pool (pool->connection);
@@ -1077,7 +1076,7 @@ void                vortex_channel_pool_deattach       (VortexChannelPool * pool
 		/* check the channel and remove from the list if found */
 		if (vortex_channel_are_equal (channel, channel_aux)) {
 			/* decrease reference */
-			vortex_channel_unref (channel);
+			vortex_channel_unref2 (channel, "channel pool");
 			axl_list_cursor_unlink (cursor);
 			break;
 		} /* end if */

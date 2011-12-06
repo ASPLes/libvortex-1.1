@@ -539,10 +539,11 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 			/* no previous frame found, store if the
 			 * complete flag is activated */
 			if (vortex_channel_have_complete_flag (channel)) {
-				vortex_log (VORTEX_LEVEL_DEBUG, "more flag and completed flag detected, skipping to the next frame");
+				vortex_log (VORTEX_LEVEL_DEBUG, "more flag on frame (%p) and complete flag detected on channel num=%d (%p), skipping to the next frame",
+					    frame, vortex_channel_get_number (channel), frame);
 
 				/* push the frame for later operation */
-				vortex_channel_store_previous_frame (channel, frame);
+				vortex_channel_store_previous_frame (ctx, channel, frame);
 				return;
 			} /* end if */
 		} else {
@@ -562,10 +563,11 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 			 * already activated because a previous frame
 			 * was found stored. Because the frame is
 			 * joinable, store. */
-			vortex_log (VORTEX_LEVEL_DEBUG, "more flag and completed flag detected, skipping to the next frame");
+			vortex_log (VORTEX_LEVEL_DEBUG, "more flag on frame (%p) and complete flag detected on channel num=%d (%p), skipping to the next frame",
+				    frame, vortex_channel_get_number (channel), frame);
 			
 			/* push the frame for later operation */
-			vortex_channel_store_previous_frame (channel, frame);
+			vortex_channel_store_previous_frame (ctx, channel, frame);
 			return;
 		} /* end if */
 
@@ -574,7 +576,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		 * previous */
 		if (vortex_channel_have_previous_frame (channel)) {
 			/* store the frame into the channel */
-			vortex_channel_store_previous_frame (channel, frame);
+			vortex_channel_store_previous_frame (ctx, channel, frame);
 
 			/* create one single frame with all stored frames */
 			frame = vortex_channel_build_single_pending_frame (channel);

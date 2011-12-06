@@ -386,8 +386,11 @@ void frame_received (VortexChannel    * channel,
 		/* call to unregister profile */
 		vortex_profiles_unregister (CONN_CTX (connection), vortex_channel_get_profile (channel));
 	} else if (axl_memcmp (vortex_frame_get_payload (frame), "complete flag limit=10000", 25)) {
+		printf ("Test 01-w: received message to sent complete flag limit..\n");
 		/* set channel limit */
 		vortex_channel_set_complete_frame_limit (channel, 10000);
+
+		printf ("Test 01-w: complete frame limit received..\n");
 
 	} else if (axl_memcmp (vortex_frame_get_payload (frame), "enable-server-log", 17)) {
 		vortex_log_enable (CONN_CTX(connection), axl_true);

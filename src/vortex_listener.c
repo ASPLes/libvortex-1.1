@@ -117,8 +117,8 @@ void vortex_listener_accept_connection    (VortexConnection * connection, axl_bo
 
 		/* check if the following handler accept the incoming
 		 * connection */
-		vortex_log (VORTEX_LEVEL_DEBUG, "calling to accept connection, handler: %p, data: %p",
-			    data->on_accept, data->on_accept_data);
+		vortex_log (VORTEX_LEVEL_DEBUG, "calling to accept connection id=%d, handler: %p, data: %p",
+			    vortex_connection_get_id (connection), data->on_accept, data->on_accept_data);
 		if (! on_accept (connection, on_accept_data)) {
 
 			/* init lock */

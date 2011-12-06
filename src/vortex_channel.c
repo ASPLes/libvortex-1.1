@@ -119,6 +119,7 @@ struct _VortexChannel {
 	int                     remote_window;
 	
 	axlList               * pending_messages;
+	VortexMutex             pending_messages_m;
 
 	int                     last_ansno_sent;
 	int                     last_ansno_expected;
@@ -907,7 +908,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 		vortex_log (VORTEX_LEVEL_CRITICAL, "internal vortex error: unable to get channel 0 for a session");
 
 		/* free allocated channel and exist */
-		vortex_channel_unref (channel);
+		vortex_channel_unref2 (channel, "new channel");
 		channel = NULL;
 		goto __vortex_channel_new_invoke_caller;
 	}
@@ -930,7 +931,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 	} /* end if */
 	
 	/* ensure we don't loose reference during creation */
-	vortex_channel_ref (channel);
+	vortex_channel_ref2 (channel, "new channel");
 	
 	/* add the channel created to the connection */
 	vortex_connection_add_channel (conn, channel);
@@ -977,7 +978,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 
 		/* remove the channel and nullify */
 		vortex_connection_remove_channel (conn, channel);
-		vortex_channel_unref (channel);
+		vortex_channel_unref2 (channel, "new channel");
 		channel = NULL;
 		
 		/* free pending data */
@@ -1008,7 +1009,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 
 		/* remove the channel and nullify */
 		vortex_connection_remove_channel (conn, channel);
-		vortex_channel_unref (channel);
+		vortex_channel_unref2 (channel, "new channel");
 		channel = NULL;
 		goto __vortex_channel_new_invoke_caller;
 	}
@@ -1024,7 +1025,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 		vortex_log (VORTEX_LEVEL_DEBUG, "after channel num=%d from connection id=%d (channels: %d) due to channel deny",
 			    channel->channel_num, vortex_connection_get_id (conn),
 			    vortex_connection_channels_count (conn));
-		vortex_channel_unref (channel);
+		vortex_channel_unref2 (channel, "new channel");
 		channel = NULL;
 		goto __vortex_channel_new_invoke_caller;
 	}
@@ -1071,7 +1072,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 		} /* end if */
 
 		/* free no longer needed data */
-		vortex_channel_unref (channel);
+		vortex_channel_unref2 (channel, "new channel");
 
 		/* release reference */
 		vortex_connection_unref (conn, "channel-create");
@@ -1079,7 +1080,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 	} /* end if */
 
 	/* free no longer needed data */
-	vortex_channel_unref (channel);
+	vortex_channel_unref2 (channel, "new channel");
 
 	/* release reference */
 	vortex_connection_unref (conn, "channel-create");
@@ -1575,6 +1576,7 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 	 * 4095 yields 4096) */
 	channel->remote_window                  = 4096;
 	channel->pending_messages               = axl_list_new (axl_list_always_return_1, NULL);
+	vortex_mutex_create (&channel->pending_messages_m);
 
 	/* incoming messages check support */
 	channel->incoming_msg                   = axl_list_new (axl_list_always_return_1, NULL);
@@ -2003,15 +2005,14 @@ VortexFrame      * vortex_channel_get_previous_frame           (VortexChannel * 
  * @param previous_frame The previous frame to replace
  * @param new_frame      The frame to be used as a replacement.
  */
-void               vortex_channel_store_previous_frame           (VortexChannel * channel, 
+void               vortex_channel_store_previous_frame           (VortexCtx     * ctx,
+								  VortexChannel * channel, 
 								  VortexFrame   * new_frame)
 {
-	VortexCtx * ctx = NULL;
 
 	/* check reference */
 	if (channel == NULL || new_frame == NULL)
-		return;
-
+		return; 
 	
 	/* update current bytes */
 	channel->complete_current_bytes += vortex_frame_get_payload_size (new_frame);
@@ -2020,9 +2021,10 @@ void               vortex_channel_store_previous_frame           (VortexChannel 
 	axl_list_append (channel->previous_frame, new_frame);
 
 	/* check limit and close the connection if reached */
+	vortex_log (VORTEX_LEVEL_DEBUG, "Checking complete frame limit=%d (current bytes: %d) for channel=%d on conection id=%d",
+		    channel->complete_frame_limit, channel->complete_current_bytes, channel->channel_num, vortex_connection_get_id (channel->connection));
 	if (channel->complete_frame_limit > 0 && channel->complete_current_bytes > channel->complete_frame_limit) {
 		/* get a reference to the context */
-		ctx = channel->ctx;
 		vortex_log (VORTEX_LEVEL_CRITICAL, "Reached complete frame limit=%d for channel=%d, closing conection id=%d",
 			    channel->complete_frame_limit, channel->channel_num, vortex_connection_get_id (channel->connection));
 		vortex_connection_shutdown (channel->connection);
@@ -2439,7 +2441,7 @@ check_limit:
 				update_msg_no = axl_false;
 			}
 		} else { /* status == 0 */
-			if (! vortex_channel_ref (channel)) {
+			if (! vortex_channel_ref2 (channel, "send msg")) {
 				axl_free (data);
 
 				/* unlock send mutex */
@@ -2879,7 +2881,7 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 			/* set status to ok */
 			feeder->status = 0;
 		} else { /* status == 0 */
-			if (! vortex_channel_ref (channel)) {
+			if (! vortex_channel_ref2 (channel, "send rpy")) {
 				axl_free (data);
 
 				/* unlock send mutex */
@@ -4185,8 +4187,10 @@ void               vortex_channel_queue_pending_message         (VortexChannel *
 		    axl_list_length (channel->pending_messages),
 		    channel->channel_num);
 
-	/* just append the message */
+	/* lock the message */
+	vortex_mutex_lock (&channel->pending_messages_m);
 	axl_list_append (channel->pending_messages, message);
+	vortex_mutex_unlock (&channel->pending_messages_m);
 	return;
 }
 
@@ -4205,30 +4209,40 @@ axlPointer         vortex_channel_next_pending_message          (VortexChannel *
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx   = vortex_channel_get_ctx (channel);
 #endif
+	axlPointer      ptr;
 
 	/* check the reference received */
 	if (channel == NULL)
 		return NULL;
  
  	/* do not return pending messages if channel is not opened */
- 	if (! vortex_channel_is_opened (channel)) 
+ 	/* if (! vortex_channel_is_opened (channel))  {
  		return NULL;
+		} */
 	
 	vortex_log (VORTEX_LEVEL_DEBUG, "returning the first pending message: current length=%d for channel=%d",
 		    axl_list_length (channel->pending_messages), channel->channel_num);
 	
 	/* no pending messages, return NULL */
-	if (axl_list_length (channel->pending_messages) == 0)
+	vortex_mutex_lock (&channel->pending_messages_m);
+	if (axl_list_length (channel->pending_messages) == 0) {
+		vortex_mutex_unlock (&channel->pending_messages_m);
 		return NULL;
+	}
 
 	/* check result */
-	return axl_list_get_first (channel->pending_messages);
+	ptr = axl_list_get_first (channel->pending_messages);
+	vortex_mutex_unlock (&channel->pending_messages_m);
+	return ptr;
 }
 
 int                vortex_channel_pending_messages             (VortexChannel * channel)
 {
-	/* pending messages */
-	return axl_list_length (channel->pending_messages);
+	int pending;
+	vortex_mutex_lock (&channel->pending_messages_m);
+	pending = axl_list_length (channel->pending_messages);
+	vortex_mutex_unlock (&channel->pending_messages_m);
+	return pending;
 }
 
 /** 
@@ -4243,12 +4257,17 @@ int                vortex_channel_pending_messages             (VortexChannel * 
  */
 axl_bool         vortex_channel_is_empty_pending_message (VortexChannel * channel)
 {
+	axl_bool result;
+
 	/* check reference */
 	if (channel == NULL)
 		return axl_false;
 
 	/* return if the pending messages are 0 */
-	return  (axl_list_length (channel->pending_messages) == 0);
+	vortex_mutex_lock (&channel->pending_messages_m);
+	result =  (axl_list_length (channel->pending_messages) == 0);
+	vortex_mutex_unlock (&channel->pending_messages_m);
+	return result;
 }
 
 /** 
@@ -4260,26 +4279,34 @@ axl_bool         vortex_channel_is_empty_pending_message (VortexChannel * channe
  * @param channel The channel where the removal operation will take
  * place.
  */
-void               vortex_channel_remove_pending_message        (VortexChannel * channel)
+axlPointer        vortex_channel_remove_pending_message        (VortexChannel * channel)
 {
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx   = vortex_channel_get_ctx (channel);
 #endif
+	axlPointer      ptr;
 
 	/* check reference */
 	if (channel == NULL)
-		return;
+		return NULL;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "removing next pending message from channel=%d, length=%d", 
 		    channel->channel_num, axl_list_length (channel->pending_messages));
 
 	/* check that the pending messages queue is not empty */
-	if (axl_list_length (channel->pending_messages) == 0)
-		return;
+	vortex_mutex_lock (&channel->pending_messages_m);
+	if (axl_list_length (channel->pending_messages) == 0) {
+		vortex_mutex_unlock (&channel->pending_messages_m);
+		return NULL;
+	}
 
 	/* get the first pending message to be removed and check it is not NULL */
+	ptr = axl_list_get_first (channel->pending_messages);
 	axl_list_unlink_first (channel->pending_messages);
-	return;
+	vortex_mutex_unlock (&channel->pending_messages_m);
+
+	/* return pointer removed */
+	return ptr;
 }
 
 /** 
@@ -4537,11 +4564,47 @@ axlPointer         vortex_channel_get_data                        (VortexChannel
  * The function is thread-safe, internally protected with mutex.
  * 
  * @param channel The channel to increase its reference counting.
+ *
+ * @return axl_true if the channel reference counting was increased,
+ * otherwise axl_false is returned.
+ */
+axl_bool           vortex_channel_ref                             (VortexChannel * channel)
+{
+	return vortex_channel_ref2 (channel, "no label");
+}
+
+
+/** 
+ * @brief Decrease in one unit the reference count for the channel
+ * provided. In the channel reference count reach 0 value, the channel
+ * is deallocated, automatically calling to \ref vortex_channel_free.
+ *
+ * The function is thread-safe, internally protected with mutex.
+ * 
+ * @param channel The channel to decrease its reference counting.
+ *
+ */
+void               vortex_channel_unref                           (VortexChannel * channel)
+{
+	vortex_channel_unref2 (channel, "no label");
+	return;
+}
+
+/** 
+ * @brief Allows to increase reference counting for the provided
+ * channel. If the reference count for the channel provided reach 0,
+ * the channel is deallocated.
+ *
+ * The function is thread-safe, internally protected with mutex.
+ * 
+ * @param channel The channel to increase its reference counting.
+ *
+ * @param label A label showed in console debug.
  * 
  * @return axl_true if the channel reference counting was increased,
  * otherwise axl_false is returned.
  */
-axl_bool            vortex_channel_ref                             (VortexChannel * channel)
+axl_bool            vortex_channel_ref2                             (VortexChannel * channel, const char * label)
 {
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
@@ -4561,8 +4624,8 @@ axl_bool            vortex_channel_ref                             (VortexChanne
 	/* increase the channel reference counting */
 	channel->ref_count++;
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "VortexChannel=%d (%p) ref called, ref count status after calling=%d", 
-		    channel->channel_num, channel, channel->ref_count);
+	vortex_log (VORTEX_LEVEL_DEBUG, "VortexChannel=%d (%p) ref called %s, ref count status after calling=%d", 
+		    channel->channel_num, channel, label, channel->ref_count);
 
 	vortex_mutex_unlock (&channel->ref_mutex);
 
@@ -4578,8 +4641,10 @@ axl_bool            vortex_channel_ref                             (VortexChanne
  * The function is thread-safe, internally protected with mutex.
  * 
  * @param channel The channel to decrease its reference counting.
+ *
+ * @param label A label showed in console debug.
  */
-void               vortex_channel_unref                           (VortexChannel * channel)
+void               vortex_channel_unref2                           (VortexChannel * channel, const char * label)
 {
 	VortexCtx     * ctx;
 
@@ -4595,8 +4660,8 @@ void               vortex_channel_unref                           (VortexChannel
 
 	ctx = vortex_channel_get_ctx (channel);
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "VortexChannel=%d (%p) unref called, ref count status after calling=%d", 
-		    channel->channel_num, channel, channel->ref_count);
+	vortex_log (VORTEX_LEVEL_DEBUG, "VortexChannel=%d (%p) unref called %s, ref count status after calling=%d", 
+		    channel->channel_num, channel, label, channel->ref_count);
 
 	/* check reference counting */
 	if (channel->ref_count == 0) {
@@ -5501,7 +5566,7 @@ axl_bool      __vortex_channel_close_full (VortexChannel * channel,
  		connection  = channel->connection;
  
  		/* update reference counting for notification */
- 		vortex_channel_ref (channel);
+ 		vortex_channel_ref2 (channel, "close channel");
  
  		vortex_log (VORTEX_LEVEL_WARNING, "Channel=%d in process of being closed before calling to this function.",
  			    channel_num);
@@ -5548,7 +5613,7 @@ axl_bool      __vortex_channel_close_full (VortexChannel * channel,
  		} /* end if */
  
  		/* unref now notification has been done */
- 		vortex_channel_unref (channel);
+ 		vortex_channel_unref2 (channel, "close channel");
  		vortex_hash_unref    (channels);
  
 		return axl_true;
@@ -5820,11 +5885,12 @@ axl_bool  vortex_channel_check_serialize_pending (VortexCtx          * ctx,
 
 		/* remove from the hash without dealloc */
 		axl_hash_delete (channel->serialize_hash, INT_TO_PTR (channel->serialize_next_seqno));
+
 		/* check to reduce refence counting on connection due
 		 * to frame deliver */
 		if ((*caller_frame) != NULL) {
 			vortex_connection_unref (conn, "second level handler (check serialize pending)");
-			vortex_channel_unref (channel);
+			vortex_channel_unref2 (channel, "check serialize pending");
 		}
 
 		if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_RPY ||
@@ -6075,7 +6141,7 @@ axlPointer __vortex_channel_invoke_received_handler (ReceivedInvokeData * data)
 		    channel_num, channel->ref_count, vortex_connection_ref_count (connection));
 	
 	/* update channel reference */
-	vortex_channel_unref (channel);
+	vortex_channel_unref2 (channel, "frame received");
 
 	/* decrease connection reference counting */
 	vortex_connection_unref (connection, "second level handler (frame received)");
@@ -6203,7 +6269,7 @@ axl_bool      vortex_channel_invoke_received_handler (VortexConnection * connect
 	}
 
 	/* also update channel references */
-	vortex_channel_ref (channel);
+	vortex_channel_ref2 (channel, "frame received");
 
 	/* create the thread to invoke frame received handler */
 	vortex_log (VORTEX_LEVEL_DEBUG, "about to invoke the frame received under a newly created handler");
@@ -6543,7 +6609,7 @@ axl_bool  vortex_channel_notify_start_internal (const char       * serverName,
 	/* increase reference counting to avoid receiving a close
 	   during channel added notification causing the channel
 	   reference to be invalid */
-	vortex_channel_ref (new_channel);
+	vortex_channel_ref2 (new_channel, "notify start");
 
 	/* build start reply here using the optional content profile
 	 * reply */
@@ -6552,7 +6618,7 @@ axl_bool  vortex_channel_notify_start_internal (const char       * serverName,
 	/* send rpy and then create the channel */
 	if (!vortex_channel_send_rpy (channel0, 
 				      start_rpy, strlen (start_rpy), msg_no)) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "an error have happen while sending start channel reply, closing channel");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "an error have happened while sending start channel reply, closing channel");
 
 		/* deallocate the channel created */
 		vortex_connection_remove_channel_common (conn, new_channel, axl_false); 
@@ -6569,7 +6635,7 @@ axl_bool  vortex_channel_notify_start_internal (const char       * serverName,
 	axl_free (start_rpy);
 
 	/* decrease reference */
-	vortex_channel_unref (new_channel);
+	vortex_channel_unref2 (new_channel, "notify start");
 
 	return result;
 }
@@ -7006,7 +7072,7 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 	
 	/* get channel to remove */
 	channel = vortex_connection_get_channel (connection, channel_num);
-	vortex_channel_ref (channel);
+	vortex_channel_ref2 (channel, "close msg");
 
 	/* check if the channel is in process of being closed */
 	vortex_mutex_lock (&channel->close_mutex);
@@ -7043,7 +7109,7 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 			
 			/* queue frame received */
 			QUEUE_PUSH (wait_reply->queue, ok_frame);
- 			vortex_channel_unref (channel);
+ 			vortex_channel_unref2 (channel, "close msg");
 
 			/* unref wait reply */
 			vortex_channel_free_wait_reply (wait_reply);
@@ -7053,10 +7119,10 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to find wait reply structure to queue a fake reply, channel=%d, conn=%d",
 			    channel->channel_num, vortex_connection_get_id (channel->connection));
-		vortex_channel_unref (channel);
+		vortex_channel_unref2 (channel, "close msg");
 		return;
 	}
- 	vortex_channel_unref (channel);
+ 	vortex_channel_unref2 (channel, "close msg");
 
 	/* check for global notify close */
 	if (channel->channel_num != 0 && ctx->global_notify_close != NULL) {
@@ -7235,16 +7301,18 @@ void vortex_channel_notify_close (VortexChannel * channel, int  msg_no, axl_bool
 		if (ok_on_wait) {
 			/* install a waiter into the channel 0 for the message
 			 * to be sent */
-			vortex_channel_install_waiter  (channel0, msg_no);
+			vortex_channel_install_waiter  (channel0, msg_no); 
 			
 			/* send ok message */
-			vortex_channel_send_rpyv       (channel0, msg_no, 
-							vortex_frame_get_ok_message ());
-			
-			/* block until the message is sent */
-			vortex_channel_wait_until_sent (channel0, msg_no);
+			if (vortex_channel_send_rpyv (channel0, msg_no, vortex_frame_get_ok_message ())) {
+				/* block until the message is sent */
+				vortex_channel_wait_until_sent (channel0, msg_no);
+				vortex_log (VORTEX_LEVEL_DEBUG, "message <ok />, sent, closing the connection");
+			} else {
+				vortex_log (VORTEX_LEVEL_CRITICAL, "failed to send RPY msg over channel 0 %p, conn-id=%d",
+					    channel, vortex_connection_get_id (channel0->connection));
+			} /* end if */
 
-			vortex_log (VORTEX_LEVEL_DEBUG, "message <ok />, sent, closing the connection");
 		}else {
 			/* log that the connection is broken */
 			vortex_log (VORTEX_LEVEL_WARNING," not sending <ok /> message because the connection is broken");
@@ -7261,7 +7329,7 @@ void vortex_channel_notify_close (VortexChannel * channel, int  msg_no, axl_bool
 		       channel->channel_num, channel->profile);
 
 		/* send the positive reply (ok message) */
-		vortex_channel_ref (channel);
+		vortex_channel_ref2 (channel, "channel remove");
 		vortex_mutex_lock (&channel->close_mutex);
 		if (ok_on_wait) {
 			vortex_log (VORTEX_LEVEL_DEBUG, "sending reply to close channel=%d", channel->channel_num);
@@ -7283,7 +7351,7 @@ void vortex_channel_notify_close (VortexChannel * channel, int  msg_no, axl_bool
 		vortex_log (VORTEX_LEVEL_DEBUG, "channel id=%d removed from connection id=%d",
 			    channel->channel_num, vortex_connection_get_id (connection));
 		vortex_mutex_unlock (&channel->close_mutex);
-		vortex_channel_unref (channel);
+		vortex_channel_unref2 (channel, "channel remove");
 	}
 
 	return;
@@ -7538,6 +7606,7 @@ void vortex_channel_free (VortexChannel * channel)
 
 	/* free pending messages */
  	axl_list_free        (channel->pending_messages);
+	vortex_mutex_destroy (&channel->pending_messages_m);
   
  	axl_list_free        (channel->incoming_msg);
  	axl_list_cursor_free (channel->incoming_msg_cursor);
@@ -8175,7 +8244,7 @@ VortexFrame   * vortex_channel_wait_reply              (VortexChannel * channel,
 	} /* end if */
 
 	/* acquire a reference to the channel */
-	vortex_channel_ref (channel);
+	vortex_channel_ref2 (channel, "wait reply");
 
 	/* configure a connection close notification to avoid getting
 	 * locked for an event that will never come */
@@ -8237,7 +8306,7 @@ VortexFrame   * vortex_channel_wait_reply              (VortexChannel * channel,
 	vortex_async_queue_unref (queue);
 
 	/* release reference */
-	vortex_channel_unref (channel);
+	vortex_channel_unref2 (channel, "wait reply");
 	
 	/* return whatever we have get */
 	return frame;
@@ -8463,7 +8532,7 @@ axl_bool               vortex_channel_install_waiter                 (VortexChan
 	} /* end if */
 
 	/* install on the data associated to the channel */
-	vortex_channel_set_data_full (channel, rpy, queue, axl_free, NULL);
+	vortex_channel_set_data_full (channel, rpy, queue, axl_free, (axlDestroyFunc) vortex_async_queue_unref);
 
 	return axl_true;
 }
@@ -8492,11 +8561,12 @@ void               vortex_channel_wait_until_sent                (VortexChannel 
 	/* get the queue */
 	rpy   = axl_strdup_printf ("vortex:wait:rpy:%d", msg_no);
 	queue = vortex_channel_get_data (channel, rpy);
-	axl_free (rpy);
 
 	/* check queue reference received */
-	if (queue == NULL)
+	if (queue == NULL) {
+		axl_free (rpy);
 		return;
+	}
 
 	/* insert close notification to detect connection broken
 	 * during wait operation */
@@ -8514,7 +8584,10 @@ void               vortex_channel_wait_until_sent                (VortexChannel 
 		/* handler was called during wait operation, get value from queue */
 		vortex_async_queue_pop (queue);
 	}
-	vortex_async_queue_unref (queue);
+
+	/* release queue */
+	vortex_channel_set_data (channel, rpy, NULL);
+	axl_free (rpy);
 	
 	return;
 }
@@ -8610,18 +8683,12 @@ VortexChannelPool * vortex_channel_get_pool                       (VortexChannel
  */
 VortexCtx         * vortex_channel_get_ctx                        (VortexChannel * channel)
 {
-	VortexCtx * ctx = NULL;
-
 	if (channel == NULL) {
 		return NULL;
 	} /* end if */
 
-	/* check connection reference */
-	
 	/* call to get the context associated to the cnonection */
-	ctx = channel->ctx;
-
-	return ctx;
+	return channel->ctx;
 } 
 
 /** 
@@ -8679,21 +8746,19 @@ void              __vortex_channel_release_pending_messages (VortexChannel * cha
 	ctx = vortex_channel_get_ctx (channel);
 	
 	/* update reference counting during operation: due to reference from connection */
-	if (! vortex_channel_ref (channel))  {
+	/* if (! vortex_channel_ref (channel))  {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to release pending channel messages for channel=%d, failed to acquire reference",
 			    channel->channel_num);
 		return;
-	} /* end if */
+		} */ /* end if */
 
 	/* get context */
 	vortex_log (VORTEX_LEVEL_DEBUG, "releasing pending message on channel=%d, ref count=%d, pending=%d",
 		    channel->channel_num, channel->ref_count, axl_list_length (channel->pending_messages));
 	
-	while ((channel != NULL) && (axl_list_get_last (channel->pending_messages) != NULL)) {
-		
-		/* get next pending message */
-		next_data = axl_list_get_last (channel->pending_messages);
-		axl_list_unlink_last (channel->pending_messages);
+	/* get first pending message */
+	next_data = vortex_channel_remove_pending_message (channel);
+	while (next_data) {
 		
 		/* un ref channel and free */
 		vortex_log (VORTEX_LEVEL_WARNING, "Detected pending message discard, finishing reference %p (channel=%d, ref count=%d, pending=%d)", 
@@ -8705,18 +8770,21 @@ void              __vortex_channel_release_pending_messages (VortexChannel * cha
 			vortex_log (VORTEX_LEVEL_CRITICAL, "Found channel reference counting reaching 0 during a release operation that should have, at least 2");
 		} /* end if */
 		
-		vortex_channel_unref (channel);
+		/* vortex_channel_unref (channel); */
 		
 		/* free message and node itself */
 		vortex_payload_feeder_unref (next_data->feeder);
 		axl_free (next_data->message);
 		axl_free (next_data);
+
+		/* get next pending */
+		next_data = vortex_channel_remove_pending_message (channel);
 		
 	} /* end while */
 	
 	/* finish reference */
-	if (vortex_channel_ref_count (channel) > 1)
-		vortex_channel_unref (channel);
+	/* if (vortex_channel_ref_count (channel) > 1)
+	   vortex_channel_unref (channel); */
 	return;
 }
 
