@@ -123,7 +123,7 @@ VortexEvent * __vortex_event_new_empty (VortexEventType    type,
 	/* now update channel reference counting */
 	if (channel) {
 		/* ref and set */
-		if (vortex_channel_ref (channel))
+		if (vortex_channel_ref2 (channel, "pull event"))
 			event->channel = channel;
 	} /* end if */
 
@@ -590,7 +590,7 @@ void               vortex_event_unref              (VortexEvent * event)
 	} /* end if */
 
 	if (event->channel) {
-		vortex_channel_unref (event->channel);
+		vortex_channel_unref2 (event->channel, "pull event");
 		event->channel = NULL;
 	} /* end if */
 

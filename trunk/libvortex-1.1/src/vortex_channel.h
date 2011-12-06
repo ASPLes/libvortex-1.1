@@ -129,7 +129,8 @@ axl_bool           vortex_channel_have_previous_frame          (VortexChannel * 
 
 VortexFrame      * vortex_channel_get_previous_frame           (VortexChannel * channel);
 
-void               vortex_channel_store_previous_frame         (VortexChannel * channel, 
+void               vortex_channel_store_previous_frame         (VortexCtx     * ctx,
+								VortexChannel * channel, 
 								VortexFrame   * new_frame);
 
 VortexFrame      * vortex_channel_build_single_pending_frame   (VortexChannel * channel);
@@ -219,8 +220,7 @@ axlPointer         vortex_channel_next_pending_message         (VortexChannel * 
 
 int                vortex_channel_pending_messages             (VortexChannel * channel);
 
-void               vortex_channel_remove_pending_message       (VortexChannel * channel);
-								 
+axlPointer         vortex_channel_remove_pending_message       (VortexChannel * channel);
 
 const char       * vortex_channel_get_profile                  (VortexChannel * channel);
 
@@ -252,6 +252,10 @@ void               vortex_channel_delete_data                     (VortexChannel
 
 axlPointer         vortex_channel_get_data                        (VortexChannel * channel,
 								   axlPointer key);
+
+axl_bool           vortex_channel_ref2                            (VortexChannel * channel, const char * label);
+
+void               vortex_channel_unref2                          (VortexChannel * channel, const char * label);
 
 axl_bool           vortex_channel_ref                             (VortexChannel * channel);
 

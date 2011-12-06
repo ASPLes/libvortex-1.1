@@ -122,7 +122,7 @@ static void py_vortex_channel_dealloc (PyVortexChannel* self)
 	/* release reference associated */
 	py_vortex_log  (PY_VORTEX_DEBUG, "Calling to dealoc the channel: %d (self: %p, self->channel: %p, refs: %d)..", 
 			vortex_channel_get_number (self->channel), self, self->channel, vortex_channel_ref_count (self->channel));
-	vortex_channel_unref (self->channel);
+	vortex_channel_unref2 (self->channel, "py-channel");
 	self->channel = NULL; 
 
 	/* free the node it self */
@@ -723,7 +723,7 @@ PyObject * py_vortex_channel_create (VortexChannel * channel)
 	PyVortexChannel * obj;
 
 	/* increase reference counting */
-	if ((channel == NULL) || (! vortex_channel_ref (channel))) {
+	if ((channel == NULL) || (! vortex_channel_ref2 (channel, "py-channel"))) {
 		py_vortex_log (PY_VORTEX_CRITICAL, "failed to create PyChannel reference, received NULL reference or vortex_channel_ref failed");
 		return NULL;
 	}
@@ -770,7 +770,7 @@ void            py_vortex_channel_set    (PyVortexChannel * py_channel,
 		return;
 
 	/* increase reference counting */
-	if (! vortex_channel_ref (channel))
+	if (! vortex_channel_ref2 (channel, "py-channel"))
 		return;
 
 	/* set the channel (even if it is null) */

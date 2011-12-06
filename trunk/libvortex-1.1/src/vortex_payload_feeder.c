@@ -504,7 +504,7 @@ void              vortex_payload_feeder_free (VortexPayloadFeeder * feeder)
 	} /* end if */
 
 	/* call to finish channel ref */
-	vortex_channel_unref (feeder->channel);
+	vortex_channel_unref2 (feeder->channel, "payload feeder");
 	feeder->channel = NULL;
 
 	/* release mutex */

@@ -44,7 +44,7 @@ static int lua_vortex_channel_gc (lua_State *L) {
 	lua_vortex_log (LUA_VORTEX_DEBUG, "Finishing VortexChannel reference associated to %p (ref count: %d)", *channel, ref_count);
 
 	/* release channel reference */
-	vortex_channel_unref (*channel);
+	vortex_channel_unref2 (*channel, "lua-vortex");
 
 	/* nullify */
 	(*channel) = NULL;
@@ -86,7 +86,7 @@ static int lua_vortex_channel_close (lua_State* L)
 	result = vortex_channel_close (*channel, NULL);
 	if (result) {
 		/* release channel reference */
-		vortex_channel_unref (*channel);
+		vortex_channel_unref2 (*channel, "lua-vortex");
 		(*channel) = NULL;
 	}
 	lua_pushboolean (L, result);
@@ -345,7 +345,7 @@ int lua_vortex_channel_new (lua_State* L, VortexChannel * _channel)
 	/* check channel reference */
 	if (_channel == NULL)
 		return 0;
-	if (! vortex_channel_ref (_channel))
+	if (! vortex_channel_ref2 (_channel, "lua-vortex"))
 		return 0;
 
 	/* create channel bucket and connect */

@@ -456,7 +456,7 @@ axl_bool  __vortex_connection_close_list_channels (axlPointer key, axlPointer va
 
 	/* get a reference and will be finalized by __close_channel_aux to avoid races */
 	if (vortex_channel_get_number (channel) != 0)
-		vortex_channel_ref (channel);
+		vortex_channel_ref2 (channel, "close-channels");
 
 	return axl_false;
 }
@@ -480,7 +480,7 @@ void __close_channel_aux (axlPointer _channel)
 	} /* end if */
 
 	/* release reference acquired during close */
-	vortex_channel_unref (channel);
+	vortex_channel_unref2 (channel, "close-channels");
 	
 	return;
 }
@@ -803,6 +803,11 @@ VortexConnection * vortex_connection_new_empty            (VortexCtx *    ctx,
 	return vortex_connection_new_empty_from_connection (ctx, socket, NULL, role);
 }
 
+void __vortex_connection_channel_unref (axlPointer channel)
+{
+	vortex_channel_unref2 (channel, "vortex connection");
+	return;
+}
 
 
 /** 
@@ -869,7 +874,7 @@ VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx       
 								       /* key destroy */
 								       NULL,
 								       /* channel destroy */
-								       (axlDestroyFunc) vortex_channel_unref);
+								       (axlDestroyFunc) __vortex_connection_channel_unref);
 		/* creates the user space data */
 		if (__connection != NULL) {
 			/* set current serverName if defined */
@@ -1995,7 +2000,7 @@ VortexConnection  * vortex_connection_new_full               (VortexCtx         
 	data->connection->port                = axl_strdup (port);
 	data->connection->channels            = vortex_hash_new_full (axl_hash_int, axl_hash_equal_int,
 								      NULL,
-								      (axlDestroyFunc) vortex_channel_unref);
+								      (axlDestroyFunc) __vortex_connection_channel_unref);
 	data->connection->ref_count           = 1;
 
 	/* call to init all mutex associated to this particular connection */
@@ -3064,7 +3069,7 @@ void               vortex_connection_free (VortexConnection * connection)
 	 * are closed must be this way: first channels and the channel
 	 * pools. Doing it other way will produce funny dead-locks.
 	 */
-	vortex_log (VORTEX_LEVEL_DEBUG, "freeing connection channels id=%d", connection->id);
+	vortex_log (VORTEX_LEVEL_DEBUG, "freeing connection id=%d channels", connection->id);
 
 	/* free channel resources */
 	if (connection->channels) {
@@ -4079,8 +4084,6 @@ void                vortex_connection_remove_channel_common  (VortexConnection *
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "after channel id=%d remove (conn refs: %d, channels: %d)", channel_num,
 		    connection->ref_count, vortex_connection_channels_count (connection));
-
-	
 	
 	return;
 }

@@ -79,7 +79,7 @@ void __vortex_alive_free (axlPointer _data)
 	data->conn = NULL;
 
 	/* unref channel */
-	vortex_channel_unref (data->channel);
+	vortex_channel_unref2 (data->channel, "alive");
 
 	/* free and data */
 	axl_free (data);
@@ -307,7 +307,7 @@ void __vortex_alive_channel_created (int                channel_num,
 
 	/* update channel reference and acquire a reference to it */
 	data->channel = channel;
-	vortex_channel_ref (channel);
+	vortex_channel_ref2 (channel, "alive");
 	data->channel_in_progress = axl_false;
 
 	/* log reporting */

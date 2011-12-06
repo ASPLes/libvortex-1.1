@@ -896,7 +896,7 @@ typedef struct _VortexProfileReceivedData {
 
 axlPointer __vortex_profiles_invoke_frame_received (axlPointer __data)
 {
-	int                         channel_num;
+	int                         channel_num  = -1;
 	VortexProfileReceivedData * data         = (VortexProfileReceivedData *) __data;
 	VortexProfile             * profile      = data->profile;
 	VortexOnFrameReceived       received     = NULL;
@@ -933,7 +933,8 @@ axlPointer __vortex_profiles_invoke_frame_received (axlPointer __data)
 	is_connected = vortex_connection_is_ok (connection, axl_false);
 
 	if (! is_connected) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "invoking frame receive on a non-connected session");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "invoking frame receive on a non-connected session, conn-id=%d, channel-num=%d",
+			    vortex_connection_get_id (connection), channel_num);
 		goto free_resources;
 	}
 
@@ -989,14 +990,15 @@ axlPointer __vortex_profiles_invoke_frame_received (axlPointer __data)
 	if (vortex_connection_channel_exists (connection, channel_num))
 		vortex_channel_signal_on_close_blocked (channel);
 
+ free_resources:
+
 	/* log a message */
 	vortex_log (VORTEX_LEVEL_DEBUG, 
-	       "invocation frame received handler for channel %d finished (first level: profiles)",
-	       channel_num);
+	       "frame received handler invocation for channel %d (conn-id=%d) finished (first level: profiles)",
+		    channel_num, vortex_connection_get_id (connection));
 
- free_resources:
 	/* update channel reference */
-	vortex_channel_unref (channel);
+	vortex_channel_unref2 (channel, "first level handler");
 
 	/* decrease reference counting */
 	vortex_connection_unref (connection, "first level handler (frame received)");
@@ -1034,6 +1036,7 @@ axl_bool      vortex_profiles_invoke_frame_received (const char       * uri,
 	VortexProfile             * profile;
 	VortexProfileReceivedData * data;
 	VortexCtx                 * ctx = vortex_connection_get_ctx (connection);
+	VortexChannel             * channel;
 
 	v_return_val_if_fail (uri,                             axl_false);
 	v_return_val_if_fail (channel_num >= 0,                axl_false);
@@ -1098,7 +1101,16 @@ axl_bool      vortex_profiles_invoke_frame_received (const char       * uri,
 	}
 
 	/* update channel reference */
-	vortex_channel_ref (vortex_connection_get_channel (connection, channel_num));
+	channel = vortex_connection_get_channel (connection, channel_num);
+	if (! vortex_channel_ref2 (channel, "first level handler")) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to acquire reference to channel (%p) over connection id=%d, skipping frame delivery",
+			    channel, vortex_connection_get_id (connection));
+		/* release profile */
+		__vortex_profiles_unref (profile, "frame_received");
+		axl_free (data);
+		vortex_connection_unref (connection, "first level handler (frame received)");
+		return axl_false;
+	}
 
 	/* call to deliver the frame */
 	vortex_thread_pool_new_task (ctx, __vortex_profiles_invoke_frame_received, data);
