@@ -2766,6 +2766,7 @@ long                vortex_connection_get_timeout (VortexCtx * ctx)
 	} /* end if */
 
 	/* check if we have used the current environment variable */
+	vortex_mutex_lock  (&(ctx->ref_mutex));
 	if (! ctx->connection_timeout_checked) {
 		ctx->connection_timeout_checked = axl_true;
 		d_timeout                       = vortex_support_getenv_int ("VORTEX_SYNC_TIMEOUT");
@@ -2773,15 +2774,16 @@ long                vortex_connection_get_timeout (VortexCtx * ctx)
 
 	if (d_timeout == 0) {
 		/* no timeout definition done using default timeout 10 seconds */
-		return ctx->connection_std_timeout;
-	}else {
+		d_timeout = ctx->connection_std_timeout;
+	} else if (d_timeout != ctx->connection_std_timeout) {
 		/* update current std timeout */
 		ctx->connection_std_timeout = d_timeout;
-		
 	} /* end if */
 
+	vortex_mutex_unlock  (&(ctx->ref_mutex));
+
 	/* return current value */
-	return ctx->connection_std_timeout;
+	return d_timeout;
 }
 
 /** 
@@ -4132,12 +4134,14 @@ void                vortex_connection_get_receive_stamp            (VortexConnec
 		(*last_idle_stamp) = 0;
 	if (conn == NULL)
 		return;
+	vortex_mutex_lock (&conn->ref_mutex);
 	if (bytes_received != NULL)
 		(*bytes_received) = conn->bytes_received;
 	if (bytes_sent != NULL)
 		(*bytes_sent) = conn->bytes_sent;
 	if (last_idle_stamp != NULL)
 		(*last_idle_stamp) = conn->last_idle_stamp;
+	vortex_mutex_unlock (&conn->ref_mutex);
 
 	return;
 }

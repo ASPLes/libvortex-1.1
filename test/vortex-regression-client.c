@@ -502,21 +502,37 @@ axl_bool  test_00a (void)
 
 	/* add a new thread */
 	vortex_thread_pool_add (ctx, 1);
+
+	/* check where stats */
+	vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+	printf ("Test 00-a: (after starting one thread) started_threads=%d, waiting_threads=%d, pending_tasks=%d\n",
+		started_threads, waiting_threads, pending_tasks);
 	
 	/* get the queue value */
 	printf ("Test 00-a: Waiting for task blocked to start..\n");
 	iterator = 0;
 	while (iterator < 10) {
-		if (value_to_update == 17)
-			break;
-		vortex_async_queue_timedpop (queue, 1000);
+		vortex_async_queue_timedpop (queue, 100000);
 		iterator++;
+
+		/* check where stats */
+		vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
+
+		printf ("Test 00-a: (current stats) started_threads=%d, waiting_threads=%d, pending_tasks=%d\n",
+			started_threads, waiting_threads, pending_tasks);
+
+		if (waiting_threads == 1)
+			break;
+
 	} /* end while */
 
-	/* check where stats */
-	vortex_thread_pool_stats (ctx, &started_threads, &waiting_threads, &pending_tasks);
 	if (waiting_threads != 1) {
 		printf ("ERROR (6): expected to find waiting threads 1 but found %d\n", waiting_threads);
+		return axl_false;
+	}
+
+	if (value_to_update != 17) {
+		printf ("ERROR (6.1): expected to find value updated to 17 but it was found %d\n", value_to_update);
 		return axl_false;
 	}
 
