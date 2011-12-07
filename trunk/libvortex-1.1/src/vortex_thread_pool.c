@@ -131,13 +131,13 @@ void __vortex_thread_pool_process_events (VortexCtx * ctx, VortexThreadPool * po
 	axlPointer               data2;
 
 	/* ensure only one thread is processing */
-	if (pool->processing_events || axl_list_length (pool->events) == 0 || vortex_is_exiting (ctx))
+	if (vortex_is_exiting (ctx))
 		return;
 
 	/* acquire lock */
 	vortex_mutex_lock (&pool->mutex);
 	/* ensure again we can continue */
-	if (pool->processing_events || axl_list_length (pool->events) == 0) {
+	if (pool->processing_events || axl_list_length (pool->events) == 0 || vortex_is_exiting (ctx)) {
 		vortex_mutex_unlock (&pool->mutex);
 		return;
 	} /* end if */
@@ -216,7 +216,9 @@ void __vortex_thread_pool_process_events (VortexCtx * ctx, VortexThreadPool * po
 	}
 
 	/* flag that no more processing events */
+	vortex_mutex_lock (&pool->mutex);
 	pool->processing_events = axl_false;
+	vortex_mutex_unlock (&pool->mutex);
 	return;
 }
 
