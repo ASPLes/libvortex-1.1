@@ -83,16 +83,6 @@ struct _VortexChannel {
 	int                     last_reply_written;
 	
 	/** 
-	 * @internal Internal counter used to manage replies that we
-	 * have received and we have fully delivered into the
-	 * application user space.
-	 */
-	int                     last_reply_delivered;
-	int                     last_msg_delivered;
-	int                     last_ans_delivered;
-	unsigned int            last_ans_seqno_delivered;
-
-	/** 
 	 * @internal Value that tracks the next seq no value to be
 	 * used on the next send operation.  In the other hand,
 	 * last_seq_no_expected tracks the next expected seq no value
@@ -5993,32 +5983,6 @@ axl_bool  vortex_channel_check_serialize_pending (VortexCtx          * ctx,
 			vortex_connection_unref (conn, "second level handler (check serialize pending)");
 			vortex_channel_unref2 (channel, "check serialize pending");
 		}
-
-		if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_RPY ||
-		    vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ERR) {
-
-			channel->last_reply_delivered++;
-
-		} else if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_MSG) {
-
-			channel->last_msg_delivered++;
-
-		} else if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_ANS) {
-
-			channel->last_ans_delivered++;
-
-		} else if (vortex_frame_get_type (frame) == VORTEX_FRAME_TYPE_NUL) {
-
-			/* reset ANS/NUL delivery status */
-			channel->last_ans_delivered = 0;
-				
-			/* also update last_reply_delivered since ANS..NUL series also
-			 * represent a single delivered RPY that will be checked in the future,
-			 * that is, if the following reply receved to an ANS..NUL series is an
-			 * RPY, the code will check if the previous reply (no mather if it was
-			 * ANS..NUL or RPY) was received */
-			channel->last_reply_delivered++; 
-		} /* end if */
 
 		/* remove previous frame */
 		vortex_frame_unref (frame);
