@@ -505,6 +505,7 @@ void vortex_thread_pool_init     (VortexCtx * ctx,
 		axl_list_cursor_free (ctx->thread_pool->events_cursor);
 		axl_list_free (ctx->thread_pool->stopped);
 	} /* end if */
+
 	ctx->thread_pool->threads       = axl_list_new (axl_list_always_return_1, __vortex_thread_pool_terminate_thread);
 	ctx->thread_pool->stopped       = axl_list_new (axl_list_always_return_1, __vortex_thread_pool_terminate_thread);
 	ctx->thread_pool->events        = axl_list_new (__vortex_thread_pool_soon_events_first, __vortex_thread_pool_unref_event);
@@ -756,7 +757,8 @@ void vortex_thread_pool_remove        (VortexCtx        * ctx,
 void vortex_thread_pool_exit (VortexCtx * ctx) 
 {
 	/* get current context */
-	int         iterator;
+	int             iterator;
+	VortexThread  * thread;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "stopping thread pool..");
 
@@ -777,6 +779,26 @@ void vortex_thread_pool_exit (VortexCtx * ctx)
 	} /* end if */
 
 	/* stop all threads */
+	if (ctx->skip_thread_pool_wait) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "found skip thread finish wait");
+		/* remove all threads */
+		while (axl_list_length (ctx->thread_pool->threads) > 0) {
+			/* get reference to the thread to be not waited */
+			thread = axl_list_get_first (ctx->thread_pool->threads);
+
+			/* remove from the list */
+			axl_list_unlink_first (ctx->thread_pool->threads);
+
+#if defined(AXL_OS_UNIX)
+			/* flag is as detached */
+			pthread_detach (*thread);
+#endif
+			/* release object */
+			axl_free (thread);
+
+		}
+	} /* end if */
+
 	axl_list_free (ctx->thread_pool->threads);
 	axl_list_free (ctx->thread_pool->events);
 	axl_list_cursor_free (ctx->thread_pool->events_cursor);

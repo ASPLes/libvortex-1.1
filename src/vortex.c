@@ -429,6 +429,9 @@ axl_bool       vortex_conf_get             (VortexCtx      * ctx,
 		/* configure automatic MIME handling */
 		*value = ctx->automatic_mime;
 		return axl_true;
+	case VORTEX_SKIP_THREAD_POOL_WAIT:
+		*value = ctx->skip_thread_pool_wait;
+		return axl_true;
 	default:
 		/* configuration found, return axl_false */
 		vortex_log (VORTEX_LEVEL_CRITICAL, "found a requested for a non existent configuration item");
@@ -545,6 +548,9 @@ axl_bool       vortex_conf_set             (VortexCtx      * ctx,
 	case VORTEX_AUTOMATIC_MIME_HANDLING:
 		/* configure automatic MIME handling */
 		ctx->automatic_mime    = value;
+		return axl_true;
+	case VORTEX_SKIP_THREAD_POOL_WAIT:
+		ctx->skip_thread_pool_wait = value;
 		return axl_true;
 	default:
 		/* configuration found, return axl_false */

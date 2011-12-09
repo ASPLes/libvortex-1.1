@@ -1359,6 +1359,69 @@ axl_bool test_00d (void) {
 	return axl_true;
 }
 
+axlPointer __test_00e_task (axlPointer _queue)
+{
+	
+	/* wait to receive the signal to push */
+	printf ("Test 00-e: signaling we started the thread..\n");
+	vortex_async_queue_push (_queue, INT_TO_PTR (1));
+
+#if defined(AXL_OS_WIN32)
+	Sleep (1000);
+#else
+	sleep (1);
+#endif
+	printf ("Test 00-e: blocking at the queue..\n");
+	vortex_async_queue_pop (_queue);
+	
+	return NULL;
+}
+
+axl_bool test_00e (void) {
+
+	VortexCtx * ctx;
+	VortexAsyncQueue * queue;
+
+	/* create new context */
+	ctx = vortex_ctx_new ();
+
+	/* init this context */
+	if (! vortex_init_ctx (ctx)) {
+		printf ("ERROR: expected proper initialization..\n");
+		return axl_false;
+	}
+
+	/* call to run a long running blocked command */
+	printf ("Test 00-e: creating blocking tasks..\n");
+	queue = vortex_async_queue_new ();
+	vortex_thread_pool_new_task (ctx, __test_00e_task, queue);
+
+	/* now wait to block */
+	vortex_async_queue_pop (queue);
+
+	/* configure skip thread pool waiting */
+	vortex_conf_set (ctx, VORTEX_SKIP_THREAD_POOL_WAIT, axl_true, NULL);
+
+	/* call to finish vortex */
+	printf ("Test 00-e: finishing context..\n");
+	vortex_exit_ctx (ctx, axl_true);
+
+	/* now push to lock thread */
+	vortex_async_queue_push (queue, INT_TO_PTR (2));
+
+	printf ("Test 00-e: context finished ..waiting.....\n");
+#if defined(AXL_OS_WIN32)
+	Sleep (2000);
+#else
+	sleep (2);
+#endif
+	vortex_async_queue_unref (queue);
+	printf ("Test 00-e: test finished..\n");
+	
+	
+	return axl_true;
+}
+
 axl_bool call_enable_server_log (axl_bool enable_server_log) {
 	VortexConnection  * conn;
 	VortexChannel     * channel;
@@ -13683,7 +13746,7 @@ int main (int  argc, char ** argv)
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
 	printf ("**       Test available: test_00, test_001, test_00a, test_00b, test_00c, test_00c1, test_00c2,\n");
-	printf ("**                       test_00d, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
+	printf ("**                       test_00d, test_00e, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
 	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o,\n");
 	printf ("**                       test_01p, test_01q, test_01r, test_01s, test_01s1, test_01t\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02b, test_02c, test_02d, test_02e, \n"); 
@@ -13865,6 +13928,9 @@ int main (int  argc, char ** argv)
 
 		if (check_and_run_test (run_test_name, "test_00d"))
 			run_test (test_00d, "Test 00-d", "(unsigned) Int to string conversion", -1, -1);
+
+		if (check_and_run_test (run_test_name, "test_00e"))
+			run_test (test_00e, "Test 00-e", "Check skip thread waiting from pool", -1, -1); 
 
 		if (check_and_run_test (run_test_name, "test_01"))
 			run_test (test_01, "Test 01", "basic BEEP support", -1, -1);
@@ -14170,6 +14236,8 @@ int main (int  argc, char ** argv)
 	run_test (test_00c2, "Test 00-c2", "Thread pool automatic resize (long running tasks)", -1, -1);
 
 	run_test (test_00d, "Test 00-d", "(unsigned) Int to string conversion", -1, -1); 
+
+	run_test (test_00e, "Test 00-e", "Check skip thread waiting from pool", -1, -1); 
 
  	run_test (test_01, "Test 01", "basic BEEP support", -1, -1);
   

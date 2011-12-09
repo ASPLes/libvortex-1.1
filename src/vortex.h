@@ -489,7 +489,28 @@ typedef enum {
 	 * - 2: Disable automatic MIME handling for channels that
 	 * aren't configured.
 	 */
-	VORTEX_AUTOMATIC_MIME_HANDLING = 5
+	VORTEX_AUTOMATIC_MIME_HANDLING = 5,
+	/** 
+	 * @brief Allows to skip thread pool waiting on vortex ctx finalization.
+	 *
+	 * By default, when vortex context is finished by calling \ref
+	 * vortex_exit_ctx, the function waits for all threads running
+	 * the in thread pool to finish. However, under some
+	 * conditions, this may cause a dead-lock problem especially
+	 * when blocking operations are triggered from threads inside the
+	 * pool at the time the exit operation happens.
+	 *
+	 * This parameter allows to signal this vortex context to not
+	 * wait for threads running in the thread pool.
+	 *
+	 * To set the value to make vortex ctx exit to not wait for
+	 * threads in the pool to finish use:
+	 *
+	 * \code
+	 * vortex_conf_set (ctx, VORTEX_SKIP_THREAD_POOL_WAIT, axl_true, NULL);
+	 * \endcode
+	 */
+	VORTEX_SKIP_THREAD_POOL_WAIT = 6
 } VortexConfItem;
 
 axl_bool  vortex_conf_get             (VortexCtx      * ctx,
