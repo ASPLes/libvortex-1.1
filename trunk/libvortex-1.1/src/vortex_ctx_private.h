@@ -91,6 +91,10 @@ struct _VortexCtx {
 	int                  backlog;
 	axl_bool             enforce_profiles_supported;
 	int                  automatic_mime;
+
+	/* allows to control if we should wait to finish threads
+	 * inside the pool */
+	axl_bool             skip_thread_pool_wait;
 	
 	/* local log variables */
 	axl_bool             debug_checked;
