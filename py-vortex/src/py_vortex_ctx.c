@@ -72,7 +72,9 @@ VortexCtx * py_vortex_ctx_get (PyObject * py_vortex_ctx)
 }
 
 /* open handler (last handler that is found running) */
-#define PY_VORTEX_WATCHER_HANDLER_HASH "py:vo:wa:ha"
+#define PY_VORTEX_WATCHER_HANDLER_HASH  "py:vo:wa:ha"
+#define PY_VORTEX_WATCHER_NOTIFIER      "py:vo:wa:no"
+#define PY_VORTEX_WATCHER_NOTIFIER_DATA "py:vo:wa:nod"
 
 typedef struct _PyVortexHandlerWatcher {
 	char    * handler_string;
@@ -154,15 +156,33 @@ void        py_vortex_ctx_record_close_handler (VortexCtx * ctx, PyObject * hand
 	return;
 }
 
-axl_bool py_vortex_ctx_handler_watcher_foreach (axlPointer key, axlPointer data, axlPointer user_data, axlPointer user_data2)
+axl_bool py_vortex_ctx_handler_watcher_foreach (axlPointer key, axlPointer data, axlPointer user_data, axlPointer user_data2, axlPointer _ctx)
 {
 	PyVortexHandlerWatcher * watcher         = data;
 	int                      watching_period = PTR_TO_INT (user_data2);
 	struct  timeval        * stamp           = user_data;
+	PyVortexTooLongNotifier  notifier;
+	axlPointer               notifier_data;
+	char                   * report_msg;
+	VortexCtx              * ctx = _ctx;
 
 	if ((stamp->tv_sec - watcher->stamp) > watching_period) {
 		py_vortex_log (PY_VORTEX_WARNING, "handler '%s' is taking too long to finish, it being running %d seconds..",
 			       watcher->handler_string, (stamp->tv_sec - watcher->stamp));
+
+		/* get references to notifiers */
+		notifier      = vortex_ctx_get_data (ctx, PY_VORTEX_WATCHER_NOTIFIER);
+		notifier_data = vortex_ctx_get_data (ctx, PY_VORTEX_WATCHER_NOTIFIER_DATA);
+
+		if (notifier) {
+			/* build message */
+			report_msg = axl_strdup_printf ("handler '%s' is taking too long to finish, it being running %d seconds..",
+							watcher->handler_string, (stamp->tv_sec - watcher->stamp));
+			/* notify caller */
+			notifier (report_msg, notifier_data);
+			/* release */
+			axl_free (report_msg);
+		}
 	} /* end if */
 
 	return axl_false; /* do not stop */
@@ -183,7 +203,7 @@ axl_bool py_vortex_ctx_handler_watcher (VortexCtx *ctx, axlPointer user_data, ax
 	gettimeofday (&current, NULL);
 
 	/* foreach all registered handlers */
-	vortex_hash_foreach2 (hash, py_vortex_ctx_handler_watcher_foreach, &current, INT_TO_PTR (watching_period));
+	vortex_hash_foreach3 (hash, py_vortex_ctx_handler_watcher_foreach, &current, INT_TO_PTR (watching_period), ctx);
 
 	return axl_false; /* do not remove handler */
 }
@@ -198,7 +218,8 @@ axl_bool py_vortex_ctx_handler_watcher (VortexCtx *ctx, axlPointer user_data, ax
  *
  * @param watching_period When to check if there are opened handler in seconds.
  */
-void        py_vortex_ctx_start_handler_watcher (VortexCtx * ctx, int watching_period)
+void        py_vortex_ctx_start_handler_watcher (VortexCtx * ctx, int watching_period,
+						 PyVortexTooLongNotifier notifier, axlPointer notifier_data)
 {
 
 	VortexHash * hash;
@@ -210,6 +231,10 @@ void        py_vortex_ctx_start_handler_watcher (VortexCtx * ctx, int watching_p
 	/* init hash */
 	hash = vortex_hash_new (axl_hash_int, axl_hash_equal_int);
 	vortex_ctx_set_data_full (ctx, PY_VORTEX_WATCHER_HANDLER_HASH, hash, NULL, (axlDestroyFunc) vortex_hash_unref);
+
+	/* record notifier if defined */
+	vortex_ctx_set_data (ctx, PY_VORTEX_WATCHER_NOTIFIER, notifier);
+	vortex_ctx_set_data (ctx, PY_VORTEX_WATCHER_NOTIFIER_DATA, notifier_data);
 
 	/* start handler */
 	vortex_thread_pool_new_event (ctx, (watching_period + 1) * 1000000, 
@@ -525,7 +550,7 @@ static PyObject * py_vortex_ctx_new_event (PyObject * self, PyObject * args, PyO
 	static char *kwlist[] = {"microseconds", "handler", "user_data", "user_data2", NULL};
 
 	/* parse and check result */
-	if (! PyArg_ParseTupleAndKeywords (args, kwds, "iO|OOs", kwlist, 
+	if (! PyArg_ParseTupleAndKeywords (args, kwds, "iO|OO", kwlist, 
 					   &microseconds,
 					   &handler, 
 					   &user_data,
