@@ -109,7 +109,7 @@ axl_bool py_vortex_log2_is_enabled      (void);
 
 axl_bool py_vortex_color_log_is_enabled (void);
 
-void     py_vortex_handle_and_clear_exception (PyObject * py_conn);
+axl_bool py_vortex_handle_and_clear_exception (PyObject * py_conn);
 
 typedef void (*PyVortexExceptionHandler) (const char * exception_msg);
 

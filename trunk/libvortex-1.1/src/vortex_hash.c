@@ -266,14 +266,11 @@ void         vortex_hash_replace_full  (VortexHash     * hash_table,
 }
 
 /**
- * @brief Returns the current hash size.
+ * @brief Returns number of items insisde the hash.
  *
- * 
- * Returns the hash table size
- * 
  * @param hash_table the hash table to operate on.
  *
- * @return the hash table size or -1 if fails
+ * @return Number of items inside the hash -1 if fails.
  **/
 int      vortex_hash_size     (VortexHash *hash_table)
 {

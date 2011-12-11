@@ -376,6 +376,7 @@ VortexChannel * py_vortex_channel_pool_create_channel (VortexConnection      * c
 	PyGILState_STATE          state;
 	PyObject                * result;
 	VortexChannel           * channel    = NULL;
+ 	VortexCtx               * ctx = CONN_CTX(connection);
 
 	if (data == NULL) {
 		py_vortex_log (PY_VORTEX_CRITICAL, "expected PyVortexChannelPoolData diferent from NULL, unable to return a channel created");
@@ -419,8 +420,14 @@ VortexChannel * py_vortex_channel_pool_create_channel (VortexConnection      * c
 	Py_INCREF (_next_data);
 	PyTuple_SetItem (args, 8, _next_data);
 
+	/* record handler */
+	START_HANDLER (data->create_channel);
+
 	/* now invoke */
 	result = PyObject_Call (data->create_channel, args, NULL);
+
+	/* record handler */
+	CLOSE_HANDLER (data->create_channel);
 
 	py_vortex_log (PY_VORTEX_DEBUG, "channel pool create handler notification finished, checking for exceptions..");
 	py_vortex_handle_and_clear_exception (py_conn);
@@ -459,6 +466,7 @@ void py_vortex_channel_pool_on_created (VortexChannelPool * _pool,
 	PyObject                * args;
 	PyObject                * result;
 	PyGILState_STATE          state;
+	VortexCtx               * ctx = CONN_CTX(vortex_channel_pool_get_connection (_pool));
 
 	if (data == NULL) {
 		py_vortex_log (PY_VORTEX_CRITICAL, "expected PyVortexChannelPoolData diferent from NULL, unable to notify channel created, return NULL");
@@ -484,8 +492,14 @@ void py_vortex_channel_pool_on_created (VortexChannelPool * _pool,
 	Py_INCREF (data->user_data);
 	PyTuple_SetItem (args, 1, data->user_data);
 
+	/* record handler */
+	START_HANDLER (data->on_channel_pool_created);
+
 	/* now invoke */
 	result = PyObject_Call (data->on_channel_pool_created, args, NULL);
+
+	/* unrecord handler */
+	CLOSE_HANDLER (data->on_channel_pool_created);
 
 	py_vortex_log (PY_VORTEX_DEBUG, "on channel pool created notification finished, checking for exceptions %p (conn id: %d)..",
 		       py_pool, vortex_connection_get_id (vortex_channel_pool_get_connection (py_pool->pool)));

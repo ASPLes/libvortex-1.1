@@ -726,6 +726,7 @@ void py_vortex_connection_set_on_close_handler (VortexConnection * conn,
 	PyGILState_STATE                   state;
 	PyObject                         * args;
 	PyObject                         * result;
+	VortexCtx                        * ctx = CONN_CTX(conn);
 
 	/* notify on close notification received */
 	py_vortex_log (PY_VORTEX_DEBUG, "found on close notification for connection id=%d, (internal: %p)", 
@@ -734,7 +735,7 @@ void py_vortex_connection_set_on_close_handler (VortexConnection * conn,
 	/*** bridge into python ***/
 	/* acquire the GIL */
 	state = PyGILState_Ensure();
-	
+
 	/* create a tuple to contain arguments */
 	args = PyTuple_New (2);
 
@@ -743,8 +744,14 @@ void py_vortex_connection_set_on_close_handler (VortexConnection * conn,
 	Py_INCREF (on_close_obj->on_close_data);
 	PyTuple_SetItem (args, 1, on_close_obj->on_close_data);
 
+	/* record handler */
+	START_HANDLER (on_close_obj->on_close);
+
 	/* now invoke */
 	result = PyObject_Call (on_close_obj->on_close, args, NULL);
+
+	/* unrecord handler */
+	CLOSE_HANDLER (on_close_obj->on_close);
 
 	py_vortex_log (PY_VORTEX_DEBUG, "connection on close notification finished, checking for exceptions..");
 	py_vortex_handle_and_clear_exception (__PY_OBJECT (on_close_obj->py_conn));

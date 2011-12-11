@@ -109,6 +109,7 @@ void py_vortex_sasl_do_notify (VortexConnection * connection,
 	PyObject             * result;
 	PyObject             * args;
 	PyObject             * py_conn   = auth_data->py_conn;
+	VortexCtx            * ctx = CONN_CTX(connection);
 
 	/* acquire the GIL */
 	state = PyGILState_Ensure();
@@ -125,9 +126,15 @@ void py_vortex_sasl_do_notify (VortexConnection * connection,
 	/* status_msg */
 	PyTuple_SetItem (args, 2, Py_BuildValue ("s", status_message));
 	PyTuple_SetItem (args, 3, auth_data->auth_notify_data);
+
+	/* record handler */
+	START_HANDLER (auth_data->auth_notify);
 	
 	/* do notification */
 	result = PyObject_Call (auth_data->auth_notify, args, NULL);
+
+	/* record handler */
+	CLOSE_HANDLER (auth_data->auth_notify);
 
 	py_vortex_log (PY_VORTEX_DEBUG, "finished sasl auth notification, checking exceptions..");
 
@@ -343,6 +350,7 @@ axlPointer py_vortex_sasl_auth_handler_bridge (VortexConnection * conn,
 	PyObject               * auth_items;
 	char                   * password = NULL;
 	axl_bool                 status   = axl_false;
+	VortexCtx              * ctx = CONN_CTX(conn);
 	
 
 	/* acquire the GIL */
@@ -376,8 +384,14 @@ axlPointer py_vortex_sasl_auth_handler_bridge (VortexConnection * conn,
 	Py_INCREF (data->auth_handler_data);
 	PyTuple_SetItem (args, 2, data->auth_handler_data);
 
+	/* record handler */
+	START_HANDLER (data->auth_handler);
+
 	/* now invoke */
 	result = PyObject_Call (data->auth_handler, args, NULL);
+
+	/* record handler */
+	CLOSE_HANDLER (data->auth_handler);
 
 	py_vortex_log (PY_VORTEX_DEBUG, "auth notification finished status, checking for exceptions..");
 	py_vortex_handle_and_clear_exception (py_conn);

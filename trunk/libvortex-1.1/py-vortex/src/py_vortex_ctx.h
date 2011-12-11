@@ -49,6 +49,16 @@ typedef struct _PyVortexCtx PyVortexCtx;
 
 VortexCtx * py_vortex_ctx_get    (PyObject * py_vortex_ctx);
 
+#define START_HANDLER(handler) py_vortex_ctx_record_start_handler (ctx, handler)
+
+#define CLOSE_HANDLER(handler) py_vortex_ctx_record_close_handler (ctx, handler)
+
+void        py_vortex_ctx_record_start_handler (VortexCtx * ctx, PyObject * handler);
+
+void        py_vortex_ctx_record_close_handler (VortexCtx * ctx, PyObject * handler);
+
+void        py_vortex_ctx_start_handler_watcher (VortexCtx * ctx, int watching_period);
+
 PyObject  * py_vortex_ctx_create (VortexCtx * ctx);
 
 void        py_vortex_ctx_register (VortexCtx  * ctx,

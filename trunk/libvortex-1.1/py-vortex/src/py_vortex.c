@@ -241,7 +241,6 @@ axl_bool  py_vortex_profile_start  (int                channel_num,
 	PyObject           * result;
 	axl_bool             _result;
 	VortexCtx          * ctx = CONN_CTX (conn);
-	
 
 	/* acquire the GIL */
 	state = PyGILState_Ensure();
@@ -251,7 +250,7 @@ axl_bool  py_vortex_profile_start  (int                channel_num,
 
 	/* get references to handlers */
 	start      = py_vortex_ctx_register_get (ctx, "%s_start", vortex_channel_get_profile (channel));
-	start_data = py_vortex_ctx_register_get (ctx, "%s_start", vortex_channel_get_profile (channel));
+	start_data = py_vortex_ctx_register_get (ctx, "%s_start_data", vortex_channel_get_profile (channel));
 
 	/* provide a default value */
 	if (start_data == NULL)
@@ -276,8 +275,14 @@ axl_bool  py_vortex_profile_start  (int                channel_num,
 	Py_INCREF (start_data);
 	PyTuple_SetItem (args, 2, start_data);
 
+	/* record handler */
+	START_HANDLER (start);
+
 	/* now invoke */
 	result = PyObject_Call (start, args, NULL);
+
+	/* unrecord handler */
+	CLOSE_HANDLER (start);
 	
 	py_vortex_log (PY_VORTEX_DEBUG, "channel start notification finished, checking for exceptions..");
 	py_vortex_handle_and_clear_exception (py_conn);
@@ -368,8 +373,14 @@ void py_vortex_profile_frame_received (VortexChannel    * channel,
 	Py_INCREF (frame_received_data);
 	PyTuple_SetItem (args, 3, frame_received_data);
 
+	/* record handler */
+	START_HANDLER (frame_received);
+
 	/* now invoke */
 	result = PyObject_Call (frame_received, args, NULL);
+
+	/* unrecord handler */
+	CLOSE_HANDLER (frame_received);
 	
 	py_vortex_log (PY_VORTEX_DEBUG, "frame notification finished, checking for exceptions..");
 	py_vortex_handle_and_clear_exception (py_conn);
@@ -749,7 +760,7 @@ PyVortexExceptionHandler py_vortex_exception_handler = NULL;
 /** 
  * @brief Allows to check, handle and clear exception state.
  */ 
-void py_vortex_handle_and_clear_exception (PyObject * py_conn)
+axl_bool py_vortex_handle_and_clear_exception (PyObject * py_conn)
 {
 	PyObject * ptype      = NULL;
 	PyObject * pvalue     = NULL;
@@ -760,10 +771,14 @@ void py_vortex_handle_and_clear_exception (PyObject * py_conn)
 	int        iterator;
 	char     * str;
 	char     * str_aux;
+	axl_bool   found_error = axl_false;
 
 
 	/* check exception */
 	if (PyErr_Occurred()) {
+		/* notify error found */
+		found_error = axl_true;
+
 		py_vortex_log (PY_VORTEX_CRITICAL, "found exception...handling..");
 
 		/* fetch exception state */
@@ -862,7 +877,8 @@ void py_vortex_handle_and_clear_exception (PyObject * py_conn)
 
 	/* clear exception */
 	PyErr_Clear ();
-	return;
+
+	return found_error;
 }
 
 /** 
