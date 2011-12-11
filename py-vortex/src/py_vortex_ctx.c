@@ -71,10 +71,158 @@ VortexCtx * py_vortex_ctx_get (PyObject * py_vortex_ctx)
 	return ((PyVortexCtx *)py_vortex_ctx)->ctx;
 }
 
+/* open handler (last handler that is found running) */
+#define PY_VORTEX_WATCHER_HANDLER_HASH "py:vo:wa:ha"
+
+typedef struct _PyVortexHandlerWatcher {
+	char    * handler_string;
+	int       stamp;
+} PyVortexHandlerWatcher;
+
+void py_vortex_ctx_release_handler_watcher (axlPointer ptr)
+{
+	PyVortexHandlerWatcher * watcher = ptr;
+
+	axl_free (watcher->handler_string);
+	axl_free (watcher);
+	
+	return;
+}
+
+/** 
+ * @internal Allows to track a handler started
+ */
+void        py_vortex_ctx_record_start_handler (VortexCtx * ctx, PyObject * handler)
+{
+	PyObject                * obj;
+	struct timeval            stamp;
+	char                    * buffer;
+	Py_ssize_t                buffer_size;
+	PyVortexHandlerWatcher  * watcher;
+	VortexHash              * hash = vortex_ctx_get_data (ctx, PY_VORTEX_WATCHER_HANDLER_HASH);
+
+	/* no hash no record */
+	if (hash == NULL)
+		return;
+
+	/* record handler position */
+	watcher = axl_new (PyVortexHandlerWatcher, 1);
+	if (watcher == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to acquire memory to record handler start, skipping");
+		return;
+	} /* end if */
+
+	/* build an string representation from the handler */
+	obj = PyObject_Str (handler);
+	if (obj == NULL) {
+		axl_free (watcher);
+		return;
+	}
+	if (PyString_AsStringAndSize (obj, &buffer, &buffer_size) == -1) {
+		Py_DECREF (obj);
+		axl_free (watcher);
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to record handler started because it wasn't possible to build an string representation");
+		return;
+	} /* end if */
+	Py_DECREF (obj);
+
+	/* record handler started */
+	watcher->handler_string = axl_strdup (buffer);
+
+	gettimeofday (&stamp, NULL);
+	watcher->stamp = (int) stamp.tv_sec;
+	
+	/* record value */
+	/* py_vortex_log (PY_VORTEX_DEBUG, "Started handler %s and stamp %d", watcher->handler_string, (int) watcher->stamp);  */
+
+	/* record */
+	vortex_hash_replace_full (hash, handler, NULL, watcher, py_vortex_ctx_release_handler_watcher);
+
+	return;
+}
+
+void        py_vortex_ctx_record_close_handler (VortexCtx * ctx, PyObject * handler)
+{
+	VortexHash * hash = vortex_ctx_get_data (ctx, PY_VORTEX_WATCHER_HANDLER_HASH);
+
+	/* no hash no record */
+	if (hash == NULL)
+		return;
+
+	/* delete handler */
+	vortex_hash_delete (hash, handler);
+	return;
+}
+
+axl_bool py_vortex_ctx_handler_watcher_foreach (axlPointer key, axlPointer data, axlPointer user_data, axlPointer user_data2)
+{
+	PyVortexHandlerWatcher * watcher         = data;
+	int                      watching_period = PTR_TO_INT (user_data2);
+	struct  timeval        * stamp           = user_data;
+
+	if ((stamp->tv_sec - watcher->stamp) > watching_period) {
+		py_vortex_log (PY_VORTEX_WARNING, "handler '%s' is taking too long to finish, it being running %d seconds..",
+			       watcher->handler_string, (stamp->tv_sec - watcher->stamp));
+	} /* end if */
+
+	return axl_false; /* do not stop */
+}
+
+axl_bool py_vortex_ctx_handler_watcher (VortexCtx *ctx, axlPointer user_data, axlPointer user_data2)
+{
+	int              watching_period  = PTR_TO_INT (user_data);
+	VortexHash     * hash             = vortex_ctx_get_data (ctx, PY_VORTEX_WATCHER_HANDLER_HASH);
+	struct timeval   current;
+	
+	/* py_vortex_log (PY_VORTEX_WARNING, "checking for long running handlers, currently registered: %d..",
+	   vortex_hash_size (hash)); */
+	if (vortex_hash_size (hash) == 0)
+		return axl_false; /* do not remove handler */
+
+	/* get current stamp */
+	gettimeofday (&current, NULL);
+
+	/* foreach all registered handlers */
+	vortex_hash_foreach2 (hash, py_vortex_ctx_handler_watcher_foreach, &current, INT_TO_PTR (watching_period));
+
+	return axl_false; /* do not remove handler */
+}
+
+/** 
+ * @internal Start a handler watcher to report user when a handler is
+ * taking too long. In general, having watching_period equal to 3
+ * seconds is a good value. This is because you handler shouldn't take
+ * longer than that and, if that might happen, look for a solution:
+ * start a task that regularly check the result in the future (python
+ * subprocess has a nice poll() method to asynchounously check that).
+ *
+ * @param watching_period When to check if there are opened handler in seconds.
+ */
+void        py_vortex_ctx_start_handler_watcher (VortexCtx * ctx, int watching_period)
+{
+
+	VortexHash * hash;
+
+	/* check handler to be previously defined */
+	if (vortex_ctx_get_data (ctx, PY_VORTEX_WATCHER_HANDLER_HASH)) 
+		return;
+
+	/* init hash */
+	hash = vortex_hash_new (axl_hash_int, axl_hash_equal_int);
+	vortex_ctx_set_data_full (ctx, PY_VORTEX_WATCHER_HANDLER_HASH, hash, NULL, (axlDestroyFunc) vortex_hash_unref);
+
+	/* start handler */
+	vortex_thread_pool_new_event (ctx, (watching_period + 1) * 1000000, 
+				      py_vortex_ctx_handler_watcher, INT_TO_PTR (watching_period), NULL);
+	return;
+}
+
 static int py_vortex_ctx_init_type (PyVortexCtx *self, PyObject *args, PyObject *kwds)
 {
     return 0;
 }
+
+
 
 /** 
  * @brief Function used to allocate memory required by the object vortex.ctx
@@ -134,7 +282,7 @@ static PyObject * py_vortex_ctx_init (PyVortexCtx* self)
 	/* call to init context and build result value */
 	self->exit_pending = vortex_init_ctx (self->ctx);
 	_result = Py_BuildValue ("i", self->exit_pending);
-	
+
 	return _result;
 }
 
@@ -275,10 +423,9 @@ axl_bool py_vortex_ctx_bridge_event (VortexCtx * ctx, axlPointer user_data, axlP
 	PyGILState_STATE     state;
 	PyObject           * result;
 	axl_bool             _result;
-	axl_bool             removed;
 	PyVortexEventData  * data       = user_data;
 	char               * str;
-	
+
 	/* check if vortex engine is existing */
 	if (vortex_is_exiting (ctx)) {
 		py_vortex_log (PY_VORTEX_DEBUG, "disabled bridged event into python code, vortex exiting=%d..",
@@ -294,7 +441,8 @@ axl_bool py_vortex_ctx_bridge_event (VortexCtx * ctx, axlPointer user_data, axlP
 	}
 
 	/* acquire the GIL */
-	/* py_vortex_log (PY_VORTEX_DEBUG, "bridging event id=%d into python code (getting GIL) vortex exiting=%d..", data->id, vortex_is_exiting (ctx));  */
+	/* py_vortex_log2 (PY_VORTEX_DEBUG, "bridging event id=%d into python code (getting GIL) vortex exiting=%d..", 
+	   data->id, vortex_is_exiting (ctx));   */
 	state = PyGILState_Ensure();
 
 	/* create a tuple to contain arguments */
@@ -310,11 +458,22 @@ axl_bool py_vortex_ctx_bridge_event (VortexCtx * ctx, axlPointer user_data, axlP
 	Py_INCREF (data->user_data2);
 	PyTuple_SetItem (args, 2, data->user_data2);
 
+	/* record handler */
+	START_HANDLER (data->handler);
+
 	/* now invoke */
 	result = PyObject_Call (data->handler, args, NULL);
 
-	/* py_vortex_log (PY_VORTEX_DEBUG, "event notification finished, checking for exceptions and result.."); */
-	py_vortex_handle_and_clear_exception (NULL);
+	/* unrecord handler */
+	CLOSE_HANDLER (data->handler);
+
+	/* py_vortex_log2 (PY_VORTEX_DEBUG, "event notification finished, checking for exceptions and result.."); */
+	if (py_vortex_handle_and_clear_exception (NULL)) {
+		/* exception found */
+		py_vortex_log (PY_VORTEX_CRITICAL, "removing bridged event %d because an exception was found during its handling",
+			       data->id);
+		goto remove_event;
+	}
 
 	/* now get result value */
 	_result = axl_false;
@@ -330,11 +489,13 @@ axl_bool py_vortex_ctx_bridge_event (VortexCtx * ctx, axlPointer user_data, axlP
 	 * terminate content inside ctx */
 	if (_result || vortex_is_exiting (ctx)) {
 
-		/* call to remove event before returning */
-		removed = vortex_thread_pool_remove_event (ctx, data->id);
+		py_vortex_log (PY_VORTEX_DEBUG, "removing bridged event %d because vortex exiting=%d or event_result=%d",
+			       data->id, vortex_is_exiting (ctx), _result);
 
-		py_vortex_log (PY_VORTEX_DEBUG, "removing bridged event %d because vortex exiting=%d or event_result=%d..removal result: %d",
-			       data->id, vortex_is_exiting (ctx), _result, removed);
+	remove_event:
+
+		/* call to remove event before returning */
+		vortex_thread_pool_remove_event (ctx, data->id);
 
 		/* we have to remove the event, finish all data */
 		str = axl_strdup_printf ("py:vo:event:%d", data->id);
@@ -359,13 +520,12 @@ static PyObject * py_vortex_ctx_new_event (PyObject * self, PyObject * args, PyO
 	PyObject           * user_data2   = NULL;
 	long                 microseconds = 0;         
 	PyVortexEventData  * data;
-	
 
 	/* now parse arguments */
 	static char *kwlist[] = {"microseconds", "handler", "user_data", "user_data2", NULL};
 
 	/* parse and check result */
-	if (! PyArg_ParseTupleAndKeywords (args, kwds, "iO|OO", kwlist, 
+	if (! PyArg_ParseTupleAndKeywords (args, kwds, "iO|OOs", kwlist, 
 					   &microseconds,
 					   &handler, 
 					   &user_data,

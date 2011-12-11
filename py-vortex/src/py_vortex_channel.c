@@ -194,6 +194,7 @@ void     py_vortex_channel_received     (VortexChannel    * channel,
 	PyObject           * result;
 	PyObject           * frame_received;
 	PyObject           * frame_received_data;
+	VortexCtx         * ctx = CONN_CTX(connection);
 
 	py_vortex_log (PY_VORTEX_DEBUG, "Received frame notification over channel num %d, connection id: %d",
 		       vortex_channel_get_number (channel), vortex_connection_get_id (connection));
@@ -230,8 +231,14 @@ void     py_vortex_channel_received     (VortexChannel    * channel,
 	Py_INCREF (frame_received_data);
 	PyTuple_SetItem (args, 3, frame_received_data);
 
+	/* record handler */
+	START_HANDLER (frame_received);
+
 	/* now invoke */
 	result = PyObject_Call (frame_received, args, NULL);
+
+	/* unrecord handler */
+	CLOSE_HANDLER (frame_received);
 
 	py_vortex_log (PY_VORTEX_DEBUG, "frame notification finished, checking for exceptions..");
 	py_vortex_handle_and_clear_exception (py_conn);
@@ -323,6 +330,7 @@ void            py_vortex_channel_create_notify  (int                channel_num
 	PyObject           * args;
 	PyObject           * result;
 	PyObject           * py_conn;
+	VortexCtx          * ctx = CONN_CTX(conn);
 
 	/* acquire the GIL */
 	state = PyGILState_Ensure();
@@ -347,9 +355,17 @@ void            py_vortex_channel_create_notify  (int                channel_num
 	/* now setup user defined on channel data */
 	PyTuple_SetItem (args, 3, py_channel->on_channel_data);
 	py_channel->on_channel_data = NULL;
+
+	/* record handler */
+	START_HANDLER (py_channel->on_channel);
 	
 	/* now invoke */
 	result = PyObject_Call (py_channel->on_channel, args, NULL);
+
+	/* unregister handler */
+	CLOSE_HANDLER (py_channel->on_channel);
+
+	/* decrease reference */
 	Py_DECREF (py_channel->on_channel);
 
 	/* release tuple and result returned (which may be null) */

@@ -75,6 +75,7 @@ void py_vortex_alive_failure_handler (VortexConnection * conn,
 	PyObject          * _result;
 	PyObject          * args;
 	PyObject          * failure_handler;
+	VortexCtx         * ctx = CONN_CTX(conn);
 
 	/*** bridge into python ***/
 	/* acquire the GIL */
@@ -91,7 +92,14 @@ void py_vortex_alive_failure_handler (VortexConnection * conn,
 
 	/* perform call */
 	failure_handler = vortex_connection_get_data (conn, PY_VORTEX_ALIVE_FAILURE_HANDLER);
+
+	/* record handler */
+	START_HANDLER (failure_handler);
+
 	_result = PyObject_Call (failure_handler, args, NULL);
+
+	/* unrecord handler */
+	CLOSE_HANDLER (failure_handler);
 
 	py_vortex_log (PY_VORTEX_DEBUG, "ALIVE failure handler finished , checking for exceptions, _result: %p..", _result);
 	py_vortex_handle_and_clear_exception (py_conn);

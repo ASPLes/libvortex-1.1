@@ -80,6 +80,7 @@ void py_vortex_tls_do_notify           (VortexConnection * connection,
 	PyObject               * _result;
 	PyGILState_STATE         state;
 	PyObject               * py_conn;
+	VortexCtx              * ctx = CONN_CTX(connection);
 
 	py_vortex_log (PY_VORTEX_DEBUG, "received request to notify TLS termination status");
 
@@ -110,9 +111,15 @@ void py_vortex_tls_do_notify           (VortexConnection * connection,
 	PyTuple_SetItem (args, 1, Py_BuildValue ("i", status));
 	PyTuple_SetItem (args, 2, Py_BuildValue ("s", status_message));
 	PyTuple_SetItem (args, 3, data->tls_notify_data);
+
+	/* record handler */
+	START_HANDLER (data->tls_notify);
 	
 	/* perform call */
 	_result = PyObject_Call (data->tls_notify, args, NULL);
+
+	/* unrecord handler */
+	CLOSE_HANDLER (data->tls_notify);
 
 	py_vortex_log (PY_VORTEX_DEBUG, "TLS termination status finished, checking for exceptions, _result: %p..", _result);
 	py_vortex_handle_and_clear_exception (py_conn);
@@ -291,9 +298,15 @@ axl_bool  py_vortex_tls_accept_handler_bridge (VortexConnection * connection,
 	PyTuple_SetItem (args, 1, Py_BuildValue ("s", serverName));
 	PyTuple_SetItem (args, 2, data->accept_handler_data);
 	Py_INCREF (data->accept_handler_data);
+
+	/* record handler */
+	START_HANDLER (data->accept_handler);
 	
 	/* perform call */
 	_result = PyObject_Call (data->accept_handler, args, NULL);
+
+	/* unrecord handler */
+	CLOSE_HANDLER (data->accept_handler);
 
 	py_vortex_log (PY_VORTEX_DEBUG, "tls query accept handling finished, checking for exceptions, _result: %p..", _result);
 	py_vortex_handle_and_clear_exception (py_conn);
@@ -347,9 +360,15 @@ char * py_vortex_tls_cert_handler_bridge (VortexConnection * connection,
 	PyTuple_SetItem (args, 1, Py_BuildValue ("s", serverName));
 	PyTuple_SetItem (args, 2, data->cert_handler_data);
 	Py_INCREF (data->cert_handler_data);
+
+	/* record handler */
+	START_HANDLER (data->cert_handler);
 	
 	/* perform call */
 	_result = PyObject_Call (data->cert_handler, args, NULL);
+
+	/* unrecord handler */
+	CLOSE_HANDLER (data->cert_handler);
 
 	py_vortex_log (PY_VORTEX_DEBUG, "cert handling finished, checking for exceptions, _result: %p..", _result);
 	py_vortex_handle_and_clear_exception (py_conn);
@@ -403,9 +422,15 @@ char * py_vortex_tls_key_handler_bridge (VortexConnection * connection,
 	PyTuple_SetItem (args, 1, Py_BuildValue ("s", serverName));
 	PyTuple_SetItem (args, 2, data->key_handler_data);
 	Py_INCREF (data->key_handler_data);
+
+	/* record handler */
+	START_HANDLER (data->key_handler);
 	
 	/* perform call */
 	_result = PyObject_Call (data->key_handler, args, NULL);
+
+	/* unrecord handler */
+	CLOSE_HANDLER (data->key_handler);
 
 	py_vortex_log (PY_VORTEX_DEBUG, "key handling finished, checking for exceptions, _result: %p..", _result);
 	py_vortex_handle_and_clear_exception (py_conn);
