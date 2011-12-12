@@ -5247,10 +5247,11 @@ axl_bool      __vortex_channel_block_until_replies_are_received (VortexChannel *
 			break;
 		}
 	} /* end while */
-	
-	vortex_mutex_unlock (&channel->close_mutex);
+
 	vortex_log (VORTEX_LEVEL_DEBUG,    "we have received all replies we can now close the channel %d", 
 		    channel->channel_num);
+	
+	vortex_mutex_unlock (&channel->close_mutex);
 
 	/* return wait status */
 	return result;
@@ -7408,8 +7409,8 @@ void vortex_channel_notify_close (VortexChannel * channel, int  msg_no, axl_bool
 
 		/* before closing the channel ensure there are not
 		 * message being_sending */
-		vortex_mutex_lock   (&channel->send_mutex);
-		vortex_mutex_unlock (&channel->send_mutex);
+		/* vortex_mutex_lock   (&channel->send_mutex);
+		   vortex_mutex_unlock (&channel->send_mutex); */
 
 		/* remove channel from connection */
 		vortex_connection_remove_channel (connection, channel);
@@ -7613,10 +7614,10 @@ void vortex_channel_free (VortexChannel * channel)
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing receive_mutex");
 	vortex_mutex_destroy (&channel->receive_mutex);
 
-	if (! ctx->reader_cleanup) {
+	/* if (! ctx->reader_cleanup) {
 		vortex_mutex_lock    (&channel->send_mutex);
 		vortex_mutex_unlock  (&channel->send_mutex);
-	}
+		} */
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing send_mutex channel=%d", channel->channel_num);
 	vortex_mutex_destroy (&channel->send_mutex);
 	vortex_cond_destroy  (&channel->send_cond);
