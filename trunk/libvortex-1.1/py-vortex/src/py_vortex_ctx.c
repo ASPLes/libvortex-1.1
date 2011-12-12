@@ -550,7 +550,7 @@ static PyObject * py_vortex_ctx_new_event (PyObject * self, PyObject * args, PyO
 	static char *kwlist[] = {"microseconds", "handler", "user_data", "user_data2", NULL};
 
 	/* parse and check result */
-	if (! PyArg_ParseTupleAndKeywords (args, kwds, "iO|OO", kwlist, 
+	if (! PyArg_ParseTupleAndKeywords (args, kwds, "lO|OO", kwlist, 
 					   &microseconds,
 					   &handler, 
 					   &user_data,
