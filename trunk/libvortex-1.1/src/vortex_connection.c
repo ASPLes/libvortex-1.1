@@ -875,6 +875,7 @@ VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx       
 								       NULL,
 								       /* channel destroy */
 								       (axlDestroyFunc) __vortex_connection_channel_unref);
+
 		/* creates the user space data */
 		if (__connection != NULL) {
 			/* set current serverName if defined */
@@ -912,7 +913,14 @@ VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx       
 		channel = vortex_channel_empty_new (0, "not applicable", connection);
 		
 		/* associate channel 0 with actual connection */
-		vortex_connection_add_channel (connection, channel);
+		if (! vortex_connection_add_channel (connection, channel)) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to add channel 0 to new connection id=%d created, unable to maintain this connection, killing");
+
+			/* release all references */
+			vortex_channel_unref2 (channel, "new connection");
+			vortex_connection_unref (connection, "vortex_connection_new_empty_from_connection");
+			return NULL;
+		}
 
 	} else {
 		/* create the hash data table for master listener connections */
@@ -3963,12 +3971,11 @@ void                vortex_connection_set_close_socket       (VortexConnection *
  * @param connection the connection where channel will be added.
  * @param channel the channel to add.
  */
-void               vortex_connection_add_channel          (VortexConnection * connection, 
+axl_bool           vortex_connection_add_channel          (VortexConnection * connection, 
 							   VortexChannel    * channel)
 {
 	/* call to common implementation */
-	vortex_connection_add_channel_common (connection, channel, axl_true);
-	return;
+	return vortex_connection_add_channel_common (connection, channel, axl_true);
 }
 
 /** 
@@ -3993,7 +4000,7 @@ void               vortex_connection_add_channel          (VortexConnection * co
  * vortex_connection_set_channel_added_handler otherwise, this
  * notification is not done.
  */
-void               vortex_connection_add_channel_common (VortexConnection * connection,
+axl_bool           vortex_connection_add_channel_common (VortexConnection * connection,
 							 VortexChannel    * channel,
 							 axl_bool           do_notify)
 {
@@ -4002,7 +4009,7 @@ void               vortex_connection_add_channel_common (VortexConnection * conn
 	
 	/* perform some aditional checks */
 	if (connection == NULL || channel == NULL || connection->channels == NULL || connection->role == VortexRoleMasterListener)
-		return;
+		return axl_false;
 
 	/* get a reference to the context */
 	ctx = connection->ctx;
@@ -4015,7 +4022,7 @@ void               vortex_connection_add_channel_common (VortexConnection * conn
 	if (_channel != NULL) {
 		vortex_mutex_unlock (&connection->channel_mutex);
 		vortex_log (VORTEX_LEVEL_CRITICAL, "trying to add a channel on a connection which already have this channel");
-		return;
+		return axl_false;
 	}
 
 	/* insert new channel on this connection */
@@ -4033,7 +4040,7 @@ void               vortex_connection_add_channel_common (VortexConnection * conn
 	if (do_notify) 
 		__vortex_connection_check_and_notify (connection, channel, axl_true);
 
-	return;
+	return axl_true;
 }
 
 /** 

@@ -919,13 +919,19 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
 					  /* use no frame received handler */
 					  NULL, NULL);
 	} /* end if */
+
+	/* add the channel created to the connection */
+	if (! vortex_connection_add_channel (conn, channel)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to add channel %p into connection id=%d, cancelling", 
+			    channel, vortex_connection_get_id (conn));
+		vortex_channel_unref2 (channel, "new channel");
+		channel = NULL;
+		goto __vortex_channel_new_invoke_caller;
+	}
 	
 	/* ensure we don't loose reference during creation */
 	vortex_channel_ref2 (channel, "new channel");
 	
-	/* add the channel created to the connection */
-	vortex_connection_add_channel (conn, channel);
-
 	/* create wait reply object. */
 	wait_reply = vortex_channel_create_wait_reply ();
 
@@ -2383,7 +2389,7 @@ check_limit:
 	mime_header_size       = __vortex_channel_get_mime_headers_size (ctx, channel);
 
 	/* prepare data to be sent */
-	data                   = axl_new (VortexSequencerData, 1);
+	data  = axl_new (VortexSequencerData, 1);
 	if (data == NULL) {
 		/* unlock send mutex */
 		vortex_mutex_unlock (&channel->send_mutex);
@@ -2403,7 +2409,7 @@ check_limit:
 		
 	if (! feeder) {
 		/* update message size */
-		data->message_size     = message_size + mime_header_size;
+		data->message_size = message_size + mime_header_size;
 
 		vortex_log (VORTEX_LEVEL_DEBUG, 
 			    "new message to sent, type=%d channel=%d msgno=%d (proposed: %d) size (%d) = msg size (%d) + mime size (%d)",
@@ -2412,7 +2418,7 @@ check_limit:
 
 		/* copy mime headers according to channel configuration, that
 		 * comes from profile configuration. */
-		data->message          = axl_new (char , data->message_size + 1);
+		data->message = axl_new (char , data->message_size + 1);
 		/* check alloc operation */
 		if (data->message == NULL) {
 			axl_free (data);
@@ -6834,7 +6840,13 @@ char *  __vortex_channel_0_handle_start_msg_reply (VortexCtx        * ctx,
 	/* add channel to the connection but without notification:
 	 * this is done later in
 	 * vortex_channel_notify_start_internal */
-	vortex_connection_add_channel_common (connection, new_channel, axl_false);
+	if (! vortex_connection_add_channel_common (connection, new_channel, axl_false)) {
+		/* release channel */
+		vortex_channel_unref (new_channel);
+
+		/* return error message */
+		return vortex_frame_get_error_message ("554", "transaction failed: unable to add channel to the connection", NULL);
+	} /* end if */
 
 	/* configure msg_no to reply and the serverName value, this
 	 * will be used by vortex_channel_notify_start before doing

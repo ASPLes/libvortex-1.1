@@ -209,10 +209,10 @@ VORTEX_SOCKET       vortex_connection_get_socket             (VortexConnection *
 void                vortex_connection_set_close_socket       (VortexConnection * connection,
 							      axl_bool           action);
 
-void                vortex_connection_add_channel            (VortexConnection * connection, 
+axl_bool            vortex_connection_add_channel            (VortexConnection * connection, 
 							      VortexChannel * channel);
 
-void                vortex_connection_add_channel_common     (VortexConnection * connection,
+axl_bool            vortex_connection_add_channel_common     (VortexConnection * connection,
 							      VortexChannel    * channel,
 							      axl_bool           do_notify);
 

@@ -84,7 +84,7 @@ VortexSequencerState * vortex_sequencer_create_state (void)
 	return result;
 }
 
-void vortex_sequencer_add_channel (VortexCtx * ctx, VortexSequencerData * data)
+axl_bool vortex_sequencer_add_channel (VortexCtx * ctx, VortexSequencerData * data)
 {
 	VortexSequencerState * state;
 
@@ -101,7 +101,7 @@ void vortex_sequencer_add_channel (VortexCtx * ctx, VortexSequencerData * data)
 		vortex_channel_queue_pending_message (data->channel, data);
 
 		vortex_mutex_unlock (&state->mutex);
-		return;
+		return axl_true;
 	}
 
 	/* seems channel is not added */
@@ -109,9 +109,14 @@ void vortex_sequencer_add_channel (VortexCtx * ctx, VortexSequencerData * data)
 		/* update channel reference (this reference is
 		   associated to the channel used by the sequencer) */
 		if (! vortex_channel_ref2 (data->channel, "sequencer")) {
+			/* release data */
+			vortex_payload_feeder_unref (data->feeder);
+			axl_free (data->message);
+			axl_free (data);
+
 			vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to acquire reference to queue channel into sequencer");
 			vortex_mutex_unlock (&state->mutex);
-			return;
+			return axl_false;
 		} /* end if */
 
 		/* add channel */
@@ -124,7 +129,7 @@ void vortex_sequencer_add_channel (VortexCtx * ctx, VortexSequencerData * data)
 	/* unlock */
 	vortex_mutex_unlock (&state->mutex);
 
-	return;
+	return axl_true;
 }
 
 void vortex_sequencer_signal (VortexCtx * ctx)
@@ -173,7 +178,8 @@ axl_bool vortex_sequencer_queue_data (VortexCtx * ctx, VortexSequencerData * dat
 	is_stalled = vortex_channel_is_stalled (data->channel);
 
 	/* add the channel to the sequencer structure */
-	vortex_sequencer_add_channel (ctx, data);
+	if (! vortex_sequencer_add_channel (ctx, data)) 
+		return axl_false;
 
 	/* signal sequencer (but only if the channel is not stalled) */
 	if (! is_stalled)
