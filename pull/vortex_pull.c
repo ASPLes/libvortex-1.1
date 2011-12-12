@@ -403,6 +403,7 @@ void           vortex_pull_cleanup            (VortexCtx * ctx)
 
 	/* nullify queue */
 	vortex_ctx_set_data (ctx, VORTEX_PULL_QUEUE_KEY, NULL);
+	vortex_ctx_set_data (ctx, VORTEX_PULL_EVENT_MASKS, NULL);
 
 	if (ctx == NULL || pull_pending_events == NULL) {
 		return;

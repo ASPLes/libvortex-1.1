@@ -325,9 +325,6 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * _data)
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "thread from pool started");
 
-	/* acquire a reference to the context */
-	vortex_ctx_ref2 (ctx, "begin pool dispatcher");
-
 	/* get a reference to the queue, waiting for the next work */
 	while (axl_true) {
 
@@ -615,6 +612,7 @@ void vortex_thread_pool_add_internal                 (VortexCtx        * ctx,
 	int                       iterator;
 	VortexThread            * thread;
 	VortexThreadPoolStarter * starter;
+	VortexCtx               * local_ctx;
 
 	v_return_if_fail (ctx);
 	v_return_if_fail (threads > 0);
@@ -635,6 +633,10 @@ void vortex_thread_pool_add_internal                 (VortexCtx        * ctx,
 		} /* end if */
 		starter->thread = thread;
 		starter->pool   = ctx->thread_pool;
+
+		/* acquire a reference to the context */
+		vortex_ctx_ref2 (ctx, "begin pool dispatcher");
+
 		if (! vortex_thread_create (thread,
 					    /* function to execute */
 					    (VortexThreadFunc)__vortex_thread_pool_dispatcher,
@@ -642,6 +644,11 @@ void vortex_thread_pool_add_internal                 (VortexCtx        * ctx,
 					    starter,
 					    /* finish thread configuration */
 					    VORTEX_THREAD_CONF_END)) {
+
+			/* failed, release ctx */
+			local_ctx = ctx;
+			vortex_ctx_unref2 (&local_ctx, "(failed) begin pool dispatcher");
+
 			/* free the reference */
 			vortex_thread_destroy (thread, axl_true);
 
