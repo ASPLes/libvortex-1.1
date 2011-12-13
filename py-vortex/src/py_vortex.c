@@ -335,7 +335,7 @@ void py_vortex_profile_frame_received (VortexChannel    * channel,
 	VortexCtx          * ctx = CONN_CTX (conn);
 
 	/* acquire the GIL */
-	state = PyGILState_Ensure();
+	state    = PyGILState_Ensure();
 
 	/* create a PyVortexFrame instance */
 	py_frame = py_vortex_frame_create (frame, axl_true);

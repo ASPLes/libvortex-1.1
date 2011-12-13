@@ -175,13 +175,13 @@ void vortex_listener_accept_connection    (VortexConnection * connection, axl_bo
 		} /* end if */
 	} /* end if */
 
-	/* call to complete incoming connection register operation */
-	vortex_listener_complete_register (connection);
-	
 	/* close connection and free resources */
 	vortex_log (VORTEX_LEVEL_DEBUG, "worker ended, connection (conn-id=%d) registered on manager (initial accept)",
 		    vortex_connection_get_id (connection));
 
+	/* call to complete incoming connection register operation */
+	vortex_listener_complete_register (connection);
+	
 	return;
 }
 
