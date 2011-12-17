@@ -1,0 +1,339 @@
+{
+   Python wrong access 1
+   Memcheck:Addr4
+   fun:PyObject_Free
+   ...
+}
+{
+   Python wrong access 2
+   Memcheck:Cond
+   fun:PyObject_Free
+   ...
+}
+{
+   Python wrong access 3
+   Memcheck:Value8
+   fun:PyObject_Free
+   ...
+}
+{
+   Python wrong access 4
+   Memcheck:Addr4
+   fun:PyObject_Realloc
+   ...
+}
+{
+   Python wrong access 5
+   Memcheck:Cond
+   fun:PyObject_Realloc
+   ...
+}
+{
+   Python wrong access 6
+   Memcheck:Value8
+   fun:PyObject_Realloc
+   ...
+}
+{
+   Python leak 7
+   Memcheck:Leak
+   fun:malloc
+   fun:strdup
+   fun:Py_InitializeEx
+   ...
+}
+{
+   Python leak 8
+   Memcheck:Leak
+   fun:malloc
+   fun:PyList_New
+   ...
+}
+{
+   Python leak 9
+   Memcheck:Leak
+   fun:malloc
+   fun:PyThread_allocate_lock
+   ...
+}
+{
+   Python leak 10
+   Memcheck:Leak
+   fun:malloc
+   fun:realloc
+   fun:PyList_Append
+   ...
+}
+{
+   Python leak 11
+   Memcheck:Leak
+   fun:malloc
+   fun:PyThread_create_key
+   ...
+}
+{
+   Python leak 12
+   Memcheck:Leak
+   fun:calloc
+   fun:_dlerror_run
+   fun:dlopen@@GLIBC_2.2.5
+   fun:_PyImport_GetDynLoadFunc
+   ...
+}
+{
+   Python leak 13
+   Memcheck:Leak
+   fun:realloc
+   fun:PyList_Append
+   ...
+}
+{
+   Python leak 14
+   Memcheck:Leak
+   fun:malloc
+   obj:/usr/bin/python2.6
+   fun:Py_GetProgramFullPath
+   ...
+}
+{
+   Python leak 15
+   Memcheck:Leak
+   fun:malloc
+   fun:decompose_rpath
+   ...
+}
+{
+   Python leak 16
+   Memcheck:Leak
+   fun:malloc
+   fun:dl_open_worker
+   ...
+}
+{
+   Python leak 17
+   Memcheck:Leak
+   fun:malloc
+   fun:PyString_FromString
+   ...
+}
+{
+   Python leak 18
+   Memcheck:Leak
+   fun:malloc
+   fun:open_path
+   ...
+}
+{
+   Python leak 19
+   Memcheck:Leak
+   fun:malloc
+   fun:_PyObject_GC_New
+   ...
+}
+{
+   Python leak 20
+   Memcheck:Leak
+   fun:malloc
+   fun:local_strdup
+   ...
+}
+{
+   Python leak 21
+   Memcheck:Leak
+   fun:malloc
+   obj:/usr/bin/python2.6
+   obj:/usr/bin/python2.6
+   fun:PyEval_EvalFrameEx
+   fun:PyEval_EvalCodeEx
+   ...
+}
+{
+   Python leak 22
+   Memcheck:Leak
+   fun:malloc
+   fun:_dl_new_object
+   ...
+}
+{
+   Python leak 23
+   Memcheck:Leak
+   fun:malloc
+   fun:PyStructSequence_InitType
+   ...
+}
+{
+   Python leak 24
+   Memcheck:Leak
+   fun:malloc
+   fun:_PyObject_GC_NewVar
+   ...
+}
+{
+   Python leak 25
+   Memcheck:Leak
+   fun:malloc
+   fun:PyString_FromStringAndSize
+   ...
+}
+{
+   Python leak 26
+   Memcheck:Leak
+   fun:malloc
+   obj:/usr/bin/python2.6
+   obj:/usr/bin/python2.6
+   fun:PyObject_CallFunctionObjArgs
+   ...
+}
+{
+   Python leak 27
+   Memcheck:Leak
+   fun:malloc
+   fun:realloc
+   fun:PyObject_Malloc
+   ...
+}
+{
+   Python leak 28
+   Memcheck:Leak
+   fun:malloc
+   obj:/usr/bin/python2.6
+   fun:PyType_Ready
+   ...
+}
+{
+   Python leak 29
+   Memcheck:Leak
+   fun:malloc
+   obj:/usr/bin/python2.6
+   fun:PyDict_SetItemString
+   ...
+}
+{
+   Python leak 30
+   Memcheck:Leak
+   fun:malloc
+   obj:/usr/bin/python2.6
+   obj:/usr/bin/python2.6
+   fun:PyDict_Copy
+   ...
+}
+{
+   Python leak 31
+   Memcheck:Leak
+   fun:malloc
+   fun:_PyObject_GC_Malloc
+   fun:PyType_GenericAlloc
+   ...
+}
+{
+   Python leak 32
+   Memcheck:Leak
+   fun:malloc
+   obj:/usr/bin/python2.6
+   fun:PyEval_EvalFrameEx
+   ...
+}
+{
+   Python leak 33
+   Memcheck:Leak
+   fun:malloc
+   fun:_PyInt_Init
+   ...
+}
+{
+   Python leak 34
+   Memcheck:Leak
+   fun:malloc
+   obj:/usr/bin/python2.6
+   fun:PyInt_FromLong
+   ...
+}
+{
+   DL map leak
+   Memcheck:Leak
+   fun:malloc
+   fun:_dl_map_object_deps
+   ...
+}
+{
+   Python leak 35
+   Memcheck:Leak
+   fun:malloc
+   obj:/usr/bin/python2.6
+   fun:PyObject_GenericSetAttr
+   ...
+}
+{
+   Python leak 36
+   Memcheck:Leak
+   fun:malloc
+   fun:PyObject_Malloc
+   ...
+}
+{
+   Python leak 37
+   Memcheck:Leak
+   fun:calloc
+   fun:_dl_check_map_versions
+   ...
+}
+{
+   Python leak 38
+   Memcheck:Leak
+   fun:malloc
+   obj:/usr/bin/python2.6
+   fun:PyString_InternInPlace
+   ...
+}
+{
+   Python leak 39
+   Memcheck:Leak
+   fun:calloc
+   fun:_dl_new_object
+   ...
+}
+{
+   GSASL leak 40
+   Memcheck:Leak
+   fun:malloc
+   fun:do_malloc
+   fun:_gcry_malloc
+   ...
+}
+{
+   TLS leak 41
+   Memcheck:Leak
+   fun:malloc
+   fun:CRYPTO_malloc
+   ...
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

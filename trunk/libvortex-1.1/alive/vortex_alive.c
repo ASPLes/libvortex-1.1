@@ -96,13 +96,19 @@ void __vortex_alive_free (axlPointer _data)
  */
 void __vortex_alive_free_reference (VortexAliveData * data)
 {
-	VortexConnection * conn = data->conn;
+	VortexConnection * conn    = data->conn;
+	VortexChannel    * channel = data->channel;
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx  = CONN_CTX (conn);
 #endif
 
 	/* nullify reference */
 	data->conn = NULL;
+	data->channel = NULL;
+
+	/* release channel reference */
+	vortex_channel_unref2 (channel, "alive");
+	   
 
 	/* now unref here */
 	vortex_log (VORTEX_LEVEL_DEBUG, "releasing alive conn-id=%d ref (current: %d)", 
@@ -203,23 +209,24 @@ axl_bool __vortex_alive_trigger_failure (VortexAliveData * data)
 	if (data->failure_handler) {
 		/* notify on handler */
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
-			    "alive check max unreplied count reached=%d or alive channel not created, notify on failure handler for connection id=%d",
+			    "alive check max unreplied count reached=%d or alive channel not created, notify on failure handler for connection id=%d (release_ref=%d)",
 			    data->max_unreply_count,
-			    vortex_connection_get_id (data->conn));
+			    vortex_connection_get_id (data->conn), release_ref);
 
 		/* call user space */
 		data->failure_handler (data->conn, data->check_period, data->max_unreply_count);
 		
 		/* remove check alive data */
-		if (release_ref)
-			__vortex_alive_free_reference (data);
+		if (release_ref) 
+			__vortex_alive_free_reference (data);    
 		
 		/* request to remove this event */
 		return axl_true;
 	}
 	
-	vortex_log (VORTEX_LEVEL_CRITICAL, "alive check max unreplied count reached=%d < %d or alive channel not created, shutting down the connection id=%d",
-		    data->max_unreply_count, vortex_channel_get_outstanding_messages (data->channel, NULL), vortex_connection_get_id (data->conn));
+	vortex_log (VORTEX_LEVEL_CRITICAL, "alive check max unreplied count reached=%d < %d or alive channel not created, shutting down the connection id=%d (release_ref=%d)",
+		    data->max_unreply_count, vortex_channel_get_outstanding_messages (data->channel, NULL), vortex_connection_get_id (data->conn),
+		    release_ref);
 	
 	/* shutdown the connection */
 	if (vortex_connection_is_ok (data->conn, axl_false)) {
@@ -228,8 +235,8 @@ axl_bool __vortex_alive_trigger_failure (VortexAliveData * data)
 	}
 
  	/* remove check alive data */
-	if (release_ref)
-		__vortex_alive_free_reference (data);
+	if (release_ref) 
+		__vortex_alive_free_reference (data);  
 
 	return axl_true;
 }
@@ -263,6 +270,8 @@ axl_bool __vortex_alive_do_check        (VortexCtx  * ctx,
 	 * pending replies and if they exceed the max unreplied
 	 * count */
 	if (data->max_unreply_count < vortex_channel_get_outstanding_messages (data->channel, NULL)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "max unreply count reached (%d) < pending replies (%d), trigger failure",
+			    data->max_unreply_count, vortex_channel_get_outstanding_messages (data->channel, NULL));
 		/* call to trigger failure */
 		return __vortex_alive_trigger_failure (data);
 	} /* end if */
@@ -305,9 +314,12 @@ void __vortex_alive_channel_created (int                channel_num,
 	vortex_thread_pool_remove_event (ctx, data->event_id);
 	data->event_id = -1;
 
-	/* update channel reference and acquire a reference to it */
+	/* acquire a reference to it and update channel reference */
+	if (! vortex_channel_ref2 (channel, "alive")) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to acquire reference to the channel to implement ALIVE protocol, skiping");
+		return;
+	} /* end if */
 	data->channel = channel;
-	vortex_channel_ref2 (channel, "alive");
 	data->channel_in_progress = axl_false;
 
 	/* log reporting */
@@ -327,6 +339,9 @@ void __vortex_alive_channel_created (int                channel_num,
 		axl_free (msg);
 		iterator++;
 	} /* end while */
+
+
+	vortex_log (VORTEX_LEVEL_CRITICAL, "failed to create alive channel on connection id=%d, trigger failure", vortex_connection_get_id (conn));
 
 	/* call to trigger failure */
 	__vortex_alive_trigger_failure (data);

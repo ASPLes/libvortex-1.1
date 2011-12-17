@@ -173,10 +173,11 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 		self->close_ref = axl_true;
 
 		if (vortex_connection_is_ok (self->conn, axl_false)) {
-			py_vortex_log (PY_VORTEX_DEBUG, "created connection id %d, with %s:%s",
+			py_vortex_log (PY_VORTEX_DEBUG, "created connection id %d, with %s:%s (self: %p, conn: %p)",
 				       vortex_connection_get_id (self->conn), 
 				       vortex_connection_get_host (self->conn),
-				       vortex_connection_get_port (self->conn));
+				       vortex_connection_get_port (self->conn),
+				       self, self->conn);
 		} else {
 			py_vortex_log (PY_VORTEX_CRITICAL, "failed to connect with %s:%s, connection id: %d",
 				       vortex_connection_get_host (self->conn),
@@ -198,8 +199,8 @@ static void py_vortex_connection_dealloc (PyVortexConnection* self)
 #endif
 	int ref_count;
 
-	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortexConnection id: %d (%p, role: %s, close-ref: %d)", 
-		       conn_id, self, __py_vortex_connection_stringify_role (self->conn), self->close_ref);
+	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortexConnection id: %d (%p, VortexConnection %p, role: %s, close-ref: %d)", 
+		       conn_id, self, self->conn, __py_vortex_connection_stringify_role (self->conn), self->close_ref);
 
 	/* finish the connection in the case it is no longer referenced */
 	if (vortex_connection_is_ok (self->conn, axl_false) && self->close_ref) {
@@ -492,6 +493,9 @@ PyObject * py_vortex_connection_get_attr (PyObject *o, PyObject *attr_name) {
 	} else if (axl_cmp (attr, "id")) {
 		/* return integer value */
 		return Py_BuildValue ("i", vortex_connection_get_id (self->conn));
+	} else if (axl_cmp (attr, "ref_count")) {
+		/* return integer value */
+		return Py_BuildValue ("i", vortex_connection_ref_count (self->conn));
 	} /* end if */
 
 	/* printf ("Attribute not found: '%s'..\n", attr); */
@@ -1175,18 +1179,6 @@ PyObject * py_vortex_connection_create   (VortexConnection * conn,
 	return (PyObject *) obj;
 }
 
-void py_vortex_connection_find_reference_close_conn (VortexConnection * conn, axlPointer _ctx)
-{
-	VortexCtx * ctx = _ctx;
-	char      * key = axl_strdup_printf ("py:vo:co:%d", vortex_connection_get_id (conn));
-
-	py_vortex_log (PY_VORTEX_DEBUG, "(find reference) releasing PyVortexConnection id=%d reference from vortex.Ctx",
-		       vortex_connection_get_id (conn));
-	vortex_ctx_set_data (ctx, key, NULL);
-	axl_free (key);
-	return;
-}
-
 /** 
  * @internal Function used to reuse PyVortexConnection references
  * rather creating and finishing them especially at server side async
@@ -1204,43 +1196,13 @@ void py_vortex_connection_find_reference_close_conn (VortexConnection * conn, ax
  */
 PyObject * py_vortex_connection_find_reference (VortexConnection * conn)
 {
-	PyObject  * py_conn;
-	VortexCtx * ctx = CONN_CTX (conn);
-	char      * key;
-
-	/* check if the connection reference was created previosly */
-	key     = axl_strdup_printf ("py:vo:co:%d", vortex_connection_get_id (conn));
-	py_vortex_log (PY_VORTEX_DEBUG, "Looking to reuse PyVortexConnection ref id=%d, key: %s",
-		       vortex_connection_get_id (conn), key);
-	py_conn = vortex_ctx_get_data (ctx, key);
-	if (py_conn != NULL) {
-		py_vortex_log (PY_VORTEX_DEBUG, "Found reference (PyVortexConnection: %p), conn id=%d",
-			       py_conn, vortex_connection_get_id (conn));
-		/* found, increase reference and return this */
-		Py_INCREF (py_conn);
-		axl_free (key);
-		return py_conn;
-	}
-
-	/* reference do not exists, create one */
-	py_conn  = py_vortex_connection_create (
+	return py_vortex_connection_create (
 		/* connection to wrap */
 		conn, 
 		/* acquire a reference to the connection */
 		axl_true,  
 		/* do not close the connection when the reference is collected, close_ref=axl_false */
 		axl_false);
-
-	py_vortex_log (PY_VORTEX_DEBUG, "Not found reference, created a new one (PyVortexConnection %p) conn id=%d",
-		       py_conn, vortex_connection_get_id (conn));
-
-	/* store the reference in the context for (re)use now and later */
-	vortex_ctx_set_data_full (ctx, key, py_conn, axl_free, (axlDestroyFunc) py_vortex_decref);
-	vortex_connection_set_on_close_full (conn, py_vortex_connection_find_reference_close_conn, ctx);
-
-	/* now increase to return it */
-	Py_INCREF (py_conn);
-	return py_conn;
 }
 
 /** 
