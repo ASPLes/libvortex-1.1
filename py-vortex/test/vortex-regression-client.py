@@ -2478,6 +2478,9 @@ def test_24 ():
         error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
         return False
 
+    # print ref count
+    info ("Connection ref count: %d" % sys.getrefcount(conn))
+
     # configure queue
     queue = vortex.AsyncQueue ()
     conn.set_data ("test_24_queue", queue)
@@ -2487,13 +2490,22 @@ def test_24 ():
         error ("Expect to find proper alive.enable_check but found failure..")
         return False
 
+    # print ref count
+    info ("Connection ref count: %d" % sys.getrefcount(conn))
+
     # block connection for a period
     conn.block ()
+
+    # print ref count
+    info ("Connection ref count: %d" % sys.getrefcount(conn))
 
     # check that the connection is blocked
     if not conn.is_blocked ():
         error ("Expected to find blocked connection but different status..")
         return False
+
+    # print ref count
+    info ("Connection ref count: %d" % sys.getrefcount(conn))
 
     # wait until failure happens
     result = queue.pop ()
@@ -2503,6 +2515,11 @@ def test_24 ():
 
     info ("received connection close..")
     queue.timedpop (200000)
+
+    # print ref count
+    info ("Connection ref count: %d" % sys.getrefcount(conn))
+
+    info ("Finshed test..")
 
     # alive check ok
     return True

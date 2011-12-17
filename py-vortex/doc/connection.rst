@@ -283,6 +283,10 @@ Module API
 
       (Read only attribute) (String) returns a string representing the connection role. Allowed connection role strings are: initiator (client connection), listener (connection that was accepted due to a listener installed), master-listener (the master listener that is waiting for new incoming requests).  
 
+   .. attribute:: ref_count
+
+      (Read only attribute) (Integer) returns reference counting current state.
+
 
 
 

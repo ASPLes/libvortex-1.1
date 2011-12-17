@@ -94,8 +94,8 @@ static PyObject * py_vortex_async_queue_new (PyTypeObject *type, PyObject *args,
 static void py_vortex_async_queue_dealloc (PyVortexAsyncQueue* self)
 {
 	/* do a log */
-	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortxAsyncQueue reference: %p, self->queue: %p", 
-		       self, self->async_queue);
+	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortxAsyncQueue reference: %p, self->queue: %p (items: %d)", 
+		       self, self->async_queue, vortex_async_queue_items (self->async_queue));
 
 	/* free async_queue */
 	vortex_async_queue_safe_unref (&(self->async_queue)); 
