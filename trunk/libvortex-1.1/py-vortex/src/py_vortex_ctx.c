@@ -152,7 +152,7 @@ void        py_vortex_ctx_record_close_handler (VortexCtx * ctx, PyObject * hand
 		return;
 
 	/* delete handler */
-	vortex_hash_delete (hash, handler);
+	vortex_hash_remove (hash, handler);
 	return;
 }
 
