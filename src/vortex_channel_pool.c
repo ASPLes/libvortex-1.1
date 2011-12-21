@@ -183,7 +183,7 @@ VortexChannel * __vortex_channel_pool_add_channels (VortexChannelPool * pool, in
 		 * break-the-loop */ 
 		if (channel == NULL) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
-			       "unable to create a channel inside the channel pool creation, this pool will have fewer channel than requested");
+				    "unable to create a channel inside the channel pool creation, this pool will have fewer channel than requested");
 			break;
 		}
 

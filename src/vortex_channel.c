@@ -8844,11 +8844,11 @@ void              __vortex_channel_release_pending_messages (VortexChannel * cha
 			    vortex_channel_ref_count (channel),
 			    vortex_channel_pending_messages (channel));
 		
-		if (vortex_channel_ref_count (channel) == 1) {
+		/* if (vortex_channel_ref_count (channel) == 1) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "Found channel reference counting reaching 0 during a release operation that should have, at least 2");
-		} /* end if */
+		} 
 		
-		/* vortex_channel_unref (channel); */
+		vortex_channel_unref (channel); */
 		
 		/* free message and node itself */
 		vortex_payload_feeder_unref (next_data->feeder);

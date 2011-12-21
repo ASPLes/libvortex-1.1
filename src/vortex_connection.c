@@ -3371,10 +3371,6 @@ int                 vortex_connection_set_profile_mask       (VortexConnection  
 		/* allocation failure */
 		return -1;
 	}
-	node->mask_id   = axl_list_length (connection->profile_masks);
-	node->mask      = mask;
-	node->user_data = user_data;
-
 	/* lock during operation */
 	vortex_mutex_lock (&connection->profile_masks_mutex);
 
@@ -3382,11 +3378,16 @@ int                 vortex_connection_set_profile_mask       (VortexConnection  
 	if (connection->profile_masks == NULL) {
 		connection->profile_masks = axl_list_new (axl_list_always_return_1, axl_free);
 		if (connection->profile_masks == NULL) {
+			axl_free (node);
 			vortex_mutex_unlock (&connection->profile_masks_mutex);
 			return -1;
 		} /* end if */
 	}
-	
+
+	node->mask_id   = axl_list_length (connection->profile_masks);
+	node->mask      = mask;
+	node->user_data = user_data;
+
 	/* install the profile mask */
 	axl_list_append (connection->profile_masks, node);
 
