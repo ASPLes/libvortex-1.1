@@ -664,7 +664,6 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 	/* get current context */
 	VortexCtx            * ctx = vortex_connection_get_ctx (connection);
 	SSL_CTX              * ssl_ctx;
-	SSL_METHOD           * meth;
 	SSL                  * ssl;
 	X509                 * server_cert;
 	VortexTlsCtxCreation   ctx_creation;
@@ -694,8 +693,7 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 
 	if (ctx_creation == NULL) {
 		/* fall back into the default implementation */
- 		meth     = TLSv1_client_method ();
-		ssl_ctx  = SSL_CTX_new (meth); 
+		ssl_ctx  = SSL_CTX_new (TLSv1_client_method ()); 
 	} else {
 		/* call to the default handler to create the SSL_CTX */
 		ssl_ctx  = ctx_creation (connection, ctx_creation_data);
@@ -1440,7 +1438,6 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 {
 	/* get current context */
 	VortexCtx            * ctx = vortex_connection_get_ctx (connection);
-	SSL_METHOD           * meth;
 	SSL_CTX              * ssl_ctx;
 	SSL                  * ssl;
 	char                 * certificate_file;
@@ -1470,8 +1467,7 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 	} /* end if */
 
 	if (ctx_creation == NULL) {
-		meth     = TLSv1_server_method ();
-		ssl_ctx  = SSL_CTX_new (meth);
+		ssl_ctx  = SSL_CTX_new (TLSv1_server_method ());
 	} else {
 		/* call to the default handler to create the SSL_CTX */
 		ssl_ctx  = ctx_creation (connection, ctx_creation_data);
