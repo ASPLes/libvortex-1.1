@@ -93,8 +93,6 @@ axl_bool      xml_rpc_gen_compile_selected (const char  * selected)
 	axlError * error;
 	axlDoc   * doc = NULL;
 
-	axlNode  * service;
-
 	char    * out_dir;
 	char    * comp_name;
 	char    * aux_file;
@@ -201,9 +199,6 @@ axl_bool      xml_rpc_gen_compile_selected (const char  * selected)
 	axl_stream_trim (comp_name);
 	
 	xml_rpc_report ("component name: '%s'..", comp_name);
-
-	/* get a service reference */
-	service = axl_doc_get (doc, "/xml-rpc-interface/service");
 
 	/* now produce the stub required */
 	if (! exarg_is_defined ("only-server")) {

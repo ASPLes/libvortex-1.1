@@ -1,6 +1,6 @@
 /** 
  *  LibExploreArguments: a library to parse command line options
- *  Copyright (C) 2010 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2005 Advanced Software Production Line, S.L.
  * 
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
@@ -450,15 +450,6 @@ char     ** exarg_split           (const char * chunk, int separator_num, ...)
 	return result;
 }
 
-/* import definition from axl if found */
-#if defined(AXL_HAVE_VASPRINTF)
-#define HAVE_VASPRINTF 1
-#endif
-#if defined(AXL_OS_WIN32)
-#define OS_WIN32 1
-#endif
-
-
 /** 
  * @internal Allows to calculate the amount of memory required to
  * store the string that will representing the construction provided
@@ -524,14 +515,14 @@ char  * exarg_strdup_printfv    (char * chunk, va_list args)
 	int       size;
 #endif
 	char    * result   = NULL;
-	int       new_size = -1;
 
 	if (chunk == NULL)
 		return NULL;
 
 #ifdef HAVE_VASPRINTF
 	/* do the operation using the GNU extension */
-	new_size = vasprintf (&result, chunk, args);
+	if (vasprintf (&result, chunk, args) == -1)
+		return NULL;
 #else
 	/* get the amount of memory to be allocated */
 	size = exarg_vprintf_len (chunk, args);
@@ -546,11 +537,11 @@ char  * exarg_strdup_printfv    (char * chunk, va_list args)
 	result   = exarg_new (char, size + 2);
 	
 	/* copy current size */
-#if defined(OS_WIN32) && ! defined (__GNUC__)
-	new_size = _vsnprintf_s (result, size + 1, size, chunk, args);
-#else
-	new_size = vsnprintf (result, size + 1, chunk, args);
-#endif
+#  if defined(OS_WIN32) && ! defined (__GNUC__)
+	_vsnprintf_s (result, size + 1, size, chunk, args);
+#  else
+	vsnprintf (result, size + 1, chunk, args);
+#  endif
 #endif
 	/* return the result */
 	return result;

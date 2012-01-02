@@ -1123,7 +1123,6 @@ axlPointer         vortex_async_queue_timedpop  (VortexAsyncQueue * queue,
 						 long               microseconds)
 {
 	axlPointer _result;
-	axl_bool   r;
 
 #if defined(AXL_OS_WIN32)
 	struct timeval stamp;
@@ -1150,7 +1149,7 @@ axlPointer         vortex_async_queue_timedpop  (VortexAsyncQueue * queue,
 	wait_again:
 #endif
 		/* check if data is available */
-		VORTEX_COND_TIMEDWAIT (r, &queue->cond, &queue->mutex, microseconds);
+		vortex_cond_timedwait (&queue->cond, &queue->mutex, microseconds);
 
 		/* check again the queue */
 		if (axl_list_length (queue->data) == 0) {

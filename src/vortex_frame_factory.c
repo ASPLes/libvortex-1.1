@@ -1868,7 +1868,6 @@ axl_bool             vortex_frame_send_raw     (VortexConnection * connection, c
 {
 
 	VortexCtx  * ctx    = vortex_connection_get_ctx (connection);
-	axl_bool     result = axl_true;
 	int          bytes  = 0;
  	int          total  = 0;
 	char       * error_msg;
@@ -1905,7 +1904,6 @@ axl_bool             vortex_frame_send_raw     (VortexConnection * connection, c
  				__vortex_connection_set_not_connected (connection,
  								       "failed to add connection to waiting set for write operation, closing connection",
 								       VortexError);
- 				result = axl_false;
  				goto end;
  			} /* en dif */
  
@@ -1917,7 +1915,6 @@ axl_bool             vortex_frame_send_raw     (VortexConnection * connection, c
  				__vortex_connection_set_not_connected (connection,
  								       "failed to add connection to waiting set for write operation, closing connection",
 								       VortexError);
- 				result = axl_false;
  				goto end;
  			case -2: /* error received while waiting (soft error like signals) */
  			case -1: /* timeout received */
@@ -1928,7 +1925,6 @@ axl_bool             vortex_frame_send_raw     (VortexConnection * connection, c
  					__vortex_connection_set_not_connected (connection,
  									       "found timeout while waiting to perform write operation and maximum tries were reached",
 									       VortexError);
- 					result = axl_false;
  					goto end;
  				} /* end if */
  				goto again;
@@ -1947,14 +1943,12 @@ axl_bool             vortex_frame_send_raw     (VortexConnection * connection, c
 			__vortex_connection_set_not_connected (connection, 
 							       "remote peer have closed connection",
 							       VortexProtocolError);
-			result = axl_false;
 			goto end;
 		}
 		error_msg = vortex_errno_get_last_error ();
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to write data to socket: %s",
 		       error_msg ? error_msg : "");
 		__vortex_connection_set_not_connected (connection, "unable to write data to socket:", VortexError);
-		result = axl_false;
 		goto end;
 	}
 
@@ -1966,7 +1960,6 @@ axl_bool             vortex_frame_send_raw     (VortexConnection * connection, c
 		__vortex_connection_set_not_connected (connection, 
 						       "remote peer have closed before sending proper close connection, closing",
 						       VortexProtocolError);
-		result = axl_false;
 		goto end;
 	}
 
@@ -1983,7 +1976,6 @@ axl_bool             vortex_frame_send_raw     (VortexConnection * connection, c
  			    total, frame_size, tries);
  		tries--;
  		if (tries == 0) {
- 			result = axl_false;
  			goto end;
 		}
  
@@ -2988,7 +2980,6 @@ int vortex_frame_read_mime_header (VortexFrame  * frame,
 	int                iterator   = (* caller_iterator);
 	int                mark;
 	char             * mime_header;
-	int                mime_header_size;
 	VortexMimeHeader * header;
 	axl_bool           first_definition = axl_true;
 #if defined(ENABLE_VORTEX_LOG)
@@ -3035,7 +3026,6 @@ int vortex_frame_read_mime_header (VortexFrame  * frame,
 	
 	/* copy content and configure mime header size */
 	memcpy (mime_header, payload + mark, iterator - mark);
-	mime_header_size = iterator - mark;
 
 	/* check if the mime header was already found */
 	header = vortex_frame_mime_find (frame->mime_headers, mime_header);

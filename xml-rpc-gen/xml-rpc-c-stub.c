@@ -1191,10 +1191,6 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 	char    * type_upper;
 	axlNode * node_type;
 
-	/* array size variables */
-	char    * size;
-	axlNode * node_size;
-
 	/* get the struct name */
 	node_name       = axl_node_get_child_nth (array, 0);
 	name            = axl_node_get_content_trim (node_name, NULL);
@@ -1212,10 +1208,6 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 	type_lower = xml_rpc_support_to_lower (type);
 	type_upper = xml_rpc_support_to_upper (type);
 	
-	/* get the size */
-	node_size = axl_node_get_child_nth (array, 2);
-	size      = axl_node_get_content_trim (node_size, NULL);
-
 	/* open the header file */
 	xml_rpc_support_open_file ("%s/%s_array_%s_xml_rpc.h",
 				   out_dir, comp_name_lower, name_lower);
@@ -1832,14 +1824,6 @@ void xml_rpc_c_stub_write_type_header (char  * result, char  * comp_name, axlDoc
 	char    * type_name_lower;
 	axlNode * name;
 
-	/* type content */
-	char    * type;
-	axlNode * type_node;
-
-	/* size content */
-	char    * size;
-	axlNode * size_node;
-
 	/* get the lower name for the component */
 	comp_name_lower = xml_rpc_support_to_lower (comp_name);
 	comp_name_upper = xml_rpc_support_to_upper (comp_name);
@@ -1878,14 +1862,6 @@ void xml_rpc_c_stub_write_type_header (char  * result, char  * comp_name, axlDoc
 			name      = axl_node_get_child_nth (node, 0);
 			type_name = axl_node_get_content_trim (name, NULL);
 
-			/* get the array type */
-			type_node   = axl_node_get_child_nth (node, 1);
-			type        = axl_node_get_content_trim (type_node, NULL);
-
-			/* get the array size */
-			size_node   = axl_node_get_child_nth (node, 2);
-			size        = axl_node_get_content_trim (size_node, NULL);
-
 			/* write the declaration */
 			xml_rpc_support_write ("/* %s type declaration */\n", type_name);
 			xml_rpc_support_write ("typedef struct __%s %s;\n\n", type_name, type_name);
@@ -1922,14 +1898,6 @@ void xml_rpc_c_stub_write_type_header (char  * result, char  * comp_name, axlDoc
 			name            = axl_node_get_child_nth (node, 0);
 			type_name       = axl_node_get_content_trim (name, NULL);
 			type_name_lower = xml_rpc_support_to_lower (type_name);
-
-			/* get the array type */
-			type_node   = axl_node_get_child_nth (node, 1);
-			type        = axl_node_get_content_trim (type_node, NULL);
-
-			/* get the array size */
-			size_node   = axl_node_get_child_nth (node, 2);
-			size        = axl_node_get_content_trim (size_node, NULL);
 
 			/* write the declaration */
 			xml_rpc_support_write ("/* %s type interface */\n", type_name);

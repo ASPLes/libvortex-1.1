@@ -1050,16 +1050,10 @@ axl_bool  check_profiles_adviced (int channel_num, VortexConnection *connection,
 {
 	axlList    * profiles = vortex_connection_get_remote_profiles (connection);
 	int          iterator;
-	const char * uri;
-
 	
 	/* printf ("Check profiles announced: %d\n", axl_list_length (profiles));*/
 	iterator = 0;
 	while (iterator < axl_list_length (profiles)) {
-		/* get uri */
-		uri = (const char *) axl_list_get_nth (profiles, iterator);
-		/* printf ("  uri found: %s\n", uri); */
-
 		/* next position */
 		iterator++;
 	}  /* end while */
