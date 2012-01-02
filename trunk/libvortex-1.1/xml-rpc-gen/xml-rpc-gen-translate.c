@@ -522,7 +522,6 @@ axlNode * __xml_rpc_gen_translate_service (char      * return_type,
 	axlNode * nodeAux;
 
 	int       chunk_matched;
-	int       parents_opened;
 	char    * fileName;
 
 
@@ -646,9 +645,6 @@ axlNode * __xml_rpc_gen_translate_service (char      * return_type,
 	/* if reached this place, it means that the user have defined
 	 * usr code for the service */
 	if (axl_stream_inspect (stream, "{", 1) > 0) {
-		/* parse the service code definition */
-		parents_opened = 0;
-
 		/* configure node relations */
 		code           = axl_node_create ("code");
 		content        = axl_node_create ("content");
@@ -1098,11 +1094,7 @@ axl_bool  xml_rpc_gen_translate_parse_services (axlDoc     * doc,
 						axlError  ** error)
 {
 	axlNode   * service;
-	axlNode   * root;
 	axl_bool    result;
-
-	/* get the root node */
-	root = axl_doc_get_root (doc);
 
 	/* parse the service */
 	while (axl_true) {

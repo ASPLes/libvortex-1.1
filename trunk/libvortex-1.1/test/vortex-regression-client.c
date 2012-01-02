@@ -3018,7 +3018,6 @@ axl_bool test_01g (void) {
 }
 
 axl_bool test_01h_check (const char * string) {
-	int result;
 
 	VORTEX_SOCKET _socket;
 
@@ -3029,7 +3028,7 @@ axl_bool test_01h_check (const char * string) {
 	if (_socket == -1)                                    
 		return axl_false;                            
 	                                                     
-	result = send (_socket, string, strlen (string), 0);
+	send (_socket, string, strlen (string), 0);
 	                                                     
 	vortex_close_socket (_socket);                        
 	return axl_true;
@@ -3972,7 +3971,6 @@ axl_bool test_01s (void) {
 axl_bool test_01s1 (void) {
 
 	VortexConnection   * conn;
-	VortexChannel      * channel;
 	int                  iterator = 0;
 
 	printf ("Test 01-s: checking connection close do not block vortex reader...\n");
@@ -3985,14 +3983,14 @@ axl_bool test_01s1 (void) {
 		} /* end if */
 		
 		/* create a channel */
-		channel = vortex_channel_new (conn, 0,
-					      REGRESSION_URI,
-					      /* no close handling */
-					      NULL, NULL,
-					      /* frame receive async handling */
-					      NULL, NULL,
-					      /* no async channel creation */
-					      NULL, NULL);
+		vortex_channel_new (conn, 0,
+				    REGRESSION_URI,
+				    /* no close handling */
+				    NULL, NULL,
+				    /* frame receive async handling */
+				    NULL, NULL,
+				    /* no async channel creation */
+				    NULL, NULL);
 		
 		/* configure a faulty connection receive data handler */
 		printf ("Test 01-s: setting faulty receive..\n");

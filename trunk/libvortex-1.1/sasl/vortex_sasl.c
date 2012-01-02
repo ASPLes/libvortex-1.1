@@ -532,10 +532,6 @@ typedef struct _VortexGsaslData {
 void __vortex_sasl_destroy_context (axlPointer _data)
 {
 	VortexGsaslData  * data = _data;
-	VortexConnection * connection;
-
-	/* get the connection reference where the SASL request was received */
-	connection      = (VortexConnection *) gsasl_callback_hook_get (data->ctx);
 
 	if (data->session != NULL) {
 		/* finish session */
@@ -1527,18 +1523,12 @@ int vortex_sasl_handle_anonymous_request (VortexCtx        * ctx,
 					  Gsasl_session    * sctx,
 					  axlPointer         user_data)
 {
-	const char * anonymous_token;
-
 	/* check if an anonymous handler was defined */
 	if (sasl_ctx->sasl_anonymous_auth_handler == NULL && sasl_ctx->sasl_anonymous_auth_handler_full == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
 			    "A SASL anonymous validation handler was not set. Unable to authenticate current request. Please check Vortex documentation to set this handler.");
 		return GSASL_NO_CALLBACK;
 	}
-	
-	/* get current anonymous token received from remote
-	 * side */
-	anonymous_token = gsasl_property_get (sctx, GSASL_ANONYMOUS_TOKEN);
 	
 	/* validate anonymous request */
 	if ((sasl_ctx->sasl_anonymous_auth_handler &&

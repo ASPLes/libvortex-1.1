@@ -719,7 +719,6 @@ axl_bool      vortex_profiles_invoke_start (const char       * uri,
 	VortexProfile                 * profile;
 	VortexCtx                     * ctx = vortex_connection_get_ctx (connection);
 	VortexOnStartChannel            start_handler;
-	axlPointer                      sh_data;
 	VortexOnStartChannelExtended    extended_start_handler;
 	axlPointer                      esh_data;
 	axl_bool                        result;
@@ -741,7 +740,6 @@ axl_bool      vortex_profiles_invoke_start (const char       * uri,
 	extended_start_handler = profile->start_extended;
 	esh_data               = profile->start_extended_user_data;
 	start_handler          = profile->start;
-	sh_data                = profile->start_user_data;
 
 	/* check for a start extended */
 	if (extended_start_handler != NULL) {
