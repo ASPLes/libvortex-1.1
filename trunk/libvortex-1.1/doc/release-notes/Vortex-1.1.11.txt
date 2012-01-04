@@ -1,0 +1,310 @@
+      ###################################################
+      ##              Vortex Library 1.1.11            ##
+      ##            "Man of simple pleasures"          ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce Vortex
+  Library 1.1.11 "Man of simple pleasures" release availability: an
+  open source "BEEP Core" protocol implementation written in C, mapped
+  onto TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.aspl.es/vortex/py-vortex/html
+      [PyVortex homepage]
+
+    - http://www.aspl.es/turbulence
+      [Turbulence BEEP server homepage]
+ 
+    - http://code.google.com/p/vortexlibrary/downloads/list
+      [Sources and Win32 binaries]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+This release in short
+~~~~~~~~~~~~~~~~~~~~~
+
+   PYVORTEX: Several updates to make the binding more stable in the
+   	     long run (also controlling memory consumption).
+
+             General PyVortex update to allow running a handler
+	     watcher that can warn the user that some particular
+	     handler is taking too long to finish and potentially may
+	     cause performance degradation.
+
+        TLS: now it is possible to provide a handler that is called
+             when a TLS handshake fails.
+
+     ENGINE: Complete vortex sequencer rewrite to allow handling all
+             outgoing sending jobs in a fair manner (handling all of
+             them in rounds, giving all channels the possibility to
+             send content without being starved by highly interactive
+             transfers).
+
+             Several fixings and updates to make the product more
+             stable.
+  
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+
+  None
+
+Thanks to..
+~~~~~~~~~~~
+
+   - Phil Black-Knight (reported and fixed problem at
+     vortex_connection_set_profile_mask where the function was
+     returning a wrong value at the first call. Also reported an API
+     clash between TLS versions used in debian/ubuntu and redhat).
+
+Changes since 1.1.10
+~~~~~~~~~~~~~~~~~~~~
+
+* [fix] Several changes to vortex-regression-client.c to make it
+  compilable in win64.
+
+* [fix] Added additional headers to fix xml-rpc-support.c under win64.
+
+* [fix] Several modifications to PyVortex to avoid reusing python
+  references which do not reduce consumption significantly and makes
+  the binding less maintainable.
+
+* [fix] Updated py channel frame received code to not store the
+  PyVortexChannel reference as a parameter to the frame received
+  handler to avoid a crash when the frame received is fired having the
+  python channel collected (but not its C representation).
+
+* [fix] Updated vortex channel pool module to nullify its reference
+  inside VortexChannel object to ensure the channel do not access the
+  channel pool after the pool was uninstalled from the channel.  Added
+  regression test to reproduce the bug and check fix introduced
+  (test-03-e).
+
+* [fix] Updated PyVortex regression test to include a check to create
+  a channel with a frame received handler forcing the PyVortexChannel
+  reference to be garbaged to check then to receive frames over that
+  channel. Reg test (py test-10-e).
+
+* [fix] Version files updates..
+
+* [fix] Updated TLS API to allow setting a failure handler that will
+  be called when an error is found. Really useful at listener side to
+  get error reporting that until now were passing silently. API added:
+
+   - vortex_tls_set_failure_handler
+   - VortexTlsFailureHandler
+
+  Updated documentation to explain how to use this.
+
+* [fix] Updated PyVortexCtx internal register to use internal
+  VortexCtx to avoid relying on having always available the python
+  vortex.Ctx that was used.
+
+* [fix] Updated PyVortex listener side frame received, close channel
+  and start channel handling to avoid passing as reference the python
+  vortex.Ctx that was used to install those handlers.
+
+* [fix] Updated PyVortex ctx.new_event to return the handle id of the
+  event installed. Also added ctx.remove_event to allow removing an
+  event installed providing its unique id. Updated documentation to
+  explain how to use it.
+
+* [fix] Updated vortex-file-transfer-server.c to also register a
+  profile that echos all content received..
+
+* [fix] Added new regression test (test-03f) that exposes a bug at
+  channel pool close when all channels are available.
+
+* [fix] Updated vortex sequencer internal reference checking to use
+  connection reference from channel instead of the connection
+  reference directly (channel reference is owned by the sequencer and
+  connection is not). Updated internal queue priority to acquire a
+  reference to the channel to avoid wrong dealloc when a connection
+  failure is found in the middle of a transfer.
+
+* [fix] Fixed wrong header for vortex_thread_pool_stats.
+
+* [fix] Reorganized vortex internal debug log to use a single shot to
+  write the log (to avoid missing log lines under heavy logging). Also
+  updated to print a time stamp for each log.
+
+* [fix] Removed flag not required to get access to vsnprintf
+
+* [fix] Making automatic thread pool resize to be also checked on
+  thread pool wait timeout.
+
+* [fix] Fixed reg test 00-c2 which wasn't removing all threads created
+  causing test 00-c1 to fail.
+
+* [fix] Added additional check to channels internal reference inside
+  vortex_connection_channels_count.
+
+* [fix] Updated PyVortexChannel set_frame_received to allow removing
+  handler installed when no parameter is received. Updated
+  documentation and checked regression tests..
+
+* [fix] Updated vortex sequencer module to avoid doing a priority
+  queue for resequence operations (when a SEQ frame was received) to
+  avoid giving priority to large send operations that are served fast
+  and also acked fast by the receiving side (causing starvation for
+  the rest of pending operations).  Also updated resequence signal
+  code to check first if there are already other previous notification
+  (to avoid filling the queue with notifications).
+
+* [fix] Updated vortex thread API to include a new function that
+  allows doing search operations over a queue looking it during the
+  search. API added:
+
+    - vortex_async_queue_lookup
+
+* [fix] Fixed pop_channel_error example inside connection
+  documentation.
+
+* [fix] Fixed vortex.Connection documentation about getting channel
+  creation error.
+
+* [fix] Complete vortex sequencer rewrite to allow handling all
+  outgoing sending jobs in a fair manner (treating them in rounds,
+  giving all channels the possibility to send content without being
+  starved by highly interactive transfers).  This rewrite will also
+  open the possibility to implement channel sending priorities. All reg
+  tests working!
+
+* [fix] Removed old code used to drop messages for broken connections
+  (inside vortex sequencer) which is no longer needed.
+
+* [fix] Several fixings to make new vortex sequencer design to work
+  with microsoft windows.
+
+* [fix] Fixed automatic thread pool removal which wasn't checking for
+  running threads causing to remove threads from the pool under heavy
+  load situations.
+
+* [fix] Making vortex channel send msg and send rpy operations to
+  acquire a reference to the channel object during the operation to
+  avoid races with new vortex sequencer implementation.
+
+* [fix] Applied several fixings according to valgrind's hellgrind
+  information (awesome tool!)...
+
+* [fix] Code cleanups at vortex channel module (removed internal
+  variables last_reply_delivered, last_msg_delivered,
+  last_ans_delivered, last_ans_seqno_delivered).
+
+* [fix] Updated vortex_set_conf API to include a new key to allow
+  controlling if context finalization should wait for threads inside
+  the thread pool to finish. API added:
+
+   - VORTEX_SKIP_THREAD_POOL_WAIT
+  
+  Added regression test (test_00-e) to reproduce a situation where
+  threads from the pool are blocked and to check that even in those
+  situations vortex_exit_ctx finishes right.  Also updated
+  documentation...
+
+* [fix] Version updates..
+
+* [fix] Fixed PyVortex start channel start data reference (it was
+  passed in properly).
+
+* [fix] General PyVortex update to allow running a handler watcher
+  that can warn the user that some particular handler is taking too
+  long to finish and potentially may cause performance degradation.
+
+* [fix] Updated PyVortex internal exception handling to report and
+  report exceptions to better cancel/close current operations rather
+  just ignoring it.
+
+* [fix] Updated PyVortex to allow registering a handler that is called
+  when it is detected a python handler is taking too long to finish.
+  API added:
+
+   - PyVortexTooLongNotifier
+
+* [fix] Removed unnecessary lock/unlock pair from vortex channel
+  module.  Moved log debug which may cause wrong memory access under
+  certain conditions.
+
+* [fix] Making vortex.Ctx.new_event to flag event period with "l"
+  instead of "i" to avoid OverflowError: signed integer is greater
+  than maximum.
+
+* [fix] Updated internal channel add handler to report a boolean value
+  with the operation result so channel resources can be released after
+  a failure.
+
+* [fix] Making vortex pull cleanup to also clear event masks.
+
+* [fix] Making vortex thread pool to acquire the VortexCtx reference
+  before starting the pool thread (to avoid races where thread isn't
+  still started and VortexCtx was finished when having skip thread
+  pool wait flag enabled).
+
+* [fix] Moved debug log before connection registering at
+  vortex_listener module to avoid wrong mem. access under some cases..
+
+* [fix] Making vortex ALIVE implementation to check vortex_channel_ref
+  result before continuing. Also making the implementation to grab the
+  reference before setting the channel used by the check loop (fixed
+  race exposed by PyVortex).
+
+* [fix] Fixed memory leak at PyVortex caused by a circular reference
+  built by vortex connection reference counting and python reference
+  counting. Added initial file.sup to better track all memory consumed
+  by PyVortex.
+
+* [fix] Included file.sup into make dist result.
+
+* [fix] Fixed memory leak inside PyVortex handler tracker: it was
+  removing handler tracking object without calling destroy func: oops!
+  ;-)
+
+* [fix] Phil Black-Knight reported and fixed a problem at
+  vortex_connection_set_profile_mask where the function was always
+  returning an error code for the first handler installed (although it
+  was indeed properly installed).
+
+* [fix] Removed code that checks for reference counting at internal
+  channel termination when detected pending messages to be sent (new
+  design doesn't requires this).
+
+* [fix] Fixed API clash between debian/ubuntu and RHEL where
+  SSL_CTX_new and method created returns and receives const SSL_METHOD
+  *. Updated the code to avoid declaring variables with that type
+  passing directly the value returned from method creation into
+  SSL_CTX_new. Bug reported by Philip Black-Knight..
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organizations to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+4th jan 2012, Madrid (Spain)
