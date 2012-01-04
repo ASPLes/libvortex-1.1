@@ -1,5 +1,5 @@
-:mod:`vortex` --- PyVortex handlers: List of handlers used by PyVortex API
-==========================================================================
+:mod:`vortex.handlers` --- PyVortex handlers: List of handlers used by PyVortex API
+===================================================================================
 
 .. currentmodule:: vortex
 
