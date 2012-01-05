@@ -98,6 +98,15 @@ Module API
    :param frame_received_data: User defined data that will notified along with corresponding data at frame received handler.
    :type  frame_received_data: object
 
+   To register a profile with a simple handler do::
+
+       # register the profile
+       vortex.register_profile (ctx, "urn:your-domain:beep:profiles:my-app-profile",
+                                frame_received=my_app_frame_received)
+
+   Check :ref:`frame-received-handler` to get details about frame received handler (**my_app_frame_received**).
+
+
 
 .. function:: queue_reply(conn, channel, frame, o)
 
