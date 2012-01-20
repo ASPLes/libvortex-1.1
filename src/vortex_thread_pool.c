@@ -257,10 +257,10 @@ void __vortex_thread_pool_automatic_resize (VortexCtx * ctx)
 	gettimeofday (&now, NULL);
 	vortex_timeval_substract (&now, &(ctx->thread_pool->last), &diff);
 
-	vortex_log2 (VORTEX_LEVEL_DEBUG, 
+/*	vortex_log2 (VORTEX_LEVEL_DEBUG, 
 		     "Checking thread pool resize: running_threads=%d, base threads=%d, waiting_threads=%d, pending_tasks=%d, thread_max_limit=%d diff=%ld, add_period=%d, auto_remove=%d\n",
 		    running_threads, ctx->thread_pool->base_thread_num, waiting_threads, pending_tasks, ctx->thread_pool->thread_max_limit, diff.tv_sec, 
-		     ctx->thread_pool->thread_add_period, ctx->thread_pool->auto_remove);
+		    ctx->thread_pool->thread_add_period, ctx->thread_pool->auto_remove); */
 
 	/* if we have waiting threads equal to 0 and our last update
 	 * was thread_pool->last seconds ago and there is at least 1
