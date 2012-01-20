@@ -93,20 +93,16 @@ axl_bool      __vortex_reader_process_socket_check_nul_frame (VortexCtx        *
 	case VORTEX_FRAME_TYPE_NUL:
 		/* check zero payload size at NUL frame */
 		if (vortex_frame_get_payload_size (frame) != 0) {
-			vortex_log (VORTEX_LEVEL_CRITICAL, "Received \"NUL\" frame with  non-zero payload (%d) content (%d)",
-				    vortex_frame_get_payload_size (frame), vortex_frame_get_content_size (frame));
-			__vortex_connection_set_not_connected (connection, 
-							       "Received \"NUL\" frame with  non-zero payload",
-							       VortexProtocolError);
+			__vortex_connection_shutdown_and_record_error (
+				connection, VortexProtocolError,"Received \"NUL\" frame with  non-zero payload (%d) content (%d)",
+				vortex_frame_get_payload_size (frame), vortex_frame_get_content_size (frame));
 			return axl_false;
 		}
 
 		/* check more flag at NUL frame reply. */
 		if (vortex_frame_get_more_flag (frame)) {
-			vortex_log (VORTEX_LEVEL_CRITICAL, "Received \"NUL\" frame with the continuator indicator: *");
-			__vortex_connection_set_not_connected (connection, 
-							       "Received \"NUL\" frame with the continuator indicator: *",
-							       VortexProtocolError);
+			__vortex_connection_shutdown_and_record_error (
+				connection, VortexProtocolError, "Received \"NUL\" frame with the continuator indicator: *");
 			return axl_false;
 		}
 		
@@ -226,13 +222,11 @@ axl_bool      vortex_reader_check_incoming_msgno (VortexCtx        * ctx,
  	 * list */
  	if (! vortex_channel_check_msg_no (channel, frame)) {
  		/* drop a log */
- 		vortex_log (VORTEX_LEVEL_CRITICAL, 
- 			    "Found incoming message number %d that represents a previous message received but still not replied, protocol violation",
- 			    vortex_frame_get_msgno (frame));
+		__vortex_connection_shutdown_and_record_error (
+			conn, VortexProtocolError,
+			"Found incoming message number %d that represents a previous message received but still not replied, protocol violation",
+			vortex_frame_get_msgno (frame));
 
- 		/* close the connection */
- 		__vortex_connection_set_not_connected (conn, "Found message number already received but still not replied", VortexProtocolError);
-  
 		/* unref frame here */
 		vortex_frame_unref (frame);
 		
@@ -348,10 +342,8 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	channel = vortex_connection_get_channel (connection,
 						 vortex_frame_get_channel (frame));
 	if (channel == NULL) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "received a frame referring to a non-opened channel, closing session");
-		__vortex_connection_set_not_connected (connection, 
-						       "received a frame referring to a non-opened channel, closing session",
-						       VortexProtocolError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexProtocolError, "received a frame referring to a non-opened channel, closing session");
 		/* free the frame */
 		vortex_frame_unref (frame);
 		return;		
@@ -378,12 +370,10 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		/* RPY or ERR frame type: check if reply is expected */
 		if (vortex_channel_get_next_expected_reply_no (channel) != vortex_frame_get_msgno (frame)) {
 
-			__vortex_connection_set_not_connected (connection, "expected reply message previous to received",
-							       VortexProtocolError);
-
-			vortex_log (VORTEX_LEVEL_CRITICAL, "expected reply message %d but received %d",
-			       vortex_channel_get_next_expected_reply_no (channel),
-			       vortex_frame_get_msgno (frame));
+			__vortex_connection_shutdown_and_record_error (
+				connection, VortexProtocolError, "expected reply message %d but received %d",
+				vortex_channel_get_next_expected_reply_no (channel),
+				vortex_frame_get_msgno (frame));
 
 			/* free the frame */
 			vortex_frame_unref (frame);
@@ -427,15 +417,12 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	    vortex_frame_get_seqno (frame)) {
 
 		/* drop a log */
-		vortex_log (VORTEX_LEVEL_CRITICAL, "expected seq no %u for channel=%d in connection-id=%d, but received %u",
-			    vortex_channel_get_next_expected_seq_no (channel),
-			    vortex_channel_get_number (channel),
-			    vortex_connection_get_id (connection),
-			    vortex_frame_get_seqno (frame));
-
-		/* close the connection due to a protocol violation */
-		__vortex_connection_set_not_connected (connection, "expected seq no number for channel wan't found",
-						       VortexProtocolError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexProtocolError, "expected seq no %u for channel=%d in connection-id=%d, but received %u",
+			vortex_channel_get_next_expected_seq_no (channel),
+			vortex_channel_get_number (channel),
+			vortex_connection_get_id (connection),
+			vortex_frame_get_seqno (frame));
 
 		/* free the frame */
 		vortex_frame_unref (frame);
@@ -550,11 +537,9 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 			/* we have a previous frame, check to store or
 			 * deliver */
 			if (! vortex_frame_are_joinable (previous, frame)) {
-				vortex_log (VORTEX_LEVEL_CRITICAL, "frame fragment received is not valid, giving up for this session");
+				__vortex_connection_shutdown_and_record_error (
+					connection, VortexProtocolError, "frame fragment received is not valid, giving up for this session");
 				vortex_frame_unref (frame);
-				__vortex_connection_set_not_connected (vortex_channel_get_connection (channel), 
-								       "frame fragment received is not valid, giving up for this session",
-								       VortexProtocolError);
 				return;
 			} /* end if */
 
@@ -1015,7 +1000,7 @@ VORTEX_SOCKET __vortex_reader_build_set_to_watch_aux (VortexCtx     * ctx,
 
 			/* set it as not connected */
 			if (vortex_connection_is_ok (connection, axl_false))
-				__vortex_connection_set_not_connected (connection, "vortex reader (add fail)", VortexError);
+				__vortex_connection_shutdown_and_record_error (connection, VortexError, "vortex reader (add fail)");
 			vortex_connection_unref (connection, "vortex reader (add fail)");
 
 			continue;

@@ -220,10 +220,9 @@ axl_bool      vortex_greetings_send (VortexConnection * connection, VortexConnec
 
 	/* build up supported registered profiles */
 	if (registered_profiles == NULL) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, 
-			    "unable to build and send greetings message: unable to find any profile registered");
-		__vortex_connection_set_not_connected (connection, 
-						       "unable to build and send greetings message: unable to find any profile registered", VortexError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexError,
+			"unable to build and send greetings message: unable to find any profile registered");
 		return axl_false;
 	}
 
@@ -231,11 +230,8 @@ axl_bool      vortex_greetings_send (VortexConnection * connection, VortexConnec
 	next_index = __vortex_greetings_build_message (connection, options, greetings_buffer, 5100);
 	if (next_index == -1) {
 		/* log */
-		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to build greetings message, closing the connection");
-		/* and drop */
-		__vortex_connection_set_not_connected (connection, 
-						       "failed to build greetings message, closing the connection",
-						       VortexError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexProtocolError, "failed to build greetings message, closing the connection");
 		return axl_false;
 	} /* end if */
 
@@ -244,8 +240,9 @@ axl_bool      vortex_greetings_send (VortexConnection * connection, VortexConnec
 				      greetings_buffer,
 				      next_index,
 				      0)) {
-		__vortex_connection_set_not_connected (connection, "unable to send listener greetings message", 
-						       VortexError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexError, "unable to send listener greetings message");
+
 		return axl_false;
 	} /* end if */
 
@@ -344,9 +341,9 @@ void vortex_greetings_manage_error_greetings (VortexConnection * connection, Vor
 		vortex_connection_push_channel_error (connection,
 						      550,
 						      "Local error, unable to parse error greetings reply. Received ERR frame but content is unparseable");
-		__vortex_connection_set_not_connected (connection,
-						       "Local error, unable to parse error greetings reply. Received ERR frame but content is unparseable",
-						       VortexConnectionError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexConnectionError,
+			"Local error, unable to parse error greetings reply. Received ERR frame but content is unparseable");
 		return;
 	} /* end if */
 
@@ -363,9 +360,9 @@ void vortex_greetings_manage_error_greetings (VortexConnection * connection, Vor
 			axl_node_get_content (node, NULL) != NULL ? axl_node_get_content (node, NULL) : "No error message reported by remote peer");
 
 		/* set not connected error */
-		__vortex_connection_set_not_connected (connection,
-						       axl_node_get_content (node, NULL) ? axl_node_get_content (node, NULL) : "No error message reported by remote peer",
-						       VortexGreetingsFailure);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexGreetingsFailure,
+			axl_node_get_content (node, NULL) ? axl_node_get_content (node, NULL) : "No error message reported by remote peer");
 	} else {
 		/* get the error code and the content */
 		vortex_connection_push_channel_error (
@@ -377,9 +374,9 @@ void vortex_greetings_manage_error_greetings (VortexConnection * connection, Vor
 			"Received ERR frame as greetings reply. Unable to connect. BEEP peer replied with XML content but unparseable");
 
 		/* set not connected error */
-		__vortex_connection_set_not_connected (connection,
-						       "Received ERR frame as greetings reply. Unable to connect. BEEP peer replied with XML content but unparseable",
-						       VortexGreetingsFailure);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexGreetingsFailure,
+			"Received ERR frame as greetings reply. Unable to connect. BEEP peer replied with XML content but unparseable");
 	} /* end if */
 
 	/* free document */
@@ -420,11 +417,11 @@ axl_bool            vortex_greetings_is_reply_ok    (VortexFrame          * fram
 
 	/* check greetings reply */
 	if (vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, 
-			    "frame error, expected RPY frame type on greetings process. Frame content: '%s'",
-			    vortex_frame_get_payload (frame));
-		__vortex_connection_set_not_connected (connection, "frame error, expected RPY frame type on greetings process",
-						       VortexProtocolError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexProtocolError,
+			"frame error, expected RPY frame type on greetings process. Frame content: '%s'",
+			vortex_frame_get_payload (frame));
+
 		vortex_frame_unref (frame);
 		return axl_false;
 	}
@@ -433,10 +430,9 @@ axl_bool            vortex_greetings_is_reply_ok    (VortexFrame          * fram
 	if (vortex_frame_get_channel (frame) != 0 || 
 	    vortex_frame_get_msgno   (frame) != 0 || 
 	    vortex_frame_get_seqno   (frame) != 0) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, 
-			    "frame error, expected greetings message on channel 0, message 0 or sequence number 0");
-		__vortex_connection_set_not_connected (connection, "frame error, expected greetings message on channel 0, message 0 or sequence number 0",
-						       VortexProtocolError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexProtocolError,
+			"frame error, expected greetings message on channel 0, message 0 or sequence number 0");
 		vortex_frame_unref (frame);
 		return axl_false;
 	}
@@ -444,11 +440,9 @@ axl_bool            vortex_greetings_is_reply_ok    (VortexFrame          * fram
 	/* check content-type reply */
 	if ((vortex_frame_get_content_type (frame) == NULL) ||
 	    (! axl_cmp (vortex_frame_get_content_type (frame), "application/beep+xml"))) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, 
-			    "frame error, expected content type: application/beep+xml, not found");
-		__vortex_connection_set_not_connected (connection, 
-						       "frame error, expected content type: application/beep+xml, not found",
-						       VortexProtocolError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexProtocolError,
+			"frame error, expected content type: application/beep+xml, not found");
 		vortex_frame_unref (frame);
 		return axl_false;
 	}
@@ -500,11 +494,8 @@ axl_bool           vortex_greetings_client_send     (VortexConnection     * conn
 	next_index = __vortex_greetings_build_message (connection, options, greetings_buffer, 5100);
 	if (next_index == -1) {
 		/* log */
-		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to build greetings message, closing the connection");
-		/* and drop */
-		__vortex_connection_set_not_connected (connection, 
-						       "failed to build greetings message, closing the connection",
-						       VortexError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexError, "failed to build greetings message, closing the connection");
 		return axl_false;
 	} /* end if */
 
@@ -513,10 +504,8 @@ axl_bool           vortex_greetings_client_send     (VortexConnection     * conn
 				      greetings_buffer,
 				      next_index,
 				      0)) {
-		vortex_log (VORTEX_LEVEL_CRITICAL,  "unable to send initial client greetings message");
-		__vortex_connection_set_not_connected (connection, 
-						       "unable to send initial client greetings message",
-						       VortexError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexError, "unable to send initial client greetings message");
 		return axl_false;
 	} /* end if */
 
@@ -584,7 +573,7 @@ void           vortex_greetings_error_send     (VortexConnection     * connectio
 	vortex_channel_block_until_replies_are_sent (channel, 1000);
 
 	/* close the connection */
-	vortex_connection_shutdown (connection);
+	__vortex_connection_shutdown_and_record_error (connection, VortexGreetingsFailure, message);
 	
 	return;
 }

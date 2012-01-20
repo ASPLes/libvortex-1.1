@@ -269,14 +269,11 @@ int vortex_sequencer_build_packet_to_send (VortexCtx           * ctx,
 
 	/* check that the next_frame_size do not report wrong values */
 	if (size_to_copy > data->message_size || size_to_copy <= 0) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, 
-			    "vortex_channel_get_next_frame_size is reporting wrong values (size to copy: %d > message size: %d), this will cause protocol failures...shutdown connection id=%d (channel stalled: %d)", 
-			    size_to_copy, data->message_size, 
-			    vortex_connection_get_id (conn), vortex_channel_is_stalled (channel));
-		vortex_log (VORTEX_LEVEL_CRITICAL, "Context data: next seqno: %u, max seq no accepted: %u, channel is stalled: %d, message type: %d",
-			    data->first_seq_no, max_seq_no_accepted, vortex_channel_is_stalled (channel), data->type);
-		
-		vortex_connection_shutdown (conn);
+		__vortex_connection_shutdown_and_record_error (
+			conn, VortexProtocolError,
+			"vortex_channel_get_next_frame_size is reporting wrong values (size to copy: %d > message size: %d), this will cause protocol failures...shutdown connection id=%d (channel stalled: %d)", 
+			size_to_copy, data->message_size, 
+			vortex_connection_get_id (conn), vortex_channel_is_stalled (channel));
 		return 0;
 	}
 

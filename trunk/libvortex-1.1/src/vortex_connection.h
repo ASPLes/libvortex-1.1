@@ -148,13 +148,18 @@ long                vortex_connection_get_connect_timeout    (VortexCtx        *
 axl_bool            vortex_connection_is_ok                  (VortexConnection * connection, 
 							      axl_bool           free_on_fail);
 
-char              * vortex_connection_get_message            (VortexConnection * connection);
+const char        * vortex_connection_get_message            (VortexConnection * connection);
 
 VortexStatus        vortex_connection_get_status             (VortexConnection * connection);
 
 axl_bool            vortex_connection_pop_channel_error      (VortexConnection  * connection, 
 							      int               * code,
 							      char             ** msg);
+
+void                __vortex_connection_shutdown_and_record_error (VortexConnection * conn,
+								   VortexStatus       status,
+								   const char       * message,
+								   ...);
 
 void                vortex_connection_push_channel_error     (VortexConnection  * connection, 
 							      int                 code,

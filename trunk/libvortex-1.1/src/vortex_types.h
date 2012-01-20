@@ -510,7 +510,7 @@ typedef enum {
 	 * The operation asked to be done by Vortex Library could be
 	 * completed.
 	 */
-	VortexError                   = 1,
+	VortexError                  = 1,
 	/** 
 	 * @brief Represents the operation have been successfully completed.
 	 *
@@ -583,7 +583,7 @@ typedef enum {
 	/** 
 	 * @brief The connection was terminated due to a call to \ref
 	 * vortex_connection_shutdown or an internal implementation
-	 * tha closes the connection without taking place the BEEP
+	 * that closes the connection without taking place the BEEP
 	 * session close negociation.
 	 */
 	VortexConnectionForcedClose  = 13,
@@ -598,7 +598,12 @@ typedef enum {
 	/** 
 	 * @brief Memory allocation failed.
 	 */
-	VortexMemoryFail             = 16
+	VortexMemoryFail             = 16,
+	/** 
+	 * @brief When a connection is closed by the remote side but
+	 * without going through the BEEP clean close.
+	 */
+	VortexUnnotifiedConnectionClose = 17
 } VortexStatus;
 
 
