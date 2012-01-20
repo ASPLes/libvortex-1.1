@@ -2021,9 +2021,8 @@ void               vortex_channel_store_previous_frame           (VortexCtx     
 		    channel->complete_frame_limit, channel->complete_current_bytes, channel->channel_num, vortex_connection_get_id (channel->connection));
 	if (channel->complete_frame_limit > 0 && channel->complete_current_bytes > channel->complete_frame_limit) {
 		/* get a reference to the context */
-		vortex_log (VORTEX_LEVEL_CRITICAL, "Reached complete frame limit=%d for channel=%d, closing conection id=%d",
-			    channel->complete_frame_limit, channel->channel_num, vortex_connection_get_id (channel->connection));
-		vortex_connection_shutdown (channel->connection);
+		__vortex_connection_shutdown_and_record_error (channel->connection, VortexError, "Reached complete frame limit=%d for channel=%d, closing conection id=%d",
+							       channel->complete_frame_limit, channel->channel_num, vortex_connection_get_id (channel->connection));
 		return;
 	} /* end if */
 
@@ -3834,15 +3833,14 @@ void vortex_channel_update_remote_incoming_buffer (VortexChannel * channel,
 	 * that the next seq no expected is already inside of the
 	 * adviced window + 1 */
 	if (! ((window_available >= 0) && (window > window_available))) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, 
-			    "Received a SEQ frame specifying a new seq no maximum value (%u = %u + %u) that is smaller than the max seq no stored (%u) or it is outside of the current adviced newton (ackno: %u <= max seq no stored + 1: %u), window available (window: %u > window_available: %u). Attempt to shrink window not allowed. Protocol violation",
-			    (ackno + window -1), ackno, window,
-			    max_remote_seq_no, ackno, max_remote_seq_no + 1,
-			    window, window_available);
-		__vortex_connection_set_not_connected (
-			vortex_channel_get_connection (channel), 
-			"Received a SEQ frame specifying a new seq no maximum value that is smaller than the max seq no stored. Attempt to shrink window not allowed. Protocol violation",
-			VortexProtocolError);
+		/* shutdown connection */
+		__vortex_connection_shutdown_and_record_error (
+			channel->connection,
+			VortexProtocolError,
+			"Received a SEQ frame specifying a new seq no maximum value (%u = %u + %u) that is smaller than the max seq no stored (%u) or it is outside of the current adviced newton (ackno: %u <= max seq no stored + 1: %u), window available (window: %u > window_available: %u). Attempt to shrink window not allowed. Protocol violation",
+			(ackno + window -1), ackno, window,
+			max_remote_seq_no, ackno, max_remote_seq_no + 1,
+			window, window_available);
 		return;
 	}
 
@@ -4887,14 +4885,11 @@ axl_bool vortex_channel_remove_first_pending_msg_no (VortexChannel * channel, in
 	if (result) 
 		axl_list_remove_first (channel->incoming_msg);
 	else {
-		/* drop a log */
-		vortex_log (VORTEX_LEVEL_CRITICAL, 
-			    "Found a request to remove next pending reply (msg no: %d) but found a different value as pending: %d",
-			    PTR_TO_INT (axl_list_get_first (channel->incoming_msg)), msg_no_rpy); 
-		/* close the connection */
-		__vortex_connection_set_not_connected (
-			channel->connection, 
-			"Found a request to remove next pending reply but found a different value as pending", VortexProtocolError);
+		/* close connection and drop a log */
+		__vortex_connection_shutdown_and_record_error (
+			channel->connection, VortexProtocolError,
+			"Found a request to remove next pending reply (msg no: %d) but found a different value as pending: %d",
+			PTR_TO_INT (axl_list_get_first (channel->incoming_msg)), msg_no_rpy); 
 	} /* end if */
 
 	/* unlock mutex */
@@ -4930,14 +4925,11 @@ axl_bool vortex_channel_remove_first_outstanding_msg_no (VortexChannel * channel
 			    channel->channel_num, msg_no_rpy);
 		axl_list_remove_first (channel->outstanding_msg);
 	} else {
-		/* drop a log */
-		vortex_log (VORTEX_LEVEL_CRITICAL, 
-			    "Found a request to remove next pending message to be replied (msg no: %d) but found a different value as pending: %d",
-			    PTR_TO_INT (axl_list_get_first (channel->outstanding_msg)), msg_no_rpy); 
-		/* close the connection */
-		__vortex_connection_set_not_connected (
-			channel->connection, 
-			"Found a request to remove next pending message to be replied but found a different value as pending", VortexProtocolError);
+		/* close connection and drop a log */
+		__vortex_connection_shutdown_and_record_error (
+			channel->connection, VortexProtocolError,
+			"Found a request to remove next pending message to be replied (msg no: %d) but found a different value as pending: %d",
+			PTR_TO_INT (axl_list_get_first (channel->outstanding_msg)), msg_no_rpy); 
 	} /* end if */
 
 	/* unlock mutex */
@@ -6424,16 +6416,12 @@ axl_bool      __vortex_channel_0_frame_received_validate (VortexChannel * channe
 		vortex_channel_send_err (channel0, error_msg, strlen (error_msg), vortex_frame_get_msgno (frame));
 		axl_free (error_msg);
 
-		/* flag an error */
-		vortex_log (VORTEX_LEVEL_CRITICAL, 
-		       "received message on channel 0 with xml parse error, closing connection: %s",
-		       axl_error_get (error));
+		/* close connection flag an error */
+		__vortex_connection_shutdown_and_record_error (
+			channel0->connection, VortexProtocolError,
+			"received message on channel 0 with xml parse error, closing connection: %s",
+			axl_error_get (error));
 		axl_error_free (error);
-
-		/* drop the connection */
-		__vortex_connection_set_not_connected (vortex_channel_get_connection (channel0),
-						       "general syntax error: xml parse error",
-						       VortexProtocolError);
 		return axl_false;		 
 	}
 	
@@ -6445,14 +6433,10 @@ axl_bool      __vortex_channel_0_frame_received_validate (VortexChannel * channe
 		axl_free (error_msg);
 
 		/* set the channel to be not connected */
-		__vortex_connection_set_not_connected (vortex_channel_get_connection (channel0),
-						       "501 syntax error in parameters: non-valid XML",
-						       VortexProtocolError);
-
-		/* report a log and free the error reported */
-		vortex_log (VORTEX_LEVEL_CRITICAL, 
-		       "received message on channel 0 with syntax error in parameters: non-valid XML: %s",
-		       axl_error_get (error));
+		__vortex_connection_shutdown_and_record_error (
+			channel0->connection, VortexProtocolError, 
+			"received message on channel 0 with syntax error in parameters: non-valid XML: %s",
+			axl_error_get (error));
 		axl_error_free (error);
 
 		/* release the document read */
@@ -7397,8 +7381,8 @@ void vortex_channel_notify_close (VortexChannel * channel, int  msg_no, axl_bool
 		}
 		
 		/* flag the connection to be closed and non usable */ 
-		__vortex_connection_set_not_connected (connection, "channel closed properly",
-						       VortexConnectionCloseCalled);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexConnectionCloseCalled, "channel closed properly");
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "connection closed..");
 		
@@ -7477,11 +7461,9 @@ void vortex_channel_0_frame_received (VortexChannel    * channel0,
 
 	/* check we are handling the channel 0 */
 	if (vortex_channel_get_number (channel0) != 0) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "invoked channel 0 frame received over a different channel (%d)\n",
-		       vortex_channel_get_number (channel0));
-		__vortex_connection_set_not_connected (connection, 
-						       "invoked channel 0 frame received over a different channel",
-						       VortexProtocolError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexProtocolError,"invoked channel 0 frame received over a different channel (%d)\n",
+			vortex_channel_get_number (channel0));
 		return;
 	}
 
@@ -7514,9 +7496,9 @@ void vortex_channel_0_frame_received (VortexChannel    * channel0,
 		break;
 	case UNKNOWN_MSG:
 		vortex_log (VORTEX_LEVEL_CRITICAL, "received unknown message type (format) on channel 0, closing connection");
-		__vortex_connection_set_not_connected (connection, 
-						       "unknown message type recevied on channel 0, closing connection",
-						       VortexProtocolError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexProtocolError,
+			"unknown message type recevied on channel 0, closing connection");
 		break;
 	} /* end switch */
 

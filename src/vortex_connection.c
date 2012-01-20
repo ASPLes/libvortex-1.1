@@ -674,9 +674,9 @@ axl_bool      __vortex_connection_parse_greetings (VortexConnection * connection
 	ctx = connection->ctx;
 
 	if ((channel_dtd = vortex_dtds_get_channel_dtd (ctx)) == NULL) {
-		__vortex_connection_set_not_connected (connection, 
-						       "Cannot find DTD definition for channel management",
-						       VortexError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexError,
+			"Cannot find DTD definition for channel management");
 		return axl_false;
 	}
 
@@ -708,11 +708,11 @@ axl_bool      __vortex_connection_parse_greetings (VortexConnection * connection
 		/* unlock the cache */
 		vortex_mutex_unlock (&ctx->connection_xml_cache_mutex);
 
-		vortex_log (VORTEX_LEVEL_CRITICAL, "found an error while parsing greetings message: %s",
-			    error ? axl_error_get (error) : "");
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexXmlValidationError, "found an error while parsing greetings message: %s",
+			error ? axl_error_get (error) : "");
 		axl_error_free (error);
-		__vortex_connection_set_not_connected (connection, "Cannot parse xml message to validate it",
-						       VortexXmlValidationError);
+
 		return axl_false;
 	}
 
@@ -753,8 +753,8 @@ axl_bool      __vortex_connection_parse_greetings (VortexConnection * connection
 	axl_doc_free   (doc);
 
 	/* flag the connection to be not connected */
-	__vortex_connection_set_not_connected (connection, "Incoming greetings validation failed",
-					       VortexGreetingsFailure);
+	__vortex_connection_shutdown_and_record_error (
+		connection, VortexProtocolError, "Incoming greetings validation failed");
 	return axl_false;
 }
 
@@ -1069,19 +1069,22 @@ axl_bool      vortex_connection_set_blocking_socket (VortexConnection    * conne
 	
 #if defined(AXL_OS_WIN32)
 	if (!vortex_win32_blocking_enable (connection->session)) {
-		__vortex_connection_set_not_connected (connection, "unable to set blocking I/O", VortexError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexError, "unable to set blocking I/O");
 		return axl_false;
 	}
 #else
 	if ((flags = fcntl (connection->session, F_GETFL, 0)) < -1) {
-		__vortex_connection_set_not_connected (connection, 
-						       "unable to get socket flags to set non-blocking I/O", VortexError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexError,
+			"unable to get socket flags to set non-blocking I/O");
 		return axl_false;
 	}
 	vortex_log (VORTEX_LEVEL_DEBUG, "actual flags state before setting blocking: %d", flags);
 	flags &= ~O_NONBLOCK;
 	if (fcntl (connection->session, F_SETFL, flags) < -1) {
-		__vortex_connection_set_not_connected (connection, "unable to set non-blocking I/O", VortexError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexError, "unable to set non-blocking I/O");
 		return axl_false;
 	}
 	vortex_log (VORTEX_LEVEL_DEBUG, "actual flags state after setting blocking: %d", flags);
@@ -1117,19 +1120,23 @@ axl_bool      vortex_connection_set_nonblocking_socket (VortexConnection * conne
 	
 #if defined(AXL_OS_WIN32)
 	if (!vortex_win32_nonblocking_enable (connection->session)) {
-		__vortex_connection_set_not_connected (connection, "unable to set non-blocking I/O", VortexError);
+		__vortex_connection_shutdown_and_record_error (
+			conn, VortexError, "unable to set non-blocking I/O");
 		return axl_false;
 	}
 #else
 	if ((flags = fcntl (connection->session, F_GETFL, 0)) < -1) {
-		__vortex_connection_set_not_connected (connection, "unable to get socket flags to set non-blocking I/O", VortexError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexError,
+			"unable to get socket flags to set non-blocking I/O");
 		return axl_false;
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "actual flags state before setting nonblocking: %d", flags);
 	flags |= O_NONBLOCK;
 	if (fcntl (connection->session, F_SETFL, flags) < -1) {
-		__vortex_connection_set_not_connected (connection, "unable to set non-blocking I/O", VortexError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexError, "unable to set non-blocking I/O");
 		return axl_false;
 	}
 	vortex_log (VORTEX_LEVEL_DEBUG, "actual flags state after setting nonblocking: %d", flags);
@@ -2405,11 +2412,10 @@ axl_bool                    vortex_connection_close                  (VortexConn
 		/* update the connection reference to avoid race
 		 * conditions caused by deallocations */
 		if (! vortex_connection_ref (connection, "vortex_connection_close")) {
-			vortex_log (VORTEX_LEVEL_WARNING, 
-				    "failed to update reference counting on the connection during close operation, skiping clean close operation..");
-			__vortex_connection_set_not_connected (connection, 
-							       "failed to update reference counting on the connection during close operation, skiping clean close operation..",
-							       VortexError);
+
+			__vortex_connection_shutdown_and_record_error (
+				connection, VortexError,
+				"failed to update reference counting on the connection during close operation, skiping clean close operation..");
 			vortex_connection_unref (connection, "vortex_connection_close");
 			return axl_true;
 		}
@@ -2430,7 +2436,8 @@ axl_bool                    vortex_connection_close                  (VortexConn
 		}
 
 		/* set the connection to be not connected */
-		__vortex_connection_set_not_connected (connection, "close connection called", VortexConnectionCloseCalled);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexConnectionCloseCalled, "close connection called");
 
 		/* update the connection reference to avoid race
 		 * conditions caused by deallocations */
@@ -2879,7 +2886,7 @@ axl_bool                vortex_connection_is_ok (VortexConnection * connection,
  * @return a message about vortex connection status. You must not free
  * this value. Use vortex_connection_free.
  */
-char             * vortex_connection_get_message (VortexConnection * connection)
+const char   * vortex_connection_get_message (VortexConnection * connection)
 {
 	if (connection == NULL)
 		return NULL;
@@ -2995,6 +3002,41 @@ axl_bool            vortex_connection_pop_channel_error      (VortexConnection  
 	vortex_mutex_unlock (&connection->pending_errors_mutex);
 
 	return axl_true;
+}
+
+/**
+ * @internal Function used to record and error and then shutdown the
+ * connection in the same step.
+ *
+ * @param conn The connection where the error was detected.
+ * @param message The message to report
+ * 
+ */
+void                __vortex_connection_shutdown_and_record_error (VortexConnection * conn,
+								   VortexStatus       status,
+								   const char       * message,
+								   ...)
+{
+	va_list     args;
+	char      * _msg;
+	VortexCtx * ctx = CONN_CTX (conn);
+
+	va_start (args, message);
+	_msg = axl_strdup_printfv (message, args);
+	va_end (args);
+
+	/* log error */
+	vortex_log (VORTEX_LEVEL_CRITICAL, _msg);
+
+	/* push an error into the connection */
+	vortex_connection_push_channel_error (conn, status, _msg);
+	
+	/* shutdown connection */
+	vortex_connection_shutdown (conn);
+
+	/* release message */
+	axl_free (_msg);
+	return;
 }
 
 /** 
@@ -5088,10 +5130,11 @@ axl_bool            vortex_connection_actions_notify   (VortexCtx               
 
 			switch (result) {
 			case -1:
-				if (vortex_connection_is_ok (conn, axl_false))
-					__vortex_connection_set_not_connected (conn,
-									       "connection action failed, closing session",
-									       VortexConnectionCloseCalled);
+				if (vortex_connection_is_ok (conn, axl_false)) {
+					__vortex_connection_shutdown_and_record_error (
+						conn, VortexConnectionCloseCalled,
+						"connection action failed, closing session");
+				}
 				/* unlock mutex */
 				vortex_mutex_unlock (&ctx->connection_actions_mutex);	
 				return axl_false;
@@ -6332,9 +6375,9 @@ axl_bool      vortex_connection_parse_greetings_and_enable (VortexConnection * c
 		vortex_reader_watch_connection (ctx, connection); 
 		return axl_true;
 	}
-	vortex_log (VORTEX_LEVEL_CRITICAL, "received a null frame (null reply) from remote side when expected a greetings reply, closing session");
-	__vortex_connection_set_not_connected (connection, "received a null frame (null reply) from remote side when expected a greetings reply, closing session",
-					       VortexProtocolError);
+	__vortex_connection_shutdown_and_record_error (
+		connection, VortexProtocolError,
+		"received a null frame (null reply) from remote side when expected a greetings reply, closing session");
 	return axl_false;
 }
 

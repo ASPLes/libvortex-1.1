@@ -157,7 +157,8 @@ void vortex_listener_accept_connection    (VortexConnection * connection, axl_bo
 		} /* end if */
 
 		/* flag the connection to be not connected */
-		__vortex_connection_set_not_connected (connection, "connection filtered by on accept handler", VortexConnectionFiltered);
+		__vortex_connection_shutdown_and_record_error (
+			connection,  VortexConnectionFiltered, "connection filtered by on accept handler");
 
 		vortex_connection_unref (connection, "vortex listener");
 		return;
@@ -358,8 +359,8 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 	if (!vortex_greetings_is_reply_ok (frame, connection, NULL)) {
 		/* previous function already unref frame object
 		 * received is something goes wrong */
-		vortex_log (VORTEX_LEVEL_CRITICAL, "wrong greeting rpy from init peer, closing session");
-		__vortex_connection_set_not_connected (connection, "wrong greeting rpy from init peer, closing session", VortexProtocolError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexProtocolError, "wrong greeting rpy from init peer, closing session");
 		return;
 	}
 
@@ -371,9 +372,9 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 		 * deallocation, unref it*/
 		vortex_frame_unref (frame);
 		
-		vortex_log (VORTEX_LEVEL_CRITICAL, "wrong greetings received, closing session (conn-id=%d)",
-			    vortex_connection_get_id (connection));
-		__vortex_connection_set_not_connected (connection, "wrong greetings received, closing session", VortexProtocolError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexProtocolError, "wrong greetings received, closing session (conn-id=%d)",
+			vortex_connection_get_id (connection));
 		return;
 	}
 
@@ -384,10 +385,9 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 		vortex_frame_unref (frame);
 
 		/* action reporting failure, unref the connection */
-		vortex_log (VORTEX_LEVEL_CRITICAL, "vortex listener do to action failure = CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES, connection closed id=%d",
-			    vortex_connection_get_id (connection));
-		__vortex_connection_set_not_connected (connection, "vortex listener do to action failure = CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES", 
-						       VortexConnectionFiltered);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexConnectionFiltered, "vortex listener do to action failure = CONNECTION_STAGE_PROCESS_GREETINGS_FEATURES, connection closed id=%d",
+			vortex_connection_get_id (connection));
 		return;
 	} /* end if */
 
@@ -399,15 +399,13 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 		/* release frame */
 		vortex_frame_unref (frame);
 
-		vortex_log (VORTEX_LEVEL_CRITICAL, "vortex listener: failed to send initial listener greetings reply message");
-		
 		/*
 		 * This unref sentence is properly defined. Opposite
 		 * ref call done to this unref is actually done by
 		 * vortex_connection_new_empty.
 		 */ 
-		__vortex_connection_set_not_connected (connection, "vortex listener: failed to send initial listener greetings reply message",
-						       VortexProtocolError);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexProtocolError, "vortex listener: failed to send initial listener greetings reply message");
 		return;
 	} /* end if */
 
@@ -428,9 +426,9 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 	/* call to notify connection created */
 	if (! vortex_connection_actions_notify (ctx, &connection, CONNECTION_STAGE_POST_CREATED)) {
 		/* action reporting failure, unref the connection */
-		vortex_log (VORTEX_LEVEL_CRITICAL, "vortex listener do to action failure = CONNECTION_STAGE_POST_CREATED, connection closed id=%d",
-			    vortex_connection_get_id (connection));
-		__vortex_connection_set_not_connected (connection, "vortex listener do to action failure = CONNECTION_STAGE_POST_CREATED", VortexConnectionFiltered);
+		__vortex_connection_shutdown_and_record_error (
+			connection, VortexConnectionFiltered, "vortex listener do to action failure = CONNECTION_STAGE_POST_CREATED, connection closed id=%d",
+			vortex_connection_get_id (connection));
 		return;
 	} /* end if */
 
@@ -654,21 +652,13 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	/* handle returned socket or error */
 	switch (fd) {
 	case -2:
-		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to start listener because vortex_listener_sock_listener reported NULL parameter received");
-		status  = VortexWrongReference;
-		message = "Failed to start listener because vortex_listener_sock_listener reported NULL parameter received";
-
-		/* set status */
-		__vortex_connection_set_not_connected (listener, message, status);
+		__vortex_connection_shutdown_and_record_error (
+			listener, VortexWrongReference, "Failed to start listener because vortex_listener_sock_listener reported NULL parameter received");
 		break;
 	case -1:
-		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to start listener, vortex_listener_sock_listener reported (code: %d): %s",
-			    axl_error_get_code (error), axl_error_get (error));
-		status  = axl_error_get_code (error);
-		message = axl_error_get (error);
-
-		/* set status */
-		__vortex_connection_set_not_connected (listener, message, status);
+		__vortex_connection_shutdown_and_record_error (
+			listener, VortexProtocolError,"Failed to start listener, vortex_listener_sock_listener reported (code: %d): %s",
+			axl_error_get_code (error), axl_error_get (error));
 		break;
 	default:
 		/* register the listener socket at the Vortex Reader process.  */
@@ -691,7 +681,8 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 		/* call to notify connection created */
 		if (! vortex_connection_actions_notify (ctx, &listener, CONNECTION_STAGE_POST_CREATED)) {
 			/* action reporting failure, unref the connection */
-			__vortex_connection_set_not_connected (listener, "vortex master listener post created action failed", VortexConnectionFiltered);
+			__vortex_connection_shutdown_and_record_error (
+				listener, VortexConnectionFiltered, "vortex master listener post created action failed");
 		} /* end if */
 
 		/* the listener reference */
@@ -1593,7 +1584,7 @@ void __vortex_listener_shutdown_foreach (VortexConnection * conn,
 	if (listener_id == PTR_TO_INT (user_data)) { 
 		vortex_log (VORTEX_LEVEL_DEBUG, "shutdown connection: %d..",
 			    vortex_connection_get_id (conn));
-		vortex_connection_shutdown (conn);
+		__vortex_connection_shutdown_and_record_error (conn, VortexOk, "Shutting down connection due to listener close");
 	}
 	return;
 }
@@ -1640,7 +1631,7 @@ void          vortex_listener_shutdown (VortexConnection * listener,
 	} /* end if */
 
 	/* shutdown the listener */
-	vortex_connection_shutdown (listener);
+	__vortex_connection_shutdown_and_record_error (listener, VortexOk, "listener shutted down");
 
 	/* unref the listener now finished */
 	vortex_connection_unref (listener, "listener-shutdown");
