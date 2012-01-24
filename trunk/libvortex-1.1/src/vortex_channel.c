@@ -5163,9 +5163,9 @@ axl_bool vortex_channel_remove_first_pending_msg_no (VortexChannel * channel, in
 	/* get first pending message to be replied */
 	result = PTR_TO_INT (axl_list_get_first (channel->incoming_msg)) == msg_no_rpy;
 
-	if (result) 
+	if (result) {
 		axl_list_remove_first (channel->incoming_msg);
-	else {
+	} else {
 		/* close connection and drop a log */
 		__vortex_connection_shutdown_and_record_error (
 			channel->connection, VortexProtocolError,
@@ -9318,9 +9318,9 @@ void              __vortex_channel_set_state (VortexChannel * channel,
 					      int             last_seq_no_expected,
 					      int             last_reply_received)
 {
- 	vortex_mutex_lock (&channel->incoming_msg_mutex);
+/* 	vortex_mutex_lock (&channel->incoming_msg_mutex);
 	axl_list_append (channel->incoming_msg, INT_TO_PTR (next_reply_no));
-	vortex_mutex_unlock (&channel->incoming_msg_mutex);
+	vortex_mutex_unlock (&channel->incoming_msg_mutex); */
 
 	/* update seq no */
 	channel->last_seq_no          = last_seq_no;
