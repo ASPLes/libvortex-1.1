@@ -432,6 +432,35 @@ static PyObject * py_vortex_channel_send_msg (PyVortexChannel * self, PyObject *
 	return Py_BuildValue ("i", msg_no);
 }
 
+static PyObject * py_vortex_channel_send_msg_more (PyVortexChannel * self, PyObject * args)
+{
+	const char * content = NULL;
+	int          size    = -1;
+	axl_bool     result;
+	int          msg_no  = 0;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "z|i", &content, &size))
+		return NULL;
+
+	/* recalculate size according to size -1 */
+	if (size == -1)
+		size = strlen (content);
+
+	/* call to send the message */
+	result = vortex_channel_send_msg_more (self->channel, content, size, &msg_no);
+
+	/* return none in the case of failure */
+	if (! result) {
+		Py_INCREF (Py_None);
+		return Py_None;
+	} /* end if */
+
+	/* and return the message number used in the case of proper
+	 * send operation */
+	return Py_BuildValue ("i", msg_no);
+}
+
 PyObject * py_vortex_channel_send_rpy (PyVortexChannel * self, PyObject * args)
 {
 	const char * content = NULL;
@@ -466,6 +495,40 @@ PyObject * py_vortex_channel_send_rpy (PyVortexChannel * self, PyObject * args)
 	return Py_BuildValue ("i", result);
 }
 
+PyObject * py_vortex_channel_send_rpy_more (PyVortexChannel * self, PyObject * args)
+{
+	const char * content = NULL;
+	int          size    = 0;
+	axl_bool     result;
+	int          msg_no  = 0;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "zii", &content, &size, &msg_no))
+		return NULL;
+
+	/* recalculate size according to size -1 */
+	if (size == -1)
+		size = strlen (content);
+
+	/* remove the following log since it is not secure */
+	py_vortex_log (PY_VORTEX_DEBUG, "received request to send rpy, channel: %p (id: %d), content: %s, size: %d, msg_no: %d",
+		       self->channel, vortex_channel_get_number (self->channel), content, size, msg_no);
+
+	/* call to send reply */
+	result = vortex_channel_send_rpy_more (self->channel, content, size, msg_no);
+
+	py_vortex_log (PY_VORTEX_DEBUG, "after sending RPY frame, status found was: %d", result);
+
+	/* return none in the case of failure */
+	if (! result) {
+		Py_INCREF (Py_None);
+		return Py_None;
+	} /* end if */
+
+	/* return reply status (1 if it was ok, otherwise use 0) */
+	return Py_BuildValue ("i", result);
+}
+
 PyObject * py_vortex_channel_send_err (PyVortexChannel * self, PyObject * args)
 {
 	const char * content = NULL;
@@ -483,6 +546,34 @@ PyObject * py_vortex_channel_send_err (PyVortexChannel * self, PyObject * args)
 
 	/* call to send reply */
 	result = vortex_channel_send_err (self->channel, content, size, msg_no);
+
+	/* return none in the case of failure */
+	if (! result) {
+		Py_INCREF (Py_None);
+		return Py_None;
+	} /* end if */
+
+	/* return reply status (1 if it was ok, otherwise use 0) */
+	return Py_BuildValue ("i", result);
+}
+
+PyObject * py_vortex_channel_send_err_more (PyVortexChannel * self, PyObject * args)
+{
+	const char * content = NULL;
+	int          size    = 0;
+	axl_bool     result;
+	int          msg_no  = 0;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "zii", &content, &size, &msg_no))
+		return NULL;
+
+	/* recalculate size according to size -1 */
+	if (size == -1)
+		size = strlen (content);
+
+	/* call to send reply */
+	result = vortex_channel_send_err_more (self->channel, content, size, msg_no);
 
 	/* return none in the case of failure */
 	if (! result) {
@@ -657,12 +748,20 @@ static PyMethodDef py_vortex_channel_methods[] = {
 	/* send_msg */
 	{"send_msg", (PyCFunction) py_vortex_channel_send_msg, METH_VARARGS,
 	 "Allows to send the message with type MSG."},
+	/* send_msg_more */
+	{"send_msg_more", (PyCFunction) py_vortex_channel_send_msg_more, METH_VARARGS,
+	 "Allows to send the message with type MSG flagging all frames with more flag on."},
 	/* send_rpy */
 	{"send_rpy", (PyCFunction) py_vortex_channel_send_rpy, METH_VARARGS,
 	 "Allows to reply to a MSG received with a RPY message."},
+	/* send_rpy_more */
+	{"send_rpy_more", (PyCFunction) py_vortex_channel_send_rpy_more, METH_VARARGS,
+	 "Allows to reply to a MSG received with a RPY message, flagging all frames with more flag on."},
 	/* send_err */
 	{"send_err", (PyCFunction) py_vortex_channel_send_err, METH_VARARGS,
 	 "Allows to reply to a MSG received with a ERR message."},
+	{"send_err_more", (PyCFunction) py_vortex_channel_send_err_more, METH_VARARGS,
+	 "Allows to reply to a MSG received with a ERR message, flagging all frames with more flag on."},
 	/* send_ans */
 	{"send_ans", (PyCFunction) py_vortex_channel_send_ans, METH_VARARGS,
 	 "Allows to reply to a MSG received with a ANS message."},

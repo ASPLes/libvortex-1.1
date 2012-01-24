@@ -292,10 +292,16 @@ axl_bool           vortex_channel_send_msg_common                 (VortexChannel
 								   int                   proposed_msg_no, 
 								   int                 * msg_no,
 								   WaitReplyData       * wait_reply,
-								   VortexPayloadFeeder * feeder);
+								   VortexPayloadFeeder * feeder,
+								   axl_bool              fixed_more);
 
 axl_bool           vortex_channel_send_msg_from_feeder            (VortexChannel       * channel,
 								   VortexPayloadFeeder * feeder);
+
+axl_bool           vortex_channel_send_msg_more                   (VortexChannel    * channel,
+								   const void       * message,
+								   size_t             message_size,
+								   int              * msg_no);
 
 axl_bool           vortex_channel_send_rpy                        (VortexChannel    * channel,  
 								   const void       * message,
@@ -310,6 +316,11 @@ axl_bool           vortex_channel_send_rpyv                       (VortexChannel
 axl_bool           vortex_channel_send_rpy_from_feeder            (VortexChannel       * channel,
 								   VortexPayloadFeeder * feeder,
 								   int                   msg_no_rpy);
+
+axl_bool           vortex_channel_send_rpy_more                   (VortexChannel    * channel,  
+								   const void       * message,
+								   size_t             message_size,
+								   int                msg_no_rpy);
 
 axl_bool           vortex_channel_send_ans_rpy                    (VortexChannel    * channel,
 								   const void       * message,
@@ -337,6 +348,11 @@ axl_bool           vortex_channel_send_errv                      (VortexChannel 
 								  int             msg_no_err,
 								  const   char  * format, 
 								  ...); 
+
+axl_bool           vortex_channel_send_err_more                  (VortexChannel    * channel,  
+								  const void       * message,
+								  size_t             message_size,
+								  int                msg_no_err);
 						
 axl_bool           vortex_channel_is_opened                      (VortexChannel * channel);
 

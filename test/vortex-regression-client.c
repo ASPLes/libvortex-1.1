@@ -6618,7 +6618,7 @@ axl_bool test_02n_check_sequence (VortexChannel * channel, VortexAsyncQueue * qu
 			break;
 
 		/* perform send operation */
-		if (! vortex_channel_send_msg_common (channel, "this is a test", 14, msg_no, &msg_no_used, NULL, NULL)) {
+		if (! vortex_channel_send_msg_common (channel, "this is a test", 14, msg_no, &msg_no_used, NULL, NULL, axl_false)) {
 			printf ("Failed to send message..\n");
 			return axl_false;
 		} /* end if */
@@ -6719,7 +6719,7 @@ axl_bool  test_02n (void) {
 	}
 
 	/* now perform tree sends operations */
-	if (! vortex_channel_send_msg_common (channel, "this is a test", 14, 5, &msg_no, NULL, NULL)) {
+	if (! vortex_channel_send_msg_common (channel, "this is a test", 14, 5, &msg_no, NULL, NULL, axl_false)) {
 		printf ("Failed to send message..\n");
 		return axl_false;
 	} /* end if */
@@ -6732,7 +6732,7 @@ axl_bool  test_02n (void) {
 	}
 
 	/* now perform tree sends operations */
-	if (! vortex_channel_send_msg_common (channel, "this is a test", 14, 659, &msg_no, NULL, NULL)) {
+	if (! vortex_channel_send_msg_common (channel, "this is a test", 14, 659, &msg_no, NULL, NULL, axl_false)) {
 		printf ("ERROR (2): Failed to send message..\n");
 		return axl_false;
 	} /* end if */
@@ -6745,7 +6745,7 @@ axl_bool  test_02n (void) {
 	}
 
 	/* now perform tree sends operations */
-	if (! vortex_channel_send_msg_common (channel, "this is a test", 14, 3, &msg_no, NULL, NULL)) {
+	if (! vortex_channel_send_msg_common (channel, "this is a test", 14, 3, &msg_no, NULL, NULL, axl_false)) {
 		printf ("ERROR (4): Failed to send message..\n");
 		return axl_false;
 	} /* end if */
@@ -6802,7 +6802,7 @@ axl_bool  test_02n (void) {
 
 	while (iterator < 10) {
 		/* send content with message number 0 */
-		if (! vortex_channel_send_msg_common (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), 0, &msg_no, NULL, NULL)) {
+		if (! vortex_channel_send_msg_common (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), 0, &msg_no, NULL, NULL, axl_false)) {
 			printf ("ERROR (12): Failed to send message..\n");
 			return axl_false;
 		} /* end if */
@@ -6891,13 +6891,13 @@ axl_bool  test_02n (void) {
 	} /* end if */
 
 	/* perform two send operations to force connection broken */
-	if (! vortex_channel_send_msg_common (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), 0, &msg_no, NULL, NULL)) {
+	if (! vortex_channel_send_msg_common (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), 0, &msg_no, NULL, NULL, axl_false)) {
 		printf ("ERROR (18): Failed to send message..\n");
 		return axl_false;
 	} /* end if */
 
 	/* perform two send operations to force connection broken */
-	if (! vortex_channel_send_msg_common (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), 0, &msg_no, NULL, NULL)) {
+	if (! vortex_channel_send_msg_common (channel, TEST_REGRESION_URI_4_MESSAGE, strlen (TEST_REGRESION_URI_4_MESSAGE), 0, &msg_no, NULL, NULL, axl_false)) {
 		printf ("ERROR (19): Failed to send message..\n");
 		return axl_false;
 	} /* end if */
@@ -7397,6 +7397,149 @@ axl_bool  test_02q (void) {
 	/* free queue */
 	vortex_async_queue_unref (queue);
 	vortex_async_queue_unref (wait_queue);
+
+	return axl_true;
+}
+
+axl_bool test_02r_common (VortexConnection * connection, VortexChannel * channel, 
+			  VortexAsyncQueue * queue, VortexAsyncQueue * wait_queue)
+{
+	VortexFrame * frame;
+
+	printf ("Test 02-r: requesting messages...\n");
+
+	/* send content */
+	if (! vortex_channel_send_msg (channel, "get-fragments", 13, NULL)) {
+		printf ("ERROR (1): failed to send command to get fragments..\n");
+		return axl_false;
+	} /* end if */
+
+	/* get reply */
+	printf ("Test 02-r: waiting for get-fragments reply...\n");
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL) {
+		printf ("ERROR (2): received a NULL frame reference when content was expected..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 02-r: content received: %s\n", (char *) vortex_frame_get_payload (frame));
+
+	/* check content */
+	if (! axl_cmp (vortex_frame_get_payload (frame), "This is a small test to check fragmented frames with the same message number ...and that's all!")) {
+		printf ("ERROR: (3): expected to receive other content but found something different..\n");
+		return axl_false;
+	}
+
+	/* release frame */
+	vortex_frame_unref (frame);
+
+	printf ("Test 02-r: waiting 100ms...\n");
+	vortex_async_queue_timedpop (wait_queue, 100000);
+	if (vortex_async_queue_items (wait_queue) > 0) {
+		printf ("Test 02-r: FAILED, expected to not find frames at this queue..\n");
+		return axl_false;
+	} /* end if */
+
+	/* check outstanding messages */
+	if (vortex_channel_get_outstanding_messages (channel, NULL) > 0) {
+		printf ("Test 02-r: FAILED, expected to not find any pending outstanding message to be replied, but found: %d\n",
+			vortex_channel_get_outstanding_messages (channel, NULL));
+		return axl_false;
+	}
+
+	printf ("Test 02-r: #### testing fragmented send operation..#### \n");
+
+	/* ok, now test vortex_channel_send_msg_more */
+	if (! vortex_channel_send_msg_more (channel, "This is a test...", 17, NULL)) {
+		printf ("Test 02-r: FAILED (1), expected to send opened send operation, but it failed..\n");
+		return axl_false;
+	}
+	if (! vortex_channel_send_msg_more (channel, " to test that opened MSG are working...", 39, NULL)) {
+		printf ("Test 02-r: FAILED (2), expected to send opened send operation, but it failed..\n");
+		return axl_false;
+	}
+	if (! vortex_channel_send_msg (channel, " without any problem...", 23, NULL)) {
+		printf ("Test 02-r: FAILED (3), expected to send opened send operation, but it failed..\n");
+		return axl_false;
+	}
+
+	/* now wait for reply */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL) {
+		printf ("ERROR (5): received a NULL frame reference when content was expected..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 02-r: content received: %s\n", (char *) vortex_frame_get_payload (frame));
+
+	/* check content */
+	/* if (! axl_cmp (vortex_frame_get_payload (frame), "This is a small test to check fragmented frames with the same message number ...and that's all!")) {
+		printf ("ERROR: (6): expected to receive other content but found something different..\n");
+		return axl_false;
+		} */
+
+	/* release frame */
+	vortex_frame_unref (frame);
+	
+	return axl_true;
+}
+
+axl_bool  test_02r (void) {
+	VortexConnection  * connection;
+	VortexChannel     * channel;
+	VortexAsyncQueue  * queue;
+	VortexAsyncQueue  * wait_queue;
+	VortexCtx         * ctx;
+
+	/* init vortex here */
+	ctx = vortex_ctx_new ();
+	if (! vortex_init_ctx (ctx)) {
+		printf ("Test 02-r: failed to init VortexCtx reference..\n");
+		return axl_false;
+	}
+
+	/* creates a new connection against localhost:44000 */
+	connection = vortex_connection_new (ctx, "localhost", "44010", NULL, NULL);
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+
+	/* create the queue */
+	queue      = vortex_async_queue_new ();
+	wait_queue = vortex_async_queue_new ();
+
+	/* create a channel */
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return axl_false;
+	}
+
+	/**** call to test ****/
+	if (! test_02r_common (connection, channel, queue, wait_queue))
+		return axl_false;
+	if (! test_02r_common (connection, channel, queue, wait_queue))
+		return axl_false;
+	if (! test_02r_common (connection, channel, queue, wait_queue))
+		return axl_false;
+
+	/* free queue */
+	vortex_async_queue_unref (queue);
+	vortex_async_queue_unref (wait_queue);
+
+	/* close connection */
+	vortex_connection_close (connection);
+
+	/* finish context */
+	vortex_exit_ctx (ctx, axl_true);
 
 	return axl_true;
 }
@@ -9946,6 +10089,7 @@ axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
 	/* send feeder */
 	printf ("Test 04-f: sending content..\n");
 	if (! vortex_channel_send_msg_from_feeder (channel, feeder)) {
+		show_conn_errros (conn);
 		printf ("ERROR (4): expected to find proper send using feeder, channel=%p, feeder=%p, conn status=%d..\n",
 			channel, feeder, vortex_connection_is_ok (conn, axl_false));
 		return axl_false;
@@ -9960,7 +10104,7 @@ axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
 	}
 
 	/* ok now pause transfer */
-	printf ("Test 04-f: #### calling to pause..\n");
+	printf ("Test 04-f: #### calling to pause, should_close_tranfer=%d..\n", should_close_transfer);
 	vortex_payload_feeder_pause (feeder, should_close_transfer);
 
 	/* now wait 200ms to recheck again we are not transferring */
@@ -13749,7 +13893,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_01p, test_01q, test_01r, test_01s, test_01s1, test_01t\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
- 	printf ("**                       test_02l, test_02l1, test_02m, test_02m1, test_02m2, test_02m3, test_02n, test_02o, test_02p, test_02q, \n");
+ 	printf ("**                       test_02l, test_02l1, test_02m, test_02m1, test_02m2, test_02m3, test_02n, test_02o, test_02p, test_02q, test_02r\n");
  	printf ("**                       test_03, test_03a, test_03b, test_03c, test_03d, test_03e, test_03f, test_04, test_04a, \n");
  	printf ("**                       test_04b, test_04c, test_04d, test_04e, test_04f, test_05, test_05a, test_05b, test_05c, \n");
 	printf ("**                       test_05d, ctest_06, test_06a, \n");
@@ -14074,6 +14218,9 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_02q"))
 			run_test (test_02q, "Test 02-q", "Check frame manipulation after vortex context finalization", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_02r"))
+			run_test (test_02r, "Test 02-r", "Check sending uncomplete frames (more flag set to true)", -1, -1);
+
 		if (check_and_run_test (run_test_name, "test_03"))
 			run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
 
@@ -14332,6 +14479,8 @@ int main (int  argc, char ** argv)
 	run_test (test_02p, "Test 02-p", "Check empty RPY", -1, -1);
 
 	run_test (test_02q, "Test 02-q", "Check frame manipulation after vortex context finalization", -1, -1);
+
+	run_test (test_02r, "Test 02-r", "Check sending uncomplete frames (more flag set to true)", -1, -1);
 
  	run_test (test_03, "Test 03", "basic BEEP channel support (large messages)", -1, -1);
   

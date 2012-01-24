@@ -357,7 +357,7 @@ build_frame:
 		data->channel_num, /* channel number the frame applies to */
 		data->msg_no,      /* the message number */
 		/* frame payload size to be created */
-		!packet->is_complete, /* have more frames */
+		!packet->is_complete || data->fixed_more, /* have more frames */
 		data->first_seq_no,   /* sequence number for the frame to be created */
 		/* size for the payload starting from previous sequence number */
 		size_to_copy,
@@ -374,6 +374,9 @@ build_frame:
 		&(packet->the_size),
 		/* buffer and its size */
 		ctx->sequencer_send_buffer, ctx->sequencer_send_buffer_size);
+
+	/* update fixed more flag on packet */
+	packet->fixed_more = data->fixed_more;
 	
 	/* return size used from the entire message */
 	return size_to_copy;
@@ -719,9 +722,9 @@ void vortex_sequencer_stop (VortexCtx * ctx)
 
 
 
-axl_bool      vortex_sequencer_direct_send (VortexConnection * connection,
-					    VortexChannel    * channel,
-					    VortexWriterData * packet)
+axl_bool      vortex_sequencer_direct_send (VortexConnection    * connection,
+					    VortexChannel       * channel,
+					    VortexWriterData    * packet)
 {
 	/* reply number */
 	axl_bool    result = axl_true;
@@ -752,7 +755,7 @@ axl_bool      vortex_sequencer_direct_send (VortexConnection * connection,
 	}
 	
 	/* signal the message have been sent */
-	if ((packet->type == VORTEX_FRAME_TYPE_RPY || packet->type == VORTEX_FRAME_TYPE_NUL) && packet->is_complete) {  
+	if ((packet->type == VORTEX_FRAME_TYPE_RPY || packet->type == VORTEX_FRAME_TYPE_NUL) && packet->is_complete && ! packet->fixed_more) {  
 
 		/* update reply sent */
 		vortex_channel_update_status (channel, 0, packet->msg_no, UPDATE_RPY_NO_WRITTEN);
