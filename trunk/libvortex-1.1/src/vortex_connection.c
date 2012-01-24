@@ -3019,23 +3019,31 @@ void                __vortex_connection_shutdown_and_record_error (VortexConnect
 {
 	va_list     args;
 	char      * _msg;
-	VortexCtx * ctx = CONN_CTX (conn);
-
-	va_start (args, message);
-	_msg = axl_strdup_printfv (message, args);
-	va_end (args);
+	VortexCtx * ctx;
 
 	/* log error */
-	vortex_log (VORTEX_LEVEL_CRITICAL, _msg);
+	if (status != VortexOk && status != VortexConnectionCloseCalled) {
 
-	/* push an error into the connection */
-	vortex_connection_push_channel_error (conn, status, _msg);
+		/* get context reference */
+		ctx = CONN_CTX (conn);
+
+		/* prepare message */
+		va_start (args, message);
+		_msg = axl_strdup_printfv (message, args);
+		va_end (args);
+
+		vortex_log (VORTEX_LEVEL_CRITICAL, _msg);
+		
+		/* push an error into the connection */
+		vortex_connection_push_channel_error (conn, status, _msg);
+
+		/* release message */
+		axl_free (_msg);
+	} 
 	
 	/* shutdown connection */
 	vortex_connection_shutdown (conn);
 
-	/* release message */
-	axl_free (_msg);
 	return;
 }
 

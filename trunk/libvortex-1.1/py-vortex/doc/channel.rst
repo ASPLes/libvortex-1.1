@@ -37,6 +37,18 @@ Module API
       	      print ("ERROR: failed to send message")
 	      # return or appropriate error recover
 
+   .. method:: send_msg_more (content, [size])
+   
+      Allows to send a message (content) with the size provided flagging all frames with more flag on.
+
+      :param content: The content to send.
+      :type  content: String (may contain binary data like \0)
+
+      :param size: Optional content size indication or -1 to let the function to deduce string size. In the case you work with unicode strings, you use use -1 to let the method to deduce the right size because API requires byte-length while python provides the char length.
+      :type  size: Integer 
+
+      :rtype: Returns the msg_no used for the send operation or None if the send operation fails. 
+
    .. method:: send_rpy (content, size, msg_no)
    
       Allows to send a reply message (frame type RPY) to a message received (frame type MSG) with the provided msg_no.
@@ -52,9 +64,39 @@ Module API
 
       :rtype: Returns True if the reply operation was done, otherwise False is returned. 
 
+   .. method:: send_rpy_more (content, size, msg_no)
+   
+      Allows to send a reply message (frame type RPY) to a message received (frame type MSG) with the provided msg_no, flagging all frames with more flag on.
+
+      :param content: The content to send.
+      :type  content: String (may contain binary data like \0)
+
+      :param size: The content size or -1 to let the function to deduce string size. In the case you work with unicode strings, you use use -1 to let the method to deduce the right size because API requires byte-length while python provides the char length.
+      :type  size: Integer
+
+      :param msg_no: The frame msgno that identifies the frame  MSG we are replying
+      :type  msg_no: Integer > 0
+
+      :rtype: Returns True if the reply operation was done, otherwise False is returned. 
+
    .. method:: send_err (content, size, msg_no)
    
       Allows to send an error reply message (frame type ERR) to a message received (frame type MSG) with the provided msg_no.
+
+      :param content: The content to send.
+      :type  content: String (may contain binary data like \0)
+
+      :param size: The content size or -1 to let the function to deduce string size. In the case you work with unicode strings, you use use -1 to let the method to deduce the right size because API requires byte-length while python provides the char length.
+      :type  size: Integer 
+
+      :param msg_no: The frame msgno that identifies the frame  MSG we are replying
+      :type  msg_no: Integer > 0
+
+      :rtype: Returns True if the reply operation was done, otherwise False is returned. 
+
+   .. method:: send_err_more (content, size, msg_no)
+   
+      Allows to send an error reply message (frame type ERR) to a message received (frame type MSG) with the provided msg_no, flagging all frames with more flag on.
 
       :param content: The content to send.
       :type  content: String (may contain binary data like \0)

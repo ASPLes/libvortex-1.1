@@ -403,6 +403,14 @@ void frame_received (VortexChannel    * channel,
 		vortex_color_log_enable (CONN_CTX(connection), axl_false);
 		vortex_log2_enable (CONN_CTX(connection), axl_false);
 		printf ("REGRESSION: server log disabled..\n");
+	} else if (axl_memcmp (vortex_frame_get_payload (frame), "get-fragments", 13)) {
+		/* received request to send content as fragments */
+		printf ("REGRESSION: replying to msg no=%d received..\n", vortex_frame_get_msgno (frame));
+		vortex_channel_send_rpy_more (channel, "This is a ", 10, vortex_frame_get_msgno (frame));
+		vortex_channel_send_rpy_more (channel, "small test to check fragmented ", 31, vortex_frame_get_msgno (frame));
+		vortex_channel_send_rpy_more (channel, "frames with the same message number ", 36, vortex_frame_get_msgno (frame));
+		vortex_channel_send_rpy (channel, "...and that's all!", 18, vortex_frame_get_msgno (frame));
+		return;
 	} /* end if */
 
 	/* DEFAULT REPLY, JUST ECHO */

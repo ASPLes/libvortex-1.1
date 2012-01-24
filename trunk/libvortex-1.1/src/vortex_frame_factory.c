@@ -668,8 +668,8 @@ char  * vortex_frame_build_up_from_params (VortexFrameType   type,
  *
  * @param ansno             The answer number for the frame
  *
- * @param content_type Optional content type to be used for the
- * channel being sent. If no value is provided no content type will be
+ * @param content_type Optional content type to be used for the frame
+ * to be sent. If no value is provided no content type will be
  * placed. If content type provided is also the default value then no
  * content type will be placed.
  *
@@ -1612,7 +1612,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 		/* check if channel is expected to be closed */
 		if (vortex_connection_get_data (connection, "being_closed")) {
 			__vortex_connection_shutdown_and_record_error (
-				connection, VortexProtocolError, 
+				connection, VortexOk, 
 				"connection properly closed");
 			return NULL;
 		}

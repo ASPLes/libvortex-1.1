@@ -816,6 +816,12 @@ typedef struct _VortexSequencerData {
 	 * @brief Optional feeder defined for this send operation.
 	 */
 	VortexPayloadFeeder * feeder;
+
+	/** 
+	 * @brief Signals if all frames sent due to this delivery
+	 * should have all of them the more flag enabled.
+	 */
+	axl_bool              fixed_more;
 } VortexSequencerData;
 
 
@@ -835,10 +841,11 @@ typedef struct _VortexSequencerData {
  */
 typedef struct _VortexWriterData {
 	VortexFrameType   type;
-	int               msg_no;
+	axl_bool          msg_no;
 	char            * the_frame;
-	int               the_size;
-	int               is_complete;
+	axl_bool          the_size;
+	axl_bool          is_complete;
+	axl_bool          fixed_more;
 }VortexWriterData;
 
 /** 

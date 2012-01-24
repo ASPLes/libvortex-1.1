@@ -385,6 +385,17 @@ struct _VortexChannel {
 	 * MIME header handling at channel level.
 	 */
 	int                     automatic_mime;
+
+	/** 
+	 * @internal Value that indicates 
+	 */
+	axlHash  *              fixed_more_indication;
+
+	/** 
+	 * @internal Reference to the last fixed_more msg_no used so
+	 * it can be used on this channel.
+	 */
+	int                     last_fixed_more_msg_no;
 };
 
 typedef struct _VortexChannelData {
@@ -1545,7 +1556,11 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 		return NULL;
 	} /* end if */
 	channel->ctx                            = ctx;
+
 	vortex_ctx_ref (ctx);
+
+	/* flag that this channel has no pending fixed more msg_no */
+	channel->last_fixed_more_msg_no = -1;
 
 	channel->channel_num                    = channel_num;
 	channel->last_message_received          = -1;
@@ -1576,13 +1591,17 @@ VortexChannel * vortex_channel_empty_new (int                channel_num,
 
 	/* incoming messages check support */
 	channel->incoming_msg                   = axl_list_new (axl_list_always_return_1, NULL);
+	if (channel_num == 0) {
+		/* insert first 0 allowed */
+		axl_list_append (channel->incoming_msg, 0);
+	}
 	channel->incoming_msg_cursor            = axl_list_cursor_new (channel->incoming_msg);
 	channel->incoming_msg_frame_fragment    = -1;
 	vortex_mutex_create (&channel->incoming_msg_mutex);
 
 	/* outgoing message check support */
 	channel->outstanding_msg                = axl_list_new (axl_list_always_return_1, NULL);
-	channel->outstanding_msg_cursor         = axl_list_cursor_new (channel->incoming_msg);
+	channel->outstanding_msg_cursor         = axl_list_cursor_new (channel->outstanding_msg);
 	vortex_mutex_create (&channel->outstanding_msg_mutex);
 
 	channel->waiting_msgno                  = vortex_queue_new ();
@@ -2294,6 +2313,59 @@ void vortex_channel_update_status_received (VortexChannel * channel,
 	return;
 }
 
+/**
+ * @internal Function to check if a msg_no is found in the list of
+ * incoming msg pending to be replied.
+ */
+axl_bool vortex_channel_check_msg_no_find_item (VortexChannel * channel, int msg_no)
+{
+	if (axl_list_length (channel->incoming_msg) == 0) {
+		/* add directly */
+		return axl_false;
+	} /* end if */
+
+	/* reset cursor */
+	axl_list_cursor_first (channel->incoming_msg_cursor);
+	while (axl_list_cursor_has_item (channel->incoming_msg_cursor)) {
+		/* check if the message was already received but not replied */
+		if (msg_no == PTR_TO_INT (axl_list_cursor_get (channel->incoming_msg_cursor))) {
+			/* item found */
+			return axl_true;
+		} /* end if */
+
+		/* next item */
+		axl_list_cursor_next (channel->incoming_msg_cursor);
+	} /* end while */
+
+	return axl_false;
+}
+
+/**
+ * @internal Function to check if a msg_no is found in the list of
+ * incoming msg pending to be replied.
+ */
+axl_bool vortex_channel_check_msg_no_find_item_outgoing (VortexCtx * ctx, VortexChannel * channel, int msg_no)
+{
+	if (axl_list_length (channel->outstanding_msg) == 0) {
+		/* add directly */
+		return axl_false;
+	} /* end if */
+
+	/* reset cursor */
+	axl_list_cursor_first (channel->outstanding_msg_cursor);
+	while (axl_list_cursor_has_item (channel->outstanding_msg_cursor)) {
+		/* check if the message was already received but not replied */
+		if (msg_no == PTR_TO_INT (axl_list_cursor_get (channel->outstanding_msg_cursor))) {
+			/* item found */
+			return axl_true;
+		} /* end if */
+
+		/* next item */
+		axl_list_cursor_next (channel->outstanding_msg_cursor);
+	} /* end while */
+
+	return axl_false;
+}
 
 /** 
  * @internal
@@ -2317,6 +2389,14 @@ void vortex_channel_update_status_received (VortexChannel * channel,
  * this value is defined, message and message_size paramter is ignored
  * but the caller still have to define message_size (the total amount
  * of bytes that will be feeded).
+ *
+ * @param fixed_more Allows to signal if more flag should be enabled
+ * on this send operation. Note that, unlike \ref
+ * vortex_channel_send_rpy_more and \ref
+ * vortex_channel_send_rpy_error, this function will make the next
+ * operation to close or continue the send operation (because the
+ * function must reuse MSG numbers to put together all the content
+ * into a single, though fragmented, content).
  * 
  * @return axl_true if channel was sent or axl_false if not.
  */
@@ -2326,7 +2406,8 @@ axl_bool    vortex_channel_send_msg_common (VortexChannel       * channel,
 					    int                   proposed_msg_no, 
 					    int                 * msg_no,
 					    WaitReplyData       * wait_reply,
-					    VortexPayloadFeeder * feeder)
+					    VortexPayloadFeeder * feeder,
+					    axl_bool              fixed_more)
 {
 	VortexSequencerData * data;
 	int                   mime_header_size;
@@ -2385,7 +2466,11 @@ check_limit:
 	}
 
 	/* get current mime header configuration */
-	mime_header_size       = __vortex_channel_get_mime_headers_size (ctx, channel);
+	if (channel->last_fixed_more_msg_no >= 0) {
+		mime_header_size = 0;
+		update_msg_no    = axl_false;
+	} else
+		mime_header_size  = __vortex_channel_get_mime_headers_size (ctx, channel);
 
 	/* prepare data to be sent */
 	data  = axl_new (VortexSequencerData, 1);
@@ -2401,10 +2486,21 @@ check_limit:
 	data->channel          = channel;
 	data->type             = VORTEX_FRAME_TYPE_MSG;
 	data->channel_num      = vortex_channel_get_number (channel);
- 	if (proposed_msg_no >= 0)
+	if (channel->last_fixed_more_msg_no >= 0) 
+		data->msg_no   = channel->last_fixed_more_msg_no;
+	else if (proposed_msg_no >= 0)
  		data->msg_no   = proposed_msg_no;
  	else
  		data->msg_no   = vortex_channel_get_next_msg_no (channel);
+
+	/* clear last_fixed_more_msg_no flag */
+	if (channel->last_fixed_more_msg_no >= 0 && ! fixed_more) {
+		channel->last_fixed_more_msg_no = -1;
+	} else if (fixed_more && channel->last_fixed_more_msg_no == -1)
+		channel->last_fixed_more_msg_no = data->msg_no;
+
+	/* set fixed more flag into the sending object */
+	data->fixed_more = fixed_more;
 		
 	if (! feeder) {
 		/* update message size */
@@ -2455,7 +2551,12 @@ check_limit:
 			   sequencer */
 			if (! feeder->close_transfer) {
 				data->msg_no = feeder->msg_no;
-				update_msg_no = axl_false;
+
+				/* though user has stated to not close
+				 * the transfer, we have to ensure the
+				 * msg is inside outstanding_msg
+				 * list */
+				update_msg_no = ! vortex_channel_check_msg_no_find_item_outgoing (ctx, channel, data->msg_no);
 			}
 		} else { /* status == 0 */
 			if (! vortex_channel_ref2 (channel, "send msg")) {
@@ -2500,7 +2601,6 @@ check_limit:
 		/* update pending messages to be replied */
 		vortex_mutex_lock (&channel->outstanding_msg_mutex);
 		axl_list_append (channel->outstanding_msg, INT_TO_PTR (data->msg_no));
-		
 		vortex_log (VORTEX_LEVEL_DEBUG, "channel=%d append pending msg no to be replied: %d (length: %d), first: %d",
 			    channel->channel_num, data->msg_no, axl_list_length (channel->outstanding_msg), 
 			    PTR_TO_INT (axl_list_get_first (channel->outstanding_msg)));
@@ -2545,7 +2645,7 @@ check_limit:
 axl_bool           vortex_channel_send_msg_from_feeder            (VortexChannel       * channel,
 								   VortexPayloadFeeder * feeder)
 {
-	return vortex_channel_send_msg_common (channel, NULL, 0, -1, NULL, NULL, feeder);
+	return vortex_channel_send_msg_common (channel, NULL, 0, -1, NULL, NULL, feeder, axl_false);
 }
 
 /** 
@@ -2649,7 +2749,64 @@ axl_bool        vortex_channel_send_msg   (VortexChannel    * channel,
 					   size_t             message_size,
 					   int              * msg_no)
 {
-	return vortex_channel_send_msg_common (channel, message, message_size, -1, msg_no, NULL, NULL);
+	return vortex_channel_send_msg_common (channel, message, message_size, -1, msg_no, NULL, NULL, axl_false);
+}
+
+/** 
+ * @brief Allows to send a message, producing required fragments, but
+ * ensuring all frames have more flag enabled.
+ *
+ * This function provides the same function like \ref
+ * vortex_channel_send_msg, but only ensuring all frames sent have
+ * more flag enabled. Check its documentation to know more about it:
+ * \ref vortex_channel_send_msg.
+ *
+ * Keep in mind you'll have to do an additional send with \ref
+ * vortex_channel_send_msg to close pending operation done with this
+ * function. Here is a simple example:
+ *
+ * \code
+ * // send a message as fragments belonging to the same MSG number
+ * vortex_channel_send_msg_more (channel, "This is a ", 10, NULL);
+ * vortex_channel_send_msg_more (channel, "to check more API ", 18, NULL);
+ * vortex_channel_send_msg (channel, "support...", 10, NULL);
+ * \endcode
+ *
+ * Previous example will send 3 fragments (assuming usual BEEP window
+ * size), all of them belonging to the same message number, having the
+ * last frame with more flag set to false (usual behaviour). 
+ *
+ * Note that the first call to \ref vortex_channel_send_msg_more left
+ * the channel with an opened MSG state, pending to be completed with
+ * more additional calls to \ref vortex_channel_send_msg_more that are
+ * finally ended by a single call to \ref vortex_channel_send_msg
+ * (which may use an empty message as content) that closes the opened
+ * MSG state. In that point, the process can be started again.
+ *
+ * @param channel The channel used to send the message.
+ *
+ * @param message The message to send. The function will create a
+ * local copy so you can provide static and dinamic references.
+ *
+ * @param message_size The message size.
+ *
+ * @param msg_no Optional reference. If defined returns the message
+ * number used for this deliver (BEEP msgno). 
+ * 
+ * @return axl_true if no error was reported after queueing the message to
+ * be sent. Otherwise axl_false is returned. Keep in mind the function do
+ * not send the message directly. This is because the channel could be
+ * stalled at the time the message was sent or because the message is
+ * too large that requires several frames to be sent. Having said
+ * that, it is recommended to not consider a "axl_true" value returned by
+ * this function as a successful send.
+ */
+axl_bool           vortex_channel_send_msg_more                   (VortexChannel    * channel,
+								   const void       * message,
+								   size_t             message_size,
+								   int              * msg_no)
+{
+	return vortex_channel_send_msg_common (channel, message, message_size, -1, msg_no, NULL, NULL, axl_true);
 }
 
 /** 
@@ -2741,7 +2898,7 @@ axl_bool           vortex_channel_send_msg_and_wait               (VortexChannel
 								   int              * msg_no,
 								   WaitReplyData    * wait_reply)
 {
-	return vortex_channel_send_msg_common (channel, message, message_size, -1, msg_no, wait_reply, NULL);
+	return vortex_channel_send_msg_common (channel, message, message_size, -1, msg_no, wait_reply, NULL, axl_false);
 }
 
 /** 
@@ -2806,6 +2963,41 @@ void __vortex_channel_free_sequencer_data (VortexSequencerData * data)
 }
 
 
+axl_bool __vortex_channel_skip_mime_headers (VortexChannel * channel, axl_bool fixed_more, int msg_no_rpy)
+{
+	axl_bool result = axl_false;
+
+	/* check to remove mime headers in the case of fixed more */
+	if (fixed_more) {
+		/* check to init fixed more indication hash */
+		if (channel->fixed_more_indication == NULL)
+			channel->fixed_more_indication = axl_hash_new (axl_hash_int, axl_hash_equal_int);
+
+		/* check if the send operation already includes MIME Headers */
+		if (PTR_TO_INT (axl_hash_get (channel->fixed_more_indication, INT_TO_PTR (msg_no_rpy)))) {
+			result = axl_true;
+		} else {
+			/* no mime headers added, ok, let them in
+			 * place and flag it to avoid adding them in
+			 * the future */
+			axl_hash_insert (channel->fixed_more_indication, INT_TO_PTR (msg_no_rpy), INT_TO_PTR (axl_true));
+		}
+	} else {
+		/* check to remove from hash */
+		if (channel->fixed_more_indication) {
+
+			/* call to get indication and remove it */
+			if (PTR_TO_INT (axl_hash_get (channel->fixed_more_indication, INT_TO_PTR (msg_no_rpy))))
+				result = axl_true;
+
+			/* remove indication if any */
+			axl_hash_remove (channel->fixed_more_indication, INT_TO_PTR (msg_no_rpy));
+		}
+	} /* end if */
+
+	return result;
+}
+
 /** 
  * @internal
  * @brief Common function to perform message replies.
@@ -2821,6 +3013,9 @@ void __vortex_channel_free_sequencer_data (VortexSequencerData * data)
  * @param msg_no_rpy the message number this function is going to reply.
  *
  * @param feeder Optional feeder object used to inject content to reply frame.
+ *
+ * @param fixed_more Signal the function to send all frames with more
+ * flag enabled.
  * 
  * @return axl_true if reply was sent, axl_false if not.
  */
@@ -2829,7 +3024,8 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 				       const void          * message,
 				       size_t                message_size,
 				       int                   msg_no_rpy,
-				       VortexPayloadFeeder * feeder)
+				       VortexPayloadFeeder * feeder, 
+				       axl_bool              fixed_more)
 {
 	VortexSequencerData * data;
 	VortexSequencerData * data2;
@@ -2879,6 +3075,7 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 
 		return axl_false;
 	}
+	data->fixed_more      = fixed_more;
 	data->channel         = channel;
 	data->type            = type;
 	data->channel_num     = vortex_channel_get_number (channel);
@@ -2886,16 +3083,19 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 	data->ansno           = channel->last_ansno_sent;
 
 	/* get current mime header configuration */
-	mime_header_size      = __vortex_channel_get_mime_headers_size (ctx, channel);
-	data->message_size    = message_size + mime_header_size;
-
+	if (__vortex_channel_skip_mime_headers (channel, fixed_more, msg_no_rpy))
+		mime_header_size = 0;
+	else
+		mime_header_size = __vortex_channel_get_mime_headers_size (ctx, channel);
+	data->message_size = message_size + mime_header_size;
+	
 	/* copy the message to be send using memcpy */
 	if (feeder == NULL && (message != NULL || data->message_size > 0)) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "new reply message to sent size (%d) = msg size (%d) + mime size (%d)",
 			    data->message_size, message_size, mime_header_size);
 
 		/* copy mime header configuration if defined */
-		data->message = axl_new (char , data->message_size + 1);
+		data->message = axl_new (char, data->message_size + 1);
 		if (data->message == NULL) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to allocate memory to hold message to be sent");
 			axl_free (data);
@@ -3096,7 +3296,8 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 	case VORTEX_FRAME_TYPE_RPY:
 	case VORTEX_FRAME_TYPE_ERR:
 		/* remove first pending message from incoming messages */
-		vortex_channel_remove_first_pending_msg_no (channel, msg_no_rpy);
+		if (! data->fixed_more)
+			vortex_channel_remove_first_pending_msg_no (channel, msg_no_rpy);
 		break;
 	default:
 		/* nothing to do */
@@ -3225,7 +3426,7 @@ axl_bool           vortex_channel_send_rpy_from_feeder            (VortexChannel
 								   int                   msg_no_rpy)
 {
 	/* call to common implementation */
-	return __vortex_channel_common_rpy (channel, VORTEX_FRAME_TYPE_RPY, NULL, 0, msg_no_rpy, feeder);
+	return __vortex_channel_common_rpy (channel, VORTEX_FRAME_TYPE_RPY, NULL, 0, msg_no_rpy, feeder, axl_false);
 }
 
 /** 
@@ -3302,7 +3503,53 @@ axl_bool        vortex_channel_send_rpy        (VortexChannel    * channel,
 						int                msg_no_rpy)
 {
 	return __vortex_channel_common_rpy (channel, VORTEX_FRAME_TYPE_RPY,
-					    message, message_size, msg_no_rpy, NULL);
+					    message, message_size, msg_no_rpy, NULL, axl_false);
+}
+
+/** 
+ * @brief Allows to send a RPY message but signal it as not complete.
+ *
+ * This function works like \ref vortex_channel_send_rpy but it
+ * ensures that all frames that are sent as a consequence of sending
+ * the user message will be flagged with more flag set to true.
+ *
+ * By default, frame fragments termination is handled by vortex,
+ * causing last frame sent due to a message to be set as the last one
+ * frame of a complete message (more flag set to false).
+ *
+ * For example, if a user sent a message of 100 bytes, using \ref
+ * vortex_channel_send_rpy, and assuming remote BEEP peer can accept
+ * that message without fragmenting it, it will cause Vortex engine to
+ * send a single frame, having the entire payload, and the more flag
+ * set to false.
+ *
+ * In a more complex situation, and still using \ref
+ * vortex_channel_send_rpy, if a user sends a bigger message that
+ * results into several frames to be sent, the last frame sent will
+ * have more flag set to false (allowing remote side to understand the
+ * complete message was received).
+ *
+ * In the case of this function, all frames sent will have more flag
+ * set to true even in the case of the last frame. 
+ *
+ * @param channel The channel where  the message will be sent.
+ * @param message The message to sent
+ * @param message_size The message size
+ * @param msg_no_rpy The message number this function is going to reply to.
+ * 
+ * @return axl_true if message was queued to be sent, otherwise axl_false is
+ * returned.
+ *
+ * <i><b>NOTE:</b> See MIME considerations described at \ref
+ * vortex_channel_send_msg which also applies to this function.</i>
+ */
+axl_bool           vortex_channel_send_rpy_more                   (VortexChannel    * channel,  
+								   const void       * message,
+								   size_t             message_size,
+								   int                msg_no_rpy)
+{
+	return __vortex_channel_common_rpy (channel, VORTEX_FRAME_TYPE_RPY,
+					    message, message_size, msg_no_rpy, NULL, axl_true);
 }
 
 /** 
@@ -3415,7 +3662,7 @@ axl_bool           vortex_channel_send_ans_rpy                    (VortexChannel
 {
 	return __vortex_channel_common_rpy (channel, VORTEX_FRAME_TYPE_ANS,
 					    message, message_size,
-					    msg_no_rpy, NULL);
+					    msg_no_rpy, NULL, axl_false);
 }
 
 /** 
@@ -3436,7 +3683,7 @@ axl_bool           vortex_channel_send_ans_rpy_from_feeder        (VortexChannel
 								   VortexPayloadFeeder * feeder,
 								   int                   msg_no_rpy)
 {
-	return __vortex_channel_common_rpy (channel, VORTEX_FRAME_TYPE_ANS, NULL, 0, msg_no_rpy, feeder);
+	return __vortex_channel_common_rpy (channel, VORTEX_FRAME_TYPE_ANS, NULL, 0, msg_no_rpy, feeder, axl_false);
 }
 
 /** 
@@ -3509,7 +3756,7 @@ axl_bool           vortex_channel_finalize_ans_rpy                (VortexChannel
 								   int             msg_no_rpy)
 {
 	return __vortex_channel_common_rpy (channel, VORTEX_FRAME_TYPE_NUL,
-					    NULL, 0, msg_no_rpy, NULL);
+					    NULL, 0, msg_no_rpy, NULL, axl_false);
 }
 
 /** 
@@ -3548,7 +3795,31 @@ axl_bool   vortex_channel_send_err        (VortexChannel    * channel,
 					   int                msg_no_rpy)
 {
 	return __vortex_channel_common_rpy (channel, VORTEX_FRAME_TYPE_ERR,
-					    message, message_size, msg_no_rpy, NULL);
+					    message, message_size, msg_no_rpy, NULL, axl_false);
+}
+
+/** 
+ * @brief Allows to send an ERR BEEP frame flagging all frames with
+ * more flag enabled.
+ *
+ * Apart from flagging all frames sent with more flag set to true,
+ * this function provides the same function like \ref
+ * vortex_channel_send_err. Check documentation on that function too.
+ *
+ * @param channel the channel where error reply is going to be sent.
+ * @param message the message.
+ * @param message_size the message size.
+ * @param msg_no_rpy the message number to reply.
+ * 
+ * @return axl_true if message was sent or axl_false if fails.
+ */
+axl_bool           vortex_channel_send_err_more                  (VortexChannel    * channel,  
+								  const void       * message,
+								  size_t             message_size,
+								  int                msg_no_rpy)
+{
+	return __vortex_channel_common_rpy (channel, VORTEX_FRAME_TYPE_ERR,
+					    message, message_size, msg_no_rpy, NULL, axl_true);
 }
 
 /** 
@@ -4822,10 +5093,13 @@ int             vortex_channel_get_next_reply_no          (VortexChannel * chann
   	
  	/* lock mutex */
  	vortex_mutex_lock (&channel->incoming_msg_mutex);
- 
+
  	/* get first pending message to be replied */
 	ctx    = channel->ctx;
- 	result = PTR_TO_INT (axl_list_get_first (channel->incoming_msg));
+	if (axl_list_length (channel->incoming_msg) == 0)
+		result = -1;
+	else
+		result = PTR_TO_INT (axl_list_get_first (channel->incoming_msg));
 	vortex_log (VORTEX_LEVEL_DEBUG, "returning next reply msgno no: %d (list length: %d)",
 		    result, axl_list_length (channel->incoming_msg));
  
@@ -4850,10 +5124,17 @@ int             vortex_channel_get_next_expected_reply_no (VortexChannel * chann
  	
  	/* lock mutex */
  	vortex_mutex_lock (&channel->outstanding_msg_mutex);
-  
- 	/* get first pending message to be replied */
- 	result = PTR_TO_INT (axl_list_get_first (channel->outstanding_msg));
- 
+
+	/* check if list is empty to don't check any thing, because
+	 * axl_list_get_first returns NULL which could be interpred as
+	 * 0 */
+	if (axl_list_length (channel->outstanding_msg) == 0) {
+		result = -1;
+	} else {
+		/* get first pending message to be replied */
+		result = PTR_TO_INT (axl_list_get_first (channel->outstanding_msg));
+	} /* end if */
+
  	/* unlock mutex */
  	vortex_mutex_unlock (&channel->outstanding_msg_mutex);
  	
@@ -7676,6 +7957,9 @@ void vortex_channel_free (VortexChannel * channel)
  	axl_list_cursor_free (channel->outstanding_msg_cursor);
  	vortex_mutex_destroy (&channel->outstanding_msg_mutex);
 
+	/* more fixed indication */
+	axl_hash_free (channel->fixed_more_indication);
+
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing channel node");
 
 	/* release context */
@@ -8849,33 +9133,6 @@ void              __vortex_channel_release_pending_messages (VortexChannel * cha
 }
 
 /**
- * @internal Function to check if a msg_no is found in the list of
- * incoming msg pending to be replied.
- */
-axl_bool vortex_channel_check_msg_no_find_item (VortexChannel * channel, int msg_no)
-{
-	if (axl_list_length (channel->incoming_msg) == 0) {
-		/* add directly */
-		return axl_false;
-	} /* end if */
-
-	/* reset cursor */
-	axl_list_cursor_first (channel->incoming_msg_cursor);
-	while (axl_list_cursor_has_item (channel->incoming_msg_cursor)) {
-		/* check if the message was already received but not replied */
-		if (msg_no == PTR_TO_INT (axl_list_cursor_get (channel->incoming_msg_cursor))) {
-			/* item found */
-			return axl_true;
-		} /* end if */
-
-		/* next item */
-		axl_list_cursor_next (channel->incoming_msg_cursor);
-	} /* end while */
-
-	return axl_false;
-}
-
-/**
  * @internal Function that checks if the provided msg_no do not
  * represent a message received on this channel, until this point. The
  * function also adds the msg_no to the list of incoming messages
@@ -8967,6 +9224,8 @@ axl_bool            vortex_channel_check_msg_no             (VortexChannel  * ch
 			
 			/* check if the item was found */
 			if (vortex_channel_check_msg_no_find_item (channel, msg_no)) {
+
+
 				/* un-lock */
 				vortex_mutex_unlock (&channel->incoming_msg_mutex);
 				
