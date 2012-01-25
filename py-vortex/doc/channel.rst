@@ -149,6 +149,20 @@ Module API
       :param data: User defined data passed to the frame received handler.
       :type  data: Object
 
+   .. method:: set_complete_flag (flag)
+   
+      Allows to configure if the channel should join all frames together into a single frame before delivering. By default, complete frames are delivered.
+      
+      :param flag: Complete flag value, True to make vortex to join fragments received together into a single frame or False to deliver all frames as received.
+      :type  flag: Boolean
+
+   .. method:: set_complete_frame_limit ([frame_limit])
+   
+      If complete_flag is enabled (see channel.set_complete_flag) this function allows to configure the limit beyond where the connection is completed if exceeded. By default, limit is disabled. After setting a limit, you can remove it by calling with limit set 0 or without any parameter.
+      
+      :param frame_limit: By default 0. If provided a value, it will be used as a frame size limit. 
+      :type  frame_limit: Number
+
    .. method:: get_reply (queue)
    
       This method is used as part of the queue reply method. It receives the queue configured along with vortex.queue_reply method as frame received. Calling to this method will block the caller until a frame is received.

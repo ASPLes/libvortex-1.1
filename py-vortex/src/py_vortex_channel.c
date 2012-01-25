@@ -403,6 +403,38 @@ static PyObject * py_vortex_channel_set_frame_received (PyVortexChannel * self, 
 	return Py_None;
 }
 
+static PyObject * py_vortex_channel_set_complete_flag (PyVortexChannel * self, PyObject * args, PyObject * kwds)
+{
+	axl_bool     complete_flag = axl_true;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "i", &complete_flag))
+		return NULL;
+
+	/* call to set value */
+	vortex_channel_set_complete_flag (self->channel, complete_flag);
+
+	/* return none */
+	Py_INCREF (Py_None);
+	return Py_None;
+}
+
+static PyObject * py_vortex_channel_set_complete_frame_limit (PyVortexChannel * self, PyObject * args, PyObject * kwds)
+{
+	int frame_limit = 0;
+
+	/* parse and check result */
+	if (! PyArg_ParseTuple (args, "|i", &frame_limit))
+		return NULL;
+
+	/* call to set value */
+	vortex_channel_set_complete_frame_limit (self->channel, frame_limit);
+
+	/* return none */
+	Py_INCREF (Py_None);
+	return Py_None;
+}
+
 static PyObject * py_vortex_channel_send_msg (PyVortexChannel * self, PyObject * args)
 {
 	const char * content = NULL;
@@ -771,6 +803,12 @@ static PyMethodDef py_vortex_channel_methods[] = {
 	/* set_frame_received */
 	{"set_frame_received", (PyCFunction) py_vortex_channel_set_frame_received, METH_VARARGS | METH_KEYWORDS,
 	 "Allows to configure the frame received handler."},
+	/* set_complete_flag */
+	{"set_complete_flag", (PyCFunction) py_vortex_channel_set_complete_flag, METH_VARARGS | METH_KEYWORDS,
+	 "Allows to configure if the channel should join all frames together into a single frame before delivering. By default, complete frames are delivered.."},
+	/* set_complete_flag */
+	{"set_complete_frame_limit", (PyCFunction) py_vortex_channel_set_complete_frame_limit, METH_VARARGS | METH_KEYWORDS,
+	 "If complete_flag is enabled (see channel.set_complete_flag) this function allows to configure the limit beyond where the connection is completed if exceeded. By default, limit is disabled. After setting a limit, you can remove it by calling with limit set 0 or without any parameter."},
 	/* get_reply */
 	{"get_reply", (PyCFunction) py_vortex_channel_get_reply, METH_VARARGS,
 	 "Python implementation of vortex_channel_get_reply function. This methods is part of the get reply method where it is required to configure as frame_received handler the function vortex.queue_reply, causing all frames received to be queued. These frames are later retrieved by using this method, that is, channel.get_reply (queue). The advantage of this method is that allows to get all frames received (replies, error, messages..) and it also support returning the first piggyback received on the channel."},
