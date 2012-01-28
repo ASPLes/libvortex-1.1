@@ -2991,6 +2991,13 @@ axl_bool            vortex_connection_pop_channel_error      (VortexConnection  
 
 	/* get next error to report */
 	error = axl_stack_pop (connection->pending_errors);
+	if (error == NULL) {
+		/* unlock and return */
+		vortex_mutex_unlock (&connection->pending_errors_mutex);
+
+		/* no error to be reported */
+		return axl_false;
+	}
 	*code = error->code;
 	*msg  = error->msg;
 
@@ -3090,6 +3097,7 @@ void                vortex_connection_push_channel_error     (VortexConnection  
 
 		/* push the data */
 		axl_stack_push (connection->pending_errors, error);
+			
 	} /* end if */
 	
 	/* unlock */
