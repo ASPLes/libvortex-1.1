@@ -4752,6 +4752,9 @@ void               vortex_channel_set_serialize                   (VortexChannel
 	if (channel->serialize && channel->serialize_hash == NULL) {
 		/* create the hash to store pending frames */
 		channel->serialize_hash = axl_hash_new (axl_hash_int, axl_hash_equal_int);
+
+		/* also set seqno at this point to deliver next message */
+		channel->serialize_next_seqno = channel->last_seq_no_expected;
 	} /* end if */
 
 	/* lock the mutex */
