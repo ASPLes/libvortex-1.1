@@ -5079,14 +5079,11 @@ int                vortex_channel_ref_count                       (VortexChannel
 }
 
 /** 
- * @brief Returns actual reply number to be used.
+ * @brief Allows to get next reply number expected on this channel.
  * 
- * This reply number must be used to now if a message reply can be
- * done. This represent the first message identifier to be replied.
+ * @param channel the channel to query.
  * 
- * @param channel the channel to query
- * 
- * @return the next reply number to use or -1 if fails
+ * @return Next reply number expected or -1 if fails
  */
 int             vortex_channel_get_next_reply_no          (VortexChannel * channel)
 {
