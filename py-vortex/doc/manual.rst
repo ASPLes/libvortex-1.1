@@ -191,3 +191,47 @@ Previous auth handler example it's authenticating
 statically. Obviously that could be replaced with appropriate database
 access check to implement dynamic SASL auth.
 
+===================================
+Enabling server side TLS encryption
+===================================
+
+The following will show you how to enable TLS profile to protect the content that travels over the connection for all channels. A really usual example of use is to first protect the connection with TLS (which is what we are going to explain) and the start a SASL channel to do the auth part.
+
+1. Anyhow, the first thing you must do is to import the required components::
+
+    import vortex
+    import vortex.tls
+
+2. Now, at the server initialization, usually before starting all listeners (vortex.create_listener) you call to register the handlers that will be called to report certificates to be used each time a request to enable TLS is received::
+
+    # enable tls support
+    vortex.tls.accept_tls (ctx, 
+                           # accept handler
+                           accept_handler=tls_accept_handler, accept_handler_data="test", 
+                           # cert handler
+                           cert_handler=tls_cert_handler, cert_handler_data="test 2",
+                           # key handler
+                           key_handler=tls_key_handler, key_handler_data="test 3")
+
+3. In the example, is used tls_accept_handler, tls_cert_handler and tls_key_handler to show the concept on how to pass values to those handlers. Now, those tree handlers must return the right values so the vortex engine can successfully activate TLS negotiation. Here is an example::
+
+       def tls_accept_handler(conn, server_name, data):
+            # accept TLS request 
+            return True
+
+       def tls_cert_handler (conn, server_name, data):
+            return "test.crt"
+
+       def tls_key_handler (conn, server_name, data):
+            return "test.key"
+
+In the example the tree handler mostly do the minimal effort to complete their job. A more elaborated example will include doing some additional operations to tls_accept_handler to filter the connection according to source address, and/or, inside tls_cert_handler/tls_key_handler return a different certificate according to server_name value received.
+
+Once a connection is successfully secured with TLS, you can call the following to check it at your frame received handlers, for example, if you want to ensure your server do not provide any data without having a TLS secured connection::
+
+     if not vortex.tls.is_enabled (conn):
+     	# connection is not secured, close it, or whatever required to stop
+        conn.shutdown ()
+
+
+
