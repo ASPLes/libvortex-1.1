@@ -1123,7 +1123,7 @@ axlPointer __vortex_channel_new (VortexChannelData * data)
  * <li>
  * <i>close handler</i>: (see more info on vortex_handlers:
  * \ref VortexOnCloseChannel) This handler is executed when a channel close
- * petition have arrived from remote peer. 
+ * petition has arrived from remote peer. 
  *
  * If you signal to close channel through \ref vortex_channel_close,
  * this handler is NOT executed, but it is executed when the given

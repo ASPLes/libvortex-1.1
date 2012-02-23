@@ -68,13 +68,55 @@ address. Please, select the <i>"Vortex Library"</i> component: <p>
 
 <p style="text-align: center;"><a href="http://bugzilla.aspl.es"><img alt="[doc ref]" src="documento-16x16.png">Vortex bug tracking center.</a>
 
+<h3>Generating a patch</h3>
+
+<p>In the case you want to submit a patch, please, consider the following: </p>
+
+<ol>
+  <li>Do not change current file encoding. At this moment it is used utf-8 with \n for new lines. This applies especially for windows users that may produce patches with \r\n.</li>
+  <li>Try to follow coding rules you see around the file (8 space tab, curly braces following functions and control structures,...). </li>
+</ol>
+
+<p>Once you are ready, you can use the following to generate a patch according to the source type you are using.</p>
+
+<ul>
+  <li><b>Patches from subversion(RECOMMENDED)</b> you can use the following steps to produce a patch:
+  <pre>
+  1. Download an updated SVN copy. For people using subversion you can use:
+  >> svn co https://dolphin.aspl.es/svn/publico/af-arch/trunk/libvortex-1.1/
+
+  2. Now do desired modifications
+
+  3. Now generate a patch going to the root directory:
+  >> svn diff > modifications.patch
+  </pre>
+  </li>
+  <li><b>Patches from stable releases:</b> you can use the following steps to produce a patch:
+  <pre>
+  1. Copy the original file to .orig.
+  >> cp file.[hc] file.[hc].orig
+
+  2. Do modifications into the original file at its original location (file.[hc])
+
+  3. Now generate a patch using:
+  >> diff -u file.[hc] file.[hc].orig > modifications.patch
+  </pre>
+  </li>
+</ul>
+
+<p>Once you have a patch, you can either fill <a href="http://bugzilla.aspl.es">a bug report
+(RECOMMENDED, see above)</a> or send a message to the <a href="http://lists.aspl.es/cgi-bin/mailman/listinfo/vortex"> list with
+the patch</a>.</p>
+  
+
+
 <h3>Support the Vortex Library project</h3>
 <p>We are looking for partners and sponsors to support the Vortex
 Library project. Please, contact us if you need to know more about
 supporting Vortex Library at: <a href="mailto:info@aspl.es">info@aspl.es</a>. 
 
 <br>
-  
+
 
 </div>
 <!-- end -->
