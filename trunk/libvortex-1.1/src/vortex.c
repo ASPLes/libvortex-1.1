@@ -2386,7 +2386,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * accepted.
  * 
  * The \ref VortexOnFrameReceived "frame received handler" is executed
- * to notify a new frame have arrived over a particular channel. The
+ * to notify a new frame has arrived over a particular channel. The
  * frame before been delivered, have been verified to be properly
  * defined. But, payload content must be actually checked by the
  * profile implementation. Vortex Library doesn't pay attention to the
@@ -2675,7 +2675,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  *    if (frame == NULL) {
  *         printf ("there was an error while receiving the reply or a timeout have occur\n");
  *    }
- *    printf ("my reply have arrived: (size: %d):\n%s", 
+ *    printf ("my reply has arrived: (size: %d):\n%s", 
  *             vortex_frame_get_payload_size (frame), 
  *             vortex_frame_get_payload (frame));
  *
@@ -5137,7 +5137,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  *
  * Now, let's talk about the \ref VortexXmlRpcServiceDispatch "service dispatch handler". As it names
  * shows, it is used to enable the Vortex engine to notify user space
- * code that a new method invocation have arrived (\ref XmlRpcMethodCall) and that it has to be dispatched to the
+ * code that a new method invocation has arrived (\ref XmlRpcMethodCall) and that it has to be dispatched to the
  * appropriate handler. This handler is mainly provided to allow
  * developers to be able to produce its own service dispatching policy.
  * 

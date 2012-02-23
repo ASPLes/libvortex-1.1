@@ -69,7 +69,7 @@ int  main (int  argc, char ** argv)
 		vortex_channel_close (channel, NULL);
 		goto end;
 	}
-	printf ("my reply have arrived: (size: %d):\n%s\n", 
+	printf ("my reply has arrived: (size: %d):\n%s\n", 
 		vortex_frame_get_payload_size (frame), 
 		(char*) vortex_frame_get_payload (frame));
 
