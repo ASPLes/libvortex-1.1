@@ -601,7 +601,7 @@ VORTEX_SOCKET     vortex_listener_sock_listen      (VortexCtx   * ctx,
         } /* end if */
 
 	/* notify listener */
-	if (getsockname (fd, (struct sockaddr *) &sin, &sin_size) < -1) {
+	if (getsockname (fd, (struct sockaddr *) &sin, &sin_size) < 0) {
 		axl_error_report (error, VortexNameResolvFailure, "an error have happen while executing getsockname");
 		return -1;
 	} /* end if */

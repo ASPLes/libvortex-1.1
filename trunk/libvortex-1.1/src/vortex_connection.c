@@ -1013,12 +1013,12 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 		conn->port = axl_strdup (real_port);
 	} else {
 		if (conn->role == VortexRoleMasterListener) {
-			if (getsockname (socket, (struct sockaddr *) &sin, &sin_size) < -1) {
+			if (getsockname (socket, (struct sockaddr *) &sin, &sin_size) < 0) {
 				vortex_log (VORTEX_LEVEL_DEBUG, "unable to get local hostname and port");
 				return axl_false;
 			} /* end if */
 		} else {
-			if (getpeername (socket, (struct sockaddr *) &sin, &sin_size) < -1) {
+			if (getpeername (socket, (struct sockaddr *) &sin, &sin_size) < 0) {
 				vortex_log (VORTEX_LEVEL_DEBUG, "unable to get remote hostname and port");
 				return axl_false;
 			} /* end if */
@@ -1030,7 +1030,7 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 	} /* end if */
 
 	/* now set local address */
-	if (getsockname (socket, (struct sockaddr *) &sin, &sin_size) < -1) {
+	if (getsockname (socket, (struct sockaddr *) &sin, &sin_size) < 0) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "unable to get local hostname and port to resolve local address");
 		return axl_false;
 	} /* end if */
@@ -1074,7 +1074,7 @@ axl_bool      vortex_connection_set_blocking_socket (VortexConnection    * conne
 		return axl_false;
 	}
 #else
-	if ((flags = fcntl (connection->session, F_GETFL, 0)) < -1) {
+	if ((flags = fcntl (connection->session, F_GETFL, 0)) < 0) {
 		__vortex_connection_shutdown_and_record_error (
 			connection, VortexError,
 			"unable to get socket flags to set non-blocking I/O");
@@ -1082,7 +1082,7 @@ axl_bool      vortex_connection_set_blocking_socket (VortexConnection    * conne
 	}
 	vortex_log (VORTEX_LEVEL_DEBUG, "actual flags state before setting blocking: %d", flags);
 	flags &= ~O_NONBLOCK;
-	if (fcntl (connection->session, F_SETFL, flags) < -1) {
+	if (fcntl (connection->session, F_SETFL, flags) < 0) {
 		__vortex_connection_shutdown_and_record_error (
 			connection, VortexError, "unable to set non-blocking I/O");
 		return axl_false;
@@ -1125,7 +1125,7 @@ axl_bool      vortex_connection_set_nonblocking_socket (VortexConnection * conne
 		return axl_false;
 	}
 #else
-	if ((flags = fcntl (connection->session, F_GETFL, 0)) < -1) {
+	if ((flags = fcntl (connection->session, F_GETFL, 0)) < 0) {
 		__vortex_connection_shutdown_and_record_error (
 			connection, VortexError,
 			"unable to get socket flags to set non-blocking I/O");
@@ -1134,7 +1134,7 @@ axl_bool      vortex_connection_set_nonblocking_socket (VortexConnection * conne
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "actual flags state before setting nonblocking: %d", flags);
 	flags |= O_NONBLOCK;
-	if (fcntl (connection->session, F_SETFL, flags) < -1) {
+	if (fcntl (connection->session, F_SETFL, flags) < 0) {
 		__vortex_connection_shutdown_and_record_error (
 			connection, VortexError, "unable to set non-blocking I/O");
 		return axl_false;
@@ -1203,12 +1203,12 @@ axl_bool                 vortex_connection_set_sock_block         (VORTEX_SOCKET
 			return axl_false;
 		}
 #else
-		if ((flags = fcntl (socket, F_GETFL, 0)) < -1) {
+		if ((flags = fcntl (socket, F_GETFL, 0)) < 0) {
 			return axl_false;
 		} /* end if */
 
 		flags &= ~O_NONBLOCK;
-		if (fcntl (socket, F_SETFL, flags) < -1) {
+		if (fcntl (socket, F_SETFL, flags) < 0) {
 			return axl_false;
 		} /* end if */
 #endif
@@ -1221,12 +1221,12 @@ axl_bool                 vortex_connection_set_sock_block         (VORTEX_SOCKET
 		}
 #else
 		/* unix case */
-		if ((flags = fcntl (socket, F_GETFL, 0)) < -1) {
+		if ((flags = fcntl (socket, F_GETFL, 0)) < 0) {
 			return axl_false;
 		}
 		
 		flags |= O_NONBLOCK;
-		if (fcntl (socket, F_SETFL, flags) < -1) {
+		if (fcntl (socket, F_SETFL, flags) < 0) {
 			return axl_false;
 		}
 #endif
@@ -1770,7 +1770,7 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 
 		/* configure local address used by this connection */
 		/* now set local address */
-		if (getsockname (connection->session, (struct sockaddr *) &sin, &sin_size) < -1) {
+		if (getsockname (connection->session, (struct sockaddr *) &sin, &sin_size) < 0) {
 			vortex_log (VORTEX_LEVEL_DEBUG, "unable to get local hostname and port to resolve local address");
 
 			/* check to release options if defined */
@@ -4291,7 +4291,7 @@ const char        * vortex_connection_get_host_ip            (VortexConnection *
 	} /* end if */
 
 	/* get actual IP value */
-	if (getpeername (connection->session, (struct sockaddr *) &sin, &sin_size) < -1) {
+	if (getpeername (connection->session, (struct sockaddr *) &sin, &sin_size) < 0) {
 		vortex_mutex_unlock (&connection->op_mutex);
 		return NULL;
 	} /* end if */
