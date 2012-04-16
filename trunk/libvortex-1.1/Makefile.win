@@ -42,8 +42,8 @@ AXL_BUILD_DIR = "../../axl-0.6.7.b4920.g4922"
 # Flags to compile OPENSSL
 # Uncomment the following lines, placing the libraries following the path
 # schema provided to get support OpenSSL
-export OPENSSL_FLAGS = -DENABLE_TLS_SUPPORT -Ic:/openssl-098h/include
-export OPENSSL_LIBS = c:/openssl-098h/bin/libeay32.dll c:/openssl-098h/bin/ssleay32.dll
+# export OPENSSL_FLAGS = -DENABLE_TLS_SUPPORT -Ic:/openssl-098h/include
+# export OPENSSL_LIBS = c:/openssl-098h/bin/libeay32.dll c:/openssl-098h/bin/ssleay32.dll
 
 # Flags for readline (used by vortex-client)
 export READLINE_LIBS = c:/af-arch-depends/bin/readline5.dll
