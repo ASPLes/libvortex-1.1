@@ -2729,13 +2729,22 @@ axl_bool test_01e (void) {
 	printf ("Test 01-e: listener created, now creating second listener reusing port: %s\n", 
 		vortex_connection_get_port (listener));
 	listener2 = vortex_listener_new (ctx, "0.0.0.0", vortex_connection_get_port (listener), NULL, NULL);
+#if defined(AXL_OS_WIN32)
+	printf ("Test 01-e: waiting listener to start on port: %s (it shouldn't start..)\n", 
+		vortex_connection_get_port (listener2));
+#endif
 	if (vortex_connection_is_ok (listener2, axl_false)) {
 		printf ("ERROR: expected to find listener failure, but found proper status code..\n");
 		return axl_false;
 	}
 
+#if defined(AXL_OS_WIN32)
+	printf ("Test 01-e: role %d, status %d and reference: %p \n", 
+		vortex_connection_get_role (listener2), vortex_connection_is_ok (listener2, axl_false), listener2);
+#endif
+
 	/* check connection role (even having it not connected) */
-	if (vortex_connection_get_role (listener2) != VortexRoleMasterListener) {
+	if (listener2 && vortex_connection_get_role (listener2) != VortexRoleMasterListener) {
 		printf ("ERROR: expected to find role %d, but found %d..\n", 
 			VortexRoleMasterListener, vortex_connection_get_role (listener2));
 		return axl_false;

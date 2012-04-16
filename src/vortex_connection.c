@@ -963,7 +963,7 @@ VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx       
  * @param conn The connection to be configured with the socket
  * provided.
  *
- * @param socket The socket connection to configure.
+ * @param _socket The socket connection to configure.
  *
  * @param real_host Optional reference that can configure the host
  * value associated to the socket provided. This is useful on
@@ -982,10 +982,11 @@ VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx       
  * provided socket, otherwise axl_false is returned.
  */
 axl_bool            vortex_connection_set_socket                (VortexConnection * conn,
-								 VORTEX_SOCKET      socket,
+								 VORTEX_SOCKET      _socket,
 								 const char       * real_host,
 								 const char       * real_port)
 {
+
 	struct sockaddr_in   sin;
 #if defined(AXL_OS_WIN32)
 	/* windows flavors */
@@ -994,17 +995,23 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 	/* unix flavors */
 	socklen_t            sin_size = sizeof (sin);
 #endif
-	VortexCtx          * ctx      = CONN_CTX(conn);
+	VortexCtx          * ctx;
+
+	/* check conn reference */
+	if (conn == NULL)
+		return axl_false;
+
+	ctx  = CONN_CTX(conn);
 
 	/* perform connection sanity check */
-	if (!vortex_connection_do_sanity_check (ctx, socket)) 
+	if (!vortex_connection_do_sanity_check (ctx, _socket)) 
 		return axl_false;
 
 	/* disable nagle */
-	vortex_connection_set_sock_tcp_nodelay (socket, axl_true);
+	vortex_connection_set_sock_tcp_nodelay (_socket, axl_true);
 
 	/* set socket */
-	conn->session = socket;
+	conn->session = _socket;
 	
 	/* get remote peer name */
 	if (real_host && real_port) {
@@ -1013,12 +1020,12 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 		conn->port = axl_strdup (real_port);
 	} else {
 		if (conn->role == VortexRoleMasterListener) {
-			if (getsockname (socket, (struct sockaddr *) &sin, &sin_size) < 0) {
+			if (getsockname (_socket, (struct sockaddr *) &sin, &sin_size) < 0) {
 				vortex_log (VORTEX_LEVEL_DEBUG, "unable to get local hostname and port");
 				return axl_false;
 			} /* end if */
 		} else {
-			if (getpeername (socket, (struct sockaddr *) &sin, &sin_size) < 0) {
+			if (getpeername (_socket, (struct sockaddr *) &sin, &sin_size) < 0) {
 				vortex_log (VORTEX_LEVEL_DEBUG, "unable to get remote hostname and port");
 				return axl_false;
 			} /* end if */
@@ -1030,11 +1037,11 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 	} /* end if */
 
 	/* now set local address */
-	if (getsockname (socket, (struct sockaddr *) &sin, &sin_size) < 0) {
+	if (getsockname (_socket, (struct sockaddr *) &sin, &sin_size) < 0) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "unable to get local hostname and port to resolve local address");
 		return axl_false;
 	} /* end if */
-	
+
 	/* set local addr and local port */
 	conn->local_addr = vortex_support_inet_ntoa (ctx, &sin);
 	conn->local_port = axl_strdup_printf ("%d", ntohs (sin.sin_port));	
@@ -1121,7 +1128,7 @@ axl_bool      vortex_connection_set_nonblocking_socket (VortexConnection * conne
 #if defined(AXL_OS_WIN32)
 	if (!vortex_win32_nonblocking_enable (connection->session)) {
 		__vortex_connection_shutdown_and_record_error (
-			conn, VortexError, "unable to set non-blocking I/O");
+			connection, VortexError, "unable to set non-blocking I/O");
 		return axl_false;
 	}
 #else

@@ -586,7 +586,7 @@ VORTEX_SOCKET     vortex_listener_sock_listen      (VortexCtx   * ctx,
 	bind_res = bind(fd, (struct sockaddr *)&saddr,  sizeof (struct sockaddr_in));
 	vortex_log (VORTEX_LEVEL_DEBUG, "bind(2) call returned: %d", bind_res);
 	if (bind_res == VORTEX_SOCKET_ERROR) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
 		axl_error_report (error, VortexBindError, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
 		vortex_close_socket (fd);
 		return -1;

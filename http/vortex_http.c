@@ -239,7 +239,7 @@ void vortex_http_connection_data_free (VortexHttpConnectionData * data)
  */
 axlPointer __vortex_http_connection_new (VortexHttpConnectionData * data)
 {
-	VORTEX_SOCKET      socket;
+	VORTEX_SOCKET      _socket;
 	int                timeout;
 	axlError         * error = NULL;
 	VortexConnection * conn;
@@ -261,8 +261,8 @@ axlPointer __vortex_http_connection_new (VortexHttpConnectionData * data)
 	/* do a connection against the host */
 	vortex_log (VORTEX_LEVEL_DEBUG, "connecting to HTTP proxy: %s:%s", setup->proxy_host, setup->proxy_port);
 	timeout = vortex_connection_get_connect_timeout (ctx); 
-	socket  = vortex_connection_sock_connect (ctx, setup->proxy_host, setup->proxy_port, NULL, &error);
-	if (socket == -1) {
+	_socket  = vortex_connection_sock_connect (ctx, setup->proxy_host, setup->proxy_port, NULL, &error);
+	if (_socket == -1) {
 		/* set message and free error */
 		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to connect to HTTP proxy %s:%s, error found: %s",
 			    setup->proxy_host, setup->proxy_port, axl_error_get (error));
@@ -274,8 +274,9 @@ axlPointer __vortex_http_connection_new (VortexHttpConnectionData * data)
 	
 	/* set socket and simulate host and port (not the host and
 	 * port from the socket) */
-	vortex_log (VORTEX_LEVEL_DEBUG, "connection ok, how associate socket..");
-	if (! vortex_connection_set_socket (conn, socket, host, port)) {
+	vortex_log (VORTEX_LEVEL_DEBUG, "connection ok, how associate socket (%d)..", _socket);
+	if (! vortex_connection_set_socket (conn, _socket, host, port)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "connection ok, how associate socket..");
 		__vortex_connection_set_not_connected (conn, "Failed to set socket to the BEEP connection created", VortexError);
 
 		goto report_conn;
@@ -299,7 +300,7 @@ axlPointer __vortex_http_connection_new (VortexHttpConnectionData * data)
 	vortex_log (VORTEX_LEVEL_DEBUG, "reading reply");
 
 	/* set socket in blocking mode to read content */
-	vortex_connection_set_sock_block (socket, axl_true);
+	vortex_connection_set_sock_block (_socket, axl_true);
 	
 	/* read line */
 	bytes_read = vortex_frame_readline (conn, buffer, 1024);
