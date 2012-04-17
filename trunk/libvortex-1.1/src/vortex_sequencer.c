@@ -685,9 +685,9 @@ axl_bool  vortex_sequencer_run (VortexCtx * ctx)
  */
 void vortex_sequencer_stop (VortexCtx * ctx)
 {
-	v_return_if_fail (ctx);
-
 	VortexSequencerState * state;
+
+	v_return_if_fail (ctx);
 
 	/**
 	 * Currently it does nothing. In the past was required. Due to
