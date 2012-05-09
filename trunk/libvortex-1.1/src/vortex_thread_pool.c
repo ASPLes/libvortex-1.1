@@ -393,15 +393,15 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * _data)
 		data = task->data;
 		axl_free (task);
 
+		/* do automatic reasize */
+		__vortex_thread_pool_automatic_resize (ctx);
+
 		/* at this point we already are executing inside a thread */
 		if (! ctx->thread_pool_being_stopped && ! ctx->vortex_exit) 
 			func (data);
 
 		/* call to process events after finishing tasks */
 		__vortex_thread_pool_process_events (ctx, pool);
-
-		/* do automatic reasize */
-		__vortex_thread_pool_automatic_resize (ctx);
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "--> thread from pool waiting for jobs");
 
@@ -550,7 +550,10 @@ void vortex_thread_pool_init     (VortexCtx * ctx,
  * @param thread_add_period This is the adding period, that is, in the
  * case threads are added to the pool, no additional add operation
  * will happen until next thread_add_period. Period is measured in
- * seconds.
+ * seconds. This value can also be seen as the period during which the
+ * thread pool must find all threads from the pool are working (busy)
+ * so he can start adding more threads (as defined by
+ * thread_add_step).
  *
  * @param auto_remove In the case axl_true is provided, the thread
  * pool will remove threads added when it is detected no pending tasks
