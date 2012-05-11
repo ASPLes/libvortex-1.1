@@ -597,6 +597,7 @@ vortex_thread_pool_remove_internal
 vortex_thread_pool_set_exclusive_pool
 vortex_thread_pool_set_num
 vortex_thread_pool_setup
+vortex_thread_pool_setup2
 vortex_thread_pool_stats
 vortex_thread_set_create
 vortex_thread_set_destroy

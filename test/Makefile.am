@@ -90,6 +90,8 @@ noinst_PROGRAMS = \
 	vortex-listener \
 	vortex-simple-listener \
 	vortex-simple-client \
+	vortex-1seg-timeout-listener \
+	vortex-1seg-timeout-client \
 	vortex-omr-server $(SASL_TESTS) $(TLS_TESTS) \
 	vortex-xml-rpc-listener \
 	vortex-client-connections \
@@ -142,6 +144,12 @@ vortex_simple_listener_LDADD   = $(LIBS) $(top_builddir)/src/libvortex-1.1.la
 
 vortex_simple_client_SOURCES   = vortex-simple-client.c
 vortex_simple_client_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.1.la
+
+vortex_1seg_timeout_listener_SOURCES = vortex-1seg-timeout-listener.c
+vortex_1seg_timeout_listener_LDADD   = $(LIBS) $(top_builddir)/src/libvortex-1.1.la
+
+vortex_1seg_timeout_client_SOURCES   = vortex-1seg-timeout-client.c
+vortex_1seg_timeout_client_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.1.la
 
 vortex_client_echo_SOURCES   = vortex-client-echo.c
 vortex_client_echo_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.1.la

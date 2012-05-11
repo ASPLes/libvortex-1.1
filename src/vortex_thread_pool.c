@@ -67,7 +67,10 @@ struct _VortexThreadPool {
 	int                thread_max_limit;
 	int                thread_add_step;
 	int                thread_add_period;
+	int                thread_remove_step;
+	int                thread_remove_period;
 	axl_bool           auto_remove;
+	axl_bool           preemtive;
 	struct timeval     last;
 
 };
@@ -261,17 +264,17 @@ void __vortex_thread_pool_automatic_resize (VortexCtx * ctx)
 		     "Checking thread pool resize: running_threads=%d, base threads=%d, waiting_threads=%d, pending_tasks=%d, thread_max_limit=%d diff=%ld, add_period=%d, auto_remove=%d\n",
 		    running_threads, ctx->thread_pool->base_thread_num, waiting_threads, pending_tasks, ctx->thread_pool->thread_max_limit, diff.tv_sec, 
 		    ctx->thread_pool->thread_add_period, ctx->thread_pool->auto_remove); */
-
 	/* if we have waiting threads equal to 0 and our last update
 	 * was thread_pool->last seconds ago and there is at least 1
 	 * pending_tasks do */
 	if (running_threads < ctx->thread_pool->thread_max_limit &&
 	    waiting_threads == 0 && 
 	    pending_tasks > 0 && 
-	    diff.tv_sec > ctx->thread_pool->thread_add_period){
+	    diff.tv_sec >= ctx->thread_pool->thread_add_period){
 
-		vortex_log (VORTEX_LEVEL_DEBUG, "Adding %d threads because there are pending tasks %d and limit was not reached %d\n",
-			    ctx->thread_pool->thread_add_step, pending_tasks, ctx->thread_pool->thread_max_limit);
+		vortex_log (VORTEX_LEVEL_DEBUG, "Adding %d threads because there are pending tasks %d and limit was not reached %d (waiting_threads=%d, running_threads=%d)\n",
+			ctx->thread_pool->thread_add_step, pending_tasks, ctx->thread_pool->thread_max_limit, waiting_threads, running_threads);
+		fflush (stdout);
 
 		/* add a thread to the pool (call internal unlocked) */
 		vortex_thread_pool_add_internal (ctx, ctx->thread_pool->thread_add_step);
@@ -281,7 +284,7 @@ void __vortex_thread_pool_automatic_resize (VortexCtx * ctx)
 		   pending_tasks == 0 && 
 		   running_threads > ctx->thread_pool->base_thread_num &&
 		   (waiting_threads + 2) > ctx->thread_pool->base_thread_num && 
-		   diff.tv_sec > (ctx->thread_pool->thread_add_period * 2)) {
+		   diff.tv_sec > (ctx->thread_pool->thread_remove_period)) {
 
 		/* remove threads if no pending task is found, and
 		   there are more waiting_threads than base thread
@@ -289,10 +292,11 @@ void __vortex_thread_pool_automatic_resize (VortexCtx * ctx)
 		   during last thread_add_period * 2. */
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "Removing %d threads because there are no pending tasks, and there are more waiting threads %d than base number %d\n",
-			    ctx->thread_pool->thread_add_step, waiting_threads, ctx->thread_pool->base_thread_num);
+			ctx->thread_pool->thread_remove_step, waiting_threads, ctx->thread_pool->base_thread_num);
+		fflush (stdout);
 		   
 		/* remove a thread from the pool */
-		vortex_thread_pool_remove_internal (ctx, ctx->thread_pool->thread_add_step);
+		vortex_thread_pool_remove_internal (ctx, ctx->thread_pool->thread_remove_step);
 		gettimeofday (&(ctx->thread_pool->last), NULL);
 
 	} /* end if */
@@ -393,8 +397,9 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * _data)
 		data = task->data;
 		axl_free (task);
 
-		/* do automatic reasize */
-		__vortex_thread_pool_automatic_resize (ctx);
+		/* do automatic reasize (preemtive) */
+		if (ctx->thread_pool->preemtive)
+			__vortex_thread_pool_automatic_resize (ctx);
 
 		/* at this point we already are executing inside a thread */
 		if (! ctx->thread_pool_being_stopped && ! ctx->vortex_exit) 
@@ -402,6 +407,10 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * _data)
 
 		/* call to process events after finishing tasks */
 		__vortex_thread_pool_process_events (ctx, pool);
+
+		/* do automatic reasize */
+		if (! ctx->thread_pool->preemtive)
+			__vortex_thread_pool_automatic_resize (ctx);
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "--> thread from pool waiting for jobs");
 
@@ -568,6 +577,9 @@ void vortex_thread_pool_init     (VortexCtx * ctx,
  * To disable thread pool automatic add operation, do a call with
  * thread_max_limit equal to -1. This will leave the engine with
  * current threads created.
+ *
+ * You can call to this function at any time to change current thread
+ * pool configuration.
  * 
  */
 void vortex_thread_pool_setup               (VortexCtx * ctx, 
@@ -575,6 +587,23 @@ void vortex_thread_pool_setup               (VortexCtx * ctx,
 					     int         thread_add_step,
 					     int         thread_add_period, 
 					     axl_bool    auto_remove)
+{
+	/* call full function */
+	vortex_thread_pool_setup2 (ctx, thread_max_limit, 
+				   thread_add_step, thread_add_period,
+				   thread_add_step, thread_add_period * 2,
+				   auto_remove, axl_false);
+	return;
+}
+
+void vortex_thread_pool_setup2              (VortexCtx * ctx, 
+					     int         thread_max_limit, 
+					     int         thread_add_step,
+					     int         thread_add_period, 
+					     int         thread_remove_step,
+					     int         thread_remove_period, 
+					     axl_bool    auto_remove,
+					     axl_bool    preemtive)
 {
 	v_return_if_fail (ctx);
 
@@ -586,7 +615,10 @@ void vortex_thread_pool_setup               (VortexCtx * ctx,
 	ctx->thread_pool->thread_max_limit        = thread_max_limit;
 	ctx->thread_pool->thread_add_step         = thread_add_step;
 	ctx->thread_pool->thread_add_period       = thread_add_period;
+	ctx->thread_pool->thread_remove_step      = thread_remove_step;
+	ctx->thread_pool->thread_remove_period    = thread_remove_period;
 	ctx->thread_pool->auto_remove             = auto_remove;
+	ctx->thread_pool->preemtive               = preemtive;
 
 	vortex_log2 (VORTEX_LEVEL_DEBUG, "Automatic thread pool resize status: %d", ctx->thread_pool->automatic_resize_status);
 
