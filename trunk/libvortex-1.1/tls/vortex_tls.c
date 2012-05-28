@@ -980,6 +980,22 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 	 * closed, how the data is send and received, or some functions
 	 * to store and retrieve data.  */
 	connection = vortex_connection_new_empty_from_connection (ctx, socket, connection_aux, VortexRoleInitiator);
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, 
+			    "TLS STAGE[6.0] Failed to continue with TLS process, unable to create empty connection to replace old one");
+
+		/* restore socket state */
+		vortex_connection_set_close_socket (connection, axl_true);
+
+		/* call to notify old connection without closing it */
+		__vortex_tls_start_negotiation_close_and_notify (
+			process_status,
+			connection_aux,
+			NULL, 
+			"Failed to continue with TLS process, unable to create empty connection to replace old one.", user_data);
+
+		return NULL;
+	}
 
 	/* unref the vortex connection and create a new empty one */
 	__vortex_connection_set_not_connected (connection_aux, 
