@@ -828,21 +828,21 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 	vortex_connection_seq_frame_updates (connection, axl_true);
 
 	/* Send TLS <ready> message. This will signal the remote peer
-	* we need to negotiate a TLS secure layer, once the remote
-	* site receive such petition, it should reply using <proceed>
-	* or <error>.
-	*
-	* Actually send a <ready> message means to create a channel
-	* using TLS profile piggybacking an initial data, that is,
-	* the <ready /> token. 
-	* 
-	* Piggybacking is just a way to save a round trip based on
-	* creating the channel based on TLS profile and then send a
-	* MSG with a <ready /> token.  We send with the same message,
-	* the channel creation request and the first message sent. If
-	* the channel is accepted to be created, the profile content,
-	* that is, the piggyback, will be accepted as the first
-	* message. */
+	 * we need to negotiate a TLS secure layer, once the remote
+	 * site receive such petition, it should reply using <proceed>
+	 * or <error>.
+	 *
+	 * Actually send a <ready> message means to create a channel
+	 * using TLS profile piggybacking an initial data, that is,
+	 * the <ready /> token. 
+	 * 
+	 * Piggybacking is just a way to save a round trip based on
+	 * creating the channel based on TLS profile and then send a
+	 * MSG with a <ready /> token.  We send with the same message,
+	 * the channel creation request and the first message sent. If
+	 * the channel is accepted to be created, the profile content,
+	 * that is, the piggyback, will be accepted as the first
+	 * message. */
 	vortex_log (VORTEX_LEVEL_DEBUG, "TLS STAGE[1]: create the TLS channel");
 	queue   = vortex_async_queue_new ();
 	channel = vortex_channel_new_full (connection, /* the connection */
@@ -1188,7 +1188,7 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
  * "process_status" handler is the one to be used once the TLS process
  * have finished properly.
  *
- * Because the TLS negotiation could fail user code placed at the
+ * Because the TLS negotiation could fail, user code placed at the
  * process function should check if the new connection provided on
  * that function is still working. This is because many things could
  * fail while TLS negotiation takes place. Some of them represents
@@ -1197,7 +1197,7 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
  * valid not only to try again the TLS activation but to use it
  * without secure transmission.
  *
- * Once TLS is activated on a connection the function just return
+ * Once TLS is activated on a connection the function just returns
  * without doing nothing, if an attempt to secure the connection is
  * made again. You could check TLS status for a given connection using
  * \ref vortex_connection_is_tlsficated.
@@ -2256,10 +2256,10 @@ void               vortex_tls_cleanup (VortexCtx * ctx)
 }
 
 int vortex_tls_auto_tlsfixate_connection (VortexCtx               * ctx,
-					 VortexConnection        * connection,
-					 VortexConnection       ** new_conn,
-					 VortexConnectionStage    stage,
-					 axlPointer               user_data)
+					  VortexConnection        * connection,
+					  VortexConnection       ** new_conn,
+					  VortexConnectionStage     stage,
+					  axlPointer                user_data)
 {
 	VortexTlsCtx * tls_ctx = vortex_ctx_get_data (ctx, TLS_CTX);
 
@@ -2273,9 +2273,8 @@ int vortex_tls_auto_tlsfixate_connection (VortexCtx               * ctx,
 		connection = vortex_tls_start_negotiation_sync (connection,
 								tls_ctx->connection_auto_tls_server_name,
 								NULL, NULL);
-		if (!vortex_connection_is_ok (connection, axl_false)) {
+		if (! vortex_connection_is_ok (connection, axl_false)) 
 			return -1;
-		}
 		
 		/* the connection is ok, check if the TLS
 		 * profile was activated, but only if auto tls
@@ -2332,9 +2331,9 @@ int vortex_tls_auto_tlsfixate_connection (VortexCtx               * ctx,
  * activated, sending and receiving data in plain mode.
  * 
  * The parameter <b>allow_tls_failures</b> allows to configure what is
- * the default action is to be taken on TLS failures. By default, if
- * TLS profile negotiation fails, the connection is closed, returning that the TLS
- * profile have failed. 
+ * the default action to be taken on TLS failures. By default, if TLS
+ * profile negotiation fails, the connection is closed, returning that
+ * the TLS profile have failed.
  * 
  * Using an axl_true value allows to still keep on working even if the
  * TLS profile negotiation have failed.
@@ -2350,7 +2349,7 @@ int vortex_tls_auto_tlsfixate_connection (VortexCtx               * ctx,
  * while activating automatic TLS negotiation.
  *
  * @param serverName The server name value to be passed in to \ref
- * vortex_tls_start_negotiation. If the received is not NULL the
+ * vortex_tls_start_negotiation. If the received value is not NULL the
  * function will perform a local copy
  *
  * <i><b>NOTE:</b> If current Vortex Library doesn't have built-in
@@ -2376,8 +2375,8 @@ int vortex_tls_auto_tlsfixate_connection (VortexCtx               * ctx,
  * </i>
  */
 void                vortex_tls_set_auto_tls       (VortexCtx  * ctx,
-						   int          enabled,
-						   int          allow_tls_failures,
+						   axl_bool     enabled,
+						   axl_bool     allow_tls_failures,
 						   const char * serverName)
 {
 

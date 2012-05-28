@@ -386,8 +386,8 @@ VortexConnection * vortex_tls_start_negotiation_sync     (VortexConnection  * co
 							  char             ** status_message);
 
 void               vortex_tls_set_auto_tls               (VortexCtx         * ctx,
-							  int                 enabled,
-							  int                 allow_tls_failures,
+							  axl_bool            enabled,
+							  axl_bool            allow_tls_failures,
 							  const char        * serverName);
 
 axl_bool           vortex_tls_accept_negotiation         (VortexCtx         * ctx, 

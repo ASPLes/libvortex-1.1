@@ -5509,7 +5509,7 @@ void                vortex_connection_set_data_full          (VortexConnection *
  * @param handler_data A user defined pointer to be passed to the
  * action function.
  *
- * Seet \ref VortexConnectionAction and \ref VortexConnectionStage for
+ * See \ref VortexConnectionAction and \ref VortexConnectionStage for
  * more information.
  */
 void                vortex_connection_set_connection_actions (VortexCtx              * ctx,
