@@ -95,6 +95,7 @@ typedef struct _VortexThreadPoolEvent {
 typedef struct _VortexThreadPoolStarter {
 	VortexThreadPool * pool;
 	VortexThread     * thread;
+	VortexAsyncQueue * queue;
 } VortexThreadPoolStarter;
 
 /* update next step to the appropiate value */
@@ -319,7 +320,7 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * _data)
 	VortexThread         * thread = _data->thread;
 	VortexThreadPool     * pool   = _data->pool;
 	VortexCtx            * ctx    = pool->ctx;
-	VortexAsyncQueue     * queue  = pool->queue;
+	VortexAsyncQueue     * queue  = _data->queue;
 
 	/* local pointers to release soon data object */
 	VortexThreadFunc       func;
@@ -398,7 +399,7 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * _data)
 		axl_free (task);
 
 		/* do automatic reasize (preemtive) */
-		if (ctx->thread_pool->preemtive)
+		if (ctx && ctx->thread_pool && ctx->thread_pool->preemtive)
 			__vortex_thread_pool_automatic_resize (ctx);
 
 		/* at this point we already are executing inside a thread */
@@ -409,7 +410,7 @@ axlPointer __vortex_thread_pool_dispatcher (VortexThreadPoolStarter * _data)
 		__vortex_thread_pool_process_events (ctx, pool);
 
 		/* do automatic reasize */
-		if (! ctx->thread_pool->preemtive)
+		if (ctx && ctx->thread_pool && ! ctx->thread_pool->preemtive)
 			__vortex_thread_pool_automatic_resize (ctx);
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "--> thread from pool waiting for jobs");
@@ -669,6 +670,14 @@ void vortex_thread_pool_add_internal                 (VortexCtx        * ctx,
 		starter->thread = thread;
 		starter->pool   = ctx->thread_pool;
 
+		/* update the reference counting for this thread to
+		 * the queue */
+		if (! vortex_async_queue_ref (ctx->thread_pool->queue)) {
+			axl_free (thread);
+			break;
+		}
+		starter->queue = ctx->thread_pool->queue;
+
 		/* acquire a reference to the context */
 		vortex_ctx_ref2 (ctx, "begin pool dispatcher");
 
@@ -679,6 +688,9 @@ void vortex_thread_pool_add_internal                 (VortexCtx        * ctx,
 					    starter,
 					    /* finish thread configuration */
 					    VORTEX_THREAD_CONF_END)) {
+
+			/* unref the queue */
+			vortex_async_queue_unref (ctx->thread_pool->queue);
 
 			/* failed, release ctx */
 			local_ctx = ctx;
@@ -693,10 +705,6 @@ void vortex_thread_pool_add_internal                 (VortexCtx        * ctx,
 
 		/* store the thread reference */
 		axl_list_add (ctx->thread_pool->threads, thread);
-
-		/* update the reference counting for this thread to
-		 * the queue */
-		vortex_async_queue_ref (ctx->thread_pool->queue);
 
 		/* update the iterator */
 		iterator++;

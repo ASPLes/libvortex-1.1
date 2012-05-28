@@ -1283,10 +1283,18 @@ int                vortex_async_queue_items     (VortexAsyncQueue * queue)
  * @brief Allows to update the reference counting for the provided queue.
  * 
  * @param queue The async queue to increase its reference.
+ *
+ * @return axl_true in the case the reference was properly incremented
+ * and acquired, otherwise axl_false is returned, signalling the
+ * caller he doesn't owns a reference as a consequence of calling to
+ * this function.
  */
-void               vortex_async_queue_ref       (VortexAsyncQueue * queue)
+axl_bool               vortex_async_queue_ref       (VortexAsyncQueue * queue)
 {
-	v_return_if_fail (queue);
+	v_return_val_if_fail (queue, axl_false);
+	
+	if (! (queue->reference > 0))
+	    return axl_false;
 
 	/* get the mutex */
 	vortex_mutex_lock (&queue->mutex);
@@ -1297,7 +1305,7 @@ void               vortex_async_queue_ref       (VortexAsyncQueue * queue)
 	/* unlock the mutex */
 	vortex_mutex_unlock (&queue->mutex);
 
-	return;
+	return queue->reference > 1;
 }
 
 /** 
