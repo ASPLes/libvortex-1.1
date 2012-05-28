@@ -481,17 +481,125 @@ void __vortex_sequencer_do_send_round (VortexCtx * ctx, VortexChannel * channel,
 	return;
 }
 
+void vortex_sequencer_process_channels (VortexCtx * ctx, VortexSequencerState * state, axl_bool process_channel_0)
+{
+	axl_bool               paused;
+	axl_bool               complete;
+	axl_bool               is_empty;
+	axl_bool               is_stalled;	
+	VortexChannel        * channel          = NULL;
+	VortexConnection     * conn             = NULL;
+
+	/* now iterate all ready channels */
+	axl_hash_cursor_first (state->ready_cursor);
+	while (axl_hash_cursor_has_item (state->ready_cursor)) {
+		
+		/* get the channel and manage it, unlocking
+		 * during the process */
+		channel = axl_hash_cursor_get_key (state->ready_cursor);
+		
+		/* check for remove flag */
+		if (PTR_TO_INT (vortex_channel_get_data (channel, "vo:seq:del"))) {
+			axl_hash_cursor_remove (state->ready_cursor);
+			continue;
+		}
+		
+		/* check if channel is stalled */
+		if (vortex_channel_is_stalled (channel)) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "channel=%d (%p) is stalled, removing from ready set",
+				    vortex_channel_get_number (channel), channel);
+			axl_hash_cursor_remove (state->ready_cursor);
+			continue;
+		} /* end if */
+
+		/* check what kind of channel is this to know if we
+		 * have to process it */
+		if (process_channel_0 && vortex_channel_get_number (channel) != 0) {
+			axl_hash_cursor_next (state->ready_cursor);
+			continue;
+		}
+		if (!process_channel_0 && vortex_channel_get_number (channel) == 0) {
+			axl_hash_cursor_next (state->ready_cursor);
+			continue;
+		}
+
+		/* get connection reference */
+		conn = vortex_channel_get_connection (channel);
+		
+		/* acquire connection */
+		if (! vortex_connection_ref (conn, "vortex-sequencer")) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to acquire reference to the connection (%p) inside vortex sequencer to do sending round, dropping channel (%p)",
+				    conn, channel);
+			axl_hash_cursor_remove (state->ready_cursor);
+			continue;
+		} /* end if */
+
+		vortex_log (VORTEX_LEVEL_DEBUG, "handling next send channel=%d (%p), conn-id=%d (%p)",
+			    vortex_channel_get_number (channel), channel, vortex_connection_get_id (conn), conn);
+		
+		/* unlock and call */
+		vortex_mutex_unlock (&state->mutex);
+		
+		/* call to do send operation */
+		paused   = axl_false;
+		complete = axl_false;
+		is_empty = axl_false;
+		__vortex_sequencer_do_send_round (ctx, channel, conn, &paused, &complete);
+		
+		vortex_log (VORTEX_LEVEL_DEBUG, "it seems the message was sent completely over conn-id=%d, channel=%d (%p)",
+			    vortex_connection_get_id (conn), vortex_channel_get_number (channel), channel);
+		
+		/* release connection (unlock mutex to allow
+		 * connection close process to reenter into
+		 * sequencer module) */
+		vortex_connection_unref (conn, "vortex-sequencer");
+		
+		vortex_mutex_lock (&state->mutex);
+		
+		/* remove message sent */
+		is_stalled = vortex_channel_is_stalled (channel);
+		if (complete) {
+			/* remove message sent */
+			is_empty = vortex_sequencer_remove_message_sent (ctx, channel);
+		} /* end if */
+		
+		/* check for remove flag */
+		if (PTR_TO_INT (vortex_channel_get_data (channel, "vo:seq:del"))) {
+			axl_hash_cursor_remove (state->ready_cursor);
+			continue;
+		}
+		
+		/* check channel after send operation */
+		if (is_empty) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "Channel %p is empty (no more pending messages), removing from sequencer", channel);
+			/* no more send operations, remove channel from our registry but check
+			 * first it wasn't removed during the unlock  */ 				
+			axl_hash_cursor_remove (state->ready_cursor);
+			continue;
+		}
+		
+		/* now check stalled channel */
+		if (is_stalled || paused) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "Channel %p is stalled or paused, removing from sequencer", channel);
+			/* no more send operations, remove channel from our registry but check
+			 * first it wasn't removed during the unlock  */ 				
+			axl_hash_cursor_remove (state->ready_cursor);
+			continue;
+		} /* end if */
+		
+		/* next item */
+		axl_hash_cursor_next (state->ready_cursor);
+		
+	} /* end while */
+
+	return;
+}
+	
 axlPointer __vortex_sequencer_run (axlPointer _data)
 {
 	/* get current context */
 	VortexCtx            * ctx = _data;
-	VortexChannel        * channel          = NULL;
-	VortexConnection     * conn             = NULL;
 	VortexSequencerState * state;
-	axl_bool               paused;
-	axl_bool               complete;
-	axl_bool               is_empty;
-	axl_bool               is_stalled;
 
 	/* get the state */
 	state = ctx->sequencer_state;
@@ -526,96 +634,11 @@ axlPointer __vortex_sequencer_run (axlPointer _data)
 			return NULL;
 		} /* end if */
 
-		/* now iterate all ready channels */
-		axl_hash_cursor_first (state->ready_cursor);
-		while (axl_hash_cursor_has_item (state->ready_cursor)) {
+		/* process all ready administrative channels (channel 0) */
+		vortex_sequencer_process_channels (ctx, state, axl_true);
 
-			/* get the channel and manage it, unlocking
-			 * during the process */
-			channel = axl_hash_cursor_get_key (state->ready_cursor);
-
-			/* check for remove flag */
-			if (PTR_TO_INT (vortex_channel_get_data (channel, "vo:seq:del"))) {
-				axl_hash_cursor_remove (state->ready_cursor);
-				continue;
-			}
-
-			/* check if channel is stalled */
-			if (vortex_channel_is_stalled (channel)) {
-				vortex_log (VORTEX_LEVEL_DEBUG, "channel=%d (%p) is stalled, removing from ready set",
-					    vortex_channel_get_number (channel), channel);
-				axl_hash_cursor_remove (state->ready_cursor);
-				continue;
-			} /* end if */
-
-			/* get connection reference */
-			conn = vortex_channel_get_connection (channel);
-
-			/* acquire connection */
-			if (! vortex_connection_ref (conn, "vortex-sequencer")) {
-				vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to acquire reference to the connection (%p) inside vortex sequencer to do sending round, dropping channel (%p)",
-					    conn, channel);
-				axl_hash_cursor_remove (state->ready_cursor);
-				continue;
-			} /* end if */
-
-			vortex_log (VORTEX_LEVEL_DEBUG, "handling next send channel=%d (%p), conn-id=%d (%p)",
-				    vortex_channel_get_number (channel), channel, vortex_connection_get_id (conn), conn);
-
-			/* unlock and call */
-			vortex_mutex_unlock (&state->mutex);
-
-			/* call to do send operation */
-			paused   = axl_false;
-			complete = axl_false;
-			is_empty = axl_false;
-			__vortex_sequencer_do_send_round (ctx, channel, conn, &paused, &complete);
-
-			vortex_log (VORTEX_LEVEL_DEBUG, "it seems the message was sent completely over conn-id=%d, channel=%d (%p)",
-				    vortex_connection_get_id (conn), vortex_channel_get_number (channel), channel);
-
-			/* release connection (unlock mutex to allow
-			 * connection close process to reenter into
-			 * sequencer module) */
-			vortex_connection_unref (conn, "vortex-sequencer");
-
-			vortex_mutex_lock (&state->mutex);
-
-			/* remove message sent */
-			is_stalled = vortex_channel_is_stalled (channel);
-			if (complete) {
-				/* remove message sent */
-				is_empty = vortex_sequencer_remove_message_sent (ctx, channel);
-			} /* end if */
-
-			/* check for remove flag */
-			if (PTR_TO_INT (vortex_channel_get_data (channel, "vo:seq:del"))) {
-				axl_hash_cursor_remove (state->ready_cursor);
-				continue;
-			}
-
-			/* check channel after send operation */
-			if (is_empty) {
-				vortex_log (VORTEX_LEVEL_DEBUG, "Channel %p is empty (no more pending messages), removing from sequencer", channel);
-				/* no more send operations, remove channel from our registry but check
-				 * first it wasn't removed during the unlock  */ 				
-				axl_hash_cursor_remove (state->ready_cursor);
-				continue;
-			}
-
-			/* now check stalled channel */
-			if (is_stalled || paused) {
-				vortex_log (VORTEX_LEVEL_DEBUG, "Channel %p is stalled or paused, removing from sequencer", channel);
-				/* no more send operations, remove channel from our registry but check
-				 * first it wasn't removed during the unlock  */ 				
-				axl_hash_cursor_remove (state->ready_cursor);
-				continue;
-			} /* end if */
-
-			/* next item */
-			axl_hash_cursor_next (state->ready_cursor);
-
-		} /* end while */
+		/* now process the rest */
+		vortex_sequencer_process_channels (ctx, state, axl_false);
 		
 	} /* end while */
 

@@ -133,7 +133,7 @@ int                vortex_async_queue_waiters   (VortexAsyncQueue * queue);
 
 int                vortex_async_queue_items     (VortexAsyncQueue * queue);
 
-void               vortex_async_queue_ref       (VortexAsyncQueue * queue);
+axl_bool           vortex_async_queue_ref       (VortexAsyncQueue * queue);
 
 int                vortex_async_queue_ref_count (VortexAsyncQueue * queue);
 
