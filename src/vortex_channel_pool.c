@@ -188,10 +188,16 @@ VortexChannel * __vortex_channel_pool_add_channels (VortexChannelPool * pool, in
 		}
 
 		/* increase the reference to the channel */
-		
 		/* so the channel have been created  */
 		vortex_channel_ref2 (channel, "channel pool");
+
+		/* lock */
+		vortex_connection_lock_channel_pool (pool->connection);
+
 		axl_list_append (pool->channels, channel);
+
+		/* unlock */
+		vortex_connection_unlock_channel_pool (pool->connection);
 
 		/* set a reference to the pool this channel belongs to */
 		vortex_channel_set_pool (channel, pool);
@@ -250,9 +256,6 @@ axlPointer __vortex_channel_pool_new (VortexChannelPoolData * data)
 	/* free data */
 	axl_free (data);
 
-	/* lock the mutex */
-	vortex_connection_lock_channel_pool (connection);
-
 	/* init channel pool type */
 	channel_pool                           = axl_new (VortexChannelPool, 1);
 	channel_pool->id                       = vortex_connection_next_channel_pool_id (connection);
@@ -272,9 +275,6 @@ axlPointer __vortex_channel_pool_new (VortexChannelPoolData * data)
 	/* now have have created the channel pool install it inside the connection */
 	channel_pool->connection = connection;
 	vortex_connection_add_channel_pool (connection, channel_pool);
-
-	/* unlock the mutex */
-	vortex_connection_unlock_channel_pool (connection);
 
 	/* return the data */
 	vortex_log (VORTEX_LEVEL_DEBUG, "channel pool created id=%d over connection id=%d", channel_pool->id,
@@ -668,14 +668,8 @@ void                vortex_channel_pool_add_full          (VortexChannelPool * p
 	if (pool == NULL || num <= 0)
 		return;
 	
-	/* lock */
-	vortex_connection_lock_channel_pool   (pool->connection);
-
 	/* add channels */
 	__vortex_channel_pool_add_channels (pool, num, user_data);
-
-	/* unlock */
-	vortex_connection_unlock_channel_pool (pool->connection);	
 
 	return;
 }
@@ -1271,10 +1265,14 @@ VortexChannel     * vortex_channel_pool_get_next_ready_full (VortexChannelPool *
 	 * ready */
 	channel  = axl_list_lookup (pool->channels, __find_ready, NULL);
 
+	/* unlock operations */
+	vortex_connection_unlock_channel_pool (pool->connection);	
+
 	if (channel == NULL) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "it seems there is no channel ready to use, check auto_inc flag");
-		/* it seems there is no channel available so check auto_inc
-		 * var to create a new channel or simply return */
+		/* it seems there is no channel available so check
+		 * auto_inc var to create a new channel or simply
+		 * return */
 		if (auto_inc) {
 			vortex_log (VORTEX_LEVEL_DEBUG, "we have auto_inc flag to axl_true, creating a new channel");
 			channel = __vortex_channel_pool_add_channels (pool, 1, user_data);
@@ -1286,17 +1284,14 @@ VortexChannel     * vortex_channel_pool_get_next_ready_full (VortexChannelPool *
 		vortex_channel_set_data (channel, "status_busy", INT_TO_PTR (axl_true));
 
 		vortex_log (VORTEX_LEVEL_DEBUG, "returning channel id=%d for pool id=%d connection id=%d",
-		       vortex_channel_get_number (channel), pool->id, 
-		       vortex_connection_get_id (pool->connection));
+			    vortex_channel_get_number (channel), pool->id, 
+			    vortex_connection_get_id (pool->connection));
 		
 		__vortex_channel_pool_print_status (pool, "get_next_ready");
 	} else {
 		vortex_log (VORTEX_LEVEL_DEBUG, "unable to return a channel, pool is empty");
 	} /* end if */
 	
-	/* unlock operations */
-	vortex_connection_unlock_channel_pool (pool->connection);	
-
 	return channel;
 }
 
