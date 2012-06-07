@@ -25,7 +25,7 @@ Module API
 
       :rtype: Returns the object stored in the queue or lock the caller until an object is available.
 
-   .. method:: timedout (microseconds)
+   .. method:: timedpop (microseconds)
    
       Allows to retrieve the next object available in the queue, limiting the wait period to the provided value (microseconds).
 

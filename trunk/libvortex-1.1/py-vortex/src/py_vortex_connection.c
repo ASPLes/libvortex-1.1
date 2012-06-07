@@ -152,6 +152,9 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 			return NULL;
 		}
 
+		/* set default timeout */
+		vortex_connection_connect_timeout (py_vortex_ctx_get (py_vortex_ctx), 60000000);
+
 		/* allow threads */
 		Py_BEGIN_ALLOW_THREADS
 
@@ -159,7 +162,7 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 		if (serverName)
 			self->conn = vortex_connection_new_full (py_vortex_ctx_get (py_vortex_ctx),
 								 host, port,
-								 CONN_OPTS (VORTEX_SERVERNAME_FEATURE, serverName),
+								 CONN_OPTS (VORTEX_SERVERNAME_FEATURE, serverName, VORTEX_OPTS_END),
 								 NULL, NULL);
 		else
 			self->conn = vortex_connection_new (py_vortex_ctx_get (py_vortex_ctx), host, port, NULL, NULL);
