@@ -8853,6 +8853,54 @@ axl_bool  test_05_a (void)
 #endif
 }
 
+axl_bool test_05_a1_post_check (VortexConnection * conn, axlPointer user_data, axlPointer ssl, axlPointer ctx)
+{
+	printf ("Test 05-a1: called post check, returning failure..\n");
+	return axl_false; /* always fails */
+}
+
+axl_bool test_05_a1 (void) 
+{
+#if defined(ENABLE_TLS_SUPPORT)
+	/* vortex connection */
+	VortexConnection * connection;
+
+	/* initialize and check if current vortex library supports TLS */
+	if (! vortex_tls_init (ctx)) {
+		printf ("--- WARNING: Unable to activate TLS, current vortex library has not TLS support activated. \n");
+		return axl_true;
+	}
+
+	/* enable autotls */
+	vortex_tls_set_auto_tls (ctx, axl_true, axl_true, NULL);
+
+	/* set a default post check that always fails */
+	vortex_tls_set_default_post_check (ctx, test_05_a1_post_check, NULL);
+
+	/* connect to the remote side */
+	connection = vortex_connection_new (ctx, listener_host, LISTENER_PORT, NULL, NULL);
+
+	if (vortex_connection_is_ok (connection, axl_false)) {
+		printf ("ERROR: expected to find connection reference error, but found it working..\n");
+		return axl_false;
+	}
+
+	/* close the conenction */
+	vortex_connection_close (connection);
+
+	/* uninstall default post check function */
+	vortex_tls_set_default_post_check (ctx, NULL, NULL);
+
+	/* disable auto tls */
+	vortex_tls_set_auto_tls (ctx, axl_false, axl_true, NULL);
+
+	return axl_true;
+#else
+	printf ("--- WARNING: Current build does not have TLS support.\n");
+	return axl_true;
+#endif	
+}
+
 axl_bool test_05_b (void)
 {
 #if defined(ENABLE_TLS_SUPPORT)
@@ -8910,6 +8958,7 @@ axl_bool test_05_c (void)
 	conn = connection_new ();
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("ERROR (1): expected proper connection creation but failure found..\n");
+		show_conn_errros (conn);
 		return axl_false;
 	} /* end if */
 
@@ -8917,6 +8966,7 @@ axl_bool test_05_c (void)
 	conn = vortex_tls_start_negotiation_sync (conn, "test-05-c.server", &status, &status_message);
 	if (status != VortexOk) {
 		printf ("ERROR (2): expected proper TLS activation but found a failure..\n");
+		show_conn_errros (conn);
 		return axl_false;
 	} /* end if */
 	
@@ -13904,7 +13954,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02l1, test_02m, test_02m1, test_02m2, test_02m3, test_02n, test_02o, test_02p, test_02q, test_02r\n");
  	printf ("**                       test_03, test_03a, test_03b, test_03c, test_03d, test_03e, test_03f, test_04, test_04a, \n");
- 	printf ("**                       test_04b, test_04c, test_04d, test_04e, test_04f, test_05, test_05a, test_05b, test_05c, \n");
+ 	printf ("**                       test_04b, test_04c, test_04d, test_04e, test_04f, test_05, test_05a, test_05a1, test_05b, test_05c, \n");
 	printf ("**                       test_05d, ctest_06, test_06a, \n");
  	printf ("**                       test_07, test_08, test_09, test_10, test_11, test_12, test_13, test_14, \n");
  	printf ("**                       test_14a, test_14b, test_14c, test_14d, test_14e, test_14f, test_14g, test_15, test_15a, test_16\n");
@@ -14278,6 +14328,9 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_05a"))
 			run_test (test_05_a, "Test 05-a", "Check auto-tls on fail fix (24/03/2008)", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_05a1"))
+			run_test (test_05_a1, "Test 05-a1", "Check auto-tls on forced failure in the middle (09/07/2012)", -1, -1);
+
 		if (check_and_run_test (run_test_name, "test_05b"))
 			run_test (test_05_b, "Test 05-b", "TLS client blocked during connection close (14/12/2009)", -1, -1);
 
@@ -14522,6 +14575,8 @@ int main (int  argc, char ** argv)
  	run_test (test_05, "Test 05", "TLS profile support", -1, -1);
   	
  	run_test (test_05_a, "Test 05-a", "Check auto-tls on fail fix (24/03/2008)", -1, -1);
+
+ 	run_test (test_05_a1, "Test 05-a1", "Check auto-tls on forced failure in the middle (09/07/2012)", -1, -1);
 
 	run_test (test_05_b, "Test 05-b", "TLS client blocked during connection close (14/12/2009)", -1, -1);
 
