@@ -298,7 +298,9 @@ void               vortex_tls_set_default_ctx_creation   (VortexCtx            *
  * 
  * @param connection The connection to be post-checked.
  *
- * @param post_check The handler to be called once required to perform the post-check.
+ * @param post_check The handler to be called once required to perform
+ * the post-check. Passing a NULL value to this handler uninstall
+ * previous check installed.
  *
  * @param user_data User defined data, that is passed to the handler
  * provided (post_check).
@@ -308,8 +310,15 @@ void               vortex_tls_set_post_check             (VortexConnection     *
 							  axlPointer             user_data)
 {
 	/* check parameters received */
-	if (connection == NULL || post_check == NULL)
+	if (connection == NULL)
 		return;
+
+	if (post_check == NULL) {
+		/* configure the handler */
+		vortex_connection_set_data (connection, POST_CHECK,      NULL);
+		vortex_connection_set_data (connection, POST_CHECK_DATA, NULL);
+		return;
+	}
 
 	/* configure the handler */
 	vortex_connection_set_data (connection, POST_CHECK,      post_check);
@@ -331,7 +340,8 @@ void               vortex_tls_set_post_check             (VortexConnection     *
  * @param ctx The context where the operation will be performed.
  * 
  * @param post_check The handler to be called once required to perform
- * the post-check.
+ * the post-check. Passing a NULL value to this handler uninstall
+ * previous check installed.
  *
  * @param user_data User defined data, that is passed to the handler
  * provided (post_check).
@@ -343,13 +353,20 @@ void               vortex_tls_set_default_post_check     (VortexCtx            *
 	VortexTlsCtx * tls_ctx;
 
 	/* check parameters received */
-	if (ctx == NULL || post_check == NULL)
+	if (ctx == NULL)
 		return;
 
 	/* check if the tls ctx was created */
 	tls_ctx = vortex_ctx_get_data (ctx, TLS_CTX);
 	if (tls_ctx == NULL) 
 		return;
+
+	if (post_check == NULL) {
+		/* uninstall handler */
+		tls_ctx->tls_default_post_check           = NULL;
+		tls_ctx->tls_default_post_check_user_data = NULL;
+		return;
+	}
 
 	/* configure the handler */
 	tls_ctx->tls_default_post_check           = post_check;
@@ -575,8 +592,8 @@ void __vortex_tls_free_mutex (VortexMutex * mutex)
 }
 
 /** 
- * @brief Common function which sets needed data for the TLS transport
- * and default callbacks for read and write data.
+ * @internal Common function which sets needed data for the TLS
+ * transport and default callbacks for read and write data.
  * 
  * @param connection The connection to configure
  * @param ssl The ssl object.
@@ -694,14 +711,17 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 	if (ctx_creation == NULL) {
 		/* fall back into the default implementation */
 		ssl_ctx  = SSL_CTX_new (TLSv1_client_method ()); 
+		vortex_log (VORTEX_LEVEL_DEBUG, "ssl context SSL_CTX_new (TLSv1_client_method ()) returned = %p", ssl_ctx);
 	} else {
 		/* call to the default handler to create the SSL_CTX */
 		ssl_ctx  = ctx_creation (connection, ctx_creation_data);
+		vortex_log (VORTEX_LEVEL_DEBUG, "ssl context ctx_creation (connection, ctx_creation_data) returned = %p", ssl_ctx);
 	} /* end if */
 
 	/* create and register the TLS method */
-	if (ctx == NULL) {
+	if (ssl_ctx == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "error while creating TLS context");
+		vortex_tls_log_ssl (ctx);
 		return axl_false;
 	}
 
@@ -709,7 +729,7 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 	vortex_log (VORTEX_LEVEL_DEBUG, "initializing TLS transport");
 	ssl = SSL_new (ssl_ctx);       
 	if (ssl == NULL) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "error while creating TLS transport");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "error while creating TLS transport, SSL_new (%p) returned NULL", ssl_ctx);
 		return axl_false;
 	}
 
@@ -1546,8 +1566,8 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 	vortex_log (VORTEX_LEVEL_DEBUG, "initializing TLS transport");
 	ssl = SSL_new (ssl_ctx);       
 	if (ssl == NULL) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "error while creating TLS transport");
-		vortex_tls_notify_failure_handler (ctx, connection, "error while creating TLS transport");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "error while creating TLS transport, SSL_new (%p) returned NULL", ssl_ctx);
+		vortex_tls_notify_failure_handler (ctx, connection, "error while creating TLS transport, SSL_new () call failed");
 		vortex_connection_set_close_socket (connection, axl_true);
 		vortex_connection_shutdown (connection);
 		return;
@@ -2262,19 +2282,31 @@ int vortex_tls_auto_tlsfixate_connection (VortexCtx               * ctx,
 					  axlPointer                user_data)
 {
 	VortexTlsCtx * tls_ctx = vortex_ctx_get_data (ctx, TLS_CTX);
+	int            conn_id = -1;
 
 	/* check for auto TLS negotiation */
 	if (tls_ctx != NULL && 
 	    tls_ctx->connection_auto_tls && 
 	    ! vortex_connection_is_tlsficated (connection)) {
+		/* get connection id before proceeding */
+		conn_id    = vortex_connection_get_id (connection);
+
 		/* seems that current Vortex Library have TLS
 		 * profile built-in support and auto TLS is
 		 * activated */
 		connection = vortex_tls_start_negotiation_sync (connection,
 								tls_ctx->connection_auto_tls_server_name,
 								NULL, NULL);
-		if (! vortex_connection_is_ok (connection, axl_false)) 
+		if (! vortex_connection_is_ok (connection, axl_false)) {
+			/* if connection is not the same, update
+			 * reference and report that */
+			if (vortex_connection_get_id (connection) != conn_id) {
+				(*new_conn) = connection;
+				return 2; /* signal caller to update connection reference */
+			} /* end if */
+
 			return -1;
+		}
 		
 		/* the connection is ok, check if the TLS
 		 * profile was activated, but only if auto tls
