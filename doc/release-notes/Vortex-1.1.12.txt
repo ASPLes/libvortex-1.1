@@ -1,0 +1,231 @@
+      ###################################################
+      ##              Vortex Library 1.1.12            ##
+      ##              "No light, No light"             ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce Vortex
+  Library 1.1.12 "No light, No light" release availability: an open
+  source "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.aspl.es/vortex/py-vortex/html
+      [PyVortex homepage]
+
+    - http://www.aspl.es/turbulence
+      [Turbulence BEEP server homepage]
+ 
+    - http://code.google.com/p/vortexlibrary/downloads/list
+      [Sources and Win32 binaries]
+
+    - http://www.beepcore.org
+      [BEEP Core community web site]
+
+    - http://www.aspl.es/xml
+      [Axl Library, XML 1.0 implementation]
+    
+This release in short
+~~~~~~~~~~~~~~~~~~~~~
+
+    ENGINE: Added new API to allow sending incomplete frames (content
+            with more flag enabled).
+
+       TLS: Fixed wrong handling on connection error when auto-tls is
+            enabled.
+
+   GENERAL: Several bugs were fixed. 
+  
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+
+  None
+
+Thanks to..
+~~~~~~~~~~~
+
+  - Jason Dana (reported wrong pointer handling on TLS failure having
+    auto-tls enabled).
+
+  - Subrahmanya (reported wrong error code handling at various system
+    calls).
+
+  - Gaurav Kumar Singh (reported various errors while compiling vortex
+    with VS tools).
+
+Changes since 1.1.11
+~~~~~~~~~~~~~~~~~~~~
+
+* [fix] Updated PyVortex documentation (added some examples at
+  vortex.register_profile).
+
+* [fix] Commented out a noisy debug line at vortex thread pool module..
+
+* [fix] Several updates into the core library to better log errors
+  that involves closing the connection. Now those errors are logged
+  into connection so they can be checked using already available
+  channel pop error API. Added new connection error to identify
+  connection closed by remote peer without going through the BEEP
+  close process.
+
+* [new] General engine update to provide an API for sending MSG, RPY
+  and ERR messages whose frames are all flagged with more flag
+  on. This allows to send a set of messages, that are then translated
+  into frames, where all of them belongs to the same MSG. API added:
+
+   - vortex_channel_send_msg_more
+   - vortex_channel_send_rpy_more
+   - vortex_channel_send_err_more
+
+  Added regression test (test_02-r) to reproduce use cases and check
+  that it is working. Added documentation explaining how to use this.
+
+* [new] Updated PyVortex API to provide an API to new opened send
+  operations (send_msg_more). API added:
+
+   - vortex.Channel.send_msg_more
+   - vortex.Channel.send_rpy_more
+   - vortex.Channel.send_err_more
+
+  Updated documentation.
+
+* [fix] Fixed BEEP checking engine for received frames to ensure it is
+  detected when a remote BEEP peer replies two times to a MSG frame
+  whose msgno is 0. Bug found during send_msg_more API development.
+
+* [fix] Fixed sending operations involving VortexPayloadFeeder objects
+  that were paused to check if their msgno is on the pending reply
+  list to avoid a race where pause operation happens at the same time
+  the msgno is removed from the list.
+
+* [fix] Fixed security bug where vortex engine may accept a fake RPY
+  with message number of 0, delivering to user configured handler,
+  even without having sent a MSG frame with that number. Only happened
+  with msgno 0.
+
+* [fix] Fixed internal __vortex_channel_set_state to ensure turbulence
+  works with latest changes..
+
+* [new] Updated PyVortex channel API to allow configuring frame
+  complete flag and frame complete limit. API added:
+
+   - set_complete_flag
+   - set_complete_frame_limit
+
+* [fix] Checking reference returned internally by
+  vortex_connection_pop_channel_error.
+
+* [fix] Making vortex_channel_set_serialize to grab current next seqno
+  value when it is requested to enable serialize, to allow enabling
+  serialize operation even when it is enabled on a channel with
+  content transferred previously without such state. Bug exposed by
+  core-admin.
+
+* [fix] Fixed horrible documentation at
+  vortex_channel_get_next_reply_no.
+
+* [fix] Adding some documentation to explain how to use TLS at
+  PyVortex..
+
+* [fix] Fixed various system calls that weren't properly checking
+  return codes. Sabrahmanya reported wrong return code handling for
+  getsocketname but it was discovered that this also happens for fcntl
+  and getpeername sys calls as well. Thanks for reporting.
+
+* [fix] Fixed some grammar mistakes at vortex documentation.
+
+* [fix] More documentation fixes.
+
+* [fix] Several windows fixes. 
+
+* [fix] Moved var declaration to the top inside vortex_sequencer_stop
+  to avoid breaking VS compilers. Reported by Gaurav Kumar Singh.
+
+* [fix] Moved automatic thread pool resize code to be done before
+  vortex task is executed..
+
+* [new] Added new API to control more details about the thread pool
+  automatic resize. API added:
+
+   - vortex_thread_pool_setup2
+
+* [fix] Fixed internal automatic thread pool resize code to check the
+  thread add period to be bigger or equal to (not just bigger) so
+  threads are added when the period is filled (not just filled +
+  1seg).
+
+* [fix] Updated vortex sequencer sending code to first manage channel
+  0 requests and then process the rest of connections. This is done to
+  ensure administrative channel is able to communicate channel
+  creation or removal before next request happens on those channels.
+  Until now, under some rare cases vortex was producing a protocol
+  violation because it was sending content before the remote peer
+  received the channel open RPY over the channel 0.
+
+* [fix] Updated vortex_async_queue_ref to return a boolean value to
+  signal the caller if reference operation finished properly.
+
+* [fix] Updated vortex thread pool activation to acquire a queue
+  reference directly from the activation object instead of getting
+  that reference from the pool. Fixes test-00e
+
+* [fix] Making internal vortex tls activation to check new reference
+  created before proceeding to avoid working and notifying a wrong
+  reference (for example, there could a oom that causes returning a
+  wrong reference).
+
+* [fix] Fixed some typos at tls documentation..
+
+* [fix] Updated channel pool addition code to avoid acquiring a lock
+  during channel creation but only when a channel opened is to be
+  added to the pool. This avoids blocking the entire channel pool when
+  a channel creation is taking too long.
+
+* [fix] Fixed documentation (timedout -> timedpop) inside
+  vortex.Asyncqueue
+
+* [fix] Added default timeout for vortex.Connection. Added missing
+  CONN_OPTS_END
+
+* [fix] Fixed bug inside auto-tls support where a wrong reference were
+  returned when a TLS failure was found.  Added reg-test to reproduce
+  the bug and check the fix introduced (test-05-a1). Bug reported by
+  Jason Dana.
+
+* [fix] Updated vortex_tls_set_post_check and
+  vortex_tls_set_default_post_check to also allow uninstalling the
+  handler if NULL reference is passed in.
+
+* [fix] Fixed wrong ssl context creation check inside vortex tls
+  module. Also added logging code to report those failures.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organizations to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+26th jul 2012, Madrid (Spain)
