@@ -844,6 +844,12 @@ static PyObject * py_vortex_connection_remove_on_close (PyObject * self, PyObjec
 	if (! PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &handle)) 
 		return NULL;
 
+	/* if None is received, just return */
+	if (! py_vortex_handle_check (handle)) {
+		Py_INCREF (Py_False);
+		return Py_False;
+	} /* end if */
+	
 	/* get on_close object */
 	on_close_obj = py_vortex_handle_get (handle);
 	py_vortex_handle_nullify (handle);
