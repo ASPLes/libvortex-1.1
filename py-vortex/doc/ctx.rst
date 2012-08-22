@@ -73,6 +73,11 @@ Module API
 
       :rtype: Returns True if the event was found and removed, otherwise False is returned.
 
+   .. method:: enable_too_long_notify_to_file (watching_period, file)
+   
+      Allows to enable a too long notify handler that internally logs those notifications into the provided file. The watching_period allows to control what is the period over which a notification is recorded.
+      :rtype: Returns True if the notifier was installed
+
    .. attribute:: log
 
       (Read/Write attribute) (True/False) returns or set current debug log. See vortex_log_is_enabled.

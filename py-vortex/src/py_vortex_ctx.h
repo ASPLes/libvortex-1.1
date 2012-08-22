@@ -62,6 +62,9 @@ void        py_vortex_ctx_record_close_handler (VortexCtx * ctx, PyObject * hand
 void        py_vortex_ctx_start_handler_watcher (VortexCtx * ctx, int watching_period,
 						 PyVortexTooLongNotifier notifier, axlPointer notifier_data);
 
+axl_bool    py_vortex_ctx_log_too_long_notifications (VortexCtx * ctx, int watching_period,
+						      const char * file);
+
 PyObject  * py_vortex_ctx_create (VortexCtx * ctx);
 
 void        py_vortex_ctx_register (VortexCtx  * ctx,
