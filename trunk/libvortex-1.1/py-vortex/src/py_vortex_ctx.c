@@ -242,6 +242,69 @@ void        py_vortex_ctx_start_handler_watcher (VortexCtx * ctx, int watching_p
 	return;
 }
 
+void py_vortex_ctx_too_long_notifier_to_file (const char * msg_string, axlPointer data)
+{
+	const char * file = data;
+	int          fd;
+	time_t       rawtime;
+	const char * value;
+
+	py_vortex_log (PY_VORTEX_DEBUG, "Logging into file: [%s], message [%s]", file, msg_string);
+	
+	/* open the file provided by the user */
+	fd = open (file, O_CREAT | O_APPEND | O_WRONLY, 0600);
+	if (fd < 0) {
+		py_vortex_log (PY_VORTEX_CRITICAL, "Failed to open log located at %s to log %s", file, msg_string);
+		return;
+	} /* end if */
+
+	time ( &rawtime );
+	value = ctime (&rawtime);
+	write (fd, value, strlen (value) - 1);
+	write (fd, "  ", 2);
+	write (fd, msg_string, strlen (msg_string));
+	write (fd, "\n", 1);
+	close (fd);
+
+	return;
+}
+
+/** 
+ * @internal Installs a too long notification handler that logs into
+ * the provided file, all notifications found for handlers that are
+ * taking more than the provided watching period measured in seconds.
+ */
+axl_bool        py_vortex_ctx_log_too_long_notifications (VortexCtx * ctx, int watching_period,
+							  const char * file)
+{
+	int          fd;
+	time_t       rawtime;
+	const char * value;
+
+	/* open the file provided by the user */
+	fd = open (file, O_CREAT | O_APPEND | O_WRONLY, 0600);
+	if (fd < 0) {
+		py_vortex_log (PY_VORTEX_CRITICAL, "Failed to open log located at %s, unable to enable long notifications", file);
+		return axl_false;
+	} /* end if */
+
+	time ( &rawtime );
+	value = ctime (&rawtime);
+	write (fd, value, strlen (value) - 1);
+	write (fd, "  ", 2);
+	write (fd, "Too long notification watcher started\n", 38);
+	close (fd);
+
+	/* record file into ctx */
+	file = strdup (file);
+	vortex_ctx_set_data_full (ctx, file, (axlPointer) file, NULL, axl_free);
+
+	/* start handler watcher here */
+	py_vortex_ctx_start_handler_watcher (ctx, watching_period, py_vortex_ctx_too_long_notifier_to_file, (axlPointer) file);	
+
+	return axl_true;
+}
+
 static int py_vortex_ctx_init_type (PyVortexCtx *self, PyObject *args, PyObject *kwds)
 {
     return 0;
@@ -610,6 +673,28 @@ static PyObject * py_vortex_ctx_remove_event (PyObject * self, PyObject * args, 
 	return Py_BuildValue ("i", vortex_thread_pool_remove_event (py_vortex_ctx_get (self), handle_id));
 }
 
+/** 
+ * @brief Too long notification to file
+ */
+static PyObject * py_vortex_ctx_enable_too_long_notify_to_file (PyObject * _self, PyObject * args, PyObject * kwds)
+{
+	int            watching_period = 0;
+	const char   * file;
+	PyVortexCtx  * self = (PyVortexCtx *) _self;
+	/* now parse arguments */
+	static char *kwlist[] = {"watching_period", "file", NULL};
+
+	/* parse and check result */
+	if (! PyArg_ParseTupleAndKeywords (args, kwds, "is", kwlist, 
+					   &watching_period, &file))
+		return NULL;
+
+	py_vortex_log (PY_VORTEX_DEBUG, "Enabling sending too long notifications to file %s with watching period %d", file, watching_period);
+
+	/* call to enable the handle and return the result */
+	return Py_BuildValue ("i", py_vortex_ctx_log_too_long_notifications (self->ctx, watching_period, file));
+}
+
 static PyMethodDef py_vortex_ctx_methods[] = { 
 	/* init */
 	{"init", (PyCFunction) py_vortex_ctx_init, METH_NOARGS,
@@ -623,6 +708,9 @@ static PyMethodDef py_vortex_ctx_methods[] = {
 	/* remove_event */
 	{"remove_event", (PyCFunction) py_vortex_ctx_remove_event, METH_VARARGS | METH_KEYWORDS,
 	 "Allows to remove an event installed with new_event() method using the handle id returned from that function. This function is the interface to vortex_thread_pool_event_remove."},
+	/* enable_too_long_notify_to_file */
+	{"enable_too_long_notify_to_file", (PyCFunction) py_vortex_ctx_enable_too_long_notify_to_file, METH_VARARGS | METH_KEYWORDS,
+	 "Allows to activate a too long notification handler that will long into the provided file a notification every time is found a handler that is taking too long to finish."},
  	{NULL}  
 }; 
 
