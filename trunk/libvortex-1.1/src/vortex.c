@@ -1051,10 +1051,7 @@ axl_bool    vortex_init_ctx (VortexCtx * ctx)
  */
 axl_bool vortex_init_check (VortexCtx * ctx)
 {
-#define msg "vortex context seems to be not initialized: you can't use vortex API without calling to vortex_init_ctx"
 	if (ctx == NULL || ! ctx->vortex_initialized) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, msg);
-		printf ("ERROR: %s\n", msg);
 		return axl_false;
 	}
 	return axl_true;
