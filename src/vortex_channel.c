@@ -5147,16 +5147,9 @@ int             vortex_channel_get_next_expected_reply_no (VortexChannel * chann
 axl_bool vortex_channel_remove_first_pending_msg_no (VortexChannel * channel, int msg_no_rpy)
 {
 	axl_bool    result;
-#if defined(ENABLE_VORTEX_LOG)
-	VortexCtx * ctx;
-#endif
+
 	v_return_val_if_fail (channel, -1);
 
-#if defined(ENABLE_VORTEX_LOG)
-	/* get context */
-	ctx = vortex_channel_get_ctx (channel);
-#endif
-	
 	/* lock mutex */
 	vortex_mutex_lock (&channel->incoming_msg_mutex);
 
