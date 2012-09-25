@@ -64,6 +64,13 @@ Module API
    :param unlock_on_signal: unlock_on_signal expects to receive True to make wait_listener to unlock on signal received.
    :type unlock_on_signal: Integer: True or False
 
+.. function:: unlock_listeners (ctx)
+
+   Allows to unlock the thread that is blocked at wait_listeners call
+
+   :param ctx: context where a listener or a set of listener were created.
+   :type ctx: vortex.Ctx
+
 .. function:: register_profile (ctx = vortex.Ctx, uri, [start], [start_data], [close], [close_data], [frame_received], [frame_received_data])
 
    Allows to register a supported profile so the current BEEP, inside
