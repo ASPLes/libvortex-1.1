@@ -772,9 +772,9 @@ axl_bool      __vortex_connection_parse_greetings (VortexConnection * connection
  * that is already connected.
  *
  * This function creates the basics structures for a new \ref
- * VortexConnection instance is it were created with \ref
+ * VortexConnection instance as if it were created with \ref
  * vortex_connection_new but without performing any additional BEEP
- * operation such us sending initial greetings. 
+ * operation such us sending initial greetings.
  *
  * This function only takes the given underlying transport descriptor
  * (that is, the socket) and gets the remote peer name in order to set
@@ -4318,7 +4318,8 @@ const char        * vortex_connection_get_host_ip            (VortexConnection *
  * connection created under Vortex Library. This allows Vortex programmer to
  * use this identifier for its own application purposes
  *
- * @param connection the unique integer identifier for the given connection.
+ * @param connection The connection to get the the unique integer
+ * identifier from.
  * 
  * @return the unique identifier.
  */

@@ -185,6 +185,9 @@ static PyObject * py_vortex_wait_listeners (PyObject * self, PyObject * args, Py
 	if (! PyArg_ParseTupleAndKeywords (args, kwds, "O|i", kwlist, &py_vortex_ctx, &unlock_on_signal))
 		return NULL;
 
+	if (! py_vortex_ctx_check (py_vortex_ctx))
+		return NULL;
+
 	/* received context, increase its reference during the wait
 	   operation */
 	Py_INCREF (py_vortex_ctx);
@@ -204,7 +207,7 @@ static PyObject * py_vortex_wait_listeners (PyObject * self, PyObject * args, Py
 	Py_BEGIN_ALLOW_THREADS
 
 	/* call to wait for listeners */
-	py_vortex_log (PY_VORTEX_DEBUG, "waiting listeners to finish");
+	py_vortex_log (PY_VORTEX_DEBUG, "waiting listeners to finish: %p", py_vortex_ctx_get (py_vortex_ctx));
 	vortex_listener_wait (py_vortex_ctx_get (py_vortex_ctx));
 	py_vortex_log (PY_VORTEX_DEBUG, "wait for listeners ended, returning");
 
@@ -212,6 +215,34 @@ static PyObject * py_vortex_wait_listeners (PyObject * self, PyObject * args, Py
 	Py_END_ALLOW_THREADS
 
 	Py_DECREF (py_vortex_ctx);
+	
+	/* return none */
+	Py_INCREF (Py_None);
+	return Py_None;
+}
+
+/** 
+ * @brief Implementation of vortex.unlock_listeners which blocks the
+ * caller until all vortex library is stopped.
+ */
+static PyObject * py_vortex_unlock_listeners (PyObject * self, PyObject * args, PyObject * kwds)
+{
+	
+	PyObject           * py_vortex_ctx = NULL;
+
+	/* now parse arguments */
+	static char *kwlist[] = {"ctx", NULL};
+
+	/* parse and check result */
+	if (! PyArg_ParseTupleAndKeywords (args, kwds, "O", kwlist, &py_vortex_ctx))
+		return NULL;
+	
+	if (! py_vortex_ctx_check (py_vortex_ctx))
+		return NULL;
+
+	/* unlock the caller */
+	py_vortex_log (PY_VORTEX_DEBUG, "unlocking listeners: %p", py_vortex_ctx_get (py_vortex_ctx));
+	vortex_listener_unlock (py_vortex_ctx_get (py_vortex_ctx));
 	
 	/* return none */
 	Py_INCREF (Py_None);
@@ -499,6 +530,9 @@ static PyMethodDef py_vortex_methods[] = {
 	/* wait_listeners */
 	{"wait_listeners", (PyCFunction) py_vortex_wait_listeners, METH_VARARGS | METH_KEYWORDS,
 	 "Direct wrapper for vortex_listener_wait. This function is optional and it is used at the listener side to make the main thread to not finish after all vortex initialization."},
+	{"unlock_listeners", (PyCFunction) py_vortex_unlock_listeners, METH_VARARGS | METH_KEYWORDS,
+	 "Direct wrapper for vortex_listener_unlock. This function allows to unlock the thread that is blocked at vortex.wait_listeners."},
+	
 	/* register_profile */
 	{"register_profile", (PyCFunction) py_vortex_register_profile, METH_VARARGS | METH_KEYWORDS,
 	 "Function that allows to register a profile with its associated handlers (frame received, channel start and channel close)."},

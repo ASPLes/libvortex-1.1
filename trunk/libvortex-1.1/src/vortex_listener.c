@@ -1166,8 +1166,7 @@ void vortex_listener_wait (VortexCtx * ctx)
 }
 
 /** 
- * @brief Unlock the the listener thread blocked at the \ref
- * vortex_listener_wait.
+ * @brief Unlock the thread blocked at the \ref vortex_listener_wait.
  * 
  * @param ctx The context where the operation will be performed.
  **/
