@@ -87,7 +87,11 @@ frame received handler::
 
 .. note::
 
-   Full client source code can be found at: https://dolphin.aspl.es/svn/python-vortex/doc/simple-client.py
+   Full client source code can be found at: https://dolphin.aspl.es/svn/publico/af-arch/trunk/libvortex-1.1/py-vortex/test/simple-client.py
+
+.. note::
+
+   Note also full regression test client, which includes all features tested, is located at: https://dolphin.aspl.es/svn/publico/af-arch/trunk/libvortex-1.1/py-vortex/test/vortex-regression-client.py
 
 ========================
 Creating a BEEP listener
@@ -142,8 +146,11 @@ have another way to make the main thread to not finish::
 
 .. note::
 
-   Full listener source code can be found at: https://dolphin.aspl.es/svn/python-vortex/doc/simple-listener.py 
+   Full listener source code can be found at: https://dolphin.aspl.es/svn/publico/af-arch/trunk/libvortex-1.1/py-vortex/test/simple-listener.py
 
+.. note::
+
+   Note also full regression test listener, which includes all features tested, is located at: https://dolphin.aspl.es/svn/publico/af-arch/trunk/libvortex-1.1/py-vortex/test/vortex-regression-listener.py
 
 ========================================
 Enabling server side SASL authentication
