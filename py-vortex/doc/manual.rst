@@ -62,17 +62,17 @@ So, to create a channel for our test, we will do as follows::
 created. Here is where the profile developer design the kind of
 messages to exchange, format, etc. To send a message we do as follows::
 
-   if not channel.send_msg ("This is a test", 14):
+   if channel.send_msg ("This is a test", 14) is None:
        print ("ERROR: Failed to send test message, error found: ")
       
        # get first message
        err = conn.pop_channel_error ()
-       while error:
+       while err:
             print ("ERROR: Found error message: " + str (err[0]) + ": " + err[1])
 
             # next message
             err = conn.pop_channel_error ()
-       return False
+       sys.exit (-1)
 
 5. Now, to receive replies and other requests, we have to configure a
 frame received handler::

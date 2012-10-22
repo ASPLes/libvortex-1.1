@@ -1,4 +1,4 @@
-EXTRA_DIST = vortex-regression-client.py vortex-regression-listener.py test.crt test.key file.sup
+EXTRA_DIST = vortex-regression-client.py vortex-regression-listener.py test.crt test.key file.sup simple-client.py simple-listener.py
 
 all: prepare
 	@echo "To run regression tests do the following steps:"
