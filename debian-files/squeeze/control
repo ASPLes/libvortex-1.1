@@ -179,7 +179,7 @@ Description: Development headers for Axl Python bindings
 Package: python-vortex-tls
 Section: libs
 Architecture: any
-Depends: libvortex-1.1 (= ${Source-Version}), python,
+Depends: libvortex-1.1 (= ${Source-Version}), python-vortex,
   libvortex-tls-1.1 (= ${Source-Version})
 Description: Python bindings for Vortex Library TLS profile
  Python bindings for Vortex Library TLS profile.
@@ -196,7 +196,7 @@ Description: Development headers for Python Vortex TLS bindings
 Package: python-vortex-sasl
 Section: libs
 Architecture: any
-Depends: libvortex-1.1 (= ${Source-Version}), python,
+Depends: libvortex-1.1 (= ${Source-Version}), python-vortex,
   libvortex-sasl-1.1 (= ${Source-Version})
 Description: Python bindings for Vortex Library SASL profile
  Python bindings for Vortex Library SASL profile.
@@ -213,7 +213,7 @@ Description: Development headers for Python Vortex SASL bindings
 Package: python-vortex-alive
 Section: libs
 Architecture: any
-Depends: libvortex-1.1 (= ${Source-Version}), python,
+Depends: libvortex-1.1 (= ${Source-Version}), python-vortex,
   libvortex-alive-1.1 (= ${Source-Version})
 Description: Python bindings for Vortex Library ALIVE support
  Python bindings for Vortex Library ALIVE profile.
