@@ -104,10 +104,39 @@ address. Please, select the <i>"Vortex Library"</i> component: <p>
   </li>
 </ul>
 
+<p>Note that it is important that your patch do not break current
+regression test. Please, use them to ensure your patch works and, if
+possible, add a regression test that reproduce the bug and test the
+fix. See next for instructions.</p>
+
 <p>Once you have a patch, you can either fill <a href="http://bugzilla.aspl.es">a bug report
 (RECOMMENDED, see above)</a> or send a message to the <a href="http://lists.aspl.es/cgi-bin/mailman/listinfo/vortex"> list with
 the patch</a>.</p>
-  
+
+<h3>Running vortex regression tests to test your patches</h3>
+
+<p>To run the regression test do the following (unix instructions):</p>
+
+<pre>
+  1. First, run regression listener located under test/ directory like follows:
+  >> cd test/
+  >> ./vortex-regression-listener
+
+  2. Now, under another terminal, do the same to run the client:
+  >> cd test/
+  >> ./vortex-regression-client
+</pre>
+
+<p>In the case you want to enable the console debug to see what
+happens, just append the following to each command (note you must
+compile vortex with log debug which is the default if you didn't
+change anything):</p>
+
+<pre>
+  # for example, to run the client with log debug enabled, do
+  >> VORTEX_DEBUG=1 VORTEX_DEBUG_COLOR=1 ./vortex-regression-client
+</pre>
+
 
 
 <h3>Support the Vortex Library project</h3>
