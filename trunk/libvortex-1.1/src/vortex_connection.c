@@ -5148,6 +5148,8 @@ axl_bool            vortex_connection_actions_notify   (VortexCtx               
 			vortex_mutex_unlock (&ctx->connection_actions_mutex);
 
 			result   = action (ctx, conn, &new_conn, stage, action_data);
+			vortex_log (VORTEX_LEVEL_DEBUG, "Action %p finished with result=%d, new_conn=%p and conn=%p",
+				    action, result, new_conn, conn);
 
 			/* (re)lock during execution */
 			vortex_mutex_lock (&ctx->connection_actions_mutex);

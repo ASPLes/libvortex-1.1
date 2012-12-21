@@ -2294,9 +2294,13 @@ int vortex_tls_auto_tlsfixate_connection (VortexCtx               * ctx,
 		/* seems that current Vortex Library have TLS
 		 * profile built-in support and auto TLS is
 		 * activated */
+		vortex_log (VORTEX_LEVEL_DEBUG, "Calling to enable TLS on connection id %d (%p, ref count: %d)", 
+			    conn_id, connection, vortex_connection_ref_count (connection));
 		connection = vortex_tls_start_negotiation_sync (connection,
 								tls_ctx->connection_auto_tls_server_name,
 								NULL, NULL);
+		vortex_log (VORTEX_LEVEL_DEBUG, "After finishing vortex_tls_start_negotiation_sync (%p, ref count: %d, status: %d)", 
+			    connection, vortex_connection_ref_count (connection), vortex_connection_is_ok (connection, axl_false));
 		if (! vortex_connection_is_ok (connection, axl_false)) {
 			/* if connection is not the same, update
 			 * reference and report that */
@@ -2305,6 +2309,8 @@ int vortex_tls_auto_tlsfixate_connection (VortexCtx               * ctx,
 				return 2; /* signal caller to update connection reference */
 			} /* end if */
 
+			/* signal the caller there was a failure but
+			   we aren't returning a new reference */
 			return -1;
 		}
 		
@@ -2313,9 +2319,18 @@ int vortex_tls_auto_tlsfixate_connection (VortexCtx               * ctx,
 		 * allow failures is not set */
 		if (! tls_ctx->connection_auto_tls_allow_failures) {
 			if (! vortex_connection_is_tlsficated (connection)) {
+				vortex_log (VORTEX_LEVEL_WARNING, "Connection wasn't TLSfixated and API was configured to not allow failures..");
+
 				__vortex_connection_set_not_connected (connection,
 								       "Automatic TLS-fication have failed, the connection have been flagged to be closed due to not allowing TLS failure settings",
 								       VortexError);
+				/* if connection is not the same,
+				 * update reference and report that */
+				if (vortex_connection_get_id (connection) != conn_id) {
+					(*new_conn) = connection;
+					return 2; /* signal caller to update connection reference */
+				} /* end if */
+
 				return -1;
 			} /* end if */
 		} /* end if */
