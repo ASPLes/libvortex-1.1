@@ -1,6 +1,6 @@
 /* 
  *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
- *  Copyright (C) 2010 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2013 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
@@ -1349,7 +1349,7 @@ int __vortex_connection_wait_on (VortexCtx           * ctx,
 	start_time   = time (NULL);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, 
-		    "detected connect timeout during %d seconds (starting from: %d)", 
+		    "starting connect timeout during %d seconds (starting from: %d)", 
 		    *wait_period, start_time);
 
 	/* add the socket in connection transit */
@@ -1371,6 +1371,14 @@ int __vortex_connection_wait_on (VortexCtx           * ctx,
 		err = vortex_io_waiting_invoke_wait (ctx, wait_set, session, wait_for);
 		vortex_log (VORTEX_LEVEL_DEBUG, "__vortex_connection_wait_on (sock=%d) operation finished, err=%d, errno=%d (%s), wait_for=%d (ellapsed: %d)",
 			    session, err, errno, vortex_errno_get_error (errno) ? vortex_errno_get_error (errno) : "", wait_for, time (NULL) - start_time);
+
+		/* check for bad file description error */
+		if (errno == EBADF) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "Found bad file descriptor while waiting");
+			/* destroy waiting set */
+			vortex_io_waiting_invoke_destroy_fd_group (ctx, wait_set);
+			return -3;
+		} /* end if */
 
 		if(err == -1 /* EINTR */ || err == -2 /* SSL */)
 			continue;
@@ -1394,6 +1402,7 @@ int __vortex_connection_wait_on (VortexCtx           * ctx,
 			break; 
 		} else if (err /*==-3, fatal internal error, other errors*/)
 			return -1;
+
 	} /* end while */
 	
 	vortex_log (VORTEX_LEVEL_DEBUG, "timeout operation finished, with err=%d, errno=%d, ellapsed time=%d (seconds)", 
@@ -1606,8 +1615,8 @@ axl_bool vortex_connection_do_greetings_exchange (VortexCtx             * ctx,
 		/* block thread until received remote greetings */
 		vortex_log (VORTEX_LEVEL_DEBUG, "getting initial greetings frame..");
 		frame = vortex_greetings_client_process (connection, options);
-		vortex_log (VORTEX_LEVEL_DEBUG, "finished wait for initial greetings frame=%p timeout=%d", 
-			    frame, timeout);
+		vortex_log (VORTEX_LEVEL_DEBUG, "finished wait for initial greetings frame=%p timeout=%d, conn-id=%d, socket=%d", 
+			    frame, timeout, connection->id, connection->session);
 
 		/* check frame received */
 		if (frame != NULL) {
@@ -1618,16 +1627,16 @@ axl_bool vortex_connection_do_greetings_exchange (VortexCtx             * ctx,
 		} else if (timeout > 0 && vortex_connection_is_ok (connection, axl_false)) {
 
 			vortex_log (VORTEX_LEVEL_WARNING, 
-				    "found NULL frame referecence connection=%d, checking to wait for read operation..",
-				    connection->id);
+				    "found NULL frame referecence connection=%d, checking to wait timeout=%d seconds for read operation..",
+				    connection->id, timeout);
 
 			/* try to perform a wait operation */
 			err = __vortex_connection_wait_on (ctx, READ_OPERATIONS, connection->session, &timeout);
 			if (err <= 0 || timeout <= 0) {
 				/* timeout reached while waiting for the connection to terminate */
 				vortex_log (VORTEX_LEVEL_WARNING, 
-					    "reached timeout=%d or general operation failure=%d while waiting for initial greetings frame",
-					    err, timeout);
+					    "reached timeout=%d or general operation failure=%d while waiting for initial greetings frame for connection id=%d",
+					    err, timeout, connection->id);
 				
 				/* close the connection */
 				shutdown (connection->session, SHUT_RDWR);
@@ -5493,6 +5502,41 @@ void                vortex_connection_set_data_full          (VortexConnection *
 	
 	/* return from setting the value */
 	return;
+}
+
+/** 
+ * @brief Allows to set a commonly used user land pointer associated
+ * to the provided connection.
+ *
+ * Though you can use \ref vortex_connection_set_data_full or \ref vortex_connection_set_data, this function allows to set a pointer
+ * that can be retreived by using \ref vortex_connection_get_hook with a low cpu usage.
+ *
+ * @param connection The connection where the user land pointer is associated.
+ *
+ * @param ptr The pointer that will be associated to the connection.
+ */
+void                vortex_connection_set_hook               (VortexConnection * connection,
+							      axlPointer         ptr)
+{
+	if (connection == NULL)
+		return;
+	connection->hook = ptr;
+	return;
+}
+
+/** 
+ * @brief Allows to get the user land pointer configured by \ref vortex_connection_set_hook.
+ *
+ * @param connection The connection where the user land pointer is
+ * being queried.
+ *
+ * @return The pointer stored.
+ */
+axlPointer          vortex_connection_get_hook               (VortexConnection * connection)
+{
+	if (connection == NULL)
+		return NULL;
+	return connection->hook;
 }
 
 

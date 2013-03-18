@@ -1,6 +1,6 @@
 /* 
  *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
- *  Copyright (C) 2010 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2013 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
@@ -292,7 +292,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		/* if defined preread handler invoke it and return. */
 		vortex_connection_invoke_preread_handler (connection);
 		return;
-	}
+	} /* end if */
 
 	/* before doing anything, check if the connection is broken */
 	if (! vortex_connection_is_ok (connection, axl_false))
@@ -1127,7 +1127,7 @@ int  __vortex_reader_check_listener_list (VortexCtx     * ctx,
 		
 		/* get the connection and socket. */
 		fds  = vortex_connection_get_socket (connection);
-		
+
 		/* check if the socket is activated */
 		if (vortex_io_waiting_invoke_is_set_fd_group (ctx, fds, on_reading, ctx)) {
 			/* init the listener incoming connection phase */
@@ -1215,6 +1215,14 @@ void __vortex_reader_dispatch_connection (int                  fds,
 
 	switch (vortex_connection_get_role (connection)) {
 	case VortexRoleMasterListener:
+		/* check if there are pre read handler to be executed on this 
+		   connection. */
+		if (vortex_connection_is_defined_preread_handler (connection)) {
+			/* if defined preread handler invoke it and return. */
+			vortex_connection_invoke_preread_handler (connection);
+			return;
+		} /* end if */
+
 		/* listener connections */
 		vortex_listener_accept_connections (ctx, fds, connection);
 		break;

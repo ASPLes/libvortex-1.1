@@ -1,6 +1,6 @@
 /* 
  *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
- *  Copyright (C) 2010 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2013 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
@@ -233,8 +233,7 @@ void __vortex_listener_release_master_ref (axlPointer ptr)
  * Internal vortex library function. This function does the initial
  * accept for a new incoming connection. New connections are accepted
  * through two steps: an initial accept and final negotiation. A
- * connection to be totally accepted must step over two previous
- * steps.
+ * connection to be totally accepted must step over these two steps.
  *
  * The reason to accept connections following this procedure is due to
  * Vortex Library way of reading data from all connections. 
@@ -250,9 +249,9 @@ void __vortex_listener_release_master_ref (axlPointer ptr)
  *
  * During the previous negotiation a malicious client can make
  * negotiation to be stopped, or sending data in an slow manner,
- * making the select loop to be blocked, even stopped. As a consequence
- * this malicious client have thrown down the reception for all
- * channels inside all connections.
+ * making the select loop to be blocked, even stopped. As a
+ * consequence this malicious client have thrown down the reception
+ * for all channels inside all connections.
  *
  * However, the vortex reader loop is prepared to avoid this problem
  * with already accepted connections because it doesn't pay attention
@@ -262,7 +261,7 @@ void __vortex_listener_release_master_ref (axlPointer ptr)
  * strong enough to avoid DOS (denial of service) attacks (well, it
  * should be ;-).
  *
- * That way the mission for the first step: to only accept the new
+ * That the mission for the first step: to only accept the new
  * connection and send the initial greeting to remote peer and *DO NOT
  * READING ANYTHING* to avoid DOS. On a second step, the response
  * reading is done and the connection is totally accepted in the
@@ -272,10 +271,30 @@ void __vortex_listener_release_master_ref (axlPointer ptr)
  * vortex reader can recognize it. 
  *
  * @param client_socket A new socket being accepted to be read.
+ *
+ * @param listener The listener where the operation was accepted.
+ *
+ * @param receive_handler Optional receive handler to be configured on
+ * the connection accepted
+ *
+ * @param send_handler Optional send handler to be configured on the
+ * connection accepted
+ *
+ * @param user_data_key Optional key label for the data to be
+ * associated to the connection provided.
+ *
+ * @param user_data Optional user pointer reference, associated to the
+ * connection with the label provided.
+ *
+ * @return A reference to the connection initially accepted.
  */
-void __vortex_listener_initial_accept (VortexCtx        * ctx,
-				       VORTEX_SOCKET      client_socket, 
-				       VortexConnection * listener)
+VortexConnection * __vortex_listener_initial_accept (VortexCtx            * ctx,
+						     VORTEX_SOCKET          client_socket, 
+						     VortexConnection     * listener,
+						     VortexReceiveHandler   receive_handler,
+						     VortexSendHandler      send_handler,
+						     const char           * user_data_key,
+						     axlPointer             user_data)
 {
 	VortexConnection     * connection = NULL;
 
@@ -291,13 +310,23 @@ void __vortex_listener_initial_accept (VortexCtx        * ctx,
 	if (vortex_connection_ref (listener, "master ref"))
 		vortex_connection_set_data_full (connection, "_vo:li:master", listener, NULL, __vortex_listener_release_master_ref);
 
+	/* setup optional I/O handlers */
+	if (send_handler) 
+		vortex_connection_set_send_handler (connection, send_handler);
+	if (receive_handler) 
+		vortex_connection_set_receive_handler (connection, receive_handler);
+
+	/* setup optinal data */
+	if (user_data_key && user_data)
+		vortex_connection_set_data (connection, user_data_key, user_data);
+
 	/*
 	 * Perform an initial accept, flagging the connection to be
 	 * into the initial accept stage, and send the initial greetings.
 	 */
 	vortex_listener_accept_connection (connection, axl_true);
 
-	return;
+	return connection;
 }
 
 /** 
@@ -482,7 +511,7 @@ void vortex_listener_accept_connections (VortexCtx        * ctx,
 
 	/* instead of negotiate the connection at this point simply
 	 * accept it to negotiate it inside vortex_reader loop.  */
-	__vortex_listener_initial_accept (vortex_connection_get_ctx (listener), client_socket, listener);
+	__vortex_listener_initial_accept (vortex_connection_get_ctx (listener), client_socket, listener, NULL, NULL, NULL, NULL);
 
 	return;
 }

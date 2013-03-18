@@ -1,6 +1,6 @@
 /*
  *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
- *  Copyright (C) 2010 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2013 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
@@ -51,6 +51,11 @@
 #if defined(ENABLE_TLS_SUPPORT)
 /* include tls support */
 #include <vortex_tls.h> 
+#endif
+
+#if defined(ENABLE_WEBSOCKET_SUPPORT)
+/* include websocket support */
+#include <vortex_websocket.h>
 #endif
 
 /* include local headers produced by xml-rpc-gen */
@@ -125,6 +130,10 @@ VortexCtx * ctx = NULL;
  */
 axl_bool enable_http_proxy = axl_false;
 
+#if defined(ENABLE_WEBSOCKET_SUPPORT)
+axl_bool enable_websocket_support = axl_false;
+#endif
+
 VortexConnection * connection_new (void)
 {
 	VortexHttpSetup  * setup;
@@ -155,6 +164,9 @@ VortexConnection * connection_new (void)
 
 		/* return connection created */
 		return conn;
+	} else if (enable_websocket_support) {
+		/* create basic setup */
+		return vortex_websocket_connection_new (listener_host, "44013", vortex_websocket_setup_new (ctx), NULL, NULL);
 
 	} else {
 		/* create a direct connection */
@@ -13833,6 +13845,114 @@ axl_bool  test_15_a (void)
 	return axl_true;
 }
 
+axl_bool test_17 (void) {
+#if defined(ENABLE_WEBSOCKET_SUPPORT)
+	VortexConnection     * conn;
+	VortexWebsocketSetup * setup;
+
+	/* create basic setup */
+	setup = vortex_websocket_setup_new (ctx);
+
+	/* create context */
+	printf ("Test 17: creating websocket connection over BEEP %s:44013..\n", listener_host);
+	conn = vortex_websocket_connection_new (listener_host, "44013", setup, NULL, NULL);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: failed to create BEEP session over WebSocket connection...\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 17: nice created!, now do some additional checks..\n");
+
+	if (! vortex_websocket_connection_is (conn)) {
+		printf ("ERROR: connection created but failed to check if it is a Websocket connection..\n");
+		return axl_false;
+	} /* end if */
+
+	/* close connection */
+	vortex_connection_close (conn);
+
+	enable_websocket_support = axl_true;
+
+	/* nice, now the rest */
+	printf ("Test 17::");
+	if (test_01 ())
+		printf ("Test 01: basic BEEP support [   OK   ]\n");
+	else {
+		printf ("Test 01: basic BEEP support [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 17::");
+	if (test_01a ())
+		printf ("Test 01-a: transfer zeroed binary frames [   OK   ]\n");
+	else {
+		printf ("Test 01-a: transfer zeroed binary frames [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 17::");
+	if (test_02 ())
+		printf ("Test 02: basic BEEP channel support [   OK   ]\n");
+	else {
+		printf ("Test 02: basic BEEP channel support [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 17::");
+	if (test_02a ()) 
+		printf ("Test 02-a: connection close notification [   OK   ]\n");
+	else {
+		printf ("Test 02-a: connection close notification [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 17::");
+	if (test_02b ()) 
+		printf ("Test 02-b: small message followed by close  [   OK   ]\n");
+	else {
+		printf ("Test 02-b: small message followed by close [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 17::");
+	if (test_02c ()) 
+		printf ("Test 02-c: huge amount of small message followed by close  [   OK   ]\n");
+	else {
+		printf ("Test 02-c: huge amount of small message followed by close [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 17::");
+	if (test_03 ())
+		printf ("Test 03: basic BEEP channel support (large messages) [   OK   ]\n");
+	else {
+		printf ("Test 03: basic BEEP channel support (large messages) [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 17::");
+	if (test_04_a ()) {
+		printf ("Test 04-a: Check ANS/NUL support, sending large content [   OK   ]\n");
+	} else {
+		printf ("Test 04-a: Check ANS/NUL support, sending large content [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 17::");
+	if (test_04_ab ()) {
+		printf ("Test 04-ab: Check ANS/NUL support, sending different files [   OK   ]\n");
+	} else {
+		printf ("Test 04-ab: Check ANS/NUL support, sending different files [ FAILED ]\n");
+		return axl_false;
+	}
+	
+
+	return axl_true;
+#else
+	printf ("Test 17: no support for WebSocket (noPoll support), doing nothing..\n");
+	return axl_true;
+#endif	
+}
 
 typedef int  (*VortexRegressionTest) (void);
   
@@ -13920,7 +14040,7 @@ int main (int  argc, char ** argv)
 	axl_bool  disable_server_log = axl_false;
 
 	printf ("** Vortex Library: A BEEP core implementation.\n");
-	printf ("** Copyright (C) 2010 Advanced Software Production Line, S.L.\n**\n");
+	printf ("** Copyright (C) 2013 Advanced Software Production Line, S.L.\n**\n");
 	printf ("** Vortex Regression tests: version=%s\n**\n",
 		VERSION);
 	printf ("** To properly run this test it is required to run vortex-regression-listener.\n");
@@ -14406,6 +14526,9 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_16a"))
 			run_test (test_16a, "Test 16-a", "Check HTTP CONNECT implementation (run tests under HTTP CONNECT)", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_17"))
+			run_test (test_17, "Test 17", "Check Websocket (RFC 6455) connect support through noPoll", -1, -1);
+
 		goto finish;
 	}
 
@@ -14627,6 +14750,8 @@ int main (int  argc, char ** argv)
 	run_test (test_16, "Test 16", "Check HTTP CONNECT implementation", -1, -1);
 
 	run_test (test_16a, "Test 16-a", "Check HTTP CONNECT implementation (run tests under HTTP CONNECT)", -1, -1); 
+
+	run_test (test_17, "Test 17", "Check Websocket (RFC 6455) connect support through noPoll", -1, -1);
 
 #if defined(AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/**

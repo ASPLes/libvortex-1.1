@@ -81,6 +81,11 @@ TLS_SUPPORT_LIBS    = $(top_builddir)/tls/libvortex-tls-1.1.la
 TLS_TESTS           = vortex-tls-listener
 endif
 
+if ENABLE_WEBSOCKET_SUPPORT
+INCLUDE_WEBSOCKET_SUPPORT = -DENABLE_WEBSOCKET_SUPPORT -I$(top_srcdir)/web-socket
+WEBSOCKET_SUPPORT_LIBS = $(top_builddir)/web-socket/libvortex-websocket-1.1.la
+endif
+
 certfilesdir    = $(datadir)/libvortex-1.1
 certfiles_DATA  = test-certificate.pem test-private-key.pem
 EXTRA_DIST      = Makefile.win $(certfiles_DATA) vortex-regression-client.vcproj  vortex-regression-listener.vcproj vortex-regression-client.idl \
@@ -107,9 +112,9 @@ noinst_PROGRAMS = \
 INCLUDES = -I$(top_srcdir)/src -I$(top_srcdir)/tunnel -I$(top_srcdir)/pull -I$(top_srcdir)/alive \
 	-I$(top_srcdir)/xml-rpc -I$(top_srcdir)/http $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
 	-I$(READLINE_PATH)/include $(compiler_options) -D__axl_disable_broken_bool_def__   \
-        -DVERSION=\""$(VORTEX_VERSION)"\" -I$(top_srcdir)/src $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_VORTEX_LOG) $(INCLUDE_TUNNEL_SUPPORT) $(INCLUDE_PULL_SUPPORT)  $(INCLUDE_XML_RPC_SUPPORT) $(INCLUDE_SASL_SUPPORT) $(INCLUDE_HTTP_SUPPORT) $(INCLUDE_TLS_SUPPORT)
+        -DVERSION=\""$(VORTEX_VERSION)"\" -I$(top_srcdir)/src $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_VORTEX_LOG) $(INCLUDE_TUNNEL_SUPPORT) $(INCLUDE_PULL_SUPPORT)  $(INCLUDE_XML_RPC_SUPPORT) $(INCLUDE_SASL_SUPPORT) $(INCLUDE_HTTP_SUPPORT) $(INCLUDE_TLS_SUPPORT) $(INCLUDE_WEBSOCKET_SUPPORT) $(NOPOLL_CFLAGS)
 
-LIBS            = $(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
+LIBS            = $(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS) $(NOPOLL_LIBS)
 
 bin_SCRIPTS = prepare_files
 
@@ -165,7 +170,7 @@ vortex_regression_client_LDADD     = \
 	$(top_builddir)/tunnel/libvortex-tunnel-1.1.la \
 	$(top_builddir)/http/libvortex-http-1.1.la \
 	$(top_builddir)/alive/libvortex-alive-1.1.la \
-	$(top_builddir)/pull/libvortex-pull-1.1.la  $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS) 
+	$(top_builddir)/pull/libvortex-pull-1.1.la  $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS) $(WEBSOCKET_SUPPORT_LIBS)
 
 vortex_regression_listener_SOURCES   = \
 	vortex-regression-listener.c vortex-regression-common.c vortex-regression-common.h $(vortex_regression_listener_xml_rpc_files) 
@@ -175,7 +180,7 @@ vortex_regression_listener_LDADD     = \
 	$(top_builddir)/tunnel/libvortex-tunnel-1.1.la \
 	$(top_builddir)/pull/libvortex-pull-1.1.la \
 	$(top_builddir)/alive/libvortex-alive-1.1.la \
-	 $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS)
+	 $(XML_RPC_SUPPORT_LIBS) $(SASL_SUPPORT_LIBS) $(TLS_SUPPORT_LIBS) $(WEBSOCKET_SUPPORT_LIBS)
 
 vortex_server_without_cbs_SOURCES   = vortex-server-without-cbs.c
 vortex_server_without_cbs_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.1.la

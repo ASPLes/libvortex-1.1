@@ -1,6 +1,6 @@
 /* 
  *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
- *  Copyright (C) 2010 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2013 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
@@ -1374,7 +1374,8 @@ int          vortex_frame_readline (VortexConnection * connection, char  * buffe
 			 * without logging a message */
 			if (vortex_connection_is_ok (connection, axl_false)) {
 				error_msg = vortex_errno_get_last_error ();
-				vortex_log (VORTEX_LEVEL_CRITICAL, "unable to read a line, error was: %s",
+				vortex_log (VORTEX_LEVEL_CRITICAL, "unable to read a line from conn-id=%d (socket %d), error was: %s",
+					    vortex_connection_get_id (connection), vortex_connection_get_socket (connection),
 					    error_msg ? error_msg : "");
 			}
 			return (-1);
@@ -1602,11 +1603,22 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	/* parse frame header, read the first line */
 	bytes_read = vortex_frame_readline (connection, line, 99);
 	if (bytes_read == -2) {
+		/* count number of non-blocking operations on this
+		 * connection to avoid iterating for ever */
+		connection->no_data_opers++;
+		if (connection->no_data_opers > 25) {
+			__vortex_connection_shutdown_and_record_error (
+				connection, VortexError, "too much no data available operations over this connection");
+			return NULL;
+		} /* end if */
+
                 vortex_log (VORTEX_LEVEL_WARNING,
-			    "no data were waiting on this non-blocking connection id=%d (EWOULDBLOCK|EAGAIN errno=%d)",
+			    "no data was waiting on this non-blocking connection id=%d (EWOULDBLOCK|EAGAIN errno=%d)",
 			    vortex_connection_get_id (connection), errno);
 		return NULL;
-	}
+	} /* end if */
+	/* reset no data opers */
+	connection->no_data_opers = 0;
 
 	if (bytes_read == 0) {
 		/* check if channel is expected to be closed */
@@ -1630,7 +1642,7 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 		/* check if we have a non-blocking connection */
 		__vortex_connection_shutdown_and_record_error (
 			connection, VortexUnnotifiedConnectionClose,
-			"remote side have disconnected without closing properly this session id=%d",
+			"remote side has disconnected without closing properly this session id=%d",
 			vortex_connection_get_id (connection));
 		return NULL;
 	}

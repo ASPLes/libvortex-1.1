@@ -1,6 +1,6 @@
 /*
  *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
- *  Copyright (C) 2010 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2013 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
@@ -64,6 +64,12 @@
 
 #ifdef AXL_OS_UNIX
 #include <signal.h>
+#endif
+
+#if defined(ENABLE_WEBSOCKET_SUPPORT)
+/* include nopoll support */
+#include <vortex_websocket.h>
+
 #endif
 
 void frame_received_fake_listeners  (VortexChannel    * channel,
@@ -1595,6 +1601,11 @@ int main (int  argc, char ** argv)
 #if defined(ENABLE_SASL_SUPPORT)
 	VortexCtx        * ctx2;
 #endif
+#if defined(ENABLE_WEBSOCKET_SUPPORT)
+	noPollCtx        * npll_ctx;
+	noPollConn       * npll_listener;
+	VortexConnection * npll_beep_listener;
+#endif
 
 	/* install default handling to get notification about
 	 * segmentation faults */
@@ -1960,6 +1971,27 @@ int main (int  argc, char ** argv)
 #else
 	printf("--- WARNING: Skipping SASL unified API check, since Vortex is not configured with SASL support\n");
 #endif
+
+#if defined(ENABLE_WEBSOCKET_SUPPORT)
+	npll_ctx = nopoll_ctx_new ();
+	
+	/* now create the listener */
+	npll_listener = nopoll_listener_new (npll_ctx, "0.0.0.0", "44013");
+	if (! nopoll_conn_is_ok (npll_listener)) {
+		printf ("ERROR: Expected to find proper WebSocket listener connection status, but found..\n");
+		return -1;
+	} /* end if */
+
+	/* now create the BEEP listener */
+	npll_beep_listener = vortex_websocket_listener_new (ctx, npll_listener, NULL, NULL);
+	if (! vortex_connection_is_ok (npll_beep_listener, axl_false)) {
+		printf ("ERROR: expected to find proper BEEP listener over Websocket creation but failure was found..\n");
+		return -1;
+	} /* end if */
+#else
+	printf ("--- WARNING: Skipping WebSocket support API check, since Vortex isn't configured with that support\n");
+#endif
+
 
 	/* configure connection notification  */
 	vortex_listener_set_on_connection_accepted (ctx, on_accepted, NULL);

@@ -1,6 +1,6 @@
 /* 
  *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
- *  Copyright (C) 2010 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2013 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
@@ -1273,7 +1273,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * Some of its features are: 
  *
  * - Robust and well tested BEEP implementation with a threaded design (non-blocking parallel comunications), written in ANSI C. 
- * - Context based API design making the library stateless. Support to run several ejecution contexts in the same process.
+ * - Context based API design making the library stateless. Support to run several execution contexts in the same process.
  * - A complete XML-RPC over BEEP <b>RFC 3529</b> with a IDL/XDL protocol compiler (<b>xml-rpc-gen</b>).
  * - A complete TUNNEL (<b>RFC3620</b>) support. 
  * - Complete implementation for TLS and SASL profiles.
