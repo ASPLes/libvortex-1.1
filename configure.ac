@@ -1,5 +1,5 @@
 dnl  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
-dnl  Copyright (C) 2010 Advanced Software Production Line, S.L.
+dnl  Copyright (C) 2013 Advanced Software Production Line, S.L.
 dnl
 dnl  This program is free software; you can redistribute it and/or
 dnl  modify it under the terms of the GNU Lesser General Public License
@@ -269,6 +269,17 @@ if test "$enable_sasl_support" = "yes" ; then
 fi
 AM_CONDITIONAL(ENABLE_SASL_SUPPORT, test "x$enable_sasl_support" = "xyes")
 
+dnl check for websocket support (through noPoll)
+AC_ARG_ENABLE(websocket-support, [  --disable-websocket-support    Makes Vortex Library to be built with WebSocket extension library], 
+	      enable_websocket_support="$enableval", 
+	      enable_websocket_support=yes)
+if test "$enable_websocket_support" != "no" ; then
+    PKG_CHECK_MODULES(NOPOLL, nopoll,	[enable_websocket_support=yes], [enable_websocket_support=no])
+    AC_SUBST(NOPOLL_CFLAGS)
+    AC_SUBST(NOPOLL_LIBS)
+fi
+AM_CONDITIONAL(ENABLE_WEBSOCKET_SUPPORT, test "x$enable_websocket_support" = "xyes")
+
 dnl check for XML-RPC RFC3529 support
 AC_ARG_ENABLE(xml-rpc-support, [  --disable-xml-rpc-support    Makes Vortex Library to be built without XML-RPC (RFC3529) support], 
 	      enable_xml_rpc_support="$enableval", 
@@ -448,6 +459,7 @@ sasl/Makefile
 tls/Makefile
 http/Makefile
 alive/Makefile
+web-socket/Makefile
 py-vortex/Makefile
 py-vortex/src/Makefile
 py-vortex/test/Makefile
@@ -475,6 +487,7 @@ vortex-sasl-1.1.pc
 vortex-tls-1.1.pc
 vortex-http-1.1.pc
 vortex-alive-1.1.pc
+vortex-websocket-1.1.pc
 ])
 
 echo "------------------------------------------"
@@ -532,6 +545,15 @@ else
    echo "     install GNU SASL developement files. "
    echo "     Once installed run again configure process "
    echo "     using --enable-sasl-support option."
+fi
+if test x$enable_websocket_support = xyes ; then
+   echo "   Build WebSocket extension library:        enabled"
+   echo "     (libvortex-websocket-1.1)"
+else
+   echo "   Build WebSocket extension library:        disabled"
+   echo 
+   echo "     NOTE: To enable WebSocket support you need to have libnopoll"
+   echo "           installed on your system and use --enable-websocket-support option."
 fi
 if test x$enable_xml_rpc_support = xyes ; then
    echo "   Build XML-RPC profile support:            enabled"

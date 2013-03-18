@@ -1,6 +1,6 @@
 /* 
  *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
- *  Copyright (C) 2010 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2013 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
@@ -376,6 +376,10 @@ struct _VortexConnection {
 	 */
 	int                          remaining_bytes;
 	int                          bytes_read;
+	int                          no_data_opers;
+
+	/** reference to the user land hook pointer **/
+	axlPointer                   hook;
 };
 
 #endif /* __VORTEX_CONNECTION_PRIVATE_H__ */

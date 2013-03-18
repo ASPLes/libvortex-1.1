@@ -1,6 +1,6 @@
 /* 
  *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
- *  Copyright (C) 2010 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2013 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
@@ -113,6 +113,14 @@ void          vortex_listener_set_on_connection_accepted (VortexCtx             
 
 void          vortex_listener_shutdown (VortexConnection * listener,
 					axl_bool           also_created_conns);
+
+VortexConnection * __vortex_listener_initial_accept (VortexCtx            * ctx,
+						     VORTEX_SOCKET          client_socket, 
+						     VortexConnection     * listener,
+						     VortexReceiveHandler   receive_handler,
+						     VortexSendHandler      send_handler,
+						     const char           * user_data_key,
+						     axlPointer             user_data);
 
 
 /* @} */

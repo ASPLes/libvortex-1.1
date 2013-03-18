@@ -1,6 +1,6 @@
 /* 
  *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
- *  Copyright (C) 2010 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2013 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
@@ -264,6 +264,11 @@ void                vortex_connection_set_data_full          (VortexConnection *
 							      axlPointer         value,
 							      axlDestroyFunc     key_destroy,
 							      axlDestroyFunc     value_destroy);
+
+void                vortex_connection_set_hook               (VortexConnection * connection,
+							      axlPointer         ptr);
+
+axlPointer          vortex_connection_get_hook               (VortexConnection * connection);
 
 void                vortex_connection_delete_key_data        (VortexConnection * connection,
 							      const char       * key);
