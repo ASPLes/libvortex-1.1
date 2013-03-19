@@ -56,8 +56,8 @@ endif
 if ENABLE_WEBSOCKET_SUPPORT
 WEBSOCKET_SUPPORT_DIR = web-socket
 WEBSOCKET_PKGCONFIG = vortex-websocket-1.1.pc
+WEBSOCKET_DEFS = update-web-socket-defs
 endif
-
 
 SUBDIRS = src $(PULL_SUPPORT_DIR) $(TUNNEL_SUPPORT_DIR) $(XML_RPC_SUPPORT_DIR) $(SASL_SUPPORT_DIR) $(TLS_SUPPORT_DIR) $(HTTP_SUPPORT_DIR) $(ALIVE_SUPPORT_DIR) $(ENABLE_WEBSOCKET_SUPPORT) $(PY_VORTEX_DIR) $(LUA_VORTEX_DIR) $(VORTEX_TEST_DIR) $(VORTEX_XML_RPC_GEN_TOOL_DIR) $(VORTEX_DOC_DIR) data logo
 EXTRA_DIST = vortex-1.1.pc.in VERSION libvortex.sln get-python-config Makefile.win Makefile.win.in check-python-dir.py
@@ -66,7 +66,7 @@ pkgconfig_DATA = vortex-1.1.pc $(PULL_PKGCONFIG) $(TUNNEL_PKGCONFIG) $(XML_RPC_P
 
 all-local: update-defs
 
-update-defs:
+update-defs: $(WEBSOCKET_DEFS)
 	cd src; make update-def; cd ..
 	cd tls; make update-def; cd ..
 	cd sasl; make update-def; cd ..
@@ -74,4 +74,6 @@ update-defs:
 	cd xml-rpc; make update-def; cd ..
 	cd pull; make update-def; cd ..
 	cd alive; make update-def; cd ..
+
+update-web-socket-defs:
 	cd web-socket; make update-def; cd ..

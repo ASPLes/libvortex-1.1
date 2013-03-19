@@ -164,10 +164,11 @@ VortexConnection * connection_new (void)
 
 		/* return connection created */
 		return conn;
+#if defined(ENABLE_WEBSOCKET_SUPPORT)
 	} else if (enable_websocket_support) {
 		/* create basic setup */
 		return vortex_websocket_connection_new (listener_host, "44013", vortex_websocket_setup_new (ctx), NULL, NULL);
-
+#endif
 	} else {
 		/* create a direct connection */
 		return vortex_connection_new (ctx, listener_host, LISTENER_PORT, NULL, NULL);

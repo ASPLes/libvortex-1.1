@@ -1,12 +1,1 @@
 EXPORTS
-vortex_websocket_connection_data_free
-vortex_websocket_connection_is
-vortex_websocket_connection_new
-vortex_websocket_listener_accept
-vortex_websocket_listener_new
-vortex_websocket_read
-vortex_websocket_send
-vortex_websocket_setup_conf
-vortex_websocket_setup_new
-vortex_websocket_setup_ref
-vortex_websocket_setup_unref
