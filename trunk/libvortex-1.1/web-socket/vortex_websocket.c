@@ -653,7 +653,7 @@ VortexConnection * vortex_websocket_listener_new   (VortexCtx                * c
 	v_return_val_if_fail (ctx || listener, NULL);
 
 	/* nopoll_log_enable (nopoll_conn_ctx (listener), axl_true);
-	   nopoll_log_color_enable (nopoll_conn_ctx (listener), axl_true);     */
+	   nopoll_log_color_enable (nopoll_conn_ctx (listener), axl_true);      */
 
 	/* check if this is a blocking or async listener creation */
 	result = vortex_connection_new_empty (ctx, nopoll_conn_socket (listener), VortexRoleMasterListener);
