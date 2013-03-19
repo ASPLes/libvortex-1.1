@@ -38,6 +38,7 @@
 #include <vortex_websocket.h>
 
 #define VORTEX_WEBSOCKET_ENABLED "vo:websocket:en"
+#define VORTEX_TLS_WEBSOCKET_ENABLED "vo:websocket:tls"
 
 #define LOG_DOMAIN "vortex-websocket"
 
@@ -79,7 +80,25 @@ struct _VortexWebsocketSetup {
 	 */
 	char * origin;
 	char * host_header;
+	/** 
+	 * @internal Use WebSocket TLS support.
+	 */
+	axl_bool use_wss;
 };
+
+/** 
+ * @internal Internal function to release and free the mutex memory
+ * allocated.
+ * 
+ * @param mutex The mutex to destroy.
+ */
+void __vortex_websocket_free_mutex (VortexMutex * mutex)
+{
+	/* free mutex */
+	vortex_mutex_destroy (mutex);
+	axl_free (mutex);
+	return;
+}
 
 /** 
  * @brief Allows to create a \ref VortexWebsocketSetup object which is used
@@ -222,6 +241,10 @@ void               vortex_websocket_setup_conf     (VortexWebsocketSetup      * 
 		/* store origin */
 		setup->host_header = axl_strdup (value);
 		break;
+	case VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_TLS:
+		/* enable wss support */
+		setup->use_wss = PTR_TO_INT (value);
+		break;
 	} /* end switch */
 
 	return;
@@ -260,16 +283,32 @@ int vortex_websocket_read (VortexConnection * conn,
 {
 	noPollConn * _conn = vortex_connection_get_hook (conn);
 	int          result;
+	VortexCtx   * ctx  = CONN_CTX (conn);
+	VortexMutex * mutex;
 
 	/* check if the connection has the greetings completed and it
 	 * is initiator role */
+	if (_conn == NULL)
+		_conn = vortex_connection_get_data (conn, "nopoll-conn");
 
-	/* call to read */
+	/* get mutex */
+	mutex = vortex_connection_get_data (conn, "ws:mutex");
+	if (mutex == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to find mutex to protect ssl object to read data");
+		return -1;
+	} /* end if */
+
+	/* call to acquire mutex, read and release */
+	vortex_mutex_lock (mutex);
 	result = nopoll_conn_read (_conn, buffer, buffer_len, nopoll_false, 0);
+	vortex_mutex_unlock (mutex);
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "nopoll_conn_read returned result=%d, noPollConn status=%d",
+		    result, nopoll_conn_is_ok (_conn));
 	if (result == -1) {
 		/* check connection status to notify that no data was
 		 * available  */
-		if (! nopoll_conn_is_ok (_conn))
+		if (nopoll_conn_is_ok (_conn))
 			return -2; 
 	} /* end if */
 	return result;
@@ -279,8 +318,27 @@ int vortex_websocket_send (VortexConnection * conn,
 			   const char       * buffer,
 			   int                buffer_len)
 {
-	noPollConn * _conn = vortex_connection_get_hook (conn);
-	return nopoll_conn_send_text (_conn, buffer, buffer_len);
+	noPollConn  * _conn = vortex_connection_get_hook (conn);
+	VortexCtx   * ctx   = CONN_CTX (conn);
+	VortexMutex * mutex;
+	int           result;
+
+	if (_conn == NULL)
+		_conn = vortex_connection_get_data (conn, "nopoll-conn");
+
+	/* get mutex */
+	mutex = vortex_connection_get_data (conn, "ws:mutex");
+	if (mutex == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to find mutex to protect ssl object to read data");
+		return -1;
+	} /* end if */
+
+	/* acquire lock, operate and release */
+	vortex_mutex_lock (mutex);
+	result = nopoll_conn_send_text (_conn, buffer, buffer_len);
+	vortex_mutex_unlock (mutex);
+
+	return result;
 }
 
 void __vortex_websocket_conn_close (axlPointer ptr)
@@ -324,6 +382,8 @@ axlPointer __vortex_websocket_connection_new (VortexWebsocketConnectionData * da
 	noPollConn           * nopoll_conn;
 	noPollCtx            * nopoll_ctx;
 	char                 * custom_origin = NULL;
+
+	VortexMutex          * mutex;
 	
 	/* create first a basic webSocket connection */
 	nopoll_ctx = nopoll_ctx_new ();
@@ -331,7 +391,7 @@ axlPointer __vortex_websocket_connection_new (VortexWebsocketConnectionData * da
 		goto report_conn;
 
 	/* nopoll_log_enable (nopoll_ctx, axl_true);
-	   nopoll_log_color_enable (nopoll_ctx, axl_true);   */
+	   nopoll_log_color_enable (nopoll_ctx, axl_true);    */
 
 	if (! setup->origin)
 		custom_origin = axl_strdup_printf ("http://%s", host);
@@ -340,19 +400,33 @@ axlPointer __vortex_websocket_connection_new (VortexWebsocketConnectionData * da
 		    nopoll_ctx, nopoll_ctx_ref_count (nopoll_ctx));
 
 	/* creat the connection */
-	nopoll_conn = nopoll_conn_new (nopoll_ctx, 
-				       host, 
-				       port,
-				       setup->host_header ? setup->host_header : host,
-				       /* get url */
-				       NULL, 
-				       /* protocols */
-				       NULL,
-				       setup->origin ? setup->origin : custom_origin);
+	if (setup->use_wss) {
+		nopoll_conn = nopoll_conn_tls_new (nopoll_ctx, 
+						   NULL, /* tls options, still not in use */
+						   host, 
+						   port,
+						   setup->host_header ? setup->host_header : host,
+						   /* get url */
+						   NULL, 
+						   /* protocols */
+						   NULL,
+						   setup->origin ? setup->origin : custom_origin);
+	} else {
+		nopoll_conn = nopoll_conn_new (nopoll_ctx, 
+					       host, 
+					       port,
+					       setup->host_header ? setup->host_header : host,
+					       /* get url */
+					       NULL, 
+					       /* protocols */
+					       NULL,
+					       setup->origin ? setup->origin : custom_origin);
+	} /* end if */
+
 	axl_free (custom_origin);
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "Created, waiting it to be completed (context %p, refs: %d)..",
-		    nopoll_ctx, nopoll_ctx_ref_count (nopoll_ctx));
+	vortex_log (VORTEX_LEVEL_DEBUG, "Created, waiting it to be completed (context %p, refs: %d, use TLS: %d)..",
+		    nopoll_ctx, nopoll_ctx_ref_count (nopoll_ctx), setup->use_wss);
 
 	/* wait until the connection is ready */
 	if (! nopoll_conn_wait_until_connection_ready (nopoll_conn, vortex_connection_get_connect_timeout (ctx) / 1000000)) {
@@ -378,6 +452,11 @@ axlPointer __vortex_websocket_connection_new (VortexWebsocketConnectionData * da
 	nopoll_conn_set_hook (nopoll_conn, conn);
 
 	/* setup I/O handlers */
+	mutex = axl_new (VortexMutex, 1);
+	vortex_mutex_create (mutex);
+	vortex_connection_set_data_full (conn, "ws:mutex", mutex,
+					 NULL, (axlDestroyFunc) __vortex_websocket_free_mutex);
+
 	vortex_connection_set_send_handler (conn, vortex_websocket_send);
 	vortex_connection_set_receive_handler (conn, vortex_websocket_read);
 
@@ -388,8 +467,27 @@ axlPointer __vortex_websocket_connection_new (VortexWebsocketConnectionData * da
 	if (! vortex_connection_do_greetings_exchange (ctx, conn, options, 60))
 		goto report_conn;
 
-	/* do connection notification */
  report_conn:
+	if (conn) {
+		/* do connection notification */
+		vortex_log (VORTEX_LEVEL_DEBUG, "BEEP over WebSocket connection status %d, use wss: %d",
+			    vortex_connection_is_ok (conn, axl_false), setup->use_wss);
+		if (setup->use_wss && vortex_connection_is_ok (conn, axl_false)) {
+			/* notify this connection is using TLS mode */
+			vortex_connection_set_data (conn, VORTEX_TLS_WEBSOCKET_ENABLED, INT_TO_PTR(1));
+		} /* end if */
+
+		/* flag that this connection was created by the websocket module */
+		vortex_connection_set_data (conn, VORTEX_WEBSOCKET_ENABLED, INT_TO_PTR(1));
+
+		/* drop a log */
+		if (vortex_connection_is_ok (conn, axl_false)) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "BEEP over WebSocket connection id=%d setup ok%s", 
+				    vortex_connection_get_id (conn),
+				    vortex_websocket_connection_is_tls_running (conn) ? " (TLS activated)" : "");
+		} /* end if */
+	} /* end if */
+
 	if (data->on_connected) {
 		data->on_connected (conn, data->user_data);
 		/* free data */
@@ -399,14 +497,6 @@ axlPointer __vortex_websocket_connection_new (VortexWebsocketConnectionData * da
 
 	/* free data */
 	vortex_websocket_connection_data_free (data);
-
-	
-	if (conn) {
-		/* flag the connection as created through a proxy */
-		vortex_connection_set_data (conn, VORTEX_WEBSOCKET_ENABLED, INT_TO_PTR(1));
-	
-		vortex_log (VORTEX_LEVEL_DEBUG, "BEEP over WebSocket connection id=%d setup ok", vortex_connection_get_id (conn));
-	} /* end if */
 	return conn;
 }
 
@@ -489,6 +579,7 @@ void vortex_websocket_listener_accept (VortexConnection * conn)
 	noPollCtx          * nopoll_ctx = nopoll_conn_ctx (listener);
 	noPollConn         * _new_conn  = NULL;
 	VortexConnection   * new_conn   = NULL;
+	VortexMutex        * mutex;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "Called pre-read handler over a BEEP over WebSocket listener id=%d (noPollConn %p), doing initial accept",
 		    vortex_connection_get_id (conn), listener);
@@ -505,12 +596,23 @@ void vortex_websocket_listener_accept (VortexConnection * conn)
 		ctx, 
 		nopoll_conn_socket (_new_conn), 
 		conn,
-		vortex_websocket_read, 
-		vortex_websocket_send, 
-		"nopoll-conn", _new_conn);
+		/* don't register the connection */
+		axl_false);
+
+	/* setup I/O handlers */
+	mutex = axl_new (VortexMutex, 1);
+	vortex_mutex_create (mutex);
+	vortex_connection_set_data_full (new_conn, "ws:mutex", mutex,
+					 NULL, (axlDestroyFunc) __vortex_websocket_free_mutex);
+
+	vortex_connection_set_send_handler (new_conn, vortex_websocket_send);
+	vortex_connection_set_receive_handler (new_conn, vortex_websocket_read);
+
+	vortex_connection_set_data (new_conn, "nopoll-conn", _new_conn);
 	vortex_connection_set_hook (new_conn, _new_conn);
-	vortex_log (VORTEX_LEVEL_DEBUG, "Configured hook pointer %p, associated to the listener %p",
-		    vortex_connection_get_hook (new_conn), new_conn);
+
+	/* called to accept listener inthe next step now we have it configured */
+	vortex_listener_accept_connection (new_conn, axl_true);
 
 	/* check connection status just to drop a log */
 	if (vortex_connection_is_ok (new_conn, axl_false)) 
@@ -551,7 +653,7 @@ VortexConnection * vortex_websocket_listener_new   (VortexCtx                * c
 	v_return_val_if_fail (ctx || listener, NULL);
 
 	/* nopoll_log_enable (nopoll_conn_ctx (listener), axl_true);
-	   nopoll_log_color_enable (nopoll_conn_ctx (listener), axl_true);   */
+	   nopoll_log_color_enable (nopoll_conn_ctx (listener), axl_true);     */
 
 	/* check if this is a blocking or async listener creation */
 	result = vortex_connection_new_empty (ctx, nopoll_conn_socket (listener), VortexRoleMasterListener);
@@ -591,6 +693,41 @@ axl_bool           vortex_websocket_connection_is (VortexConnection * conn)
 {
 	/* current status */
 	return PTR_TO_INT (vortex_connection_get_data (conn, VORTEX_WEBSOCKET_ENABLED));
+}
+
+/** 
+ * @brief Allows to check if the provided connection has TLS enabled
+ * (WebSocket over TLS).
+ *
+ * @param conn The connection that is asked about its connection type.
+ *
+ * @return axl_true in the case the connection is running WebSocket
+ * over TLS.
+ */
+axl_bool           vortex_websocket_connection_is_tls_running (VortexConnection * conn)
+{
+	noPollConn * _conn;
+	VortexCtx  * ctx = CONN_CTX (conn);
+
+	/* check incoming reference */
+	if (conn == NULL)
+		return axl_false;
+
+	/* get connection hook */
+	_conn = vortex_connection_get_hook (conn);
+	vortex_log (VORTEX_LEVEL_DEBUG, "Checking connection hook: %p -> %p", conn, _conn);
+	if (_conn == NULL)
+		return axl_false;
+
+	/* check if the noPoll connection is running TLS */
+	vortex_log (VORTEX_LEVEL_DEBUG, "Checking connection TLS state: %p (%d)", _conn, nopoll_conn_is_tls_on (_conn));
+	if (! nopoll_conn_is_tls_on (_conn)) 
+		return axl_false;
+
+	/* current status */
+	vortex_log (VORTEX_LEVEL_DEBUG, "Checking connection TLS vortex flag: %p (%d)", conn, 
+		    PTR_TO_INT (vortex_connection_get_data (conn, VORTEX_TLS_WEBSOCKET_ENABLED)));
+	return PTR_TO_INT (vortex_connection_get_data (conn, VORTEX_TLS_WEBSOCKET_ENABLED));
 }
 
 /** 

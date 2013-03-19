@@ -1,6 +1,7 @@
 EXPORTS
 vortex_websocket_connection_data_free
 vortex_websocket_connection_is
+vortex_websocket_connection_is_tls_running
 vortex_websocket_connection_new
 vortex_websocket_listener_accept
 vortex_websocket_listener_new

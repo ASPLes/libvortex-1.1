@@ -132,12 +132,16 @@ axl_bool enable_http_proxy = axl_false;
 
 #if defined(ENABLE_WEBSOCKET_SUPPORT)
 axl_bool enable_websocket_support = axl_false;
+axl_bool enable_websocket_tls_support = axl_false;
 #endif
 
 VortexConnection * connection_new (void)
 {
 	VortexHttpSetup  * setup;
 	VortexConnection * conn;
+#if defined(ENABLE_WEBSOCKET_SUPPORT)
+	VortexWebsocketSetup * wss_setup;
+#endif
 
 	/* create a new connection */
 	if (tunnel_tested) {
@@ -168,6 +172,15 @@ VortexConnection * connection_new (void)
 	} else if (enable_websocket_support) {
 		/* create basic setup */
 		return vortex_websocket_connection_new (listener_host, "44013", vortex_websocket_setup_new (ctx), NULL, NULL);
+	} else if (enable_websocket_tls_support) {
+		/* create basic setup */
+		wss_setup = vortex_websocket_setup_new (ctx);
+
+		/* setup wss protocol */
+		vortex_websocket_setup_conf (wss_setup, VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_TLS, INT_TO_PTR (axl_true));
+		
+		/* create connection */
+		return vortex_websocket_connection_new (listener_host, "44014", wss_setup, NULL, NULL);
 #endif
 	} else {
 		/* create a direct connection */
@@ -13947,6 +13960,137 @@ axl_bool test_17 (void) {
 		return axl_false;
 	}
 	
+	/* flag that websocket automatic connection creation has finished */
+	enable_websocket_support = axl_false;
+
+	return axl_true;
+#else
+	printf ("Test 17: no support for WebSocket (noPoll support), doing nothing..\n");
+	return axl_true;
+#endif	
+}
+
+axl_bool test_18 (void) {
+#if defined(ENABLE_WEBSOCKET_SUPPORT)
+	VortexConnection     * conn;
+	VortexWebsocketSetup * setup;
+
+	/* create basic setup */
+	setup = vortex_websocket_setup_new (ctx);
+
+	/* setup wss protocol */
+	vortex_websocket_setup_conf (setup, VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_TLS, INT_TO_PTR (axl_true));
+
+	/* create context */
+	printf ("Test 18: creating websocket connection over BEEP %s:44014..\n", listener_host);
+	conn = vortex_websocket_connection_new (listener_host, "44014", setup, NULL, NULL);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: failed to create BEEP session over WebSocket connection...\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 18: nice created!, now do some additional checks..\n");
+	if (! vortex_websocket_connection_is (conn)) {
+		printf ("ERROR: connection created but failed to check if it is a Websocket connection..\n");
+		return axl_false;
+	} /* end if */
+
+	if (! vortex_websocket_connection_is_tls_running (conn)) {
+		printf ("ERROR: expected connection working with TLS but found it isn't..\n");
+		return axl_false;
+	} /* end if */
+
+	/* close connection */
+	vortex_connection_close (conn);
+
+	return axl_true;
+#else
+	printf ("Test 18: no support for TLS WebSocket (noPoll support), doing nothing..\n");
+	return axl_true;
+#endif	
+}
+
+axl_bool test_19 (void) {
+#if defined(ENABLE_WEBSOCKET_SUPPORT)
+
+	/* notify the way we want connections be created */
+	enable_websocket_tls_support = axl_true;
+
+	/* nice, now the rest */
+	printf ("Test 19::");
+	if (test_01 ())
+		printf ("Test 01: basic BEEP support [   OK   ]\n");
+	else {
+		printf ("Test 01: basic BEEP support [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 19::");
+	if (test_01a ())
+		printf ("Test 01-a: transfer zeroed binary frames [   OK   ]\n");
+	else {
+		printf ("Test 01-a: transfer zeroed binary frames [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 19::");
+	if (test_02 ())
+		printf ("Test 02: basic BEEP channel support [   OK   ]\n");
+	else {
+		printf ("Test 02: basic BEEP channel support [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 19::");
+	if (test_02a ()) 
+		printf ("Test 02-a: connection close notification [   OK   ]\n");
+	else {
+		printf ("Test 02-a: connection close notification [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 19::");
+	if (test_02b ()) 
+		printf ("Test 02-b: small message followed by close  [   OK   ]\n");
+	else {
+		printf ("Test 02-b: small message followed by close [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 19::");
+	if (test_02c ()) 
+		printf ("Test 02-c: huge amount of small message followed by close  [   OK   ]\n");
+	else {
+		printf ("Test 02-c: huge amount of small message followed by close [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 19::");
+	if (test_03 ())
+		printf ("Test 03: basic BEEP channel support (large messages) [   OK   ]\n");
+	else {
+		printf ("Test 03: basic BEEP channel support (large messages) [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 19::");
+	if (test_04_a ()) {
+		printf ("Test 04-a: Check ANS/NUL support, sending large content [   OK   ]\n");
+	} else {
+		printf ("Test 04-a: Check ANS/NUL support, sending large content [ FAILED ]\n");
+		return axl_false;
+	}
+
+	printf ("Test 19::");
+	if (test_04_ab ()) {
+		printf ("Test 04-ab: Check ANS/NUL support, sending different files [   OK   ]\n");
+	} else {
+		printf ("Test 04-ab: Check ANS/NUL support, sending different files [ FAILED ]\n");
+		return axl_false;
+	}
+	
+	/* flag that websocket automatic connection creation has finished */
+	enable_websocket_tls_support = axl_false;
 
 	return axl_true;
 #else
@@ -14079,6 +14223,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_05d, ctest_06, test_06a, \n");
  	printf ("**                       test_07, test_08, test_09, test_10, test_11, test_12, test_13, test_14, \n");
  	printf ("**                       test_14a, test_14b, test_14c, test_14d, test_14e, test_14f, test_14g, test_15, test_15a, test_16\n");
+ 	printf ("**                       test_17, test_18, test_19\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -14530,6 +14675,12 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_17"))
 			run_test (test_17, "Test 17", "Check Websocket (RFC 6455) connect support through noPoll", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_18"))
+			run_test (test_18, "Test 18", "Check TLS Websocket (RFC 6455) connect support through noPoll", -1, -1);
+
+		if (check_and_run_test (run_test_name, "test_19"))
+			run_test (test_19, "Test 19", "Check TLS Websocket (RFC 6455) more tests", -1, -1);
+
 		goto finish;
 	}
 
@@ -14753,6 +14904,10 @@ int main (int  argc, char ** argv)
 	run_test (test_16a, "Test 16-a", "Check HTTP CONNECT implementation (run tests under HTTP CONNECT)", -1, -1); 
 
 	run_test (test_17, "Test 17", "Check Websocket (RFC 6455) connect support through noPoll", -1, -1);
+
+	run_test (test_18, "Test 18", "Check TLS Websocket (RFC 6455) connect support through noPoll", -1, -1);
+
+	run_test (test_19, "Test 19", "Check TLS Websocket (RFC 6455) more tests", -1, -1);
 
 #if defined(AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/**

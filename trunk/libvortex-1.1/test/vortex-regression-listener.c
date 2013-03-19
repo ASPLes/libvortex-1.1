@@ -1978,7 +1978,7 @@ int main (int  argc, char ** argv)
 	/* now create the listener */
 	npll_listener = nopoll_listener_new (npll_ctx, "0.0.0.0", "44013");
 	if (! nopoll_conn_is_ok (npll_listener)) {
-		printf ("ERROR: Expected to find proper WebSocket listener connection status, but found..\n");
+		printf ("ERROR: Expected to find proper WebSocket listener connection status, but found failure..\n");
 		return -1;
 	} /* end if */
 
@@ -1988,6 +1988,22 @@ int main (int  argc, char ** argv)
 		printf ("ERROR: expected to find proper BEEP listener over Websocket creation but failure was found..\n");
 		return -1;
 	} /* end if */
+
+	/* also create a WebSocket listener */
+	npll_listener = nopoll_listener_tls_new (npll_ctx, "0.0.0.0", "44014");
+	if (! nopoll_conn_is_ok (npll_listener)) {
+		printf ("ERROR: Expected to find proper WebSocket listener connection status, but found failure..\n");
+		return -1;
+	} /* end if */
+	nopoll_listener_set_certificate (npll_listener, "test-certificate.pem", "test-private-key.pem", NULL);
+
+	/* now create the BEEP listener under TLS */
+	npll_beep_listener = vortex_websocket_listener_new (ctx, npll_listener, NULL, NULL);
+	if (! vortex_connection_is_ok (npll_beep_listener, axl_false)) {
+		printf ("ERROR: expected to find proper BEEP listener over Websocket creation but failure was found..\n");
+		return -1;
+	} /* end if */
+
 #else
 	printf ("--- WARNING: Skipping WebSocket support API check, since Vortex isn't configured with that support\n");
 #endif
