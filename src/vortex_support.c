@@ -615,7 +615,7 @@ int      vortex_support_getenv_int                 (const char * env_name)
 
 	/* get the content of the variable */
 	memset (variable, 0, sizeof (char) * 1024);
-	size_returned = GetEnvironmentVariable (env_name, variable, 1023);
+	size_returned = GetEnvironmentVariableA (env_name, variable, 1023);
 
 	if (size_returned > 1023) {
 		return 0;
@@ -659,7 +659,7 @@ char *   vortex_support_getenv                 (const char * env_name)
 
 	/* get the content of the variable */
 	memset (variable, 0, sizeof (char) * 1024);
-	size_returned = GetEnvironmentVariable (env_name, variable, 1023);
+	size_returned = GetEnvironmentVariableA (env_name, variable, 1023);
 
 	if (size_returned > 1023) {
 		return 0;
@@ -691,7 +691,7 @@ axl_bool     vortex_support_setenv                     (const char * env_name,
 	
 #if defined (AXL_OS_WIN32)
 	/* use windows implementation */
-	return SetEnvironmentVariable (env_name, env_value);
+	return SetEnvironmentVariableA (env_name, env_value);
 #elif defined(AXL_OS_UNIX)
 	/* use the unix implementation */
 	return setenv (env_name, env_value, 1) == 0;
@@ -714,7 +714,7 @@ axl_bool      vortex_support_unsetenv                   (const char * env_name)
 
 #if defined (AXL_OS_WIN32)
 	/* use windows implementation */
-	return SetEnvironmentVariable (env_name, NULL);
+	return SetEnvironmentVariableA (env_name, NULL);
 #elif defined(AXL_OS_UNIX)
 	/* use the unix implementation */
 	setenv (env_name, "", 1);
