@@ -117,10 +117,7 @@ void          vortex_listener_shutdown (VortexConnection * listener,
 VortexConnection * __vortex_listener_initial_accept (VortexCtx            * ctx,
 						     VORTEX_SOCKET          client_socket, 
 						     VortexConnection     * listener,
-						     VortexReceiveHandler   receive_handler,
-						     VortexSendHandler      send_handler,
-						     const char           * user_data_key,
-						     axlPointer             user_data);
+						     axl_bool               dont_register);
 
 
 /* @} */

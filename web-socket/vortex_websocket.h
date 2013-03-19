@@ -85,7 +85,13 @@ typedef enum {
 	 * WebSocket initial handshake. If nothing is defined, the
 	 * connection's host value is used.
 	 */
-	VORTEX_WEBSOCKET_CONF_ITEM_HOST = 5
+	VORTEX_WEBSOCKET_CONF_ITEM_HOST = 5,
+	/** 
+	 * @brief Optional connection flag that allows indicating the
+	 * connection creation that the TLS protocol must be enabled
+	 * first before proceeding (support wss://).
+	 */
+	VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_TLS = 6
 } VortexWebsocketConfItem;
 
 VortexWebsocketSetup  * vortex_websocket_setup_new      (VortexCtx * ctx);
@@ -111,6 +117,8 @@ VortexConnection * vortex_websocket_listener_new   (VortexCtx                * c
 						    axlPointer                 user_data);
 
 axl_bool           vortex_websocket_connection_is  (VortexConnection * conn);
+
+axl_bool           vortex_websocket_connection_is_tls_running (VortexConnection * conn);
 
 END_C_DECLS
 

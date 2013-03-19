@@ -291,10 +291,7 @@ void __vortex_listener_release_master_ref (axlPointer ptr)
 VortexConnection * __vortex_listener_initial_accept (VortexCtx            * ctx,
 						     VORTEX_SOCKET          client_socket, 
 						     VortexConnection     * listener,
-						     VortexReceiveHandler   receive_handler,
-						     VortexSendHandler      send_handler,
-						     const char           * user_data_key,
-						     axlPointer             user_data)
+						     axl_bool               register_conn)
 {
 	VortexConnection     * connection = NULL;
 
@@ -310,15 +307,9 @@ VortexConnection * __vortex_listener_initial_accept (VortexCtx            * ctx,
 	if (vortex_connection_ref (listener, "master ref"))
 		vortex_connection_set_data_full (connection, "_vo:li:master", listener, NULL, __vortex_listener_release_master_ref);
 
-	/* setup optional I/O handlers */
-	if (send_handler) 
-		vortex_connection_set_send_handler (connection, send_handler);
-	if (receive_handler) 
-		vortex_connection_set_receive_handler (connection, receive_handler);
-
-	/* setup optinal data */
-	if (user_data_key && user_data)
-		vortex_connection_set_data (connection, user_data_key, user_data);
+	/* call to register the connection */
+	if (! register_conn)
+		return connection;
 
 	/*
 	 * Perform an initial accept, flagging the connection to be
@@ -511,7 +502,7 @@ void vortex_listener_accept_connections (VortexCtx        * ctx,
 
 	/* instead of negotiate the connection at this point simply
 	 * accept it to negotiate it inside vortex_reader loop.  */
-	__vortex_listener_initial_accept (vortex_connection_get_ctx (listener), client_socket, listener, NULL, NULL, NULL, NULL);
+	__vortex_listener_initial_accept (vortex_connection_get_ctx (listener), client_socket, listener, axl_true);
 
 	return;
 }
