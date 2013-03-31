@@ -775,7 +775,7 @@ char   * xml_rpc_support_find_data_file      (char  * name)
  * Internal implementation that support xml_rpc_support_to_lower and
  * xml_rpc_support_to_upper.
  */
-char  * __xml_rpc_support_common_name (char  * name, int      to_upper)
+char  * __xml_rpc_support_common_name (const char  * name, int      to_upper)
 {
 	char  * result;
 	int     iterator;
@@ -813,7 +813,7 @@ char  * __xml_rpc_support_common_name (char  * name, int      to_upper)
  * 
  * @return A newly allocated string or NULL if it fails.
  */
-char   * xml_rpc_support_to_lower            (char  * name)
+char   * xml_rpc_support_to_lower            (const char  * name)
 {
 	/* makes a to lower operation */
 	return __xml_rpc_support_common_name (name, axl_false);
@@ -828,7 +828,7 @@ char   * xml_rpc_support_to_lower            (char  * name)
  * 
  * @return A newly allocated string or NULL if it fails.
  */
-char   * xml_rpc_support_to_upper            (char  * name)
+char   * xml_rpc_support_to_upper            (const char  * name)
 {
 	/* makes a to upper operation */
 	return __xml_rpc_support_common_name (name, axl_true);
@@ -884,7 +884,7 @@ char   * xml_rpc_support_get_function_type_prefix (axlNode * params)
 	axlNode * aux3;	
 
 	/* service type unit */
-	char    * type;
+	const char * type;
 	char    * type_ref;
 	
 	/* service type prefix result */

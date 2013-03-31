@@ -7079,6 +7079,7 @@ char *  __vortex_channel_0_handle_start_msg_reply (VortexCtx        * ctx,
 
 	/* ask if we have an start handler defined */
 	if (!vortex_profiles_is_defined_start (ctx, profile)) {
+		vortex_log (VORTEX_LEVEL_WARNING, "received request for a profile=%s without start handler, denying request",  profile);
 		/* send an error reply */
 		return vortex_frame_get_error_message ("421", "service not available: channel can not be created, no start handler defined", NULL);
 	}
@@ -7204,11 +7205,26 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, 
-		    "start message received: channel='%d' profile='%s' serverName='%s' profile_content='%s' encoding='%s'", 
+		    "start message received: channel='%d' profile='%s' serverName='%s (%s%s)' profile_content='%s' encoding='%s'", 
 		    channel_num, profile,
 		    (serverName != NULL) ? serverName : "",
+		    vortex_connection_get_server_name (connection) ? vortex_connection_get_server_name (connection) : "",
+		    vortex_connection_get_server_name (connection) ? " already conf" : "",
 		    (profile_content != NULL) ? profile_content : "",
 		    (encoding == EncodingNone) ? "none" : "base64");
+
+	/* check and fix serverName requests with value already
+	 * configured */
+	if (vortex_connection_get_server_name (connection) && serverName && ! axl_cmp (serverName, vortex_connection_get_server_name (connection))) {
+		vortex_log (VORTEX_LEVEL_WARNING, "Received serverName=%s request for a conection that already has that value configured=%s, ignoring request..",
+			    serverName, vortex_connection_get_server_name (connection));
+		/* fix request */
+		serverName = axl_strdup (vortex_connection_get_server_name (connection));
+
+	} else if (serverName == NULL && vortex_connection_get_server_name (connection)) {
+		/* notify start handler with the value already configured */
+		serverName = axl_strdup (vortex_connection_get_server_name (connection));
+	} /* end if */
 
 	/* check if channel exists */
 	if (vortex_connection_channel_exists (connection, channel_num)) {
@@ -7299,6 +7315,9 @@ axl_bool vortex_channel_0_handle_start_msg_reply (VortexCtx        * ctx,
 		
 		axl_free (aux);
 		axl_free (error_msg);
+
+		vortex_log (VORTEX_LEVEL_WARNING, "Channel profile %s is filtered by some user level function, denying channel start reply conn-id=%d, channel=%d",
+			    profile, vortex_connection_get_id (connection), channel_num);
 
 		return axl_false; /* send channel error reply */
 	} /* end if */

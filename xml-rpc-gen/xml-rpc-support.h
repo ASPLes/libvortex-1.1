@@ -83,9 +83,9 @@ void      xml_rpc_support_add_search_path_ref (char  * path);
 char    * xml_rpc_support_find_data_file      (char  * name);
 
 /* name handling */
-char    * xml_rpc_support_to_lower            (char  * name);
+char    * xml_rpc_support_to_lower            (const char * name);
 
-char    * xml_rpc_support_to_upper            (char  * name);
+char    * xml_rpc_support_to_upper            (const char * name);
 
 /** 
  * @brief Simple alias definition to \ref xml_rpc_file_test.
