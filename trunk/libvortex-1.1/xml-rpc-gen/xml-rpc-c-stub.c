@@ -56,8 +56,8 @@ void xml_rpc_support_write_function_type_prefix (axlNode * params)
 	axlNode * aux2;
 	axlNode * aux3;	
 
-	char    * type;
-	char    * type_ref;
+	const char * type;
+	char       * type_ref;
 
 	/* now we have int aux a reference to the <params> node, get
 	 * its first child */
@@ -98,8 +98,8 @@ void xml_rpc_support_write_function_parameters (axlDoc * doc, axlNode * params)
 	axlNode * aux2;
 	axlNode * aux3;	
 
-	char    * type;
-	char    * name;
+	const char * type;
+	const char * name;
 
 	axl_bool  first = axl_true;
 
@@ -160,7 +160,7 @@ void xml_rpc_support_write_function_parameters_names (axlNode * aux)
 	axlNode * aux2;
 	axlNode * aux3;	
 
-	char    * name;
+	const char * name;
 	axl_bool  first = axl_true;
 
 	/* now write the service parameter spec */
@@ -204,9 +204,9 @@ void xml_rpc_support_write_method_create_values (axlDoc * doc, axlNode * aux, ch
 	axlNode * aux2;
 	axlNode * aux3;	
 
-	char    * type;
+	const char * type;
 	char    * type_ref;
-	char    * name;
+	const char * name;
 
 	char    * comp_name_lower;
 
@@ -305,8 +305,8 @@ void xml_rpc_support_write_method_create_values (axlDoc * doc, axlNode * aux, ch
  */
 void xml_rpc_c_stub_write_service_sync (axlDoc * doc, char  * comp_name, axlNode * node, axl_bool  is_header)
 {
-	char    * service_name;
-	char    * return_type;
+	const char    * service_name;
+	const char    * return_type;
 	char    * comp_name_lower;
 
 	axlNode * aux;
@@ -380,11 +380,11 @@ void xml_rpc_c_stub_write_service_sync (axlDoc * doc, char  * comp_name, axlNode
  * @return axl_true if the provided type is a struct or an array according
  * to the value received at type.
  */
-axl_bool  __xml_rpc_c_stub_type_is_common (axlDoc * doc, char  * type_name, char  * type)
+axl_bool  __xml_rpc_c_stub_type_is_common (axlDoc * doc, const char  * type_name, char  * type)
 {
-	axlNode * node;
-	axlNode * node_name;
-	char    * name;
+	axlNode    * node;
+	axlNode    * node_name;
+	const char * name;
 
 	/* write all struct definitions */
 	node = axl_doc_get (doc, "/xml-rpc-interface/name");
@@ -419,7 +419,7 @@ axl_bool  __xml_rpc_c_stub_type_is_common (axlDoc * doc, char  * type_name, char
  * 
  * @return 
  */
-axl_bool  xml_rpc_c_stub_type_is_struct (axlDoc * doc, char  * type_name)
+axl_bool  xml_rpc_c_stub_type_is_struct (axlDoc * doc, const char  * type_name)
 {
 	return __xml_rpc_c_stub_type_is_common (doc, type_name, "struct");
 }
@@ -436,7 +436,7 @@ axl_bool  xml_rpc_c_stub_type_is_struct (axlDoc * doc, char  * type_name)
  * 
  * @return 
  */
-axl_bool  xml_rpc_c_stub_type_is_array (axlDoc * doc, char  * type_name)
+axl_bool  xml_rpc_c_stub_type_is_array (axlDoc * doc, const char  * type_name)
 {
 	return __xml_rpc_c_stub_type_is_common (doc, type_name, "array");
 }
@@ -462,8 +462,8 @@ void xml_rpc_c_stub_write_service (axlDoc  * doc,
 				   axlNode * node, 
 				   axl_bool  is_header)
 {
-	char    * service_name;
-	char    * return_type;
+	const char    * service_name;
+	const char    * return_type;
 	char    * comp_name_lower;
 
 	axlNode * aux;
@@ -547,11 +547,11 @@ void xml_rpc_c_stub_write_struct_checkings (axlNode * _struct)
 	axlDoc  * doc;
 	axlNode * member;
 
-	axlNode * name_node;
-	char    * _name;
+	axlNode       * name_node;
+	const char    * _name;
 
 	axlNode * type_node;
-	char    * type;
+	const char    * type;
 
 	doc = axl_node_get_doc (_struct);
 
@@ -624,7 +624,7 @@ void xml_rpc_c_stub_write_struct_def (char  * out_dir,
 	axlNode * name;
 	char    * struct_upper;
 	char    * struct_lower;
-	char    * struct_name;
+	const char    * struct_name;
 
 	char    * comp_name_upper;
 	char    * comp_name_lower;
@@ -633,11 +633,11 @@ void xml_rpc_c_stub_write_struct_def (char  * out_dir,
 	axl_bool  written;
 
 	axlNode * type_node;
-	char    * type;
+	const char * type;
 	char    * type_lower;
 	
-	axlNode * name_node;
-	char    * _name;
+	axlNode    * name_node;
+	const char * _name;
 
 	axlDoc  * doc;
 
@@ -1127,7 +1127,7 @@ void xml_rpc_c_stub_write_struct_def (char  * out_dir,
  * @param same_line Writes the type into the same line or use the API
  * provided to produce tabular indentation.
  */
-void xml_rpc_c_stub_write_native_type (axlDoc * doc, char  * type, axl_bool      same_line)
+void xml_rpc_c_stub_write_native_type (axlDoc * doc, const char  * type, axl_bool      same_line)
 {
 	char  * type_write = "";
 
@@ -1180,13 +1180,13 @@ void xml_rpc_c_stub_write_array_def (char  * out_dir, char  * comp_name, axlNode
 	char    * comp_name_lower;
 
 	/* array name variables */
-	char    * name;
+	const char * name;
 	char    * name_upper;
 	char    * name_lower;
 	axlNode * node_name;
 
 	/* array type variables */
-	char    * type;
+	const char * type;
 	char    * type_lower;
 	char    * type_upper;
 	axlNode * node_type;
@@ -1820,7 +1820,7 @@ void xml_rpc_c_stub_write_type_header (char  * result, char  * comp_name, axlDoc
 	char    * comp_name_upper;
 
 	/* name content */
-	char    * type_name;
+	const char * type_name;
 	char    * type_name_lower;
 	axlNode * name;
 
@@ -2038,7 +2038,7 @@ void xml_rpc_c_stub_create_header_file (axlDoc * doc, char  * result, char  * co
 	return;
 }
 
-char  * xml_rpc_c_stub_write_service_body_sync_unmarshaller (axlDoc * doc, char  * return_type)
+char  * xml_rpc_c_stub_write_service_body_sync_unmarshaller (axlDoc * doc, const char  * return_type)
 {
 	if (axl_cmp (return_type, "int"))
 		return "vortex_xml_rpc_unmarshall_int_sync";
@@ -2064,7 +2064,7 @@ char  * xml_rpc_c_stub_write_service_body_sync_unmarshaller (axlDoc * doc, char 
 	return "--NOT-DEFINED--";
 }
 
-char  * xml_rpc_c_stub_write_service_body_async_unmarshaller (axlDoc * doc, char  * return_type)
+char  * xml_rpc_c_stub_write_service_body_async_unmarshaller (axlDoc * doc, const char  * return_type)
 {
 	if (axl_cmp (return_type, "int"))
 		return "vortex_xml_rpc_unmarshall_int";
@@ -2102,10 +2102,10 @@ char  * xml_rpc_c_stub_write_service_body_async_unmarshaller (axlDoc * doc, char
  */
 void xml_rpc_c_stub_write_service_body (axlDoc * doc, char  * comp_name, axlNode * node)
 {
-	char    * service_name;
+	const char * service_name;
 	
 	/* return type */
-	char    * return_type;
+	const char * return_type;
 	char    * return_type_lower;
 
 	/* component name */
@@ -2114,8 +2114,8 @@ void xml_rpc_c_stub_write_service_body (axlDoc * doc, char  * comp_name, axlNode
 	axlNode * aux;
 
 	/* alternative method name support */
-	char    * method_name;
-	axlNode * aux2;
+	const char * method_name;
+	axlNode    * aux2;
 
 	/* get service name */
 	aux          = axl_node_get_child_called (node, "name");

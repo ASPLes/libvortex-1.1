@@ -1346,6 +1346,10 @@ void vortex_listener_cleanup (VortexCtx * ctx)
  * established, see \ref vortex_connection_set_connection_actions with
  * \ref CONNECTION_STAGE_POST_CREATED.
  *
+ * This function supports setting up several handlers which will be
+ * called in the order they were configured. The function is thread
+ * safe.
+ *
  */
 void          vortex_listener_set_on_connection_accepted (VortexCtx                  * ctx,
 							  VortexOnAcceptedConnection   on_accepted, 
@@ -1433,8 +1437,8 @@ axl_bool            vortex_listener_parse_conf_and_start (VortexCtx * ctx)
 	axlNode  * aux;
 
 	/* host and port references */
-	char     * host;
-	char     * port;
+	const char     * host;
+	const char     * port;
 
 	/* a full path reference to the file */
 	char     * full_path_file;

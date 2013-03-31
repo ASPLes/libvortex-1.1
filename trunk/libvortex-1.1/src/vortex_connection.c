@@ -4366,8 +4366,9 @@ const char        * vortex_connection_get_server_name        (VortexConnection *
 
 /** 
  * @internal Function that allows to configure the serverName for the
- * first caller. Rest of the callers will fail to set the name (doing
- * nothing the function) if the serverName is found to be configured.
+ * first caller. Rest of the callers will fail to set the name (the
+ * function will do nothing) if the serverName is found to be
+ * configured.
  * 
  * @param connection The connection to configure its serverName.
  * @param serverName The server name value to configured.

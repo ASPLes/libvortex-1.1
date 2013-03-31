@@ -7,7 +7,7 @@ Name: libvortex-websocket-1.1
 Description: Support to run BEEP over WebSocket (RFC 6455)
   Allows to create VortexConnection objects runs on top of a WebSocket
   connection and that are compatible with the core API.
-Requires: vortex-1.1
+Requires: vortex-1.1 nopoll
 Version: @VORTEX_VERSION@
 Libs: -L${libdir} -lvortex-websocket-1.1
 Cflags: -I${includedir}/vortex-1.1

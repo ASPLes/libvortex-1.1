@@ -55,7 +55,7 @@ void xml_rpc_write_c_server_include_services (axlDoc * doc,
 	axlNode * name;
 	axlNode * params;
 
-	char    * content;
+	const char * content;
 	char    * to_lower;
 	
 	/* get a reference to the first <service> node */
@@ -106,11 +106,11 @@ void xml_rpc_write_c_server_include_services (axlDoc * doc,
 /* write service dispatch */
 void __xml_rpc_c_server_service_dispach (axlNode * service)
 {
-	char    * service_name;
+	const char * service_name;
 
 	/* alternative method name support */
 	axlNode * aux2;
-	char    * method_name;
+	const char * method_name;
 	axlDoc  * doc = axl_node_get_doc (service);
 	
 	axlNode * name;
@@ -118,8 +118,8 @@ void __xml_rpc_c_server_service_dispach (axlNode * service)
 	axlNode * param;
 
 	/* service type */
-	axlNode * type;
-	char    * service_type;
+	axlNode    * type;
+	const char * service_type;
 
 	/* check if the service was already handled */
 	if (axl_node_annotate_get_int (service, "service-handled", axl_false))
@@ -496,12 +496,12 @@ void xml_rpc_c_server_create_main_c (axlDoc * doc,
  * Writes to the opened file the service header, the service that will
  * execute the service code to be invoked.
  */
-void xml_rpc_c_server_write_service_header (char    * service_name, 
-					    int       param_count, 
-					    char    * return_type, 
-					    char    * type_prefix,
-					    axlNode * aux,
-					    axl_bool  is_header)
+void xml_rpc_c_server_write_service_header (const char * service_name, 
+					    int          param_count, 
+					    const char * return_type, 
+					    char       * type_prefix,
+					    axlNode    * aux,
+					    axl_bool     is_header)
 {
 	axlDoc * doc = axl_node_get_doc (aux);
 
@@ -557,10 +557,10 @@ axl_bool      xml_rpc_c_server_write_temporal_parameter_getting (char  * comp_na
 	axlNode * aux3;	
 	axlDoc  * doc;
 
-	char    * type;
-	char    * type_lower;
-	char    * comp_name_lower = NULL;
-	char    * name;
+	const char * type;
+	char       * type_lower;
+	char       * comp_name_lower = NULL;
+	const char * name;
 
 	int       iterator;
 	axl_bool  first_time = axl_true;
@@ -684,10 +684,10 @@ axl_bool  xml_rpc_c_server_write_temporal_parameter_releasing (char  * comp_name
 	axlNode * aux3;	
 	axlDoc  * doc;
 
-	char    * type;
-	char    * type_lower;
-	char    * comp_name_lower = NULL;
-	char    * name;
+	const char * type;
+	char       * type_lower;
+	char       * comp_name_lower = NULL;
+	const char * name;
 
 	int       iterator;
 	axl_bool  first_time = axl_true;
@@ -778,8 +778,8 @@ void xml_rpc_c_server_write_parameter_getting (axlNode * params)
 	axlNode * aux3;	
 	axlDoc  * doc;
 
-	char    * type;
-	char    * name;
+	const char * type;
+	const char * name;
 
 	int       iterator;
 
@@ -846,8 +846,8 @@ void xml_rpc_c_server_create_write_service (axlNode * service,
 					    char    * out_dir, 
 					    char    * comp_name)
 {
-	char    * service_name;
-	char    * return_type;
+	const char * service_name;
+	const char * return_type;
 	char    * return_type_lower;
 
 	int       param_count;

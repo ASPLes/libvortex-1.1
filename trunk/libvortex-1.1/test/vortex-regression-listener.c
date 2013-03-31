@@ -2026,6 +2026,10 @@ int main (int  argc, char ** argv)
 	vortex_exit_ctx (ctx2, axl_true);
 #endif
 
+#if defined(ENABLE_WEBSOCKET_SUPPORT)
+	nopoll_ctx_unref (npll_ctx);
+#endif
+
 	return 0;
 }
 

@@ -189,7 +189,7 @@ void xml_rpc_autoconf_write_struct_and_arrays (axlDoc * doc, char  * comp_name)
 	/* struct support */
 	axlNode * _struct;
 	axlNode * name;
-	char    * struct_name;
+	const char * struct_name;
 	char    * struct_lower;
 	char    * comp_name_lower;
 
@@ -266,7 +266,7 @@ void xml_rpc_autoconf_makefile_am_create (axlDoc    * doc,
 	axlNode * name;
 
 	/* string variables */
-	char    * service_name;
+	const char * service_name;
 	char    * type_prefix;
 	char    * comp_name_lower;
 	
