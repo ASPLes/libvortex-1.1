@@ -635,8 +635,8 @@ void     vortex_log_set_handler      (VortexCtx        * ctx,
 }
 
 /** 
- * @brief Allows to instruct vortex to send log strings already
- * formated to log handler configured (vortex_log_set_handler).
+ * @brief Allows to instruct vortex to send string logs already
+ * formated into the log handler configured (vortex_log_set_handler).
  *
  * This will make vortex to expand string arguments (message and
  * args), causing the argument \ref VortexLogHandler message argument
@@ -737,6 +737,7 @@ void _vortex_log_common (VortexCtx        * ctx,
 			/* call a custom debug handler if one has been set */
 			ctx->debug_handler (file, line, log_level, message, args);
 		} /* end if */
+
 	} else {
 		/* printout the process pid */
 	ctx_not_defined:
@@ -764,7 +765,7 @@ void _vortex_log_common (VortexCtx        * ctx,
 					 (int) stamp.tv_sec, (int) stamp.tv_usec, getpid (), file ? file : "", line, buffer);
 				break;
 			}
-		}else {
+		} else {
 #endif /* __GNUC__ */
 			switch (log_level) {
 			case VORTEX_LEVEL_DEBUG:
@@ -787,7 +788,7 @@ void _vortex_log_common (VortexCtx        * ctx,
 		fflush (stdout);
 		
 	} /* end if (ctx->debug_handler) */
-	
+
 	/* check to release the mutex if defined the context */
 	if (use_log_mutex) 
 		vortex_mutex_unlock (&ctx->log_mutex);
