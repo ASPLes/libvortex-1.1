@@ -952,6 +952,129 @@ char   * vortex_support_inet_ntoa                  (VortexCtx           * ctx,
 }
 
 /** 
+ * @brief Creates a portable pipe (by creating a socket connected
+ * pair).
+ *
+ * @param descf The pointer to the buffer where descriptors will be
+ * stored.
+ *
+ * @return The function returns -1 in the case of failure or 0 if pipe
+ * was properly created.
+ */
+int      vortex_support_pipe                       (VortexCtx * ctx, int descf[2])
+{
+	struct sockaddr_in      saddr;
+	struct sockaddr_in      sin;
+
+	VORTEX_SOCKET           listener_fd;
+#if defined(AXL_OS_WIN32)
+/*	BOOL                    unit      = axl_true; */
+	int                     sin_size  = sizeof (sin);
+#else    	
+	int                     unit      = 1; 
+	socklen_t               sin_size  = sizeof (sin);
+#endif	  
+	int                     bind_res;
+	int                     result;
+
+	/* create listener socket */
+	if ((listener_fd = socket(AF_INET, SOCK_STREAM, 0)) <= 2) {
+		/* do not allow creating sockets reusing stdin (0),
+		   stdout (1), stderr (2) */
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to create listener socket: %d (errno=%d:%s)", listener_fd, errno, vortex_errno_get_error (errno));
+		return -1;
+        } /* end if */
+
+#if defined(AXL_OS_WIN32)
+	/* Do not issue a reuse addr which causes on windows to reuse
+	 * the same address:port for the same process. Under linux,
+	 * reusing the address means that consecutive process can
+	 * reuse the address without being blocked by a wait
+	 * state.  */
+	/* setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char  *)&unit, sizeof(BOOL)); */
+#else
+	setsockopt (listener_fd, SOL_SOCKET, SO_REUSEADDR, &unit, sizeof (unit));
+#endif 
+
+	memset(&saddr, 0, sizeof(struct sockaddr_in));
+	saddr.sin_family          = AF_INET;
+	saddr.sin_port            = 0;
+	saddr.sin_addr.s_addr     = htonl (INADDR_LOOPBACK);
+
+	/* call to bind */
+	bind_res = bind (listener_fd, (struct sockaddr *)&saddr,  sizeof (struct sockaddr_in));
+	if (bind_res == VORTEX_SOCKET_ERROR) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to bind address (port already in use or insufficient permissions). Closing socket: %d", listener_fd);
+		vortex_close_socket (listener_fd);
+		return -1;
+	}
+	
+	if (listen (listener_fd, 1) == VORTEX_SOCKET_ERROR) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "an error have occur while executing listen");
+		vortex_close_socket (listener_fd);
+		return -1;
+        } /* end if */
+
+	/* notify listener */
+	if (getsockname (listener_fd, (struct sockaddr *) &sin, &sin_size) < -1) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "an error have happen while executing getsockname");
+		vortex_close_socket (listener_fd);
+		return -1;
+	} /* end if */
+
+	vortex_log  (VORTEX_LEVEL_DEBUG, "created listener running listener at %s:%d (socket: %d)", inet_ntoa(sin.sin_addr), ntohs (sin.sin_port), listener_fd);
+
+	/* on now connect: read side */
+	descf[0]      = socket (AF_INET, SOCK_STREAM, 0);
+	if (descf[0] == VORTEX_INVALID_SOCKET) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to create socket required for pipe");
+		vortex_close_socket (listener_fd);
+		return -1;
+	} /* end if */
+
+	/* disable nagle */
+	vortex_connection_set_sock_tcp_nodelay (descf[0], axl_true);
+
+	/* set non blocking connection */
+	vortex_connection_set_sock_block (descf[0], axl_false);  
+
+        memset(&saddr, 0, sizeof(saddr));
+	saddr.sin_addr.s_addr     = htonl(INADDR_LOOPBACK);
+        saddr.sin_family          = AF_INET;
+        saddr.sin_port            = sin.sin_port;
+
+	/* connect in non blocking manner */
+	result = connect (descf[0], (struct sockaddr *)&saddr, sizeof (saddr));
+	if (errno != VORTEX_EINPROGRESS) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "connect () returned %d, errno=%d:%s", 
+			    result, errno, vortex_errno_get_last_error ());
+		vortex_close_socket (listener_fd);
+		return -1;
+	}
+
+	/* accept connection */
+	vortex_log  (VORTEX_LEVEL_DEBUG, "calling to accept () socket");
+	descf[1] = vortex_listener_accept (listener_fd);
+
+	if (descf[1] <= 0) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to accept connection, failed to create pipe");
+		vortex_close_socket (listener_fd);
+		return -1;
+	}
+	/* set pipe read end from result returned by thread */
+	vortex_log (VORTEX_LEVEL_DEBUG, "Created pipe [%d, %d]", descf[0], descf[1]);
+
+	/* disable nagle */
+	vortex_connection_set_sock_tcp_nodelay (descf[1], axl_true);
+
+	/* close listener */
+	vortex_close_socket (listener_fd);
+
+	/* report and return fd */
+	return 0;
+}
+
+/** 
  * @brief Allows to perform a set of test for the provided path.
  * 
  * @param path The path that will be checked.

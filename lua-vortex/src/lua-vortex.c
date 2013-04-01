@@ -935,115 +935,13 @@ int _lua_vortex_yield (lua_State * L)
 
 axl_bool __lua_vortex_event_fd_init_pipe (lua_State * L, LuaVortexLock * lock)
 {
-	struct sockaddr_in      saddr;
-	struct sockaddr_in      sin;
+	VortexCtx * ctx = vortex_ctx_new ();
+	axl_bool    result;
 
-	VORTEX_SOCKET           listener_fd;
-#if defined(AXL_OS_WIN32)
-/*	BOOL                    unit      = axl_true; */
-	int                     sin_size  = sizeof (sin);
-#else    	
-	int                     unit      = 1; 
-	socklen_t               sin_size  = sizeof (sin);
-#endif	  
-	int                     bind_res;
-	int                     result;
-
-	/* create listener socket */
-	if ((listener_fd = socket(AF_INET, SOCK_STREAM, 0)) <= 2) {
-		/* do not allow creating sockets reusing stdin (0),
-		   stdout (1), stderr (2) */
-		lua_vortex_error (L, "failed to create listener socket: %d (errno=%d:%s)", listener_fd, errno, vortex_errno_get_error (errno));
-		return -1;
-        } /* end if */
-
-#if defined(AXL_OS_WIN32)
-	/* Do not issue a reuse addr which causes on windows to reuse
-	 * the same address:port for the same process. Under linux,
-	 * reusing the address means that consecutive process can
-	 * reuse the address without being blocked by a wait
-	 * state.  */
-	/* setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char  *)&unit, sizeof(BOOL)); */
-#else
-	setsockopt (listener_fd, SOL_SOCKET, SO_REUSEADDR, &unit, sizeof (unit));
-#endif 
-
-	memset(&saddr, 0, sizeof(struct sockaddr_in));
-	saddr.sin_family          = AF_INET;
-	saddr.sin_port            = 0;
-	saddr.sin_addr.s_addr     = htonl (INADDR_LOOPBACK);
-
-	/* call to bind */
-	bind_res = bind (listener_fd, (struct sockaddr *)&saddr,  sizeof (struct sockaddr_in));
-	if (bind_res == VORTEX_SOCKET_ERROR) {
-		lua_vortex_error (L, "unable to bind address (port already in use or insufficient permissions). Closing socket: %d", listener_fd);
-		vortex_close_socket (listener_fd);
-		return axl_false;
-	}
-	
-	if (listen (listener_fd, 1) == VORTEX_SOCKET_ERROR) {
-		lua_vortex_error (L, "an error have occur while executing listen");
-		vortex_close_socket (listener_fd);
-		return axl_false;
-        } /* end if */
-
-	/* notify listener */
-	if (getsockname (listener_fd, (struct sockaddr *) &sin, &sin_size) < -1) {
-		lua_vortex_error (L, "an error have happen while executing getsockname");
-		vortex_close_socket (listener_fd);
-		return axl_false;
-	} /* end if */
-
-	lua_vortex_log  (LUA_VORTEX_DEBUG, "created listener running listener at %s:%d (socket: %d)", inet_ntoa(sin.sin_addr), ntohs (sin.sin_port), listener_fd);
-
-	/* on now connect: read side */
-	lock->pipe[0]      = socket (AF_INET, SOCK_STREAM, 0);
-	if (lock->pipe[0] == VORTEX_INVALID_SOCKET) {
-		lua_vortex_error (L,  "Unable to create socket required for pipe");
-		vortex_close_socket (listener_fd);
-		return axl_false;
-	} /* end if */
-
-	/* disable nagle */
-	vortex_connection_set_sock_tcp_nodelay (lock->pipe[0], axl_true);
-
-	/* set non blocking connection */
-	vortex_connection_set_sock_block (lock->pipe[0], axl_false);  
-
-        memset(&saddr, 0, sizeof(saddr));
-	saddr.sin_addr.s_addr     = htonl(INADDR_LOOPBACK);
-        saddr.sin_family          = AF_INET;
-        saddr.sin_port            = sin.sin_port;
-
-	/* connect in non blocking manner */
-	result = connect (lock->pipe[0], (struct sockaddr *)&saddr, sizeof (saddr));
-	if (errno != VORTEX_EINPROGRESS) {
-		lua_vortex_error (L, "connect () returned %d, errno=%d:%s", 
-				  result, errno, vortex_errno_get_last_error ());
-		vortex_close_socket (listener_fd);
-		return axl_false;
-	}
-
-	/* accept connection */
-	lua_vortex_log  (LUA_VORTEX_DEBUG, "calling to accept () socket");
-	lock->pipe[1] = vortex_listener_accept (listener_fd);
-
-	if (lock->pipe[1] <= 0) {
-		lua_vortex_error (L, "Unable to accept connection, failed to create pipe");
-		vortex_close_socket (listener_fd);
-		return axl_false;
-	}
-	/* set pipe read end from result returned by thread */
-	lua_vortex_log (LUA_VORTEX_DEBUG, "Created pipe [%d, %d] for lua state %p", lock->pipe[0], lock->pipe[1], L);
-
-	/* disable nagle */
-	vortex_connection_set_sock_tcp_nodelay (lock->pipe[1], axl_true);
-
-	/* close listener */
-	vortex_close_socket (listener_fd);
-
-	/* report and return fd */
-	return axl_true;
+	/* create pipe and check it returns 0 */
+	result = vortex_support_pipe (ctx, lock->pipe) == 0;
+	vortex_ctx_free (ctx);
+	return result;
 }
 
 /** 
