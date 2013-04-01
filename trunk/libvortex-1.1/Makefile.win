@@ -16,7 +16,7 @@
 # 
 
 # version
-vortex_1_1_version = 1.1.12.b5023.g5023
+vortex_1_1_version = 1.1.12.b5052.g5052
 
 # While especifiying directories do not append the trailing slash
 
@@ -37,7 +37,7 @@ export enable_gcc_debug = -g
 export MODE        = windows
 
 # AXL location:
-AXL_BUILD_DIR = "../../axl-0.6.7.b5047.g5050"
+AXL_BUILD_DIR = "../../axl-0.6.7.b5003.g5019"
 
 # Flags to compile OPENSSL
 # Uncomment the following lines, placing the libraries following the path

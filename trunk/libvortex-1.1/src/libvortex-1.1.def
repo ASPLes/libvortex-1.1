@@ -577,6 +577,7 @@ vortex_support_getenv_int
 vortex_support_inet_ntoa
 vortex_support_init
 vortex_support_itoa
+vortex_support_pipe
 vortex_support_setenv
 vortex_support_strtod
 vortex_support_unsetenv

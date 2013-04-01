@@ -126,7 +126,8 @@ int      vortex_timeval_substract                  (struct timeval * a,
 
 char   * vortex_support_inet_ntoa                  (VortexCtx          * ctx, 
  						    struct sockaddr_in * sin);
- 						    
+
+int      vortex_support_pipe                       (VortexCtx * ctx, int descf[2]);
 
 #define copy_if_not_null(arg) (arg != NULL) ? axl_strdup (arg) : NULL;
 
