@@ -286,6 +286,8 @@ int                 vortex_connection_actions_notify         (VortexCtx         
 axlPointer          vortex_connection_get_data               (VortexConnection * connection,
 							      const char       * key);
 
+VortexHash        * vortex_connection_get_data_hash          (VortexConnection * connection);
+
 VortexHash        * vortex_connection_get_channels_hash      (VortexConnection * connection);
 
 VortexChannelPool * vortex_connection_get_channel_pool       (VortexConnection * connection,

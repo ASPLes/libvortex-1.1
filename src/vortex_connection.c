@@ -1021,12 +1021,12 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 	} else {
 		if (conn->role == VortexRoleMasterListener) {
 			if (getsockname (_socket, (struct sockaddr *) &sin, &sin_size) < 0) {
-				vortex_log (VORTEX_LEVEL_DEBUG, "unable to get local hostname and port");
+				vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get local hostname and port from socket=%d", _socket);
 				return axl_false;
 			} /* end if */
 		} else {
 			if (getpeername (_socket, (struct sockaddr *) &sin, &sin_size) < 0) {
-				vortex_log (VORTEX_LEVEL_DEBUG, "unable to get remote hostname and port");
+				vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get remote hostname and port from socket=%d", _socket);
 				return axl_false;
 			} /* end if */
 		} /* end if */
@@ -1038,7 +1038,7 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 
 	/* now set local address */
 	if (getsockname (_socket, (struct sockaddr *) &sin, &sin_size) < 0) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "unable to get local hostname and port to resolve local address");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get local hostname and port to resolve local address from socket=%d", _socket);
 		return axl_false;
 	} /* end if */
 
@@ -5611,6 +5611,21 @@ axlPointer         vortex_connection_get_data               (VortexConnection * 
  	v_return_val_if_fail (connection->data, NULL);
 
 	return vortex_hash_lookup (connection->data, (axlPointer) key);
+}
+
+/** 
+ * @brief Allows to get current data hash object used by the provided
+ * connection. This way you can use this hash object directly with
+ * \ref vortex_hash "vortex hash API".
+ *
+ * @param connection The connection where the hash has been requested..
+ *
+ * @return A reference to the hash or NULL if it fails.
+ */
+VortexHash        * vortex_connection_get_data_hash          (VortexConnection * connection)
+{
+	v_return_val_if_fail (connection, NULL);
+	return connection->data;
 }
 
 /**
