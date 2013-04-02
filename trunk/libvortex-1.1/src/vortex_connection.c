@@ -4376,6 +4376,9 @@ const char        * vortex_connection_get_server_name        (VortexConnection *
 void                vortex_connection_set_server_name         (VortexConnection * connection,
 							       const char       * serverName)
 {
+	VortexCtx * ctx = CONN_CTX (connection);
+	int iterator = 0;
+
 	/* check if the connection is null or the serverName is
 	 * null */
 	if (connection == NULL || serverName == NULL || connection->serverName != NULL)
@@ -4383,6 +4386,16 @@ void                vortex_connection_set_server_name         (VortexConnection 
 
 	/* configure serverName */
 	connection->serverName = axl_strdup (serverName);
+
+	/* remove : values and the rest behind it */
+	while (connection->serverName[iterator]) {
+		if (connection->serverName[iterator] == ':')
+			connection->serverName[iterator] = 0;
+
+		/* next iterator*/
+		iterator++;
+	}
+	vortex_log (VORTEX_LEVEL_DEBUG, "Received serverName %s and configured %s", serverName, connection->serverName);
 	
 	return;
 }

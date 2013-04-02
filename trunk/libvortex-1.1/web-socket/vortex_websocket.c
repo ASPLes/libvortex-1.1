@@ -589,7 +589,6 @@ int vortex_websocket_listener_post_actions (VortexCtx               * ctx,
 					    axlPointer                user_data)
 {
 	noPollConn  * _new_conn   = vortex_connection_get_hook (new_conn);
-	char        * host_header;
 
 	/* skip for connections that aren't final listeners */
 	if (_new_conn == NULL || vortex_connection_get_role (new_conn) != VortexRoleListener || ! vortex_websocket_connection_is (new_conn))
@@ -613,11 +612,7 @@ int vortex_websocket_listener_post_actions (VortexCtx               * ctx,
 		} /* end if */
 
 		/* configure server name and drop a log */
-		host_header = axl_strdup (nopoll_conn_get_host_header (_new_conn));
-		axl_replace (host_header, ":", '\0');
-		
-		vortex_connection_set_server_name (new_conn, host_header);
-		axl_free (host_header);
+		vortex_connection_set_server_name (new_conn, nopoll_conn_get_host_header (_new_conn));
 		vortex_log (VORTEX_LEVEL_DEBUG, "Virtual hosting Host: %s header received, set as BEEP serverName=%s value on conn-id=%d",
 			    nopoll_conn_get_host_header (_new_conn), vortex_connection_get_server_name (new_conn), 
 			    vortex_connection_get_id (new_conn));
