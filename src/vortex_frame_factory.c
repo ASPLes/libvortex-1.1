@@ -1271,9 +1271,11 @@ int         vortex_frame_receive_raw  (VortexConnection * connection, char  * bu
 		if (errno == VORTEX_EINTR)
 			goto __vortex_frame_readn_keep_reading;
 		
-		error_msg = vortex_errno_get_last_error ();
-		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to readn=%d, error was: '%s'",
-			    maxlen, error_msg ? error_msg : "");
+		if (errno != 0) {
+			error_msg = vortex_errno_get_last_error ();
+			vortex_log (VORTEX_LEVEL_CRITICAL, "unable to readn=%d, error was: '%s', errno=%d",
+				    maxlen, error_msg ? error_msg : "", errno);
+		} /* end if */
 	}
 
 	if (nread > 0) {

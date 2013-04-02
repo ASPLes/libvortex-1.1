@@ -7219,6 +7219,7 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 		vortex_log (VORTEX_LEVEL_WARNING, "Received serverName=%s request for a conection that already has that value configured=%s, ignoring request..",
 			    serverName, vortex_connection_get_server_name (connection));
 		/* fix request */
+		axl_free (serverName);
 		serverName = axl_strdup (vortex_connection_get_server_name (connection));
 
 	} else if (serverName == NULL && vortex_connection_get_server_name (connection)) {
