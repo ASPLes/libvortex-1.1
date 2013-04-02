@@ -1287,7 +1287,7 @@ VortexChannel     * vortex_channel_pool_get_next_ready_full (VortexChannelPool *
 			    vortex_channel_get_number (channel), pool->id, 
 			    vortex_connection_get_id (pool->connection));
 		
-		__vortex_channel_pool_print_status (pool, "get_next_ready");
+		/* __vortex_channel_pool_print_status (pool, "get_next_ready");*/
 	} else {
 		vortex_log (VORTEX_LEVEL_DEBUG, "unable to return a channel, pool is empty");
 	} /* end if */
@@ -1341,7 +1341,7 @@ void                vortex_channel_pool_release_channel   (VortexChannelPool * p
 	vortex_log (VORTEX_LEVEL_DEBUG, "channel id=%d for pool id=%d connection id=%d was released", 
 	       vortex_channel_get_number (channel), pool->id, vortex_connection_get_id (pool->connection));
 
-	__vortex_channel_pool_print_status (pool, "releasing");
+	/* __vortex_channel_pool_print_status (pool, "releasing"); */
 
 	/* unlock operations */
 	vortex_connection_unlock_channel_pool (pool->connection);	
