@@ -492,7 +492,7 @@ void vortex_listener_accept_connections (VortexCtx        * ctx,
 		vortex_log (VORTEX_LEVEL_CRITICAL, "accept () failed, server_socket=%d, soft-limit=%d, hard-limit=%d: (errno=%d) %s\n",
 			    server_socket, soft_limit, hard_limit, errno, vortex_errno_get_last_error ());
 		return;
-	}
+	} /* end if */
 
 	/* check we can support more sockets, if not close current
 	 * connection: function already closes client socket in the

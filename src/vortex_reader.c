@@ -614,7 +614,7 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 		return; /* frame was successfully delivered */
 	}
 	
-	vortex_log (VORTEX_LEVEL_CRITICAL, 
+	vortex_log (VORTEX_LEVEL_WARNING, 
 		    "unable to deliver incoming frame id=%d, no first or second level handler defined, dropping frame",
 		    frame_id);
 

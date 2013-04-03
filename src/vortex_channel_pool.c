@@ -1330,10 +1330,10 @@ void                vortex_channel_pool_release_channel   (VortexChannelPool * p
 
 	/* check if the channel to add doesn't exist on the pool */
 	if (!__vortex_channel_pool_channel_exists (pool, channel)) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "trying to release a channel which doesn't exists on the channel pool");
+		vortex_log (VORTEX_LEVEL_WARNING, "trying to release a channel which doesn't exists on the channel pool");
 		vortex_connection_unlock_channel_pool (pool->connection);
 		return;
-	}
+	} /* end if */
 
 	/* unflag channel to be choosable */
 	vortex_channel_set_data (channel, "status_busy", NULL);

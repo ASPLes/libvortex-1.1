@@ -3052,6 +3052,81 @@ axl_bool test_01g (void) {
 	return axl_true;
 }
 
+axl_bool test_01g1 (void) {
+	VORTEX_SOCKET      _socket;
+	VortexConnection * conn;
+	int                iterator;
+	VortexCtx        * ctx;
+	char             * content;
+	int                msg_size;
+	int                desp;
+	VortexAsyncQueue * queue;
+
+	/* init vortex here */
+	ctx = vortex_ctx_new ();
+	if (! vortex_init_ctx (ctx)) {
+		printf ("Test 00-a: failed to init VortexCtx reference..\n");
+		return axl_false;
+	}
+
+	/* create socket to the listener */
+	printf ("Test 01-g1: creating raw socket to: %s:%s\n", listener_host, LISTENER_PORT);
+	_socket = vortex_connection_sock_connect (ctx, listener_host, LISTENER_PORT, NULL, NULL);
+	if (_socket <= 0) {
+		printf ("Test 01-g1: unable to connect via raw socket to %s:%s\n", listener_host, LISTENER_PORT);
+		return axl_false;
+	} /* end if */
+
+	/* ok, now create a connection and simulate a greetings message */
+	printf ("Test 01-g1: creating BEEP session using provided socket=%d\n", _socket);
+	conn = vortex_connection_new_empty (ctx, _socket, VortexRoleInitiator);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Test 01-g1: unable to create connection required for the test..\n");
+		return axl_false;
+	} /* end if */
+
+#define __TEST_MESSAGE__ "klj123 dlfkjae fklqwjerql23kr5jqsefkl jqweflkqwjerqwk jq2l3k 5j23lkj 4sldkfjalekwfja klj123 dlfkjae fklqwjerql23kr5jqsefkl jqweflkqwjerqwk jq2l3k 5j23lkj 4sldkfjalekwfja klj123 dlfkjae fklqwjerql23kr5jqsefkl jqweflkqwjerqwk jq2l3k 5j23lkj 4sldkfjalekwfja klj123 dlfkjae fklqwjerql23kr5jqsefkl jqweflkqwjerqwk jq2l3k 5j23lkj 4sldkfjalekwfja klj123 dlfkjae fklqwjerql23kr5jqsefkl jqweflkqwjerqwk jq2l3k 5j23lkj 4sldkfjalekwfja klj123 dlfkjae fklqwjerql23kr5jqsefkl jqweflkqwjerqwk jq2l3k 5j23lkj 4sldkfjalekwfja klj123 dlfkjae fklqwjerql23kr5jqsefkl jqweflkqwjerqwk jq2l3k 5j23lkj 4sldkfjalekwfja"
+	msg_size = (int) strlen (__TEST_MESSAGE__);
+
+	iterator = 0;
+	desp     = 0;
+	queue    = vortex_async_queue_new ();
+	while (iterator < 1000) {
+		/* send raw frame */
+		printf ("Test 01-g1: sending content (%d)..\n", msg_size);
+		content = axl_strdup_printf ("RPY 0 0 * %d %d\r\n\r\n%sEND\r\n", 
+					     desp, msg_size + 2, __TEST_MESSAGE__);
+		desp += (msg_size + 2);
+		if (! vortex_frame_send_raw (conn, content, strlen (content))) {
+			axl_free (content);
+			break;
+		} /* end if */
+
+		/* wait quue */
+		vortex_async_queue_timedpop (queue, 20000);
+		
+		axl_free (content);
+
+		/* next iterator */
+		iterator++;
+	} /* end while */
+
+	vortex_async_queue_unref (queue);
+
+	if (iterator > 10) {
+		printf ("ERROR: expected to not be able to send so much content...check current implementation because may allow remote DOS..\n");
+		return axl_false;
+	} /* end if */
+	printf ("Test 01-g1: allowed iterations by remote peer: %d\n", iterator);
+
+	vortex_connection_close (conn);
+
+	/* terminate ctx */
+	vortex_exit_ctx (ctx, axl_true);
+
+	return axl_true;
+}
+
 axl_bool test_01h_check (const char * string) {
 
 	VORTEX_SOCKET _socket;
@@ -14213,7 +14288,7 @@ int main (int  argc, char ** argv)
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
 	printf ("**       Test available: test_00, test_001, test_00a, test_00b, test_00c, test_00c1, test_00c2,\n");
 	printf ("**                       test_00d, test_00e, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
-	printf ("**                       test_01f, test_01g, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o,\n");
+	printf ("**                       test_01f, test_01g, test_01g1, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o,\n");
 	printf ("**                       test_01p, test_01q, test_01r, test_01s, test_01s1, test_01t\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
@@ -14425,6 +14500,9 @@ int main (int  argc, char ** argv)
 
 		if (check_and_run_test (run_test_name, "test_01g"))
 			run_test (test_01g, "Test 01-g", "Check connection serverName feature on greetings", -1, -1);
+
+		if (check_and_run_test (run_test_name, "test_01g1"))
+			run_test (test_01g1, "Test 01-g1", "Try to flood server (DOS) with infinite greetings", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_01h"))
 			run_test (test_01h, "Test 01-h", "BEEP wrong header attack..", -1, -1);
@@ -14738,6 +14816,8 @@ int main (int  argc, char ** argv)
  	run_test (test_01f, "Test 01-f", "Check connection with no greetings showed (or registerered)", -1, -1);
 
  	run_test (test_01g, "Test 01-g", "Check connection serverName feature on greetings", -1, -1);
+
+ 	run_test (test_01g1, "Test 01-g1", "Try to flood server (DOS) with infinite greetings", -1, -1);
 
 	run_test (test_01h, "Test 01-h", "BEEP wrong header attack..", -1, -1);
 
