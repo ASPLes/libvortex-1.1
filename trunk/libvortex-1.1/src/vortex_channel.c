@@ -3277,7 +3277,7 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 
 	/* do sending reply operation */
  send_reply:
-	vortex_log (VORTEX_LEVEL_DEBUG, "sending reply for message %d (size: %d, channel queue status: %d)\n", 
+	vortex_log (VORTEX_LEVEL_DEBUG, "sending reply for message num %d (size: %d, channel queue status: %d)\n", 
  		    msg_no_rpy, message_size, vortex_channel_pending_messages (channel));
 
 	switch (type) {
