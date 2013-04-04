@@ -1176,6 +1176,36 @@ typedef axl_bool (* VortexPayloadFeederHandler) (VortexCtx              * ctx,
 typedef void (* VortexPayloadFeederFinishedHandler) (VortexChannel        * channel,
 						     VortexPayloadFeeder  * feeder,
 						     axlPointer             user_data);
+
+/** 
+ * @brief Port sharing handler definition used by those functions that
+ * tries to detect alternative transports that must be activated
+ * before continue with normal BEEP course.
+ *
+ * The handler must return the following codes to report what they
+ * found:
+ *  - 1 : no error, nothing found for this handler (don't call me again).
+ *  - 2 : found transport, stop calling the next.
+ *
+ * @param ctx The vortex context where the operation takes place.
+ *
+ * @param conn The connection where port sharing is to be
+ * detected. The function must use PEEK operation over the socket
+ * (_session) to detect transports until the function is sure about
+ * what is going to do. If the function do complete reads during the
+ * testing part (removing data from the socket queue) the rest of the
+ * BEEP session will fail.
+ *
+ * @param _session The socket associated to the provided \ref VortexConnection.
+ *
+ * @param bytes Though the function can do any PEEK read required, the
+ * engine reads 4 bytes from the socket (or tries) and pass them into
+ * this reference. It should be enough for most cases.
+ *
+ * @param user_data User defined pointer pass in to the handler (as defined by \ref vortex_listener_set_port_sharing_handling 's last parameter).
+ */
+typedef int (*VortexPortShareHandler) (VortexCtx * ctx, VortexConnection * conn, VORTEX_SOCKET _session, const char * bytes, axlPointer user_data);
+
 				      
 /** 
  * @internal Handler used for debugging. Not really useful for end user application.

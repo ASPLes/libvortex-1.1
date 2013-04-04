@@ -14174,6 +14174,51 @@ axl_bool test_19 (void) {
 #endif	
 }
 
+axl_bool test_20 (void) {
+#if defined(ENABLE_WEBSOCKET_SUPPORT)
+	VortexConnection * conn;
+	VortexCtx         * ctx;
+
+	/* create new context */
+	ctx = vortex_ctx_new ();
+
+	/* init this context */
+	if (! vortex_init_ctx (ctx)) {
+		printf ("ERROR: expected proper initialization..\n");
+		return axl_false;
+	}
+
+	/* create normal connection as usually done to the  */
+	printf ("Test 20: creating BEEP session with normal API..\n");
+	conn = vortex_connection_new (ctx, listener_host, "44015", NULL, NULL);
+
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Test 20: failed to create connection..");
+		vortex_connection_close (conn);
+		return axl_false;
+	}
+
+	vortex_connection_close (conn);
+
+	printf ("Test 20: creating BEEP session with WebSocket transport (no TLS)..\n");
+	conn = vortex_websocket_connection_new (listener_host, "44015", vortex_websocket_setup_new (ctx), NULL, NULL);
+
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Test 20: failed to create connection..");
+		vortex_connection_close (conn);
+		return axl_false;
+	}
+
+	vortex_connection_close (conn);
+
+
+	return axl_true;
+#else
+	printf ("Test 20: websocket port share support..\n");
+	return axl_true;
+#endif	
+}
+
 typedef int  (*VortexRegressionTest) (void);
   
  
@@ -14759,6 +14804,9 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_19"))
 			run_test (test_19, "Test 19", "Check TLS Websocket (RFC 6455) more tests", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_20"))
+			run_test (test_20, "Test 20", "Check Websocket transparent port sharing", -1, -1);
+
 		goto finish;
 	}
 
@@ -14989,6 +15037,8 @@ int main (int  argc, char ** argv)
 
 	run_test (test_19, "Test 19", "Check TLS Websocket (RFC 6455) more tests", -1, -1);
 
+	run_test (test_20, "Test 20", "Check Websocket transparent port sharing", -1, -1);
+	
 #if defined(AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/**
 	 * If poll(2) I/O mechanism is available, re-run tests with

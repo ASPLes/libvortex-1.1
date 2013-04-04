@@ -2004,6 +2004,19 @@ int main (int  argc, char ** argv)
 		return -1;
 	} /* end if */
 
+	/* create a vortex server using normal BEEP declaration but
+	 * enabling port sharing on it  */
+	listener = vortex_listener_new (ctx, "0.0.0.0", "44015", NULL, NULL);
+	if (! vortex_connection_is_ok (listener, axl_false)) {
+		printf ("ERROR: failed to start listener at: 44015, error found (code: %d): %s\n",
+			vortex_connection_get_status (listener),
+			vortex_connection_get_message (listener));
+		return -1;
+	}
+
+	/* enable port sharing */
+	vortex_websocket_listener_port_sharing (ctx, "0.0.0.0", "44015");
+
 #else
 	printf ("--- WARNING: Skipping WebSocket support API check, since Vortex isn't configured with that support\n");
 #endif

@@ -342,6 +342,7 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
 	VortexFrame   * pending;
 	VortexCtx     * ctx = vortex_connection_get_ctx (connection);
 
+
 	vortex_log (VORTEX_LEVEL_DEBUG, "called listener second step accept for conn-id=%d..", vortex_connection_get_id (connection));
 
 	/* check if the connection have a pending frame (get the reference) */
@@ -1400,6 +1401,93 @@ void          vortex_listener_set_on_connection_accepted (VortexCtx             
 	return;
 }
 
+/** 
+ * @internal type definition used to hold port share handlers.
+ */
+typedef struct _VortexPortShareData {
+	char                    * local_addr;
+	char                    * local_port;
+	VortexPortShareHandler    handler;
+	axlPointer                user_data;
+} VortexPortShareData;
+
+void __vortex_listener_release_port_share_data (axlPointer _ptr)
+{
+	VortexPortShareData * data = _ptr;
+	axl_free (data->local_port);
+	axl_free (data->local_addr);
+	axl_free (data);
+	return;
+}
+
+/** 
+ * @brief Allows to install a port share handler that will be called
+ * to detect and activate alternative transports that must be enabled
+ * before activating normal BEEP session.
+ *
+ * @param ctx The context the operation will take place. Handlers
+ * installed on this context will not affect to other running contexts
+ * on the same process.
+ *
+ * @param local_addr Reference to the local address this handler must
+ * be limited. Pass in NULL in the case you don't want any filtering
+ * (that is, to avoid calling this handler if local address value
+ * doesn't match).
+ *
+ * @param local port Reference to the local port this handler must be
+ * limited. Pass in NULL in the case you don't want any filtering
+ * (that is, to avoid calling this handler if local port value doesn't
+ * match).
+ *
+ * @param handler The handler that will be called to detect the transport. 
+ *
+ * @param user_data User defined pointer that will be passed in into
+ * the handler when called.
+ *
+ * @return A handle that represent the installed port sharing handler
+ * or NULL if it fail. The value returned can be used to remove this
+ * handler later.
+ *
+ */
+axlPointer          vortex_listener_set_port_sharing_handling (VortexCtx               * ctx, 
+							       const char              * local_addr,
+							       const char              * local_port, 
+							       VortexPortShareHandler    handler,
+							       axlPointer                user_data)
+{
+	VortexPortShareData * data = NULL;
+
+	v_return_val_if_fail (ctx && handler, NULL);
+
+	data = axl_new (VortexPortShareData, 1);
+	if (data == NULL)
+		return NULL;
+
+	/* record local address and local port published */
+	if (local_addr)
+		data->local_addr = axl_strdup (local_addr);
+	if (local_port)
+		data->local_port = axl_strdup (local_port);
+
+	/* store the handler and user data associated to the handler */
+	data->handler   = handler;
+	data->user_data = user_data;
+
+	/* lock during operation */
+	vortex_mutex_lock (&ctx->port_share_mutex);
+
+	if (ctx->port_share_handlers == NULL)
+		ctx->port_share_handlers = axl_list_new (axl_list_equal_ptr, __vortex_listener_release_port_share_data);
+
+	/* add configuration */
+	axl_list_append (ctx->port_share_handlers, data);
+
+	/* unlock */
+	vortex_mutex_unlock (&ctx->port_share_mutex);
+	
+	return data;
+}
+
 
 /** 
  * @brief Support function for Vortex Library listeners, that reads a
@@ -1661,5 +1749,83 @@ void          vortex_listener_shutdown (VortexConnection * listener,
 
 	return;
 }
+
+/** 
+ * @internal PORT SHARING: Function used to detect previous transports
+ * that must be activated other the provided connection before doing
+ * any read operation. 
+ *
+ * The function tries to locate port sharing handlers that may detect
+ * transports that should be negotiated first before continue to later
+ * let the connection to work as usual.
+ *
+ * If the function doesn't find anything, it just return axl_true
+ * ("connection ready to use").
+ */
+axl_bool __vortex_listener_check_port_sharing (VortexCtx * ctx, VortexConnection * connection)
+{
+	char                  buffer[5];
+	int                   position = 0;
+	int                   result;
+	VortexPortShareData * data;
+
+	/* check if the connection is a listener connection to avoid
+	 * running all this code. Transport detection is only for
+	 * listener peers */
+	if (connection->role != VortexRoleListener)
+		return axl_true; /* nothing to detect here */
+
+	/* check if we have some handler installed */
+	if (ctx->port_share_handlers == NULL)
+		return axl_true; /* nothing to detect here, no handlers found */
+
+	/* check if transport is already detected to avoid installing
+	 * this */
+	if (connection->transport_detected)
+		return axl_true; /* nothing to detect here */
+
+	/* call to prepare this port */
+	if (recv (connection->session, buffer, 4, MSG_PEEK | MSG_DONTWAIT) != 4) 
+		return axl_true; /* nothing found, do not activate this */
+	buffer[4] = 0;
+
+	vortex_log (VORTEX_LEVEL_CRITICAL, "Transport detection for conn-id=%d, content detected: '%c%c%c%c'", 
+		    vortex_connection_get_id (connection),
+		    buffer[0], buffer[1], buffer[2], buffer[3]);
+	if (axl_memcmp (buffer, "RPY", 3)) {
+		/* detected BEEP transport, finishing detection here */
+		connection->transport_detected = axl_true;
+		return axl_true;
+	} /* end if */
+
+	/* lock */
+	vortex_mutex_lock (&ctx->port_share_mutex);
+
+	/* for each position call the call back */
+	while (position < axl_list_length (ctx->port_share_handlers)) {
+
+		/* get data handler */
+		data = axl_list_get_nth (ctx->port_share_handlers, position);
+
+		/* call handler */
+		result = data->handler (ctx, connection, connection->session, buffer, data->user_data);
+		if (result == 2) {
+			/* ok, transport found */
+			connection->transport_detected = axl_true;
+			break;
+		} /* end if */
+		
+		/* next position */
+		position++;
+	}
+
+	/* unlock */
+	vortex_mutex_lock (&ctx->port_share_mutex);
+
+
+	/* do nothing */
+	return axl_true;
+}
+
 
 /* @} */

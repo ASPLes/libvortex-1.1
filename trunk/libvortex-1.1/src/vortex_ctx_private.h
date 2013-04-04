@@ -309,6 +309,9 @@ struct _VortexCtx {
 	 */
 	VortexClientConnCreated conn_created;
 	axlPointer              conn_created_data;
+	
+	axlList               * port_share_handlers;
+	VortexMutex             port_share_mutex;
 };
 
 #endif /* __VORTEX_CTX_PRIVATE_H__ */

@@ -339,6 +339,7 @@ struct _VortexConnection {
 	 * to a connection in the middle of the greetings.
 	 */
 	axl_bool                initial_accept;
+	axl_bool                transport_detected;
 
 	/** 
 	 * @internal Reference to a line that wasn't totally read when

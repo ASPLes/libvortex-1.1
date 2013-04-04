@@ -1545,6 +1545,12 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 	char        * buffer = NULL;
 	VortexCtx   * ctx    = vortex_connection_get_ctx (connection);
 
+	/* check here port sharing for this connection before reading
+	 * the content. The function returns axl_true if the
+	 * connection is ready to be used to read content */
+	if (! __vortex_listener_check_port_sharing (ctx, connection)) 
+		return NULL;
+
 	/* before reading anything else, we have to check if previous
 	 * read was complete if not, we are in a frame fragment case */
 	buffer = connection->buffer;
