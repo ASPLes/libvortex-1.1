@@ -802,6 +802,59 @@ axl_bool           vortex_websocket_connection_is_tls_running (VortexConnection 
 	return PTR_TO_INT (vortex_connection_get_data (conn, VORTEX_TLS_WEBSOCKET_ENABLED));
 }
 
+int __vortex_websocket_detect_and_prepare_transport (VortexCtx        * ctx, 
+						     VortexConnection * conn, 
+						     VORTEX_SOCKET      _session,
+						     const char       * bytes,
+						     axlPointer         user_data)
+{
+	
+	return 1;
+}
+
+/** 
+ * @brief Allows to activate Vortex Library port sharing feature on
+ * the provided local listener address and local listener port.
+ *
+ * Vortex Library port sharing is a feature provided by the core
+ * library that allows running pure BEEP protocol (as defined by RFC
+ * 3081, that is, running BEEP on top of TCP) but also activate other
+ * previous transports before running BEEP like BEEP over WebSocket or
+ * BEEP over TLS webSocket.
+ *
+ * This allows to have on a single port an unified configuration that
+ * allows receiving normal BEEP conections and BEEP over WebSocket
+ * (with or without TLS), thus saving configurations. 
+ *
+ * @param ctx The context where the port sharing feature will be
+ * enabled.
+ *
+ * @param local_addr The local address to limit the port sharing
+ * operation (or NULL if it is required to be applied to any address).
+ *
+ * @param local_port The local port to limit the port sharing feature
+ * or NULL to enable it over all listeners ports.
+ *
+ * @param enable axl_true to activate port sharing status or axl_false
+ * to disable it.
+ *
+ * @return The function returns a handler of the port share
+ * installed. This handler can later be used to remove this port share
+ * detector.
+ */
+axlPointer         vortex_websocket_listener_port_sharing (VortexCtx  * ctx, 
+							   const char * local_addr, 
+							   const char * local_port)
+{
+	v_return_val_if_fail (ctx, NULL);
+
+	/* call to enable/disable according to the enable status */
+	return vortex_listener_set_port_sharing_handling (
+		ctx, 
+		local_addr, local_port, 
+		__vortex_websocket_detect_and_prepare_transport, NULL);
+}
+
 /** 
  * @} 
  */

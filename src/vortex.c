@@ -941,6 +941,7 @@ axl_bool    vortex_init_ctx (VortexCtx * ctx)
 	vortex_mutex_create (&ctx->listener_unlock);
 	vortex_mutex_create (&ctx->exit_mutex);
 	vortex_mutex_create (&ctx->profiles_list_mutex);
+	vortex_mutex_create (&ctx->port_share_mutex);
 
 	/* init channel module */
 	vortex_channel_init (ctx);
@@ -1198,6 +1199,7 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
 	vortex_mutex_destroy (&ctx->listener_mutex);
 	vortex_mutex_destroy (&ctx->listener_unlock);
 	vortex_mutex_destroy (&ctx->profiles_list_mutex);
+	vortex_mutex_destroy (&ctx->port_share_mutex);
 
 	/* lock/unlock to avoid race condition */
 	vortex_mutex_lock  (&ctx->exit_mutex);

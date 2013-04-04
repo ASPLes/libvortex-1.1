@@ -111,13 +111,22 @@ void          vortex_listener_set_on_connection_accepted (VortexCtx             
 							  VortexOnAcceptedConnection   on_accepted, 
 							  axlPointer                   data);
 
+axlPointer    vortex_listener_set_port_sharing_handling (VortexCtx               * ctx, 
+							 const char              * local_addr,
+							 const char              * local_port, 
+							 VortexPortShareHandler    handler,
+							 axlPointer                user_data);
+
 void          vortex_listener_shutdown (VortexConnection * listener,
 					axl_bool           also_created_conns);
 
+/*** internal API ***/
 VortexConnection * __vortex_listener_initial_accept (VortexCtx            * ctx,
 						     VORTEX_SOCKET          client_socket, 
 						     VortexConnection     * listener,
 						     axl_bool               dont_register);
+
+axl_bool __vortex_listener_check_port_sharing (VortexCtx * ctx, VortexConnection * connection);
 
 
 /* @} */
