@@ -1186,6 +1186,7 @@ typedef void (* VortexPayloadFeederFinishedHandler) (VortexChannel        * chan
  * found:
  *  - 1 : no error, nothing found for this handler (don't call me again).
  *  - 2 : found transport, stop calling the next.
+ *  - (-1) : transport detected but failure found while activating it.
  *
  * @param ctx The vortex context where the operation takes place.
  *
