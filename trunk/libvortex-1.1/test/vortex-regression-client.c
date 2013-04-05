@@ -14174,6 +14174,68 @@ axl_bool test_19 (void) {
 #endif	
 }
 
+axl_bool test_20_check (VortexConnection * conn)
+{
+	VortexChannel    * channel;
+	VortexAsyncQueue * queue;
+	VortexFrame      * frame;
+	int                iterator;
+
+	/* create the queue */
+	queue   = vortex_async_queue_new ();
+
+	/* create a channel */
+	channel = vortex_channel_new (conn, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Unable to create the channel..");
+		return axl_false;
+	}
+
+	iterator = 0;
+	while (iterator < 20) {
+		if (! vortex_channel_send_msg (channel, "This is a test message..", 24, NULL)) {
+			printf ("Test 20: failed to send message..\n");
+			return axl_false;
+		} /* end if */
+
+		/* next position */
+		iterator++;
+	} /* end if */
+
+	iterator = 0;
+	while (iterator < 20) {
+		/* get pending content */
+		frame = vortex_channel_get_reply (channel, queue);
+		if (frame == NULL) {
+			printf ("Test 20: expected to receive reply, but found NULL frame..\n");
+			return axl_false;
+		}
+
+		if (! axl_cmp (vortex_frame_get_payload (frame), "This is a test message..")) {
+			printf ("Test 20: expected to receive a different message..\n");
+			return axl_false;
+		}
+
+		/* unref frame */
+		vortex_frame_unref (frame);
+
+		/* next position */
+		iterator++;
+	} /* end while */
+
+	/* release queue */
+	vortex_async_queue_unref (queue);
+
+	return axl_true;
+}
+
 axl_bool test_20 (void) {
 #if defined(ENABLE_WEBSOCKET_SUPPORT)
 	VortexConnection * conn;
@@ -14192,6 +14254,9 @@ axl_bool test_20 (void) {
 	printf ("Test 20: creating BEEP session with normal API..\n");
 	conn = vortex_connection_new (ctx, listener_host, "44015", NULL, NULL);
 
+	if (! test_20_check (conn))
+		return axl_false;
+
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("Test 20: failed to create connection..");
 		vortex_connection_close (conn);
@@ -14203,6 +14268,9 @@ axl_bool test_20 (void) {
 	printf ("Test 20: creating BEEP session with WebSocket transport (no TLS)..\n");
 	conn = vortex_websocket_connection_new (listener_host, "44015", vortex_websocket_setup_new (ctx), NULL, NULL);
 
+	if (! test_20_check (conn))
+		return axl_false;
+
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("Test 20: failed to create connection..");
 		vortex_connection_close (conn);
@@ -14210,6 +14278,8 @@ axl_bool test_20 (void) {
 	}
 
 	vortex_connection_close (conn);
+
+	vortex_exit_ctx (ctx, axl_true);
 
 
 	return axl_true;
