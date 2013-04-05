@@ -1201,6 +1201,9 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
 	vortex_mutex_destroy (&ctx->profiles_list_mutex);
 	vortex_mutex_destroy (&ctx->port_share_mutex);
 
+	/* release port share handlers (if any) */
+	axl_list_free (ctx->port_share_handlers);
+
 	/* lock/unlock to avoid race condition */
 	vortex_mutex_lock  (&ctx->exit_mutex);
 	vortex_mutex_unlock  (&ctx->exit_mutex);
