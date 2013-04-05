@@ -1817,6 +1817,11 @@ axl_bool __vortex_listener_check_port_sharing (VortexCtx * ctx, VortexConnection
 			/* ok, transport found */
 			connection->transport_detected = axl_true;
 			break;
+		} else if (result == -1) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "Found connection-id=%d with a port share handler that failed, closing connection", 
+				    vortex_connection_get_id (connection));
+			vortex_connection_shutdown (connection);
+			break;
 		} /* end if */
 		
 		/* next position */
