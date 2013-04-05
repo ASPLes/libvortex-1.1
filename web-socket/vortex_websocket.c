@@ -630,6 +630,32 @@ int vortex_websocket_listener_post_actions (VortexCtx               * ctx,
 	return -1;
 }
 
+/** 
+ * @internal Setup and link the provided listener connection accepted
+ * with the provided associated new no poll connection.
+ */
+void __vortex_websocket_setup_listener_connection (VortexConnection * new_conn, noPollConn * _new_conn)
+{
+	VortexMutex        * mutex;
+
+	/* set this connection was accepted under the WebSocket interface */
+	vortex_connection_set_data (new_conn, VORTEX_WEBSOCKET_ENABLED, INT_TO_PTR (1));
+
+	/* setup I/O handlers */
+	mutex = axl_new (VortexMutex, 1);
+	vortex_mutex_create (mutex);
+	vortex_connection_set_data_full (new_conn, "ws:mutex", mutex,
+					 NULL, (axlDestroyFunc) __vortex_websocket_free_mutex);
+
+	vortex_connection_set_send_handler (new_conn, vortex_websocket_send);
+	vortex_connection_set_receive_handler (new_conn, vortex_websocket_read);
+
+	vortex_connection_set_data_full (new_conn, "nopoll-conn", _new_conn, NULL, __vortex_websocket_conn_close);
+	vortex_connection_set_hook (new_conn, _new_conn);
+
+	return;
+}
+
 void vortex_websocket_listener_accept (VortexConnection * conn)
 {
 	VortexCtx          * ctx        = CONN_CTX (conn);
@@ -637,7 +663,6 @@ void vortex_websocket_listener_accept (VortexConnection * conn)
 	noPollCtx          * nopoll_ctx = nopoll_conn_ctx (listener);
 	noPollConn         * _new_conn  = NULL;
 	VortexConnection   * new_conn   = NULL;
-	VortexMutex        * mutex;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "Called pre-read handler over a BEEP over WebSocket listener id=%d (noPollConn %p), doing initial accept",
 		    vortex_connection_get_id (conn), listener);
@@ -658,20 +683,10 @@ void vortex_websocket_listener_accept (VortexConnection * conn)
 		/* don't register the connection */
 		axl_false);
 
+	__vortex_websocket_setup_listener_connection (new_conn, _new_conn);
+
 	/* set this connection was accepted under the WebSocket interface */
 	vortex_connection_set_data (new_conn, VORTEX_WEBSOCKET_ENABLED, INT_TO_PTR (1));
-
-	/* setup I/O handlers */
-	mutex = axl_new (VortexMutex, 1);
-	vortex_mutex_create (mutex);
-	vortex_connection_set_data_full (new_conn, "ws:mutex", mutex,
-					 NULL, (axlDestroyFunc) __vortex_websocket_free_mutex);
-
-	vortex_connection_set_send_handler (new_conn, vortex_websocket_send);
-	vortex_connection_set_receive_handler (new_conn, vortex_websocket_read);
-
-	vortex_connection_set_data_full (new_conn, "nopoll-conn", _new_conn, NULL, __vortex_websocket_conn_close);
-	vortex_connection_set_hook (new_conn, _new_conn);
 
 	/* called to accept listener inthe next step now we have it configured */
 	vortex_listener_accept_connection (new_conn, axl_true);
@@ -803,13 +818,64 @@ axl_bool           vortex_websocket_connection_is_tls_running (VortexConnection 
 }
 
 int __vortex_websocket_detect_and_prepare_transport (VortexCtx        * ctx, 
+						     VortexConnection * listener,
 						     VortexConnection * conn, 
 						     VORTEX_SOCKET      _session,
 						     const char       * bytes,
 						     axlPointer         user_data)
 {
-	
-	return 1;
+	noPollCtx  * nopoll_ctx;
+	noPollConn * nopoll_conn;
+	noPollConn * nopoll_listener;
+
+	if (! axl_memcmp ("GET", bytes, 3))
+		return 1; /* nothing detected here (it doesn't seems
+			     to be a websocket connection) */
+
+	/* get context associated to the listener */
+	nopoll_ctx = vortex_connection_get_data (listener, "nopoll-ctx");
+	if (nopoll_ctx == NULL) {
+		/* no context found, create we and set it into the the
+		   listener */
+
+		/* create a context */
+		nopoll_ctx = nopoll_ctx_new ();
+
+		/* associate context */
+		vortex_connection_set_data_full (listener, "nopoll-ctx", nopoll_ctx, NULL, __vortex_websocket_release_ctx);
+	} /* end if */
+
+	/* MASTER LISTENER: now get the noPoll listener associated to this Vortex listener */
+	nopoll_listener = vortex_connection_get_data (listener, "nopoll-conn");
+	if (nopoll_listener == NULL) {
+		/* create the listener */
+		nopoll_listener = nopoll_listener_from_socket (nopoll_ctx, vortex_connection_get_socket (listener));
+
+		/* associate it to the connection */
+		vortex_connection_set_data_full (listener, "nopoll-conn", nopoll_listener, NULL, __vortex_websocket_conn_close);
+	} /* end if */
+
+	/* ACCEPTED CONNECTION: create connection accepted noPollConn object */
+	nopoll_conn = nopoll_listener_from_socket (nopoll_ctx, vortex_connection_get_socket (conn));
+	if (nopoll_conn == NULL) {
+		/* failed to create connection, this is a failure */
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to create noPollConn object for accepted conn-id=%d, socket=%d",
+			    vortex_connection_get_id (conn), vortex_connection_get_socket (conn));
+		return -1;
+	} /* end if */
+
+	/* complete websocket conn setup */
+	if (! nopoll_conn_accept_complete (nopoll_ctx, nopoll_listener, nopoll_conn, _session)) {
+		/* failed to create connection, this is a failure */
+		vortex_log (VORTEX_LEVEL_CRITICAL, "noPoll accept process failed (nopoll_conn_accept_complete) conn-id=%d, socket=%d",
+			    vortex_connection_get_id (conn), vortex_connection_get_socket (conn));
+		return -1;
+	} /* end if */
+
+	/* now prepare all I/O associated to the listener */
+	vortex_log (VORTEX_LEVEL_DEBUG, "WEB-SOCKET: Detected and activated websocket transport for conn-id=%d", vortex_connection_get_id (conn));
+	__vortex_websocket_setup_listener_connection (conn, nopoll_conn);
+	return 2; /* web socket connection detected */
 }
 
 /** 

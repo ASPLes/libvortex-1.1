@@ -1768,6 +1768,7 @@ axl_bool __vortex_listener_check_port_sharing (VortexCtx * ctx, VortexConnection
 	int                   position = 0;
 	int                   result;
 	VortexPortShareData * data;
+	VortexConnection    * listener;
 
 	/* check if the connection is a listener connection to avoid
 	 * running all this code. Transport detection is only for
@@ -1798,6 +1799,9 @@ axl_bool __vortex_listener_check_port_sharing (VortexCtx * ctx, VortexConnection
 		return axl_true;
 	} /* end if */
 
+	/* ok, get connection listener */
+	listener = vortex_connection_get_listener (connection);
+
 	/* lock */
 	vortex_mutex_lock (&ctx->port_share_mutex);
 
@@ -1808,7 +1812,7 @@ axl_bool __vortex_listener_check_port_sharing (VortexCtx * ctx, VortexConnection
 		data = axl_list_get_nth (ctx->port_share_handlers, position);
 
 		/* call handler */
-		result = data->handler (ctx, connection, connection->session, buffer, data->user_data);
+		result = data->handler (ctx, listener, connection, connection->session, buffer, data->user_data);
 		if (result == 2) {
 			/* ok, transport found */
 			connection->transport_detected = axl_true;
@@ -1820,7 +1824,7 @@ axl_bool __vortex_listener_check_port_sharing (VortexCtx * ctx, VortexConnection
 	}
 
 	/* unlock */
-	vortex_mutex_lock (&ctx->port_share_mutex);
+	vortex_mutex_unlock (&ctx->port_share_mutex);
 
 
 	/* do nothing */
