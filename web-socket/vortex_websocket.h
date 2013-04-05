@@ -121,6 +121,7 @@ axl_bool           vortex_websocket_connection_is  (VortexConnection * conn);
 axl_bool           vortex_websocket_connection_is_tls_running (VortexConnection * conn);
 
 axlPointer         vortex_websocket_listener_port_sharing (VortexCtx  * ctx, 
+							   noPollCtx  * nopoll_ctx,
 							   const char * local_addr, 
 							   const char * local_port);
 

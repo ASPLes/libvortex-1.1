@@ -1026,7 +1026,8 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 			} /* end if */
 		} else {
 			if (getpeername (_socket, (struct sockaddr *) &sin, &sin_size) < 0) {
-				vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get remote hostname and port from socket=%d", _socket);
+				vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get remote hostname and port from socket=%d (errno=%d)", 
+					    _socket, errno);
 				return axl_false;
 			} /* end if */
 		} /* end if */

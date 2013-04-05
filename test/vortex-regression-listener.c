@@ -2015,7 +2015,13 @@ int main (int  argc, char ** argv)
 	}
 
 	/* enable port sharing */
-	vortex_websocket_listener_port_sharing (ctx, "0.0.0.0", "44015");
+	/* configure here certificates */
+	if (! nopoll_ctx_set_certificate (npll_ctx, NULL, "test-certificate.pem", "test-private-key.pem", NULL)) {
+		printf ("ERROR: unable to configure certificate at noPollCtx level..\n");
+		return -1;
+	}
+
+	vortex_websocket_listener_port_sharing (ctx, npll_ctx, "0.0.0.0", "44015");
 
 #else
 	printf ("--- WARNING: Skipping WebSocket support API check, since Vortex isn't configured with that support\n");
