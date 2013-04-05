@@ -664,8 +664,10 @@ void vortex_websocket_listener_accept (VortexConnection * conn)
 	noPollConn         * _new_conn  = NULL;
 	VortexConnection   * new_conn   = NULL;
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "Called pre-read handler over a BEEP over WebSocket listener id=%d (noPollConn %p), doing initial accept",
-		    vortex_connection_get_id (conn), listener);
+	vortex_log (VORTEX_LEVEL_DEBUG, "Called pre-read handler over a BEEP over WebSocket listener id=%d (socket=%d, noPollConn %p), doing initial accept",
+		    vortex_connection_get_id (conn), vortex_connection_get_socket (conn), listener);
+	/* nopoll_log_enable (nopoll_ctx, nopoll_true);
+	   nopoll_log_color_enable (nopoll_ctx, nopoll_true); */
 
 	/* ok, accept connection and register it */
 	_new_conn = nopoll_conn_accept (nopoll_ctx, listener);
@@ -827,13 +829,20 @@ int __vortex_websocket_detect_and_prepare_transport (VortexCtx        * ctx,
 	noPollCtx  * nopoll_ctx;
 	noPollConn * nopoll_conn;
 	noPollConn * nopoll_listener;
+	axl_bool     is_tls_conn;
 
-	if (! axl_memcmp ("GET", bytes, 3))
+	/* detect tls conn */
+	is_tls_conn = bytes[0] == 22 && bytes[1] == 3 && bytes[2] == 1 && bytes[3] == 0;
+
+	if (! axl_memcmp ("GET", bytes, 3) && ! is_tls_conn)
 		return 1; /* nothing detected here (it doesn't seems
 			     to be a websocket connection) */
 
+	vortex_log (VORTEX_LEVEL_DEBUG, "WEB-SOCKET: activated port share handler for conn-id=%d (socket=%d)",
+		    vortex_connection_get_id (conn), _session);
+
 	/* get context associated to the listener */
-	nopoll_ctx = vortex_connection_get_data (listener, "nopoll-ctx");
+	nopoll_ctx = vortex_ctx_get_data (ctx, "nopoll-ctx");
 	if (nopoll_ctx == NULL) {
 		/* no context found, create we and set it into the the
 		   listener */
@@ -842,7 +851,7 @@ int __vortex_websocket_detect_and_prepare_transport (VortexCtx        * ctx,
 		nopoll_ctx = nopoll_ctx_new ();
 
 		/* associate context */
-		vortex_connection_set_data_full (listener, "nopoll-ctx", nopoll_ctx, NULL, __vortex_websocket_release_ctx);
+		vortex_ctx_set_data_full (ctx, "nopoll-ctx", nopoll_ctx, NULL, __vortex_websocket_release_ctx);
 	} /* end if */
 
 	/* MASTER LISTENER: now get the noPoll listener associated to this Vortex listener */
@@ -865,7 +874,7 @@ int __vortex_websocket_detect_and_prepare_transport (VortexCtx        * ctx,
 	} /* end if */
 
 	/* complete websocket conn setup */
-	if (! nopoll_conn_accept_complete (nopoll_ctx, nopoll_listener, nopoll_conn, _session)) {
+	if (! nopoll_conn_accept_complete (nopoll_ctx, nopoll_listener, nopoll_conn, _session, is_tls_conn)) {
 		/* failed to create connection, this is a failure */
 		vortex_log (VORTEX_LEVEL_CRITICAL, "noPoll accept process failed (nopoll_conn_accept_complete) conn-id=%d, socket=%d",
 			    vortex_connection_get_id (conn), vortex_connection_get_socket (conn));
@@ -873,7 +882,8 @@ int __vortex_websocket_detect_and_prepare_transport (VortexCtx        * ctx,
 	} /* end if */
 
 	/* now prepare all I/O associated to the listener */
-	vortex_log (VORTEX_LEVEL_DEBUG, "WEB-SOCKET: Detected and activated websocket transport for conn-id=%d", vortex_connection_get_id (conn));
+	vortex_log (VORTEX_LEVEL_DEBUG, "WEB-SOCKET: Detected and activated websocket transport for conn-id=%d (is tls on=%d)", 
+		    vortex_connection_get_id (conn), is_tls_conn);
 	__vortex_websocket_setup_listener_connection (conn, nopoll_conn);
 	return 2; /* web socket connection detected */
 }
@@ -895,6 +905,10 @@ int __vortex_websocket_detect_and_prepare_transport (VortexCtx        * ctx,
  * @param ctx The context where the port sharing feature will be
  * enabled.
  *
+ * @param nopoll_ctx Reference to the noPoll context that should be
+ * used by all noPollConn listeners. If you provide a NULL value, the
+ * function will create a new noPollCtx object.
+ *
  * @param local_addr The local address to limit the port sharing
  * operation (or NULL if it is required to be applied to any address).
  *
@@ -909,10 +923,15 @@ int __vortex_websocket_detect_and_prepare_transport (VortexCtx        * ctx,
  * detector.
  */
 axlPointer         vortex_websocket_listener_port_sharing (VortexCtx  * ctx, 
+							   noPollCtx  * nopoll_ctx,
 							   const char * local_addr, 
 							   const char * local_port)
 {
 	v_return_val_if_fail (ctx, NULL);
+
+	/* associate nopoll-ctx if found */
+	if (nopoll_ctx)
+		vortex_ctx_set_data_full (ctx, "nopoll-ctx", nopoll_ctx, NULL, __vortex_websocket_release_ctx);
 
 	/* call to enable/disable according to the enable status */
 	return vortex_listener_set_port_sharing_handling (

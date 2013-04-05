@@ -14241,6 +14241,8 @@ axl_bool test_20 (void) {
 	VortexConnection * conn;
 	VortexCtx         * ctx;
 
+	VortexWebsocketSetup * wss_setup;
+
 	/* create new context */
 	ctx = vortex_ctx_new ();
 
@@ -14265,8 +14267,29 @@ axl_bool test_20 (void) {
 
 	vortex_connection_close (conn);
 
+	/* BEEP over WEBSOCKET */
 	printf ("Test 20: creating BEEP session with WebSocket transport (no TLS)..\n");
 	conn = vortex_websocket_connection_new (listener_host, "44015", vortex_websocket_setup_new (ctx), NULL, NULL);
+
+	if (! test_20_check (conn))
+		return axl_false;
+
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Test 20: failed to create connection..");
+		vortex_connection_close (conn);
+		return axl_false;
+	}
+
+	vortex_connection_close (conn);
+
+	/* BEEP over TLS WEBSOCKET */
+	printf ("Test 20: creating BEEP session with WebSocket transport (WITH TLS)..\n");
+
+	/* create basic setup */
+	wss_setup = vortex_websocket_setup_new (ctx);
+	/* setup wss protocol */
+	vortex_websocket_setup_conf (wss_setup, VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_TLS, INT_TO_PTR (axl_true));
+	conn = vortex_websocket_connection_new (listener_host, "44015", wss_setup, NULL, NULL);
 
 	if (! test_20_check (conn))
 		return axl_false;
