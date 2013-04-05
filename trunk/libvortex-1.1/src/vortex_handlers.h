@@ -1189,6 +1189,8 @@ typedef void (* VortexPayloadFeederFinishedHandler) (VortexChannel        * chan
  *
  * @param ctx The vortex context where the operation takes place.
  *
+ * @param listener The listener where this connection was received.
+ *
  * @param conn The connection where port sharing is to be
  * detected. The function must use PEEK operation over the socket
  * (_session) to detect transports until the function is sure about
@@ -1204,7 +1206,7 @@ typedef void (* VortexPayloadFeederFinishedHandler) (VortexChannel        * chan
  *
  * @param user_data User defined pointer pass in to the handler (as defined by \ref vortex_listener_set_port_sharing_handling 's last parameter).
  */
-typedef int (*VortexPortShareHandler) (VortexCtx * ctx, VortexConnection * conn, VORTEX_SOCKET _session, const char * bytes, axlPointer user_data);
+typedef int (*VortexPortShareHandler) (VortexCtx * ctx, VortexConnection * listener, VortexConnection * conn, VORTEX_SOCKET _session, const char * bytes, axlPointer user_data);
 
 				      
 /** 
