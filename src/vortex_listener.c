@@ -1790,7 +1790,7 @@ axl_bool __vortex_listener_check_port_sharing (VortexCtx * ctx, VortexConnection
 		return axl_true; /* nothing found, do not activate this */
 	buffer[4] = 0;
 
-	vortex_log (VORTEX_LEVEL_CRITICAL, "Transport detection for conn-id=%d, content detected: '%d %d %d %d'", 
+	vortex_log (VORTEX_LEVEL_DEBUG, "Transport detection for conn-id=%d, content detected: '%d %d %d %d'", 
 		    vortex_connection_get_id (connection),
 		    buffer[0], buffer[1], buffer[2], buffer[3]);
 	if (axl_memcmp (buffer, "RPY", 3)) {

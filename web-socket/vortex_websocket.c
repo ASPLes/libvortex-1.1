@@ -582,6 +582,41 @@ VortexConnection * vortex_websocket_connection_new (const char            * host
 	return __vortex_websocket_connection_new (data);
 }
 
+/** 
+ * @internal Function used to setup Host: header received over the
+ * WebSocket into the BEEP serverName session value.
+ */
+axl_bool __vortex_websocket_setup_server_name_from_header (noPollConn * _new_conn, VortexConnection * new_conn)
+{
+	VortexCtx * ctx = CONN_CTX (new_conn);
+
+	v_return_val_if_fail (_new_conn && new_conn, axl_false);
+
+	if (nopoll_conn_get_host_header (_new_conn)) {
+		
+		if (nopoll_conn_is_tls_on (_new_conn)) {
+			/* drop a log */
+			vortex_log (VORTEX_LEVEL_DEBUG, "Flagging WebSocket connection id=%d with TLS on",
+				    vortex_connection_get_id (new_conn));
+			
+			/* configure tls enabled */
+			vortex_connection_set_data (new_conn, VORTEX_TLS_WEBSOCKET_ENABLED, INT_TO_PTR(1));
+			vortex_connection_set_data (new_conn, "tls-fication:status", INT_TO_PTR(1));
+		} /* end if */
+		
+		/* configure server name and drop a log */
+		vortex_connection_set_server_name (new_conn, nopoll_conn_get_host_header (_new_conn));
+		vortex_log (VORTEX_LEVEL_DEBUG, "Virtual hosting Host: %s header received, set as BEEP serverName=%s value on conn-id=%d",
+			    nopoll_conn_get_host_header (_new_conn), vortex_connection_get_server_name (new_conn), 
+			    vortex_connection_get_id (new_conn));
+
+		/* return ok operation */
+		return axl_true;
+	} /* end if */
+
+	return axl_false;
+}
+
 int vortex_websocket_listener_post_actions (VortexCtx               * ctx, 
 					    VortexConnection        * new_conn, 
 					    VortexConnection       ** __new_ref, 
@@ -599,27 +634,8 @@ int vortex_websocket_listener_post_actions (VortexCtx               * ctx,
 
 	/* check if the WebSocket handshake completed (where Host:
 	 * header could be sent) and check it */
-	if (nopoll_conn_get_host_header (_new_conn)) {
-
-		if (nopoll_conn_is_tls_on (_new_conn)) {
-			/* drop a log */
-			vortex_log (VORTEX_LEVEL_DEBUG, "Flagging WebSocket connection id=%d with TLS on",
-				    vortex_connection_get_id (new_conn));
-
-			/* configure tls enabled */
-			vortex_connection_set_data (new_conn, VORTEX_TLS_WEBSOCKET_ENABLED, INT_TO_PTR(1));
-			vortex_connection_set_data (new_conn, "tls-fication:status", INT_TO_PTR(1));
-		} /* end if */
-
-		/* configure server name and drop a log */
-		vortex_connection_set_server_name (new_conn, nopoll_conn_get_host_header (_new_conn));
-		vortex_log (VORTEX_LEVEL_DEBUG, "Virtual hosting Host: %s header received, set as BEEP serverName=%s value on conn-id=%d",
-			    nopoll_conn_get_host_header (_new_conn), vortex_connection_get_server_name (new_conn), 
-			    vortex_connection_get_id (new_conn));
-
-		/* return ok operation */
+	if (__vortex_websocket_setup_server_name_from_header (_new_conn, new_conn))
 		return 1;
-	} /* end if */
 
 	/* request to shutdown connection because host header wasn't
 	 * received */
@@ -701,6 +717,24 @@ void vortex_websocket_listener_accept (VortexConnection * conn)
 }
 
 /** 
+ * @internal Function used to check and install post action function
+ * (if it wasn't found).
+ */
+void __vortex_websocket_install_post_actions (VortexCtx * ctx)
+{
+	if (! vortex_ctx_get_data (ctx, "vo:web:post-action")) {
+		/* setup handler to be called for each connection
+		 * accepted on every listener started */
+		vortex_connection_set_connection_actions (ctx, CONNECTION_STAGE_POST_CREATED, vortex_websocket_listener_post_actions, NULL);
+		
+		/* setup we have already setup the handler */
+		vortex_ctx_set_data (ctx, "vo:web:post-action", INT_TO_PTR (1));
+	} /* end if */
+
+	return;
+}
+
+/** 
  * @brief Allows to create a new BEEP listener accepting connections over WebSocket.
  *
  * The function accepts the noPollConn reference of the WebSocket
@@ -735,14 +769,7 @@ VortexConnection * vortex_websocket_listener_new   (VortexCtx                * c
 	   nopoll_log_color_enable (nopoll_conn_ctx (listener), axl_true);      */
 
 	/* check if we have installed post actions function */
-	if (! vortex_ctx_get_data (ctx, "vo:web:post-action")) {
-		/* setup handler to be called for each connection
-		 * accepted on every listener started */
-		vortex_connection_set_connection_actions (ctx, CONNECTION_STAGE_POST_CREATED, vortex_websocket_listener_post_actions, NULL);
-
-		/* setup we have already setup the handler */
-		vortex_ctx_set_data (ctx, "vo:web:post-action", INT_TO_PTR (1));
-	} /* end if */
+	__vortex_websocket_install_post_actions (ctx);
 
 	/* check if this is a blocking or async listener creation */
 	result = vortex_connection_new_empty (ctx, nopoll_conn_socket (listener), VortexRoleMasterListener);
@@ -882,8 +909,10 @@ int __vortex_websocket_detect_and_prepare_transport (VortexCtx        * ctx,
 	} /* end if */
 
 	/* now prepare all I/O associated to the listener */
-	vortex_log (VORTEX_LEVEL_DEBUG, "WEB-SOCKET: Detected and activated websocket transport for conn-id=%d (is tls on=%d)", 
-		    vortex_connection_get_id (conn), is_tls_conn);
+	vortex_log (VORTEX_LEVEL_DEBUG, "WEB-SOCKET: Detected and activated websocket transport for conn-id=%d, serverName=%s (is tls on=%d)", 
+		    vortex_connection_get_id (conn), 
+		    vortex_connection_get_server_name (conn) ? vortex_connection_get_server_name (conn) : "<not defined>",
+		    is_tls_conn);
 	__vortex_websocket_setup_listener_connection (conn, nopoll_conn);
 	return 2; /* web socket connection detected */
 }
@@ -939,6 +968,9 @@ axlPointer         vortex_websocket_listener_port_sharing (VortexCtx  * ctx,
 		} /* end if */
 		vortex_ctx_set_data_full (ctx, "nopoll-ctx", nopoll_ctx, NULL, __vortex_websocket_release_ctx);
 	}
+
+	/* check if we have installed post actions function */
+	__vortex_websocket_install_post_actions (ctx);
 
 	/* call to enable/disable according to the enable status */
 	return vortex_listener_set_port_sharing_handling (
