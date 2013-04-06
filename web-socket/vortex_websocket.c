@@ -832,7 +832,7 @@ int __vortex_websocket_detect_and_prepare_transport (VortexCtx        * ctx,
 	axl_bool     is_tls_conn;
 
 	/* detect tls conn */
-	is_tls_conn = bytes[0] == 22 && bytes[1] == 3 && bytes[2] == 1 && bytes[3] == 0;
+	is_tls_conn = bytes[0] == 22 && bytes[1] == 3 && bytes[2] == 1;
 
 	if (! axl_memcmp ("GET", bytes, 3) && ! is_tls_conn)
 		return 1; /* nothing detected here (it doesn't seems
@@ -907,7 +907,9 @@ int __vortex_websocket_detect_and_prepare_transport (VortexCtx        * ctx,
  *
  * @param nopoll_ctx Reference to the noPoll context that should be
  * used by all noPollConn listeners. If you provide a NULL value, the
- * function will create a new noPollCtx object.
+ * function will create a new noPollCtx object. The function will
+ * acquire a reference to the noPollCtx object passed in. The caller
+ * still owns all references to this object.
  *
  * @param local_addr The local address to limit the port sharing
  * operation (or NULL if it is required to be applied to any address).
@@ -930,8 +932,13 @@ axlPointer         vortex_websocket_listener_port_sharing (VortexCtx  * ctx,
 	v_return_val_if_fail (ctx, NULL);
 
 	/* associate nopoll-ctx if found */
-	if (nopoll_ctx)
+	if (nopoll_ctx) {
+		if (! nopoll_ctx_ref (nopoll_ctx)) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "Unable to acquire noPollCtx reference, failed to activate port sharing feature..");
+			return NULL;
+		} /* end if */
 		vortex_ctx_set_data_full (ctx, "nopoll-ctx", nopoll_ctx, NULL, __vortex_websocket_release_ctx);
+	}
 
 	/* call to enable/disable according to the enable status */
 	return vortex_listener_set_port_sharing_handling (
