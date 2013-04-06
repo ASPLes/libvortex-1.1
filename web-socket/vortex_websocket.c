@@ -920,7 +920,7 @@ int __vortex_websocket_detect_and_prepare_transport (VortexCtx        * ctx,
  *
  * @return The function returns a handler of the port share
  * installed. This handler can later be used to remove this port share
- * detector.
+ * detector. The function returns NULL in the case of failure.
  */
 axlPointer         vortex_websocket_listener_port_sharing (VortexCtx  * ctx, 
 							   noPollCtx  * nopoll_ctx,
