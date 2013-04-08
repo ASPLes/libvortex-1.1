@@ -140,6 +140,22 @@ Depends: libaxl-dev (>= 0.6.4), libvortex-1.1-dev (= ${Source-Version}),
  libvortex-tls-1.1 (= ${Source-Version})
 Description: BEEP ALIVE support for Vortex Library (devel headers).
  Development headers for BEEP ALIVE profile.
+
+Package: libvortex-websocket-1.1
+Section: libs
+Architecture: any
+Depends: libc6, libaxl1 (>= 0.6.4), libvortex-1.1 (= ${Source-Version}),
+  libnopoll0
+Description: BEEP over WebSocket support for Vortex Library
+ This package contains BEEP over WebSocket support for Vortex Library.
+
+Package: libvortex-websocket-1.1-dev
+Section: libdevel
+Architecture: any
+Depends: libaxl-dev (>= 0.6.4), libvortex-1.1-dev (= ${Source-Version}),
+ libvortex-tls-1.1 (= ${Source-Version}), libnopoll0-dev
+Description: BEEP over WebSocket support for Vortex Library (dev headers)
+ This package contains BEEP over WebSocket support for Vortex Library.
  
 Package: vortex-xml-rpc-gen-1.1
 Section: net
