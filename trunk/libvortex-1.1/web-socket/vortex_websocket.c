@@ -51,6 +51,52 @@
  * @{
  */
 
+noPollPtr __vortex_websocket_mutex_create (void) {
+	VortexMutex * mutex = axl_new (VortexMutex, 1);
+	if (mutex == NULL)
+		return NULL;
+	vortex_mutex_create (mutex);
+	return mutex;
+}
+
+void __vortex_websocket_mutex_destroy (noPollPtr _mutex) {
+	VortexMutex * mutex = _mutex;
+	vortex_mutex_destroy (mutex);
+	axl_free (mutex);
+	return;
+}
+
+void __vortex_websocket_mutex_lock (noPollPtr _mutex) {
+	VortexMutex * mutex = _mutex;
+	vortex_mutex_lock (mutex);
+	return;
+}
+
+void __vortex_websocket_mutex_unlock (noPollPtr _mutex) {
+	VortexMutex * mutex = _mutex;
+	vortex_mutex_unlock (mutex);
+	return;
+}
+
+/* call to check and init library */
+axl_bool __vortex_websocket_was_init = axl_false;
+void __vortex_websocket_check_and_init (void) {
+
+	/* check if the library was init and skip operation */
+	if (__vortex_websocket_was_init)
+		return;
+
+	/* configure handlers */
+	nopoll_thread_handlers (__vortex_websocket_mutex_create, 
+				__vortex_websocket_mutex_destroy,
+				__vortex_websocket_mutex_lock,
+				__vortex_websocket_mutex_unlock);
+
+	/* flag this was init */
+	__vortex_websocket_was_init = axl_true;
+	return;
+}
+
 struct _VortexWebsocketSetup {
 	/** 
 	 * @internal Context reference.
@@ -560,6 +606,9 @@ VortexConnection * vortex_websocket_connection_new (const char            * host
 	v_return_val_if_fail_msg (port,  NULL, "Unable to create connection, received NULL port reference");
 	v_return_val_if_fail_msg (setup, NULL, "Unable to create connection, received NULL setup reference");
 
+	/* call to check and init library */
+	__vortex_websocket_check_and_init ();
+
 	/* create invocation object */
 	data               = axl_new (VortexWebsocketConnectionData, 1);
 	data->ctx          = setup->ctx;
@@ -765,6 +814,9 @@ VortexConnection * vortex_websocket_listener_new   (VortexCtx                * c
 
 	v_return_val_if_fail (ctx || listener, NULL);
 
+	/* call to check and init library */
+	__vortex_websocket_check_and_init ();
+
 	/* nopoll_log_enable (nopoll_conn_ctx (listener), axl_true);
 	   nopoll_log_color_enable (nopoll_conn_ctx (listener), axl_true);      */
 
@@ -959,6 +1011,9 @@ axlPointer         vortex_websocket_listener_port_sharing (VortexCtx  * ctx,
 							   const char * local_port)
 {
 	v_return_val_if_fail (ctx, NULL);
+
+	/* call to check and init library */
+	__vortex_websocket_check_and_init ();
 
 	/* associate nopoll-ctx if found */
 	if (nopoll_ctx) {
