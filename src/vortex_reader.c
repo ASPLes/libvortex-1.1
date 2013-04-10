@@ -1191,8 +1191,11 @@ void __vortex_reader_stop_process (VortexCtx     * ctx,
 
 void __vortex_reader_close_connection (axlPointer pointer)
 {
+	VortexConnection * conn = pointer;
+
 	/* unref the connection */
-	vortex_connection_unref ((VortexConnection *) pointer, "vortex reader");
+	vortex_connection_shutdown (conn);
+	vortex_connection_unref (conn, "vortex reader");
 
 	return;
 }
