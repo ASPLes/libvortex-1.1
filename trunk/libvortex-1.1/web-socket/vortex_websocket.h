@@ -91,7 +91,12 @@ typedef enum {
 	 * connection creation that the TLS protocol must be enabled
 	 * first before proceeding (support wss://).
 	 */
-	VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_TLS = 6
+	VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_TLS = 6,
+	/** 
+	 * @brief Allows to to enable debug at noPollCtx context
+	 * object created by the connection. By default is disabled.
+	 */
+	VORTEX_WEBSOCKET_ENABLE_DEBUG = 7
 } VortexWebsocketConfItem;
 
 VortexWebsocketSetup  * vortex_websocket_setup_new      (VortexCtx * ctx);

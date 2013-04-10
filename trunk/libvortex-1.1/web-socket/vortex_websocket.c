@@ -130,6 +130,11 @@ struct _VortexWebsocketSetup {
 	 * @internal Use WebSocket TLS support.
 	 */
 	axl_bool use_wss;
+
+	/** 
+	 * @internal Enable debug.
+	 */
+	axl_bool enable_debug;
 };
 
 /** 
@@ -291,6 +296,10 @@ void               vortex_websocket_setup_conf     (VortexWebsocketSetup      * 
 		/* enable wss support */
 		setup->use_wss = PTR_TO_INT (value);
 		break;
+	case VORTEX_WEBSOCKET_ENABLE_DEBUG:
+		/* enable debug */
+		setup->enable_debug = PTR_TO_INT (value);
+		break;
 	} /* end switch */
 
 	return;
@@ -440,8 +449,10 @@ axlPointer __vortex_websocket_connection_new (VortexWebsocketConnectionData * da
 	if (nopoll_ctx == NULL)
 		goto report_conn;
 
-	/* nopoll_log_enable (nopoll_ctx, axl_true);
-	   nopoll_log_color_enable (nopoll_ctx, axl_true);    */
+	if (setup->enable_debug) {
+		nopoll_log_enable (nopoll_ctx, axl_true);
+		nopoll_log_color_enable (nopoll_ctx, axl_true);    
+	} /* end if */
 
 	if (! setup->origin)
 		custom_origin = axl_strdup_printf ("http://%s", host);
@@ -827,6 +838,11 @@ VortexConnection * vortex_websocket_listener_new   (VortexCtx                * c
 	result = vortex_connection_new_empty (ctx, nopoll_conn_socket (listener), VortexRoleMasterListener);
 	/* operation ok */
 	if (vortex_connection_is_ok (result, axl_false)) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "WEBSOCKET: starting listener id=%d, using noPollConn-id=%d (%s:%s, refs: %d)",
+			    vortex_connection_get_id (result), nopoll_conn_get_id (listener), 
+			    vortex_connection_get_host (result), vortex_connection_get_port (result),
+			    vortex_connection_ref_count (result));
+
 		/* now configure here the on accept function that
 		 * should be used to create new BEEP sessions on top
 		 * of WebSocket */
@@ -838,6 +854,7 @@ VortexConnection * vortex_websocket_listener_new   (VortexCtx                * c
 
 		/* register into the reader */
 		vortex_reader_watch_listener (ctx, result);
+		
 	}
 
 	if (on_ready_full == NULL) 
