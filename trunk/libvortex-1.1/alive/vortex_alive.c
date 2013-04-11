@@ -98,7 +98,7 @@ void __vortex_alive_free_reference (VortexAliveData * data)
 {
 	VortexConnection * conn    = data->conn;
 	VortexChannel    * channel = data->channel;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx        * ctx  = CONN_CTX (conn);
 #endif
 
@@ -196,7 +196,7 @@ axl_bool __vortex_alive_found_activity (VortexCtx * ctx, VortexConnection * conn
  */
 axl_bool __vortex_alive_trigger_failure (VortexAliveData * data)
 {
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	/* get ctx */
 	VortexCtx * ctx = CONN_CTX (data->conn);
 #endif

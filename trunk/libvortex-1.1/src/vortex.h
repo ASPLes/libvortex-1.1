@@ -297,6 +297,18 @@ END_C_DECLS
 #endif
 
 /** 
+ * @internal The following definition allows to find printf like wrong
+ * argument passing to nopoll_log function. To activate the depuration
+ * just add the following header after this comment.
+ *
+ * #define SHOW_FORMAT_BUGS (1)
+ */
+#if defined(SHOW_FORMAT_BUGS)
+# undef  vortex_log
+# define vortex_log(l, m, ...)   do{printf (m, ##__VA_ARGS__);}while(0)
+#endif
+
+/** 
  * @internal Allows to check a condition and return if it is not meet.
  * 
  * @param expr The expresion to check.

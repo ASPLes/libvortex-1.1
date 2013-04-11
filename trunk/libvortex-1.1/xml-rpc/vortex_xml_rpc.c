@@ -102,7 +102,7 @@ void __vortex_xml_rpc_notify (VortexXmlRpcBootNotify    process_status,
 			      axlPointer                user_data)
 {
 	/* get context */
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = vortex_channel_get_ctx (channel);
 #endif
 
@@ -175,7 +175,7 @@ void __vortex_xml_rpc_notify_response (XmlRpcInvokeNotify     notify,
 				       axlPointer             user_data)
 {
 	/* get context */
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = vortex_channel_get_ctx (channel);
 #endif
 
@@ -495,7 +495,7 @@ typedef struct _VortexXmlRpcBootData {
 axlPointer __vortex_xml_rpc_boot_channel_process (VortexXmlRpcBootData * data)
 {
 	VortexConnection        * connection      = data->connection;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx               * ctx             = vortex_connection_get_ctx (connection);
 #endif
 	char                    * serverName      = data->serverName;
@@ -588,7 +588,7 @@ axlPointer __vortex_xml_rpc_boot_channel_process (VortexXmlRpcBootData * data)
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "checking resource validation, received: %s",
-		    vortex_frame_get_payload (reply));
+		    (const char *) vortex_frame_get_payload (reply));
 
 	/* seems that the remote peer have accepted to create the
 	 * XML-RPC channel. Because it is not a good idea to exec the
@@ -704,7 +704,7 @@ void __vortex_xml_rpc_boot_channel_sync_process  (VortexChannel    * booted_chan
 						  axlPointer         user_data)
 {
 	VortexAsyncQueue * queue = user_data;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx        * ctx   = vortex_channel_get_ctx (booted_channel);
 #endif
 
@@ -1327,7 +1327,7 @@ axlPointer __vortex_xml_rpc_invoke (VortexXmlRpcInvokeData * data)
 	XmlRpcMethodCall     * invocator     = data->invocator;
 	XmlRpcInvokeNotify     reply_notify  = data->reply_notify;
 	axlPointer             user_data     = data->user_data;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx            * ctx           = CHANNEL_CTX(channel);
 #endif
 	char                 * message;
@@ -1472,7 +1472,7 @@ void __vortex_xml_rpc_invoke_sync_process (VortexChannel        * channel,
 					   axlPointer             user_data)
 {
 	VortexAsyncQueue * queue = user_data;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx        * ctx   = vortex_channel_get_ctx (channel);
 #endif
 
@@ -1589,7 +1589,7 @@ VortexXmlRpcState   vortex_xml_rpc_channel_status   (VortexChannel * channel)
 {
 	char      * boot_state;
 	/* get a reference to the context */
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = vortex_channel_get_ctx (channel);
 #endif
 
@@ -2384,7 +2384,7 @@ XmlRpcMethodValue * __vortex_xml_rpc_unmarshall_common_sync (XmlRpcMethodRespons
 	XmlRpcResponseStatus   _status;
 	char                 * string;
 	/* get a reference to the context */
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx            * ctx = vortex_channel_get_ctx (channel);
 #endif
 	

@@ -271,7 +271,7 @@ axl_bool      vortex_greetings_send (VortexConnection * connection, VortexConnec
 VortexFrame *  vortex_greetings_process (VortexConnection     * connection,
 					 VortexConnectionOpts * options)
 {
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx          * ctx   = vortex_connection_get_ctx (connection);
 #endif
 	VortexFrame        * frame;
@@ -403,7 +403,7 @@ axl_bool            vortex_greetings_is_reply_ok    (VortexFrame          * fram
 						     VortexConnectionOpts * options)
 {
 	VortexChannel * channel;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx     * ctx = vortex_connection_get_ctx (connection);
 #endif
 

@@ -904,7 +904,7 @@ axlPointer __vortex_profiles_invoke_frame_received (axlPointer __data)
 	VortexFrame               * frame        = data->frame;
 	VortexChannel             * channel      = NULL;
 	axl_bool                    is_connected = axl_false;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx                 * ctx          = vortex_connection_get_ctx (connection);
 #endif
 

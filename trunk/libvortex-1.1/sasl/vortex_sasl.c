@@ -276,7 +276,7 @@ axl_bool                vortex_sasl_set_propertie             (VortexConnection 
 							       char                 * value,
 							       axlDestroyFunc         value_destroy)
 {
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 #endif
 	
@@ -352,7 +352,7 @@ axl_bool                vortex_sasl_set_propertie             (VortexConnection 
 char             * vortex_sasl_get_propertie             (VortexConnection     * connection,
 							  VortexSaslProperties   prop)
 {
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 #endif
 
@@ -480,7 +480,7 @@ void __vortex_sasl_notify (VortexSaslAuthNotify   process_status,
 			   axlPointer             user_data)
 {
 	/* get the context */
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 #endif
 
@@ -563,7 +563,7 @@ axl_bool      __vortex_sasl_create_context (VortexConnection * connection)
 {
 	VortexGsaslData * data;
 	int               rc;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 #endif
 
@@ -610,7 +610,7 @@ void vortex_sasl_configure_current_properties (VortexConnection * connection)
 {
 	char              hostname[512];
 	VortexGsaslData * data = vortex_connection_get_data (connection, SASL_DATA);
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 #endif
 	
@@ -670,7 +670,7 @@ char  * __vortex_sasl_initiator_do_initial_step (const char           * profile,
 	char              * base64_chunk;
 	int                 rc;
 
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx     * ctx = vortex_connection_get_ctx (connection);
 #endif
 
@@ -712,7 +712,7 @@ char  * __vortex_sasl_initiator_do_initial_step (const char           * profile,
 	if (rc == GSASL_NEEDS_MORE || rc == GSASL_OK) {
 		vortex_log (VORTEX_LEVEL_DEBUG, 
 			    "SASL initial start have finished, sending start message to remote server: [size %d] '%s', GSASL message: (%d)",
-			    strlen (base64_chunk), base64_chunk, rc);
+			    (int) strlen (base64_chunk), base64_chunk, rc);
 		return base64_chunk;
 	}
 	vortex_log (VORTEX_LEVEL_CRITICAL, "initial step have failed: (%d): %s",
@@ -854,7 +854,7 @@ axl_bool __vortex_sasl_initiator_do_steps (VortexChannel          * channel,
 	char              * new_blob = NULL;
 	char              * status   = NULL;
 	VortexGsaslData   * data;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx   * ctx      = vortex_connection_get_ctx (connection);
 #endif
 
@@ -1018,7 +1018,7 @@ void               __vortex_sasl_start_auth              (VortexSaslStartData * 
 {
 	/* local variable declarations received from main function */
 	VortexConnection     * connection      = data->connection;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx            * ctx             = vortex_connection_get_ctx (connection);
 #endif
 	const char           * profile         = data->profile;
@@ -1346,7 +1346,7 @@ void __vortex_sasl_start_auth_sync_process  (VortexConnection * connection,
 					     axlPointer         user_data)
 {
 	VortexAsyncQueue * queue = user_data;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx        * ctx   = vortex_connection_get_ctx (connection);
 #endif
 
@@ -2028,7 +2028,7 @@ axl_bool      __vortex_sasl_server_iterate (VortexConnection * connection,
 	char             * base64_chunk  = NULL;
 	char             * status        = NULL;
 	VortexGsaslData  * data          = vortex_connection_get_data (connection, SASL_DATA);
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx        * ctx           = vortex_connection_get_ctx (connection);
 #endif
 	int                rc;
@@ -2136,7 +2136,7 @@ axl_bool      __vortex_sasl_accept_negotiation_start (const char        * profil
 
 	VortexGsaslData   * data;
 	int                 rc;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx         * ctx = vortex_connection_get_ctx (connection);
 #endif
 
@@ -2216,7 +2216,7 @@ void __vortex_sasl_accept_negotiation_frame_receive (VortexChannel    * channel,
 						     axlPointer user_data)
 {
 	char      * payload_reply = NULL;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx           = vortex_connection_get_ctx (connection);
 #endif
 

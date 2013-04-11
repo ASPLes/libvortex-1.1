@@ -1032,7 +1032,7 @@ void               vortex_pull_close_notify       (VortexChannel * channel,
 						   axlPointer      user_data)
 {
 	VortexEvent * event;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx   * ctx = user_data;
 #endif
 

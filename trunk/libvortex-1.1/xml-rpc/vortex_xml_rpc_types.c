@@ -1498,7 +1498,7 @@ VortexCtx         * vortex_xml_rpc_method_call_get_ctx      (XmlRpcMethodCall  *
 char              * vortex_xml_rpc_method_call_marshall     (XmlRpcMethodCall  * method_call,
 							     int               * size)
 {
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx         * ctx = METHOD_CALL_CTX(method_call);
 #endif
 	XmlRpcMethodValue * value;

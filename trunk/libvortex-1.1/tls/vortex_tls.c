@@ -513,7 +513,7 @@ int  vortex_tls_ssl_write (VortexConnection * connection, const char  * buffer, 
 	int           res;
 	int           ssl_err;
 	VortexMutex * mutex;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx   * ctx = vortex_connection_get_ctx (connection);
 #endif
 
@@ -603,7 +603,7 @@ void vortex_tls_set_common_data (VortexConnection * connection,
 				 SSL* ssl, SSL_CTX * _ctx)
 {
 	VortexMutex * mutex;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx   * ctx = vortex_connection_get_ctx (connection);
 #endif
 
@@ -648,7 +648,7 @@ void __vortex_tls_start_negotiation_close_and_notify (VortexTlsActivation   proc
 						      char                * message,
 						      axlPointer            user_data)
 {
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx   * ctx = vortex_connection_get_ctx (connection);
 #endif
 
@@ -944,8 +944,8 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 		if (!axl_cmp (vortex_frame_get_payload (reply), "<proceed />")) {
 			/* content received */
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
-			       "Wrong reply received from remote peer for TLS support (<proceed /> != '%s'",
-			       vortex_frame_get_payload (reply));
+				    "Wrong reply received from remote peer for TLS support (<proceed /> != '%s'",
+				    vortex_frame_get_payload (reply) ? (const char *) vortex_frame_get_payload (reply) : "<content not defined>");
 
 			/* received a unexpected token reply */
 			vortex_frame_unref (reply);
@@ -1798,7 +1798,7 @@ void __vortex_tls_start_negotiation_sync_process (VortexConnection * connection,
 						  axlPointer         user_data)
 {
 	VortexAsyncQueue    * queue = user_data;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx           * ctx = vortex_connection_get_ctx (connection);
 #endif
 	VortexTlsSyncResult * result;
