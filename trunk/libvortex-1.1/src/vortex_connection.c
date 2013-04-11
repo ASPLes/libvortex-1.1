@@ -4283,6 +4283,27 @@ const char         * vortex_connection_get_host             (VortexConnection * 
 }
 
 /** 
+ * @internal Function used to setup manuall values returned by \ref
+ * vortex_connection_get_host and \ref vortex_connection_get_port.
+ */
+void                vortex_connection_set_host_and_port      (VortexConnection * connection, 
+							      const char       * host,
+							      const char       * port)
+{
+	v_return_if_fail (connection && host && port);
+	
+	if (connection->host)
+		axl_free (connection->host);
+	if (connection->port)
+		axl_free (connection->port);
+	
+	connection->host = axl_strdup (host);
+	connection->port = axl_strdup (port);
+
+	return;
+}
+
+/** 
  * @brief Allows to get the actual host ip this connection is
  * connected to.
  *

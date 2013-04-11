@@ -238,6 +238,10 @@ const char        * vortex_connection_get_local_addr         (VortexConnection *
 
 const char        * vortex_connection_get_local_port         (VortexConnection * connection);
 
+void                vortex_connection_set_host_and_port      (VortexConnection * connection, 
+							      const char       * host,
+							      const char       * port);
+
 int                 vortex_connection_get_id                 (VortexConnection * connection);
 
 const char        * vortex_connection_get_server_name        (VortexConnection * connection);
