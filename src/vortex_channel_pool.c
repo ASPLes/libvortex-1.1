@@ -142,7 +142,7 @@ VortexChannel * __vortex_channel_pool_add_channels (VortexChannelPool * pool, in
 {
 	int              iterator = 0;
 	VortexChannel  * channel  = NULL;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx      * ctx      = vortex_connection_get_ctx (pool->connection);
 #endif
 
@@ -249,7 +249,7 @@ axlPointer __vortex_channel_pool_new (VortexChannelPoolData * data)
 	/* function local parameters */
 	VortexChannelPool           * channel_pool;
 
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx                   * ctx                     = vortex_connection_get_ctx (connection);
 #endif
 
@@ -792,7 +792,7 @@ void           __vortex_channel_pool_close_common (VortexChannelPool * pool,
 	int                 channels;
 	VortexConnection  * connection;
 	VortexChannel     * channel;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx         * ctx                     = pool ? vortex_connection_get_ctx (pool->connection) : NULL;
 #endif
 	axlListCursor     * cursor;
@@ -1196,7 +1196,7 @@ VortexChannel     * vortex_channel_pool_get_next_ready (VortexChannelPool * pool
 
 axl_bool  __find_ready (axlPointer channel, axlPointer data)
 {
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = vortex_channel_get_ctx (channel);
 #endif
 

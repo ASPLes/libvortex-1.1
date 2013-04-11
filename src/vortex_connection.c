@@ -465,7 +465,7 @@ void __close_channel_aux (axlPointer _channel)
 {
 	VortexChannel * channel = _channel;
 	/* get the context */
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx     * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
@@ -681,7 +681,7 @@ axl_bool      __vortex_connection_parse_greetings (VortexConnection * connection
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "About to parse the following message: (size: %d) '%s'",
-	       vortex_frame_get_payload_size (frame), vortex_frame_get_payload (frame));
+		    vortex_frame_get_payload_size (frame), (const char *) vortex_frame_get_payload (frame));
 
 	/* dtd correct */
 
@@ -914,7 +914,8 @@ VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx       
 		
 		/* associate channel 0 with actual connection */
 		if (! vortex_connection_add_channel (connection, channel)) {
-			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to add channel 0 to new connection id=%d created, unable to maintain this connection, killing");
+			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to add channel 0 to new connection id=%d created, unable to maintain this connection, killing",
+				    connection->id);
 
 			/* release all references */
 			vortex_channel_unref2 (channel, "new connection");
@@ -1371,7 +1372,7 @@ int __vortex_connection_wait_on (VortexCtx           * ctx,
 		/* perform wait operation */
 		err = vortex_io_waiting_invoke_wait (ctx, wait_set, session, wait_for);
 		vortex_log (VORTEX_LEVEL_DEBUG, "__vortex_connection_wait_on (sock=%d) operation finished, err=%d, errno=%d (%s), wait_for=%d (ellapsed: %d)",
-			    session, err, errno, vortex_errno_get_error (errno) ? vortex_errno_get_error (errno) : "", wait_for, time (NULL) - start_time);
+			    session, err, errno, vortex_errno_get_error (errno) ? vortex_errno_get_error (errno) : "", wait_for, (int) (time (NULL) - start_time));
 
 		/* check for bad file description error */
 		if (errno == EBADF) {
@@ -1407,7 +1408,7 @@ int __vortex_connection_wait_on (VortexCtx           * ctx,
 	} /* end while */
 	
 	vortex_log (VORTEX_LEVEL_DEBUG, "timeout operation finished, with err=%d, errno=%d, ellapsed time=%d (seconds)", 
-		    err, errno, time (NULL) - start_time);
+		    err, errno, (int) (time (NULL) - start_time));
 
 	/* destroy waiting set */
 	vortex_io_waiting_invoke_destroy_fd_group (ctx, wait_set);
@@ -1522,8 +1523,8 @@ VORTEX_SOCKET vortex_connection_sock_connect (VortexCtx   * ctx,
 		if(timeout == 0 || (errno != VORTEX_EINPROGRESS && errno != VORTEX_EWOULDBLOCK)) { 
 			shutdown (session, SHUT_RDWR);
 			vortex_close_socket (session);
-			vortex_log (VORTEX_LEVEL_WARNING, "unable to connect to remote host errno=%d, timeout=%d",
-				    errno, timeout);
+			vortex_log (VORTEX_LEVEL_WARNING, "unable to connect to remote host errno=%d, timeout reached",
+				    errno);
 			axl_error_report (error, VortexConnectionError, "unable to connect to remote host");
 			return -1;
 		} /* end if */
@@ -4377,7 +4378,9 @@ const char        * vortex_connection_get_server_name        (VortexConnection *
 void                vortex_connection_set_server_name         (VortexConnection * connection,
 							       const char       * serverName)
 {
+#if ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = CONN_CTX (connection);
+#endif
 	int iterator = 0;
 
 	/* check if the connection is null or the serverName is
@@ -4461,7 +4464,7 @@ typedef struct __VortexOnCloseNotify {
 
 axlPointer __vortex_connection_on_close_do_notify (VortexOnCloseNotify * data)
 {
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = CONN_CTX (data->conn);
 #endif
 	/* do notification */
@@ -4484,7 +4487,7 @@ void __vortex_connection_invoke_on_close_do_notify (VortexConnection            
 						    axl_bool                      is_full)
 {
 	VortexOnCloseNotify * data;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx           * ctx = CONN_CTX (conn);
 #endif
 	VortexThread          thread_def;
@@ -4791,7 +4794,7 @@ axlPointer                vortex_connection_set_channel_removed_handler  (Vortex
 	}
 	update->handler      = removed_handler;
 	update->handler_data = user_data;
-	vortex_log (VORTEX_LEVEL_DEBUG, "Configure on channel removed handler at: 0x%x",
+	vortex_log (VORTEX_LEVEL_DEBUG, "Configure on channel removed handler at: %p",
 		    removed_handler);
 
 	/* check the list and add the item */
@@ -5004,7 +5007,7 @@ int                 vortex_connection_get_next_frame_size          (VortexConnec
 void                vortex_connection_seq_frame_updates            (VortexConnection * connection,
 								    axl_bool           is_disabled)
 {
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = CONN_CTX (connection);
 #endif
 	v_return_if_fail (connection);

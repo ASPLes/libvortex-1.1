@@ -178,7 +178,7 @@ axl_bool  __vortex_io_waiting_default_add_to (int                fds,
 					      axlPointer         __fd_set)
 {
 	VortexSelect * select = (VortexSelect *) __fd_set;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx    * ctx    = vortex_connection_get_ctx (connection);
 #endif
 

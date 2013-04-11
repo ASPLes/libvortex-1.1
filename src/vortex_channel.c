@@ -693,7 +693,7 @@ axl_bool  __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _p
 	} /* end if */
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "doing validate for start reply msg: '%s'", 
-		    vortex_frame_get_payload (frame));
+		    (const char *) vortex_frame_get_payload (frame));
 
 	/* parse xml document */
 	doc = axl_doc_parse (vortex_frame_get_payload (frame), 
@@ -2216,7 +2216,7 @@ int             vortex_channel_get_number (VortexChannel * channel)
 void vortex_channel_update_status (VortexChannel * channel, unsigned int  frame_size, int msg_no, WhatUpdate update)
 {
 	/* get a reference */
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx     * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
@@ -2276,7 +2276,7 @@ void vortex_channel_update_status_received (VortexChannel * channel,
 					    WhatUpdate      update)
 {
 
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx     * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
@@ -2509,7 +2509,7 @@ check_limit:
 		vortex_log (VORTEX_LEVEL_DEBUG, 
 			    "new message to sent, type=%d channel=%d msgno=%d (proposed: %d) size (%d) = msg size (%d) + mime size (%d)",
 			    data->type, data->channel_num, data->msg_no, proposed_msg_no,
-			    data->message_size, message_size, mime_header_size);
+			    data->message_size, (int) message_size, (int) mime_header_size);
 
 		/* copy mime headers according to channel configuration, that
 		 * comes from profile configuration. */
@@ -3092,7 +3092,7 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 	/* copy the message to be send using memcpy */
 	if (feeder == NULL && (message != NULL || data->message_size > 0)) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "new reply message to sent size (%d) = msg size (%d) + mime size (%d)",
-			    data->message_size, message_size, mime_header_size);
+			    data->message_size, (int) message_size, mime_header_size);
 
 		/* copy mime header configuration if defined */
 		data->message = axl_new (char, data->message_size + 1);
@@ -3278,7 +3278,7 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 	/* do sending reply operation */
  send_reply:
 	vortex_log (VORTEX_LEVEL_DEBUG, "sending reply for message num %d (size: %d, channel queue status: %d)\n", 
- 		    msg_no_rpy, message_size, vortex_channel_pending_messages (channel));
+ 		    msg_no_rpy, (int) message_size, vortex_channel_pending_messages (channel));
 
 	switch (type) {
 	case VORTEX_FRAME_TYPE_NUL:
@@ -4077,7 +4077,7 @@ void vortex_channel_update_remote_incoming_buffer (VortexChannel * channel,
  						   unsigned        ackno,
  						   unsigned        window)
 {
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx    * ctx     = vortex_channel_get_ctx (channel);
 #endif
 	unsigned int   max_remote_seq_no;
@@ -4537,7 +4537,7 @@ axl_bool                vortex_channel_are_equal                    (VortexChann
 void               vortex_channel_queue_pending_message         (VortexChannel * channel,
 								 axlPointer      message)
 {
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx     * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
@@ -4569,7 +4569,7 @@ void               vortex_channel_queue_pending_message         (VortexChannel *
  */
 axlPointer         vortex_channel_next_pending_message          (VortexChannel * channel)
 {
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx     * ctx   = vortex_channel_get_ctx (channel);
 #endif
 	axlPointer      ptr;
@@ -4645,7 +4645,7 @@ axl_bool         vortex_channel_is_empty_pending_message (VortexChannel * channe
  */
 axlPointer        vortex_channel_remove_pending_message        (VortexChannel * channel)
 {
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx     * ctx   = vortex_channel_get_ctx (channel);
 #endif
 	axlPointer      ptr;
@@ -5578,7 +5578,7 @@ axl_bool      vortex_channel_block_until_replies_are_sent (VortexChannel * chann
 			    "we still didn't sent replies for connection=%d channel=%d, block until all replies are sent (RPY %d != MSG %d), remaining timeout=%d",
 			    vortex_connection_get_id (channel->connection),
 			    channel->channel_num,
-			    (channel->last_reply_written), channel->last_message_received, microseconds_to_wait);
+			    (channel->last_reply_written), channel->last_message_received, (int) microseconds_to_wait);
 		
 		/* check the connection status to perform a signaled
 		 * wait for replies not received */
@@ -6814,7 +6814,7 @@ axl_bool      __vortex_channel_0_frame_received_get_start_param (VortexFrame    
 	axlNode       * profile_node;
 	const char    * channel;
 	const char    * enc;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx     * ctx     = vortex_frame_get_ctx (frame);
 #endif
 
@@ -6888,7 +6888,7 @@ axl_bool  vortex_channel_notify_start_internal (const char       * serverName,
 	char        * start_rpy;
 	const char  * profile;
 	axl_bool      result = axl_true;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx   * ctx     = CONN_CTX (conn);
 #endif
 
@@ -7130,7 +7130,7 @@ char *  __vortex_channel_0_handle_start_msg_reply (VortexCtx        * ctx,
 	 * reply */
 	if (PTR_TO_INT (vortex_channel_get_data (new_channel, "_vo:ch:defer"))) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "found channel start deferred for profile=%s and channel_num=%d on connection id=%d",
-			    status, profile, channel_num, vortex_connection_get_id (connection));
+			    profile, channel_num, vortex_connection_get_id (connection));
 		axl_free (profile_content_reply);
 		return NULL;
 	} /* end if */
@@ -7610,7 +7610,7 @@ void vortex_channel_notify_close (VortexChannel * channel, int  msg_no, axl_bool
 	VortexConnection * connection;
 	char             * error_msg;
 	int                ok_on_wait      = axl_false;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx        * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
@@ -7749,7 +7749,7 @@ void vortex_channel_0_frame_received (VortexChannel    * channel0,
 				      VortexFrame      * frame,
 				      axlPointer         user_data)
 {
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx   * ctx     = vortex_channel_get_ctx (channel0);
 #endif
 
@@ -7762,8 +7762,8 @@ void vortex_channel_0_frame_received (VortexChannel    * channel0,
 	}
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "frame received over channel 0 (size: %d):\n%s\n",
-	       vortex_frame_get_content_size (frame),
-	       vortex_frame_get_payload (frame));
+		    vortex_frame_get_content_size (frame),
+		    (const char *) vortex_frame_get_payload (frame));
 
 	/* validate message */
 	/* if (!__vortex_channel_0_frame_received_validate (channel0,
@@ -8138,7 +8138,7 @@ void               vortex_channel_queue_reply                    (VortexChannel 
 {
 	VortexAsyncQueue * queue      = user_data;
 	VortexFrame      * frame_copy = NULL;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx        * ctx        = vortex_channel_get_ctx (channel);
 #endif
 	
@@ -8751,7 +8751,7 @@ void               vortex_channel_unlock_to_receive              (VortexChannel 
 void           	   vortex_channel_signal_on_close_blocked        (VortexChannel    * channel)
 {
 
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx   * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
@@ -8960,7 +8960,7 @@ void             vortex_channel_signal_rpy_sent                 (VortexChannel *
 {
 	char             * rpy;
 	VortexAsyncQueue * queue;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx        * ctx     = vortex_channel_get_ctx (channel);
 #endif
 

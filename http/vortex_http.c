@@ -110,7 +110,7 @@ VortexHttpSetup  * vortex_http_setup_new      (VortexCtx * ctx)
  */
 axl_bool           vortex_http_setup_ref      (VortexHttpSetup * setup)
 {
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = setup ? setup->ctx : NULL;
 #endif
 
@@ -169,7 +169,7 @@ void               vortex_http_setup_conf     (VortexHttpSetup      * setup,
 					       axlPointer             value)
 {
 	char      * str_aux;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = (setup ? setup->ctx : NULL);
 #endif
 

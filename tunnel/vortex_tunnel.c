@@ -764,7 +764,7 @@ void __vortex_tunnel_pass_octets (VortexConnection * connection)
 	/* get the connection partner */
 	VortexConnection * partner = vortex_connection_get_data (connection, VORTEX_TUNNEL_PARTNER_CONNECTION);
 	char             * buffer  = vortex_connection_get_data (connection, VORTEX_TUNNEL_BUFFER);
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx        * ctx     = vortex_connection_get_ctx (connection);
 #endif
 	int                read;

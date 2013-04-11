@@ -188,7 +188,7 @@ VortexWebsocketSetup  * vortex_websocket_setup_new      (VortexCtx * ctx)
  */
 axl_bool           vortex_websocket_setup_ref      (VortexWebsocketSetup * setup)
 {
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = setup ? setup->ctx : NULL;
 #endif
 
@@ -250,7 +250,7 @@ void               vortex_websocket_setup_conf     (VortexWebsocketSetup      * 
 					       axlPointer             value)
 {
 	char      * str_aux;
-#if defined(ENABLE_VORTEX_LOG)
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = (setup ? setup->ctx : NULL);
 #endif
 
@@ -338,7 +338,9 @@ int vortex_websocket_read (VortexConnection * conn,
 {
 	noPollConn * _conn = vortex_connection_get_hook (conn);
 	int          result;
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx   * ctx  = CONN_CTX (conn);
+#endif
 	VortexMutex * mutex;
 
 	/* check if the connection has the greetings completed and it
@@ -374,7 +376,9 @@ int vortex_websocket_send (VortexConnection * conn,
 			   int                buffer_len)
 {
 	noPollConn  * _conn = vortex_connection_get_hook (conn);
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx   * ctx   = CONN_CTX (conn);
+#endif
 	VortexMutex * mutex;
 	int           result;
 
@@ -401,7 +405,9 @@ void __vortex_websocket_conn_close (axlPointer ptr)
 	noPollConn       * conn = ptr;
 	/* noPollCtx        * nopoll_ctx = nopoll_conn_ctx (conn);*/
 	VortexConnection * v_conn = nopoll_conn_get_hook (conn);
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx        * ctx    = CONN_CTX (v_conn); 
+#endif
 
 	/* nopoll_log_enable (nopoll_ctx, nopoll_true);
 	   nopoll_log_color_enable (nopoll_ctx, nopoll_true); */
@@ -648,7 +654,9 @@ VortexConnection * vortex_websocket_connection_new (const char            * host
  */
 axl_bool __vortex_websocket_setup_server_name_from_header (noPollConn * _new_conn, VortexConnection * new_conn)
 {
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = CONN_CTX (new_conn);
+#endif
 
 	v_return_val_if_fail (_new_conn && new_conn, axl_false);
 
@@ -892,7 +900,9 @@ axl_bool           vortex_websocket_connection_is (VortexConnection * conn)
 axl_bool           vortex_websocket_connection_is_tls_running (VortexConnection * conn)
 {
 	noPollConn * _conn;
+#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx  * ctx = CONN_CTX (conn);
+#endif
 
 	/* check incoming reference */
 	if (conn == NULL)
