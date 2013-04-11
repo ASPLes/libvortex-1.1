@@ -1770,6 +1770,9 @@ axl_bool __vortex_listener_check_port_sharing (VortexCtx * ctx, VortexConnection
 	VortexPortShareData * data;
 	VortexConnection    * listener;
 
+	vortex_log (VORTEX_LEVEL_DEBUG, "Checking port sharing support for conn-id=%d (role %d == %d ?, handlers %p ?, already tp detected: %d ?",
+		    connection->id, connection->role, VortexRoleListener, ctx->port_share_handlers, connection->transport_detected);
+
 	/* check if the connection is a listener connection to avoid
 	 * running all this code. Transport detection is only for
 	 * listener peers */
