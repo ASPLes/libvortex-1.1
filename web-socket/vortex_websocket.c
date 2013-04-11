@@ -296,7 +296,7 @@ void               vortex_websocket_setup_conf     (VortexWebsocketSetup      * 
 		/* enable wss support */
 		setup->use_wss = PTR_TO_INT (value);
 		break;
-	case VORTEX_WEBSOCKET_ENABLE_DEBUG:
+	case VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_DEBUG:
 		/* enable debug */
 		setup->enable_debug = PTR_TO_INT (value);
 		break;

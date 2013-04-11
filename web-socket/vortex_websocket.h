@@ -96,7 +96,7 @@ typedef enum {
 	 * @brief Allows to to enable debug at noPollCtx context
 	 * object created by the connection. By default is disabled.
 	 */
-	VORTEX_WEBSOCKET_ENABLE_DEBUG = 7
+	VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_DEBUG = 7
 } VortexWebsocketConfItem;
 
 VortexWebsocketSetup  * vortex_websocket_setup_new      (VortexCtx * ctx);
