@@ -4288,7 +4288,8 @@ const char         * vortex_connection_get_host             (VortexConnection * 
  */
 void                vortex_connection_set_host_and_port      (VortexConnection * connection, 
 							      const char       * host,
-							      const char       * port)
+							      const char       * port,
+							      const char       * host_ip)
 {
 	v_return_if_fail (connection && host && port);
 	
@@ -4296,9 +4297,13 @@ void                vortex_connection_set_host_and_port      (VortexConnection *
 		axl_free (connection->host);
 	if (connection->port)
 		axl_free (connection->port);
+	if (connection->host_ip)
+		axl_free (connection->host_ip);
 	
-	connection->host = axl_strdup (host);
-	connection->port = axl_strdup (port);
+	/* set host, port and ip value */
+	connection->host    = axl_strdup (host);
+	connection->port    = axl_strdup (port);
+	connection->host_ip = axl_strdup (host_ip);
 
 	return;
 }

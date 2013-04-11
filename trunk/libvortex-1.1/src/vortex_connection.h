@@ -240,7 +240,8 @@ const char        * vortex_connection_get_local_port         (VortexConnection *
 
 void                vortex_connection_set_host_and_port      (VortexConnection * connection, 
 							      const char       * host,
-							      const char       * port);
+							      const char       * port,
+							      const char       * host_ip);
 
 int                 vortex_connection_get_id                 (VortexConnection * connection);
 
