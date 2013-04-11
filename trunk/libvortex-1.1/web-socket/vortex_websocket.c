@@ -952,6 +952,7 @@ int __vortex_websocket_detect_and_prepare_transport (VortexCtx        * ctx,
 	if (nopoll_ctx == NULL) {
 		/* no context found, create we and set it into the the
 		   listener */
+		vortex_log (VORTEX_LEVEL_DEBUG, "WEB-SOCKET: noPollCtx context not found associated to VortexCtx=%p, creating one", ctx);
 
 		/* create a context */
 		nopoll_ctx = nopoll_ctx_new ();
@@ -963,6 +964,10 @@ int __vortex_websocket_detect_and_prepare_transport (VortexCtx        * ctx,
 	/* MASTER LISTENER: now get the noPoll listener associated to this Vortex listener */
 	nopoll_listener = vortex_connection_get_data (listener, "nopoll-conn");
 	if (nopoll_listener == NULL) {
+		/* no context found, create we and set it into the the
+		   listener */
+		vortex_log (VORTEX_LEVEL_DEBUG, "WEB-SOCKET: noPollConn master listener not found associated to listener %p, creating one from this", listener);
+
 		/* create the listener */
 		nopoll_listener = nopoll_listener_from_socket (nopoll_ctx, vortex_connection_get_socket (listener));
 
@@ -982,8 +987,8 @@ int __vortex_websocket_detect_and_prepare_transport (VortexCtx        * ctx,
 	/* complete websocket conn setup */
 	if (! nopoll_conn_accept_complete (nopoll_ctx, nopoll_listener, nopoll_conn, _session, is_tls_conn)) {
 		/* failed to create connection, this is a failure */
-		vortex_log (VORTEX_LEVEL_CRITICAL, "noPoll accept process failed (nopoll_conn_accept_complete) conn-id=%d, socket=%d",
-			    vortex_connection_get_id (conn), vortex_connection_get_socket (conn));
+		vortex_log (VORTEX_LEVEL_CRITICAL, "noPoll accept process failed (nopoll_conn_accept_complete) conn-id=%d, socket=%d, noPollCtx=%p",
+			    vortex_connection_get_id (conn), vortex_connection_get_socket (conn), nopoll_ctx);
 		return -1;
 	} /* end if */
 
