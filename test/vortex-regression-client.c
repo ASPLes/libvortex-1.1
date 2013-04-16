@@ -14436,7 +14436,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_05d, ctest_06, test_06a, \n");
  	printf ("**                       test_07, test_08, test_09, test_10, test_11, test_12, test_13, test_14, \n");
  	printf ("**                       test_14a, test_14b, test_14c, test_14d, test_14e, test_14f, test_14g, test_15, test_15a, test_16\n");
- 	printf ("**                       test_17, test_18, test_19\n");
+ 	printf ("**                       test_17, test_18, test_19, test_20\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
