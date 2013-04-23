@@ -395,6 +395,9 @@ int vortex_websocket_send (VortexConnection * conn,
 	/* acquire lock, operate and release */
 	vortex_mutex_lock (mutex);
 	result = nopoll_conn_send_text (_conn, buffer, buffer_len);
+
+	/* limit operation */
+	result += nopoll_conn_flush_writes (_conn, 2000000);
 	vortex_mutex_unlock (mutex);
 
 	return result;
