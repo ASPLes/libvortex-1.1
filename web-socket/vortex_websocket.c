@@ -381,6 +381,7 @@ int vortex_websocket_send (VortexConnection * conn,
 #endif
 	VortexMutex * mutex;
 	int           result;
+	int           pending;
 
 	if (_conn == NULL)
 		_conn = vortex_connection_get_data (conn, "nopoll-conn");
@@ -397,10 +398,15 @@ int vortex_websocket_send (VortexConnection * conn,
 	result = nopoll_conn_send_text (_conn, buffer, buffer_len);
 
 	/* limit operation */
-	result += nopoll_conn_flush_writes (_conn, 2000000);
+	pending = nopoll_conn_flush_writes (_conn, 2000000);
+
 	vortex_mutex_unlock (mutex);
 
-	return result;
+	if (result >= 0 && pending >= 0)
+		return result + pending;
+	else if (result > 0)
+		return result;
+	return pending;
 }
 
 void __vortex_websocket_conn_close (axlPointer ptr)
