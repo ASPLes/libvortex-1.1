@@ -131,8 +131,9 @@ VortexCtx * ctx = NULL;
 axl_bool enable_http_proxy = axl_false;
 
 #if defined(ENABLE_WEBSOCKET_SUPPORT)
-axl_bool enable_websocket_support = axl_false;
+axl_bool enable_websocket_support     = axl_false;
 axl_bool enable_websocket_tls_support = axl_false;
+axl_bool enable_websocket_debug       = axl_false;
 #endif
 
 VortexConnection * connection_new (void)
@@ -170,14 +171,21 @@ VortexConnection * connection_new (void)
 		return conn;
 #if defined(ENABLE_WEBSOCKET_SUPPORT)
 	} else if (enable_websocket_support) {
+	        /* create basic setup */
+		wss_setup = vortex_websocket_setup_new (ctx);
+		if (enable_websocket_debug)
+		        vortex_websocket_setup_conf (wss_setup, VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_DEBUG, INT_TO_PTR (axl_true));
+
 		/* create basic setup */
-		return vortex_websocket_connection_new (listener_host, "44013", vortex_websocket_setup_new (ctx), NULL, NULL);
+		return vortex_websocket_connection_new (listener_host, "44013", wss_setup, NULL, NULL);
 	} else if (enable_websocket_tls_support) {
 		/* create basic setup */
 		wss_setup = vortex_websocket_setup_new (ctx);
 
 		/* setup wss protocol */
 		vortex_websocket_setup_conf (wss_setup, VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_TLS, INT_TO_PTR (axl_true));
+		if (enable_websocket_debug)
+		        vortex_websocket_setup_conf (wss_setup, VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_DEBUG, INT_TO_PTR (axl_true));
 		
 		/* create connection */
 		return vortex_websocket_connection_new (listener_host, "44014", wss_setup, NULL, NULL);
@@ -14463,7 +14471,7 @@ int main (int  argc, char ** argv)
 	printf ("**     >> libtool --mode=execute valgrind --leak-check=yes --error-limit=no ./vortex-regression-client --disable-time-checks\n**\n");
 	printf ("** Additional settings:\n");
 	printf ("**\n");
-	printf ("**     >> ./vortex-regression-client [--disable-time-checks] [--run-test=NAME] [--enable-server-log] [--disable-server-log] \n");
+	printf ("**     >> ./vortex-regression-client [--disable-time-checks] [--run-test=NAME] [--enable-server-log] [--disable-server-log] [--enable-websocket-debug] \n");
 	printf ("**                                   [listener-host [TUNNEL-proxy-host [proxy-host [proxy-port]]]]\n");
 	printf ("**\n");
 	printf ("**       If no listener-host value is provided, it is used \"localhost\". \n");
@@ -14538,6 +14546,19 @@ int main (int  argc, char ** argv)
 
 		printf ("INFO: calling to enable server log\n");
 		enable_server_log = axl_true;
+		while (iterator <= argc) {
+			argv[iterator] = argv[iterator+1];
+			iterator++;
+		} /* end while */
+	} /* end if */
+
+	/* check for enable websocket debug */
+	if (argc > 1 && axl_cmp (argv[1], "--enable-websocket-debug")) {
+		iterator       = 1;
+		argc--;
+
+		printf ("INFO: calling to websocket debug log\n");
+		enable_websocket_debug = axl_true;
 		while (iterator <= argc) {
 			argv[iterator] = argv[iterator+1];
 			iterator++;
