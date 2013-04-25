@@ -1597,6 +1597,7 @@ int process_greetings_features (VortexCtx               * ctx,
 
 int main (int  argc, char ** argv) 
 {
+        int                iterator;
 	VortexConnection * listener;
 #if defined(ENABLE_SASL_SUPPORT)
 	VortexCtx        * ctx2;
@@ -1974,6 +1975,20 @@ int main (int  argc, char ** argv)
 
 #if defined(ENABLE_WEBSOCKET_SUPPORT)
 	npll_ctx = nopoll_ctx_new ();
+
+	/* check for enable websocket debug */
+	if (argc > 1 && axl_cmp (argv[1], "--enable-websocket-debug")) {
+		iterator       = 1;
+		argc--;
+
+		printf ("INFO: calling to websocket debug log\n");
+		nopoll_log_enable (npll_ctx, nopoll_true);
+		nopoll_log_color_enable (npll_ctx, nopoll_true);
+		while (iterator <= argc) {
+			argv[iterator] = argv[iterator+1];
+			iterator++;
+		} /* end while */
+	} /* end if */
 	
 	/* now create the listener */
 	npll_listener = nopoll_listener_new (npll_ctx, "0.0.0.0", "44013");
@@ -2026,6 +2041,8 @@ int main (int  argc, char ** argv)
 #else
 	printf ("--- WARNING: Skipping WebSocket support API check, since Vortex isn't configured with that support\n");
 #endif
+
+	
 
 
 	/* configure connection notification  */
