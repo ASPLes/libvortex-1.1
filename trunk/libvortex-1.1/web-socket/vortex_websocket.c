@@ -359,9 +359,6 @@ int vortex_websocket_read (VortexConnection * conn,
 	vortex_mutex_lock (mutex);
 	result = nopoll_conn_read (_conn, buffer, buffer_len, nopoll_false, 0);
 	vortex_mutex_unlock (mutex);
-
-	vortex_log (VORTEX_LEVEL_DEBUG, "nopoll_conn_read returned result=%d, noPollConn status=%d",
-		    result, nopoll_conn_is_ok (_conn));
 	if (result == -1) {
 		/* check connection status to notify that no data was
 		 * available  */
@@ -419,7 +416,10 @@ void __vortex_websocket_conn_close (axlPointer ptr)
 	vortex_log (VORTEX_LEVEL_DEBUG, "Calling to close noPoll conn-id=%d (%p, socket: %d), associated to conn-id=%d (%p)",
 		    nopoll_conn_get_id (conn), conn, nopoll_conn_socket (conn), vortex_connection_get_id (v_conn), v_conn);
 	
-	nopoll_conn_set_socket (conn, -1);
+	/* avoid having noPoll level closing the socket because it may
+	   be done at a time that socket identifier was reused. Do not
+	   change the following call */
+	nopoll_conn_set_socket (conn, -1); 
 	nopoll_conn_close (conn);
 
 	return;
@@ -557,8 +557,8 @@ axlPointer __vortex_websocket_connection_new (VortexWebsocketConnectionData * da
 
 		/* drop a log */
 		if (vortex_connection_is_ok (conn, axl_false)) {
-			vortex_log (VORTEX_LEVEL_DEBUG, "BEEP over WebSocket connection id=%d setup ok%s", 
-				    vortex_connection_get_id (conn),
+			vortex_log (VORTEX_LEVEL_DEBUG, "BEEP over WebSocket connection id=%d, session=%d setup ok%s", 
+				    vortex_connection_get_id (conn), vortex_connection_get_socket (conn),
 				    vortex_websocket_connection_is_tls_running (conn) ? " (TLS activated)" : "");
 		} /* end if */
 	} /* end if */
