@@ -1333,15 +1333,6 @@ axlPointer __vortex_reader_run (VortexCtx * ctx)
 		/* reset descriptor set */
 		vortex_io_waiting_invoke_clear_fd_group (ctx, ctx->on_reading);
 
-		/* build socket descriptor to be read */
-		max_fds = __vortex_reader_build_set_to_watch (ctx, ctx->on_reading, ctx->conn_cursor, ctx->srv_cursor);
-		if (errno == EBADF) {
-			vortex_log (VORTEX_LEVEL_CRITICAL, "Found wrong file descriptor error...(max_fds=%d, errno=%d), cleaning", max_fds, errno);
-			/* detect and cleanup wrong connections */
-			__vortex_reader_detect_and_cleanup_connections (ctx);
-			continue;
-		} /* end if */
-
 		if ((axl_list_length (ctx->conn_list) == 0) && (axl_list_length (ctx->srv_list) == 0)) {
 			/* check if we have to terminate the process
 			 * in the case no more connections are
@@ -1352,6 +1343,15 @@ axlPointer __vortex_reader_run (VortexCtx * ctx)
 			vortex_log (VORTEX_LEVEL_DEBUG, "no more connection to watch for, putting thread to sleep");
 			goto __vortex_reader_run_first_connection;
 		}
+
+		/* build socket descriptor to be read */
+		max_fds = __vortex_reader_build_set_to_watch (ctx, ctx->on_reading, ctx->conn_cursor, ctx->srv_cursor);
+		if (errno == EBADF) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "Found wrong file descriptor error...(max_fds=%d, errno=%d), cleaning", max_fds, errno);
+			/* detect and cleanup wrong connections */
+			__vortex_reader_detect_and_cleanup_connections (ctx);
+			continue;
+		} /* end if */
 		
 		/* perform IO blocking wait for read operation */
 		result = vortex_io_waiting_invoke_wait (ctx, ctx->on_reading, max_fds, READ_OPERATIONS);
