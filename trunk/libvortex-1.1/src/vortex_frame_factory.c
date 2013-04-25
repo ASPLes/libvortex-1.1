@@ -1258,6 +1258,10 @@ int         vortex_frame_receive_raw  (VortexConnection * connection, char  * bu
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 #endif
 
+	/* avoid calling to read when no good socket is defined */
+	if (connection->session == -1)
+		return -1;
+
  __vortex_frame_readn_keep_reading:
 	/* clear buffer */
 	/* memset (buffer, 0, maxlen * sizeof (char )); */
@@ -1273,8 +1277,8 @@ int         vortex_frame_receive_raw  (VortexConnection * connection, char  * bu
 		
 		if (errno != 0) {
 			error_msg = vortex_errno_get_last_error ();
-			vortex_log (VORTEX_LEVEL_CRITICAL, "unable to readn=%d, error was: '%s', errno=%d",
-				    maxlen, error_msg ? error_msg : "", errno);
+			vortex_log (VORTEX_LEVEL_CRITICAL, "unable to readn=%d, error was: '%s', errno=%d (conn-id=%d, session=%d)",
+				    maxlen, error_msg ? error_msg : "", errno, connection->id, connection->session);
 		} /* end if */
 	}
 
@@ -1318,6 +1322,10 @@ int          vortex_frame_readline (VortexConnection * connection, char  * buffe
 #if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 #endif
+
+	/* avoid calling to read when no good socket is defined */
+	if (connection->session == -1)
+		return -1;
 
 	/* clear the buffer received */
 	/* memset (buffer, 0, maxlen * sizeof (char ));  */

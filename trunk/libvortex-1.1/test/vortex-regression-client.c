@@ -4365,6 +4365,61 @@ axl_bool test_01w (void) {
 	return axl_true;
 }
 
+void test_01y_full (VortexConnection * connection, axlPointer data)
+{
+	/* store data on the queue */
+	vortex_async_queue_push ((VortexAsyncQueue *) data, INT_TO_PTR (4));
+	return;
+}
+
+axl_bool test_01y (void) {
+
+	VortexConnection   * conn;
+	VortexConnection   * conn2;
+	VortexAsyncQueue   * queue;
+	int                  value;
+
+	/* call to create connection */
+	conn = connection_new ();
+	if (!vortex_connection_is_ok (conn, axl_false)) {
+		vortex_connection_close (conn);
+		return axl_false;
+	} /* end if */
+
+	/* now create a working connection we aren't going to close */
+	conn2 = connection_new ();
+	if (!vortex_connection_is_ok (conn, axl_false)) {
+		vortex_connection_close (conn);
+		return axl_false;
+	} /* end if */
+
+	/* set connection close */
+	printf ("Test 01-y: set on connection close..\n");
+	queue = vortex_async_queue_new (),
+	vortex_connection_set_on_close_full (conn, test_01y_full, queue);
+
+	printf ("Test 01-y: closing socket....\n");
+
+	/* get the socket from the connection and close it */
+	vortex_close_socket (vortex_connection_get_socket (conn));
+
+	printf ("Test 01-y: waiting for socket close to be detected....\n");
+
+	/* wait the library to detect the problem */
+	value = PTR_TO_INT (vortex_async_queue_pop (queue));
+	if (value != 4) {
+		printf ("Test 01-y: expected to receive 4 but found %d...\n", value);
+		return axl_false;
+	} /* end if */
+
+	/* release connection and queue */
+	vortex_async_queue_unref (queue);
+	vortex_connection_close (conn);
+	vortex_connection_close (conn2);
+
+	return axl_true;
+}
+
 
 
 #define TEST_02_MAX_CHANNELS 24
@@ -14427,7 +14482,7 @@ int main (int  argc, char ** argv)
 	printf ("**       Test available: test_00, test_001, test_00a, test_00b, test_00c, test_00c1, test_00c2,\n");
 	printf ("**                       test_00d, test_00e, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
 	printf ("**                       test_01f, test_01g, test_01g1, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o,\n");
-	printf ("**                       test_01p, test_01q, test_01r, test_01s, test_01s1, test_01t\n");
+	printf ("**                       test_01p, test_01q, test_01r, test_01s, test_01s1, test_01t, test_01u, test_01w, test_01y\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02l1, test_02m, test_02m1, test_02m2, test_02m3, test_02n, test_02o, test_02p, test_02q, test_02r\n");
@@ -14686,6 +14741,9 @@ int main (int  argc, char ** argv)
 
 		if (check_and_run_test (run_test_name, "test_01w"))
 			run_test (test_01w, "Test 01-w", "Check complete flag limit", -1, -1);
+
+		if (check_and_run_test (run_test_name, "test_01y"))
+			run_test (test_01y, "Test 01-y", "Check socket close out side the control of Vortex Library", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
@@ -14989,6 +15047,8 @@ int main (int  argc, char ** argv)
 	run_test (test_01v, "Test 01-v", "Check profile unregistering", -1, -1);
 
 	run_test (test_01w, "Test 01-w", "Check complete flag limit", -1, -1);
+
+	run_test (test_01y, "Test 01-y", "Check socket close out side the control of Vortex Library", -1, -1);
 
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   

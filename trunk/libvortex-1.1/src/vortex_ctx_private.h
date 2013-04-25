@@ -233,9 +233,9 @@ struct _VortexCtx {
 	VortexAsyncQueue        * reader_queue;
 	VortexAsyncQueue        * reader_stopped;
 	axlPointer                on_reading;
-	axlList                 * con_list;
+	axlList                 * conn_list;
 	axlList                 * srv_list;
-	axlListCursor           * con_cursor;
+	axlListCursor           * conn_cursor;
 	axlListCursor           * srv_cursor;
 	/* the following flag is used to detecte vortex
 	   reinitialization escenarios where it is required to release
