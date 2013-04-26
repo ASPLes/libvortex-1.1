@@ -127,9 +127,6 @@
 #define vortex_is_disconnected ((errno == WSAESHUTDOWN) || (errno == WSAECONNABORTED) || (errno == WSAECONNRESET))
 #define VORTEX_FILE_SEPARATOR "\\"
 
-/* a definition to avoid warnings */
-#define strlen (int) strlen
-
 /* no link support windows */
 #define S_ISLNK(m) (0)
 
