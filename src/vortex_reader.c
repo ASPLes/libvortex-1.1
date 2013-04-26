@@ -1258,7 +1258,8 @@ axl_bool __vortex_reader_detect_and_cleanup_connection (axlListCursor * cursor)
 			ctx = CONN_CTX (conn);
 			vortex_log (VORTEX_LEVEL_CRITICAL, "Found connection-id=%d, with session=%d not working (errno=%d), shutting down",
 				    vortex_connection_get_id (conn), fds, errno);
-			/* close connection */
+			/* close connection, but remove the socket reference to avoid closing some's socket */
+			conn->session = -1;
 			vortex_connection_shutdown (conn);
 			
 			/* connection isn't ok, unref it */

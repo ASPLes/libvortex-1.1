@@ -5046,6 +5046,9 @@ axl_bool  test_02 (void) {
 		
 	} /* end if */
 
+	/* vortex_log_enable (ctx, axl_true);
+	   vortex_color_log_enable (ctx, axl_true); */
+
 	/* call common implementation */
 	if (! test_02_common (connection))
 		return axl_false;
@@ -5055,6 +5058,9 @@ axl_bool  test_02 (void) {
 		printf ("failed to close the BEEP session\n");
 		return axl_false;
 	} /* end if */
+
+	/* vortex_log_enable (ctx, axl_false);
+	   vortex_color_log_enable (ctx, axl_false);*/
 	
 	/* return axl_true */
 	return axl_true;
