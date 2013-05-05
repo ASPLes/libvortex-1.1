@@ -1140,6 +1140,40 @@ def test_10_e ():
     # NOTE: the test do not close conn or channe (this is intentional)
     return True
 
+def test_10_f ():
+
+    # create a context
+    ctx = vortex.Ctx ()
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    queue = vortex.AsyncQueue ()
+
+    # create connection
+    iterator = 0
+    while iterator < 5:
+        conn = vortex.Connection (ctx, host, port)
+
+        # check connection status
+        if not conn.is_ok ():
+            error ("Expected to find connection status ok, but found a failure: " + conn.status_msg)
+            return False
+
+        # ok now create channel without waiting
+        channel = conn.open_channel (0, REGRESSION_URI)
+        channel.set_frame_received (queue_reply, queue)
+        channel.send_msg ("<close-connection>", -1)
+
+        iterator += 1
+ 
+    info ("Found expected content!")
+
+    # NOTE: the test do not close conn or channe (this is intentional)
+    return True
+
 def test_11 ():
     # create a context
     ctx = vortex.Ctx ()
@@ -2624,6 +2658,7 @@ tests = [
    (test_10_c, "Check async channel start notification"),
    (test_10_d, "Check async channel start notification (failure expected)"),
    (test_10_e, "Check channel creation inside a function with frame received"),
+   (test_10_f, "Check connection close after sending message"),
    (test_11,   "Check BEEP listener support"),
    (test_12,   "Check connection on close notification"),
    (test_12_a, "Check connection on close notification (during channel start)"),
