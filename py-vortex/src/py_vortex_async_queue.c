@@ -123,8 +123,14 @@ static PyObject * py_vortex_async_queue_push (PyVortexAsyncQueue* self, PyObject
 	py_vortex_log (PY_VORTEX_DEBUG, "pushing object %p into queue: %p, self->queue: %p",
 		       obj, self, self->async_queue);
 
+	/* let other threads to work after this */
+	Py_BEGIN_ALLOW_THREADS
+
 	/* push the item */
 	vortex_async_queue_push (self->async_queue, obj);
+
+	/* restore thread state */
+	Py_END_ALLOW_THREADS
 
 	Py_INCREF (Py_None);
 	return Py_None;

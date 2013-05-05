@@ -875,7 +875,15 @@ axl_bool py_vortex_handle_and_clear_exception (PyObject * py_conn)
 				iterator++;
 			} /* end while */
 
+			/* allow other threads to enter into the python space */
+			Py_BEGIN_ALLOW_THREADS
+
 			py_vortex_exception_handler (str);
+
+			/* restore thread state */
+			Py_END_ALLOW_THREADS
+			
+
 #if defined(ENABLE_PY_VORTEX_LOG)
 		} else if (_py_vortex_log_enabled) {
 			str[strlen (str) - 1] = 0;
