@@ -270,6 +270,7 @@ axl_bool  py_vortex_channel_configure_frame_received  (VortexChannel * channel, 
 {
 
 	if (handler == NULL && channel) {
+
 		/* remove frame received */
 		vortex_channel_set_received_handler (channel, NULL, NULL);
 		vortex_channel_set_data (channel, "py:vo:ch:fr", NULL);
@@ -283,7 +284,7 @@ axl_bool  py_vortex_channel_configure_frame_received  (VortexChannel * channel, 
 		return axl_false;
 
 	/* reconfigure the frame received for used for all channels */
-	if (channel) {
+	if (channel && handler) {
 		/* call to configure new frame received */
 		py_vortex_channel_set_frame_received_internal (channel, handler, data);
 		vortex_channel_set_received_handler (channel, py_vortex_channel_received, NULL);
