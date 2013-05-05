@@ -56,6 +56,12 @@ def ok (msg):
     print "[  OK   ] : " + msg
 
 def default_frame_received (conn, channel, frame, data):
+
+    if frame.payload == "<close-connection>":
+        info ("Closing connection id=%d" % conn.id)
+        conn.shutdown ()
+        return
+
     # reply to the frame received
     if not channel.send_rpy (frame.payload, frame.payload_size, frame.msgno):
         error ("Failed to send reply, some parts of the regression test are not working")
