@@ -315,6 +315,10 @@ axl_bool  py_vortex_tls_accept_handler_bridge (VortexConnection * connection,
 	if (_result != NULL && ! PyArg_Parse (_result, "i", &result)) {
 		py_vortex_log (PY_VORTEX_CRITICAL, "failed to parse result get from tls accept handler");
 		py_vortex_handle_and_clear_exception (py_conn);
+
+		/* release the GIL */
+		PyGILState_Release(state);
+
 		return axl_false;
 	}
 
@@ -377,6 +381,10 @@ char * py_vortex_tls_cert_handler_bridge (VortexConnection * connection,
 	if (_result != NULL && ! PyArg_Parse (_result, "z", &result)) {
 		py_vortex_log (PY_VORTEX_CRITICAL, "failed to parse result get from tls accept handler");
 		py_vortex_handle_and_clear_exception (py_conn);
+
+		/* release the GIL */
+		PyGILState_Release(state);
+
 		return NULL;
 	}
 
@@ -439,6 +447,10 @@ char * py_vortex_tls_key_handler_bridge (VortexConnection * connection,
 	if (_result != NULL && ! PyArg_Parse (_result, "z", &result)) {
 		py_vortex_log (PY_VORTEX_CRITICAL, "failed to parse result get from tls accept handler");
 		py_vortex_handle_and_clear_exception (py_conn);
+
+		/* release the GIL */
+		PyGILState_Release(state);
+
 		return NULL;
 	}
 

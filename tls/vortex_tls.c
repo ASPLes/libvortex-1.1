@@ -1027,7 +1027,10 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 	/* the the connection to be blocking during the TLS
 	 * negotiation, once called
 	 * vortex_connection_parse_greetings_and_enable, the
-	 * connection will be again non-blocking. */
+	 * connection will be again non-blocking. Because the
+	 * connection will be registered by
+	 * vortex_reader_watch_connection, that function will set the
+	 * status to non-blocking. */
 	vortex_connection_set_blocking_socket (connection);
 
 	/* do the TLS voodoo */
