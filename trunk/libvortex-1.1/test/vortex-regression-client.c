@@ -13598,6 +13598,7 @@ axl_bool test_15_aux (VortexCtx * ctx, long check_period, int unreply_count, Vor
 
 	if (! vortex_channel_send_msg (channel, "block-connection", 16, NULL)) {
 		printf ("Test 16: failed to send block connection message..\n");
+		show_conn_errros (conn);
 		return axl_false;
 	} /* end if */
 
