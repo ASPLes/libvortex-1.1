@@ -4487,7 +4487,9 @@ axl_bool  test_02_common (VortexConnection * connection)
 							NULL, NULL);
 		/* check channel returned */
 		if (channel[iterator] == NULL) {
-			printf ("Unable to create the channel, failed to create channel=%d..", iterator);
+			printf ("Unable to create the channel, failed to create channel at iteration=%d (expected %d)..\n", 
+				iterator, TEST_02_MAX_CHANNELS);
+			show_conn_errros (connection);
 			return axl_false;
 		}
 
@@ -5042,6 +5044,7 @@ axl_bool  test_02 (void) {
 	VortexConnection * connection;
 
 	/* creates a new connection against localhost:44000 */
+	
 	connection = connection_new ();
 	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
