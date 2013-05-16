@@ -4388,6 +4388,7 @@ axl_bool test_01y (void) {
 	int                  value;
 
 	/* call to create connection */
+	printf ("Test-01-y: creating first connection ...\n");
 	conn = connection_new ();
 	if (!vortex_connection_is_ok (conn, axl_false)) {
 		vortex_connection_close (conn);
@@ -4395,6 +4396,7 @@ axl_bool test_01y (void) {
 	} /* end if */
 
 	/* now create a working connection we aren't going to close */
+	printf ("Test-01-y: creating second connection ...\n");
 	conn2 = connection_new ();
 	if (!vortex_connection_is_ok (conn, axl_false)) {
 		vortex_connection_close (conn);
@@ -4415,6 +4417,7 @@ axl_bool test_01y (void) {
 
 	/* wait the library to detect the problem */
 	value = PTR_TO_INT (vortex_async_queue_pop (queue));
+	printf ("Test 01-y: async queue pop reported: %d\n", value);
 	if (value != 4) {
 		printf ("Test 01-y: expected to receive 4 but found %d...\n", value);
 		return axl_false;
