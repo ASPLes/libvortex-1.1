@@ -813,6 +813,64 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 }
 
 /** 
+ * @brief Allows to configure the provided connection to verify peer
+ * certificate after TLS profile activation.
+ *
+ * This function provides a ready to use code that will implement
+ * server certificate verification at the client side after connection
+ * or, if used at the server side, it also provides support for mutual
+ * TLS verification.
+ *
+ * The idea behind this function to enable certificate verification is
+ * to do like follows:
+ *
+ * \code 
+ * // connect to remote side as usual 
+ * connection = vortex_connection_new (ctx, "host-destination.com", "602", NULL, NULL);
+ * // check connection
+ * if (! vortex_connection_is_ok (conn, axl_false)) {
+ *      // failure found, handle connection error
+ *      return;
+ * }
+ * // enable certificate verification
+ * vortex_tls_verify_cert (connection, axl_true);
+ *
+ * // now enable TLS as usual. For example:
+ * connection = vortex_tls_start_negotiation_sync (connection, "host-destination.com", &status, &status_message);
+ * // check status
+ * if (! vortex_connection_is_ok (connection, axl_false)) {
+ *      // certificate verification failed, handle error here
+ *      return;
+ * }
+ *
+ * // verify connection has tls enabled
+ * if (! vortex_connection_is_tlsficated (connection)) {
+ *      // TLS wasn't enabled, handle error here
+ *      return;
+ * }
+ *
+ * // CERTIFICATE ok!
+ * \endcode
+ *
+ * In the case you need a more complex certificate handling, please
+ * see \ref VortexTlsCtxCreation for more examples.
+ *
+ * @param connection The connection where the certificate will be checked.
+ *
+ * @param enabled axl_true to enable certificate
+ * verification. axl_false (default) to not enable it.
+ */
+void               vortex_tls_verify_cert                (VortexConnection     * connection,
+							  axl_bool               enabled)
+{
+	if (connection == NULL)
+		return;
+	/* enable certificate verification (or not) */
+	vortex_connection_set_data (connection, "vo:tls:vrfy", INT_TO_PTR (enabled));
+	return;
+}
+
+/** 
  * @internal
  *
  * @brief Support function for \ref vortex_tls_start_negotiation which actually do
