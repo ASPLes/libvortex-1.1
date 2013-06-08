@@ -1622,7 +1622,9 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 		vortex_log (VORTEX_LEVEL_DEBUG, "Using certificate: %s\n", certificate_file);
 		if (SSL_CTX_use_certificate_file (ssl_ctx, certificate_file, SSL_FILETYPE_PEM) <= 0) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
-				    "there was an error while setting certificate file into the SSl context, unable to start TLS profile. Failure found at SSL_CTX_use_certificate_file function.");
+				    "there was an error while setting certificate file '%s' into the SSl context, unable to start TLS profile. Failure found at SSL_CTX_use_certificate_file function.",
+				    certificate_file);
+				
 			/* dump error stack */
 			vortex_tls_notify_failure_handler (ctx, connection, "there was an error while setting certificate file into the SSl context, unable to start TLS profile. Failure found at SSL_CTX_use_certificate_file function.");
 			vortex_connection_set_close_socket (connection, axl_true);
