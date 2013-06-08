@@ -100,12 +100,22 @@ Module API
    :param key_handler_data: User defined data that will notified along with corresponding data at key handler.
    :type  key_handler_data: object
 
-   
 .. function:: is_enabled (conn)
 
    Allows to check if the provided connection has successfully activated TLS profile
 
    :param conn: the connection to check for TLS activation.
    :type conn: vortex.Connection
+
+   :rtype: True in the case TLS profile was activated. Otherwise False  is returned. Check :ref:`verify_cert` in the case you want to also check certificate status.
+
+.. function:: verify_cert (conn)
+
+   Allows to check peer certificate verify status.
+
+   :param conn: the connection to check for TLS activation.
+   :type conn: vortex.Connection
+
+   :rtype: True in the case certificate verification status is Ok (valid). Otherwise False is returned.
    
 

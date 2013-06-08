@@ -375,8 +375,7 @@ void               vortex_tls_set_failure_handler        (VortexCtx             
 							  VortexTlsFailureHandler   failure_handler,
 							  axlPointer                user_data);
 
-void               vortex_tls_verify_cert                (VortexConnection     * connection,
-							  axl_bool               enabled);
+axl_bool           vortex_tls_verify_cert                (VortexConnection     * connection);
 
 void               vortex_tls_start_negotiation          (VortexConnection     * connection,
 							  const char           * serverName,
