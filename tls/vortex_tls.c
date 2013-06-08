@@ -67,10 +67,27 @@ int vortex_tls_log_ssl (VortexCtx * ctx)
 {
 	char          log_buffer [512];
 	unsigned long err;
+	int           error_position;
+	int           aux_position;
 	
 	while ((err = ERR_get_error()) != 0) {
 		ERR_error_string_n (err, log_buffer, sizeof (log_buffer));
 		vortex_log (VORTEX_LEVEL_CRITICAL, "tls stack: %s (find reason(code) at openssl/ssl.h)", log_buffer);
+
+		/* find error code position */
+		error_position = 0;
+		while (log_buffer[error_position] != ':')
+			error_position++;
+		error_position++;
+		aux_position = error_position;
+		while (log_buffer[aux_position] != 0) {
+			if (log_buffer[aux_position] == ':') {
+				log_buffer[aux_position] = 0;
+				break;
+			}
+			aux_position++;
+		} /* end while */
+		vortex_log (VORTEX_LEVEL_CRITICAL, "    details, run: openssl errstr %s", log_buffer + error_position);
 	}
 	
 	return (0);
@@ -666,7 +683,6 @@ void __vortex_tls_start_negotiation_close_and_notify (VortexTlsActivation   proc
 	return;
 }
 
-
 /** 
  * @internal
  * @brief Invoke the specific TLS code to perform the handshake.
@@ -813,61 +829,77 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 }
 
 /** 
- * @brief Allows to configure the provided connection to verify peer
- * certificate after TLS profile activation.
+ * @brief Allows to verify peer certificate after successfully
+ * establish TLS session.
  *
- * This function provides a ready to use code that will implement
- * server certificate verification at the client side after connection
- * or, if used at the server side, it also provides support for mutual
- * TLS verification.
- *
- * The idea behind this function to enable certificate verification is
- * to do like follows:
- *
- * \code 
- * // connect to remote side as usual 
- * connection = vortex_connection_new (ctx, "host-destination.com", "602", NULL, NULL);
- * // check connection
- * if (! vortex_connection_is_ok (conn, axl_false)) {
- *      // failure found, handle connection error
- *      return;
- * }
- * // enable certificate verification
- * vortex_tls_verify_cert (connection, axl_true);
- *
- * // now enable TLS as usual. For example:
- * connection = vortex_tls_start_negotiation_sync (connection, "host-destination.com", &status, &status_message);
- * // check status
- * if (! vortex_connection_is_ok (connection, axl_false)) {
- *      // certificate verification failed, handle error here
- *      return;
- * }
- *
- * // verify connection has tls enabled
- * if (! vortex_connection_is_tlsficated (connection)) {
- *      // TLS wasn't enabled, handle error here
- *      return;
- * }
- *
- * // CERTIFICATE ok!
- * \endcode
- *
- * In the case you need a more complex certificate handling, please
- * see \ref VortexTlsCtxCreation for more examples.
+ * This function is useful to check if certificate used by the remote
+ * peer is valid.
  *
  * @param connection The connection where the certificate will be checked.
  *
- * @param enabled axl_true to enable certificate
- * verification. axl_false (default) to not enable it.
+ * @return axl_true If certificate verification status is ok,
+ * otherwise axl_false is returned.
  */
-void               vortex_tls_verify_cert                (VortexConnection     * connection,
-							  axl_bool               enabled)
+axl_bool               vortex_tls_verify_cert                (VortexConnection     * connection)
 {
+	SSL       * ssl;
+	X509      * peer;
+	char        peer_common_name[512];
+	VortexCtx * ctx;
+	long        result;
+
 	if (connection == NULL)
-		return;
-	/* enable certificate verification (or not) */
-	vortex_connection_set_data (connection, "vo:tls:vrfy", INT_TO_PTR (enabled));
-	return;
+		return axl_false;
+
+	/* get ctx from this connection */
+	ctx = CONN_CTX (connection);
+
+	/* check if connection has TLS enabled */
+	if (! vortex_connection_is_tlsficated (connection)) {
+		vortex_log (VORTEX_LEVEL_WARNING, "TLS wasn't enabled on this connection (id=%d), cert verify cannot succeed",
+			    vortex_connection_get_id (connection));
+		return axl_false;
+	} /* end if */
+
+	/* get ssl object */
+	ssl = vortex_connection_get_data (connection, "ssl-data:ssl");
+	if (! ssl) {
+		vortex_log (VORTEX_LEVEL_WARNING, "SSL object cannot found for this connection (id=%d), cert verify cannot succeed",
+			    vortex_connection_get_id (connection));
+		return axl_false;
+	} /* end if */
+
+	/* check certificate */
+	result = SSL_get_verify_result (ssl);
+	if (result != X509_V_OK) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Certificate verify failed (SSL_get_verify_result failed = %ld)", result);
+		/* dump stack if no failure handler */
+		vortex_tls_log_ssl (ctx);
+		return axl_false;
+	} /* end if */
+
+	/*
+	 * Check the common name
+	 */
+	peer = SSL_get_peer_certificate (ssl);
+	if (! peer) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Certificate verify failed (SSL_get_verify_result failed)");
+		/* dump stack if no failure handler */
+		vortex_tls_log_ssl (ctx);
+		return axl_false;
+	} /* end if */
+
+	/* get certificate announced common name */
+	X509_NAME_get_text_by_NID (X509_get_subject_name (peer), NID_commonName, peer_common_name, 512);
+
+	if (! axl_cmp (peer_common_name, vortex_connection_get_server_name (connection))) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "Certificate common name %s == serverName %s MISMATCH",
+			    peer_common_name, vortex_connection_get_server_name (connection));
+		return axl_false;
+	}
+
+	/* verification ok */
+	return axl_true;
 }
 
 /** 
