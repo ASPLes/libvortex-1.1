@@ -9376,7 +9376,6 @@ axl_bool  test_04_a_common (int block_size, int num_blocks, int num_times) {
 	char             * message;
 	int                total_bytes = 0;
 	int                blocks_received;
-	noPollCtx        * nopoll_ctx;
 	
 #if defined(AXL_OS_UNIX)
 	struct timeval      start;
