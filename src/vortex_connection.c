@@ -5327,10 +5327,10 @@ void           __vortex_connection_set_not_connected (VortexConnection * connect
 
 		/* close socket connection if weren't  */
 		if (( connection->close_session) && (connection->session != -1)) {
-			vortex_log (VORTEX_LEVEL_DEBUG, "closing connection id=%d to %s:%s", 
+			vortex_log (VORTEX_LEVEL_DEBUG, "closing connection id=%d to %s:%s (socket: %d)", 
 				    connection->id,
 				    axl_check_undef (connection->host), 
-				    axl_check_undef (connection->port));
+				    axl_check_undef (connection->port), connection->session);
 			shutdown (connection->session, SHUT_RDWR); 
 			vortex_close_socket (connection->session);  
 
@@ -5338,9 +5338,6 @@ void           __vortex_connection_set_not_connected (VortexConnection * connect
 			vortex_mutex_lock (&(connection->ref_mutex));
 			connection->session      = -1;
 			vortex_mutex_unlock (&(connection->ref_mutex));
-
-			vortex_log (VORTEX_LEVEL_DEBUG, "closing session id=%d and set to be not connected",
-			       connection->id);
 
  	        } /* end if */
 
