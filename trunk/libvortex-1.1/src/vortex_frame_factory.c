@@ -1663,8 +1663,8 @@ VortexFrame * vortex_frame_get_next     (VortexConnection * connection)
 		return NULL;
 	}
 	if (bytes_read == -1) {
-		__vortex_connection_shutdown_and_record_error (
-			connection, VortexProtocolError, "an error have ocurred while reading socket");
+	        if (vortex_connection_is_ok (connection, axl_false))
+		        __vortex_connection_shutdown_and_record_error (connection, VortexProtocolError, "an error have ocurred while reading socket");
 		return NULL;
 	}
 
