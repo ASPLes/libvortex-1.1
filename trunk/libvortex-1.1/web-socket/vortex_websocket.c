@@ -358,7 +358,6 @@ int vortex_websocket_read (VortexConnection * conn,
 	VortexCtx   * ctx  = CONN_CTX (conn);
 #endif
 	VortexMutex * mutex;
-	VORTEX_SOCKET _socket;
 
 	/* check if the connection has the greetings completed and it
 	 * is initiator role */
@@ -429,10 +428,10 @@ void __vortex_websocket_conn_close (axlPointer ptr)
 {
 	noPollConn       * conn = ptr;
 	/* noPollCtx        * nopoll_ctx = nopoll_conn_ctx (conn);*/
-	VortexConnection * v_conn = nopoll_conn_get_hook (conn);
-#if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
+	/* VortexConnection * v_conn = nopoll_conn_get_hook (conn); */
+	/* #if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx        * ctx    = CONN_CTX (v_conn); 
-#endif
+	#endif */
 
 	/* nopoll_log_enable (nopoll_ctx, nopoll_true);
 	   nopoll_log_color_enable (nopoll_ctx, nopoll_true); */
