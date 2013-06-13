@@ -36,6 +36,7 @@
  *         info@aspl.es - http://www.aspl.es/vortex
  */
 #include <vortex_websocket.h>
+#include <vortex_connection_private.h>
 
 #define VORTEX_WEBSOCKET_ENABLED "vo:websocket:en"
 #define VORTEX_TLS_WEBSOCKET_ENABLED "vo:websocket:tls"
@@ -75,6 +76,21 @@ void __vortex_websocket_mutex_lock (noPollPtr _mutex) {
 void __vortex_websocket_mutex_unlock (noPollPtr _mutex) {
 	VortexMutex * mutex = _mutex;
 	vortex_mutex_unlock (mutex);
+	return;
+}
+
+void __vortex_websocket_nopoll_on_close (noPollCtx * _ctx, noPollConn * conn, noPollPtr ptr)
+{
+        VortexConnection * _conn = ptr;
+	VortexCtx        * ctx  = CONN_CTX (_conn);
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "Called onClose for noPollConn id=%d, conn associated BEEP conn-id=%d (socket: %d)",
+		    nopoll_conn_get_id (conn), vortex_connection_get_id (_conn), nopoll_conn_socket (conn));
+
+	/* remove reference to avoid future close of a descriptor with
+	   the same value */
+	nopoll_conn_set_socket (conn, -1);
+	
 	return;
 }
 
@@ -342,6 +358,7 @@ int vortex_websocket_read (VortexConnection * conn,
 	VortexCtx   * ctx  = CONN_CTX (conn);
 #endif
 	VortexMutex * mutex;
+	VORTEX_SOCKET _socket;
 
 	/* check if the connection has the greetings completed and it
 	 * is initiator role */
@@ -364,6 +381,13 @@ int vortex_websocket_read (VortexConnection * conn,
 		 * available  */
 		if (nopoll_conn_is_ok (_conn))
 			return -2; 
+
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Found noPollConn-id=%d (%p) read error vortex conn-id=%d (session: %d), errno=%d (shutting down)",
+			    nopoll_conn_get_id (_conn), _conn, vortex_connection_get_id (conn), vortex_connection_get_socket (conn), errno);
+
+		/* shutdown connection */
+		nopoll_conn_set_socket (_conn, -1);
+		vortex_connection_shutdown (conn);
 	} /* end if */
 	return result;
 }
@@ -413,8 +437,8 @@ void __vortex_websocket_conn_close (axlPointer ptr)
 	/* nopoll_log_enable (nopoll_ctx, nopoll_true);
 	   nopoll_log_color_enable (nopoll_ctx, nopoll_true); */
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "Calling to close noPoll conn-id=%d (%p, socket: %d), associated to conn-id=%d (%p)",
-		    nopoll_conn_get_id (conn), conn, nopoll_conn_socket (conn), vortex_connection_get_id (v_conn), v_conn);
+	/* vortex_log (VORTEX_LEVEL_DEBUG, "Calling to close noPoll conn-id=%d (ptr: %p, socket: %d), associated to conn-id=%d (%p)",
+	   nopoll_conn_get_id (conn), conn, nopoll_conn_socket (conn), vortex_connection_get_id (v_conn), v_conn);*/
 	
 	/* avoid having noPoll level closing the socket because it may
 	   be done at a time that socket identifier was reused. Do not
@@ -513,6 +537,9 @@ axlPointer __vortex_websocket_connection_new (VortexWebsocketConnectionData * da
 	
 	/* create an empty connection object */
 	conn = vortex_connection_new_empty (ctx, nopoll_conn_socket (nopoll_conn), VortexRoleInitiator);
+
+	/* setup on close handler to control sockets */
+	nopoll_conn_set_on_close (nopoll_conn, __vortex_websocket_nopoll_on_close, conn);
 
 	/* setup serverName value */
 	vortex_connection_set_server_name (conn, setup->host_header ? setup->host_header : host);
@@ -741,6 +768,9 @@ void __vortex_websocket_setup_listener_connection (VortexConnection * new_conn, 
 	vortex_connection_set_data_full (new_conn, "nopoll-conn", _new_conn, NULL, __vortex_websocket_conn_close);
 	vortex_connection_set_hook (new_conn, _new_conn);
 
+	/* setup on close handler to control sockets */
+	nopoll_conn_set_on_close (_new_conn, __vortex_websocket_nopoll_on_close, new_conn);
+
 	return;
 }
 
@@ -783,7 +813,8 @@ void vortex_websocket_listener_accept (VortexConnection * conn)
 
 	/* check connection status just to drop a log */
 	if (vortex_connection_is_ok (new_conn, axl_false)) 
-		vortex_log (VORTEX_LEVEL_DEBUG, "Received new BEEP over WebSocket connection id=%d, still required to complete BEEP greetings", vortex_connection_get_id (new_conn));
+		vortex_log (VORTEX_LEVEL_DEBUG, "Received new BEEP over WebSocket connection id=%d (noPoll conn-id=%d), still required to complete BEEP greetings", 
+			    vortex_connection_get_id (new_conn), nopoll_conn_get_id (_new_conn));
 	
 	return;
 }
@@ -874,6 +905,28 @@ VortexConnection * vortex_websocket_listener_new   (VortexCtx                * c
 
 	/* do an async notification on the onready handler here and return NULL */
 	return NULL;
+}
+
+/** 
+ * @brief Allows to get the noPollCtx context associated to the
+ * noPollConn supported the given BEEP session.
+ *
+ * @param conn The BEEP (VortexConnection) where to get the associated
+ * noPollCtx object.
+ *
+ * @return Reference to the noPollCtx object or NULL if it fails.
+ */
+noPollCtx        * vortex_websocket_connection_get_ctx (VortexConnection * conn)
+{
+        noPollConn * _conn;
+	if (conn == NULL)
+	        return NULL;
+
+	_conn = vortex_connection_get_hook (conn);
+	if (_conn == NULL)
+	        return NULL;
+
+	return nopoll_conn_ctx (_conn);
 }
 
 /** 

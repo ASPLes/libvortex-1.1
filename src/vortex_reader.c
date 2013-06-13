@@ -666,10 +666,11 @@ axl_bool   vortex_reader_register_watch (VortexReaderData * data, axlList * con_
 
 		break;
 	case LISTENER:
-		vortex_log (VORTEX_LEVEL_DEBUG, "new listener connection to be watched (%d --> %s:%s)",
+		vortex_log (VORTEX_LEVEL_DEBUG, "new listener connection to be watched (socket: %d --> %s:%s, conn-id: %d)",
 			    vortex_connection_get_socket (connection), 
 			    vortex_connection_get_host (connection), 
-			    vortex_connection_get_port (connection));
+			    vortex_connection_get_port (connection),
+			    vortex_connection_get_id (connection));
 		axl_list_append (srv_list, connection);
 		break;
 	case TERMINATE:
@@ -1254,6 +1255,7 @@ axl_bool __vortex_reader_detect_and_cleanup_connection (axlListCursor * cursor)
 		fds    = vortex_connection_get_socket (conn);
 		result = recv (fds, bytes, 1, MSG_PEEK);
 		if (errno == EBADF) {
+			  
 			/* get context */
 			ctx = CONN_CTX (conn);
 			vortex_log (VORTEX_LEVEL_CRITICAL, "Found connection-id=%d, with session=%d not working (errno=%d), shutting down",
@@ -1290,15 +1292,15 @@ void __vortex_reader_detect_and_cleanup_connections (VortexCtx * ctx)
 	axl_list_cursor_first (ctx->srv_cursor);
 	while (axl_list_cursor_has_item (ctx->srv_cursor)) {
 
-		/* get the connection */
-		if (! __vortex_reader_detect_and_cleanup_connection (ctx->srv_cursor))
-			continue;
+	  /* get the connection */
+	  if (! __vortex_reader_detect_and_cleanup_connection (ctx->srv_cursor))
+		   continue; 
 
-		/* get the next */
-		axl_list_cursor_next (ctx->srv_cursor);
+	    /* get the next */
+	    axl_list_cursor_next (ctx->srv_cursor); 
 	} /* end while */
 
-	return;
+	return; 
 }
 
 axlPointer __vortex_reader_run (VortexCtx * ctx)
