@@ -121,6 +121,8 @@ VortexConnection * vortex_websocket_listener_new   (VortexCtx                * c
 						    VortexListenerReadyFull    on_ready_full,
 						    axlPointer                 user_data);
 
+noPollCtx        * vortex_websocket_connection_get_ctx (VortexConnection * conn);
+
 axl_bool           vortex_websocket_connection_is  (VortexConnection * conn);
 
 axl_bool           vortex_websocket_connection_is_tls_running (VortexConnection * conn);

@@ -5381,7 +5381,7 @@ axl_bool   __vortex_connection_one_sending_round (axlPointer key,
 	return axl_false;
 }
 
-/**
+/** 
  * @internal
  * @brief Helper function to Vortex Writer process
  * 

@@ -196,6 +196,25 @@ VortexConnection * connection_new (void)
 	}
 }
 
+void web_socket_log (axl_bool value, VortexConnection * conn)
+{
+        noPollCtx * nopoll_ctx;
+
+	if (value)
+	        enable_websocket_debug = value;
+	else {
+	        nopoll_ctx = vortex_websocket_connection_get_ctx (conn);
+		nopoll_log_enable (nopoll_ctx, axl_false);
+		nopoll_log_color_enable (nopoll_ctx, axl_false);
+	}
+
+	/* enable vortex log too */
+	vortex_log_enable (ctx, value);
+	vortex_color_log_enable (ctx, value);
+
+	return;
+}
+
 void show_conn_errros (VortexConnection * conn)
 {
 	char * msg;
@@ -5031,8 +5050,10 @@ axl_bool  test_04_ab_common (VortexConnection * connection, int window_size, con
 	vortex_async_queue_unref (queue);
 
 	/* ok, close the channel */
-	if (! vortex_channel_close (channel, NULL))
+	if (! vortex_channel_close (channel, NULL)) {
+	        printf ("ERROR (4): failed to close channel (test_04_ab_common) ...\n");
 		return axl_false;
+	}
 
 	/* close connection */
 	return axl_true;
@@ -5121,13 +5142,19 @@ axl_bool  test_02a (void) {
 	VortexConnection * connection;
 	int                count;
 
+	/* web_socket_log (axl_true, NULL); */
+
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
 	if (!vortex_connection_is_ok (connection, axl_false)) {
+	        printf ("ERROR: unable to create connection, failed to connect to %s:%s\n", 
+			listener_host, LISTENER_PORT);
 		vortex_connection_close (connection);
 		return axl_false;
 		
 	} /* end if */
+
+	/* web_socket_log (axl_false, connection); */
 
 	/* create a queue to store data from handlers */
 	test_02a_queue = vortex_async_queue_new ();
@@ -5161,13 +5188,20 @@ axl_bool  test_02a (void) {
 	/* unref the queue */
 	vortex_async_queue_unref (test_02a_queue);
 
+	/* web_socket_log (axl_true, NULL); */
+
 	/* creates a new connection against localhost:44000 */
+	printf ("Test 02-a: creating second connection ...\n");
 	connection = connection_new ();
 	if (!vortex_connection_is_ok (connection, axl_false)) {
+	        printf ("ERROR (2): unable to create connection, failed to connect to %s:%s\n", 
+			listener_host, LISTENER_PORT);
 		vortex_connection_close (connection);
 		return axl_false;
 		
 	} /* end if */
+
+	/* web_socket_log (axl_false, connection); */
 
 	/* create a queue to store data from handlers */
 	test_02a_queue = vortex_async_queue_new ();
@@ -5199,7 +5233,6 @@ axl_bool  test_02a (void) {
 
 	/* unref the queue */
 	vortex_async_queue_unref (test_02a_queue);
-	
 
 	return axl_true;
 }
@@ -9343,17 +9376,23 @@ axl_bool  test_04_a_common (int block_size, int num_blocks, int num_times) {
 	char             * message;
 	int                total_bytes = 0;
 	int                blocks_received;
+	noPollCtx        * nopoll_ctx;
 	
 #if defined(AXL_OS_UNIX)
 	struct timeval      start;
 	struct timeval      stop;
 #endif
+	/* web_socket_log (axl_true, NULL); */
+
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
 	if (!vortex_connection_is_ok (connection, axl_false)) {
+	        printf ("ERROR (1): failed to create connection...\n");
 		vortex_connection_close (connection);
 		return axl_false;
 	}
+
+	/* web_socket_log (axl_false, connection); */
 
 	/* create the queue */
 	queue = vortex_async_queue_new ();
@@ -9525,12 +9564,16 @@ axl_bool  test_04_a_common (int block_size, int num_blocks, int num_times) {
 	vortex_async_queue_unref (queue);
 
 	/* ok, close the channel */
-	if (! vortex_channel_close (channel, NULL))
+	if (! vortex_channel_close (channel, NULL)) {
+	        printf ("ERROR (2): failed to close channel..\n");
 		return axl_false;
+	}
 
 	/* ok, close the connection */
-	if (! vortex_connection_close (connection))
+	if (! vortex_connection_close (connection)) {
+	        printf ("ERROR (3): failed to close connection...\n");
 		return axl_false;
+	}
 
 	/* close connection */
 	return axl_true;
@@ -9545,7 +9588,7 @@ axl_bool  test_04_a_common (int block_size, int num_blocks, int num_times) {
  */
 axl_bool  test_04_a (void) {
 	/* call to run default test: block=4096, block-num=4096 */
-	if (! test_04_a_common (4096, 4096, 1))
+	if (! test_04_a_common (4096, 4096, 1)) 
 		return axl_false;
 
 	/* call to run test: block=4094, block-num=4096 */
@@ -9574,6 +9617,7 @@ axl_bool  test_04_ab (void) {
 	/* creates a new connection against localhost:44000 */
 	connection = connection_new ();
 	if (!vortex_connection_is_ok (connection, axl_false)) {
+	        printf ("ERROR (1): failed to create connection...\n");
 		vortex_connection_close (connection);
 		return axl_false;
 	}
@@ -9583,8 +9627,10 @@ axl_bool  test_04_ab (void) {
 		return axl_false;
 
 	/* ok, close the connection */
-	if (! vortex_connection_close (connection))
+	if (! vortex_connection_close (connection)) {
+	        printf ("ERROR (2): failed to close connection...\n");
 		return axl_false;
+	}
 
 	/* close connection */
 	return axl_true;
