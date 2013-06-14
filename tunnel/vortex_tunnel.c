@@ -785,7 +785,7 @@ void __vortex_tunnel_pass_octets (VortexConnection * connection)
 		return;
 	}
 
-	buffer[read] = 0;
+	/* buffer[read] = 0; */
 	vortex_log (VORTEX_LEVEL_DEBUG, "TUNNEL, passing octects (%s:%s --> %s:%s): %d", 
 		    vortex_connection_get_host (connection),
 		    vortex_connection_get_port (connection),
