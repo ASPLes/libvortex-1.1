@@ -4901,7 +4901,8 @@ axl_bool  test_04_ab_common (VortexConnection * connection, int window_size, con
 	char             * file_name;
 	FILE             * file;
 	int                bytes_written;
-	int                iterator = 0;
+	int                iterator  = 0;
+	int                iterator2 = 0;
 	axl_bool           disable_log = (times == 4);
 
 	if (amount_transferred)
@@ -4978,7 +4979,7 @@ axl_bool  test_04_ab_common (VortexConnection * connection, int window_size, con
 	/* wait for all replies */
 	if (! disable_log)
 		printf ("%sTest 04-ab:   waiting replies having file: %s\n", prefix ? prefix : "", file_name);
-	iterator = 0;
+	iterator2 = 0;
 	while (axl_true) {
 		/* get the next message, blocking at this call. */
 		frame = vortex_channel_get_reply (channel, queue);
@@ -4989,9 +4990,9 @@ axl_bool  test_04_ab_common (VortexConnection * connection, int window_size, con
 			}
 
 			/* next iterator */
-			iterator++;
-			if (iterator > 10) {
-				printf ("Test 04-ab: too much timeouts was received while waiting for reply... failed to continue\n");
+			iterator2++;
+			if (iterator2 > 10) {
+				printf ("Test 04-ab: too much timeouts was received while waiting for reply... failed to continue (after waiting for %d times)\n", iterator2);
 				return axl_false;
 			} /* end if */
 
