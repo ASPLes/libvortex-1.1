@@ -4978,10 +4978,23 @@ axl_bool  test_04_ab_common (VortexConnection * connection, int window_size, con
 	/* wait for all replies */
 	if (! disable_log)
 		printf ("%sTest 04-ab:   waiting replies having file: %s\n", prefix ? prefix : "", file_name);
+	iterator = 0;
 	while (axl_true) {
 		/* get the next message, blocking at this call. */
 		frame = vortex_channel_get_reply (channel, queue);
 		if (frame == NULL) {
+			if (! vortex_connection_is_ok (connection, axl_false))  {
+				printf ("Test 04-ab: found connection failure while waiting for frame reply...\n");
+				return axl_false;
+			}
+
+			/* next iterator */
+			iterator++;
+			if (iterator > 10) {
+				printf ("Test 04-ab: too much timeouts was received while waiting for reply... failed to continue\n");
+				return axl_false;
+			} /* end if */
+
 			printf ("Timeout received for regression test (1): %s\n", REGRESSION_URI_4);
 			continue;
 		}
