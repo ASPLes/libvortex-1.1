@@ -215,7 +215,7 @@ void web_socket_log (axl_bool value, VortexConnection * conn)
 	return;
 }
 
-void show_conn_errros (VortexConnection * conn)
+void show_conn_errors (VortexConnection * conn)
 {
 	char * msg;
 	int    code;
@@ -4512,7 +4512,7 @@ axl_bool  test_02_common (VortexConnection * connection)
 		if (channel[iterator] == NULL) {
 			printf ("Unable to create the channel, failed to create channel at iteration=%d (expected %d)..\n", 
 				iterator, TEST_02_MAX_CHANNELS);
-			show_conn_errros (connection);
+			show_conn_errors (connection);
 			return axl_false;
 		}
 
@@ -8564,9 +8564,11 @@ axl_bool  test_04 (void)
 		/* creates a new connection against localhost:44000 */
 		connections[iterator] = connection_new ();
 		if (!vortex_connection_is_ok (connections[iterator], axl_false)) {
-			printf ("Test 04: Unable to connect remote server (iterator=%d, MAX_NUM_CON=%d), error was: %s",
+			printf ("Test 04: Unable to connect remote server (iterator=%d, MAX_NUM_CON=%d), error was: %s\n",
 				iterator, MAX_NUM_CON, vortex_connection_get_message (connections[iterator]));
 			printf ("Test 04: errno=%d (%s)\n", errno, strerror (errno));
+			printf ("Test 04: show_conn_errors:\n");
+			show_conn_errors (connections[iterator]);
 			return axl_false;
 		} /* end if */
 
@@ -9186,7 +9188,7 @@ axl_bool test_05_c (void)
 	conn = connection_new ();
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("ERROR (1): expected proper connection creation but failure found..\n");
-		show_conn_errros (conn);
+		show_conn_errors (conn);
 		return axl_false;
 	} /* end if */
 
@@ -9194,7 +9196,7 @@ axl_bool test_05_c (void)
 	conn = vortex_tls_start_negotiation_sync (conn, "test-05-c.server", &status, &status_message);
 	if (status != VortexOk) {
 		printf ("ERROR (2): expected proper TLS activation but found a failure..\n");
-		show_conn_errros (conn);
+		show_conn_errors (conn);
 		return axl_false;
 	} /* end if */
 	
@@ -10388,7 +10390,7 @@ axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
 	/* send feeder */
 	printf ("Test 04-f: sending content..\n");
 	if (! vortex_channel_send_msg_from_feeder (channel, feeder)) {
-		show_conn_errros (conn);
+		show_conn_errors (conn);
 		printf ("ERROR (4): expected to find proper send using feeder, channel=%p, feeder=%p, conn status=%d..\n",
 			channel, feeder, vortex_connection_is_ok (conn, axl_false));
 		return axl_false;
@@ -10459,7 +10461,7 @@ axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
 		if (frame == NULL) {
 			printf ("ERROR (7.1): received NULL frame, connection status: %d, %s ..\n", 
 				vortex_connection_is_ok (conn, axl_false), vortex_connection_get_message (conn));
-			show_conn_errros (conn);
+			show_conn_errors (conn);
 			return axl_false;
 		} /* end if */
 
@@ -12183,7 +12185,7 @@ axl_bool test_14_a (void)
 	conn = vortex_connection_new (client_ctx, listener_host, LISTENER_PORT, NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("Expected to find proper connection with regression test listener: %s..\n", vortex_connection_get_message (conn));
-		show_conn_errros (conn);
+		show_conn_errors (conn);
 		return axl_false;
 	} /* end if */
 
@@ -12439,7 +12441,7 @@ axl_bool test_14_b (void)
 	conn = vortex_connection_new (client_ctx, "localhost", vortex_connection_get_port (listener), NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("Expected to find proper connection with regression test listener: %s..\n", vortex_connection_get_message (conn));
-		show_conn_errros (conn);
+		show_conn_errors (conn);
 		return axl_false;
 	} /* end if */
 
@@ -12624,7 +12626,7 @@ axl_bool test_14_c (void)
 	conn = vortex_connection_new (client_ctx, "localhost", vortex_connection_get_port (listener), NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("Expected to find proper connection with regression test listener: %s..\n", vortex_connection_get_message (conn));
-		show_conn_errros (conn);
+		show_conn_errors (conn);
 		return axl_false;
 	} /* end if */
 
@@ -12850,7 +12852,7 @@ axl_bool test_14_d (void)
 	conn = vortex_connection_new (client_ctx, "localhost", vortex_connection_get_port (listener), NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("Expected to find proper connection with regression test listener: %s..\n", vortex_connection_get_message (conn));
-		show_conn_errros (conn);
+		show_conn_errors (conn);
 		return axl_false;
 	} /* end if */
 	printf ("Test 14-d: checking PULL API for channel start event, creating client channel..\n");
@@ -12961,7 +12963,7 @@ axl_bool test_14_e (void)
 	conn = vortex_connection_new (client_ctx, listener_host, LISTENER_PORT, NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("Expected to find proper connection with regression test listener: %s..\n", vortex_connection_get_message (conn));
-		show_conn_errros (conn);
+		show_conn_errors (conn);
 		return axl_false;
 	} /* end if */
 
@@ -13274,7 +13276,7 @@ axl_bool test_14_g (void)
 	conn = vortex_connection_new (client_ctx, "localhost", vortex_connection_get_port (listener), NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("Expected to find proper connection with regression test listener: %s..\n", vortex_connection_get_message (conn));
-		show_conn_errros (conn);
+		show_conn_errors (conn);
 		return axl_false;
 	} /* end if */
 
@@ -13374,7 +13376,7 @@ axl_bool test_14_h (void)
 	conn = vortex_connection_new (client_ctx, "localhost", vortex_connection_get_port (listener), NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("Expected to find proper connection with regression test listener..\n");
-		show_conn_errros (conn);
+		show_conn_errors (conn);
 		return axl_false;
 	} /* end if */
 
@@ -13668,7 +13670,7 @@ axl_bool test_15_aux (VortexCtx * ctx, long check_period, int unreply_count, Vor
 
 	if (! vortex_channel_send_msg (channel, "block-connection", 16, NULL)) {
 		printf ("Test 16: failed to send block connection message..\n");
-		show_conn_errros (conn);
+		show_conn_errors (conn);
 		return axl_false;
 	} /* end if */
 
