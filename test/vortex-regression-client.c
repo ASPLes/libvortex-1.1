@@ -10465,6 +10465,12 @@ axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
 			return axl_false;
 		} /* end if */
 
+		printf ("Test -- -: frame received (type: %d, MSG=%d, RPY=%d, ERR=%d), size: %d, msgno: %d\n", vortex_frame_get_type (frame),
+			VORTEX_FRAME_TYPE_MSG, 
+			VORTEX_FRAME_TYPE_RPY, 
+			VORTEX_FRAME_TYPE_ERR, 
+			vortex_frame_get_payload_size (frame), vortex_frame_get_msgno (frame));
+
 		/* save content */
 		if (! test_04_e_save (frame, "test_04_e.save", axl_true)) {
 			printf ("ERROR (7): expected proper save operation but a failure was found..\n");
