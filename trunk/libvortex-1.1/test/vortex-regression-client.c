@@ -8559,7 +8559,14 @@ axl_bool  test_04 (void)
 		iterator++;
 	} /* end while */
 
-	printf ("Test 04: starting test, current errno=%d\n", errno);
+	if (errno != 0) {
+		printf ("Test 04: starting test, current errno=%d, waiting a bit\n", errno);
+#if defined(AXL_OS_UNIX)
+		sleep (2);
+#elif defined(AXL_OS_WIN32)
+		Sleep (2000);
+#endif
+	}
 
 	iterator = 0;
 	while (iterator < MAX_NUM_CON) { 
