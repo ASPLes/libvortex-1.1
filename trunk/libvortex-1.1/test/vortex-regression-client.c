@@ -8559,6 +8559,8 @@ axl_bool  test_04 (void)
 		iterator++;
 	} /* end while */
 
+	printf ("Test 04: starting test, current errno=%d\n", errno);
+
 	iterator = 0;
 	while (iterator < MAX_NUM_CON) { 
 		/* creates a new connection against localhost:44000 */
