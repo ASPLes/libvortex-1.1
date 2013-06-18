@@ -1301,6 +1301,9 @@ void __vortex_reader_detect_and_cleanup_connections (VortexCtx * ctx)
 	    axl_list_cursor_next (ctx->srv_cursor); 
 	} /* end while */
 
+	/* clear errno after cleaning descriptors */
+	errno = 0;
+
 	return; 
 }
 
