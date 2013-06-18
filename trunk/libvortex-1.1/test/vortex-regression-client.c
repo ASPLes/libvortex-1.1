@@ -8571,6 +8571,11 @@ axl_bool  test_04 (void)
 	iterator = 0;
 	while (iterator < MAX_NUM_CON) { 
 		/* creates a new connection against localhost:44000 */
+		if (iterator >= 998) {
+			vortex_log_enable (ctx, axl_true);
+			vortex_color_log_enable (ctx, axl_true); 
+		} /* end if */
+
 		connections[iterator] = connection_new ();
 		if (!vortex_connection_is_ok (connections[iterator], axl_false)) {
 			printf ("Test 04: Unable to connect remote server (iterator=%d, MAX_NUM_CON=%d), error was: %s\n",
@@ -8585,6 +8590,9 @@ axl_bool  test_04 (void)
 		iterator++;
 	} /* end while */
 
+	/* disable logs */
+	vortex_log_enable (ctx, axl_false);
+	vortex_color_log_enable (ctx, axl_false); 
 
 	iterator = 0;
 	while (iterator < MAX_NUM_CON) {
