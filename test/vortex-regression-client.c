@@ -8564,10 +8564,11 @@ axl_bool  test_04 (void)
 		/* creates a new connection against localhost:44000 */
 		connections[iterator] = connection_new ();
 		if (!vortex_connection_is_ok (connections[iterator], axl_false)) {
-			printf ("Test 04: Unable to connect remote server, error was: %s",
-				vortex_connection_get_message (connections[iterator]));
+			printf ("Test 04: Unable to connect remote server (iterator=%d, MAX_NUM_CON=%d), error was: %s",
+				iterator, MAX_NUM_CON, vortex_connection_get_message (connections[iterator]));
+			printf ("Test 04: errno=%d (%s)\n", errno, strerror (errno));
 			return axl_false;
-		}
+		} /* end if */
 
 		/* update iterator */
 		iterator++;
