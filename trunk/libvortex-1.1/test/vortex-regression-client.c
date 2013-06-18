@@ -4427,7 +4427,8 @@ axl_bool test_01y (void) {
 	queue = vortex_async_queue_new (),
 	vortex_connection_set_on_close_full (conn, test_01y_full, queue);
 
-	printf ("Test 01-y: closing socket....\n");
+	printf ("Test 01-y: closing socket=%d (conn-id=%d)....\n",
+		vortex_connection_get_socket (conn), vortex_connection_get_id (conn));
 
 	/* get the socket from the connection and close it */
 	vortex_close_socket (vortex_connection_get_socket (conn));
@@ -4487,6 +4488,9 @@ axl_bool  test_02_common (VortexConnection * connection)
 	char             * message;
 	char             * msg;
 	int                code;
+
+	printf ("Test --: running tests with conn-id=%d, socket=%d\n", 
+		vortex_connection_get_id (connection), vortex_connection_get_socket (connection));
 
 	/* create the queue */
 	queue   = vortex_async_queue_new ();
@@ -5088,7 +5092,7 @@ axl_bool  test_02 (void) {
 	} /* end if */
 
 	/* vortex_log_enable (ctx, axl_true);
-	   vortex_color_log_enable (ctx, axl_true); */
+	   vortex_color_log_enable (ctx, axl_true);  */
 
 	/* call common implementation */
 	if (! test_02_common (connection))
@@ -5101,7 +5105,7 @@ axl_bool  test_02 (void) {
 	} /* end if */
 
 	/* vortex_log_enable (ctx, axl_false);
-	   vortex_color_log_enable (ctx, axl_false);*/
+	   vortex_color_log_enable (ctx, axl_false); */
 	
 	/* return axl_true */
 	return axl_true;
