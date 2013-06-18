@@ -361,9 +361,9 @@ void frame_received (VortexChannel    * channel,
 	} else if (axl_memcmp (vortex_frame_get_payload (frame), "block-connection", 16)) {
 		/* lock the connection */
 		vortex_connection_block (connection, axl_true);
-		/* install an event handler to remove this connection between 100ms */
+		/* install an event handler to remove this connection between 400ms */
 		vortex_connection_ref (connection, "close event");
-		vortex_thread_pool_new_event (CONN_CTX (connection), 100000, __close_connection, connection, NULL);
+		vortex_thread_pool_new_event (CONN_CTX (connection), 400000, __close_connection, connection, NULL);
 	} else if (axl_memcmp (vortex_frame_get_payload (frame), "set_serial", 10)) {
 		/* enable channel serialization */
 		vortex_channel_set_serialize (channel, axl_true);
