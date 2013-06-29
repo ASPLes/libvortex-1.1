@@ -1400,20 +1400,39 @@ int          vortex_frame_readline (VortexConnection * connection, char  * buffe
 
 }
 
-int  get_int_value (char  * string, int  * position)
+int  get_int_value (VortexCtx * ctx, VortexConnection * conn, char  * string, int  * position)
 {
 	int iterator = 0;
 	int result;
 	while ((string[iterator] != ' ')    &&
 	       (string[iterator] != '\x0A') && 
-	       (string[iterator] != '\x0D'))
+	       (string[iterator] != '\x0D')) {
+
+		/* check digit values */
+		if (string[iterator] != '0' &&
+		    string[iterator] != '1' &&
+		    string[iterator] != '2' &&
+		    string[iterator] != '3' &&
+		    string[iterator] != '4' &&
+		    string[iterator] != '5' &&
+		    string[iterator] != '6' &&
+		    string[iterator] != '7' &&
+		    string[iterator] != '8' &&
+		    string[iterator] != '9') {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "Unallowed sequence in header, shutting down connection-id=%d from %s:%s",
+				    vortex_connection_get_id (conn), vortex_connection_get_host (conn), vortex_connection_get_port (conn));
+			vortex_connection_shutdown (conn);
+			return -1;
+		}
+			
 		iterator++;
+	}
 	/* set the new terminator */
 	string[iterator] = 0;
 
-	/* use atoi because we don't want to detect errors at this
-	 * place */
+	/* translate value */
 	result   = strtol (string, NULL, 10);
+	vortex_log (VORTEX_LEVEL_DEBUG, "Translated %s -> %d", string, result);
 
 	/* return the iterator position */
 	*position = (*position) + iterator + 1;
@@ -1421,15 +1440,34 @@ int  get_int_value (char  * string, int  * position)
 	return result;
 }
 
-unsigned int  get_unsigned_int_value (char  * string, int  * position)
+unsigned int  get_unsigned_int_value (VortexCtx * ctx, VortexConnection * conn, char  * string, int  * position)
 {
 	int          iterator = 0;
 	unsigned int result;
 	
 	while ((string[iterator] != ' ')    &&
 	       (string[iterator] != '\x0A') && 
-	       (string[iterator] != '\x0D'))
+	       (string[iterator] != '\x0D')) {
+
+		/* check digit values */
+		if (string[iterator] != '0' &&
+		    string[iterator] != '1' &&
+		    string[iterator] != '2' &&
+		    string[iterator] != '3' &&
+		    string[iterator] != '4' &&
+		    string[iterator] != '5' &&
+		    string[iterator] != '6' &&
+		    string[iterator] != '7' &&
+		    string[iterator] != '8' &&
+		    string[iterator] != '9') {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "Unallowed sequence in header, shutting down connection-id=%d from %s:%s",
+				    vortex_connection_get_id (conn), vortex_connection_get_host (conn), vortex_connection_get_port (conn));
+			vortex_connection_shutdown (conn);
+			return -1;
+		}
+
 		iterator++;
+	}
 	/* set the new terminator */
 	string[iterator] = 0;
 
@@ -1447,10 +1485,12 @@ unsigned int  get_unsigned_int_value (char  * string, int  * position)
  * @internal check that last value returned is not -2 and position
  * never overflows beep header length received.
  */
-#define CHECK_INDEX_AND_RETURN(value) do{               \
+#define CHECK_INDEX_AND_RETURN(value) do{                       \
+   if (value == -1)                                             \
+	   return -1;                                           \
    if (value == -2 || (position > (header_length -1))) {	\
-	   return -2;                                   \
-   }                                                    \
+	   return -2;                                           \
+   }                                                            \
 } while(0)
 
 /** 
@@ -1488,30 +1528,30 @@ int  vortex_frame_get_header_data (VortexCtx * ctx, VortexConnection * connectio
 	case VORTEX_FRAME_TYPE_SEQ:
 		/* SEQ frame format: "%d %d %d\x0D\x0A"
 		   channel seqno size */
-		frame->channel    = get_int_value          (beep_header, &position);
+		frame->channel    = get_int_value          (ctx, connection, beep_header, &position);
 		CHECK_INDEX_AND_RETURN (frame->channel);
 
-		frame->seqno      = get_unsigned_int_value (beep_header + position, &position);
+		frame->seqno      = get_unsigned_int_value (ctx, connection, beep_header + position, &position);
 		CHECK_INDEX_AND_RETURN (frame->seqno);
 
-		frame->size       = get_int_value          (beep_header + position, &position);
+		frame->size       = get_int_value          (ctx, connection, beep_header + position, &position);
 		CHECK_INDEX_AND_RETURN (frame->size);
 		break;
 	default:
 		/* where all cases matches: "%d %d %c %d %d\x0D\x0A"
 		   channel msgno more_char seqno size */
-		frame->channel    = get_int_value (beep_header, &position);
+		frame->channel    = get_int_value (ctx, connection, beep_header, &position);
 		CHECK_INDEX_AND_RETURN (frame->channel);
 
-		frame->msgno      = get_int_value (beep_header + position, &position);
+		frame->msgno      = get_int_value (ctx, connection, beep_header + position, &position);
 		CHECK_INDEX_AND_RETURN (frame->msgno);
 
 		/* get more char */
 		frame->more_char  = beep_header [position];
 		position         += 2; /* one space and point to the
 					* next item */
-		frame->seqno      = get_unsigned_int_value (beep_header + position, &position);
-		frame->size       = get_int_value          (beep_header + position, &position);
+		frame->seqno      = get_unsigned_int_value (ctx, connection, beep_header + position, &position);
+		frame->size       = get_int_value          (ctx, connection, beep_header + position, &position);
 		break;
 
 	}
@@ -1521,7 +1561,7 @@ int  vortex_frame_get_header_data (VortexCtx * ctx, VortexConnection * connectio
 		/* ANS frame format: "%d %d %c %u %d %d\x0D\x0A"
 		   channel msgno more_char seqno size ansno: read one
 		   more int */
-		frame->ansno      = get_int_value (beep_header + position, &position);
+		frame->ansno      = get_int_value (ctx, connection, beep_header + position, &position);
 	}
 
 	/* return current position plus one unit (\x0D and \x0A) */
