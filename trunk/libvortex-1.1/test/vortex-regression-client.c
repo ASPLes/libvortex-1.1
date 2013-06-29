@@ -4451,6 +4451,70 @@ axl_bool test_01y (void) {
 	return axl_true;
 }
 
+axl_bool test_01x_run (const char * header, VortexAsyncQueue * queue) {
+
+	VortexConnection * conn;
+	VORTEX_SOCKET        _socket;
+	int iterator;
+
+	conn = connection_new ();
+	if (!vortex_connection_is_ok (conn, axl_false)) {
+		vortex_connection_close (conn);
+		return axl_false;
+	} /* end if */
+
+	/* send crafted header */
+	_socket = vortex_connection_get_socket (conn);
+	
+	printf ("Test 01-x: sending crafted package..\n");
+	if (send (_socket, "MSG 3923sdfsadfwer1231231231231231231254klsjdflwkjer23423423423423123091293829038902\r\n", 87, 0) != 87) {
+		printf ("ERROR: failed to send crafted package..\n");
+		return axl_false;
+	} /* end if */
+
+	
+	iterator = 0;
+	while (iterator < 10) {
+		/* wait a bit */
+		vortex_async_queue_timedpop (queue, 200000);
+
+		/* check if it is broken */
+		if (! vortex_connection_is_ok (conn, axl_false))
+			break;
+
+		iterator ++;
+	}
+
+	/* check connection status*/
+	if (vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: expected to find connection failure, but it right\n");
+		return axl_false;
+	} /* end if */
+
+	/* connection close */
+	vortex_connection_close (conn);
+
+	return axl_true;
+}
+
+axl_bool test_01x (void) {
+
+	VortexAsyncQueue   * queue;
+
+	/* call to create connection */
+	printf ("Test-01-x: creating first connection ...\n");
+
+	queue = vortex_async_queue_new ();
+
+	if (! test_01x_run ("MSG 3923sdfsadfwer1231231231231231231254klsjdflwkjer23423423423423123091293829038902\r\n", queue))
+		return axl_false;
+
+	/* release connection and queue */
+	vortex_async_queue_unref (queue);
+
+	return axl_true;
+}
+
 
 
 #define TEST_02_MAX_CHANNELS 24
@@ -14584,7 +14648,7 @@ int main (int  argc, char ** argv)
 	printf ("**       Test available: test_00, test_001, test_00a, test_00b, test_00c, test_00c1, test_00c2,\n");
 	printf ("**                       test_00d, test_00e, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
 	printf ("**                       test_01f, test_01g, test_01g1, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o,\n");
-	printf ("**                       test_01p, test_01q, test_01r, test_01s, test_01s1, test_01t, test_01u, test_01w, test_01y\n");
+	printf ("**                       test_01p, test_01q, test_01r, test_01s, test_01s1, test_01t, test_01u, test_01w, test_01y, test_01x\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02l1, test_02m, test_02m1, test_02m2, test_02m3, test_02n, test_02o, test_02p, test_02q, test_02r\n");
@@ -14859,6 +14923,9 @@ int main (int  argc, char ** argv)
 
 		if (check_and_run_test (run_test_name, "test_01y"))
 			run_test (test_01y, "Test 01-y", "Check socket close out side the control of Vortex Library", -1, -1);
+
+		if (check_and_run_test (run_test_name, "test_01x"))
+			run_test (test_01x, "Test 01-x", "Check header overflow", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_02"))
 			run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
@@ -15164,6 +15231,8 @@ int main (int  argc, char ** argv)
 	run_test (test_01w, "Test 01-w", "Check complete flag limit", -1, -1);
 
 	run_test (test_01y, "Test 01-y", "Check socket close out side the control of Vortex Library", -1, -1);
+
+	run_test (test_01x, "Test 01-x", "Check header overflow", -1, -1);
 
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
   
