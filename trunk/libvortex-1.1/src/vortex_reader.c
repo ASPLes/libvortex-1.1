@@ -1255,7 +1255,7 @@ axl_bool __vortex_reader_detect_and_cleanup_connection (axlListCursor * cursor)
 		fds    = vortex_connection_get_socket (conn);
 		errno = 0;
 		result = recv (fds, bytes, 1, MSG_PEEK);
-		if (errno == EBADF) {
+		if (result == -1 && errno == EBADF) {
 			  
 			/* get context */
 			ctx = CONN_CTX (conn);
