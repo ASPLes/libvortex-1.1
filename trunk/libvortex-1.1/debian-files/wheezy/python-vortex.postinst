@@ -1,0 +1,6 @@
+#!/usr/bin/python
+
+import os
+if os.path.exists ("/usr/lib/python2.5/site-packages/vortex"):
+   os.rename ("/usr/lib/python2.5/site-packages/vortex", "/usr/lib/python2.5/site-packages/vortex-back-inst")
+# end if
