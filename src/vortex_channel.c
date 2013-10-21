@@ -7892,16 +7892,6 @@ void vortex_channel_free (VortexChannel * channel)
 		vortex_channel_pool_deattach (channel->pool, channel);
 	}
 
-	/* ensure no wait reply is running remaining to unlock the
-	 * channel receive_mutex. Lock on it and unlock it
-	 * immediately. */
-	if (! ctx->reader_cleanup) {
-		vortex_mutex_lock    (&channel->receive_mutex);
-		vortex_mutex_unlock  (&channel->receive_mutex);
-	} /* end if */
-	vortex_log (VORTEX_LEVEL_DEBUG, "freeing receive_mutex");
-	vortex_mutex_destroy (&channel->receive_mutex);
-
 	/* if (! ctx->reader_cleanup) {
 		vortex_mutex_lock    (&channel->send_mutex);
 		vortex_mutex_unlock  (&channel->send_mutex);
@@ -7943,12 +7933,25 @@ void vortex_channel_free (VortexChannel * channel)
 
 	/* freeing wait replies */
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing waiting reply queue");
+	vortex_mutex_lock    (&channel->receive_mutex);
 	while (!vortex_queue_is_empty (channel->waiting_msgno)) {
 		wait_reply = vortex_queue_pop (channel->waiting_msgno);
 		vortex_channel_free_wait_reply (wait_reply);
 	}
 	vortex_queue_free   (channel->waiting_msgno);
 	channel->waiting_msgno = NULL;
+	vortex_mutex_unlock  (&channel->receive_mutex);
+
+	/* ensure no wait reply is running remaining to unlock the
+	 * channel receive_mutex. Lock on it and unlock it
+	 * immediately. */
+	if (! ctx->reader_cleanup) {
+		vortex_mutex_lock    (&channel->receive_mutex);
+		vortex_mutex_unlock  (&channel->receive_mutex);
+	} /* end if */
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "freeing receive_mutex");
+	vortex_mutex_destroy (&channel->receive_mutex);
 
 	/* free pending messages to be completed */
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing previous frames");
