@@ -107,7 +107,7 @@ Module API
    :param conn: the connection to check for TLS activation.
    :type conn: vortex.Connection
 
-   :rtype: True in the case TLS profile was activated. Otherwise False  is returned. Check :ref:`verify_cert` in the case you want to also check certificate status.
+   :rtype: True in the case TLS profile was activated. Otherwise False  is returned. Check verify_cert() in the case you want to also check certificate status.
 
 .. function:: verify_cert (conn)
 
