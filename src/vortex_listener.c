@@ -1434,7 +1434,7 @@ void __vortex_listener_release_port_share_data (axlPointer _ptr)
  * (that is, to avoid calling this handler if local address value
  * doesn't match).
  *
- * @param local port Reference to the local port this handler must be
+ * @param local_port Reference to the local port this handler must be
  * limited. Pass in NULL in the case you don't want any filtering
  * (that is, to avoid calling this handler if local port value doesn't
  * match).

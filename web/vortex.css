@@ -177,7 +177,7 @@ div.link td {
   text-align: center;
   margin-top: 15px;
   border-top: 1px dotted #a0a0a0;
-  padding-top: 15px;
+/*   padding-top: 15px; */
   padding-bottom: 15px;
   color: #a0a0a0;
 }
@@ -276,7 +276,7 @@ span.item-description {
 
 .using { 
   padding-bottom: 20px;
-/*  border-bottom: 1px solid #cc0000; */
+  border-bottom: 1px dotted #c9c9c9; 
 }
 
 .using img { 
@@ -355,3 +355,54 @@ span.item-description {
   position: relative; left: 65%; top: 0%; z-index: 1;
   font-weight: normal;
 }
+
+.sponsored-content { 
+  background: #3465a4;
+  color: white; 
+  text-align: left;
+  border-bottom: 1px dotted #3465a4;
+  margin-bottom: 10px;
+  border-left: 1px dotted #729fcf;
+  border-right: 1px dotted #729fcf;
+  
+}
+
+.sponsored-content .dotted { 
+  border-right: 1px dotted #729fcf;
+}
+
+.sponsored-content a { 
+   background: #3465a4;
+   color: white !important; 
+   font-weight: bold;
+}
+
+.sponsored-content table { 
+  padding: 10px;
+}
+
+.sponsored-content h1 { 
+  border-left: 8px solid #cc0000;
+  border-bottom: 1px solid #cc0000;
+  padding-left: 6px;
+  margin-right: 12px;
+  padding-top: 0px;
+  margin-top: 0px;
+  background: #3465a4;
+  color: white; 
+}
+
+.sponsored-content td { 
+  vertical-align: top;
+}
+
+.sponsored-content ul { 
+  padding: 6px;
+  margin: 6px;
+}
+
+.sponsored-content li { 
+  font-size: 10pt;
+  list-style: none;
+}
+
