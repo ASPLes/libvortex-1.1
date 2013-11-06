@@ -958,6 +958,8 @@ char   * vortex_support_inet_ntoa                  (VortexCtx           * ctx,
  * @param descf The pointer to the buffer where descriptors will be
  * stored.
  *
+ * @param ctx The context where the operation will take place.
+ *
  * @return The function returns -1 in the case of failure or 0 if pipe
  * was properly created.
  */
