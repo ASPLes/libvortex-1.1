@@ -1,0 +1,363 @@
+      ###################################################
+      ##              Vortex Library 1.1.13            ##
+      ##           "Jumping like Dick Fosbury!"        ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce Vortex
+  Library 1.1.13 "Jumping like Dick Fosbury!" release availability: an
+  open source "BEEP Core" protocol implementation written in C, mapped
+  onto TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.core-admin.com
+      [Feature product: Core-Admin]
+      
+    
+This release in short
+~~~~~~~~~~~~~~~~~~~~~
+
+   - CORE-ADMIN: first release supporting all features required by
+     this project (http://www.core-admin.com), a server administration
+     platform with a web-client interface that integrates BEEP and
+     WebSocket!
+
+   - BEEP over WEBSOCKET: VortexLibrary now support providing BEEP
+     services over WebSocket, through noPoll library:
+   
+           http://www.aspl.es/nopoll
+
+   - PORT SHARING: added new generic support that allows the library
+     to support running BEEP, BEEP over WebSocket (ws://) and BEEP
+     over TLS WebSocket (wss://) under the same port, allowing easy
+     and transparent support for native BEEP and websocket
+     applications!
+
+   - ENGINE: several fixings, additional regression tests and new API
+     functions were added.
+
+   - PYVORTEX: several improvements into this binding making it more
+     stable and more usable from Turbulence.
+
+   - SECURITY: now by default SSP is used for compilation and official
+     packages uses it.
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+
+  None
+
+Thanks to..
+~~~~~~~~~~~
+
+  - Étienne Dupuis (reported and provided a path to ensure proper
+    ascii handling of environment variables; reported unfortunate
+    strlen declaration).
+
+  - Michael Sola (reported a failure inside vortex tls post action,
+    with a nice test case).
+
+  - Mark Fowler (reported missing listener and client at
+    documentation).
+
+Changes since 1.1.12
+~~~~~~~~~~~~~~~~~~~~
+
+* [fix] Updated pyvortex conn.remove_on_close handler to check that
+  value received is a handle to avoid a segfault when None or other
+  complex object is received.
+
+* [new] Updated PyVortex API to include a new API that will allow
+  python space code to enable too long notifications (handlers that
+  are taking too long to finish) into a file. API added:
+
+   - vortex.ctx.enable_too_long_notify_to_file
+
+* [fix] Removed debug messages from vortex_init_check.
+
+* [fix] Fixed unnecessary VortexCtx * ctx declaration inside
+  vortex_channel_remove_first_pending_msg_no which cause the build to
+  fail when log support is disabled. Bug reported by Dan Moore.
+
+* [new] Updated PyVortex API to include vortex.unlock_listeners...
+
+* [fix] Adding missing simple listener and simple client and fixed
+  documentation that was out of date. Problem reported by Mark Fowler.
+
+* [fix] Fixed debian declaration for python-vortex-* packages
+  to depend on python-vortex..
+
+* [fix] Adding instructions to run regression test before sending a
+  patch..
+
+* [fix] Fixed wrong reference handler at vortex tls post action
+  causing to return a reference that was finished because automatic
+  tls failed. Bug reported with a nice test case by Michael Sola.
+
+* [fix] Updated python-vortex package installation to rename
+  /usr/lib/python2.5/site-packages/vortex folder when found squeeze
+  installation being upgraded from lenny.
+
+* [new] Added new extension library (libvortex-websocket-1.1) to
+  support providing BEEP over WebSocket through noPoll library. Nice!!
+  Added initial regression test (test-17) to test support.
+
+* [fix] Updated connection creation waiting code to detect Bad File
+  Descriptor error code to stop waiting while connecting.
+
+* [new] Added new functions to allow storing and getting a hook
+  pointer associated to a connection to avoid having to use
+  vortex_connection_set_data and its getters which its computational
+  expensive in cases where lots of calls are required. API added:
+
+  - vortex_connection_get_hook
+  - vortex_connection_set_hook
+
+* [fix] Updated reading code to track the number of "no data
+  available" operations found for a particular connection to shutdown
+  it when a certain amount is reached.
+
+* [fix] Updated reading code to execute preread handler (if defined)
+  for VortexRoleMasterListener connections.
+
+* [fix] Several updates to ensure libvortex-1.1 is compilable when
+  web-sockets isn't available.
+
+* [fix] Updated libvortex-websocket library to support having BEEP
+  running on top of a TLS Websocket (wss). Nice! Added new API and
+  regression test test_18 and test_19. API added:
+
+  - vortex_websocket_connection_is_tls_running
+  - VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_TLS (configuration item)
+
+* [fix] Minor change to vortex_websocket.c transport..
+
+* [fix] Updated vortex_support.c to replace GetEnvironmentVariable and
+  SetEnvironmentVariable with they "A" implementations to ensure ascii
+  version is used even when those functions are used with Unicode
+  build enabled. Bug reported and fix proposed by Étienne Dupuis
+  (Thanks!)  More information at:
+  http://msdn.microsoft.com/en-us/library/windows/desktop/dd317766(v=vs.85).aspx
+
+* [fix] Making channel start notification to detect and fix serverName
+  value provided by the requester in the case serverName value was
+  already configured on the BEEP session by a previous request.
+
+* [fix] Updated vortex-websocket extension library to setup the
+  serverName value associated to the BEEP session according to the
+  Host header received over the WebSocket connection (if
+  provided). Also updated the module to flag the connection as "having
+  TLS on" when received a successful TLS WebSocket connection
+  (wss://). This way turbulence is able to handle BEEP sessions with
+  TLS profile and BEEP session over wss:// with the same profile path
+  declaration. Fixed vortex-websocket-1.1.pc to also require nopoll
+  module.
+  
+
+* [new] Updated vortex support module API to include a new function to
+  create a portable pipe. Moved this code from lua code which now uses
+  this public and cleaned definition. API added:
+
+   - vortex_support_pipe
+
+* [new] Updated vortex connection API to include a new function to
+  return the internal data hash associated to each connection. API
+  added:
+
+  - vortex_connection_get_data_hash
+
+* [fix] Fixed some debug logs that should be critical at vortex
+  connection module.
+
+* [fix] Fixed memory leak inside vortex_channel when caller requested
+  a new serverName value over a connection with that value set.
+
+* [fix] Updated vortex frame factory to only drop an error log when
+  errno != 0 and and raw read error was found.
+
+* [fix] Making websocket module to get Host: header value up until the
+  ":" value.
+
+* [fix] Making vortex_connection_set_server_name to find hostname
+  declarations with port part and take away it from the final
+  serverName configured.
+
+* [fix] Making vortex channel pool to not print the status unless
+  explicitly called by the client.
+
+* [fix] Added new regression test to check if it is possible to flood
+  a vortex BEEP listener by sending a greetings initial message formed
+  by infinite frames with more flag on.
+
+* [new] Added initial support for port share support that will allow
+  running BEEP and BEEP over WebSocket (with TLS variation) on the same
+  port without having to have especial configurations from library
+  users. API added:
+ 
+  - vortex_listener_set_port_sharing_handling
+  - VortexPortShareHandler
+
+  Added initial regression test (test_20). Still more work required.
+  Looks really promising.
+
+* [fix] More updates on port sharing code used by web-socket extension
+  library.  Now regtest (test-20) finishes properly. Still more work
+  required.
+
+* [fix] More cleanups on port share code. Updated code to release
+  pending code at the listener side. Updated test_20 to ensure the
+  connection is really working..
+
+* [fix] Completed working and tested implementation for Websocket port
+  sharing including support to run on the same port BEEP, BEEP over
+  WebSocket and BEEP over TLS websocket..
+
+* [fix] Fixed transport detection (port-sharing) at web-socket
+  extension library when receiving TLS connections. Updated module to
+  acquire references to noPollCtx object when enabled port-sharing.
+
+* [fix] Updated web-socket extension library to run post action
+  functions that setups Host: WebSocket header into BEEP serverName
+  value.
+
+* [fix] Updated vortex web-socket module to install thread safety
+  handlers used by noPoll to protect critical sections.
+
+* [fix] Making vortex reader engine to shutdown connections before
+  calling vortex_connection_unref on finishing operations.
+
+* [fix] Updated web-socket extension library to include a new setup
+  options to enable noPoll Debug. API added:
+
+  - VORTEX_WEBSOCKET_ENABLE_DEBUG
+
+* [fix] Several updates to fix various debug log calls with wrong or
+  poorly configured arguments.
+
+* [fix] Added additional logging into web-socket extension library.
+
+* [fix] Renamed VORTEX_WEBSOCKET_ENABLE_DEBUG into
+  VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_DEBUG.
+
+* [fix] Added new function to setup manually host and port value
+  returned by vortex_connection_get_host and
+  vortex_connection_get_port for a given connection. API added:
+
+  - vortex_connection_set_host_and_port
+
+* [fix] Engine update to detect bad file socket descriptors that may
+  have been closed by other means not controlled by vortex to drop
+  those connections as soon as possible. Added regression test to
+  reproduce the bug and check the fix introduced (test-01y).
+
+* [fix] Updated vortex reader loop to do the wrong connection check
+  after the stopping code. Upps.
+
+* [fix] Updated regression test code to allow enabling websocket debug when
+  received --enable-websocket-debug
+
+* [fix] Updated vortex reader to unset socket associated to a
+  connection that is showing EBADF error.
+
+* [fix] Removed unfortunate strlen declaration (reported by Étienne
+  Dupuis).
+
+* [fix] Updated PyVortex regression test to check connection close
+  after send operation.
+
+* [fix] Updated PyVortex to use Py_BEGIN_ALLOW_THREADS and
+  Py_END_ALLOW_THREADS around exception notification and calls to
+  vortex_async_queue_push.
+
+* [fix] Updated PyVortex to add missing GIL release calls on tls
+  module when failure happens.
+
+* [fix] Updated regression test (test_12) to remove parts of the code
+  that were causing problems..
+
+* [fix] Updated regression client to show connection errors when
+  test_15 fails to send block message.
+
+* [fix] Updated vortex_tls module to include support for easy peer
+  certificate verification (avoids forcing to use SSL post
+  checks). API added:
+
+   - vortex_tls_verify_cert
+
+* [fix] Additional fixings to vortex_tls_verify_cert to detect more
+  cases.
+
+* [fix] Updated vortex_tls (added some additional debug logs when
+  certificate fails to be loaded).
+
+* [fix] Updated vortex connection logging to also state what socket is
+  being closed. Updated vortex frame factory to avoid issuing an
+  additional connection close during frame reading if the connection
+  is already broken.
+
+* [fix] Updated web-socket module to use new nopoll_conn_set_on_close
+  call to control when socket is closed at the noPoll layer to avoid
+  closing it after at the vortex layer with the risk of closing a
+  different socket but with the same value.
+
+* [fix] Updated WebSocket connection API to include a new function to
+  get noPollCtx. API added:
+
+  - vortex_websocket_connection_get_ctx
+
+* [fix] Updated regression test to limit wait timeouts while waiting
+  for replies at test 04-ab.
+
+* [fix] Removed wrong memory access inside vortex_tunnel.c
+  implementation while passing data from and to connected sessions.
+
+* [fix] Updated vortex reader's
+  detect-and-cleanup-wrong-file-descriptors to reset to 0 errno value
+  before checking the fd, to avoid confusions about what of them is
+  wrong indeed (fixes interaction between test_01y and test_02 under
+  pressure).
+
+* [fix] Updated compilation process to include SSP by default (on
+  linux, gcc compatible platforms..).
+
+* [fix] Added new regression test to check header overflow (nothing
+  found), but test remains (test_01x).
+
+* [fix] Fixed unused variable error raised by newer gcc compilers..
+
+* [fix] Adding files to have libvortex-1.1 packages for wheezy.
+
+* [fix] Making vortex_channel_free to internally acquire the look
+  associated to waiting msgno queue to release pending items inside
+  it.
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organizations to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+6th nov 2013, Madrid (Spain)
