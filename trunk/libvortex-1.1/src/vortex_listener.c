@@ -1278,13 +1278,17 @@ void vortex_listener_init (VortexCtx * ctx)
 void          vortex_listener_send_greetings_on_connect (VortexConnection * listener, 
 							 axl_bool           send_on_connect)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 
 	if (listener == NULL)
 		return;
 
+#if defined(ENABLE_VORTEX_LOG)
 	ctx = CONN_CTX (listener);
 	vortex_log (VORTEX_LEVEL_DEBUG, "Setting BEEP listener greetings reply: %d", send_on_connect);
+#endif
 	vortex_connection_set_data (listener, "vo:li:send-greetings", INT_TO_PTR (send_on_connect));
 	return;
 }
@@ -1677,14 +1681,18 @@ void __vortex_listener_shutdown_foreach (VortexConnection * conn,
 {
 	/* get the listener id associated to the connection */
 	int         listener_id;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 
 	/* check the role (if it is a listener, skip) */
 	if (vortex_connection_get_role (conn) == VortexRoleMasterListener)
 		return;
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* get the listener ctx */
 	ctx = vortex_connection_get_ctx (conn);
+#endif
 
 	/* get the listener id associated to the connection */
 	listener_id = vortex_connection_get_id (vortex_connection_get_listener (conn));
@@ -1789,7 +1797,11 @@ axl_bool __vortex_listener_check_port_sharing (VortexCtx * ctx, VortexConnection
 		return axl_true; /* nothing to detect here */
 
 	/* call to prepare this port */
+#if defined(AXL_OS_WIN32)
+	if (recv (connection->session, buffer, 4, MSG_PEEK) != 4) 
+#else
 	if (recv (connection->session, buffer, 4, MSG_PEEK | MSG_DONTWAIT) != 4) 
+#endif
 		return axl_true; /* nothing found, do not activate this */
 	buffer[4] = 0;
 

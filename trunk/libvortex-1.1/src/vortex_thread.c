@@ -113,10 +113,10 @@ axl_bool  vortex_thread_create_internal (VortexThread      * thread_def,
 					 axlPointer          user_data,
 					 va_list             args)
 {
-	VortexThreadConf   conf;
 	/* default configuration for joinable state, axl_true */
-	axl_bool           joinable = axl_true;
 #if defined(AXL_OS_UNIX)
+	VortexThreadConf   conf;
+	axl_bool           joinable = axl_true;
 	pthread_attr_t     attr;
 #elif defined(AXL_OS_WIN32)
 	VortexThreadData * data;
@@ -128,6 +128,7 @@ axl_bool  vortex_thread_create_internal (VortexThread      * thread_def,
 	v_return_val_if_fail (func, axl_false);
 	
 	/* open arguments to get the thread configuration */
+#if defined(AXL_OS_UNIX)
 	do {
 		/* get next configuration */
 		conf = va_arg (args, axl_bool);
@@ -135,7 +136,6 @@ axl_bool  vortex_thread_create_internal (VortexThread      * thread_def,
 			/* finished argument processing */
 			break;
 		} /* end if */
-
 		switch (conf) {
 		case VORTEX_THREAD_CONF_JOINABLE:
 			/* thread joinable state configuration, get the parameter */
@@ -147,8 +147,8 @@ axl_bool  vortex_thread_create_internal (VortexThread      * thread_def,
 		default:
 			return axl_false;
 		} /* end if */
-		
 	} while (1);
+#endif
 
 	
 
@@ -702,7 +702,6 @@ axl_bool  __vortex_cond_common_wait_win32 (VortexCond * cond, VortexMutex * mute
 					   int milliseconds, axl_bool  wait_infinite)
 {
 	axl_bool   last_waiter;
-	DWORD      result;
 
 	/* Avoid race conditions. */
 	EnterCriticalSection (&cond->waiters_count_lock_);
@@ -713,9 +712,9 @@ axl_bool  __vortex_cond_common_wait_win32 (VortexCond * cond, VortexMutex * mute
 	 * semaphore until \ref vortex_cond_signal or \ref
 	 * vortex_cond_broadcast> are called by another thread. */
 	if (wait_infinite)
-		result = SignalObjectAndWait (*mutex, cond->sema_, INFINITE, FALSE);
+		SignalObjectAndWait (*mutex, cond->sema_, INFINITE, FALSE);
 	else
-		result = SignalObjectAndWait (*mutex, cond->sema_, milliseconds, FALSE);
+		SignalObjectAndWait (*mutex, cond->sema_, milliseconds, FALSE);
 
 
 	/* Reacquire lock to avoid race conditions. */

@@ -507,15 +507,19 @@ void __close_channel_aux (axlPointer _channel)
 axl_bool      vortex_connection_close_all_channels (VortexConnection * connection, int      also_channel_0)
 {
 	VortexChannel             * channel0 = NULL;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx                 * ctx;
+#endif
 	axlList                   * result;
 
 	/* define the context */
 	if (connection == NULL)
 		return axl_false;
-	
+
+#if defined(ENABLE_VORTEX_LOG)	
 	/* get the context */
 	ctx = connection->ctx;
+#endif
 
 	/* block connection operations during channel closing for this
 	 * session */
@@ -1065,7 +1069,9 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
  */
 axl_bool      vortex_connection_set_blocking_socket (VortexConnection    * connection)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 #if defined(AXL_OS_UNIX)
 	int  flags;
 #endif
@@ -1073,8 +1079,10 @@ axl_bool      vortex_connection_set_blocking_socket (VortexConnection    * conne
 	if (connection == NULL)
 		return axl_false;
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* get a reference to the ctx */
 	ctx = connection->ctx;
+#endif
 	
 #if defined(AXL_OS_WIN32)
 	if (!vortex_win32_blocking_enable (connection->session)) {
@@ -1115,7 +1123,9 @@ axl_bool      vortex_connection_set_blocking_socket (VortexConnection    * conne
  */
 axl_bool      vortex_connection_set_nonblocking_socket (VortexConnection * connection)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 
 #if defined(AXL_OS_UNIX)
 	int  flags;
@@ -1124,8 +1134,10 @@ axl_bool      vortex_connection_set_nonblocking_socket (VortexConnection * conne
 	if (connection == NULL)
 		return axl_false;
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* get a reference to context */
 	ctx = connection->ctx;
+#endif
 	
 #if defined(AXL_OS_WIN32)
 	if (!vortex_win32_nonblocking_enable (connection->session)) {
@@ -2402,14 +2414,18 @@ axl_bool            vortex_connection_reconnect              (VortexConnection *
 axl_bool                    vortex_connection_close                  (VortexConnection * connection)
 {
 	int         refcount = 0;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 
 	/* if the connection is a null reference, just return axl_true */
 	if (connection == NULL)
 		return axl_true;
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* get a reference to the ctx */
 	ctx = connection->ctx;
+#endif
 
 	/* ensure only one call to vortex_connection_close will
 	   progress */
@@ -2501,14 +2517,18 @@ axl_bool               vortex_connection_ref_internal                    (Vortex
 									  const char       * who,
 									  axl_bool           check_ref)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 
 	v_return_val_if_fail (connection, axl_false);
 	if (check_ref)
 		v_return_val_if_fail (vortex_connection_is_ok (connection, axl_false), axl_false);
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* get a reference to the ctx */
 	ctx = connection->ctx;
+#endif
 	
 	/* lock ref/unref operations over this connection */
 	vortex_mutex_lock   (&connection->ref_mutex);
@@ -2618,7 +2638,10 @@ axl_bool               vortex_connection_uncheck_ref           (VortexConnection
 void               vortex_connection_unref                  (VortexConnection * connection, 
 							     char const       * who)
 {
+
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx  * ctx;
+#endif
 	int          count;
 
 	/* do not operate if no reference is received */
@@ -2628,8 +2651,10 @@ void               vortex_connection_unref                  (VortexConnection * 
 	/* lock the connection being unrefered */
 	vortex_mutex_lock     (&(connection->ref_mutex));
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* get context */
 	ctx = connection->ctx;
+#endif
 
 	/* decrease reference counting */
 	connection->ref_count--;
@@ -3044,13 +3069,9 @@ void                __vortex_connection_shutdown_and_record_error (VortexConnect
 {
 	va_list     args;
 	char      * _msg;
-	VortexCtx * ctx;
 
 	/* log error */
 	if (status != VortexOk && status != VortexConnectionCloseCalled) {
-
-		/* get context reference */
-		ctx = CONN_CTX (conn);
 
 		/* prepare message */
 		va_start (args, message);
@@ -3147,13 +3168,17 @@ void                vortex_connection_push_channel_error     (VortexConnection  
 void               vortex_connection_free (VortexConnection * connection)
 {
 	VortexChannelError * error;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx          * ctx;
+#endif
 	
 	if (connection == NULL)
 		return;
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* get a reference to the context reference */
 	ctx = connection->ctx;
+#endif
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "freeing connection id=%d (%p)", connection->id, connection);
 
@@ -3584,14 +3609,18 @@ axl_bool           vortex_connection_is_profile_supported (VortexConnection * co
 							   const char       * uri)
 {
 	axl_bool    result;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 
 	/* check reference received */
 	if (connection == NULL || uri == NULL)
 		return axl_false;
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* get a reference to the context */
 	ctx = connection->ctx;
+#endif
 
 	if (!connection->is_connected) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, 
@@ -3702,14 +3731,18 @@ int             vortex_connection_foreach_channel        (VortexConnection * con
 							  axlHashForeachFunc func,
 							  axlPointer         user_data)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 
 	/* do not operate */
 	v_return_val_if_fail (connection, axl_false);
 	v_return_val_if_fail (func, axl_false);
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* get context */
 	ctx = connection->ctx;
+#endif
 
 	/* try to ref the connection to avoid loosing the reference
 	 * during the process. */
@@ -3794,21 +3827,25 @@ int                vortex_connection_get_next_channel     (VortexConnection * co
 VortexChannel    * vortex_connection_get_channel          (VortexConnection * connection, int  channel_num)
 {
 	VortexChannel * channel;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx;
+#endif
 
 	/* check values returned */
 	if (connection == NULL || ! connection->is_connected || channel_num < 0)
 		return NULL;
 
-	/* get a reference to the ctx */
-	ctx = connection->ctx;
-
 	/* channel 0 always exists, and cannot be closed. It's closed
 	 * when connection (or session) is closed */
 	channel = vortex_hash_lookup (connection->channels, INT_TO_PTR(channel_num));
 	
-	if (channel == NULL) 
+#if defined(ENABLE_VORTEX_LOG)
+	if (channel == NULL) {
+		/* get a reference to the ctx */
+		ctx = connection->ctx;
 		vortex_log (VORTEX_LEVEL_DEBUG, "failed to get channel=%d", channel_num);
+	}
+#endif
 	return channel;
 }
 
@@ -4082,15 +4119,14 @@ axl_bool           vortex_connection_add_channel_common (VortexConnection * conn
 							 axl_bool           do_notify)
 {
 	VortexChannel * _channel;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx;
+#endif
 	
 	/* perform some aditional checks */
 	if (connection == NULL || channel == NULL || connection->channels == NULL || connection->role == VortexRoleMasterListener)
 		return axl_false;
 
-	/* get a reference to the context */
-	ctx = connection->ctx;
-	    
 	/* lock channel hash */
 	vortex_mutex_lock (&connection->channel_mutex);
 
@@ -4098,6 +4134,10 @@ axl_bool           vortex_connection_add_channel_common (VortexConnection * conn
 	_channel = vortex_hash_lookup (connection->channels, INT_TO_PTR (vortex_channel_get_number (channel)));
 	if (_channel != NULL) {
 		vortex_mutex_unlock (&connection->channel_mutex);
+#if defined(ENABLE_VORTEX_LOG)
+		/* get a reference to the ctx */
+		ctx = connection->ctx;
+#endif
 		vortex_log (VORTEX_LEVEL_CRITICAL, "trying to add a channel on a connection which already have this channel");
 		return axl_false;
 	}
@@ -4404,7 +4444,7 @@ const char        * vortex_connection_get_server_name        (VortexConnection *
 void                vortex_connection_set_server_name         (VortexConnection * connection,
 							       const char       * serverName)
 {
-#if ! defined(SHOW_FORMAT_BUGS)
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx = CONN_CTX (connection);
 #endif
 	int iterator = 0;
@@ -4798,14 +4838,18 @@ axlPointer                vortex_connection_set_channel_removed_handler  (Vortex
 									  axlPointer                        user_data)
 {
 	VortexChannelStatusUpdate * update;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx                 * ctx;
+#endif
 
 	/* check parameters received */
 	if (connection == NULL || removed_handler == NULL)
 		return NULL;
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* get a reference to the context */
 	ctx = connection->ctx;
+#endif
 
 	/* lock the connection */
 	vortex_mutex_lock (&connection->channel_update_mutex);
@@ -5274,14 +5318,18 @@ void           __vortex_connection_set_not_connected (VortexConnection * connect
 						      const char       * message,
 						      VortexStatus       status)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 
 	/* check reference received */
 	if (connection == NULL || message == NULL)
 		return;
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* get a reference to the context */
 	ctx = connection->ctx;
+#endif
 
 	/* set connection status to axl_false if weren't */
 	vortex_mutex_lock (&connection->op_mutex);
@@ -5402,15 +5450,19 @@ axl_bool   __vortex_connection_one_sending_round (axlPointer key,
  */
 int                vortex_connection_do_a_sending_round (VortexConnection * connection)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 	int         messages = 0;
 
 	/* check connection status */
 	if (! vortex_connection_is_ok (connection, axl_false))
 		return 0;
-	
+
+#if defined(ENABLE_VORTEX_LOG)	
 	/* get a reference to the ctx */
 	ctx = connection->ctx;
+#endif
 
 	/* foreach channel, check if we have something to send */
 	vortex_hash_foreach (connection->channels, 
@@ -5727,12 +5779,16 @@ VortexChannelPool * vortex_connection_get_channel_pool       (VortexConnection *
  */
 void                vortex_connection_lock_channel_pool      (VortexConnection * connection)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 	if (connection == NULL)
 		return;
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* get the ctx */
 	ctx = connection->ctx;
+#endif
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "locking pool channel..");
 	vortex_mutex_lock (&connection->channel_pool_mutex);
@@ -5753,13 +5809,17 @@ void                vortex_connection_lock_channel_pool      (VortexConnection *
  */
 void                vortex_connection_unlock_channel_pool    (VortexConnection * connection)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 
 	if (connection == NULL)
 		return;
-	
+
+#if defined(ENABLE_VORTEX_LOG)	
 	/* get the ctx */
 	ctx = connection->ctx;
+#endif
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "unlocking pool channel..");
 
@@ -6105,14 +6165,18 @@ VortexReceiveHandler   vortex_connection_set_receive_handler (VortexConnection  
  */
 void                   vortex_connection_set_default_io_handler (VortexConnection * connection)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 
 	/* check reference */
 	if (connection == NULL)
 		return;
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* get a reference */
 	ctx = connection->ctx;
+#endif
 
 	/* set default send and receive handlers */
 	connection->send       = vortex_connection_default_send;
@@ -6228,7 +6292,9 @@ void                    vortex_connection_set_on_close_full2  (VortexConnection 
 							       axlPointer                     data)
 {
 	VortexConnectionOnCloseData * handler;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx                   * ctx;
+#endif
 
 	/* check reference received */
 	if (connection == NULL || on_close_handler == NULL)
@@ -6256,9 +6322,11 @@ void                    vortex_connection_set_on_close_full2  (VortexConnection 
 		axl_list_append (connection->on_close_full, handler);
 	else
 		axl_list_prepend (connection->on_close_full, handler);
+#if defined(ENABLE_VORTEX_LOG)
 	ctx = connection->ctx;
 	vortex_log (VORTEX_LEVEL_DEBUG, "on close full handlers %d on conn-id=%d, handler added %p (added %s)",
 		    axl_list_length (connection->on_close_full), connection->id, handler, insert_last ? "last" : "first");
+#endif
 
 	/* unlock now it is done */
 	vortex_mutex_unlock (&connection->handlers_mutex);

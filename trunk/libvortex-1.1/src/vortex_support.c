@@ -1047,7 +1047,7 @@ int      vortex_support_pipe                       (VortexCtx * ctx, int descf[2
 
 	/* connect in non blocking manner */
 	result = connect (descf[0], (struct sockaddr *)&saddr, sizeof (saddr));
-	if (errno != VORTEX_EINPROGRESS) {
+	if (result < 0 && errno != VORTEX_EINPROGRESS) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "connect () returned %d, errno=%d:%s", 
 			    result, errno, vortex_errno_get_last_error ());
 		vortex_close_socket (listener_fd);
