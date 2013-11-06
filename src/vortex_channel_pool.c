@@ -985,13 +985,12 @@ axl_bool      __vortex_channel_pool_channel_exists (VortexChannelPool * pool,
 void                vortex_channel_pool_attach         (VortexChannelPool * pool,
 							VortexChannel     * channel)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 
 	if (pool == NULL || channel == NULL)
 		return;
-
-	/* get the context */
-	ctx = vortex_connection_get_ctx (pool->connection);
 
 	/* check new channel belongs to the same connection */
 	if (!__vortex_channel_check_same_connections (pool, channel))
@@ -1002,6 +1001,10 @@ void                vortex_channel_pool_attach         (VortexChannelPool * pool
 
 	/* check if the channel to add doesn't exist on the pool */
 	if (__vortex_channel_pool_channel_exists (pool, channel)) {
+#if defined(ENABLE_VORTEX_LOG)
+		/* get the context */
+		ctx = vortex_connection_get_ctx (pool->connection);
+#endif
 		vortex_log (VORTEX_LEVEL_CRITICAL, "trying to add a channel which already exists on the channel pool");
 		vortex_connection_unlock_channel_pool (pool->connection);
 		return;
@@ -1035,13 +1038,12 @@ void                vortex_channel_pool_deattach       (VortexChannelPool * pool
 {
 	axlListCursor    * cursor;
 	VortexChannel    * channel_aux;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx;
+#endif
 
 	if (pool == NULL || channel == NULL)
 		return;
-
-	/* get the context */
-	ctx = vortex_connection_get_ctx (pool->connection);
 
 	/* check new channel belongs to the same connection */
 	if (!__vortex_channel_check_same_connections (pool, channel))
@@ -1049,6 +1051,11 @@ void                vortex_channel_pool_deattach       (VortexChannelPool * pool
 
 	/* lock to operate */
 	vortex_connection_lock_channel_pool   (pool->connection);
+
+#if defined(ENABLE_VORTEX_LOG)
+	/* get the context */
+	ctx = vortex_connection_get_ctx (pool->connection);
+#endif
 
 	/* check if the channel to add doesn't exist on the pool */
 	if (!__vortex_channel_pool_channel_exists (pool, channel)) {
@@ -1247,13 +1254,17 @@ VortexChannel     * vortex_channel_pool_get_next_ready_full (VortexChannelPool *
 							     axlPointer          user_data)
 {
 	VortexChannel * channel   = NULL;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx;
+#endif
 
 	if (pool == NULL)
 		return NULL;
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* get the context */
 	ctx = vortex_connection_get_ctx (pool->connection);
+#endif
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "getting new channel before locking..");
 
@@ -1310,13 +1321,17 @@ VortexChannel     * vortex_channel_pool_get_next_ready_full (VortexChannelPool *
 void                vortex_channel_pool_release_channel   (VortexChannelPool * pool,
 							   VortexChannel     * channel)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 
 	if (pool == NULL || channel == NULL)
 		return;
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* get the context */
 	ctx = vortex_connection_get_ctx (pool->connection);
+#endif
 	
 	/* check new channel belongs to the same connection */
 	if (!__vortex_channel_check_same_connections (pool, channel))

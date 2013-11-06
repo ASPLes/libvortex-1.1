@@ -639,12 +639,16 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 axl_bool   vortex_reader_register_watch (VortexReaderData * data, axlList * con_list, axlList * srv_list)
 {
 	VortexConnection * connection;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx;
+#endif
 
 	/* get a reference to the connection (no matter if it is not
 	 * defined) */
 	connection = data->connection;
+#if defined(ENABLE_VORTEX_LOG)
 	ctx        = vortex_connection_get_ctx (connection);
+#endif
 
 	switch (data->type) {
 	case CONNECTION:
@@ -1245,7 +1249,9 @@ axl_bool __vortex_reader_detect_and_cleanup_connection (axlListCursor * cursor)
 	char               bytes[3];
 	int                result;
 	int                fds;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx;
+#endif
 	
 	/* get connection from cursor */
 	conn = axl_list_cursor_get (cursor);
@@ -1253,12 +1259,16 @@ axl_bool __vortex_reader_detect_and_cleanup_connection (axlListCursor * cursor)
 
 		/* get the connection and socket. */
 		fds    = vortex_connection_get_socket (conn);
-		errno = 0;
+#if defined(AXL_OS_UNIX)
+		errno  = 0;
+#endif
 		result = recv (fds, bytes, 1, MSG_PEEK);
 		if (result == -1 && errno == EBADF) {
 			  
 			/* get context */
+#if defined(ENABLE_VORTEX_LOG)
 			ctx = CONN_CTX (conn);
+#endif
 			vortex_log (VORTEX_LEVEL_CRITICAL, "Found connection-id=%d, with session=%d not working (errno=%d), shutting down",
 				    vortex_connection_get_id (conn), fds, errno);
 			/* close connection, but remove the socket reference to avoid closing some's socket */
@@ -1302,7 +1312,9 @@ void __vortex_reader_detect_and_cleanup_connections (VortexCtx * ctx)
 	} /* end while */
 
 	/* clear errno after cleaning descriptors */
+#if defined(AXL_OS_UNIX)
 	errno = 0;
+#endif
 
 	return; 
 }

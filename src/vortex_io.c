@@ -796,9 +796,11 @@ void     __vortex_io_waiting_epoll_dispatch (axlPointer           fd_group,
 axl_bool                  vortex_io_waiting_use (VortexCtx * ctx, VortexIoWaitingType type)
 {
 	/* get current context */
-	axl_bool    result = axl_false;
-	axl_bool    do_notify;
-	char      * mech = "";
+	axl_bool       result = axl_false;
+	axl_bool       do_notify;
+#if defined(ENABLE_VORTEX_LOG)
+	const char   * mech = "";
+#endif
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "about to change I/O waiting API");
 
@@ -834,7 +836,9 @@ axl_bool                  vortex_io_waiting_use (VortexCtx * ctx, VortexIoWaitin
 		ctx->waiting_have_dispatch = NULL;
 		ctx->waiting_dispatch      = NULL;
 		ctx->waiting_type          = VORTEX_IO_WAIT_SELECT;
-		mech                              = "select(2) system call";
+#if defined(ENABLE_VORTEX_LOG)
+		mech                       = "select(2) system call";
+#endif
 
 		/* ok */
 		result = axl_true;
@@ -853,7 +857,9 @@ axl_bool                  vortex_io_waiting_use (VortexCtx * ctx, VortexIoWaitin
 		ctx->waiting_have_dispatch = __vortex_io_waiting_poll_have_dispatch;
 		ctx->waiting_dispatch      = __vortex_io_waiting_poll_dispatch;
 		ctx->waiting_type          = VORTEX_IO_WAIT_POLL;
-		mech                              = "poll(2) system call";
+#if defined(ENABLE_VORTEX_LOG)
+		mech                       = "poll(2) system call";
+#endif
 	       
 		/* ok */
 		result = axl_true;
@@ -877,7 +883,9 @@ axl_bool                  vortex_io_waiting_use (VortexCtx * ctx, VortexIoWaitin
 		ctx->waiting_have_dispatch = __vortex_io_waiting_epoll_have_dispatch;
 		ctx->waiting_dispatch      = __vortex_io_waiting_epoll_dispatch;
 		ctx->waiting_type          = VORTEX_IO_WAIT_EPOLL;
-		mech                              = "linux epoll(2) system call";
+#if defined(ENABLE_VORTEX_LOG)
+		mech                       = "linux epoll(2) system call";
+#endif
 	       
 		/* ok */
 		result = axl_true;

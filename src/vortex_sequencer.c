@@ -391,8 +391,10 @@ build_frame:
 void __vortex_sequencer_do_send_round (VortexCtx * ctx, VortexChannel * channel, VortexConnection * conn, axl_bool * paused, axl_bool * complete)
 {
 	VortexSequencerData  * data;
+#if defined(ENABLE_VORTEX_LOG)
 	int                    message_size;
 	int                    max_seq_no = 0;
+#endif
 	int                    size_to_copy;
 	VortexWriterData       packet;
 
@@ -413,8 +415,10 @@ void __vortex_sequencer_do_send_round (VortexCtx * ctx, VortexChannel * channel,
 
 	/* refresh all sending data */
 	data->first_seq_no     = vortex_channel_get_next_seq_no (channel);
+#if defined(ENABLE_VORTEX_LOG)
 	message_size           = data->message_size;
 	max_seq_no             = vortex_channel_get_max_seq_no_remote_accepted (channel);
+#endif
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "sequence operation (%p): type=%d, msgno=%d, next seq no=%u message size=%d max seq no=%u step=%u",
 		    data, data->type, data->msg_no, data->first_seq_no, message_size, max_seq_no, data->step);

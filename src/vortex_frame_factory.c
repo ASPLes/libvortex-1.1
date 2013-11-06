@@ -1253,7 +1253,9 @@ VortexFrame * vortex_frame_copy                 (VortexFrame      * frame)
 int         vortex_frame_receive_raw  (VortexConnection * connection, char  * buffer, int  maxlen)
 {
 	int         nread;
+#if defined(ENABLE_VORTEX_LOG)
 	char      * error_msg;
+#endif
 #if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 #endif
@@ -1275,11 +1277,13 @@ int         vortex_frame_receive_raw  (VortexConnection * connection, char  * bu
 		if (errno == VORTEX_EINTR)
 			goto __vortex_frame_readn_keep_reading;
 		
+#if defined(ENABLE_VORTEX_LOG)
 		if (errno != 0) {
 			error_msg = vortex_errno_get_last_error ();
 			vortex_log (VORTEX_LEVEL_CRITICAL, "unable to readn=%d, error was: '%s', errno=%d (conn-id=%d, session=%d)",
 				    maxlen, error_msg ? error_msg : "", errno, connection->id, connection->session);
 		} /* end if */
+#endif
 	}
 
 	if (nread > 0) {
@@ -1318,7 +1322,9 @@ int          vortex_frame_readline (VortexConnection * connection, char  * buffe
 	int         n, rc;
 	int         desp;
 	char        c, *ptr;
+#if defined(ENABLE_VORTEX_LOG)
 	char      * error_msg;
+#endif
 #if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 #endif
@@ -1380,6 +1386,7 @@ int          vortex_frame_readline (VortexConnection * connection, char  * buffe
 				return (-2);
 			}
 			
+#if defined(ENABLE_VORTEX_LOG)
 			/* if the connection is closed, just return
 			 * without logging a message */
 			if (vortex_connection_is_ok (connection, axl_false)) {
@@ -1388,6 +1395,7 @@ int          vortex_frame_readline (VortexConnection * connection, char  * buffe
 					    vortex_connection_get_id (connection), vortex_connection_get_socket (connection), rc,
 					    error_msg ? error_msg : "");
 			}
+#endif
 			return (-1);
 		}
 	}
@@ -2140,13 +2148,17 @@ int           vortex_frame_ref_count             (VortexFrame * frame)
  **/
 void          vortex_frame_free (VortexFrame * frame)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 	if (frame == NULL)
 		return;
 
 	/* log a frame deallocated message */
+#if defined(ENABLE_VORTEX_LOG)
 	ctx = frame->ctx;
 	vortex_log (VORTEX_LEVEL_DEBUG, "deallocating frame id=%d", frame->id);
+#endif
 
 	/* free MIME headers */
 	vortex_frame_mime_status_free (frame->mime_headers);
@@ -2304,7 +2316,9 @@ axl_bool      vortex_frame_common_string_check (const char  * value_a, const cha
  */
 axl_bool      vortex_frame_are_joinable (VortexFrame * a, VortexFrame * b) 
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 	/*
 	 * Because frames inside vortex with mime type are handled
 	 * separating payload from entity-headers (mime headers), the
@@ -2332,8 +2346,10 @@ axl_bool      vortex_frame_are_joinable (VortexFrame * a, VortexFrame * b)
 	if (a == NULL || b == NULL)
 		return axl_false;
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* get the context */
 	ctx = a->ctx;
+#endif
 	
 	if (a->type != b->type) {
 		vortex_log (VORTEX_LEVEL_WARNING, "frames are not joinable because type mismatch");
@@ -2387,13 +2403,17 @@ axl_bool      vortex_frame_are_joinable (VortexFrame * a, VortexFrame * b)
  */
 axl_bool      vortex_frame_are_equal (VortexFrame * a, VortexFrame * b)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 	
 	if (a == NULL || b == NULL)
 		return axl_false;
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* get the context */
 	ctx = a->ctx;
+#endif
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "checking for equality");
 
@@ -3223,13 +3243,16 @@ axl_bool           vortex_frame_mime_process          (VortexFrame * frame)
 	/* local reference to cast the frame content */
 	char      * payload;
 	int         step;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
 
 	/* check reference */
 	v_return_val_if_fail (frame, axl_false);
-
+#if defined(ENABLE_VORTEX_LOG)
 	/* internal check */
 	ctx = frame->ctx;
+#endif
 	if (frame->type == VORTEX_FRAME_TYPE_SEQ) {
 		vortex_log (VORTEX_LEVEL_WARNING, "something is not working properly because a SEQ frame was received to reconfigure its MIME");
 		return axl_false;
@@ -3238,8 +3261,6 @@ axl_bool           vortex_frame_mime_process          (VortexFrame * frame)
 	/* configure global variables */
 	iterator = 0; 
 	payload  = frame->payload;
-	ctx      = frame->ctx;
-
 	vortex_log (VORTEX_LEVEL_DEBUG, "frame content size=%d: '%c%c'",
 		    frame->size, payload[0],payload[1]);  
 

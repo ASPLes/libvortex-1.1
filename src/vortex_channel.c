@@ -4343,12 +4343,12 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 						     unsigned int  * ackno,
 						     int           * window)
 {
- 	unsigned int new_max_seq_no_accepted;
 	unsigned int channel_max_seq_no_accepted;
  	unsigned int consumed_seqno;
  	int          window_size;
 	int          bytes_available;
 #if defined(ENABLE_VORTEX_LOG)
+ 	unsigned int new_max_seq_no_accepted;
 	VortexCtx * ctx     = vortex_channel_get_ctx (channel);
 #endif
 
@@ -4391,7 +4391,9 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 	window_size             = channel->window_size;
 
 	/* generate a new value for the seqno accepted */
+#if defined(ENABLE_VORTEX_LOG)
 	new_max_seq_no_accepted     = (consumed_seqno + window_size - 1) % (MAX_SEQ_NO);
+#endif
 	channel_max_seq_no_accepted = vortex_channel_get_max_seq_no_accepted (channel);
 
 	/* particular case where NUL frame was received, consuming 2
@@ -4446,7 +4448,9 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 			/* update window size for future SEQ frame updates */
  			channel->window_size    = window_size;
 
+#if defined(ENABLE_VORTEX_LOG)
  			new_max_seq_no_accepted = (consumed_seqno + window_size - 1) % (MAX_SEQ_NO);
+#endif
  		}
 
 		vortex_log (VORTEX_LEVEL_DEBUG, 
@@ -5016,7 +5020,9 @@ axl_bool            vortex_channel_ref2                             (VortexChann
  */
 void               vortex_channel_unref2                           (VortexChannel * channel, const char * label)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx;
+#endif
 
 	/* check reference */
 	v_return_if_fail (channel);
@@ -5027,7 +5033,9 @@ void               vortex_channel_unref2                           (VortexChanne
 	/* decrease the channel */
 	channel->ref_count--;
 
+#if defined(ENABLE_VORTEX_LOG)
 	ctx = vortex_channel_get_ctx (channel);
+#endif
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "VortexChannel=%d (%p) unref called %s, ref count status after calling=%d", 
 		    channel->channel_num, channel, label, channel->ref_count);
@@ -5088,14 +5096,19 @@ int                vortex_channel_ref_count                       (VortexChannel
 int             vortex_channel_get_next_reply_no          (VortexChannel * channel)
 {
  	int         result;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
+#endif
   	v_return_val_if_fail (channel, -1);
   	
  	/* lock mutex */
  	vortex_mutex_lock (&channel->incoming_msg_mutex);
 
- 	/* get first pending message to be replied */
+#if defined(ENABLE_VORTEX_LOG)
 	ctx    = channel->ctx;
+#endif
+
+ 	/* get first pending message to be replied */
 	if (axl_list_length (channel->incoming_msg) == 0)
 		result = -1;
 	else
@@ -6994,7 +7007,9 @@ axl_bool  vortex_channel_notify_start (VortexChannel    * new_channel,
 	VortexChannel    * channel0;
 	int                msg_no;
 	const char       * serverName;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx;
+#endif
 
 	/* check references received */
 	if (new_channel == NULL)
@@ -7011,7 +7026,9 @@ axl_bool  vortex_channel_notify_start (VortexChannel    * new_channel,
 	serverName = vortex_channel_get_data (new_channel, "_vo:ch:srvnm");
 
 	/* call to notify start status */
+#if defined(ENABLE_VORTEX_LOG)
 	ctx = channel0->ctx;
+#endif
 	vortex_log (VORTEX_LEVEL_DEBUG, "doing reply to channel=%d start request, with msg_no=%d",
 		    new_channel->channel_num, msg_no);
 	return vortex_channel_notify_start_internal (serverName,
@@ -8912,7 +8929,9 @@ void               vortex_channel_wait_until_sent                (VortexChannel 
 {
 	VortexAsyncQueue * queue;
 	char             * rpy;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx;
+#endif
 
 	/* get channel profile */
 	if (channel == NULL)
@@ -8934,7 +8953,9 @@ void               vortex_channel_wait_until_sent                (VortexChannel 
 
 	/* wait until message is sent */
 	if (PTR_TO_INT (vortex_async_queue_pop (queue)) == -3) {
+#if defined(ENABLE_VORTEX_LOG)
 		ctx = CONN_CTX (channel->connection);
+#endif
 		vortex_log (VORTEX_LEVEL_WARNING, "Found connection id=%d close during wait until sent operation for channel=%d", 
 			    vortex_connection_get_id (channel->connection), channel->channel_num);
 	} /* end if */
@@ -9096,14 +9117,18 @@ void                vortex_channel_cleanup                        (VortexCtx * c
 void              __vortex_channel_release_pending_messages (VortexChannel * channel)
 {
 	VortexSequencerData * next_data;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx           * ctx;
+#endif
 	
 	/* do nothing if the channel reference is NULL */
 	if (channel == NULL)
 		return;
 
+#if defined(ENABLE_VORTEX_LOG)
 	/* get context */
 	ctx = vortex_channel_get_ctx (channel);
+#endif
 	
 	/* update reference counting during operation: due to reference from connection */
 	/* if (! vortex_channel_ref (channel))  {
