@@ -3069,6 +3069,9 @@ void                __vortex_connection_shutdown_and_record_error (VortexConnect
 {
 	va_list     args;
 	char      * _msg;
+#if defined(ENABLE_VORTEX_LOG)
+	VortexCtx * ctx = conn->ctx;
+#endif
 
 	/* log error */
 	if (status != VortexOk && status != VortexConnectionCloseCalled) {
