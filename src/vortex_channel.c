@@ -2040,8 +2040,13 @@ void               vortex_channel_store_previous_frame           (VortexCtx     
 		    channel->complete_frame_limit, channel->complete_current_bytes, channel->channel_num, vortex_connection_get_id (channel->connection));
 	if (channel->complete_frame_limit > 0 && channel->complete_current_bytes > channel->complete_frame_limit) {
 		/* get a reference to the context */
-		__vortex_connection_shutdown_and_record_error (channel->connection, VortexError, "Reached complete frame limit=%d for channel=%d, closing conection id=%d",
-							       channel->complete_frame_limit, channel->channel_num, vortex_connection_get_id (channel->connection));
+		__vortex_connection_shutdown_and_record_error (channel->connection, VortexError, 
+							       "Reached complete frame limit=%d for channel=%d, profile=%s, closing conection id=%d (from %s:%s)",
+							       channel->complete_frame_limit, 
+							       channel->channel_num, channel->profile, 
+							       vortex_connection_get_id (channel->connection),
+							       vortex_connection_get_host_ip (channel->connection),
+							       vortex_connection_get_port (channel->connection));
 		return;
 	} /* end if */
 
