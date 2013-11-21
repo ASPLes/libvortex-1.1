@@ -107,7 +107,9 @@ noinst_PROGRAMS = \
 	vortex-close-listeners \
 	vortex-file-transfer-server vortex-file-transfer-client \
 	vortex-pull-listener \
-	vortex-client-echo
+	vortex-client-echo \
+	vortex-simple-client-alive \
+	vortex-simple-listener-alive 
 
 INCLUDES = -I$(top_srcdir)/src -I$(top_srcdir)/tunnel -I$(top_srcdir)/pull -I$(top_srcdir)/alive \
 	-I$(top_srcdir)/xml-rpc -I$(top_srcdir)/http $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
@@ -207,6 +209,12 @@ vortex_file_transfer_client_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.
 
 vortex_pull_listener_SOURCES   = vortex-pull-listener.c
 vortex_pull_listener_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.1.la $(top_builddir)/pull/libvortex-pull-1.1.la
+
+vortex_simple_client_alive_SOURCES   = vortex-simple-client-alive.c
+vortex_simple_client_alive_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.1.la $(top_builddir)/alive/libvortex-alive-1.1.la
+
+vortex_simple_listener_alive_SOURCES   = vortex-simple-listener-alive.c
+vortex_simple_listener_alive_LDADD     = $(LIBS) $(top_builddir)/src/libvortex-1.1.la $(top_builddir)/alive/libvortex-alive-1.1.la
 
 # build xml-rpc source files required by the regression test.
 refresh_xml_rpc:
