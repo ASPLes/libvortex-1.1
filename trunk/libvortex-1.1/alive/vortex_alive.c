@@ -58,8 +58,9 @@ typedef struct _VortexAliveData {
 	axl_bool             channel_in_progress;
 	int                  channel_tries;
 	int                  event_id;
-	long                 last_idle_stamp;
 	long                 bytes_received;
+	struct timeval       when_started;
+	int                  max_failure_period;
 }VortexAliveData;
 
 /** 
@@ -177,12 +178,11 @@ axl_bool __vortex_alive_found_activity (VortexCtx * ctx, VortexConnection * conn
 	vortex_connection_get_receive_stamp (conn, &bytes_received, &bytes_sent, &last_idle_stamp);
 
 	/* check against values previously recorded */
-	if (bytes_received > data->bytes_received || last_idle_stamp > data->last_idle_stamp) {
+	if (bytes_received > data->bytes_received) {
 		vortex_log (VORTEX_LEVEL_WARNING, 
-			    "Skipping failure check because stamp=%ld (previous %ld) or bytes=%ld (previous %ld) received signals activity on conn-id=%d",
-			    last_idle_stamp, data->last_idle_stamp, bytes_received, data->bytes_received, vortex_connection_get_id (conn));
+			    "Skipping failure check because bytes=%ld (previous %ld) received signals activity on conn-id=%d",
+			    bytes_received, data->bytes_received, vortex_connection_get_id (conn));
 		data->bytes_received  = bytes_received;
-		data->last_idle_stamp = last_idle_stamp;
 		return axl_true; /* activity found, skip alive failure checks */
 	} /* end if */
 
@@ -269,7 +269,7 @@ axl_bool __vortex_alive_do_check        (VortexCtx  * ctx,
 	/* if channel is ok, and so the connection, check if there are
 	 * pending replies and if they exceed the max unreplied
 	 * count */
-	if (data->max_unreply_count < vortex_channel_get_outstanding_messages (data->channel, NULL)) {
+	if (data->max_unreply_count <= vortex_channel_get_outstanding_messages (data->channel, NULL)) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "max unreply count reached (%d) < pending replies (%d), trigger failure",
 			    data->max_unreply_count, vortex_channel_get_outstanding_messages (data->channel, NULL));
 		/* call to trigger failure */
@@ -325,6 +325,10 @@ void __vortex_alive_channel_created (int                channel_num,
 	/* log reporting */
 	if (channel) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "alive channel created on connection id=%d", vortex_connection_get_id (conn));
+		/* record current activity to have current reference
+		 * of the connection's activity */
+		__vortex_alive_found_activity (ctx, data->conn, data);
+
 		/* now configure the event to implement the check */
 		data->event_id = vortex_thread_pool_new_event (ctx, data->check_period, __vortex_alive_do_check, data, NULL);
 		return;
@@ -355,6 +359,7 @@ axl_bool   __vortex_alive_create_channel        (VortexCtx  * ctx,
 						 axlPointer   user_data2)
 {
 	VortexAliveData * data = user_data;
+	struct timeval    now;
 
 	/* check connection status after continue with tests */
 	if (! vortex_connection_is_ok (data->conn, axl_false)) {
@@ -377,7 +382,8 @@ axl_bool   __vortex_alive_create_channel        (VortexCtx  * ctx,
 		   creation: if channel is not created during
 		   this tries, alive check will consider the
 		   connection is failing */
-		data->channel_tries       = data->max_unreply_count + 10;
+		if (data->check_period <= 40000)
+			data->channel_tries  = data->max_unreply_count + 10;
 		
 		vortex_log (VORTEX_LEVEL_DEBUG, "channel alive profile still not created, triggering async creation..");
 		vortex_channel_new (data->conn, 0, VORTEX_ALIVE_PROFILE_URI, 
@@ -390,7 +396,7 @@ axl_bool   __vortex_alive_create_channel        (VortexCtx  * ctx,
 		
 		/* still channel not created, unable to do checks */
 		return axl_false;
-	} 
+	} /* end if */
 
 	vortex_log (VORTEX_LEVEL_WARNING, "Alive channel still not created, tries: %d (in_progress: %d, outstanding messages: %d)", 
 		    data->channel_tries, data->channel_in_progress,
@@ -400,6 +406,18 @@ axl_bool   __vortex_alive_create_channel        (VortexCtx  * ctx,
 	   updated or more bytes were received */
 	if (__vortex_alive_found_activity (ctx, data->conn, data))
 		return axl_false;
+
+	/* check channel to be created within the max period
+	 * established */
+	gettimeofday (&now, NULL);
+	if ((now.tv_sec - data->when_started.tv_sec) >= data->max_failure_period) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Alive channel was not created after waiting %d seconds (max failure period)",
+			    data->max_failure_period);
+
+		/* call to trigger failure */
+		return __vortex_alive_trigger_failure (data);
+	}
+		
 	
 	/* check channel tries */
 	data->channel_tries --;
@@ -443,23 +461,26 @@ axl_bool   __vortex_alive_create_channel        (VortexCtx  * ctx,
  * @param check_period The check period. It is defined in microseconds
  * (1 second == 1000000 microseconds). To check every 20ms a
  * connection pass 20000. It must be > 0, or the function will return
- * axl_false.
+ * axl_false. 
  *
  * @param max_unreply_count The maximum amount of unreplied messages
- * we accept. It must be > 0 or the function will return axl_false.
+ * we accept. It must be > 0 or the function will return axl_false. If
+ * max_unreply_count is reached, the failure is triggered.
  *
  * @param failure_handler Optional handler called when a failure is
  * detected.
  *
  * @return axl_true if the check was properly enabled on the
  * connection, otherwise axl_false is returned.
+ *
+ *
  */
 axl_bool           vortex_alive_enable_check               (VortexConnection * conn,
 							    long               check_period,
 							    int                max_unreply_count,
 							    VortexAliveFailure failure_handler)
 {
-	VortexAliveData * data;
+	VortexAliveData  * data;
 	VortexCtx        * ctx = CONN_CTX (conn);
 
 	if (check_period <= 0 || max_unreply_count < 0) {
@@ -484,6 +505,11 @@ axl_bool           vortex_alive_enable_check               (VortexConnection * c
 	data->max_unreply_count = max_unreply_count;
 	data->check_period      = check_period;
 
+	/* get when we started to track channel creation */
+	gettimeofday (&data->when_started, NULL);
+	/* get how many seconds we can wait until channel is
+	 * created */
+	data->max_failure_period = (data->max_unreply_count * data->check_period) / 1000000;
 	if (! vortex_connection_ref (conn, "alive-check")) {
 		/* release */
 		axl_free (data);
@@ -498,7 +524,7 @@ axl_bool           vortex_alive_enable_check               (VortexConnection * c
 	vortex_connection_set_on_close_full (conn, __vortex_alive_connection_closed, data);
 
 	/* record current bytes received and idle stamp */
-	vortex_connection_get_receive_stamp (conn, &data->bytes_received, NULL, &data->last_idle_stamp);
+	vortex_connection_get_receive_stamp (conn, &data->bytes_received, NULL, NULL);
 
 	/* install event to create the channel */
 	data->event_id = vortex_thread_pool_new_event (ctx, check_period > 40000 ? check_period : 40000, __vortex_alive_create_channel, data, NULL);
