@@ -473,7 +473,15 @@ axl_bool   __vortex_alive_create_channel        (VortexCtx  * ctx,
  * @return axl_true if the check was properly enabled on the
  * connection, otherwise axl_false is returned.
  *
+ * <b>NOTE: about channel created to do alive tests</b>
  *
+ * In order to implement ALIVE checks, a channel must be created over
+ * the provided connection. Until that channel isn't working, ALIVE
+ * checkign cannot be implemented.
+ *
+ * In this context, if the channel isn't created before
+ * (max_unreply_count x check_period), with a minimum value of 3
+ * seconds, ALIVE will trigger a failure too.
  */
 axl_bool           vortex_alive_enable_check               (VortexConnection * conn,
 							    long               check_period,
@@ -510,6 +518,10 @@ axl_bool           vortex_alive_enable_check               (VortexConnection * c
 	/* get how many seconds we can wait until channel is
 	 * created */
 	data->max_failure_period = (data->max_unreply_count * data->check_period) / 1000000;
+	/* at least give 3 seconds to complete channel creation */
+	if (data->max_failure_period < 3)
+		data->max_failure_period = 3;
+	
 	if (! vortex_connection_ref (conn, "alive-check")) {
 		/* release */
 		axl_free (data);
