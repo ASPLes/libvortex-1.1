@@ -73,6 +73,9 @@ int  main (int  argc, char ** argv)
 		vortex_frame_get_payload_size (frame), 
 		(char*) vortex_frame_get_payload (frame));
 
+	/* release frame */
+	vortex_frame_unref (frame);
+
  end:				      
 	vortex_connection_close (connection);
 
