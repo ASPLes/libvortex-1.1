@@ -54,13 +54,21 @@ AC_ISC_POSIX
 AC_HEADER_STDC
 AM_PROG_LIBTOOL
 
+# compiler option
 compiler_options=""
 STRICT_PROTOTYPES=""
 if test "$compiler" = "gcc" ; then
-   compiler_options="-Wstrict-prototypes -Wall -Werror -g -ansi -fstack-protector-all -Wstack-protector"
+   compiler_options="-Wstrict-prototypes -Wall -Werror -g -fstack-protector-all -Wstack-protector"
    echo "Detected gcc compiler: $compiler, adding options: $compiler_options"
 fi
 AC_SUBST(compiler_options)
+# ansi option
+ansi_option=""
+# if test "$compiler" = "gcc" ; then
+#    ansi_option="-ansi"
+#    echo "Detected gcc compiler: $compiler, adding options: $ansi_option"
+# fi
+AC_SUBST(ansi_option)
 
 AC_CHECK_PROG(PKG_CONFIG, pkg-config, "yes", "no")
 if test "$PKG_CONFIG" = "no" ; then

@@ -20,7 +20,7 @@ if DEFAULT_POLL
 INCLUDE_DEFAULT_POLL=-DDEFAULT_POLL 
 endif
 
-INCLUDES = $(compiler_options) -I$(top_srcdir) -D__COMPILING_VORTEX__ -D__axl_disable_broken_bool_def__  \
+INCLUDES = $(compiler_options) $(ansi_option) -I$(top_srcdir) -D__COMPILING_VORTEX__ -D__axl_disable_broken_bool_def__  \
 	$(AXL_CFLAGS) $(INCLUDE_VORTEX_LOG) $(PTHREAD_CFLAGS) \
 	-DVERSION=\""$(VORTEX_VERSION)"\" \
 	-DPACKAGE_DTD_DIR=\""$(datadir)"\" \

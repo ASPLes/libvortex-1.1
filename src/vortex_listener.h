@@ -75,6 +75,11 @@ VORTEX_SOCKET     vortex_listener_sock_listen      (VortexCtx   * ctx,
 						    const char  * port,
 						    axlError   ** error);
 
+VORTEX_SOCKET     vortex_listener_sock_listen6     (VortexCtx   * ctx,
+						    const char  * host,
+						    const char  * port,
+						    axlError   ** error);
+
 void          vortex_listener_accept_connections   (VortexCtx        * ctx,
 						    int                server_socket,
 						    VortexConnection * listener);
