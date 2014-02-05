@@ -4672,13 +4672,14 @@ axl_bool  test_02_common (VortexConnection * connection)
 		}
 
 		/* get frame and the expected message */
-		vortex_frame_free (frame);
+		vortex_frame_unref (frame);
 		axl_free (message);
 		
 		/* update iterator */
 		iterator++;
 
 	} /* end while */
+	printf ("Test --: sent %d messages..\n", iterator);
 
 	/* check queue state */
 	if (vortex_async_queue_length (queue) != 0) {
@@ -5174,6 +5175,94 @@ axl_bool  test_02 (void) {
 	/* return axl_true */
 	return axl_true;
 }
+
+axl_bool  test_02a3 (void) {
+
+	VortexConnection * connection;
+
+	/* creates a new connection against localhost:44000 */
+	printf ("Test 02-a3: creating IPv6 connection against ::1 . 44016\n");
+	connection = vortex_connection_new (ctx , "::1", "44016", NULL, NULL);
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		printf ("ERROR: failed to create IPV6 connection..\n");
+		vortex_connection_close (connection);
+		return axl_false;
+		
+	} /* end if */
+
+	/* vortex_log_enable (ctx, axl_true);
+	   vortex_color_log_enable (ctx, axl_true);  */
+
+	/* call common implementation */
+	if (! test_02_common (connection))
+		return axl_false;
+	
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return axl_false;
+	} /* end if */
+
+	/* vortex_log_enable (ctx, axl_false);
+	   vortex_color_log_enable (ctx, axl_false); */
+	
+	/* return axl_true */
+	return axl_true;
+}
+
+axl_bool  test_02a4 (void) {
+
+	VortexConnection * connection;
+
+	/* creates a new connection against localhost:44000 */
+	printf ("Test 02-a4: creating IPv6 connection against ::1 . 44016\n");
+	connection = vortex_connection_new6 (ctx , "::1", "44016", NULL, NULL);
+	if (!vortex_connection_is_ok (connection, axl_false)) {
+		printf ("ERROR: failed to create IPV6 connection..\n");
+		vortex_connection_close (connection);
+		return axl_false;
+		
+	} /* end if */
+
+	/* call common implementation */
+	if (! test_02_common (connection))
+		return axl_false;
+
+	printf ("Test 02-a4: all tests worked with %s:%s (local %s:%s)\n",
+		vortex_connection_get_host (connection),
+		vortex_connection_get_port (connection),
+		vortex_connection_get_local_addr (connection),
+		vortex_connection_get_local_port (connection));
+	
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return axl_false;
+	} /* end if */
+
+	/* creates a new connection against localhost:44000 */
+	printf ("Test 02-a4: creating IPv6 connection against 127.0.0.1 : 44016 (it should fail)\n");
+	connection = vortex_connection_new6 (ctx , "127.0.0.1", "44016", NULL, NULL);
+	if (vortex_connection_is_ok (connection, axl_false)) {
+		printf ("ERROR: it worked but it shouldn't! be possible to create a IPv6 connection with 127.0.0.1..\n");
+		vortex_connection_close (connection);
+		return axl_false;
+		
+	} /* end if */
+
+	/* ok, close the connection */
+	if (! vortex_connection_close (connection)) {
+		printf ("failed to close the BEEP session\n");
+		return axl_false;
+	} /* end if */
+
+	/* vortex_log_enable (ctx, axl_false);
+	   vortex_color_log_enable (ctx, axl_false); */
+	
+	/* return axl_true */
+	return axl_true;
+}
+
 
 VortexAsyncQueue * test_02a_queue;
 
@@ -14649,7 +14738,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_00d, test_00e, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
 	printf ("**                       test_01f, test_01g, test_01g1, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o,\n");
 	printf ("**                       test_01p, test_01q, test_01r, test_01s, test_01s1, test_01t, test_01u, test_01w, test_01y, test_01x\n");
-	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02b, test_02c, test_02d, test_02e, \n"); 
+	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02a3, test_02a4, test_02b, test_02c, test_02d, test_02e, \n"); 
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
  	printf ("**                       test_02l, test_02l1, test_02m, test_02m1, test_02m2, test_02m3, test_02n, test_02o, test_02p, test_02q, test_02r\n");
  	printf ("**                       test_03, test_03a, test_03b, test_03c, test_03d, test_03e, test_03f, test_04, test_04a, \n");
@@ -14938,6 +15027,12 @@ int main (int  argc, char ** argv)
 
 		if (check_and_run_test (run_test_name, "test_02a2"))
 			run_test (test_02a2, "Test 02-a2", "send content to an unopened channel", -1, -1);
+
+		if (check_and_run_test (run_test_name, "test_02a3"))
+			run_test (test_02a3, "Test 02-a3", "basic BEEP channel support (IPv6)", -1, -1);
+		
+		if (check_and_run_test (run_test_name, "test_02a4"))
+			run_test (test_02a4, "Test 02-a4", "basic BEEP channel support (mixing IPv6 + IPv4 connections)", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_02b"))
 			run_test (test_02b, "Test 02-b", "small message followed by close", -1, -1);
@@ -15235,12 +15330,16 @@ int main (int  argc, char ** argv)
 	run_test (test_01x, "Test 01-x", "Check header overflow", -1, -1);
 
  	run_test (test_02, "Test 02", "basic BEEP channel support", -1, -1);
-  
+
  	run_test (test_02a, "Test 02-a", "connection close notification", -1, -1);
 
 	run_test (test_02a1, "Test 02-a1", "connection close notification with handlers removed", -1, -1);
 
 	run_test (test_02a2, "Test 02-a2", "send content to an unopened channel", -1, -1);
+
+ 	run_test (test_02a3, "Test 02-a3", "basic BEEP channel support (IPv6)", -1, -1);
+
+ 	run_test (test_02a4, "Test 02-a4", "basic BEEP channel support (mixing IPv6 + IPv4 connections)", -1, -1);
  
  	run_test (test_02b, "Test 02-b", "small message followed by close", -1, -1);
   	

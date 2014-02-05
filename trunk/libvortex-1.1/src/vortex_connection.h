@@ -93,6 +93,19 @@ VortexConnection  * vortex_connection_new_full               (VortexCtx         
 							      VortexConnectionNew    on_connected, 
 							      axlPointer             user_data);
 
+VortexConnection  * vortex_connection_new6                   (VortexCtx            * ctx,
+							      const char           * host, 
+							      const char           * port,
+							      VortexConnectionNew    on_connected, 
+							      axlPointer             user_data);
+
+VortexConnection  * vortex_connection_new_full6              (VortexCtx            * ctx,
+							      const char           * host, 
+							      const char           * port,
+							      VortexConnectionOpts * options,
+							      VortexConnectionNew    on_connected, 
+							      axlPointer             user_data);
+
 axl_bool            vortex_connection_reconnect              (VortexConnection * connection,
 							      VortexConnectionNew on_connected,
 							      axlPointer user_data);
@@ -104,6 +117,13 @@ VORTEX_SOCKET       vortex_connection_sock_connect           (VortexCtx   * ctx,
 							      const char  * port,
 							      int         * timeout,
 							      axlError   ** error);
+
+VORTEX_SOCKET       vortex_connection_sock_connect_common    (VortexCtx            * ctx,
+							      const char           * host,
+							      const char           * port,
+							      int                  * timeout,
+							      VortexNetTransport     transport,
+							      axlError            ** error);
 
 axl_bool            vortex_connection_do_greetings_exchange  (VortexCtx            * ctx, 
 							      VortexConnection     * connection, 

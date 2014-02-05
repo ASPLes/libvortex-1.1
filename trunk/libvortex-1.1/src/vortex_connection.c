@@ -131,6 +131,22 @@ VortexConnectionOpts * __vortex_connection_opts_process (VortexConnectionOptItem
 	return opts;
 }
 
+VortexNetTransport __vortex_connection_detect_transport (VortexCtx * ctx, const char * host)
+{
+	/* if something os not configured, report IPv4 support */
+	if (ctx == NULL || host == NULL) {
+		return VORTEX_IPv4;
+	} /* end if */
+
+	if (strstr (host, ":")) {
+		/* IPv6 resolution */
+		return VORTEX_IPv6;
+	} /* end if */
+
+	/* IPv4 resolution (default with for IPv4 address too) */
+	return VORTEX_IPv4;
+}
+
 /** 
  * @brief Allows to create a connection options object.
  *
@@ -438,6 +454,7 @@ typedef struct _VortexConnectionNewData {
 	VortexConnectionNew     on_connected;
 	axlPointer              user_data;
 	axl_bool                threaded;
+	VortexNetTransport      transport;
 }VortexConnectionNewData;
 
 
@@ -992,7 +1009,7 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 								 const char       * real_port)
 {
 
-	struct sockaddr_in   sin;
+	struct sockaddr_storage   sin;
 #if defined(AXL_OS_WIN32)
 	/* windows flavors */
 	int                  sin_size = sizeof (sin);
@@ -1001,6 +1018,8 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 	socklen_t            sin_size = sizeof (sin);
 #endif
 	VortexCtx          * ctx;
+	char                 host_name[NI_MAXHOST];
+	char                 srv_name[NI_MAXSERV]; 
 
 	/* check conn reference */
 	if (conn == NULL)
@@ -1024,6 +1043,7 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 		conn->host = axl_strdup (real_host);
 		conn->port = axl_strdup (real_port);
 	} else {
+		/* clear sin structure */
 		if (conn->role == VortexRoleMasterListener) {
 			if (getsockname (_socket, (struct sockaddr *) &sin, &sin_size) < 0) {
 				vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get local hostname and port from socket=%d", _socket);
@@ -1038,8 +1058,15 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 		} /* end if */
 
 		/* set host and port from socket recevied */
-		conn->host = vortex_support_inet_ntoa (ctx, &sin);
-		conn->port = axl_strdup_printf ("%d", ntohs (sin.sin_port));	
+		if (getnameinfo ((struct sockaddr *) &sin, sin_size, host_name, NI_MAXHOST, srv_name, NI_MAXSERV, 0) != 0) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "getnameinfo () call failed, error was errno=%d", errno);
+			return axl_false;
+		}
+
+		/* copy values */
+		conn->host = axl_strdup (host_name);
+		conn->port = axl_strdup (srv_name);
+
 	} /* end if */
 
 	/* now set local address */
@@ -1048,9 +1075,15 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 		return axl_false;
 	} /* end if */
 
+	/* set host and port from socket recevied */
+	if (getnameinfo ((struct sockaddr *) &sin, sin_size, host_name, NI_MAXHOST, srv_name, NI_MAXSERV, 0) != 0) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "getnameinfo () call failed, error was errno=%d", errno);
+		return axl_false;
+	}
+
 	/* set local addr and local port */
-	conn->local_addr = vortex_support_inet_ntoa (ctx, &sin);
-	conn->local_port = axl_strdup_printf ("%d", ntohs (sin.sin_port));	
+	conn->local_addr = axl_strdup (host_name);
+	conn->local_port = axl_strdup (srv_name);
 
 	return axl_true;
 }
@@ -1269,12 +1302,14 @@ axl_bool                 vortex_connection_set_sock_block         (VORTEX_SOCKET
  * @return A reference to the struct hostent or NULL if it fails to
  * resolv the hostname.
  */
-struct in_addr * vortex_gethostbyname (VortexCtx  * ctx, 
-				       const char * hostname)
+struct addrinfo * vortex_gethostbyname (VortexCtx           * ctx, 
+					const char          * hostname, 
+					const char          * port,
+					VortexNetTransport    transport)
 {
 	/* get current context */
-	struct in_addr * result;
-	struct hostent * _result;
+	struct addrinfo    hints, *res = NULL;
+	char             * key;
 
 	/* check that context and hostname are valid */
 	if (ctx == NULL || hostname == NULL)
@@ -1284,31 +1319,58 @@ struct in_addr * vortex_gethostbyname (VortexCtx  * ctx,
 	vortex_mutex_lock (&ctx->connection_hostname_mutex);
 
 	/* resolv using the hash */
-	result = axl_hash_get (ctx->connection_hostname, (axlPointer) hostname);
-	if (result == NULL) {
-		_result = gethostbyname (hostname);
-		if (_result != NULL) {
-			/* alloc and get the address */
-			result         = axl_new (struct in_addr, 1);
-			if (result == NULL) {
-				vortex_mutex_unlock (&ctx->connection_hostname_mutex);
-				return NULL;
-			} /* end if */
-			result->s_addr = ((struct in_addr *) (_result->h_addr_list)[0])->s_addr;
+	key = axl_strdup_printf ("%s:%s", hostname, port);
+	res = axl_hash_get (ctx->connection_hostname, (axlPointer) key);
+	if (res) {
+		/* release key */
+		axl_free (key);
 
-			/* now store the result */
-			axl_hash_insert_full (ctx->connection_hostname, 
-					      /* the hostname */
-					      axl_strdup (hostname), axl_free,
-					      /* the address */
-					      result, axl_free);
-		} /* end if */
-	} /* end if */
+		/* unlock and return the result */
+		vortex_mutex_unlock (&ctx->connection_hostname_mutex);
+
+		return res;
+
+	}
+
+	/* reached this point, key wasn't found, now try to DNS-resolve */
+
+	/* clear hints structure */
+	memset (&hints, 0, sizeof(struct addrinfo));
+
+	switch (transport) {
+	case VORTEX_IPv4:
+		hints.ai_family = AF_INET;
+		break;
+	case VORTEX_IPv6:
+		hints.ai_family = AF_INET6;
+		break;
+	} /* end switch */
+	hints.ai_socktype = SOCK_STREAM;
+
+	/* resolve hostname with hints */
+	if (getaddrinfo (hostname, port, &hints, &res) != 0) {
+		axl_free (key);
+		freeaddrinfo (res);
+		
+		vortex_mutex_unlock (&ctx->connection_hostname_mutex);
+		vortex_log (VORTEX_LEVEL_CRITICAL, "getaddrinfo () call failed, found errno=%d", errno);
+		return NULL;
+	}
+
+	/* now store the result */
+	axl_hash_insert_full (ctx->connection_hostname, 
+			      /* the hostname */
+			      key, axl_free,
+			      /* the address */
+			      res, (axlDestroyFunc) freeaddrinfo);
 
 	/* unlock and return the result */
 	vortex_mutex_unlock (&ctx->connection_hostname_mutex);
 
-	return result;
+	/* no need to release key here: this will be done once
+	 * ctx->connection_hostname hash is fihished */
+
+	return res;
 	
 }
 
@@ -1464,25 +1526,69 @@ VORTEX_SOCKET vortex_connection_sock_connect (VortexCtx   * ctx,
 					      int         * timeout,
 					      axlError   ** error)
 {
-	struct in_addr     * haddr;
-	struct sockaddr_in   saddr;
-	int		     err          = 0;
-	VORTEX_SOCKET        session;
+	return vortex_connection_sock_connect_common (ctx, host, port, timeout, VORTEX_IPv4, error);
+}
 
-	/*
-	 * standard tcp socket voodo connection (I would like to know
-	 * who was the great mind designer of this api)
-	 */
-	haddr = vortex_gethostbyname (ctx, host);
-        if (haddr == NULL) {
-		vortex_log (VORTEX_LEVEL_WARNING, "unable to get host name by using gethostbyname host=%s",
+/** 
+ * @brief Allows to create a plain socket connection against the host
+ * and port provided allowing to configure the transport. 
+ *
+ * This function differs from \ref vortex_connection_sock_connect in
+ * the sense it allows to configure the transport (\ref
+ * VortexNetTransport) so you can create TCP/IPv4 (\ref VORTEX_IPv4)
+ * and TCP/IPv6 (\ref VORTEX_IPv6) connections.
+ *
+ * @param ctx The context where the connection happens.
+ *
+ * @param host The host server to connect to.
+ *
+ * @param port The port server to connect to.
+ *
+ * @param timeout Parameter where optionally is returned the timeout
+ * defined by the library (\ref vortex_connection_get_connect_timeout)
+ * that remains after only doing a socket connected. The value is only
+ * returned if the caller provide a reference.
+ *
+ * @param error Optional axlError reference to report an error code
+ * and a textual diagnostic.
+ *
+ * @return A connected socket or -1 if it fails. The particular error
+ * is reported at axlError optional reference.
+ */
+VORTEX_SOCKET vortex_connection_sock_connect_common (VortexCtx            * ctx,
+						     const char           * host,
+						     const char           * port,
+						     int                  * timeout,
+						     VortexNetTransport     transport,
+						     axlError            ** error)
+{
+
+	struct addrinfo    * res;
+	int		     err          = 0;
+	VORTEX_SOCKET        session      = -1;
+
+	/* do resolution according to the transport */
+	res = vortex_gethostbyname (ctx, host, port, transport);
+        if (res == NULL) {
+		vortex_log (VORTEX_LEVEL_WARNING, "unable to get host name by using vortex_gethostbyname () host=%s",
 			    host);
-		axl_error_report (error, VortexNameResolvFailure, "unable to get host name by using gethostbyname");
+		axl_error_report (error, VortexNameResolvFailure, "unable to get host name by using vortex_gethostbyname ()");
 		return -1;
-	}
+	} /* end if */
 
 	/* create the socket and check if it */
-	session      = socket (AF_INET, SOCK_STREAM, 0);
+	switch (transport) {
+	case VORTEX_IPv4:
+		session      = socket (AF_INET, SOCK_STREAM, 0);
+		break;
+	case VORTEX_IPv6:
+		session      = socket (AF_INET6, SOCK_STREAM, 0);
+		break;
+	default:
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Transport value is not supported (%d), unable to create socket", transport);
+		axl_error_report (error, VortexNameResolvFailure, "Transport value is not supported, unable to create socket");
+		return -1;
+	}
 	if (session == VORTEX_INVALID_SOCKET) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to create socket");
 		axl_error_report (error, VortexNameResolvFailure, "unable to create socket (socket call have failed)");
@@ -1509,13 +1615,6 @@ VORTEX_SOCKET vortex_connection_sock_connect (VortexCtx   * ctx,
 	/* disable nagle */
 	vortex_connection_set_sock_tcp_nodelay (session, axl_true);
 
-	/* prepare socket configuration to operate using TCP/IP
-	 * socket */
-        memset(&saddr, 0, sizeof(saddr));
-        memcpy(&saddr.sin_addr, haddr, sizeof(struct in_addr));
-        saddr.sin_family    = AF_INET;
-        saddr.sin_port      = htons((uint16_t) strtod (port, NULL));
-	
 	/* get current vortex connection timeout to check if the
 	 * application have requested to configure a particular TCP
 	 * connect timeout. */
@@ -1531,12 +1630,11 @@ VORTEX_SOCKET vortex_connection_sock_connect (VortexCtx   * ctx,
 	} /* end if */
 
 	/* do a tcp connect */
-        if (connect (session, (struct sockaddr *)&saddr, sizeof(saddr)) < 0) {
+        if (connect (session, res->ai_addr, res->ai_addrlen) < 0) {
 		if(timeout == 0 || (errno != VORTEX_EINPROGRESS && errno != VORTEX_EWOULDBLOCK)) { 
 			shutdown (session, SHUT_RDWR);
 			vortex_close_socket (session);
-			vortex_log (VORTEX_LEVEL_WARNING, "unable to connect to remote host errno=%d, timeout reached",
-				    errno);
+			vortex_log (VORTEX_LEVEL_WARNING, "unable to connect(), session=%d to remote host errno=%d (%s), timeout reached", session, errno, strerror (errno));
 			axl_error_report (error, VortexConnectionError, "unable to connect to remote host");
 			return -1;
 		} /* end if */
@@ -1755,6 +1853,7 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 	axl_bool               threaded     = data->threaded;
 	VortexConnectionNew    on_connected = data->on_connected;
 	axlPointer             user_data    = data->user_data;
+	VortexNetTransport     transport    = data->transport;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "executing connection new in %s mode to %s:%s id=%d",
 	       (data->threaded == axl_true) ? "thread" : "blocking", 
@@ -1775,7 +1874,7 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 		ctx->conn_created (ctx, connection, ctx->conn_created_data);
 
 	/* configure the socket created */
-	connection->session = vortex_connection_sock_connect (ctx, connection->host, connection->port, &d_timeout, &error);
+	connection->session = vortex_connection_sock_connect_common (ctx, connection->host, connection->port, &d_timeout, transport, &error);
 	if (connection->session == -1) {
 		/* free previous message */
 		if (connection->message)
@@ -1838,6 +1937,115 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 
 	return connection;
 }
+
+VortexConnection  * vortex_connection_new_full_common        (VortexCtx            * ctx,
+							      const char           * host, 
+							      const char           * port,
+							      VortexConnectionOpts * options,
+							      VortexConnectionNew    on_connected, 
+							      VortexNetTransport     transport,
+							      axlPointer             user_data)
+{
+	VortexConnectionNewData * data;
+
+	/* check context is initialized */
+	if ((! vortex_init_check (ctx)) || ctx->vortex_exit) {
+		/* check to release options if defined */
+		vortex_connection_opts_check_and_release (options);
+		return NULL;
+	}
+
+	/* check parameters */
+	if (host == NULL || port == NULL) {
+		/* check to release options if defined */
+		vortex_connection_opts_check_and_release (options);
+		return NULL;
+	} /* end if */
+
+	data                                  = axl_new (VortexConnectionNewData, 1);
+	if (data == NULL) {
+		/* check to release options if defined */
+		vortex_connection_opts_check_and_release (options);
+		return NULL;
+	} /* end if */
+	data->options                         = options;
+	data->connection                      = axl_new (VortexConnection, 1);
+	/* check allocated connection */
+	if (data->connection == NULL) {
+		/* check to release options if defined */
+		vortex_connection_opts_check_and_release (options);
+		axl_free (data);
+		return NULL;
+	} /* end if */
+	data->connection->id                  = __vortex_connection_get_next_id (ctx);
+	data->connection->ctx                 = ctx;
+	vortex_ctx_ref2 (ctx, "new connection"); /* acquire a reference to context */
+	data->connection->host                = axl_strdup (host);
+	data->connection->port                = axl_strdup (port);
+	data->connection->channels            = vortex_hash_new_full (axl_hash_int, axl_hash_equal_int,
+								      NULL,
+								      (axlDestroyFunc) __vortex_connection_channel_unref);
+	data->connection->ref_count           = 1;
+
+	/* call to init all mutex associated to this particular connection */
+	__vortex_connection_init_mutex (data->connection);
+
+	data->connection->data                = vortex_hash_new_full (axl_hash_string, axl_hash_equal_string,
+								      NULL,
+								      NULL);
+	data->connection->channel_pools       = vortex_hash_new_full (axl_hash_int, axl_hash_equal_int,
+								      NULL, 
+								      (axlDestroyFunc) __vortex_channel_pool_close_internal);
+	/* remote side profiles, NULL reference filled by the
+	 * greetings cache */
+	data->connection->remote_supported_profiles = NULL;
+
+	/* establish the connection role and initial next channel
+	 * available. */
+	data->connection->role                = VortexRoleInitiator;
+	data->connection->last_channel        = 1;
+
+	/* set default send and receive handlers */
+	data->connection->send                = vortex_connection_default_send;
+	data->connection->receive             = vortex_connection_default_receive;
+
+	/* set by default to close the underlying connection when the
+	 * connection is closed */
+	data->connection->close_session       = axl_true;
+
+	/* establish connection status, connection negotiation method
+	 * and user data */
+	data->on_connected                    = on_connected;
+	data->user_data                       = user_data;
+	data->threaded                        = (on_connected != NULL);
+
+	/* check allocated values */
+	if (data->connection->host          == NULL ||
+	    data->connection->port          == NULL ||
+	    data->connection->channels      == NULL ||
+	    data->connection->data          == NULL ||
+	    data->connection->channel_pools == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Connection memory allocation failed.."); 
+		/* connection allocation failed */
+		vortex_connection_free (data->connection);
+		axl_free (data);
+		return NULL;
+	}
+
+	/* detect transport we have to configure */
+	data->transport = transport;
+	/* set same transport on the connection */
+	data->connection->transport = data->transport;
+
+	if (data->threaded) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "invoking connection_new threaded mode");
+		vortex_thread_pool_new_task (ctx, (VortexThreadFunc) __vortex_connection_new, data);
+		return NULL;
+	}
+	vortex_log (VORTEX_LEVEL_DEBUG, "invoking connection_new non-threaded mode");
+	return __vortex_connection_new (data);
+}
+
 
 /** 
  * @brief Allows to create a new BEEP session (connection) to the
@@ -2007,103 +2215,63 @@ VortexConnection  * vortex_connection_new_full               (VortexCtx         
 							      VortexConnectionNew    on_connected, 
 							      axlPointer             user_data)
 {
-	VortexConnectionNewData * data;
+	VortexNetTransport transport;
+	
+	/* get transport we have to use */
+	transport = __vortex_connection_detect_transport (ctx, host);
 
-	/* check context is initialized */
-	if ((! vortex_init_check (ctx)) || ctx->vortex_exit) {
-		/* check to release options if defined */
-		vortex_connection_opts_check_and_release (options);
-		return NULL;
-	}
-
-	/* check parameters */
-	if (host == NULL || port == NULL) {
-		/* check to release options if defined */
-		vortex_connection_opts_check_and_release (options);
-		return NULL;
-	} /* end if */
-
-	data                                  = axl_new (VortexConnectionNewData, 1);
-	if (data == NULL) {
-		/* check to release options if defined */
-		vortex_connection_opts_check_and_release (options);
-		return NULL;
-	} /* end if */
-	data->options                         = options;
-	data->connection                      = axl_new (VortexConnection, 1);
-	/* check allocated connection */
-	if (data->connection == NULL) {
-		/* check to release options if defined */
-		vortex_connection_opts_check_and_release (options);
-		axl_free (data);
-		return NULL;
-	} /* end if */
-	data->connection->id                  = __vortex_connection_get_next_id (ctx);
-	data->connection->ctx                 = ctx;
-	vortex_ctx_ref2 (ctx, "new connection"); /* acquire a reference to context */
-	data->connection->host                = axl_strdup (host);
-	data->connection->port                = axl_strdup (port);
-	data->connection->channels            = vortex_hash_new_full (axl_hash_int, axl_hash_equal_int,
-								      NULL,
-								      (axlDestroyFunc) __vortex_connection_channel_unref);
-	data->connection->ref_count           = 1;
-
-	/* call to init all mutex associated to this particular connection */
-	__vortex_connection_init_mutex (data->connection);
-
-	data->connection->data                = vortex_hash_new_full (axl_hash_string, axl_hash_equal_string,
-								      NULL,
-								      NULL);
-	data->connection->channel_pools       = vortex_hash_new_full (axl_hash_int, axl_hash_equal_int,
-								      NULL, 
-								      (axlDestroyFunc) __vortex_channel_pool_close_internal);
-	/* remote side profiles, NULL reference filled by the
-	 * greetings cache */
-	data->connection->remote_supported_profiles = NULL;
-
-	/* establish the connection role and initial next channel
-	 * available. */
-	data->connection->role                = VortexRoleInitiator;
-	data->connection->last_channel        = 1;
-
-	/* set default send and receive handlers */
-	data->connection->send                = vortex_connection_default_send;
-	data->connection->receive             = vortex_connection_default_receive;
-
-	/* set by default to close the underlying connection when the
-	 * connection is closed */
-	data->connection->close_session       = axl_true;
-
-	/* establish connection status, connection negotiation method
-	 * and user data */
-	data->on_connected                    = on_connected;
-	data->user_data                       = user_data;
-	data->threaded                        = (on_connected != NULL);
-
-	/* check allocated values */
-	if (data->connection->host          == NULL ||
-	    data->connection->port          == NULL ||
-	    data->connection->channels      == NULL ||
-	    data->connection->data          == NULL ||
-	    data->connection->channel_pools == NULL) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "Connection memory allocation failed.."); 
-		/* connection allocation failed */
-		vortex_connection_free (data->connection);
-		axl_free (data);
-		return NULL;
-	}
-
-	if (data->threaded) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "invoking connection_new threaded mode");
-		vortex_thread_pool_new_task (ctx, (VortexThreadFunc) __vortex_connection_new, data);
-		return NULL;
-	}
-	vortex_log (VORTEX_LEVEL_DEBUG, "invoking connection_new non-threaded mode");
-	return __vortex_connection_new (data);
+	/* call to create the connection */
+	return vortex_connection_new_full_common (ctx, host, port, options, on_connected, transport, user_data);
 }
 
 /** 
- * @brief Allows to create a new BEEP session (connection) to the given <i>host:port</i>.
+ * @brief Allows to create a new BEEP session (connection) to the
+ * given <i>host:port</i> using provided options and using TCP/IPv6.
+ *
+ * See \ref vortex_connection_new_full for extended information. This function is the same as \ref vortex_connection_new_full but using IPv6 transport and resolution.
+ * 
+ * @param ctx The context where the operation will be performed.
+ *
+ * @param host The remote peer to connect to.
+ *
+ * @param port The peer's port to connect to.
+ *
+ * @param options Additional connection options to be used for this
+ * particular operation. This is mainly used to provide feature
+ * notification to remote BEEP listener. See \ref
+ * vortex_connection_opts_new and \ref VortexConnectionOptItem for more details.
+ *
+ * @param on_connected Optional handler to process connection new
+ * status.
+ *
+ * @param user_data Optional handler to process connection new status
+ * 
+ * @return A newly created \ref VortexConnection if called in a
+ * blocking manner, that is, without providing the <b>on_connected</b>
+ * handler. If you provide the <b>on_connected</b> handler, the
+ * function will return NULL, and the connection created will be
+ * notified on the handler <b>on_connected</b>. In both cases, you
+ * must use \ref vortex_connection_is_ok to check if you are already
+ * connected.
+ *
+ * Remember to check documentation at \ref vortex_connection_new_full
+ * to get information that also applies to this function.
+ */
+VortexConnection  * vortex_connection_new_full6              (VortexCtx            * ctx,
+							      const char           * host, 
+							      const char           * port,
+							      VortexConnectionOpts * options,
+							      VortexConnectionNew    on_connected, 
+							      axlPointer             user_data)
+{
+	/* call to create the connection */
+	return vortex_connection_new_full_common (ctx, host, port, options, on_connected, VORTEX_IPv6, user_data);
+}
+
+/** 
+ * @brief Allows to create a new BEEP session (connection) to the given <i>host:port</i> using TCP/IPv4 resolution and transport.
+ *
+ * This is the IPv4 version support for BEEP session. If you need IPv6 support, see \ref vortex_connection_new6.
  *
  * See \ref vortex_connection_new_full for complete
  * documentation. This function implements the same behaviour than
@@ -2138,6 +2306,46 @@ VortexConnection * vortex_connection_new (VortexCtx   * ctx,
 					  axlPointer user_data)
 {
 	return vortex_connection_new_full (ctx, host, port, NULL, on_connected, user_data);
+}
+
+/** 
+ * @brief Allows to create a new BEEP session (connection) to the given <i>host:port</i> using TCP/IPv6 resolution and transport.
+ *
+ * This is the IPv6 version support for BEEP session. If you need IPv4 support, see \ref vortex_connection_new6.
+ *
+ * See \ref vortex_connection_new_full for complete
+ * documentation. This function implements the same behaviour than
+ * \ref vortex_connection_new_full but without providing additional
+ * options (\ref VortexConnectionOpts).
+ *
+ * This function is implemented on top of \ref vortex_connection_new_full.
+ * 
+ * @param ctx The context where the operation will be performed.
+ *
+ * @param host The remote peer to connect to.
+ *
+ * @param port The peer's port to connect to.
+ *
+ * @param on_connected Optional handler to process connection new
+ * status.
+ *
+ * @param user_data Optional handler to process connection new status
+ * 
+ * @return A newly created \ref VortexConnection if called in a
+ * blocking manner, that is, without providing the <b>on_connected</b>
+ * handler. If you provide the <b>on_connected</b> handler, the
+ * function will return NULL, and the connection created will be
+ * notified on the handler <b>on_connected</b>. In both cases, you
+ * must use \ref vortex_connection_is_ok to check if you are already
+ * connected.
+ */
+VortexConnection * vortex_connection_new6 (VortexCtx   * ctx,
+					  const char  * host, 
+					  const char  * port, 
+					  VortexConnectionNew on_connected,
+					  axlPointer user_data)
+{
+	return vortex_connection_new_full6 (ctx, host, port, NULL, on_connected, user_data);
 }
 
 /** 
@@ -2368,6 +2576,9 @@ axl_bool            vortex_connection_reconnect              (VortexConnection *
 	if (connection->message)
 		axl_free (connection->message);
 	connection->message = NULL;
+
+	/* detect transport we have to configure */
+	data->transport = connection->transport;
 	
 	if (data->threaded) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "reconnecting connection in threaded mode");

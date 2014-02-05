@@ -1230,6 +1230,20 @@ typedef enum {
 	PAYLOAD_FEEDER_RELEASE = 4
 } VortexPayloadFeederOp;
 
+/** 
+ * @brief Definition for supported network transports.
+ */ 
+typedef enum { 
+	/** 
+	 * @brief IPv4 transport.
+	 */
+	VORTEX_IPv4 = 1,
+	/** 
+	 * @brief IPv6 transport.
+	 */
+	VORTEX_IPv6 = 2
+} VortexNetTransport;
+
 #endif
 
 /* @} */

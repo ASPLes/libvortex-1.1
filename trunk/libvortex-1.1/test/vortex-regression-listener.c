@@ -2042,8 +2042,14 @@ int main (int  argc, char ** argv)
 	printf ("--- WARNING: Skipping WebSocket support API check, since Vortex isn't configured with that support\n");
 #endif
 
-	
-
+	/* IPv6 support */
+	listener = vortex_listener_new (ctx, "::", "44016", NULL, NULL);
+	if (! vortex_connection_is_ok (listener, axl_false)) {
+		printf ("ERROR: failed to start IPv6 listener at: 44016, error found (code: %d): %s\n",
+			vortex_connection_get_status (listener),
+			vortex_connection_get_message (listener));
+		return -1;
+	}	
 
 	/* configure connection notification  */
 	vortex_listener_set_on_connection_accepted (ctx, on_accepted, NULL);

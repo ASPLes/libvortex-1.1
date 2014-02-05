@@ -36,6 +36,7 @@
  *         info@aspl.es - http://www.aspl.es/vortex
  */
 #include <vortex.h>
+#include <netdb.h>
 
 /* local include */
 #include <vortex_ctx_private.h>
@@ -520,7 +521,172 @@ typedef struct _VortexListenerData {
 }VortexListenerData;
 
 /** 
- * @brief Starts a generic TCP listener on the provided address and
+ * @internal Function used to create a listen process.
+ */
+VORTEX_SOCKET     vortex_listener_sock_listen_common      (VortexCtx            * ctx,
+							   const char           * host,
+							   const char           * port,
+							   axlError            ** error,
+							   VortexNetTransport     transport)
+{
+	struct hostent     * he    = NULL;
+	struct in_addr     * haddr = NULL;
+	struct sockaddr_in   saddr;
+	struct sockaddr_in   sin;
+
+	struct sockaddr_in6  sin6;
+
+	VORTEX_SOCKET        fd;
+#if defined(AXL_OS_WIN32)
+/*	BOOL                 unit      = axl_true; */
+	int                  sin_size  = sizeof (sin);
+#else    	
+	int                  unit      = 1; 
+	socklen_t            sin_size  = sizeof (sin);
+#endif	
+	uint16_t             int_port;
+	int                  backlog   = 0;
+	int                  bind_res  = VORTEX_SOCKET_ERROR;
+	int                  result;
+	char               * str_out_buf[INET6_ADDRSTRLEN];
+	struct addrinfo      req, *ans;
+
+	v_return_val_if_fail (ctx,  -2);
+	v_return_val_if_fail (host, -2);
+	v_return_val_if_fail (port || strlen (port) == 0, -2);
+
+	/* create socket */
+	switch (transport) {
+	case VORTEX_IPv6:
+		/* resolve hostname */
+		req.ai_flags    = AI_PASSIVE;
+		req.ai_family   = PF_INET6;
+		req.ai_socktype = SOCK_STREAM;
+		req.ai_protocol = 0;
+
+		if (getaddrinfo (host, port, &req, &ans) != 0) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to get hostname by calling getaddrinfo(), errno=%d", errno);
+			axl_error_report (error, VortexNameResolvFailure, "Unable to get hostname by calling getaddrinfo()");
+			return -1;
+		} /* end if */
+
+		/* IPv6 */
+		fd = socket (ans->ai_family, ans->ai_socktype, ans->ai_protocol);
+		break;
+	case VORTEX_IPv4:
+		/* resolve old way */
+		he = gethostbyname (host);
+		if (he == NULL) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to get hostname by calling gethostbyname(), errno=%d", errno);
+			axl_error_report (error, VortexNameResolvFailure, "Unable to get hostname by calling gethostbyname()");
+			return -1;
+		} /* end if */
+		
+		haddr = ((struct in_addr *) (he->h_addr_list)[0]);
+
+		/* IPv4 */
+		fd = socket (PF_INET, SOCK_STREAM, 0);
+		break;
+	default:
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Received unsupported transport. Unable to create listener");
+		axl_error_report (error, VortexSocketCreationError, "Received unsupported transport. Unable to create listener");
+		return -1;
+	} /* end if */
+
+	/* check socket created */
+	if (fd <= 2) {
+		/* do not allow creating sockets reusing stdin (0),
+		   stdout (1), stderr (2) */
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to create listener socket: %d (errno=%d:%s)", fd, errno, vortex_errno_get_error (errno));
+		axl_error_report (error, VortexSocketCreationError, 
+				  "failed to create listener socket: %d (errno=%d:%s)", fd, errno, vortex_errno_get_error (errno));
+		return -1;
+	} /* end if */
+
+#if defined(AXL_OS_WIN32)
+	/* Do not issue a reuse addr which causes on windows to reuse
+	 * the same address:port for the same process. Under linux,
+	 * reusing the address means that consecutive process can
+	 * reuse the address without being blocked by a wait
+	 * state.  */
+	/* setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char  *)&unit, sizeof(BOOL)); */
+#else
+	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &unit, sizeof (unit));
+#endif 
+
+	/* get integer port */
+	int_port  = (uint16_t) atoi (port);
+
+	switch (transport) {
+	case VORTEX_IPv6:
+		/* call bind */
+		bind_res = bind(fd, ans->ai_addr,  ans->ai_addrlen);
+
+		/* release ans object */
+		freeaddrinfo (ans); 
+		break;
+	case VORTEX_IPv4:
+		memset (&saddr, 0, sizeof(struct sockaddr_in));
+		saddr.sin_family          = AF_INET;
+		saddr.sin_port            = htons(int_port);
+		memcpy (&saddr.sin_addr, haddr, sizeof(struct in_addr));
+
+		/* call bind */
+		bind_res = bind(fd, (struct sockaddr *)&saddr,  sizeof (struct sockaddr_in));
+
+		break;
+	} /* end */
+
+	/* call to bind */
+	vortex_log (VORTEX_LEVEL_DEBUG, "bind(2) call returned: %d", bind_res);
+	if (bind_res == VORTEX_SOCKET_ERROR) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
+		axl_error_report (error, VortexBindError, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
+		vortex_close_socket (fd);
+		return -1;
+	}
+	
+	/* get current backlog configuration */
+	vortex_conf_get (ctx, VORTEX_LISTENER_BACKLOG, &backlog);
+	
+	if (listen(fd, backlog) == VORTEX_SOCKET_ERROR) {
+		axl_error_report (error, VortexSocketCreationError, "an error have occur while executing listen");
+		return -1;
+        } /* end if */
+
+	/* notify listener */
+	result = -1;
+	switch (transport) {
+	case VORTEX_IPv4:
+		result = getsockname (fd, (struct sockaddr *) &sin, &sin_size);
+		break;
+	case VORTEX_IPv6:
+		result = getsockname (fd, (struct sockaddr *) &sin6, &sin_size);
+		break;
+	}
+
+	if (result < 0) {
+		axl_error_report (error, VortexNameResolvFailure, "an error have happen while executing getsockname");
+		return -1;
+	} /* end if */
+
+	/* report and return fd */
+	switch (transport) {
+	case VORTEX_IPv4:
+		vortex_log  (VORTEX_LEVEL_DEBUG, "running listener at %s:%d (socket: %d)", 
+			     inet_ntoa(sin.sin_addr), ntohs (sin.sin_port), fd);
+		break;
+	case VORTEX_IPv6:
+		vortex_log  (VORTEX_LEVEL_DEBUG, "running listener at %s:%d (socket: %d)", 
+			     inet_ntop (sin6.sin6_family, sin6.sin6_addr.s6_addr, (void *) str_out_buf, INET6_ADDRSTRLEN), ntohs (sin6.sin6_port), fd);
+		break;
+	} /* end */
+	return fd;
+}
+
+
+/** 
+ * @brief Starts a generic TCP/IPv4 listener on the provided address and
  * port. This function is used internally by the vortex listener
  * module to startup the vortex listener TCP session associated,
  * however the function can be used directly to start TCP listeners.
@@ -547,89 +713,39 @@ VORTEX_SOCKET     vortex_listener_sock_listen      (VortexCtx   * ctx,
 						    const char  * port,
 						    axlError   ** error)
 {
-	struct hostent     * he;
-       struct in_addr     * haddr;
-       struct sockaddr_in   saddr;
-	struct sockaddr_in   sin;
-	VORTEX_SOCKET        fd;
-#if defined(AXL_OS_WIN32)
-/*	BOOL                 unit      = axl_true; */
-	int                  sin_size  = sizeof (sin);
-#else    	
-	int                  unit      = 1; 
-	socklen_t            sin_size  = sizeof (sin);
-#endif	
-	uint16_t             int_port;
-	int                  backlog   = 0;
-	int                  bind_res;
+	return vortex_listener_sock_listen_common (ctx, host, port, error, VORTEX_IPv4);
+}
 
-	v_return_val_if_fail (ctx,  -2);
-	v_return_val_if_fail (host, -2);
-	v_return_val_if_fail (port || strlen (port) == 0, -2);
-
-	/* resolve hostname */
-	he = gethostbyname (host);
-        if (he == NULL) {
-		axl_error_report (error, VortexNameResolvFailure, "unable to get hostname by calling gethostbyname");
-		return -1;
-	} /* end if */
-
-	haddr = ((struct in_addr *) (he->h_addr_list)[0]);
-	if ((fd = socket(AF_INET, SOCK_STREAM, 0)) <= 2) {
-		/* do not allow creating sockets reusing stdin (0),
-		   stdout (1), stderr (2) */
-		vortex_log (VORTEX_LEVEL_DEBUG, "failed to create listener socket: %d (errno=%d:%s)", fd, errno, vortex_errno_get_error (errno));
-		axl_error_report (error, VortexSocketCreationError, 
-				  "failed to create listener socket: %d (errno=%d:%s)", fd, errno, vortex_errno_get_error (errno));
-		return -1;
-        } /* end if */
-
-#if defined(AXL_OS_WIN32)
-	/* Do not issue a reuse addr which causes on windows to reuse
-	 * the same address:port for the same process. Under linux,
-	 * reusing the address means that consecutive process can
-	 * reuse the address without being blocked by a wait
-	 * state.  */
-	/* setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char  *)&unit, sizeof(BOOL)); */
-#else
-	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &unit, sizeof (unit));
-#endif 
-
-	/* get integer port */
-	int_port  = (uint16_t) atoi (port);
-
-	memset(&saddr, 0, sizeof(struct sockaddr_in));
-	saddr.sin_family          = AF_INET;
-	saddr.sin_port            = htons(int_port);
-	memcpy(&saddr.sin_addr, haddr, sizeof(struct in_addr));
-
-	/* call to bind */
-	bind_res = bind(fd, (struct sockaddr *)&saddr,  sizeof (struct sockaddr_in));
-	vortex_log (VORTEX_LEVEL_DEBUG, "bind(2) call returned: %d", bind_res);
-	if (bind_res == VORTEX_SOCKET_ERROR) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
-		axl_error_report (error, VortexBindError, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
-		vortex_close_socket (fd);
-		return -1;
-	}
-	
-	/* get current backlog configuration */
-	vortex_conf_get (ctx, VORTEX_LISTENER_BACKLOG, &backlog);
-	
-	if (listen(fd, backlog) == VORTEX_SOCKET_ERROR) {
-		axl_error_report (error, VortexSocketCreationError, "an error have occur while executing listen");
-		return -1;
-        } /* end if */
-
-	/* notify listener */
-	if (getsockname (fd, (struct sockaddr *) &sin, &sin_size) < 0) {
-		axl_error_report (error, VortexNameResolvFailure, "an error have happen while executing getsockname");
-		return -1;
-	} /* end if */
-
-	/* report and return fd */
-	vortex_log  (VORTEX_LEVEL_DEBUG, "running listener at %s:%d (socket: %d)", inet_ntoa(sin.sin_addr), ntohs (sin.sin_port), fd);
-	return fd;
+/** 
+ * @brief Starts a generic TCP/IPv6 listener on the provided address
+ * and port. This function is used internally by the vortex listener
+ * module to startup the vortex listener TCP session associated,
+ * however the function can be used directly to start TCP listeners.
+ *
+ * @param ctx The context where the listener is started.
+ *
+ * @param host Host address to allocate. It can be "::1" (IPv4
+ * equivalent of 127.0.0.1) to only listen for localhost connections
+ * or "::" (IPv4 equivalent of 0.0.0.0) to listen on any address that
+ * the server has installed. It cannot be NULL.
+ *
+ * @param port The port to listen on. It cannot be NULL and it must be
+ * a non-zero string.
+ *
+ * @param error Optional axlError reference where a textual diagnostic
+ * will be reported in case of error.
+ *
+ * @return The function returns the listener socket or -1 if it
+ * fails. Optionally the axlError reports the textual especific error
+ * found. If the function returns -2 then some parameter provided was
+ * found to be NULL.
+ */
+VORTEX_SOCKET     vortex_listener_sock_listen6      (VortexCtx   * ctx,
+						    const char  * host,
+						    const char  * port,
+						    axlError   ** error)
+{
+	return vortex_listener_sock_listen_common (ctx, host, port, error, VORTEX_IPv6);
 }
 
 axlPointer __vortex_listener_new (VortexListenerData * data)
@@ -655,8 +771,12 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	/* free data */
 	axl_free (data);
 
-	/* allocate listener */
-	fd = vortex_listener_sock_listen (ctx, host, str_port, &error);
+	/* allocate listener, try to guess IPv6 support */
+	if (strstr (host, ":")) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "Detected IPv6 listener: %s..", host);
+		fd = vortex_listener_sock_listen6 (ctx, host, str_port, &error);
+	} else
+		fd = vortex_listener_sock_listen (ctx, host, str_port, &error);
 	
 	/* unref the host and port value */
 	axl_free (str_port);

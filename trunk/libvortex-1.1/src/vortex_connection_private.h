@@ -381,6 +381,9 @@ struct _VortexConnection {
 
 	/** reference to the user land hook pointer **/
 	axlPointer                   hook;
+
+	/** reference to the transport used by the library */
+	VortexNetTransport           transport;
 };
 
 #endif /* __VORTEX_CONNECTION_PRIVATE_H__ */
