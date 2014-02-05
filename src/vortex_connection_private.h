@@ -39,6 +39,51 @@
 #ifndef __VORTEX_CONNECTION_PRIVATE_H__
 #define __VORTEX_CONNECTION_PRIVATE_H__
 
+#if defined(AXL_OS_UNIX)
+#  ifndef NI_MAXHOST
+/* define some values */
+#  define   NI_MAXHOST 1025
+#  define   NI_MAXSERV 512
+
+/* define ai_passive */
+#ifndef AI_PASSIVE
+#define AI_PASSIVE 0x00000001 /* get address to use bind() */
+#endif
+
+/** 
+ * NOTE: we are including here static definitions because we are
+ * compiling with -ansi flag. However, that flag also hides IPv6 new
+ * resolution API. We can disable -ansi flag because we want Vortex
+ * Library to remain ANSI-C project so we have to include some static
+ * definitions to have them. If you have a better idea or you think
+ * this can admit improvements, please, contact us. We will be glad to
+ * hear you! */
+struct addrinfo {
+	int     ai_flags;
+	int     ai_family;
+	int     ai_socktype;
+	int     ai_protocol;
+	size_t  ai_addrlen;
+	struct  sockaddr *ai_addr;
+	char    *ai_canonname;     /* canonical name */
+	struct  addrinfo *ai_next; /* this struct can form a linked list */
+};
+
+int getaddrinfo (const char *hostname,
+		 const char *service,
+		 const struct addrinfo *hints,
+		 struct addrinfo **res);
+
+int getnameinfo (const struct sockaddr *sa, socklen_t salen,
+		 char *host, size_t hostlen,
+		 char *serv, size_t servlen,
+		 int flags);
+
+void freeaddrinfo(struct addrinfo *ai);
+
+#  endif
+#endif
+
 /** 
  * @internal
  * @brief Internal VortexConnection representation.
