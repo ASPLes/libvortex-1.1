@@ -36,7 +36,9 @@
  *         info@aspl.es - http://www.aspl.es/vortex
  */
 #include <vortex.h>
+#if defined(AXL_OS_UNIX)
 #include <netdb.h>
+#endif
 
 /* local include */
 #include <vortex_ctx_private.h>
@@ -548,7 +550,9 @@ VORTEX_SOCKET     vortex_listener_sock_listen_common      (VortexCtx            
 	int                  backlog   = 0;
 	int                  bind_res  = VORTEX_SOCKET_ERROR;
 	int                  result;
+#if defined(ENABLE_VORTEX_LOG)
 	char               * str_out_buf[INET6_ADDRSTRLEN];
+#endif
 	struct addrinfo      req, *ans;
 
 	v_return_val_if_fail (ctx,  -2);
