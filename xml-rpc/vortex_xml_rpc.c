@@ -2027,7 +2027,9 @@ axl_bool  vortex_xml_rpc_notify_reply (XmlRpcMethodCall     * method_call,
 	int             msg_no       = -1;
 	char          * reply_string = NULL;
 	int             reply_size   = -1;
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx     * ctx;
+#endif
 
 	/* check that the reply notification facility is received
 	 * right data */
@@ -2037,8 +2039,10 @@ axl_bool  vortex_xml_rpc_notify_reply (XmlRpcMethodCall     * method_call,
 	/* get reply data from the given method call */
 	__vortex_xml_rpc_method_call_get_reply_data (method_call, &channel, &msg_no);
 	
+#if defined(ENABLE_VORTEX_LOG)
 	/* get a reference to the context */
 	ctx = vortex_channel_get_ctx (channel);
+#endif
 
 	/* get the xml representation for the method reply */
 	reply_string = vortex_xml_rpc_method_response_marshall (method_response, &reply_size);

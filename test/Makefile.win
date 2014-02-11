@@ -1,3 +1,6 @@
+WEBSOCKET_LIBS = -L"../../../../nopoll/trunk/src/" -lnopoll
+WEBSOCKET_CFLAGS = -I"../../../../nopoll/trunk/src/" -DENABLE_WEBSOCKET_SUPPORT
+
 # -*- makefile -*- 
 ifdef enable_vortex_log
    vortex_dll         = -lvortex-debug-1.1
@@ -6,6 +9,7 @@ ifdef enable_vortex_log
    vortex_tls_dll     = -lvortex-tls-debug-1.1
    vortex_sasl_dll    = -lvortex-sasl-debug-1.1
    vortex_pull_dll    = -lvortex-pull-debug-1.1
+   vortex_websocket_dll = -lvortex-websocket-debug-1.1
    vortex_http_dll    = -lvortex-http-debug-1.1
    vortex_alive_dll    = -lvortex-alive-debug-1.1
 
@@ -16,6 +20,7 @@ ifdef enable_vortex_log
    vortex_file_tls_dll     = libvortex-tls-debug-1.1.dll
    vortex_file_sasl_dll    = libvortex-sasl-debug-1.1.dll
    vortex_file_pull_dll    = libvortex-pull-debug-1.1.dll
+   vortex_file_websocket_dll    = libvortex-websocket-debug-1.1.dll
    vortex_file_http_dll    = libvortex-http-debug-1.1.dll
    vortex_file_alive_dll    = libvortex-alive-debug-1.1.dll
 else
@@ -25,6 +30,7 @@ else
    vortex_tls_dll     = -lvortex-tls-1.1
    vortex_sasl_dll    = -lvortex-sasl-1.1
    vortex_pull_dll    = -lvortex-pull-1.1
+   vortex_websocket_dll    = -lvortex-websocket-1.1
    vortex_http_dll    = -lvortex-http-1.1
    vortex_alive_dll    = -lvortex-alive-1.1
 
@@ -35,6 +41,7 @@ else
    vortex_file_tls_dll     = libvortex-tls-1.1.dll
    vortex_file_sasl_dll    = libvortex-sasl-1.1.dll
    vortex_file_pull_dll    = libvortex-pull-1.1.dll
+   vortex_file_websocket_dll    = libvortex-websocket-1.1.dll
    vortex_file_http_dll    = libvortex-http-1.1.dll
    vortex_file_alive_dll    = libvortex-alive-1.1.dll
 endif
@@ -67,18 +74,19 @@ PROGRAMS = vortex-listener.exe \
 	   vortex-file-transfer-server.exe \
 	   vortex-client-connections.exe
 
-LIBS     = -Wall -Werror -g -lws2_32 $(AXL_LIBS) $(search_lib_path) \
+LIBS     = -Wall -Werror -g -lws2_32 $(AXL_LIBS) $(search_lib_path) $(WEBSOCKET_LIBS) \
 	-L../src -L../../libaxl/src -L$(DEPEND_DIR)/bin -laxl $(vortex_dll) \
 	-L../tunnel $(vortex_tunnel_dll) \
 	-L../xml-rpc $(vortex_xml_rpc_dll) \
 	-L../tls $(vortex_tls_dll) \
 	-L../sasl $(vortex_sasl_dll) \
 	-L../pull $(vortex_pull_dll) \
+	-L../web-socket $(vortex_websocket_dll) \
 	-L../http $(vortex_http_dll) \
 	-L../alive $(vortex_alive_dll) \
 	-lreadline5
 
-INCS =  -I"." -I"../src" -I"../tunnel" -I"../tls" -I"../sasl" -I"../xml-rpc" -I"../pull" -I"../http" -I"../alive" $(AXL_INCLUDE) \
+INCS =  -I"." -I"../src" -I"../tunnel" -I"../tls" -I"../sasl" -I"../xml-rpc" -I"../pull" -I"../http" -I"../alive" -I"../web-socket" $(AXL_INCLUDE) $(WEBSOCKET_CFLAGS) \
         -I"../../libaxl/src" -I$(DEPEND_DIR)/include -DENABLE_SASL_SUPPORT -DENABLE_XML_RPC_SUPPORT -DENABLE_TLS_SUPPORT
 
 CFLAGS   = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" -Wall -g -D__axl_disable_broken_bool_def__  
@@ -140,6 +148,8 @@ links:
 	cp ../tunnel/$(vortex_file_tunnel_dll) .
 	cp ../xml-rpc/$(vortex_file_xml_rpc_dll) .
 	cp ../pull/$(vortex_file_pull_dll) .
+	cp ../web-socket/$(vortex_file_websocket_dll) .
+	cp ../../../../nopoll/trunk/src/libnopoll.dll .
 	cp ../http/$(vortex_file_http_dll) .
 	cp ../alive/$(vortex_file_alive_dll) .
 	cp ../data/*.dtd .

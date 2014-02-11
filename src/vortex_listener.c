@@ -569,7 +569,7 @@ VORTEX_SOCKET     vortex_listener_sock_listen_common      (VortexCtx            
 		req.ai_protocol = 0;
 
 		if (getaddrinfo (host, port, &req, &ans) != 0) {
-			vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to get hostname by calling getaddrinfo(), errno=%d", errno);
+			vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to get hostname by calling getaddrinfo(%s:%s), errno=%d", host, port, errno);
 			axl_error_report (error, VortexNameResolvFailure, "Unable to get hostname by calling getaddrinfo()");
 			return -1;
 		} /* end if */
@@ -782,32 +782,41 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	} else
 		fd = vortex_listener_sock_listen (ctx, host, str_port, &error);
 	
-	/* unref the host and port value */
-	axl_free (str_port);
-	axl_free (host);
-
 	/* listener ok */
 	/* seems listener to be created, now create the BEEP
 	 * connection around it */
 	listener = vortex_connection_new_empty (ctx, fd, VortexRoleMasterListener);
+	if (listener) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "listener reference created (%p, id: %d, socket: %d)", listener, 
+			    vortex_connection_get_id (listener), fd);
+	} else {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "vortex_connection_new_empty() failed to create listener at %s:%s, closing socket: %d", 
+			    host, str_port, fd);
+		vortex_close_socket (fd);
+	} /* end if */
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "listener reference created (%p, id: %d, socket: %d)", listener, 
-		    vortex_connection_get_id (listener), fd);
+	/* unref the host and port value */
+	axl_free (str_port);
+	axl_free (host);
 
 	/* handle returned socket or error */
 	switch (fd) {
 	case -2:
 		__vortex_connection_shutdown_and_record_error (
 			listener, VortexWrongReference, "Failed to start listener because vortex_listener_sock_listener reported NULL parameter received");
+		/* nullify reference */
+		listener = NULL;
 		break;
 	case -1:
 		__vortex_connection_shutdown_and_record_error (
-			listener, VortexProtocolError,"Failed to start listener, vortex_listener_sock_listener reported (code: %d): %s",
+			listener, VortexProtocolError, "Failed to start listener, vortex_listener_sock_listener reported (code: %d): %s",
 			axl_error_get_code (error), axl_error_get (error));
+		/* nullify reference */
+		listener = NULL;
 		break;
 	default:
 		/* register the listener socket at the Vortex Reader process.  */
-		if (register_conn)
+		if (register_conn && listener)
 			vortex_reader_watch_listener (ctx, listener);
 		if (threaded) {
 			vortex_log (VORTEX_LEVEL_DEBUG, "doing listener notification (threaded mode)");
@@ -822,6 +831,10 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 			} /* end if */
 			axl_free (host_used);
 		} /* end if */
+		
+		/* do not continue in the case of NULL reference */
+		if (! listener)
+			return NULL;
 
 		/* call to notify connection created */
 		if (! vortex_connection_actions_notify (ctx, &listener, CONNECTION_STAGE_POST_CREATED)) {

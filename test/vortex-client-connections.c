@@ -194,6 +194,8 @@ int main (int argc, char ** argv)
 #if defined(AXL_OS_UNIX)
 	printf ("INFO: Test ok, created %d connections: diff: %ld.%ld!\n", 
 		count, (long) stop.tv_sec, (long) stop.tv_usec);
+#elif defined(AXL_OS_WIN32)
+	printf ("INFO: Test ok, created %d connections\n", count);
 #endif
 
 	return 0;

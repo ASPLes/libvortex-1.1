@@ -1,28 +1,30 @@
-# -*- makefile -*- Makefile for windows (mingw)
-OBJ  = vortex_http.o 
+OBJ  = vortex_websocket.o 
 
 ifdef enable_vortex_log
-   DLL = $(vortex_debug_http_1_1_dll).dll
+   DLL = $(vortex_debug_websocket_1_1_dll).dll
    vortex_dll = -lvortex-debug-1.1
 else
-   DLL = $(vortex_http_1_1_dll).dll
+   DLL = $(vortex_websocket_1_1_dll).dll
    vortex_dll = -lvortex-1.1
 endif
 IMPORT_DLL = $(DLL).a
-STATIC_LIB = $(vortex_http_1_1_dll).a
+STATIC_LIB = $(vortex_websocket_1_1_dll).a
+
+WEBSOCKET_LIBS = -L"../../../../nopoll/trunk/src/" -lnopoll
+WEBSOCKET_CFLAGS = -I"../../../../nopoll/trunk/src/"
 
 #LIBS = -Wall $(enable_gcc_debug) -L"$(BASE_DIR)/lib" \
 #	-L"$(BASE_DIR)/bin" \
 #	--add-stdcall-alias \
 #	-lws2_32 \
 #	-lintl  -liconv  -lm 
-LIBS = -Wall $(enable_gcc_debug) $(AXL_LIBS) -L"../src" -L"../../libaxl/src/" -laxl -lws2_32 $(vortex_dll) $(OPENSSL_LIBS) $(search_lib_path) 
+LIBS = -Wall $(enable_gcc_debug) $(AXL_LIBS) -L"../src" -L"../../libaxl/src/" -laxl -lws2_32 $(vortex_dll) $(OPENSSL_LIBS) $(WEBSOCKET_LIBS) $(search_lib_path) 
 
 # build vortex with log support
-INCS = -Wall $(enable_gcc_debug) $(AXL_INCLUDE) -I"." -I"../../libaxl/src" -I"../src" $(enable_vortex_log) -DENABLE_HTTP_SUPPORT
+INCS = -Wall $(enable_gcc_debug) $(AXL_INCLUDE) -I"." -I"../../libaxl/src" -I"../src" $(enable_vortex_log) $(WEBSOCKET_CFLAGS) -DENABLE_WEBSOCKET_SUPPORT
 
-CFLAGS = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" -D__axl_disable_broken_bool_def__   \
-	-DPACKAGE_DTD_DIR=\""$(datadir)"\" -DPACKAGE_TOP_DIR=\""$(top_srcdir)"\" -Wall $(enable_gcc_debug) $(OPENSSL_FLAGS) 
+CFLAGS = $(INCS) -DVERSION=\""$(VORTEX_VERSION)"\" -D__axl_disable_broken_bool_def__  \
+	-DPACKAGE_DTD_DIR=\""$(datadir)"\" -DPACKAGE_TOP_DIR=\""$(top_srcdir)"\" -Wall $(enable_gcc_debug) $(OPENSSL_FLAGS) $(WEBSOCKET_FLAGS)
 RM = rm -f
 
 .PHONY: all clean
@@ -34,23 +36,23 @@ clean:
 
 install: all
 	test -d $(INSTALL_DIR) || exit -1
-	cp libvortex-http-1.1.dll $(INSTALL_DIR)
+	cp libvortex-websocket-1.1.dll $(INSTALL_DIR)
 
 $(DLL): $(OBJ)
 # add the following line to create an import library. At this point this step
 # is not requiered because gcc automatically get an import library from the dll.
 # -Wl,--out-implib,libvortex-1.1.lib
-	$(CC) -m$(MODE) -shared -Wl,--out-implib,$(IMPORT_DLL) --export-all-symbols \
+	$(CC) -m$(MODE) -shared -Wl,--out-implib,$(IMPORT_DLL) $(export_all_symbols) \
 		  $(OBJ) -o $(DLL)        $(LIBS)
-	lib.exe /def:libvortex-http-1.1.def
+	lib.exe /def:libvortex-websocket-1.1.def
 ifdef enable_vortex_log
-	cp libvortex-http-1.1.lib $(release_dir)/libvortex-http-debug-1.1.lib
-	cp libvortex-http-1.1.def $(release_dir)/libvortex-http-debug-1.1.def
-	cp libvortex-http-1.1.exp $(release_dir)/libvortex-http-debug-1.1.exp
+	cp libvortex-websocket-1.1.lib $(release_dir)/libvortex-websocket-debug-1.1.lib
+	cp libvortex-websocket-1.1.def $(release_dir)/libvortex-websocket-debug-1.1.def
+	cp libvortex-websocket-1.1.exp $(release_dir)/libvortex-websocket-debug-1.1.exp
 else
-	cp libvortex-http-1.1.lib $(release_dir)/
-	cp libvortex-http-1.1.def $(release_dir)/
-	cp libvortex-http-1.1.exp $(release_dir)/
+	cp libvortex-websocket-1.1.lib $(release_dir)/
+	cp libvortex-websocket-1.1.def $(release_dir)/
+	cp libvortex-websocket-1.1.exp $(release_dir)/
        # only strip if not debug
 	strip --strip-unneeded $(DLL)
 endif

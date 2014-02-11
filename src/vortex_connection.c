@@ -1043,7 +1043,9 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 		conn->host = axl_strdup (real_host);
 		conn->port = axl_strdup (real_port);
 	} else {
-		/* clear sin structure */
+		/* clear structures */
+		memset (host_name, 0, NI_MAXHOST);
+		memset (srv_name, 0, NI_MAXSERV);
 		if (conn->role == VortexRoleMasterListener) {
 			if (getsockname (_socket, (struct sockaddr *) &sin, &sin_size) < 0) {
 				vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get local hostname and port from socket=%d", _socket);
@@ -1058,10 +1060,10 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 		} /* end if */
 
 		/* set host and port from socket recevied */
-		if (getnameinfo ((struct sockaddr *) &sin, sin_size, host_name, NI_MAXHOST, srv_name, NI_MAXSERV, 0) != 0) {
+		if (getnameinfo ((struct sockaddr *) &sin, sin_size, host_name, NI_MAXHOST, 0, NI_MAXSERV, NI_NUMERICSERV | NI_NUMERICHOST) != 0) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "getnameinfo () call failed, error was errno=%d", errno);
 			return axl_false;
-		}
+		} /* end if */
 
 		/* copy values */
 		conn->host = axl_strdup (host_name);
@@ -1076,7 +1078,7 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 	} /* end if */
 
 	/* set host and port from socket recevied */
-	if (getnameinfo ((struct sockaddr *) &sin, sin_size, host_name, NI_MAXHOST, srv_name, NI_MAXSERV, 0) != 0) {
+	if (getnameinfo ((struct sockaddr *) &sin, sin_size, host_name, NI_MAXHOST, srv_name, NI_MAXSERV, NI_NUMERICSERV | NI_NUMERICHOST) != 0) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "getnameinfo () call failed, error was errno=%d", errno);
 		return axl_false;
 	}
@@ -1353,7 +1355,7 @@ struct addrinfo * vortex_gethostbyname (VortexCtx           * ctx,
 		freeaddrinfo (res);
 		
 		vortex_mutex_unlock (&ctx->connection_hostname_mutex);
-		vortex_log (VORTEX_LEVEL_CRITICAL, "getaddrinfo () call failed, found errno=%d", errno);
+		vortex_log (VORTEX_LEVEL_CRITICAL, "getaddrinfo (%s:%s) call failed, found errno=%d", hostname, port, errno);
 		return NULL;
 	}
 
@@ -3281,7 +3283,14 @@ void                __vortex_connection_shutdown_and_record_error (VortexConnect
 	va_list     args;
 	char      * _msg;
 #if defined(ENABLE_VORTEX_LOG)
-	VortexCtx * ctx = conn->ctx;
+	VortexCtx * ctx;
+#endif
+	if (conn == NULL)
+		return;
+
+#if defined(ENABLE_VORTEX_LOG)
+	/* get reference */
+	ctx = conn->ctx;
 #endif
 
 	/* log error */

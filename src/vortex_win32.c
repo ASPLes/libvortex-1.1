@@ -124,4 +124,18 @@ int gettimeofday(struct timeval *tv, axlPointer notUsed)
 } /* end gettimeofday */
 #endif /* end ! defined(HAVE_GETTIMEOFDAY) */
 
+const char* vortex_win32_inet_ntop (int af, const void* src, char* dst, int cnt)
+{
+ 
+    struct sockaddr_in srcaddr;
+    memset (&srcaddr, 0, sizeof(struct sockaddr_in));
+    memcpy (&(srcaddr.sin_addr), src, sizeof(srcaddr.sin_addr));
+ 
+    srcaddr.sin_family = af;
+    if (WSAAddressToString((struct sockaddr*) &srcaddr, sizeof(struct sockaddr_in), 0, dst, (LPDWORD) &cnt) != 0) {
+        return NULL;
+    }
+    return dst;
+}
+
 #endif 

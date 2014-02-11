@@ -81,11 +81,13 @@ void __vortex_websocket_mutex_unlock (noPollPtr _mutex) {
 
 void __vortex_websocket_nopoll_on_close (noPollCtx * _ctx, noPollConn * conn, noPollPtr ptr)
 {
-        VortexConnection * _conn = ptr;
+#if defined(ENABLE_VORTEX_LOG)
+	VortexConnection * _conn = ptr;
 	VortexCtx        * ctx  = CONN_CTX (_conn);
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "Called onClose for noPollConn id=%d, conn associated BEEP conn-id=%d (socket: %d)",
 		    nopoll_conn_get_id (conn), vortex_connection_get_id (_conn), nopoll_conn_socket (conn));
+#endif
 
 	/* remove reference to avoid future close of a descriptor with
 	   the same value */

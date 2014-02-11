@@ -100,10 +100,10 @@
 
 /* _WIN32_WINNT note: If the application including the header defines
  * the _WIN32_WINNT, it must include the bit defined by the value
- * 0x400. */
-#ifndef _WIN32_WINNT
-#  define _WIN32_WINNT 0x400
-#endif
+ * 0x501 (formerly 0x400). */
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x501
+
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
@@ -127,6 +127,7 @@
 #define uint16_t               u_short
 #define vortex_is_disconnected ((errno == WSAESHUTDOWN) || (errno == WSAECONNABORTED) || (errno == WSAECONNRESET))
 #define VORTEX_FILE_SEPARATOR "\\"
+#define inet_ntop vortex_win32_inet_ntop
 
 /* no link support windows */
 #define S_ISLNK(m) (0)
