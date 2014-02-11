@@ -60,6 +60,8 @@ int gettimeofday(struct timeval *tv, axlPointer notUsed);
 
 #endif /* end ! defined(HAVE_GETTIMEOFDAY) */
 
+const char* vortex_win32_inet_ntop (int af, const void* src, char* dst, int cnt);
+
 END_C_DECLS
 
 #endif

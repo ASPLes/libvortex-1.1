@@ -69,10 +69,12 @@ void vortex_regression_common_wait (long microseconds)
  */
 char * vortex_regression_common_read_file (const char * file, int * size)
 {
-	char * result;
+	char * result = NULL;
 	FILE * handle;
 	struct stat status;
+#if ! defined(AXL_OS_WIN32)
 	int    requested;
+#endif
 
 	/* check parameter received */
 	if (file == NULL)
@@ -95,10 +97,11 @@ char * vortex_regression_common_read_file (const char * file, int * size)
 		fclose (handle);
 		return NULL;
 	} /* end if */
-	
+
+#if ! defined(AXL_OS_WIN32)	
 	result    = axl_new (char, status.st_size + 1);
 	requested = fread (result, 1, status.st_size, handle);
-#if ! defined(AXL_OS_WIN32)
+
 	/* disabled because windows could return a different size
 	 * reported that the actual size !!!!! */
 	if (status.st_size != requested) {

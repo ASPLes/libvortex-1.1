@@ -228,16 +228,20 @@ void vortex_tunnel_settings_add_hop (VortexTunnelSettings * settings,
 	VortexTunnelItem   item;
 	axlNode          * node;
 	axlNode          * temp;
-	VortexCtx        * ctx;
 	const char       * value;
 	char             * content;
 	int                size;
+#if defined(ENABLE_VORTEX_LOG)
+	VortexCtx        * ctx;
+#endif
 
 	/* check parameter */
 	v_return_if_fail (settings);
 
-	/* get context */
+#if defined(ENABLE_VORTEX_LOG)
+	/* configure context */
 	ctx = settings->ctx;
+#endif
 
 	/* create a new node */
 	node = axl_node_create ("tunnel");

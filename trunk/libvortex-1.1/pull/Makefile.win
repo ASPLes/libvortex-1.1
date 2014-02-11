@@ -41,7 +41,7 @@ $(DLL): $(OBJ)
 # add the following line to create an import library. At this point this step
 # is not requiered because gcc automatically get an import library from the dll.
 # -Wl,--out-implib,libvortex-1.1.lib
-	$(CC) -m$(MODE) -shared -Wl,--out-implib,$(IMPORT_DLL) --export-all-symbols \
+	$(CC) -m$(MODE) -shared -Wl,--out-implib,$(IMPORT_DLL) $(export_all_symbols) \
 		  $(OBJ) -o $(DLL)        $(LIBS)
 	lib.exe /def:libvortex-pull-1.1.def
 ifdef enable_vortex_log
