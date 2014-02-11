@@ -50,6 +50,13 @@
 #define AI_PASSIVE 0x00000001 /* get address to use bind() */
 #endif
 
+#ifndef NI_NUMERICHOST
+# define NI_NUMERICHOST	1	/* Don't try to look up hostname.  */
+#endif
+#ifndef NI_NUMERICSERV
+# define NI_NUMERICSERV 2	/* Don't convert port number to name.  */
+#endif
+
 /** 
  * NOTE: we are including here static definitions because we are
  * compiling with -ansi flag. However, that flag also hides IPv6 new
