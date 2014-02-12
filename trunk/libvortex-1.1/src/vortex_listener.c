@@ -545,6 +545,7 @@ VORTEX_SOCKET     vortex_listener_sock_listen_common      (VortexCtx            
 	int                  sin_size6 = sizeof (sin6);
 #else    	
 	int                  unit      = 1; 
+	socklen_t            sin_size  = sizeof (sin);
 	socklen_t            sin_size6 = sizeof (sin6);
 #endif	
 	uint16_t             int_port;

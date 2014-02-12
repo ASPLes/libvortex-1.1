@@ -50,6 +50,10 @@
 #define AI_PASSIVE 0x00000001 /* get address to use bind() */
 #endif
 
+#ifndef AI_NUMERICHOST
+# define AI_NUMERICHOST	0x0004	/* Don't use name resolution.  */
+#endif
+
 #ifndef NI_NUMERICHOST
 # define NI_NUMERICHOST	1	/* Don't try to look up hostname.  */
 #endif
