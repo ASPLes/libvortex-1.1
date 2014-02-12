@@ -468,13 +468,12 @@ void __vortex_listener_second_step_accept (VortexFrame * frame, VortexConnection
  */
 VORTEX_SOCKET vortex_listener_accept (VORTEX_SOCKET server_socket)
 {
-	struct sockaddr_in inet_addr;
+	struct sockaddr_storage inet_addr;
 #if defined(AXL_OS_WIN32)
-	int               addrlen;
+	int               addrlen = sizeof (inet_addr);
 #else
-	socklen_t         addrlen;
+	socklen_t         addrlen = sizeof (inet_addr);
 #endif
-	addrlen       = sizeof(struct sockaddr_in);
 
 	/* accept the connection new connection */
 	return accept (server_socket, (struct sockaddr *)&inet_addr, &addrlen);
@@ -543,9 +542,10 @@ VORTEX_SOCKET     vortex_listener_sock_listen_common      (VortexCtx            
 #if defined(AXL_OS_WIN32)
 /*	BOOL                 unit      = axl_true; */
 	int                  sin_size  = sizeof (sin);
+	int                  sin_size6 = sizeof (sin6);
 #else    	
 	int                  unit      = 1; 
-	socklen_t            sin_size  = sizeof (sin);
+	socklen_t            sin_size6 = sizeof (sin6);
 #endif	
 	uint16_t             int_port;
 	int                  backlog   = 0;
@@ -565,10 +565,10 @@ VORTEX_SOCKET     vortex_listener_sock_listen_common      (VortexCtx            
 	switch (transport) {
 	case VORTEX_IPv6:
 		/* resolve hostname */
-		req.ai_flags    = AI_PASSIVE;
+		memset (&req, 0, sizeof(struct addrinfo));
+		req.ai_flags    = AI_PASSIVE | AI_NUMERICHOST; 
 		req.ai_family   = AF_INET6;
 		req.ai_socktype = SOCK_STREAM;
-		req.ai_protocol = 0;
 
 		/* try to resolve */
 		ret_val = getaddrinfo (host, port, &req, &ans);
@@ -648,7 +648,7 @@ VORTEX_SOCKET     vortex_listener_sock_listen_common      (VortexCtx            
 	} /* end */
 
 	/* call to bind */
-	vortex_log (VORTEX_LEVEL_DEBUG, "bind(2) call returned: %d", bind_res);
+	vortex_log (VORTEX_LEVEL_DEBUG, "bind() call returned: %d, errno: %d", bind_res, errno);
 	if (bind_res == VORTEX_SOCKET_ERROR) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
 		axl_error_report (error, VortexBindError, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
@@ -659,7 +659,9 @@ VORTEX_SOCKET     vortex_listener_sock_listen_common      (VortexCtx            
 	/* get current backlog configuration */
 	vortex_conf_get (ctx, VORTEX_LISTENER_BACKLOG, &backlog);
 	
-	if (listen(fd, backlog) == VORTEX_SOCKET_ERROR) {
+	if (listen (fd, backlog) == VORTEX_SOCKET_ERROR) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "listen() failed, errno: %d. Closing socket: %d", errno, fd);
+		vortex_close_socket (fd);
 		axl_error_report (error, VortexSocketCreationError, "an error have occur while executing listen");
 		return -1;
         } /* end if */
@@ -671,11 +673,13 @@ VORTEX_SOCKET     vortex_listener_sock_listen_common      (VortexCtx            
 		result = getsockname (fd, (struct sockaddr *) &sin, &sin_size);
 		break;
 	case VORTEX_IPv6:
-		result = getsockname (fd, (struct sockaddr *) &sin6, &sin_size);
+		result = getsockname (fd, (struct sockaddr *) &sin6, &sin_size6);
 		break;
 	}
 
 	if (result < 0) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "getsockname () reported %d, errno %d", result, errno);
+		vortex_close_socket (fd);
 		axl_error_report (error, VortexNameResolvFailure, "an error have happen while executing getsockname");
 		return -1;
 	} /* end if */
@@ -784,7 +788,7 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 
 	/* allocate listener, try to guess IPv6 support */
 	if (strstr (host, ":") || transport == VORTEX_IPv6) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "Detected IPv6 listener: %s..", host);
+		vortex_log (VORTEX_LEVEL_DEBUG, "Detected IPv6 listener: %s:%s..", host, str_port);
 		fd = vortex_listener_sock_listen6 (ctx, host, str_port, &error);
 	} else
 		fd = vortex_listener_sock_listen (ctx, host, str_port, &error);

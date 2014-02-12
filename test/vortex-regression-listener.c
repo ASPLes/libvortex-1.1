@@ -2043,7 +2043,7 @@ int main (int  argc, char ** argv)
 #endif
 
 	/* IPv6 support */
-	listener = vortex_listener_new6 (ctx, "::", "44016", NULL, NULL);
+	listener = vortex_listener_new6 (ctx, "::1", "44016", NULL, NULL);
 	if (! vortex_connection_is_ok (listener, axl_false)) {
 		printf ("ERROR: failed to start IPv6 listener at: 44016, error found (code: %d): %s\n",
 			vortex_connection_get_status (listener),
