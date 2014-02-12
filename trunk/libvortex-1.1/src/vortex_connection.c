@@ -1048,7 +1048,8 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 		memset (srv_name, 0, NI_MAXSERV);
 		if (conn->role == VortexRoleMasterListener) {
 			if (getsockname (_socket, (struct sockaddr *) &sin, &sin_size) < 0) {
-				vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get local hostname and port from socket=%d", _socket);
+				vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get local hostname and port from socket=%d, errno=%d (%s)", 
+					    _socket, errno, vortex_errno_get_error (errno));
 				return axl_false;
 			} /* end if */
 		} else {
@@ -1060,7 +1061,7 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 		} /* end if */
 
 		/* set host and port from socket recevied */
-		if (getnameinfo ((struct sockaddr *) &sin, sin_size, host_name, NI_MAXHOST, 0, NI_MAXSERV, NI_NUMERICSERV | NI_NUMERICHOST) != 0) {
+		if (getnameinfo ((struct sockaddr *) &sin, sin_size, host_name, NI_MAXHOST, srv_name, NI_MAXSERV, NI_NUMERICSERV | NI_NUMERICHOST) != 0) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "getnameinfo () call failed, error was errno=%d", errno);
 			return axl_false;
 		} /* end if */
@@ -1068,7 +1069,6 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 		/* copy values */
 		conn->host = axl_strdup (host_name);
 		conn->port = axl_strdup (srv_name);
-
 	} /* end if */
 
 	/* now set local address */
@@ -1350,6 +1350,7 @@ struct addrinfo * vortex_gethostbyname (VortexCtx           * ctx,
 	hints.ai_socktype = SOCK_STREAM;
 
 	/* resolve hostname with hints */
+	vortex_log (VORTEX_LEVEL_DEBUG, "Calling getaddrinfo (%s:%s), transport=%d", hostname, port, transport);
 	if (getaddrinfo (hostname, port, &hints, &res) != 0) {
 		axl_free (key);
 		freeaddrinfo (res);
@@ -1837,7 +1838,7 @@ axl_bool vortex_connection_do_greetings_exchange (VortexCtx             * ctx,
  */
 axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 {
-	struct sockaddr_in     sin;
+	struct sockaddr_storage   sin;
 #if defined(AXL_OS_WIN32)
 	/* windows flavors */
 	int                    sin_size     = sizeof (sin);
@@ -1856,6 +1857,8 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 	VortexConnectionNew    on_connected = data->on_connected;
 	axlPointer             user_data    = data->user_data;
 	VortexNetTransport     transport    = data->transport;
+	char                   host_name[NI_MAXHOST];
+	char                   srv_name[NI_MAXSERV]; 
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "executing connection new in %s mode to %s:%s id=%d",
 	       (data->threaded == axl_true) ? "thread" : "blocking", 
@@ -1909,10 +1912,18 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 
 			return NULL;
 		} /* end if */
+
+		/* set host and port from socket recevied */
+		memset (host_name, 0, NI_MAXHOST);
+		memset (srv_name, 0, NI_MAXSERV);
+		if (getnameinfo ((struct sockaddr *) &sin, sin_size, host_name, NI_MAXHOST, srv_name, NI_MAXSERV, NI_NUMERICSERV | NI_NUMERICHOST) != 0) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "getnameinfo () call failed, error was errno=%d", errno);
+			return axl_false;
+		}
 	
 		/* set local addr and local port */
-		connection->local_addr = vortex_support_inet_ntoa (ctx, &sin);
-		connection->local_port = axl_strdup_printf ("%d", ntohs (sin.sin_port));	
+		connection->local_addr = axl_strdup (host_name);
+		connection->local_port = axl_strdup (srv_name);
 
 		/* block thread until received remote greetings */
 		if (vortex_connection_do_greetings_exchange (ctx, connection, options, d_timeout)) {

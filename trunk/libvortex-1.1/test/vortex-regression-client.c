@@ -1889,7 +1889,7 @@ axl_bool  test_01d_01 (void)
 	printf ("Test 01-d: checking MIME support for wrong UNIX MIME (no CR-LF but LF)..\n");
 	mime_message = vortex_regression_common_read_file ("mime.example.1.txt", NULL);
 	if (mime_message == NULL) {
-		printf ("ERROR: failed to load mime message: %s", "mime.example.1.txt");
+		printf ("ERROR: failed to load mime message (1): %s", "mime.example.1.txt");
 		return axl_false;
 	} /* end if */
 
@@ -2124,7 +2124,7 @@ axl_bool  test_01d_03 (void)
 	printf ("Test 01-d: checking MIME support (no headers)..\n");
 	mime_message = vortex_regression_common_read_file ("mime.example.3.txt", NULL);
 	if (mime_message == NULL) {
-		printf ("ERROR: failed to load mime message: %s", "mime.example.3.txt");
+		printf ("ERROR: failed to load mime message vortex_regression_common_read_file (), failed): %s", "mime.example.3.txt");
 		return axl_false;
 	} /* end if */
 
@@ -2468,7 +2468,7 @@ axl_bool  test_01d (void) {
 	printf ("Test 01-d: opening MIME message..\n");
 	mime_message = vortex_regression_common_read_file ("mime.example.1.txt", NULL);
 	if (mime_message == NULL) {
-		printf ("ERROR: failed to load mime message: %s", "mime.example.1.txt");
+		printf ("ERROR: failed to load mime message (2): %s", "mime.example.1.txt");
 		return axl_false;
 	} /* end if */
 
@@ -5189,6 +5189,12 @@ axl_bool  test_02a3 (void) {
 		return axl_false;
 		
 	} /* end if */
+
+	printf ("Test 02-a3: connected to %s:%s\n", vortex_connection_get_host (connection),
+		vortex_connection_get_port (connection));
+	printf ("            ...with local address: %s:%s\n", 
+		vortex_connection_get_local_addr (connection),
+		vortex_connection_get_local_port (connection));
 
 	/* vortex_log_enable (ctx, axl_true);
 	   vortex_color_log_enable (ctx, axl_true);  */
