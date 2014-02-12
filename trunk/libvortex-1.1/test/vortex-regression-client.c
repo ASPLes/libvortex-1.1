@@ -3105,7 +3105,7 @@ axl_bool test_01g1 (void) {
 	} /* end if */
 
 	/* ok, now create a connection and simulate a greetings message */
-	printf ("Test 01-g1: creating BEEP session using provided socket=%d\n", _socket);
+	printf ("Test 01-g1: creating BEEP session using provided socket=%d\n", (int) _socket);
 	conn = vortex_connection_new_empty (ctx, _socket, VortexRoleInitiator);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("Test 01-g1: unable to create connection required for the test..\n");
@@ -4428,7 +4428,7 @@ axl_bool test_01y (void) {
 	vortex_connection_set_on_close_full (conn, test_01y_full, queue);
 
 	printf ("Test 01-y: closing socket=%d (conn-id=%d)....\n",
-		vortex_connection_get_socket (conn), vortex_connection_get_id (conn));
+		(int) vortex_connection_get_socket (conn), vortex_connection_get_id (conn));
 
 	/* get the socket from the connection and close it */
 	vortex_close_socket (vortex_connection_get_socket (conn));
@@ -4554,7 +4554,7 @@ axl_bool  test_02_common (VortexConnection * connection)
 	int                code;
 
 	printf ("Test --: running tests with conn-id=%d, socket=%d\n", 
-		vortex_connection_get_id (connection), vortex_connection_get_socket (connection));
+		vortex_connection_get_id (connection), (int) vortex_connection_get_socket (connection));
 
 	/* create the queue */
 	queue   = vortex_async_queue_new ();
