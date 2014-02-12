@@ -51,6 +51,12 @@ VortexConnection * vortex_listener_new             (VortexCtx            * ctx,
 						    VortexListenerReady    on_ready, 
 						    axlPointer             user_data);
 
+VortexConnection * vortex_listener_new6            (VortexCtx            * ctx,
+						    const char           * host, 
+						    const char           * port, 
+						    VortexListenerReady    on_ready, 
+						    axlPointer             user_data);
+
 VortexConnection * vortex_listener_new2            (VortexCtx           * ctx,
 						    const char          * host,
 						    int                   port,
@@ -64,6 +70,13 @@ VortexConnection * vortex_listener_new_full        (VortexCtx                * c
 						    axlPointer                 user_data);
 
 VortexConnection * vortex_listener_new_full2       (VortexCtx                * ctx,
+						    const char               * host,
+						    const char               * port,
+						    axl_bool                   register_conn,
+						    VortexListenerReadyFull    on_ready_full, 
+						    axlPointer                 user_data);
+
+VortexConnection * vortex_listener_new_full6       (VortexCtx                * ctx,
 						    const char               * host,
 						    const char               * port,
 						    axl_bool                   register_conn,
