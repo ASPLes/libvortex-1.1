@@ -86,6 +86,8 @@ int getnameinfo (const struct sockaddr *sa, socklen_t salen,
 		 char *serv, size_t servlen,
 		 int flags);
 
+const char * gai_strerror (int errcode);
+
 void freeaddrinfo(struct addrinfo *ai);
 
 #  endif

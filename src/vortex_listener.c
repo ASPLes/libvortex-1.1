@@ -520,6 +520,7 @@ typedef struct _VortexListenerData {
 	axl_bool                   threaded;
 	axl_bool                   register_conn;
 	VortexCtx                * ctx;
+	VortexNetTransport         transport;
 }VortexListenerData;
 
 /** 
@@ -772,6 +773,7 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	axlError           * error         = NULL;
 	VORTEX_SOCKET        fd;
 	struct sockaddr_in   sin;
+	VortexNetTransport   transport     = data->transport;
 
 	/* handlers received (may be both null) */
 	VortexListenerReady      on_ready       = data->on_ready;
@@ -781,7 +783,7 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 	axl_free (data);
 
 	/* allocate listener, try to guess IPv6 support */
-	if (strstr (host, ":")) {
+	if (strstr (host, ":") || transport == VORTEX_IPv6) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "Detected IPv6 listener: %s..", host);
 		fd = vortex_listener_sock_listen6 (ctx, host, str_port, &error);
 	} else
@@ -888,6 +890,7 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
 						  axl_bool                  register_conn,
 						  VortexListenerReady       on_ready, 
 						  VortexListenerReadyFull   on_ready_full,
+						  VortexNetTransport        transport,
 						  axlPointer                user_data)
 {
 	VortexListenerData * data;
@@ -909,6 +912,7 @@ VortexConnection * __vortex_listener_new_common  (VortexCtx               * ctx,
 	data->ctx           = ctx;
 	data->register_conn = register_conn;
 	data->threaded      = (on_ready != NULL) || (on_ready_full != NULL);
+	data->transport     = transport;
 	
 	/* make request */
 	if (data->threaded) {
@@ -1122,7 +1126,43 @@ VortexConnection * vortex_listener_new (VortexCtx           * ctx,
 					axlPointer            user_data)
 {
 	/* call to int port API */
-	return __vortex_listener_new_common (ctx, host, __vortex_listener_get_port (port), axl_true, on_ready, NULL, user_data);
+	return __vortex_listener_new_common (ctx, host, __vortex_listener_get_port (port), axl_true, on_ready, NULL, VORTEX_IPv4, user_data);
+}
+
+/** 
+ * @brief Creates a new TCP/IPv6 Vortex Listener accepting incoming
+ * connections on the given <b>host:port</b> configuration.
+ *
+ * Take a look to \ref vortex_listener_new for additional
+ * information. This functions provides same features plus IPv6
+ * support.
+ *
+ * @param ctx The context where the operation will be performed.
+ *
+ * @param host The host to listen on.
+ *
+ * @param port The port to listen on.
+ *
+ * @param on_ready A optional callback to get a notification when
+ * vortex listener is ready to accept requests.
+ *
+ * @param user_data A user defined pointer to be passed in to
+ * <i>on_ready</i> handler.
+ *
+ * @return The listener connection created (represented by a \ref
+ * VortexConnection reference). You must use \ref
+ * vortex_connection_is_ok to check if the server was started.
+ * 
+ * See additional notes at \ref vortex_listener_new
+ */
+VortexConnection * vortex_listener_new6 (VortexCtx           * ctx,
+					 const char          * host, 
+					 const char          * port, 
+					 VortexListenerReady   on_ready, 
+					 axlPointer            user_data)
+{
+	/* call to int port API */
+	return __vortex_listener_new_common (ctx, host, __vortex_listener_get_port (port), axl_true, on_ready, NULL, VORTEX_IPv6, user_data);
 }
 
 /** 
@@ -1173,7 +1213,7 @@ VortexConnection * vortex_listener_new_full  (VortexCtx   * ctx,
 					      axlPointer user_data)
 {
 	/* call to int port API */
-	return __vortex_listener_new_common (ctx, host, __vortex_listener_get_port (port), axl_true, NULL, on_ready_full, user_data);
+	return __vortex_listener_new_common (ctx, host, __vortex_listener_get_port (port), axl_true, NULL, on_ready_full, VORTEX_IPv4, user_data);
 }
 
 /** 
@@ -1215,7 +1255,50 @@ VortexConnection * vortex_listener_new_full2       (VortexCtx                * c
 						    axlPointer                 user_data)
 {
 	/* call to int port API */
-	return __vortex_listener_new_common (ctx, host, __vortex_listener_get_port (port), register_conn, NULL, on_ready_full, user_data);
+	return __vortex_listener_new_common (ctx, host, __vortex_listener_get_port (port), register_conn, NULL, on_ready_full, VORTEX_IPv4, user_data);
+}
+
+/** 
+ * @brief Allows to create an IPv6 BEEP listener. 
+ *
+ * See \ref vortex_listener_new_full for more details.
+ *
+ * @param ctx The context where the operation will be performed.
+ * 
+ * @param host The host to listen on. The host name is a IPv6 address
+ * or a hostname that will be resolved using IPv6 API.
+ *
+ * @param port The port to listen on.
+ *
+ * @param register_conn axl_true makes the function to work like \ref
+ * vortex_listener_new_full. Otherwise, axl_false makes the listener
+ * created to be not registered on vortex reader process.
+ *
+ * @param on_ready_full A optional callback to get a notification when
+ * vortex listener is ready to accept requests.
+ *
+ * @param user_data A user defined pointer to be passed in to
+ * <i>on_ready</i> handler.
+ *
+ * @return The listener connection created, or NULL if the optional
+ * handler is provided (on_ready).
+ *
+ * <b>IMPORTANT NOTE:</b>
+ *
+ * All vortex_listener_new* functions have a common behavior which is
+ * reference returned is owned by the vortex engine. In this case, if
+ * the caller passes register_conn = axl_false makes the reference
+ * returned or notified to be owned by the caller.
+ */
+VortexConnection * vortex_listener_new_full6       (VortexCtx                * ctx,
+						    const char               * host,
+						    const char               * port,
+						    axl_bool                   register_conn,
+						    VortexListenerReadyFull    on_ready_full, 
+						    axlPointer                 user_data)
+{
+	/* call to int port API */
+	return __vortex_listener_new_common (ctx, host, __vortex_listener_get_port (port), register_conn, NULL, on_ready_full, VORTEX_IPv6, user_data);
 }
 
 /** 
@@ -1261,7 +1344,7 @@ VortexConnection * vortex_listener_new2    (VortexCtx   * ctx,
 {
 
 	/* call to common API */
-	return __vortex_listener_new_common (ctx, host, port, axl_true, on_ready, NULL, user_data);
+	return __vortex_listener_new_common (ctx, host, port, axl_true, on_ready, NULL, VORTEX_IPv4, user_data);
 }
 
 
