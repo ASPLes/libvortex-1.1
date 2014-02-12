@@ -1041,7 +1041,7 @@ axl_bool vortex_thread_pool_remove_event        (VortexCtx              * ctx,
 			axl_list_cursor_remove (ctx->thread_pool->events_cursor);
 
 			vortex_log (VORTEX_LEVEL_DEBUG, "Removing event id %d, total events registered after removal: %d",
-				    PTR_TO_INT (event_id), axl_list_length (ctx->thread_pool->events));
+				    event_id, axl_list_length (ctx->thread_pool->events));
 
 			/* unlock the thread pool */
 			vortex_mutex_unlock (&(ctx->thread_pool->mutex));

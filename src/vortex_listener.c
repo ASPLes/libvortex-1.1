@@ -554,6 +554,7 @@ VORTEX_SOCKET     vortex_listener_sock_listen_common      (VortexCtx            
 	char               * str_out_buf[INET6_ADDRSTRLEN];
 #endif
 	struct addrinfo      req, *ans;
+	int                  ret_val;
 
 	v_return_val_if_fail (ctx,  -2);
 	v_return_val_if_fail (host, -2);
@@ -564,12 +565,16 @@ VORTEX_SOCKET     vortex_listener_sock_listen_common      (VortexCtx            
 	case VORTEX_IPv6:
 		/* resolve hostname */
 		req.ai_flags    = AI_PASSIVE;
-		req.ai_family   = PF_INET6;
+		req.ai_family   = AF_INET6;
 		req.ai_socktype = SOCK_STREAM;
 		req.ai_protocol = 0;
 
-		if (getaddrinfo (host, port, &req, &ans) != 0) {
-			vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to get hostname by calling getaddrinfo(%s:%s), errno=%d", host, port, errno);
+		/* try to resolve */
+		ret_val = getaddrinfo (host, port, &req, &ans);
+		if (ret_val != 0) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to get hostname by calling getaddrinfo(%s:%s) = %d, errno=%d (%s)", 
+				    host, port, ret_val, errno, 
+				    gai_strerror (ret_val));
 			axl_error_report (error, VortexNameResolvFailure, "Unable to get hostname by calling getaddrinfo()");
 			return -1;
 		} /* end if */
@@ -581,7 +586,7 @@ VORTEX_SOCKET     vortex_listener_sock_listen_common      (VortexCtx            
 		/* resolve old way */
 		he = gethostbyname (host);
 		if (he == NULL) {
-			vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to get hostname by calling gethostbyname(), errno=%d", errno);
+			vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to get hostname by calling gethostbyname(%s), errno=%d", host, errno);
 			axl_error_report (error, VortexNameResolvFailure, "Unable to get hostname by calling gethostbyname()");
 			return -1;
 		} /* end if */

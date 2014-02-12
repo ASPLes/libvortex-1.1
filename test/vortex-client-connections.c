@@ -37,7 +37,7 @@ VortexConnection * connection_new (void)
 	}
 }
 
-void __pause (char * message, int seconds)
+void __vortex_pause (char * message, int seconds)
 {
 	struct timeval      time;
 	printf ("%s",message);
