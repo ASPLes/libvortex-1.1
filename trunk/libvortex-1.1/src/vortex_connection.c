@@ -1350,7 +1350,7 @@ struct addrinfo * vortex_gethostbyname (VortexCtx           * ctx,
 	hints.ai_socktype = SOCK_STREAM;
 
 	/* resolve hostname with hints */
-	vortex_log (VORTEX_LEVEL_DEBUG, "Calling getaddrinfo (%s:%s), transport=%d", hostname, port, transport);
+	vortex_log (VORTEX_LEVEL_DEBUG, "Calling getaddrinfo (%s:%s), transport=%s", hostname, port, transport == VORTEX_IPv6 ? "IPv6" : "IPv4");
 	if (getaddrinfo (hostname, port, &hints, &res) != 0) {
 		axl_free (key);
 		freeaddrinfo (res);

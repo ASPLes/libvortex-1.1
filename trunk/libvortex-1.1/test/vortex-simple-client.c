@@ -10,6 +10,7 @@ int  main (int  argc, char ** argv)
 	WaitReplyData    * wait_reply;
 	VortexCtx        * ctx;
 	int                msg_no;
+	char             * host_to_connect;
 
 	/* init vortex library */
 	ctx = vortex_ctx_new ();
@@ -22,8 +23,19 @@ int  main (int  argc, char ** argv)
 
 
 	/* creates a new connection against localhost:44000 */
-	printf ("connecting to localhost:44000...\n");
-	connection = vortex_connection_new (ctx, "localhost", "44000", NULL, NULL);
+	host_to_connect = "localhost";
+	if (argc > 1) 
+		host_to_connect = argv[1];
+
+	/* show what we are doing, a: hey, yes, this is important dude, b: important why? ... a: what kind of creature you are? */
+	printf ("INFO: connecting to %s:44000...\n", host_to_connect);
+	if (strstr (host_to_connect, ":")) {
+		printf ("INFO: using IPv6 api\n");
+		connection = vortex_connection_new6 (ctx, host_to_connect, "44000", NULL, NULL);
+	} else {
+		printf ("INFO: using IPv4 api\n");
+		connection = vortex_connection_new (ctx, host_to_connect, "44000", NULL, NULL);
+	}
 	if (!vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Unable to connect remote server, error was: %s\n",
 			 vortex_connection_get_message (connection));
