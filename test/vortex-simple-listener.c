@@ -60,6 +60,8 @@ int      on_accepted (VortexConnection * connection, axlPointer data)
 int  main (int  argc, char ** argv) 
 {
 
+	char * listening_on;
+
 	/* create the context */
 	ctx = vortex_ctx_new ();
 
@@ -78,7 +80,12 @@ int  main (int  argc, char ** argv)
 				  frame_received, NULL);
 
 	/* create a vortex server */
-	vortex_listener_new (ctx, "0.0.0.0", "44000", NULL, NULL);
+	listening_on = "0.0.0.0";
+	if (argc > 1)
+		listening_on = argv[1];
+
+	printf ("INFO: listening on %s\n", listening_on);
+	vortex_listener_new (ctx, listening_on, "44000", NULL, NULL);
 
 	/* configure connection notification */
 	vortex_listener_set_on_connection_accepted (ctx, on_accepted, NULL);

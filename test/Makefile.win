@@ -53,6 +53,7 @@ OBJ      = vortex-listener.o \
 	   vortex-sasl-listener.o \
 	   vortex-tls-listener.o \
 	   vortex-simple-listener.o \
+	   vortex-simple-client.o \
 	   vortex-xml-rpc-listener.o \
 	   vortex-regression-client.o \
 	   vortex-regression-listener.o \
@@ -67,6 +68,7 @@ PROGRAMS = vortex-listener.exe \
 	   vortex-sasl-listener.exe \
 	   vortex-tls-listener.exe \
 	   vortex-simple-listener.exe \
+	   vortex-simple-client.exe \
 	   vortex-xml-rpc-listener.exe \
 	   vortex-regression-client.exe \
 	   vortex-regression-listener.exe \
@@ -115,6 +117,9 @@ vortex-sasl-listener.exe: vortex-sasl-listener.o
 	$(CC) -mconsole $< -o $@ $(LIBS)
 
 vortex-simple-listener.exe: vortex-simple-listener.o
+	$(CC) -mconsole $< -o $@ $(LIBS)
+
+vortex-simple-client.exe: vortex-simple-client.o
 	$(CC) -mconsole $< -o $@ $(LIBS)
 
 vortex-tls-listener.exe: vortex-tls-listener.o
