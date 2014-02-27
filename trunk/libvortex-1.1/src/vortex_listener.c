@@ -649,7 +649,7 @@ VORTEX_SOCKET     vortex_listener_sock_listen_common      (VortexCtx            
 	} /* end */
 
 	/* call to bind */
-	vortex_log (VORTEX_LEVEL_DEBUG, "bind() call returned: %d, errno: %d", bind_res, errno);
+	vortex_log (VORTEX_LEVEL_DEBUG, "bind() call returned: %d, errno: %d (%s)", bind_res, errno, errno != 0 ? vortex_errno_get_error (errno) : "");
 	if (bind_res == VORTEX_SOCKET_ERROR) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
 		axl_error_report (error, VortexBindError, "unable to bind address (port:%u already in use or insufficient permissions). Closing socket: %d", int_port, fd);
