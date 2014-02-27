@@ -101,10 +101,6 @@
 /* _WIN32_WINNT note: If the application including the header defines
  * the _WIN32_WINNT, it must include the bit defined by the value
  * 0x501 (formerly 0x400). */
-#if (_WIN32_WINNT == 0x0500)
-#include <tpipv6.h>
-#endif
-
 #undef _WIN32_WINNT
 #define _WIN32_WINNT 0x501
 
