@@ -1291,6 +1291,11 @@ axl_bool                 vortex_connection_set_sock_block         (VORTEX_SOCKET
 	return axl_true;
 }
 
+void __free_addr_info (axlPointer ptr)
+{
+	freeaddrinfo (ptr);
+	return;
+}
 
 /** 
  * @internal wrapper to avoid possible problems caused by the
@@ -1365,7 +1370,7 @@ struct addrinfo * vortex_gethostbyname (VortexCtx           * ctx,
 			      /* the hostname */
 			      key, axl_free,
 			      /* the address */
-			      res, (axlDestroyFunc) freeaddrinfo);
+			      res, (axlDestroyFunc) __free_addr_info);
 
 	/* unlock and return the result */
 	vortex_mutex_unlock (&ctx->connection_hostname_mutex);
@@ -6937,7 +6942,6 @@ void                vortex_connection_cleanup                (VortexCtx        *
 {
 	v_return_if_fail (ctx);
 
-
 	/**** vortex_connection.c: cleanup ****/
 	vortex_mutex_destroy (&ctx->connection_xml_cache_mutex);
 	vortex_mutex_destroy (&ctx->connection_hostname_mutex);
@@ -6946,6 +6950,7 @@ void                vortex_connection_cleanup                (VortexCtx        *
 	/* drop hashes */
 	axl_hash_free (ctx->connection_xml_cache);
 	ctx->connection_xml_cache = NULL;
+
 	axl_hash_free (ctx->connection_hostname);
 	ctx->connection_hostname = NULL;
 

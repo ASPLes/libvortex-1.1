@@ -1145,11 +1145,6 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
 	/* stop vortex profiles process */
 	vortex_profiles_cleanup (ctx);
 
-#if defined(AXL_OS_WIN32)
-	WSACleanup ();
-	vortex_log (VORTEX_LEVEL_DEBUG, "shutting down WinSock2(tm) API");
-#endif
-
 	/* clean up vortex modules */
 	vortex_log (VORTEX_LEVEL_DEBUG, "shutting down vortex xml subsystem");
 
@@ -1235,6 +1230,11 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
 		/* release lock */
 		vortex_mutex_unlock (&ctx->ref_mutex);
 	} /* end if */
+
+#if defined(AXL_OS_WIN32)
+	WSACleanup (); 
+	vortex_log (VORTEX_LEVEL_DEBUG, "shutting down WinSock2(tm) API");
+#endif
    
 	/* release the ctx */
 	if (free_ctx)
