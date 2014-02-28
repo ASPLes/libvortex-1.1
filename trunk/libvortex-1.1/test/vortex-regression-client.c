@@ -2804,7 +2804,7 @@ axl_bool test_01e (void) {
 	} /* end if */
 
 	/* close the listener */
-	vortex_connection_close (listener2);
+	vortex_connection_shutdown (listener2);
 
 	/* check listener here */
 	if (! vortex_connection_is_ok (listener, axl_false)) {
@@ -2819,7 +2819,8 @@ axl_bool test_01e (void) {
 	times--;
 	if (times > 0)
 		goto test_01e_do_test;
-	
+
+	sleep (3);
 	return axl_true;
 }
 

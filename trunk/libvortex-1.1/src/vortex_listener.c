@@ -793,6 +793,16 @@ axlPointer __vortex_listener_new (VortexListenerData * data)
 		fd = vortex_listener_sock_listen6 (ctx, host, str_port, &error);
 	} else
 		fd = vortex_listener_sock_listen (ctx, host, str_port, &error);
+
+	if (fd == VORTEX_SOCKET_ERROR || fd == -1) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to create listener socket, fd reported is an error %d. Unable to find on %s:%s. Error found: %s", fd,
+			    host, str_port, axl_error_get (error));
+		/* unref the host and port value */
+		axl_free (str_port);
+		axl_free (host);
+		axl_error_free (error);
+		return NULL;
+	}
 	
 	/* listener ok */
 	/* seems listener to be created, now create the BEEP
