@@ -252,6 +252,9 @@ int vortex_sequencer_build_packet_to_send (VortexCtx           * ctx,
  	unsigned int max_seq_no_accepted = vortex_channel_get_max_seq_no_remote_accepted (channel);
 	char       * payload             = NULL;
 
+	/* clear packet */
+	memset (packet, 0, sizeof (VortexWriterData));
+
 	/* flag as not complete until something different is set */
 	packet->is_complete = axl_false;
 

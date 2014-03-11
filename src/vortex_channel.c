@@ -8987,20 +8987,23 @@ void               vortex_channel_wait_until_sent                (VortexChannel 
 void             vortex_channel_signal_rpy_sent                 (VortexChannel * channel,
 								 int             msg_no)
 {
-	char             * rpy;
 	VortexAsyncQueue * queue;
 #if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx        * ctx     = vortex_channel_get_ctx (channel);
 #endif
+	char               buffer[50];
+	int                buffer_size = 0;
 
 	/* get channel profile */
 	if (channel == NULL)
 		return;
+	if (msg_no < 0)
+		return;
 
 	/* get the queue */
-	rpy   = axl_strdup_printf ("vortex:wait:rpy:%d", msg_no);
-	queue = vortex_channel_get_data (channel, rpy);
-	axl_free (rpy);
+	memset (buffer, 0, 50);
+	axl_stream_printf_buffer (buffer, 49, &buffer_size, "vortex:wait:rpy:%d", msg_no);
+	queue = vortex_channel_get_data (channel, buffer);
 
 	/* check the queue */
 	if (queue == NULL)
