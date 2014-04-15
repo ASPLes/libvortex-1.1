@@ -227,9 +227,9 @@ void frame_received (VortexChannel    * channel,
 	int                 * reference;
 	VortexMutex         * mutex;
 	VortexStats         * stats;
-	int                   running_threads;
-	int                   pending_tasks;
-	int                   waiting_threads;
+	int                   running_threads = 0;
+	int                   pending_tasks = 0;
+	int                   waiting_threads = 0;
 	VortexAsyncQueue    * queue;
 	VortexAsyncQueue    * blocking_queue;
 
