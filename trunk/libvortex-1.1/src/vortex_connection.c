@@ -1557,6 +1557,8 @@ VORTEX_SOCKET vortex_connection_sock_connect (VortexCtx   * ctx,
  * that remains after only doing a socket connected. The value is only
  * returned if the caller provide a reference.
  *
+ * @param transport The network transport to use for this connect operation.
+ *
  * @param error Optional axlError reference to report an error code
  * and a textual diagnostic.
  *
