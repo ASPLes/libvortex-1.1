@@ -1287,7 +1287,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * - Support to proxy BEEP connections through HTTP proxy servers. See \ref vortex_http "Vortex HTTP CONNECT API".
  * - Support for single threaded (no async notification) programming. See \ref vortex_pull "Vortex Pull API" and \ref vortex_manual_pull_api "Notes and how to use PULL API".
  *
- * Vortex Library is been developed by <b>Advanced Software Production
+ * Vortex Library has been developed by <b>Advanced Software Production
  * Line, S.L.</b> (http://www.aspl.es). It is licensed under the LGPL
  * 2.1 which allows open source and commercial usage.
  *
