@@ -122,19 +122,21 @@ maps.append (("libvortex-pull-1.1.la", "libvortex%s-pull-1.1.la" % prefix))
 maps.append (("libvortex-pull-1.1.def", "libvortex%s-pull-1.1.def" % prefix))
 maps.append (("libvortex_pull_1_1", "libvortex_pull_%s_1_1" % prefix))
 # web-socket
-maps.append (("libvortex-web-socket-1.1.def", "libvortex%s-web-socket-1.1.def" % prefix))
-maps.append (("libvortex-web-socket-1.1.exp", "libvortex%s-web-socket-1.1.exp" % prefix))
-maps.append (("libvortex-web-socket-1.1.la", "libvortex%s-web-socket-1.1.la" % prefix))
-maps.append (("libvortex-web-socket-1.1.def", "libvortex%s-web-socket-1.1.def" % prefix))
-maps.append (("libvortex_web-socket_1_1", "libvortex_web-socket_%s_1_1" % prefix))
+maps.append (("libvortex-websocket-1.1.def", "libvortex%s-websocket-1.1.def" % prefix))
+maps.append (("libvortex-websocket-1.1.exp", "libvortex%s-websocket-1.1.exp" % prefix))
+maps.append (("libvortex-websocket-1.1.la", "libvortex%s-websocket-1.1.la" % prefix))
+maps.append (("libvortex-websocket-1.1.def", "libvortex%s-websocket-1.1.def" % prefix))
+maps.append (("libvortex_websocket_1_1", "libvortex_websocket_%s_1_1" % prefix))
+
 # xml-rpc
 maps.append (("libvortex-xml-rpc-1.1.def", "libvortex%s-xml-rpc-1.1.def" % prefix))
 maps.append (("libvortex-xml-rpc-1.1.exp", "libvortex%s-xml-rpc-1.1.exp" % prefix))
 maps.append (("libvortex-xml-rpc-1.1.la", "libvortex%s-xml-rpc-1.1.la" % prefix))
 maps.append (("libvortex-xml-rpc-1.1.def", "libvortex%s-xml-rpc-1.1.def" % prefix))
-maps.append (("libvortex_xml-rpc_1_1", "libvortex_xml-rpc_%s_1_1" % prefix))
+maps.append (("libvortex_xml_rpc_1_1", "libvortex_xml_rpc_%s_1_1" % prefix))
 
-
+# lua-plugins
+maps.append (("liblua_vortex_sasl_11", "liblua_vortex_sasl_%s_11" % prefix))
 
 replace_on_file ("src/Makefile", maps)
 replace_on_file ("tls/Makefile", maps)
