@@ -135,6 +135,9 @@ maps.append (("libvortex-xml-rpc-1.1.la", "libvortex%s-xml-rpc-1.1.la" % prefix)
 maps.append (("libvortex-xml-rpc-1.1.def", "libvortex%s-xml-rpc-1.1.def" % prefix))
 maps.append (("libvortex_xml_rpc_1_1", "libvortex_xml_rpc_%s_1_1" % prefix))
 
+# axl translations
+maps.append (("-laxl", "-laxl%s" % prefix))
+
 # lua-plugins
 maps.append (("liblua_vortex_sasl_11", "liblua_vortex_sasl_%s_11" % prefix))
 
