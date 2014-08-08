@@ -2820,7 +2820,11 @@ axl_bool test_01e (void) {
 	if (times > 0)
 		goto test_01e_do_test;
 
+#if defined(AXL_OS_WIN32)
+	Sleep (3000);
+#else
 	sleep (3);
+#endif
 	return axl_true;
 }
 
