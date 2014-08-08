@@ -167,9 +167,15 @@ endif
         # copy gsasl libraries and strip them
 	cp $(GSASL_LIBS) .
 ifndef enable_vortex_log
+ifeq (libgsasl-7.dll,$(wildcard libgsasl-7.dll))
 	strip --strip-unneeded libgsasl-7.dll
+endif
+ifeq (libgcrypt-11.dll,$(wildcard libgcrypt-11.dll))
 	strip --strip-unneeded libgcrypt-11.dll
+endif
+ifeq (libgpg-error-0.dll,$(wildcard libgpg-error-0.dll))
 	strip --strip-unneeded libgpg-error-0.dll
+endif
 endif
 
 %.o: %.c
