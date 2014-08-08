@@ -1,0 +1,136 @@
+      ###################################################
+      ##              Vortex Library 1.1.13            ##
+      ##          "There's nothing left to say"        ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce Vortex
+  Library 1.1.14 "There's nothing left to say" release availability:
+  an open source "BEEP Core" protocol implementation written in C,
+  mapped onto TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.aspl.es/vortex/downloads
+      [Vortex Library downloads, binaries w64 & w32]
+
+    - http://www.core-admin.com
+      [Feature product: Core-Admin]
+      
+    
+This release in short
+~~~~~~~~~~~~~~~~~~~~~
+
+  New stable release that includes improvements an corrections and
+  IPv6 support.
+
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+
+  None
+
+Thanks to..
+~~~~~~~~~~~
+
+Changes since 1.1.13
+~~~~~~~~~~~~~~~~~~~~
+
+* [fix] Improved notification about complete frame limit reached so it
+  can be more useful. Added information about the profile and
+  connecting host and port.
+
+* [fix] Several updates into ALIVE implementation to check max unreply
+  count x check period while waiting for creating the channel to
+  ensure connection close event is triggered if that max period is
+  reached. Also updated checking to trigger failure when max unreply
+  count is reached instead of exceeding it.
+
+* [fix] Fixed ALIVE when checks are done too quickly (check_period of
+  20000 and max_unreply_count set to 5). Updated documentation to
+  explain limits.
+
+* [fix] Adding support to ubuntu precise..
+
+* [fix] Fixed missing vortex_frame_unref at vortex-simple-client.c
+
+* [new] Updated vortex engine to support IPv6. Nice! Now IPv4 and IPv6
+  are automatically supported on the previous IPv4 APIs and new
+  specific APIs are provided to "force" IPv6 resolution/usage. New API
+  function added:
+
+   - vortex_connection_new_full6
+   - vortex_connection_new6
+   - 
+
+  Added new regression tests to check IPv6 support and to tests how it
+  plays with IPv4 API:
+  
+   - test_02a3
+   - test_02a4
+  
+
+* [fix] Restoring back -ansi compilation flag. Updated
+  vortex_connection_private.h to have some of the IPv6 resolution
+  function prototypes so they are available during compilation even
+  having -ansi enabled.
+
+* [fix] Several modifications to make IPv6 support to work on
+  windows. Still more work required.
+
+* [fix] Added new API functions to allow IPv6 only listeners. API
+  added:
+
+  - vortex_listener_new6
+  - vortex_listener_new_full6
+
+* [fix] Additional modifications to make vortex-simple-client.c and
+  vortex-simple-listener.c to compile on windows and to allow
+  selecting IPv6 addresses from the command line.
+
+* [fix] Updated vortex listener module to include more debug info when
+  the listener fails.
+
+* [fix] Updated vortex connection freeaddrinfo code to fix a really
+  really really odd behavior while calling it directly on finalization.
+  :-??
+
+* [fix] Fixed memory allocation error when vortex_listener creation
+  fails.
+
+* [fix] Updated vortex sequencer and vortex channel module to
+  initialize static data used and reply handling (avoids valgrind
+  warnings).
+
+* [fix] Added some initialization to test_02_c2 variables used at
+  vortex-regression-listener.c
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organizations to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+8th aug 2014, Madrid (Spain)
