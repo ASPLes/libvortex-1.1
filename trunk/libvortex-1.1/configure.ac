@@ -190,15 +190,6 @@ fi
 AM_CONDITIONAL(DEFAULT_EPOLL, test "x$default_platform" = "xepoll")
 AM_CONDITIONAL(DEFAULT_POLL, test "x$default_platform" = "xpoll")
 
-# support for release versioning
-AC_ARG_ENABLE(release-prefix, [  --enable-release-prefix    Enable library release prefixing [default=]], enable_release_prefix="$enableval", enable_release_prefix="")
-release_prefix_cmd=""
-if test -n "$enable_release_prefix" ; then
-   release_prefix_cmd="-release $enable_release_prefix"
-   echo "Adding release command: $release_prefix_cmd"
-fi
-AC_SUBST(release_prefix_cmd)
-
 dnl check for vortex client tool dependencies
 AC_ARG_ENABLE(vortex-client, [  --enable-vortex-client    Enable vortex-client tool building [default=yes]], enable_vortex_client="$enableval", enable_vortex_client=yes)
 if test x$enable_vortex_client = xyes ; then

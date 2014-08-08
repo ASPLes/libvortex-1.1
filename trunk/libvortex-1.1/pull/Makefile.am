@@ -24,7 +24,7 @@ libvortex_pull_1_1_include_HEADERS = vortex_pull.h
 libvortex_pull_1_1_la_LIBADD = \
 	$(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS) $(top_builddir)/src/libvortex-1.1.la
 
-libvortex_pull_1_1_la_LDFLAGS = -no-undefined -export-symbols-regex '^(vortex|__vortex|_vortex).*' $(release_prefix_cmd)
+libvortex_pull_1_1_la_LDFLAGS = -no-undefined -export-symbols-regex '^(vortex|__vortex|_vortex).*' 
 
 libvortex-pull-1.1.def: update-def
 

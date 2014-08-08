@@ -87,7 +87,7 @@ libvortex_1_1_include_HEADERS = vortex.h \
 libvortex_1_1_la_LIBADD = \
 	$(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
 
-libvortex_1_1_la_LDFLAGS = -no-undefined -export-symbols-regex '^(vortex|__vortex|_vortex).*' $(release_prefix_cmd)
+libvortex_1_1_la_LDFLAGS = -no-undefined -export-symbols-regex '^(vortex|__vortex|_vortex).*'
 
 libvortex-1.1.def: update-def
 
