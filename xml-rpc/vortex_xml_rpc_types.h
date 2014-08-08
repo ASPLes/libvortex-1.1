@@ -57,6 +57,10 @@
  */
 typedef enum {
 	/** 
+	 * @internal Value use to stop iterations used by xml-rpc module. 
+	 */
+	XML_RPC_END_VALUE = -1,
+	/** 
 	 * @brief Allows to represent the unknown value to report
 	 * error conditions. User application shouldn't use this value
 	 * directly.
