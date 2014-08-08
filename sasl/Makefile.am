@@ -20,7 +20,7 @@ libvortex_sasl_1_1_include_HEADERS = vortex_sasl.h vortex-sasl.dtd.h
 libvortex_sasl_1_1_la_LIBADD = \
 	$(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS) $(SASL_LIBS) $(top_builddir)/src/libvortex-1.1.la
 
-libvortex_sasl_1_1_la_LDFLAGS = -no-undefined -export-symbols-regex '^(vortex|__vortex|_vortex).*' $(release_prefix_cmd)
+libvortex_sasl_1_1_la_LDFLAGS = -no-undefined -export-symbols-regex '^(vortex|__vortex|_vortex).*' 
 
 libvortex-sasl-1.1.def: update-def
 
