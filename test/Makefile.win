@@ -1,7 +1,8 @@
+# -*- makefile -*- 
+
 WEBSOCKET_LIBS = -L"../../../../nopoll/trunk/src/" -lnopoll
 WEBSOCKET_CFLAGS = -I"../../../../nopoll/trunk/src/" -DENABLE_WEBSOCKET_SUPPORT
 
-# -*- makefile -*- 
 ifdef enable_vortex_log
    vortex_dll         = -lvortex-debug-1.1
    vortex_tunnel_dll  = -lvortex-tunnel-debug-1.1
@@ -86,7 +87,7 @@ LIBS     = -Wall -Werror -g -lws2_32 $(AXL_LIBS) $(search_lib_path) $(WEBSOCKET_
 	-L../web-socket $(vortex_websocket_dll) \
 	-L../http $(vortex_http_dll) \
 	-L../alive $(vortex_alive_dll) $(readline_libs)
-	
+
 
 INCS =  -I"." -I"../src" -I"../tunnel" -I"../tls" -I"../sasl" -I"../xml-rpc" -I"../pull" -I"../http" -I"../alive" -I"../web-socket" $(readline_flags) $(AXL_INCLUDE) $(WEBSOCKET_CFLAGS) \
         -I"../../libaxl/src" -I$(DEPEND_DIR)/include -DENABLE_SASL_SUPPORT -DENABLE_XML_RPC_SUPPORT -DENABLE_TLS_SUPPORT
@@ -158,6 +159,7 @@ links:
 	cp ../http/$(vortex_file_http_dll) .
 	cp ../alive/$(vortex_file_alive_dll) .
 	cp ../data/*.dtd .
+	cp $(libgcc_s_dw2) .
 ifdef AXL_BUILD_DIR
 	cp $(AXL_BUILD_DIR)/src/libaxl.dll .
 else
