@@ -1280,7 +1280,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  *
  * - Robust and well tested BEEP implementation with a threaded design (non-blocking parallel comunications), written in ANSI C. 
  * - Context based API design making the library stateless. Support to run several execution contexts in the same process.
- * - A complete XML-RPC over BEEP <b>RFC 3529</b> with a IDL/XDL protocol compiler (<b>xml-rpc-gen</b>).
+ * - A complete XML-RPC over BEEP <b>RFC 3529</b> with a IDL/XDL protocol compiler (<b>xml-rpc-gen-1.1</b>).
  * - A complete TUNNEL (<b>RFC3620</b>) support. 
  * - Complete implementation for TLS and SASL profiles.
  * - Modular design which allows to use only those components needed: See \ref vortex_components "vortex components"
@@ -1625,7 +1625,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  *
  * - Vortex Library includes a complete XML-RPC over BEEP support,
  * with a Raw invocation API, and a protocol compiler,
- * <b>xml-rpc-gen</b> which allows to produce server and client
+ * <b>xml-rpc-gen-1.1</b> which allows to produce server and client
  * components really fast. See the \ref programming_with_xml_rpc "XML-RPC over BEEP manual" for more details.
  *
  * - Vortex Library includes a complete TUNNEL profile support
@@ -1652,7 +1652,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * BEEP Core protocol at RFC3080 (http://www.ietf.org/rfc/rfc3080.txt)
  * and RFC3081 (http://www.ietf.org/rfc/rfc3081.txt), including SASL
  * and TLS profiles. It also includes a complete XML-RPC
- * implementation (RFC3529) with a protocol compiler (xml-rpc-gen) and
+ * implementation (RFC3529) with a protocol compiler (xml-rpc-gen-1.1) and
  * TUNNEL profile support (RFC3620).
  *
  * Vortex Library is stable for production environment. Currently it
@@ -4775,7 +4775,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  *  - \ref raw_client_invoke_considerations
  *  - \ref receiving_an_invocation
  *
- * <b>Section 3: </b> Using Vortex Library <b>xml-rpc-gen</b> tool
+ * <b>Section 3: </b> Using Vortex Library <b>xml-rpc-gen-1.1</b> tool
  *  
  *  - \ref abstraction_required
  *  - \ref xml_rpc_gen_tool_language
@@ -5291,7 +5291,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * runtimes. Once the runtime have generated the reply, it must be
  * used the following function \ref vortex_xml_rpc_notify_reply, to actually perform the reply.
  *
- * \section abstraction_required Abstraction required: The xml-rpc-gen tool
+ * \section abstraction_required Abstraction required: The xml-rpc-gen-1.1 tool
  *
  * Until now, we have seen that producing RPC enabled solutions is
  * really complex. First, because we have to produce the server
@@ -5301,7 +5301,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * However, every RPC framework comes with a protocol compiler that
  * helps on producing lot of source code. For the XML-RPC over BEEP
  * implementation that comes with Vortex Library, this tool is
- * <b>xml-rpc-gen</b>.
+ * <b>xml-rpc-gen-1.1</b>.
  *
  * This tool reads IDL and XDL interface definitions and produce a
  * ready server and a client library (usually called
@@ -5317,7 +5317,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * source code) and exec the following:
  * 
  * \code
- * >> ./xml-rpc-gen reg-test01.idl
+ * >> ./xml-rpc-gen-1.1 reg-test01.idl
  * [*] compiling: reg-test01.idl..
  * [*] detected IDL format definition..
  * [*] detected xml-rpc definition: 'test'..
@@ -5340,7 +5340,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * located at: <b><i>out/client-test</i></b>.
  *
  * Now, instead of producing all source code required to perform the
- * invocation, the <b>xml-rpc-gen</b> tool allows you define a xml-rpc
+ * invocation, the <b>xml-rpc-gen-1.1</b> tool allows you define a xml-rpc
  * interface definition, that produces that code for you. In this
  * case, looking at: <b><i>out/client-test/test_xml_rpc.h</i></b>,
  * you'll find a C API that hides all details to actually invoke the
@@ -5348,16 +5348,16 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  *
  * In the other hand, instead of producing all source code, at the
  * server side, to unmarshall and invoke the service, all this code is
- * produced by <b>xml-rpc-gen</b> tool. In this case, looking at:
+ * produced by <b>xml-rpc-gen-1.1</b> tool. In this case, looking at:
  * <b><i>out/server-test/test_sum_int_int.c</i></b> you'll find the
  * <b>sum</b> service implementation. 
  *
  * In the following sections it is explained how to use the
- * <b>xml-rpc-gen</b> tool to produce RPC solutions.
+ * <b>xml-rpc-gen-1.1</b> tool to produce RPC solutions.
  *
- * \section xml_rpc_gen_tool_language Using xml-rpc-gen tool: language syntax
+ * \section xml_rpc_gen_tool_language Using xml-rpc-gen-1.1 tool: language syntax
  *
- * <b>xml-rpc-gen</b> is a compiler that produces a client component
+ * <b>xml-rpc-gen-1.1</b> is a compiler that produces a client component
  * and a server component. The client component is just a library that
  * hides all details required to perform the invocation. The tool
  * support two formats: one structured, more based on the IDL
@@ -5386,7 +5386,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * it is easy to parse and it is more portable (there is a XML parser
  * in every platform).
  * 
- * \section xml_rpc_gen_tool_language_types Types supported by xml-rpc-gen tool
+ * \section xml_rpc_gen_tool_language_types Types supported by xml-rpc-gen-1.1 tool
  *
  * There are 6 basic types supported by the tool (well, it is more
  * accurate to say by the XML-RPC definition) which are:
@@ -5443,7 +5443,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * - However, because the tool allows you to define source code
  * inside the services to be included inside the server output, you
  * have to use the pointer syntax. This could be obvious: remember
- * that xml-rpc-gen tool just includes the source code. It doesn't
+ * that xml-rpc-gen-1.1 tool just includes the source code. It doesn't
  * perform any syntax validation.
  *
  *
@@ -5496,18 +5496,18 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  *
  * \section xml_rpc_gen_tool_changing_method_name Changing the method name for a service declared
  *
- * Due to the kind of output produced by the xml-rpc-gen tool, it has
+ * Due to the kind of output produced by the xml-rpc-gen-1.1 tool, it has
  * to create "method names" for services declared at the IDL processed
  * in a synchronized way to a client invocation, using a particular
  * service, is properly processed by the remote service entry point.
  *
  * Under some situations it is required to change the name that used
- * by default the xml-rpc-gen tool. This is done by using a prefix
+ * by default the xml-rpc-gen-1.1 tool. This is done by using a prefix
  * declaration before the service:
  * \include af-arch.idl
  *
  * In the example, the service <b>get_list</b> won't be invoked using
- * that name (the default xml-rpc-gen behavior), but the name
+ * that name (the default xml-rpc-gen-1.1 behavior), but the name
  * declared at the <b>method_name</b> will be used.
  *
  * Previous IDL declaration is used by shaper to invoke a service
@@ -5559,7 +5559,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  *
  * This list declaration must be used before any service with the
  * attribute <b>"resource"</b>. The list configured will enforce the
- * xml-rpc-gen tool to allow and check all resources used.
+ * xml-rpc-gen-1.1 tool to allow and check all resources used.
  *
  * \section xml_rpc_gen_tool_including_body_code Including additional code to be placed at the service module file
  *
@@ -5594,7 +5594,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * included at the file: <i>"do_sum_operation.c"</i>. The same applies
  * to the content included at the module header file.
  * 
- * \section xml_rpc_gen_tool_using_output_client Using the output produced by xml-rpc-gen tool at the CLIENT SIDE
+ * \section xml_rpc_gen_tool_using_output_client Using the output produced by xml-rpc-gen-1.1 tool at the CLIENT SIDE
  * 
  * The output produced by the tool are two software pieces: the client
  * stub library and the server component. The client stub is small
@@ -5611,7 +5611,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * reg-test01.idl) as follows:
  * 
  * \code
- * bash:~$ xml-rpc-gen reg-test01.idl
+ * bash:~$ xml-rpc-gen-1.1 reg-test01.idl
  * \endcode
  * 
  * By default, the client library is placed at:
@@ -5684,7 +5684,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * notified. 
  *
  * Now we know a bit more about the main API created by the
- * xml-rpc-gen tool, the file <b>test_xml_rpc.h</b>. However, you also
+ * xml-rpc-gen-1.1 tool, the file <b>test_xml_rpc.h</b>. However, you also
  * have to take a look to <b>test_types.h</b> file. It contains all
  * complex type definitions, that is, struct and array
  * declarations. In this case, that file is empty.
@@ -5710,7 +5710,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * channel created, and providing some variables to get invocation
  * status, etc), but it helps you to get an idea.
  * 
- * \section xml_rpc_gen_tool_using_output_listener Using the output produced by xml-rpc-gen tool at the LISTENER SIDE
+ * \section xml_rpc_gen_tool_using_output_listener Using the output produced by xml-rpc-gen-1.1 tool at the LISTENER SIDE
  *
  * Following the example of the previous section, there is not too
  * much to say. You have to compile the server and then run it.  Try
@@ -5725,7 +5725,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  *  bash:~/Test/out/server-test$ ./server-test
  * \endcode
  *
- * Because xml-rpc-gen tool have support to include the service source
+ * Because xml-rpc-gen-1.1 tool have support to include the service source
  * code definition, into the IDL/XDL definition, the compiled product
  * only required to be compiled. However programing a XML-RPC service
  * usually is more complex than adding two integer. Here are some

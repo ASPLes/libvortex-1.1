@@ -160,7 +160,7 @@ void xml_rpc_autoconf_configure_ac_create (axlDoc    * doc,
 					"AM_PROG_LIBTOOL\n",
 					NULL);
 
-	xml_rpc_support_write ("\nPKG_CHECK_MODULES(LIBRARIES, vortex axl)\n");
+	xml_rpc_support_write ("\nPKG_CHECK_MODULES(LIBRARIES, vortex-1.1 vortex-xml-rpc-1.1 axl)\n");
 
 	xml_rpc_support_multiple_write ("AC_SUBST(LIBRARIES_CFLAGS)\n",
 					"AC_SUBST(LIBRARIES_LIBS)\n\n",
@@ -406,7 +406,7 @@ void xml_rpc_autoconf_pkg_config_create (axlDoc * doc,
 	xml_rpc_support_write ("Description: C stub connector with %s XML-RPC component\n", 
 			       comp_name);
 	
-	xml_rpc_support_multiple_write ("Requires: vortex axl\n",
+	xml_rpc_support_multiple_write ("Requires: vortex-1.1 axl vortex-xml-rpc-1.1\n",
 					"Version: @VERSION@\n",
 					NULL);
 	
