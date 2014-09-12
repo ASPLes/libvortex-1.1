@@ -184,7 +184,22 @@ void xml_rpc_autoconf_configure_ac_create (axlDoc    * doc,
 }
 
 
-void xml_rpc_autoconf_write_struct_and_arrays (axlDoc * doc, char  * comp_name)
+typedef enum XmlRpcAutoConfFileType {
+	/** 
+	 * @internal Write all file types (.c and .h)
+	 */
+	__XML_RPC_AUTOCONF_FILE_TYPE_ALL     = 1,
+	/** 
+	 * @internal Just writes .h files
+	 */
+	__XML_RPC_AUTOCONF_FILE_TYPE_HEADERS = 2,
+	/** 
+	 * @internal Just writes .c files
+	 */
+	__XML_RPC_AUTOCONF_FILE_TYPE_SOURCES = 3,
+}XmlRpcAutoConfFileType;
+
+void xml_rpc_autoconf_write_struct_and_arrays (axlDoc * doc, char  * comp_name, XmlRpcAutoConfFileType __file_type)
 {
 	/* struct support */
 	axlNode * _struct;
@@ -208,8 +223,23 @@ void xml_rpc_autoconf_write_struct_and_arrays (axlDoc * doc, char  * comp_name)
 				/* make a lower copy */
 				struct_lower = xml_rpc_support_to_lower (struct_name);
 				
-				xml_rpc_support_write ("%s_struct_%s_xml_rpc.h %s_struct_%s_xml_rpc.c ",
-						       comp_name_lower, struct_lower, comp_name_lower, struct_lower);
+				switch (__file_type) {
+				case __XML_RPC_AUTOCONF_FILE_TYPE_ALL:
+					xml_rpc_support_write ("%s_struct_%s_xml_rpc.h %s_struct_%s_xml_rpc.c ",
+							       comp_name_lower, struct_lower, comp_name_lower, struct_lower);
+					break;
+				case __XML_RPC_AUTOCONF_FILE_TYPE_HEADERS:
+					xml_rpc_support_write ("%s_struct_%s_xml_rpc.h ",
+							       comp_name_lower, struct_lower);
+					break;
+				case __XML_RPC_AUTOCONF_FILE_TYPE_SOURCES:
+					xml_rpc_support_write ("%s_struct_%s_xml_rpc.c ",
+							       comp_name_lower, struct_lower);
+					break;
+				default:
+					/* never reached */
+					break;
+				}
 				
 				/* unref the lower copy */
 				axl_free (struct_lower);
@@ -230,8 +260,24 @@ void xml_rpc_autoconf_write_struct_and_arrays (axlDoc * doc, char  * comp_name)
 				/* make a lower copy */
 				struct_lower = xml_rpc_support_to_lower (struct_name);
 				
-				xml_rpc_support_write ("%s_array_%s_xml_rpc.h %s_array_%s_xml_rpc.c ",
-						       comp_name_lower, struct_lower, comp_name_lower, struct_lower);
+				switch (__file_type) {
+				case __XML_RPC_AUTOCONF_FILE_TYPE_ALL:
+					xml_rpc_support_write ("%s_array_%s_xml_rpc.h %s_array_%s_xml_rpc.c ",
+							       comp_name_lower, struct_lower, comp_name_lower, struct_lower);
+					break;
+				case __XML_RPC_AUTOCONF_FILE_TYPE_SOURCES:
+					xml_rpc_support_write ("%s_array_%s_xml_rpc.c ",
+							       comp_name_lower, struct_lower);
+					break;
+				case __XML_RPC_AUTOCONF_FILE_TYPE_HEADERS:
+					xml_rpc_support_write ("%s_array_%s_xml_rpc.h ",
+							       comp_name_lower, struct_lower);
+					break;
+				default:
+					/* never reached */
+					break;
+				}
+
 				
 				/* unref the lower copy */
 				axl_free (struct_lower);
@@ -279,16 +325,24 @@ void xml_rpc_autoconf_makefile_am_create (axlDoc    * doc,
 	xml_rpc_support_write ("INCLUDES = -g -I$(top_srcdir) $(LIBRARIES_CFLAGS)  -DCOMPILATION_DATE=`date +%%s` -Wall\n\n");
 			       
 	if (! is_server) {
-		xml_rpc_support_write ("lib%s_xml_rpcincludedir = $(includedir)/%s_xml_rpc\n\n", 
+		xml_rpc_support_write ("lib%s_xml_rpc_includedir = $(includedir)/%s_xml_rpc\n\n", 
 				       comp_name_lower, comp_name_lower);
 		
 		xml_rpc_support_write ("lib_LTLIBRARIES = lib%s_xml_rpc.la\n\n", comp_name_lower);
-		
-		xml_rpc_support_write ("lib%s_xml_rpc_la_SOURCES = %s_xml_rpc.h %s_xml_rpc.c %s_types.h ",
-				       comp_name_lower, comp_name_lower, comp_name_lower, comp_name_lower);
+
+		xml_rpc_support_write ("lib%s_xml_rpc_include_HEADERS = %s_xml_rpc.h %s_types.h ",
+				       comp_name_lower, comp_name_lower, comp_name_lower);
 
 		/* write struct and array references */
-		xml_rpc_autoconf_write_struct_and_arrays (doc, comp_name);
+		xml_rpc_autoconf_write_struct_and_arrays (doc, comp_name, __XML_RPC_AUTOCONF_FILE_TYPE_HEADERS);
+
+		xml_rpc_support_write ("\n\n");
+		
+		xml_rpc_support_write ("lib%s_xml_rpc_la_SOURCES = %s_xml_rpc.c ",
+				       comp_name_lower, comp_name_lower);
+
+		/* write struct and array references */
+		xml_rpc_autoconf_write_struct_and_arrays (doc, comp_name, __XML_RPC_AUTOCONF_FILE_TYPE_SOURCES);
 
 		xml_rpc_support_write ("\n\n");
 
@@ -310,7 +364,7 @@ void xml_rpc_autoconf_makefile_am_create (axlDoc    * doc,
 		xml_rpc_support_write_sl ("server_%s_SOURCES = main.c service_dispatch.c service_dispatch.h ", comp_name_lower);
 
 		/* write struct and array references */
-		xml_rpc_autoconf_write_struct_and_arrays (doc, comp_name);
+		xml_rpc_autoconf_write_struct_and_arrays (doc, comp_name, __XML_RPC_AUTOCONF_FILE_TYPE_ALL);
 
 		/* write a couple of file references for each
 		 * service */
