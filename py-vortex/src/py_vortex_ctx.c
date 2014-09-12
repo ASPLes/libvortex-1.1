@@ -260,10 +260,14 @@ void py_vortex_ctx_too_long_notifier_to_file (const char * msg_string, axlPointe
 
 	time ( &rawtime );
 	value = ctime (&rawtime);
-	write (fd, value, strlen (value) - 1);
-	write (fd, "  ", 2);
-	write (fd, msg_string, strlen (msg_string));
-	write (fd, "\n", 1);
+	if (write (fd, value, strlen (value) - 1) < 0)
+		py_vortex_log (PY_VORTEX_WARNING, "Unable to write info into log, errno: %s", vortex_errno_get_error (errno));
+	if (write (fd, "  ", 2) < 0)
+		py_vortex_log (PY_VORTEX_WARNING, "Unable to write info into log, errno: %s", vortex_errno_get_error (errno));
+	if (write (fd, msg_string, strlen (msg_string)) < 0)
+		py_vortex_log (PY_VORTEX_WARNING, "Unable to write info into log, errno: %s", vortex_errno_get_error (errno));
+	if (write (fd, "\n", 1) < 0)
+		py_vortex_log (PY_VORTEX_WARNING, "Unable to write info into log, errno: %s", vortex_errno_get_error (errno));
 	close (fd);
 
 	return;
@@ -290,9 +294,12 @@ axl_bool        py_vortex_ctx_log_too_long_notifications (VortexCtx * ctx, int w
 
 	time ( &rawtime );
 	value = ctime (&rawtime);
-	write (fd, value, strlen (value) - 1);
-	write (fd, "  ", 2);
-	write (fd, "Too long notification watcher started\n", 38);
+	if (write (fd, value, strlen (value) - 1) < 0)
+		py_vortex_log (PY_VORTEX_WARNING, "Unable to write info into log, errno: %s", vortex_errno_get_error (errno));
+	if (write (fd, "  ", 2) < 0)
+		py_vortex_log (PY_VORTEX_WARNING, "Unable to write info into log, errno: %s", vortex_errno_get_error (errno));
+	if (write (fd, "Too long notification watcher started\n", 38) < 0)
+		py_vortex_log (PY_VORTEX_WARNING, "Unable to write info into log, errno: %s", vortex_errno_get_error (errno));
 	close (fd);
 
 	/* record file into ctx */
