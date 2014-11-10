@@ -1624,7 +1624,7 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 		/* configure certificate file */
 		certificate_file = vortex_connection_get_data (connection, "tls:certificate-file");
 		vortex_log (VORTEX_LEVEL_DEBUG, "Using certificate: %s", certificate_file);
-		if (axl_memcmp (certificate_file, "-----BEGIN CERTIFICATE-----", 27)) {
+		if (axl_memcmp (certificate_file, "-----BEGIN", 10)) {
 			/* get bufio */
 			bufio  = BIO_new_mem_buf (certificate_file, strlen (certificate_file));
 			vortex_log (VORTEX_LEVEL_DEBUG, "Loaded bufio... %p", bufio);
@@ -1658,7 +1658,7 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 		
 		/* configure private file */
 		private_file    = vortex_connection_get_data (connection, "tls:private-file");
-		if (axl_memcmp (private_file, "-----BEGIN RSA PRIVATE KEY-----", 31)) {
+		if (axl_memcmp (private_file, "-----BEGIN", 10)) {
 			/* get bufio */
 			bufio  = BIO_new_mem_buf (private_file, strlen (private_file));
 			pkey   = PEM_read_bio_PrivateKey (bufio,NULL, NULL, NULL);
