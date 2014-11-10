@@ -9514,6 +9514,119 @@ axl_bool test_05_d (void)
 #endif
 }
 
+char * test_05_e_certificate_handler (VortexConnection * connection,
+				      const char       * serverName)
+{
+	char   buffer[4096];
+	FILE * file;
+	int    bytes_read;
+
+	/* open file and close it */
+	file = fopen ("test-certificate.pem", "r");
+	memset (buffer, 0,  4096);
+	bytes_read = fread (buffer, 1, 4095, file);
+	if (bytes_read < 0) {
+		fclose (file);
+		return NULL;
+	}
+	fclose (file);
+
+	return axl_strdup (buffer);
+}
+
+char * test_05_e_private_handler (VortexConnection * connection,
+				  const char       * serverName)
+{
+	char   buffer[4096];
+	FILE * file;
+	int    bytes_read;
+
+	/* open file and close it */
+	file = fopen ("test-private-key.pem", "r");
+	memset (buffer, 0,  4096);
+	bytes_read = fread (buffer, 1, 4095, file);
+	if (bytes_read < 0) {
+		fclose (file);
+		return NULL;
+	} /* end if */
+	fclose (file);
+
+
+
+	return axl_strdup (buffer);	
+	
+}
+
+axl_bool test_05_e (void)
+{
+#if defined(ENABLE_TLS_SUPPORT)
+	/* TLS status notification */
+	VortexStatus       status;
+	char             * status_message = NULL; 
+
+	/* vortex connection */
+	VortexCtx        * ctx;
+	VortexConnection * listener;
+	VortexConnection * conn;
+	
+	/* init vortex here */
+	ctx = vortex_ctx_new ();
+	if (! vortex_init_ctx (ctx)) {
+		printf ("Test 00-a: failed to init VortexCtx reference..\n");
+		return axl_false;
+	}
+
+	/* initialize and check if current vortex library supports TLS */
+	if (! vortex_tls_init (ctx)) {
+		printf ("--- WARNING: Unable to activate TLS, current vortex library has not TLS support activated. \n");
+		return axl_true;
+	}
+
+	/* accept negotiation */
+	if (! vortex_tls_accept_negotiation (ctx, NULL, test_05_e_certificate_handler, test_05_e_private_handler)) {
+		printf ("--- ERROR: expected no failure from vortex_tls_accept_negotiation but found failure..\n");
+		return axl_false;
+	} /* end if */
+
+	/* create a local listener */
+	listener = vortex_listener_new (ctx, "0.0.0.0", "0", NULL, NULL);
+	if (! vortex_connection_is_ok (listener, axl_false)) {
+		printf ("ERROR: unable to create listener for testing..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("INFO: listener created at: %s:%s\n", vortex_connection_get_host (listener), vortex_connection_get_port (listener));
+
+	/* now create connection to this listener */
+	conn = vortex_connection_new (ctx, "localhost", vortex_connection_get_port (listener), NULL, NULL);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: unable to create connection to remote listener..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("INFO: connection created to listener OK, now enable TLS support\n");
+	/* now enable TLS */
+	conn = vortex_tls_start_negotiation_sync (conn, NULL, 
+						  &status,
+						  &status_message);
+	printf ("INFO: TLS activation status was status=%d, status_message=%s\n", status, status_message);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: unable to create connection to remote listener..\n");
+		return axl_false;
+	} /* end if */
+
+	vortex_connection_close (conn);
+
+	/* exit vortex context */
+	vortex_exit_ctx (ctx, axl_true);
+	
+	return axl_true;
+#else
+	printf ("--- WARNING: Current build does not have TLS support.\n");
+	return axl_true;
+#endif
+}
+
 
 /* message size: 4096 */
 #define TEST_REGRESION_URI_4_MESSAGE "This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary ."
@@ -15168,6 +15281,9 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_05d"))
 			run_test (test_05_d, "Test 05-d", "TLS sync timeout (09/09/2010)", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_05e"))
+			run_test (test_05_e, "Test 05-e", "TLS check handlers reporting PEM certificates (instead of file paths)", -1, -1);
+
 		if (check_and_run_test (run_test_name, "test_06"))
 			run_test (test_06, "Test 06", "SASL profile support", -1, -1);
 
@@ -15433,6 +15549,8 @@ int main (int  argc, char ** argv)
 	run_test (test_05_c, "Test 05-c", "TLS client serverName after success (09/08/2010)", -1, -1);
 
 	run_test (test_05_d, "Test 05-d", "TLS sync timeout (09/09/2010)", -1, -1);
+
+	run_test (test_05_e, "Test 05-e", "TLS check handlers reporting PEM certificates (instead of file paths)", -1, -1);
 
  	run_test (test_06, "Test 06", "SASL profile support", -1, -1);
 

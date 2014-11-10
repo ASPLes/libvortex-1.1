@@ -1576,6 +1576,10 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 	VortexTlsCtxCreation   ctx_creation;
 	axlPointer             ctx_creation_data;
 	VortexTlsCtx         * tls_ctx;
+	axl_bool               status;
+	BIO                  * bufio;
+	X509                 * x509;
+	EVP_PKEY             * pkey;
 
 	/* check if the tls ctx was created */
 	tls_ctx = vortex_ctx_get_data (ctx, TLS_CTX);
@@ -1619,22 +1623,56 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 
 		/* configure certificate file */
 		certificate_file = vortex_connection_get_data (connection, "tls:certificate-file");
-		vortex_log (VORTEX_LEVEL_DEBUG, "Using certificate: %s\n", certificate_file);
-		if (SSL_CTX_use_certificate_file (ssl_ctx, certificate_file, SSL_FILETYPE_PEM) <= 0) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "Using certificate: %s", certificate_file);
+		if (axl_memcmp (certificate_file, "-----BEGIN CERTIFICATE-----", 27)) {
+			/* get bufio */
+			bufio  = BIO_new_mem_buf (certificate_file, strlen (certificate_file));
+			vortex_log (VORTEX_LEVEL_DEBUG, "Loaded bufio... %p", bufio);
+			x509   = PEM_read_bio_X509 (bufio, NULL, NULL, NULL);
+			vortex_log (VORTEX_LEVEL_DEBUG, "Loaded x509...... %p", x509);
+			status = SSL_CTX_use_certificate (ssl_ctx, x509) <= 0;
+			vortex_log (VORTEX_LEVEL_DEBUG, "status=%d... ", status);
+
+			/* release resources */
+			X509_free (x509);
+			BIO_free (bufio);
+		} else {
+			/* load certificate from file and get status */
+			status = SSL_CTX_use_certificate_file (ssl_ctx, certificate_file, SSL_FILETYPE_PEM) <= 0;
+		} /* end if */
+
+		if (status) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
 				    "there was an error while setting certificate file '%s' into the SSl context, unable to start TLS profile. Failure found at SSL_CTX_use_certificate_file function.",
 				    certificate_file);
-				
+			vortex_tls_log_ssl (ctx);
+
 			/* dump error stack */
 			vortex_tls_notify_failure_handler (ctx, connection, "there was an error while setting certificate file into the SSl context, unable to start TLS profile. Failure found at SSL_CTX_use_certificate_file function.");
 			vortex_connection_set_close_socket (connection, axl_true);
 			vortex_connection_shutdown (connection);
 			return;
-		}
+		} /* end if */
+
+		vortex_log (VORTEX_LEVEL_DEBUG, "Certificate loaded OK into SSL context");
 		
 		/* configure private file */
 		private_file    = vortex_connection_get_data (connection, "tls:private-file");
-		if (SSL_CTX_use_PrivateKey_file (ssl_ctx, private_file, SSL_FILETYPE_PEM) <= 0) {
+		if (axl_memcmp (private_file, "-----BEGIN RSA PRIVATE KEY-----", 31)) {
+			/* get bufio */
+			bufio  = BIO_new_mem_buf (private_file, strlen (private_file));
+			pkey   = PEM_read_bio_PrivateKey (bufio,NULL, NULL, NULL);
+
+			status = SSL_CTX_use_PrivateKey (ssl_ctx, pkey) <= 0;
+			
+			/* release resources */
+			EVP_PKEY_free (pkey);
+			BIO_free (bufio);
+		} else {
+			status = SSL_CTX_use_PrivateKey_file (ssl_ctx, private_file, SSL_FILETYPE_PEM) <= 0;
+		} /* end if */
+
+		if (status) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
 				    "there was an error while setting private file into the SSl context, unable to start TLS profile. Failure found at SSL_CTX_use_PrivateKey_file function.");
 			/* dump error stack */
@@ -1644,8 +1682,10 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 			return;
 		}
 
+		vortex_log (VORTEX_LEVEL_DEBUG, "Private loaded OK into SSL context");
+
 		/* check for private key and certificate file to match. */
-		if (!SSL_CTX_check_private_key(ssl_ctx)) {
+		if (!SSL_CTX_check_private_key (ssl_ctx)) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
 				    "seems that certificate file and private key doesn't match!, unable to start TLS profile. Failure found at SSL_CTX_check_private_key function.");
 			/* dump error stack */
