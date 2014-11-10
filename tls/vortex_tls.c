@@ -76,7 +76,7 @@ int vortex_tls_log_ssl (VortexCtx * ctx)
 
 		/* find error code position */
 		error_position = 0;
-		while (log_buffer[error_position] != ':')
+		while (log_buffer[error_position] != ':' && log_buffer[error_position] != 0 && error_position < 511)
 			error_position++;
 		error_position++;
 		aux_position = error_position;
@@ -2093,7 +2093,7 @@ VortexConnection * vortex_tls_start_negotiation_sync     (VortexConnection  * co
  * can use NULL value for this parameter. This will make Vortex
  * Library to set the default certificate handler which returns a path
  * to a test certificate. It is highly recommended to set this handler,
- * however you can use NULL value under development environment. 
+ * however you can use NULL value for development environment. 
  *
  * @param private_key_handler A handler executed to know where is
  * located the private key file to be used to cipher the session. You
