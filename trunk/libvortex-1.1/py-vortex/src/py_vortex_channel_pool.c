@@ -535,7 +535,6 @@ PyObject * py_vortex_channel_pool_create   (PyObject           * py_conn,
 	/* return a new instance */
 	PyVortexChannelPool     * obj;
 	VortexChannelPool       * pool;
-	
 
 	/* check callable handlers */
 	PY_VORTEX_IS_CALLABLE (create_channel, "create_channel handler is not a callable reference, unable to create channel pool");
@@ -549,8 +548,17 @@ PyObject * py_vortex_channel_pool_create   (PyObject           * py_conn,
 		return NULL;
 	} /* end if */
 
+	if (! py_vortex_connection_check (py_conn) || py_vortex_connection_get (py_conn) == NULL) {
+		PyErr_Format (PyExc_ValueError, "Received something that is not a vortex.Connection() or it is collected, unable to create pool");
+		return NULL;
+	} /* end if */
+
 	/* create the empty object here */
 	obj = (PyVortexChannelPool *) py_vortex_channel_pool_empty (py_vortex_connection_get (py_conn));
+	if (obj == NULL) {
+		PyErr_Format (PyExc_ValueError, "Unable to create empty pool object");
+		return NULL;
+	} /* end if */
 
 	/* create data structure */
 	obj->data = axl_new (PyVortexChannelPoolData, 1);
