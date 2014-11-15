@@ -129,13 +129,13 @@ typedef axl_bool      (*VortexTlsAcceptQuery) (VortexConnection * connection,
 					       const char       * serverName);
 
 /** 
- * @brief Handler definition for those function allowing to locate the
- * certificate file to be used while enabling TLS support.
+ * @brief Handler definition for those functions that allows to locate
+ * the certificate file to be used while enabling TLS support.
  * 
- * Once a TLS negotiation is started two files are required to enable
- * TLS cyphering: the certificate and the private key. Two handlers
- * are used by the Vortex Library to allow user app level to configure
- * file locations for both files.
+ * Once a TLS negotiation is started at least two files are required
+ * to enable TLS cyphering: the certificate and the private key. Two
+ * handlers are used by the Vortex Library to allow user app level to
+ * configure file locations for both files.
  * 
  * This handler is used to configure location for the certificate
  * file. The function will receive the connection where the TLS is
@@ -144,8 +144,8 @@ typedef axl_bool      (*VortexTlsAcceptQuery) (VortexConnection * connection,
  * by this value.
  * 
  * The function must return a path to the certificate using a
- * dynamically allocated value. Once finished, Vortex Library will
- * unref it.
+ * dynamically allocated value or the certificate content itself. Once
+ * finished, Vortex Library will unref it.
  * 
  * <b>The function should return a basename file avoiding full path file
  * names</b>. This is because the Vortex Library will use \ref
@@ -181,14 +181,14 @@ typedef axl_bool      (*VortexTlsAcceptQuery) (VortexConnection * connection,
  *  - \ref vortex_tls_accept_negotiation 
  * 
  * @return A newly allocated value containing the path to the
- * certificate file.
+ * certificate file or the certificate content to be used.
  */
 typedef char  * (* VortexTlsCertificateFileLocator) (VortexConnection * connection,
 						     const char       * serverName);
 
 /** 
- * @brief Handler definition for those function allowing to locate the
- * private key file to be used while enabling TLS support.
+ * @brief Handler definition for those functions that allows to locate
+ * the private key file to be used while enabling TLS support.
  * 
  * See \ref VortexTlsCertificateFileLocator handler. This handler
  * allows to define how is located the private key file used for the
@@ -197,7 +197,8 @@ typedef char  * (* VortexTlsCertificateFileLocator) (VortexConnection * connecti
  * This handler is used by:
  *  - \ref vortex_tls_accept_negotiation 
  * 
- * @return A newly allocated value containing the path to the private key file.
+ * @return A newly allocated value containing the path to the private
+ * key file or content itself to be used.
  */
 typedef char  * (* VortexTlsPrivateKeyFileLocator) (VortexConnection * connection,
 						    const char       * serverName);
