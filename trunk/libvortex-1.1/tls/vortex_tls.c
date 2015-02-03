@@ -1147,7 +1147,6 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 		    vortex_connection_get_id (connection));
 	vortex_connection_seq_frame_updates (connection, axl_false);
 
-
 	/* 5. Issue again initial greetings, greetings just like we
 	 * were creating a connection. */
 	if (!vortex_greetings_client_send (connection, NULL)) {
@@ -1168,7 +1167,17 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 	   be blocked by next write (vortex_greetings_client_process)
 	   causing the client greetings to never reach listener side,
 	   also causing listener greetings to be never sent. */
-	vortex_channel_block_until_replies_are_sent (vortex_connection_get_channel (connection, 0), 1000);
+	if (! vortex_channel_block_until_replies_are_sent (vortex_connection_get_channel (connection, 0), 15000000)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to ensure all replies were sent, failed to send greetings after TLS negotiation");
+
+		/* notify that the TLS negotiation have failed
+		 * because the initial greetings failure */
+		__vortex_tls_start_negotiation_close_and_notify (process_status,
+								 connection,
+								 NULL, 
+								 "Initial greetings before a TLS negotiation has failed", user_data);
+		return NULL;
+	} /* end if */
 	
 	vortex_log (VORTEX_LEVEL_DEBUG, "TLS STAGE[8]: greetings sent, waiting for reply");
 
