@@ -207,8 +207,14 @@ static PyObject * py_vortex_tls_start_tls (PyObject * self, PyObject * args, PyO
 	conn   = py_vortex_connection_get (py_conn);
 	py_vortex_connection_nullify (py_conn);
 
+	/* allow other threads to enter into the python space */
+	Py_BEGIN_ALLOW_THREADS 
+
 	/* call to authenticate in a blocking manner */
 	conn    = vortex_tls_start_negotiation_sync (conn, serverName, &status, &status_msg);
+
+	/* restore thread state */
+	Py_END_ALLOW_THREADS 
 
 	/* create the connection or increase reference in the case the
 	 * same connection is returned */
