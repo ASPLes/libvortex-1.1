@@ -9487,6 +9487,8 @@ axl_bool test_05_d (void)
 			return axl_false;
 		} /* end if */
 
+		printf ("Test 05-d: received status=%d, status_message=%s\n", status, status_message);
+
 		if (conn != NULL) {
 			printf ("Test 05-d: found connection with proper reference after TLS failure..\n");
 			if (! vortex_connection_is_ok (conn, axl_false)) {

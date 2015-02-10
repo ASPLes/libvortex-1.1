@@ -2029,6 +2029,8 @@ VortexConnection * vortex_tls_start_negotiation_sync     (VortexConnection  * co
 	VortexConnection    * _connection;
 	VortexTlsSyncResult * result;
 	VortexAsyncQueue    * queue;
+	struct timeval        start, stop, diff;
+	char                * ref;
 
 	/* check connection status */
 	if (! vortex_connection_is_ok (connection, axl_false)) {
@@ -2053,6 +2055,7 @@ VortexConnection * vortex_tls_start_negotiation_sync     (VortexConnection  * co
 				      queue);
 
 	/* get status */
+	gettimeofday (&start, NULL);
 	result = vortex_async_queue_timedpop (queue, vortex_connection_get_timeout (ctx));
 	vortex_log (VORTEX_LEVEL_DEBUG, "Pointer returned by queue_timedpop %p", result);
 	if (result == NULL) {
@@ -2063,8 +2066,21 @@ VortexConnection * vortex_tls_start_negotiation_sync     (VortexConnection  * co
 		 * end */
 		if (status != NULL)
 			(* status)         = VortexError;
-		if (status_message != NULL)
-			(* status_message) = "Timeout have been reached while waiting for TLS to finish";
+		if (status_message != NULL) {
+			gettimeofday (&stop, NULL);
+			vortex_timeval_substract (&stop, &start, &diff);
+			/* build error message customized with all timeout data */
+			ref = axl_strdup_printf ("Timeout (%ld ns, diff=%ld segs, %ld us) has been reached while waiting for TLS to finish for connection-id=%d (started at=%ld secs, %ld us, stopped at=%ld secs, %ld us)",
+						 vortex_connection_get_timeout (ctx), 
+						 (long) diff.tv_sec, (long) diff.tv_usec,
+						 vortex_connection_get_id (connection), 
+						 (long) start.tv_sec, (long) start.tv_usec,
+						 (long) stop.tv_sec, (long) stop.tv_usec);
+			(* status_message) = ref;
+
+			/* configure reference to be released when connection is terminated */
+			vortex_connection_set_data_full (connection, ref, ref, NULL, axl_free);
+		} /* end if */
 
 		/* return the same connection */
 		return NULL;
