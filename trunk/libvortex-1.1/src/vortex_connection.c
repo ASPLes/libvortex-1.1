@@ -2775,7 +2775,7 @@ axl_bool               vortex_connection_ref_internal                    (Vortex
 	/* unlock ref/unref options over this connection */
 	vortex_mutex_unlock (&connection->ref_mutex);
 
-	return axl_true;
+	return connection->ref_count > 1;
 }
 
 /** 
