@@ -331,8 +331,8 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 	/* check if this connection is being initially accepted */
 	if (connection->initial_accept) {
 		/* it doesn't matter to have a connection accepted or
-		 * not accepted to the vortex reader mission, so
-		 * simply call second step accept and return.  */
+		 * not to the vortex reader's mission, so simply call
+		 * second step accept and return.  */
 		__vortex_listener_second_step_accept (frame, connection);
 		return;
 	}
