@@ -50,7 +50,10 @@
  * not available in ANSI C. This is only required when compile vortex
  * with log support */
 #if defined(ENABLE_VORTEX_LOG)
+/* but avoid defining it on macosx because it seems to break the compiler */
+#if !defined(__APPLE__)
 int vsnprintf(char *str, size_t size, const char *format, va_list ap);
+#endif
 #endif
 
 /**
