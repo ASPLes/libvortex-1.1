@@ -1925,7 +1925,7 @@ axlPointer __vortex_connection_new (VortexConnectionNewData * data)
 		memset (srv_name, 0, NI_MAXSERV);
 		if (getnameinfo ((struct sockaddr *) &sin, sin_size, host_name, NI_MAXHOST, srv_name, NI_MAXSERV, NI_NUMERICSERV | NI_NUMERICHOST) != 0) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "getnameinfo () call failed, error was errno=%d", errno);
-			return axl_false;
+			return NULL;
 		}
 	
 		/* set local addr and local port */
