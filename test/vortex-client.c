@@ -158,7 +158,7 @@ unsigned int get_number_long (char  * ans, long limit) {
 	printf ("%s", ans);
 	response  = readline ("you chose: ");
 	num       = strtod (response, NULL);
-	if (num < 0 || num > limit ) {
+	if (((int)num) < 0 || num > limit ) {
                 axl_free (response);
 		printf ("You must provide a valid number from 0 up to %ld\n", limit);
 		goto label;
