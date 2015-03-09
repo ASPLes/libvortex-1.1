@@ -1307,7 +1307,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  *
  * The following section represents documents you may find useful to
  * get an idea if Vortex Library is right for you. It talks about
- * features, some insights about its implementation and license issues.
+ * features, some insights about its implementation and product license.
  *
  * - \ref implementation
  * - \ref features
@@ -1709,7 +1709,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  */
 
 /**
- * \page license License issues
+ * \page license Vortex Library License
  *
  * \section licence_intro Vortex Library terms of use
  * The Vortex Library is release under the terms of the Lesser General
@@ -1734,6 +1734,37 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * they could be damaged. Of course, we would appreciate your project, in
  * the case it is a proprietary one, make a reference to us but you are
  * not required to do so. 
+ *
+ * \section license_about_static_linking About statically linking Vortex Library
+ *
+ * Statically linking Vortex Library, GSASL
+ * (http://www.gnu.org/software/gsasl/), LibAxl
+ * (http://www.aspl.es/xml), noPoll (http://www.aspl.es/nopoll) or any
+ * other component based on GPL/LGPL <b>is strictly forbidden by the
+ * license</b> unless all components taking part into the final
+ * products are all of them GPL, LGPL, MIT, Bsds, etc, or similar
+ * licenses that allow an end user or the customer to download the
+ * entire product source code and clear instructions to rebuild it.
+ *
+ * If the library is being used by a proprietary product the only
+ * allowed option is dynamic linking (so final user is capable of
+ * updating that dynamic linked part) or a practical procedure where
+ * the propritary binary object along with the instructions to relink
+ * the LGPL part (including an update or modification of it) is
+ * provided.
+ * 
+ * An end user or customer using a product using LGPL components must
+ * be able to rebuild those components by introducing updates or
+ * improvements.
+ * 
+ * Thus, statically linking a LGPL components without considering
+ * previous points takes away this user/customer right because he/she
+ * cannot replace/update that LGPL component anymore unless you can
+ * have access to the whole solution.
+ *
+ * - See more about this at:  https://www.gnu.org/licenses/lgpl-2.1.html
+ * - Also at: http://stackoverflow.com/questions/10130143/gpl-lgpl-and-static-linking
+ * - LGPL 2.1 Guide: http://copyleft.org/guide/comprehensive-gpl-guidech11.html
  *
  * \section legal_notice_about_openssl About OpenSSL dependency:
  * 
