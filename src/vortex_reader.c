@@ -1246,7 +1246,7 @@ void __vortex_reader_dispatch_connection (int                  fds,
 axl_bool __vortex_reader_detect_and_cleanup_connection (axlListCursor * cursor) 
 {
 	VortexConnection * conn;
-	char               bytes[3];
+	char               bytes[4];
 	int                result;
 	int                fds;
 #if defined(ENABLE_VORTEX_LOG)

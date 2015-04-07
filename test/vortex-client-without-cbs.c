@@ -256,7 +256,7 @@ void handle_frame_received (int frame_pipe [], VortexAsyncQueue * queue)
 {
 
 	/* local variables */
-	char               value[2];
+	char               value[4];
 	VortexFrame      * frame;
 
 	/* frame received */
@@ -346,7 +346,7 @@ void close_request_received (VortexChannel * channel,
  */
 void handle_close_request (int close_pipe[2], VortexAsyncQueue * close_queue)
 {
-	char            value[2];
+	char            value[4];
 	VortexChannel * channel;
 	int             msg_no;
 			

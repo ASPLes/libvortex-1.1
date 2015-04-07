@@ -224,8 +224,8 @@ axl_bool  xml_rpc_support_are_equal (char * file1 , char * file2)
 {
 	int fd1;
 	int fd2;
-	char buffer1[1];
-	char buffer2[1];
+	char buffer1[4];
+	char buffer2[4];
 	int  read1;
 	int  read2;
 
