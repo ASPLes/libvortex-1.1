@@ -56,6 +56,8 @@ PACKAGE="Vortex Library 1.1:  A BEEP (RFC3080/RFC3081) implementation."
 echo "Generating configuration files for $PACKAGE, please wait...." 
 echo; 
 
+export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/lib/pkgconfig
+
 touch NEWS README AUTHORS ChangeLog 
 libtoolize --force;
 aclocal $ACLOCAL_FLAGS; 
