@@ -122,7 +122,7 @@ profile to core Vortex Library.
 %package -n libvortex-tls-1.1-dev
 Summary: BEEP TLS profile support for Vortex Library (devel headers).
 Group: System Environment/Libraries
-Requires: libvortex-1.1-tls
+Requires: libvortex-tls-1.1
 Requires: openssl-devel
 %description  -n libvortex-tls-1.1-dev
 Development headers for BEEP TLS profile.
@@ -152,7 +152,7 @@ profiles to the core Vortex Library.
 %package -n libvortex-sasl-1.1-dev
 Summary: BEEP SASL profiles support for Vortex Library (devel headers)
 Group: System Environment/Libraries
-Requires: libvortex-1.1-sasl
+Requires: libvortex-sasl-1.1
 # Requires: libgsasl (missing package)
 %description  -n libvortex-sasl-1.1-dev
 Development headers for BEEP SASL profiles for Vortex Library
@@ -180,7 +180,7 @@ definition for BEEP protocol.
 %package -n libvortex-tunnel-1.1-dev
 Summary: BEEP TUNNEL profile support for Vortex Library (devel headers)
 Group: System Environment/Libraries
-Requires: libvortex-1.1-tunnel
+Requires: libvortex-tunnel-1.1
 %description  -n libvortex-tunnel-1.1-dev
 Development headers for BEEP TUNNEL profile for Vortex Library.
 %files -n libvortex-tunnel-1.1-dev
@@ -234,7 +234,7 @@ pullable events that are handled inside the same thread.
 %package -n libvortex-pull-1.1-dev
 Summary: PULL API extension development headers
 Group: System Environment/Libraries
-Requires: libvortex-1.1-pull
+Requires: libvortex-pull-1.1
 %description  -n libvortex-pull-1.1-dev
 Development headers for PULL API extension
 %files -n libvortex-pull-1.1-dev
@@ -283,7 +283,7 @@ This package contains ALIVE Vortex Library implementation
 %package -n libvortex-alive-1.1-dev
 Summary: BEEP ALIVE support for Vortex Library (devel headers)
 Group: System Environment/Libraries
-Requires: libvortex-1.1-alive
+Requires: libvortex-alive-1.1
 %description  -n libvortex-alive-1.1-dev
 Development headers for BEEP ALIVE profile
 %files -n libvortex-alive-1.1-dev
@@ -308,7 +308,7 @@ This package contains BEEP over WebSocket support for Vortex Library
 %package -n  libvortex-websocket-1.1-dev
 Summary: BEEP over WebSocket support for Vortex Library (headers)
 Group: System Environment/Libraries
-Requires: libvortex-1.1-websocket-1.1
+Requires: libvortex-websocket-1.1
 %description  -n  libvortex-websocket-1.1-dev
 This package contains BEEP over WebSocket support for Vortex Library.
 %files -n  libvortex-websocket-1.1-dev
@@ -319,7 +319,7 @@ This package contains BEEP over WebSocket support for Vortex Library.
 %package -n  vortex-xml-rpc-gen-1.1
 Summary: Tool to create support files to execute XML-RPC services
 Group: System Environment/Libraries
-Requires: libvortex-1.1-websocket-1.1
+Requires: libvortex-websocket-1.1
 %description  -n  vortex-xml-rpc-gen-1.1
 This package contains the xml-rpc-gen tool which is used to create 
 client and server side files to support XML-RPC over BEEP.
@@ -331,8 +331,8 @@ client and server side files to support XML-RPC over BEEP.
 Summary: BEEP core implemetation client
 Group: System Environment/Libraries
 Requires: libvortex-1.1
-Requires: libvortex-1.1-tls
-Requires: libvortex-1.1-xml-rpc
+Requires: libvortex-tls-1.1
+Requires: libvortex-xml-rpc-1.1
 %description  -n  vortex-client-1.1
 This package contains vortex-client, a command line that allows
 to connect to and debug BEEP peers.
@@ -382,7 +382,7 @@ Python Vortex bindings development headers.
 Summary: Python bindings for Vortex Library TLS profile
 Group: System Environment/Libraries
 Requires: libvortex-1.1
-Requires: libvortex-1.1-tls
+Requires: libvortex-tls-1.1
 Requires: python
 Requires: python-vortex
 %description  -n  python-vortex-tls
@@ -402,7 +402,7 @@ Python bindings for Vortex Library TLS profile.
 Summary: Development headers for Python Vortex TLS bindings
 Group: System Environment/Libraries
 Requires: libvortex-1.1
-Requires: libvortex-1.1-tls-dev
+Requires: libvortex-tls-1.1-dev
 Requires: python
 Requires: python-vortex-tls
 %description  -n  python-vortex-tls-dev
@@ -416,7 +416,7 @@ Python Vortex TLS  bindings development headers
 Summary: Python bindings for Vortex Library SASL profile
 Group: System Environment/Libraries
 Requires: libvortex-1.1
-Requires: libvortex-1.1-sasl
+Requires: libvortex-sasl-1.1
 Requires: python
 Requires: python-vortex
 %description  -n  python-vortex-sasl
@@ -436,8 +436,8 @@ Python bindings for Vortex Library SASL profile
 Summary: Development headers for Python Vortex SASL bindings
 Group: System Environment/Libraries
 Requires: libvortex-1.1
-Requires: libvortex-1.1-sasl
-Requires: libvortex-1.1-sasl-dev
+Requires: libvortex-sasl-1.1
+Requires: libvortex-sasl-1.1-dev
 Requires: python-vortex-sasl
 %description  -n  python-vortex-sasl-dev
 Python Vortex SASL  bindings development headers
@@ -450,7 +450,7 @@ Python Vortex SASL  bindings development headers
 Summary: Python bindings for Vortex Library ALIVE support
 Group: System Environment/Libraries
 Requires: libvortex-1.1
-Requires: libvortex-1.1-alive
+Requires: libvortex-alive-1.1
 Requires: python
 Requires: python-vortex
 %description  -n  python-vortex-alive
@@ -470,7 +470,7 @@ Python bindings for Vortex Library ALIVE profile
 Summary: Python bindings for Vortex Library ALIVE support (headers)
 Group: System Environment/Libraries
 Requires: libvortex-1.1
-Requires: libvortex-1.1-alive
+Requires: libvortex-alive-1.1
 Requires: python
 Requires: python-vortex
 Requires: python-vortex-alive
