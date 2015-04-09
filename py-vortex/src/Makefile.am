@@ -39,8 +39,11 @@ libpy_vortex_11_la_SOURCES  = \
 	py_vortex_frame.c \
 	py_vortex_channel_pool.c \
 	py_vortex_handle.c
+
 libpy_vortex_11_la_LDFLAGS  = $(PYTHON_LIBS) $(top_srcdir)/src/libvortex-1.1.la $(AXL_LIBS)
 libpy_vortex_11_la_includedir = $(includedir)/py_vortex
+
+libpy_vortex_11_la_LIBADD = $(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
 
 if ENABLE_SASL_SUPPORT
 # libpy_vortex_sasl_11.la
@@ -50,6 +53,8 @@ libpy_vortex_sasl_11_la_SOURCES = \
 	py_vortex_sasl.c
 libpy_vortex_sasl_11_la_LDFLAGS  = $(PYTHON_LIBS) $(top_srcdir)/src/libvortex-1.1.la $(top_srcdir)/sasl/libvortex-sasl-1.1.la $(AXL_LIBS) libpy_vortex_11.la
 libpy_vortex_sasl_11_la_includedir = $(includedir)/py_vortex
+
+libpy_vortex_sasl_11_la_LIBADD = $(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
 endif
 
 if ENABLE_TLS_SUPPORT
@@ -60,6 +65,8 @@ libpy_vortex_tls_11_la_SOURCES = \
 	py_vortex_tls.c
 libpy_vortex_tls_11_la_LDFLAGS  = $(PYTHON_LIBS) $(top_srcdir)/src/libvortex-1.1.la $(top_srcdir)/tls/libvortex-tls-1.1.la $(AXL_LIBS) libpy_vortex_11.la
 libpy_vortex_tls_11_la_includedir = $(includedir)/py_vortex
+
+libpy_vortex_tls_11_la_LIBADD = $(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
 endif
 
 # libpy_vortex_alive_11.la
@@ -69,6 +76,8 @@ libpy_vortex_alive_11_la_SOURCES = \
 	py_vortex_alive.c
 libpy_vortex_alive_11_la_LDFLAGS  = $(PYTHON_LIBS) $(top_srcdir)/src/libvortex-1.1.la $(top_srcdir)/alive/libvortex-alive-1.1.la $(AXL_LIBS) libpy_vortex_11.la
 libpy_vortex_alive_11_la_includedir = $(includedir)/py_vortex
+
+libpy_vortex_alive_11_la_LIBADD = $(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
 
 libdir = ${pythondir}/vortex
 
