@@ -6,6 +6,8 @@ echo "Preparing sources"
 rm -rf rpm/SOURCES/*.tar.gz
 rm -rf rpm/BUILD/*
 rm -rf rpm/BUILDROOT/*
+find rpm/RPMS/ -type f -exec rm {} \;
+
 make dist
 cp vortex-`cat VERSION`.tar.gz rpm/SOURCES/
 
