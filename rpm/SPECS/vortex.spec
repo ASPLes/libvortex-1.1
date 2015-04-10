@@ -1,3 +1,4 @@
+%define release_date %(date +"%a %b %d %Y")
 %define vortex_version %(cat VERSION)
 
 Name:           vortex
@@ -482,6 +483,5 @@ Python bindings for Vortex Library ALIVE profile (devel headers)
 
 
 %changelog
-* Sun Apr 07 2015 Francis Brosnan Blázquez <francis@aspl.es> - %{vortex_version}
-- New upstream release
+%include rpm/SPECS/changelog.inc
 
