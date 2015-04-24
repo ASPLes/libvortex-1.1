@@ -153,6 +153,11 @@ struct _VortexWebsocketSetup {
 	 * @internal Enable debug.
 	 */
 	axl_bool enable_debug;
+
+	/** 
+	 * @internal Control certificate verificadtion for wss://
+	 */
+	axl_bool cert_verify;
 };
 
 /** 
@@ -318,6 +323,10 @@ void               vortex_websocket_setup_conf     (VortexWebsocketSetup      * 
 		/* enable debug */
 		setup->enable_debug = PTR_TO_INT (value);
 		break;
+	case VORTEX_WEBSOCKET_CONF_CERT_VERIFY:
+		/* configure certificate verify */
+		setup->cert_verify = PTR_TO_INT (value);
+		break;
 	} /* end switch */
 
 	return;
@@ -474,6 +483,7 @@ axlPointer __vortex_websocket_connection_new (VortexWebsocketConnectionData * da
 	VortexWebsocketSetup * setup   = data->setup;
 	VortexConnectionOpts * options = setup->options;
 	noPollConn           * nopoll_conn;
+	noPollConnOpts       * opts          = NULL;
 	noPollCtx            * nopoll_ctx;
 	char                 * custom_origin = NULL;
 
@@ -497,8 +507,14 @@ axlPointer __vortex_websocket_connection_new (VortexWebsocketConnectionData * da
 
 	/* creat the connection */
 	if (setup->use_wss) {
+		/* disable certificate verification if the user requested so */
+		if (! setup->cert_verify) {
+			opts = nopoll_conn_opts_new ();
+			nopoll_conn_opts_ssl_peer_verify (opts, nopoll_false);
+		} /* end if */
+
 		nopoll_conn = nopoll_conn_tls_new (nopoll_ctx, 
-						   NULL, /* tls options, still not in use */
+						   opts, /* tls options */
 						   host, 
 						   port,
 						   setup->host_header ? setup->host_header : host,

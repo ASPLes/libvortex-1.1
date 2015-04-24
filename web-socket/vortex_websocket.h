@@ -96,7 +96,13 @@ typedef enum {
 	 * @brief Allows to to enable debug at noPollCtx context
 	 * object created by the connection. By default is disabled.
 	 */
-	VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_DEBUG = 7
+	VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_DEBUG = 7,
+	/** 
+	 * @brief Allows to control if certificate verification should
+	 * be enabled or disabled. By default, certificate
+	 * verification is enabled.
+	 */ 
+	VORTEX_WEBSOCKET_CONF_CERT_VERIFY = 8
 } VortexWebsocketConfItem;
 
 VortexWebsocketSetup  * vortex_websocket_setup_new      (VortexCtx * ctx);
