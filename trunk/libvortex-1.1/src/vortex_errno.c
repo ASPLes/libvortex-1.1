@@ -96,7 +96,7 @@ void    vortex_errno_show_error        (VortexCtx * ctx, int  __errno)
 {
 
 #if defined(AXL_OS_WIN32)
-	switch (errno) {
+	switch (__errno) {
 	case WSAEINTR:
 		vortex_log (VORTEX_LEVEL_CRITICAL,  ERRNO_WSAEINTR);
 	case WSAEACCES:
@@ -200,7 +200,7 @@ void    vortex_errno_show_error        (VortexCtx * ctx, int  __errno)
 	}
 #elif defined (AXL_OS_UNIX)
 	/* show the last error */
-	vortex_log (VORTEX_LEVEL_CRITICAL, strerror (errno));
+	vortex_log (VORTEX_LEVEL_CRITICAL, strerror (__errno));
 #endif
 	return;
 }
@@ -215,7 +215,7 @@ void    vortex_errno_show_last_error   (VortexCtx * ctx)
 char  * vortex_errno_get_error         (int  __errno)
 {
 #if defined(AXL_OS_WIN32)
-	switch (errno) {
+	switch (__errno) {
 	case WSAEINTR:
 		return ERRNO_WSAEINTR;
 	case WSAEACCES:
@@ -320,7 +320,7 @@ char  * vortex_errno_get_error         (int  __errno)
 	return NULL;
 #elif defined(AXL_OS_UNIX)
 	/* return last errno */
-	return strerror (errno);
+	return strerror (__errno);
 #else
 	return NULL;
 #endif
