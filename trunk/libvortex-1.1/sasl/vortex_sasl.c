@@ -328,6 +328,11 @@ axl_bool                vortex_sasl_set_propertie             (VortexConnection 
 
 		vortex_connection_set_data_full (connection, SASL_AUTHID, 
 						 value, NULL, NULL);
+		break;
+	case VORTEX_SASL_HOSTNAME:
+		vortex_connection_set_data_full (connection, SASL_HOSTNAME,
+						 value, NULL, value_destroy);
+		break;
 	case VORTEX_SASL_PROP_NUM:
 		/* nothing to do */
 		break;
@@ -379,6 +384,8 @@ char             * vortex_sasl_get_propertie             (VortexConnection     *
 		return vortex_connection_get_data (connection, SASL_REALM);
 	case VORTEX_SASL_ANONYMOUS_TOKEN:
 		return vortex_connection_get_data (connection, SASL_ANONYMOUS_TOKEN);
+	case VORTEX_SASL_HOSTNAME:
+		return vortex_connection_get_data (connection, SASL_HOSTNAME);
 	case VORTEX_SASL_PROP_NUM:
 		/* nothing to do */
 		break;
@@ -613,6 +620,7 @@ void vortex_sasl_configure_current_properties (VortexConnection * connection)
 #if defined(ENABLE_VORTEX_LOG) && ! defined(SHOW_FORMAT_BUGS)
 	VortexCtx * ctx = vortex_connection_get_ctx (connection);
 #endif
+	const char        * server_hostname;
 	
 	gsasl_property_set (data->session, GSASL_AUTHID,   
 			    vortex_sasl_get_propertie (connection, VORTEX_SASL_AUTH_ID));
@@ -630,11 +638,28 @@ void vortex_sasl_configure_current_properties (VortexConnection * connection)
 			    vortex_sasl_get_propertie (connection, VORTEX_SASL_ANONYMOUS_TOKEN));
 
 	gsasl_property_set (data->session, GSASL_SERVICE, "beep");
-	
-	/* get current hostname */
-	if (gethostname (hostname, 512) == 0) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "using as hostname for SASL service: %s", hostname);
-		gsasl_property_set (data->session, GSASL_HOSTNAME, hostname);
+
+	/* get the SASL server-name */
+	server_hostname = vortex_sasl_get_propertie (connection, VORTEX_SASL_HOSTNAME);
+	if (server_hostname != NULL) {
+		vortex_log (VORTEX_LEVEL_DEBUG, "using as SASL servname: %s", server_hostname);
+		gsasl_property_set (data->session, GSASL_HOSTNAME, server_hostname);
+	} else if (vortex_connection_get_role (connection) == VortexRoleInitiator) {
+		/* try first getting from currently configured serverName */
+		server_hostname = vortex_connection_get_server_name (connection);
+		if (! server_hostname) {
+			/* try to get from connecting host address
+			 * (attention: it might be an IP) */
+			server_hostname = vortex_connection_get_host (connection);
+		} /* end if */
+
+		vortex_log (VORTEX_LEVEL_DEBUG, "using as hostname for SASL we connect to: %s", server_hostname);
+		gsasl_property_set (data->session, GSASL_HOSTNAME, server_hostname);
+	} else {
+		if (gethostname (hostname, 512) == 0) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "using as hostname for SASL service: %s", hostname);
+			gsasl_property_set (data->session, GSASL_HOSTNAME, hostname);
+		}
 	}
 	return;
 }

@@ -201,6 +201,11 @@ BEGIN_C_DECLS
  */
 #define SASL_METHOD_USED                "sasl:method:used"
 
+/**
+ * @brief Mark used to store the SASL hostname used.
+ */
+#define SASL_HOSTNAME			"sasl:hostname"
+
 
 /** 
  * @brief Set of properties to be used to configure client authentication. 
@@ -232,11 +237,16 @@ typedef enum {
 	 * @brief Allows to configure anonymous token while using ANONYMOUS profile. This propertie is especific for ANONYMOUS profile.
 	 */
 	VORTEX_SASL_ANONYMOUS_TOKEN   = 5,
+	/**
+	 * @brief Allows to configure the hostname of the listening side used
+	 * within some SASL mechanisms.
+	 */
+	VORTEX_SASL_HOSTNAME          = 6,
 	/** 
 	 * @internal
 	 * The following value must be always be the last. While adding new properties, they must go before this one.
 	 */
-	VORTEX_SASL_PROP_NUM          = 6
+	VORTEX_SASL_PROP_NUM          = 7
 } VortexSaslProperties;
 
 /** 
