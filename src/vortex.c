@@ -1920,7 +1920,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * to be stable, by checking out a svn copy executing the following:
  *
  * \code
- *   svn co https://dolphin.aspl.es/svn/publico/af-arch/trunk/libvortex-1.1
+ *   >> svn co https://dolphin.aspl.es/svn/publico/af-arch/trunk/libvortex-1.1
  * \endcode
  * 
  * If you are using Microsoft Windows platform use the url
@@ -1932,15 +1932,31 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * dependencies. Check the \ref dep_notes "this section" to know
  * more about library dependencies.
  *
- * \section compile_linux Compiling Vortex Library on GNU/linux environments (including Cygwin)
+ * \section compile_linux Compiling Vortex Library on GNU/linux environments (including Cygwin, mingw)
  *
- * If you are running a POSIX (unix-like including cygwin) environment you can use
+ * If you are running a POSIX (unix-like including cygwin,mingw) environment you can use
  * autotools to configure the project so you can compile it. Type the
- * following once you have downloaded the source code:
+ * following once you have downloaded the source code.
+ *
+ * <b>From SVN:</b>
  *
  * \code
- *   bash:~$ cd libvortex-1.1
- *   bash:~/libvortex$-1.1 ./autogen.sh
+ *   >> svn co https://dolphin.aspl.es/svn/publico/af-arch/trunk/libvortex-1.1
+ *   >> cd libvortex-1.1
+ *   >> ./autogen.sh
+ *   >> make clean
+ *   >> make 
+ * \endcode
+ *
+ * <b>From a vortex .tar.gz file:</b>
+ *
+ * \code
+ *   >> wget http://www.aspl.es/vortex/downloads/vortex-1.1.14.b5292.g5292.tar.gz
+ *   >> tar xzvf vortex-1.1.14.b5292.g5292.tar.gz
+ *   >> cd vortex-1.1.14.b5292.g5292
+ *   >> ./configure
+ *   >> make clean
+ *   >> make 
  * \endcode
  *
  * This will configure your project trying to find the dependencies
@@ -1995,7 +2011,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  *
  * Of course, the <b>CC</b> variable may point to another gcc, check the one
  * that is installed on your system but, make sure you are not using
- * the gcc provided by a cygwin installation. It will produce a faulty
+ * the gcc provided by a cygwin/mingw installation. It will produce a faulty
  * libvortex-1.1.dll not usable by any native Microsoft Windows program.
  *
  * The <b>MODE</b> variable can be set to <b>"windows"</b>. This will disable the
@@ -2024,14 +2040,14 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * library will be needed to compile your application under windows
  * against Vortex Library so it get linked to libvortex-1.1.dll.
  * 
- * \section using_linux Using Vortex on GNU/Linux platforms (including Cygwin)
+ * \section using_linux Using Vortex on GNU/Linux platforms (including Cygwin/Mingw)
  * 
  * Once you have installed the library you can type: 
  * \code
  *   gcc `pkg-config --cflags --libs vortex-1.1` your-program.c -o your-program
  * \endcode
  *
- * On windows platform using cygwin the previous example also
+ * On windows platform using cygwin/mingw the previous example also
  * works. 
  *
  * \section using_mingw Using Vortex on Microsoft Windows with Mingw
