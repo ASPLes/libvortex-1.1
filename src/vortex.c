@@ -734,7 +734,7 @@ void _vortex_log_common (VortexCtx        * ctx,
 		if (ctx->prepare_log_string) {
 			/* pass the string already prepared */
 			log_string = axl_strdup_printfv (message, args);
-			ctx->debug_handler (file, line, log_level, log_string, NULL);
+			ctx->debug_handler (file, line, log_level, log_string, args);
 			axl_free (log_string);
 		} else {
 			/* call a custom debug handler if one has been set */
