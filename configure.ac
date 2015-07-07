@@ -307,16 +307,21 @@ dnl check for websocket support (through noPoll)
 AC_ARG_ENABLE(websocket-support, [  --disable-websocket-support    Makes Vortex Library to be built with WebSocket extension library], 
 	      enable_websocket_support="$enableval", 
 	      enable_websocket_support=yes)
+
+dnl If websocket is requested/enabled, try to detect it
 if test "$enable_websocket_support" != "no" ; then
+
     PKG_CHECK_MODULES(NOPOLL, nopoll,	[enable_websocket_support=yes], [enable_websocket_support=no])
     if test "$enable_websocket_support" = "no" ; then
        	dnl try to check by header
 	AC_CHECK_HEADER(nopoll/nopoll.h,enable_websocket_support=yes,enable_websocket_support=no)
+	AC_MSG_RESULT([Headers detected for noPoll: $enable_websocket_support])
 	if test "$enable_websocket_support" = "yes" ; then
 	   NOPOLL_CFLAGS=
 	   NOPOLL_LIBS=-lnopoll
 	fi
     fi
+
     AC_SUBST(NOPOLL_CFLAGS)
     AC_SUBST(NOPOLL_LIBS)
 fi
