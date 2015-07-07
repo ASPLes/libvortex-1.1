@@ -217,7 +217,17 @@ fi
 AM_CONDITIONAL(ENABLE_AF_ARCH_DOC, test "x$DOXYGEN" = "xyes")
 
 dnl LibAxl library support.
-PKG_CHECK_MODULES(AXL, axl >= 0.7.0)
+PKG_CHECK_MODULES(AXL, axl >= 0.7.0, [enable_axl_support=yes], [enable_axl_support=no])
+if test "$enable_axl_support" = "no" ; then
+   dnl Try to find by header
+   AC_CHECK_HEADER(axl/axl.h,enable_axl_support=yes,enable_axl_support=no)
+   if test "$enable_websocket_support" = "yes" ; then
+       AXL_CFLAGS=
+       AXL_LIBS=-laxl
+   else
+       AC_MSG_ERROR([ERROR: LibAxl wasn't found installed on this system. Unable to compile Vortex without it.])
+   fi
+fi
 AC_SUBST(AXL_CFLAGS)
 AC_SUBST(AXL_LIBS)
 
@@ -254,26 +264,43 @@ if test "$enable_sasl_support" != "no" ; then
     if test "$enable_sasl_support" = "no" ; then
         PKG_CHECK_MODULES(GSASL, libgsasl >= 0.2.12,	[enable_sasl_support=yes], [enable_sasl_support=no])
 	if test "$enable_sasl_support" = "yes" ; then
-	        AC_MSG_WARN([Found old GSASL installation, this could cause problems.])
-		found_old_sasl=yes
+	     AC_MSG_WARN([Found old GSASL installation, this could cause problems.])
+	     found_old_sasl=yes
         else 
+	     dnl try to find headers manually
+	     AC_CHECK_HEADER(gsasl.h,enable_sasl_support=yes,enable_sasl_support=no)
+	     if test "$enable_sasl_support" = "yes" ; then
+
+	     	# flag that we have gsasl
+		HAVE_GSASL_FREE=-DGSASL_HAVE_FREE
+
+		dnl Enable SASL cflags and link headers
+		SASL_LIBS=-lgsasl
+		SASL_CFLAGS=
+		dnl SASL libraries subsitution
+		AC_SUBST(SASL_CFLAGS)
+		AC_SUBST(SASL_LIBS)
+		AC_SUBST(HAVE_GSASL_FREE)
+	     	
+	     else
 	        AC_MSG_WARN([Cannot find GNU SASL installaton, disabling it. This will disable SASL family profile support.])
 		enable_sasl_support=no
+             fi
         fi
     else
 	# flag that we have gsasl
 	HAVE_GSASL_FREE=-DGSASL_HAVE_FREE
+
+	dnl Enable SASL cflags and link headers
+	SASL_LIBS=`pkg-config --libs libgsasl`
+   	SASL_CFLAGS=`pkg-config --cflags libgsasl`
+	dnl SASL libraries subsitution
+	AC_SUBST(SASL_CFLAGS)
+	AC_SUBST(SASL_LIBS)
+	AC_SUBST(HAVE_GSASL_FREE)
     fi
 fi
-if test "$enable_sasl_support" = "yes" ; then
-   dnl Enable SASL cflags and link headers
-   SASL_LIBS=`pkg-config --libs libgsasl`
-   SASL_CFLAGS=`pkg-config --cflags libgsasl`
-   dnl SASL libraries subsitution
-   AC_SUBST(SASL_CFLAGS)
-   AC_SUBST(SASL_LIBS)
-   AC_SUBST(HAVE_GSASL_FREE)
-fi
+
 AM_CONDITIONAL(ENABLE_SASL_SUPPORT, test "x$enable_sasl_support" = "xyes")
 
 dnl check for websocket support (through noPoll)
@@ -282,6 +309,14 @@ AC_ARG_ENABLE(websocket-support, [  --disable-websocket-support    Makes Vortex 
 	      enable_websocket_support=yes)
 if test "$enable_websocket_support" != "no" ; then
     PKG_CHECK_MODULES(NOPOLL, nopoll,	[enable_websocket_support=yes], [enable_websocket_support=no])
+    if test "$enable_websocket_support" = "no" ; then
+       	dnl try to check by header
+	AC_CHECK_HEADER(nopoll/nopoll.h,enable_websocket_support=yes,enable_websocket_support=no)
+	if test "$enable_websocket_support" = "yes" ; then
+	   NOPOLL_CFLAGS=
+	   NOPOLL_LIBS=-lnopoll
+	fi
+    fi
     AC_SUBST(NOPOLL_CFLAGS)
     AC_SUBST(NOPOLL_LIBS)
 fi
