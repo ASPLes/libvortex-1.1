@@ -39,9 +39,9 @@ body {
 .page { 
   border: 1px solid #428ac7;
   background: white;
-  width: 800px;
+  width: 900px;
   position: absolute; left: 50%; top: 0%; z-index: 1;
-  margin-left: -400px;
+  margin-left: -450px;
   margin-top: 10px;
   font-family: Verdana,Tahoma,Arial,Sans-Serif;
   font-weight: normal;
@@ -406,3 +406,25 @@ span.item-description {
   list-style: none;
 }
 
+table.licensing-table { 
+  text-align: center;
+}
+
+.licensing-table .header { 
+  color: white;
+  font-weight: bold;
+  background: #729fcf                  
+}
+
+.licensing-table td { 
+  padding: 6px;
+}
+
+.licensing-table .table-option { 
+  width: 400px; 
+  text-align: right;
+}
+
+.licensing-table .row-odd { 
+  background: #e7f0f3
+}
