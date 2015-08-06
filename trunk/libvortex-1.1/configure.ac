@@ -371,10 +371,16 @@ AM_PATH_PYTHON([2.3],, enable_py_vortex_support="no")
 if test "$enable_py_vortex_support" = "yes" ; then
 
    # find python-config
-   PYTHON_CONFIG=`./get-python-config`
+   bash_location=`which bash`
+   echo "Bash location found: $bash_location"
+   PYTHON_CONFIG=`${bash_location} ./get-python-config`
 
    # get site_packages
-   python_dir_check=`eval ./check-python-dir.py ${pythondir}`
+   if test "${PYTHON}" = "/usr/bin/python" ; then
+      python_dir_check=`./check-python-dir.py ${pythondir}`
+   else
+      python_dir_check=`python ./check-python-dir.py ${pythondir}`
+   fi
 
    # get python includes 
    PYTHON_INCLUDES=`$PYTHON_CONFIG --includes 2>/dev/null`
