@@ -228,6 +228,8 @@ if test "$enable_axl_support" = "no" ; then
        AC_MSG_ERROR([ERROR: LibAxl wasn't found installed on this system. Unable to compile Vortex without it.])
    fi
 fi
+AXL_CFLAGS=`echo $AXL_CFLAGS | sed 's@ \/@/@g'`
+AXL_LIBS=`echo $AXL_LIBS | sed 's@ \/@/@g'`
 AC_SUBST(AXL_CFLAGS)
 AC_SUBST(AXL_LIBS)
 
@@ -294,6 +296,11 @@ if test "$enable_sasl_support" != "no" ; then
 	dnl Enable SASL cflags and link headers
 	SASL_LIBS=`pkg-config --libs libgsasl`
    	SASL_CFLAGS=`pkg-config --cflags libgsasl`
+
+	dnl cleanup declarations (FreeBSD)
+	SASL_CFLAGS=`echo $SASL_CFLAGS | sed 's@ \/@/@g'`
+	SASL_LIBS=`echo $SASL_LIBS | sed 's@ \/@/@g'`
+
 	dnl SASL libraries subsitution
 	AC_SUBST(SASL_CFLAGS)
 	AC_SUBST(SASL_LIBS)
@@ -322,6 +329,8 @@ if test "$enable_websocket_support" != "no" ; then
 	fi
     fi
 
+    NOPOLL_CFLAGS=`echo $NOPOLL_CFLAGS | sed 's@ \/@/@g'`
+    NOPOLL_LIBS=`echo $NOPOLL_LIBS | sed 's@ \/@/@g'`
     AC_SUBST(NOPOLL_CFLAGS)
     AC_SUBST(NOPOLL_LIBS)
 fi
@@ -437,6 +446,8 @@ if test "$enable_lua_vortex_support" = "yes" ; then
     PKG_CHECK_MODULES(LUA, lua5.1, enable_lua_vortex_support="yes", enable_lua_vortex_support=="no")
 
     if test "$enable_lua_vortex_support" = "yes" ; then
+       LUA_CFLAGS=`echo $LUA_CFLAGS | sed 's@ \/@/@g'`
+       LUA_LIBS=`echo $LUA_LIBS | sed 's@ \/@/@g'`
        AC_SUBST(LUA_CFLAGS)
        AC_SUBST(LUA_LIBS)
 
@@ -557,8 +568,16 @@ echo "      epoll(2) support:            [$enable_cv_epoll]"
 echo "      default:                     [$default_platform]"
 echo "      debug log support:           [$enable_vortex_log]"
 echo "      release prefix:              [$enable_release_prefix]"
-echo "      pthread cflags=$PTHREAD_CFLAGS, libs=$PTHREAD_LIBS"
-echo "      additional libs=$ADDITIONAL_LIBS"
+echo "      pthread cflags: $PTHREAD_CFLAGS, libs=$PTHREAD_LIBS"
+echo "      additional libs: $ADDITIONAL_LIBS"
+echo "      axl flags: $AXL_CFLAGS"
+echo "      axl libs: $AXL_LIBS"
+echo "      nopoll flags: $NOPOLL_CFLAGS"
+echo "      nopoll libs: $NOPOLL_LIBS"
+echo "      gsasl flags: $GSASL_CFLAGS"
+echo "      gsasl libs: $GSASL_LIBS"
+echo "      lua flags: $LUA_CFLAGS"
+echo "      lua libs: $LUA_LIBS"
 if test x$enable_vortex_log = xyes ; then
 echo "      NOTE: To disable log reporting use: "
 echo "            --disable-vortex-log"               
