@@ -2890,9 +2890,9 @@ void               vortex_connection_unref                  (VortexConnection * 
 	connection->ref_count--;
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "%d decreased connection id=%d (%p) reference count to %d decreased by %s\n", 
-		vortex_getpid (),
-		connection->id, connection,
-		connection->ref_count, who ? who : "??");  
+		    vortex_getpid (),
+		    connection->id, connection,
+		    connection->ref_count, who ? who : "??");  
 		
 	/* get current count */
 	count = connection->ref_count;

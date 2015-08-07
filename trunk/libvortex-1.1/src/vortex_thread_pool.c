@@ -1024,7 +1024,13 @@ axl_bool vortex_thread_pool_remove_event        (VortexCtx              * ctx,
 						 int                      event_id)
 {
 	VortexThreadPoolEvent * event;
-	v_return_val_if_fail (ctx, axl_false);
+
+	if (ctx == NULL || ctx->thread_pool == NULL)
+		return axl_true; /* remove event because we are
+				  * receiving ctx or ctx->thread_pool
+				  * NULL */
+
+	/* v_return_val_if_fail (ctx, axl_false); */
 
 	/* lock the thread pool */
 	vortex_mutex_lock (&(ctx->thread_pool->mutex));

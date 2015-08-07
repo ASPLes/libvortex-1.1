@@ -13923,7 +13923,7 @@ axl_bool test_15_aux (VortexCtx * ctx, long check_period, int unreply_count, Vor
 	VortexChannel    * channel;
 
 
-	printf ("Test 16: checking alive with check-perid=%ld, and unreply count=%d\n",
+	printf ("Test --: checking alive with check-perid=%ld, and unreply count=%d\n",
 		check_period, unreply_count);
 
 	/* create connection */
@@ -13963,7 +13963,7 @@ axl_bool test_15_aux (VortexCtx * ctx, long check_period, int unreply_count, Vor
 	vortex_connection_set_on_close_full (conn, test_15_on_close_full, queue);
 
 	if (! vortex_channel_send_msg (channel, "block-connection", 16, NULL)) {
-		printf ("Test 16: failed to send block connection message..\n");
+		printf ("Test --: failed to send block connection message..\n");
 		show_conn_errors (conn);
 		return axl_false;
 	} /* end if */
@@ -13977,10 +13977,10 @@ axl_bool test_15_aux (VortexCtx * ctx, long check_period, int unreply_count, Vor
 	} /* end if */
 
 	/* lock until connection is closed */
-	printf ("Test 16: waiting connection to be detected to be closed..\n");
+	printf ("Test --: waiting connection to be detected to be closed..\n");
 	vortex_async_queue_pop (queue);
 
-	printf ("Test 16: ok, connection close detected..\n");
+	printf ("Test --: ok, connection close detected..\n");
 
 	/* close connection */
 	vortex_connection_close (conn);
@@ -14049,7 +14049,7 @@ axl_bool  test_15 (void)
 		return axl_false;
 
 	/* now check channel alive report after alive cancel */
-	printf ("Test 16: checking alive activation after delay alive channel notification due to really small notification..\n");
+	printf ("Test --: checking alive activation after delay alive channel notification due to really small notification..\n");
 	conn = vortex_connection_new (ctx, listener_host, LISTENER_PORT, NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("ERROR: failed to create connection under HTTP CONNECT..\n");
@@ -14063,7 +14063,7 @@ axl_bool  test_15 (void)
 	} /* end if */
 
 	/* wait a bit to force channel alive notification when no longer required */
-	printf ("Test 16: forcing channel alive notification when no longer required (waiting 40ms)..\n");
+	printf ("Test --: forcing channel alive notification when no longer required (waiting 40ms)..\n");
 	vortex_async_queue_timedpop (queue, 40000);
 
 	/* close connection */
@@ -14072,7 +14072,7 @@ axl_bool  test_15 (void)
 	/* terminate context */
 	vortex_exit_ctx (ctx, axl_true);
 
-	printf ("Test 16: ok, wait to close connection (100ms)..\n");
+	printf ("Test --: ok, wait to close connection (100ms)..\n");
 	vortex_async_queue_timedpop (queue, 100000);
 
 	/**** SECOND PART: checking proper connection close after alive check ****/
@@ -14082,7 +14082,7 @@ axl_bool  test_15 (void)
 		return axl_false;
 	}
 
-	printf ("Test 16: Creating a connection, enable alive check and close it..\n");
+	printf ("Test --: Creating a connection, enable alive check and close it..\n");
 	iterator = 0;
 	while (iterator < 10) {
 		conn = connection_new ();
@@ -14105,7 +14105,7 @@ axl_bool  test_15 (void)
 	/**** THIRD PART: check alive with real content transfer ****/
 
 	/* now test alive with ongoing transfer */
-	printf ("Test 16: check alive with other transfer content..\n");
+	printf ("Test --: check alive with other transfer content..\n");
 	conn = connection_new ();
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("ERROR: failed to create connection under HTTP CONNECT..\n");
@@ -14117,7 +14117,7 @@ axl_bool  test_15 (void)
 		return axl_false;
 	} /* end if */
 
-	printf ("Test 16: checking real content transfer");
+	printf ("Test --: checking real content transfer");
 	iterator = 0;
 	while (iterator < 20) {
 		printf (".");
@@ -14134,7 +14134,7 @@ axl_bool  test_15 (void)
 	vortex_connection_close (conn);
 
 	/**** FOURTH PART: checking alive channel close ****/
-	printf ("Test 16: fourth part: checking alive channel close\n");
+	printf ("Test --: fourth part: checking alive channel close\n");
 	conn = connection_new ();
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("ERROR: failed to create connection under HTTP CONNECT..\n");
@@ -14184,7 +14184,7 @@ axl_bool  test_15 (void)
 	vortex_connection_close (conn);
 
 	/**** FIFTH PATH: checking alive on heavy transfer escenarios ****/
-	printf ("Test 16: fifth path, checking alive on heavy transfer situations..\n");
+	printf ("Test --: fifth path, checking alive on heavy transfer situations..\n");
 	conn = connection_new ();
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("ERROR: failed to create connection under HTTP CONNECT..\n");
@@ -14231,7 +14231,7 @@ axl_bool  test_15 (void)
 
 	/* now check connection after transfer completed */
 	if (! vortex_connection_is_ok (conn, axl_false)) {
-		printf ("ERROR: found connection close during reply received check..\n");
+		printf ("ERROR: found connection close during reply received check (it should be working ref 9jy8j)..\n");
 		return axl_false;
 	}
 
@@ -14239,7 +14239,7 @@ axl_bool  test_15 (void)
 	vortex_connection_close (conn);
 
 	/**** SIXTH: check failure handler ****/
-	printf ("Test 16: sixth part, checking failure handler..\n");
+	printf ("Test --: sixth part, checking failure handler..\n");
 	conn = connection_new ();
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("ERROR: failed to create connection under HTTP CONNECT..\n");
@@ -14257,7 +14257,7 @@ axl_bool  test_15 (void)
 
 	/* wait until connection is received */
 	conn2 = vortex_async_queue_pop (queue);
-	printf ("Test 16: received connection..\n");
+	printf ("Test --: received connection..\n");
 	
 	/* check references */
 	if (vortex_connection_get_id (conn) != vortex_connection_get_id (conn2)) {
