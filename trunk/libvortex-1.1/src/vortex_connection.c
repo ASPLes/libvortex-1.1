@@ -1358,7 +1358,6 @@ struct addrinfo * vortex_gethostbyname (VortexCtx           * ctx,
 	vortex_log (VORTEX_LEVEL_DEBUG, "Calling getaddrinfo (%s:%s), transport=%s", hostname, port, transport == VORTEX_IPv6 ? "IPv6" : "IPv4");
 	if (getaddrinfo (hostname, port, &hints, &res) != 0) {
 		axl_free (key);
-		freeaddrinfo (res);
 		
 		vortex_mutex_unlock (&ctx->connection_hostname_mutex);
 		vortex_log (VORTEX_LEVEL_CRITICAL, "getaddrinfo (%s:%s) call failed, found errno=%d", hostname, port, errno);
