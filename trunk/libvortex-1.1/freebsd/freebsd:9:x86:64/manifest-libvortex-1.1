@@ -1,0 +1,27 @@
+{
+    "name":"@PACKAGENAME@",
+    "origin":"net/@PACKAGENAME@",
+    "version":"@VERSION@",
+    "comment":"@DESCRIPTION@",
+    "maintainer":"info@aspl.es",
+    "www":"http://www.aspl.es/vortex/",
+    "abi":"@ABI@",
+    "arch":"@ARCH@",
+    "prefix":"/usr/local",
+    "flatsize":@FLATSIZE@,
+    "licenselogic":"single",
+    "licenses":["LGPL21"],
+    "desc":"@DESCRIPTION@",
+    "deps" : {"libaxl1" : {"origin" : "textproc/libaxl1", "version" : "0.7.0.b5340.g5351"}},
+    "categories":["net"],
+    @SHLIBS_PROVIDED@
+    "files":{
+    @LIST_OF_FILES@
+    },
+    "scripts":
+       {
+        "post-install":"/sbin/ldconfig -m /usr/local/lib",
+        "post-deinstall":"/sbin/ldconfig -R"
+       }
+},
+
