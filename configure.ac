@@ -225,7 +225,15 @@ if test "$enable_axl_support" = "no" ; then
        AXL_CFLAGS=
        AXL_LIBS=-laxl
    else
-       AC_MSG_ERROR([ERROR: LibAxl wasn't found installed on this system. Unable to compile Vortex without it.])
+       dnl Try to find files at /usr/local/lib/pkgconfig/axl.pc
+       if test -f /usr/local/lib/pkgconfig/axl.pc; then
+       	  dnl alternative location found, try to tell the system to use this location
+	  export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+	  PKG_CHECK_MODULES(AXL, axl >= 0.7.0, [enable_axl_support=yes], [enable_axl_support=no])
+       fi
+       if test "$enable_axl_support" = "no" ; then
+       	  AC_MSG_ERROR([ERROR: LibAxl wasn't found installed on this system. Unable to compile Vortex without it.])
+       fi
    fi
 fi
 AXL_CFLAGS=`echo $AXL_CFLAGS | sed 's@ \/@/@g'`
