@@ -37,7 +37,7 @@
  *         info@aspl.es - http://www.aspl.es/vortex
  */
 
-#ifndef __VORTEX_REGRESSION_COMMOH_H__
+#ifndef __VORTEX_REGRESSION_COMMON_H__
 #define __VORTEX_REGRESSION_COMMON_H__
 
 /** 

@@ -221,7 +221,7 @@ char  * sasl_cram_md5_validation_full (VortexConnection * connection,
 	}
 
 	printf ("Received cram md5 validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.", auth_id);
-	return axl_false;
+	return NULL;
 }
 
 char  * sasl_digest_md5_validation (VortexConnection * connection,
@@ -246,7 +246,7 @@ char  * sasl_digest_md5_validation_full (VortexConnection * connection,
 	}
 
 	printf ("Received digest md5 validation (full) for: %s, replying FAILED.\nUser pointer not properly passed.", auth_id);
-	return axl_false;
+	return NULL;
 }
 
 

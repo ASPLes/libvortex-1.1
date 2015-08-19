@@ -517,7 +517,7 @@ axl_bool py_vortex_ctx_bridge_event (VortexCtx * ctx, axlPointer user_data, axlP
 	PyObject           * args;
 	PyGILState_STATE     state;
 	PyObject           * result;
-	axl_bool             _result;
+	axl_bool             _result = axl_false;
 	PyVortexEventData  * data       = user_data;
 	char               * str;
 
