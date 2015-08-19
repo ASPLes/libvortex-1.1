@@ -322,7 +322,8 @@ char * xml_rpc_gen_translate_copy_and_escape (const char * content,
 	int    iterator  = 0;
 	int    iterator2 = 0;
 	char * result;
-	axl_return_val_if_fail (content, axl_false);
+	
+	axl_return_val_if_fail (content, NULL);
 
 	/* allocate the memory to be returned */
 	result = axl_new (char, content_size + additional_size + 1);
