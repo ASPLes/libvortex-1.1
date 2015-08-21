@@ -1598,7 +1598,9 @@ int process_greetings_features (VortexCtx               * ctx,
 
 int main (int  argc, char ** argv) 
 {
+#if defined(ENABLE_WEBSOCKET_SUPPORT)
         int                iterator;
+#endif
 	VortexConnection * listener;
 #if defined(ENABLE_SASL_SUPPORT)
 	VortexCtx        * ctx2;

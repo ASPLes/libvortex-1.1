@@ -196,6 +196,7 @@ VortexConnection * connection_new (void)
 	}
 }
 
+#if defined(ENABLE_WEBSOCKET_SUPPORT)
 void web_socket_log (axl_bool value, VortexConnection * conn)
 {
         noPollCtx * nopoll_ctx;
@@ -214,6 +215,7 @@ void web_socket_log (axl_bool value, VortexConnection * conn)
 
 	return;
 }
+#endif
 
 void show_conn_errors (VortexConnection * conn)
 {
@@ -14925,6 +14927,7 @@ int main (int  argc, char ** argv)
 		} /* end while */
 	} /* end if */
 
+#if defined(ENABLE_WEBSOCKET_SUPPORT)
 	/* check for enable websocket debug */
 	if (argc > 1 && axl_cmp (argv[1], "--enable-websocket-debug")) {
 		iterator       = 1;
@@ -14937,6 +14940,7 @@ int main (int  argc, char ** argv)
 			iterator++;
 		} /* end while */
 	} /* end if */
+#endif
 
 	/* check for disable serverlog */
 	if (argc > 1 && axl_cmp (argv[1], "--disable-server-log")) {
