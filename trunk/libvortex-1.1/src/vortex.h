@@ -269,7 +269,16 @@ END_C_DECLS
 #if defined(AXL_OS_WIN32)
 /* errno redefinition for windows platform. this declaration must
  * follow the previous include. Please, use -DVORTEX_SKIP_ERRNO_REDEF
- * if this redefinition is causing you problems under windows */
+ * if this redefinition is causing you problems under windows. */
+
+/* Also, some automatic code is added to detect some cases */
+#if defined(_MSC_VER >= 1700)
+/* skip errno redefinition for Visual Studio 11 2012 and above:
+   http://stackoverflow.com/questions/70013/how-to-detect-if-im-compiling-code-with-visual-studio-2008
+*/
+# define VORTEX_SKIP_ERRNO_REDEF
+#endif
+
 #if !defined(VORTEX_SKIP_ERRNO_REDEF)
 #  ifdef  errno
 #  undef  errno
