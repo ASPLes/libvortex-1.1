@@ -268,12 +268,15 @@ END_C_DECLS
 
 #if defined(AXL_OS_WIN32)
 /* errno redefinition for windows platform. this declaration must
- * follow the previous include. */
-#ifdef  errno
-#undef  errno
-#endif
-#define errno (WSAGetLastError())
-#endif
+ * follow the previous include. Please, use -DVORTEX_SKIP_ERRNO_REDEF
+ * if this redefinition is causing you problems under windows */
+#if !defined(VORTEX_SKIP_ERRNO_REDEF)
+#  ifdef  errno
+#  undef  errno
+#  endif
+#  define errno (WSAGetLastError())
+#  endif
+#endif /* !defined(VORTEX_SKIP_ERRNO_REDEF) */
 
 /* console debug support:
  *
