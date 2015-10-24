@@ -87,10 +87,12 @@ platform.</p>
  </table>
 </div>
 
-<h3>Debian packages</h3>
+<h3>Debian/Ubuntu packages</h3>
 
 <p>Use the following debian apt repository to get access to latest
 Vortex Library 1.1 packages:</p>
+
+<p style='background: #ffee93; padding: 6px; margin: 6px; font-weight: bold'><i>NOTE: do not use these sources if you are using <a href="http://www.core-admin.com">Core-Admin</a> unless you know what you are doing.</i></p>
 
 <p class="link">
 <div class="link">
@@ -122,49 +124,38 @@ Vortex Library 1.1 packages:</p>
 </table>
 </div>
 
-<h3>Getting Gentoo ebuilds</h3>
+<h2>Latest CentOS packages</h2>
 
-<p><a href="mailto:milton.yates@loule.info">Milton Yates</a> maintains
-Gentoo ebuilds, which are ready to produce a Vortex Library
-installation. You can download latest ebuilds from the following link.
-</p>
+<p>CentOS packages are also provided using the following yum  repository:</p>
 
-<p class="link">
-<div class="link">
-<table>
-  <tr>
-    <td><img alt="[gentoo pkgs]" src="icon-gentoo.png"></td>
-    <td><a href="http://www.sf.net/projects/vortexlibrary">http://www.sf.net/projects/vortexlibrary</a></td>
-  </tr>
-</table>
-</div>
+<p style='background: #ffee93; padding: 6px; margin: 6px; font-weight: bold'><i>NOTE: do not use these sources if you are using <a href="http://www.core-admin.com">Core-Admin</a> unless you know what you are doing.</i></p>
+  
+<pre>
+
+  # /etc/yum.repos.d/ASPL-Base.repo
+  # Aspl-Public repo 
+  #
+  # ASPL packages for libaxl, vortex, nopoll, myqtt, ext-dns, valvula
+  # and other open source public projects
+  #
+  
+  [aspl-public]
+  name=Aspl-Public-$releasever - Base
+  baseurl=http://www.aspl.es/centos/public/$releasever/$basearch/
+  gpgcheck=0
  
-<h3>OpenPkg distribution package</h3>
+  # Aspl-Private repo 
+  #
+  # ASPL packages for commercial projects like core-admin
+  #
+  [aspl-private]
+  name=Aspl-Private-$releasever - Base
+  baseurl=http://www.aspl.es/centos/private/$releasever/$basearch/
+  gpgcheck=0
 
-<p>The OpenPkg project has Vortex and LibAxl packages:</p>
- 
-<p class="link">
-<div class="link">
-<table>
-  <tr>
-    <td><img alt="OpenPkg vortex" src="icon-tarball.png"></td>
-    <td><a href="http://www.openpkg.org/product/packages/?package=vortex">http://www.openpkg.org/product/packages/?package=vortex</a></td>
-  </tr>
- </table>
-</div>
+</pre>
 
- 
-<p class="link">
-<div class="link">
-<table>
-  <tr>
-    <td><img alt="OpenPkg axl" src="icon-tarball.png"></td>
-    <td><a href="http://www.openpkg.org/product/packages/?package=axl">http://www.openpkg.org/product/packages/?package=axl</a></td>
-  </tr>
- </table>
-</div>
-
-
+<p>Then run an <b>yum search nopoll</b> to search noPoll packages.</p>
 
 <h3>Getting source code from the SVN repository (github.com) </h3>
 
