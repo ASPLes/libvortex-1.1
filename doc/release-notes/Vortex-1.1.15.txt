@@ -1,0 +1,234 @@
+      ###################################################
+      ##              Vortex Library 1.1.15            ##
+      ##          "Don't forget the hand break!"       ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce Vortex
+  Library 1.1.15 "Don't forget the hand break!" release availability:
+  an open source "BEEP Core" protocol implementation written in C,
+  mapped onto TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.aspl.es/vortex/downloads
+      [Vortex Library downloads, binaries w64 & w32]
+
+    - http://www.core-admin.com
+      [Featured product: Core-Admin]
+      
+    
+This release in short
+~~~~~~~~~~~~~~~~~~~~~
+
+  - Added support for centOS (6.X) and added official support for
+    centos packages (.rpm). See ready to use packages at:
+
+        http://www.aspl.es/vortex/download.html
+
+  - Added support for Android, providing official support to create
+    ready to use binaries for all platforms and arch combinations.
+
+        http://www.aspl.es/fact/files/af-arch/vortex-1.1/html/vortex_android_usage.html#vortex_android_usage
+
+  - Added support for FreeBSD 9.X
+
+  - Added support to keep certificate content available so that
+    changing process uid/gid does not affect TLS/SSL process.
+
+  - Updated WebSocket API to support/control certificate verification
+
+  - Several cleanups, API updates and minor new options..
+
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+
+  None
+
+Thanks to..
+~~~~~~~~~~~
+
+  - Matthias Peter Wimmer
+    
+    * Fixed hostname handling at SASL module to use hostname provided
+      by the caller instead of current local server name (reported and
+      fixed by Matthias Petter Wimmer)
+
+    * Fixed wrong axl version referenced from 0.6.4 to 0.7.0
+
+  - Robert Münch
+
+    * Reported wrong vsnprintf header definition when log is enabled
+      on Mac/OSX
+
+    * Reported various NULL values returned as axl_false at
+      __vortex_connection_new
+
+  - Ralf Konush
+
+    * Reported header redefinitions using various Visual Studio
+      versions
+
+Changes since 1.1.14
+~~~~~~~~~~~~~~~~~~~~
+
+* [fix] Several updates to make the vortex bundle for w32 to include
+  libgcc_s_dw2-1.dll by default...
+
+* [fix] Fixed xml-rpc-gen-1.1 to produce Makefile.am files that
+  separates headers from sources so headers are installed for client
+  libraries.
+
+* [fix] Fixed some unused result warnings found at py-vortex module.
+
+* [fix] Updated vortex_tls_log_ssl to avoid buffer overflow when not
+  found openssl error format.
+
+* [fix] Several updates to make libvortex-1.1 ssl API to allow loading
+  certificates from a PEM certificate loaded from memory. Now this
+  method is supported along with the previously one which is loading
+  PEM certificates from files. Now it is possible to load a certificate
+  and then use it at the right moment without having to have especial
+  permissions.
+   
+* [fix] Some cleanups at PyVortex to better handle wrong connection
+  references received at channel pool creation.
+
+* [fix] Documentation updates on VortexTlsCertificateFileLocator and
+  VortexTlsPrivateKeyFileLocator
+
+* [fix] Improved waiting code to send all pending replies just after
+  sending greeting after TLS handshake.
+
+* [fix] Several updates to make vortex_tls module to notify additional
+  information about timeout settings, when it was started, when
+  stopped and what connection the message applies when a timeout is
+  reached during sync TLS activation.
+
+* [fix] Making vortex.tls.start_tls to allow threading (other python
+  functions) when called.
+
+* [fix] Making vortex_connection_ref_internal to report
+  connection->ref_count > 1 instead of axl_true. There are suspicions
+  that some race may cause reporting true when in fact the reference
+  isn't working.
+
+* [fix] Removed --Werror from building autogen.sh.
+
+* [fix] Added additional checks to avoid defining vsnprintf header
+  when log is enabled on Mac/OSX (reported by Robert Münch).
+
+* [fix] Fixed reporting NULL instead of axl_false in
+  __vortex_connection_new (reported by Robert Münch).
+
+* [fix] Fixed vortex-client.c warning reported by clang.
+
+* [fix] Updated autogen.sh to allow supporting Centos packaging..
+
+* [fix] Several updates to fix compile errors when enabling stack
+  protector with gcc.
+
+* [fix] Added initial working files to produce rpm packages.
+
+* [fix] Updated vortex-web-socket API to include an option to allow
+  disabling certificate verification. API added:
+  
+   - VORTEX_WEBSOCKET_CONF_CERT_VERIFY
+
+* [fix] Fixed libaxl wrong version reference, moving it from 0.6.4 to
+  0.7.0 (reported by Matthias Peter Wimmer).
+
+* [fix] Updated hostname handling done by SASL module to make client
+  initiator to report and use HOSTNAME configured by the caller or the
+  value reported by vortex_sasl_get_server_name or
+  vortex_sasl_get_host (), instead of current local server name. Bug
+  reported by fixed by Matthias Petter Wimmer).
+
+* [fix] Fixed args reference used at main module to have Vortex
+  compiled for Android.
+
+* [fix] Added several updates to support detecting nopoll, gsasl and
+  axl even when pkg-config is not present..
+
+* [fix] Updated configure.ac file to detect if bash is outside common
+  location to detect those cases before continue.
+
+* [fix] Removed call to freeaddrinfo() when getaddrinfo() fails. It is
+  segfaulting application on FreeBSD.
+
+* [fix] Updated configure.ac to fix pkg-config output which is broken on FreeBSD.
+
+
+* [fix] Fixed regression test (vortex-regression-listener.c) to grab a
+  reference to the connection to implement connection close checks for
+  reg-test (test_15).
+
+* [fix] Updated thread pool event removal handler to check ctx and
+  ctx->thread_pool references.
+
+* [fix] Adding initial files to support creating binary packages for
+  FreeBSD 9.X
+
+* [fix] Adding packaging support for http, pull,sasl and tls modules
+  for FreeBSD..
+
+* [fix] Adding package descriptions for libvortex-1.1 (tunnel)
+  extensions for FreeBSD
+
+* [fix] Adding websocket packaging for FreeBSD..
+
+* [fix] Adding packaging support for xml-rpc modules for FreeBSD
+
+* [fix] Added FreeBSD packing support for python-vortex
+
+* [fix] Added more code to configure.ac to detect alternative
+  locations for axl.pc
+
+* [fix] Updated freebsd directories to avoid using :
+
+* [fix] Fixing references when websocket support is disabled.
+
+* [fix] Fixed .def rebuilding at main Makefile.am causing compilation
+  problems when optional modules like tls, web-socket or sasl aren't
+  enabled.
+
+* [fix] Updated vortex.h to allow defining a VORTEX_SKIP_ERRNO_REDEF
+  variable to avoid errno redefinition on windows (which seems to be 
+  causing problems in Visual Studio 12).
+
+* [fix] Added code to detect Visual Studio 11 2012 and above to avoid
+  errno redefinition.
+
+* [fix] Applied some updates in vortex.h to avoid header redefinition warnings
+  (reported by Ralf Konush). 
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organisations to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+23th Oct 2015, Madrid (Spain)
