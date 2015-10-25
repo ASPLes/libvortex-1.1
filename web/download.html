@@ -157,6 +157,23 @@ Vortex Library 1.1 packages:</p>
 
 <p>Then run an <b>yum search nopoll</b> to search noPoll packages.</p>
 
+<h2>FreeBSD packages</h2>
+
+<p>FreeBSD ready to use packages are also provided using the following pkg repository:</p>
+
+<p style='background: #ffee93; padding: 6px; margin: 6px; font-weight: bold'><i>NOTE: do not use these sources if you are using <a href="http://www.core-admin.com">Core-Admin</a> unless you know what you are doing.</i></p>
+  
+<pre>
+ # FreeBSD 
+ ASPL: {
+   url: "pkg+http://www.aspl.es/freebsd/public/9/${ABI}",
+   mirror_type: "srv",
+   enabled: yes
+ }
+</pre>
+
+<p>Then run an <b>pkg search vortex</b> to search Vortex Library packages.</p>
+
 <h3>Getting source code from the SVN repository (github.com) </h3>
 
 <img src="Octocat-128.png" alt="Octocat" style="float: left">
