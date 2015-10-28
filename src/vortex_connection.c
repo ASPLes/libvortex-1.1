@@ -3089,7 +3089,7 @@ long              vortex_connection_get_connect_timeout (VortexCtx * ctx)
 	/* check context recevied */
 	if (ctx == NULL) {
 		/* get the the default connect */
-		return (0);
+		return (60000000);
 	} /* end if */
 		
 	/* check if we have used the current environment variable */

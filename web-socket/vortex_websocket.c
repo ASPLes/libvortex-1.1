@@ -488,6 +488,7 @@ axlPointer __vortex_websocket_connection_new (VortexWebsocketConnectionData * da
 	char                 * custom_origin = NULL;
 
 	VortexMutex          * mutex;
+	long                   timeout;
 	
 	/* create first a basic webSocket connection */
 	nopoll_ctx = nopoll_ctx_new ();
@@ -537,13 +538,21 @@ axlPointer __vortex_websocket_connection_new (VortexWebsocketConnectionData * da
 
 	axl_free (custom_origin);
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "Created, waiting it to be completed (context %p, refs: %d, use TLS: %d)..",
-		    nopoll_ctx, nopoll_ctx_ref_count (nopoll_ctx), setup->use_wss);
+	timeout = vortex_connection_get_connect_timeout (ctx);
+	if (timeout > 0)
+		timeout = timeout / 1000000;
+	if (timeout <= 0)
+		timeout = 60;
+	vortex_log (VORTEX_LEVEL_DEBUG, "Created, waiting it to be completed (context %p, refs: %d, use TLS: %d, connect timeout (ctx) = %d secs)..",
+		    nopoll_ctx, nopoll_ctx_ref_count (nopoll_ctx), setup->use_wss,
+		    timeout);
 
 	/* wait until the connection is ready */
-	if (! nopoll_conn_wait_until_connection_ready (nopoll_conn, vortex_connection_get_connect_timeout (ctx) / 1000000)) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to create connection with %s:%s, nopoll connection is not working. Is there a listener at %s:%s?",
-			    host, port, host, port);
+	if (! nopoll_conn_wait_until_connection_ready (nopoll_conn, timeout)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to create connection with %s:%s, nopoll connection is not working (timed out after %d seconds). Is there a listener at %s:%s?",
+			    host, port, 
+			    timeout,
+			    host, port);
 		nopoll_conn_close (nopoll_conn);
 		nopoll_ctx_unref (nopoll_ctx);
 		goto report_conn;
