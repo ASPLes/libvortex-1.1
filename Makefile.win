@@ -16,7 +16,7 @@
 # 
 
 # version
-vortex_1_1_version = 1.1.15.b5426.g5426
+vortex_1_1_version = 1.1.16.b2251
 
 # While especifiying directories do not append the trailing slash
 

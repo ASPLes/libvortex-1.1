@@ -536,6 +536,7 @@ tls/Makefile
 http/Makefile
 alive/Makefile
 web-socket/Makefile
+external/Makefile
 py-vortex/Makefile
 py-vortex/src/Makefile
 py-vortex/test/Makefile
@@ -564,6 +565,7 @@ vortex-tls-1.1.pc
 vortex-http-1.1.pc
 vortex-alive-1.1.pc
 vortex-websocket-1.1.pc
+vortex-external-1.1.pc
 ])
 
 echo "------------------------------------------"

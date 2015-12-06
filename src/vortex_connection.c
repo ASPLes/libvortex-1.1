@@ -859,9 +859,19 @@ void __vortex_connection_channel_unref (axlPointer channel)
  * must be deallocated using \ref vortex_connection_close.
  */
 VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx        * ctx,
-								VORTEX_SOCKET      socket,
-								VortexConnection * __connection,
-								VortexPeerRole     role)
+								 VORTEX_SOCKET      _socket,
+								 VortexConnection * __connection,
+								 VortexPeerRole     role)
+{
+	/* do not skip naming */
+	return vortex_connection_new_empty_from_connection2 (ctx, _socket, __connection, role, axl_false);
+}
+
+VortexConnection * vortex_connection_new_empty_from_connection2 (VortexCtx        * ctx,
+								 VORTEX_SOCKET      _socket,
+								 VortexConnection * __connection,
+								 VortexPeerRole     role,
+								 axl_bool           skip_naming)
 {
 	VortexConnection   * connection;
 	VortexChannel      * channel;
@@ -961,18 +971,22 @@ VortexConnection * vortex_connection_new_empty_from_connection (VortexCtx       
 	connection->role               = role;
 
 	/* set socket provided (do not allow stdin(0), stdout(1), stderr(2) */
-	if (socket > 2) {
-		if (! vortex_connection_set_socket (connection, socket, NULL, NULL)) {
-			vortex_log (VORTEX_LEVEL_CRITICAL, "failed to configure socket associated to connection");
-			vortex_connection_unref (connection, "vortex_connection_new_empty_from_connection");
-			return NULL;
-		} /* end if */
+	if (skip_naming) {
+		connection->session = _socket;
 	} else {
-		/* set a wrong socket connection in the case a not
-		   proper value is received */
-		vortex_log (VORTEX_LEVEL_WARNING, "received wrong socket fd, setting invalid fd beacon: -1");
-		connection->session = -1;
-	} /* end if */
+		if (_socket > 2) {
+			if (! vortex_connection_set_socket (connection, _socket, NULL, NULL)) {
+				vortex_log (VORTEX_LEVEL_CRITICAL, "failed to configure socket associated to connection");
+				vortex_connection_unref (connection, "vortex_connection_new_empty_from_connection");
+				return NULL;
+			} /* end if */
+		} else {
+			/* set a wrong socket connection in the case a not
+			   proper value is received */
+			vortex_log (VORTEX_LEVEL_WARNING, "received wrong socket fd, setting invalid fd beacon: -1");
+			connection->session = -1;
+		} /* end if */
+	}
 
 	return connection;	
 }
@@ -1028,7 +1042,7 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 	ctx  = CONN_CTX(conn);
 
 	/* perform connection sanity check */
-	if (!vortex_connection_do_sanity_check (ctx, _socket)) 
+	if (! vortex_connection_do_sanity_check (ctx, _socket)) 
 		return axl_false;
 
 	/* disable nagle */
@@ -1046,6 +1060,7 @@ axl_bool            vortex_connection_set_socket                (VortexConnectio
 		/* clear structures */
 		memset (host_name, 0, NI_MAXHOST);
 		memset (srv_name, 0, NI_MAXSERV);
+
 		if (conn->role == VortexRoleMasterListener) {
 			if (getsockname (_socket, (struct sockaddr *) &sin, &sin_size) < 0) {
 				vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get local hostname and port from socket=%d, errno=%d (%s)", 

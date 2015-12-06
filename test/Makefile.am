@@ -112,7 +112,7 @@ noinst_PROGRAMS = \
 	vortex-simple-listener-alive 
 
 INCLUDES = -I$(top_srcdir)/src -I$(top_srcdir)/tunnel -I$(top_srcdir)/pull -I$(top_srcdir)/alive \
-	-I$(top_srcdir)/xml-rpc -I$(top_srcdir)/http $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
+	-I$(top_srcdir)/xml-rpc -I$(top_srcdir)/http -I$(top_srcdir)/external  $(AXL_CFLAGS)  $(PTHREAD_CFLAGS) \
 	-I$(READLINE_PATH)/include $(compiler_options) -D__axl_disable_broken_bool_def__   \
         -DVERSION=\""$(VORTEX_VERSION)"\" -I$(top_srcdir)/src $(INCLUDE_VORTEX_POLL) $(INCLUDE_VORTEX_EPOLL) $(INCLUDE_VORTEX_LOG) $(INCLUDE_TUNNEL_SUPPORT) $(INCLUDE_PULL_SUPPORT)  $(INCLUDE_XML_RPC_SUPPORT) $(INCLUDE_SASL_SUPPORT) $(INCLUDE_HTTP_SUPPORT) $(INCLUDE_TLS_SUPPORT) $(INCLUDE_WEBSOCKET_SUPPORT) $(NOPOLL_CFLAGS)
 
@@ -169,6 +169,7 @@ vortex_regression_client_SOURCES   = \
 
 vortex_regression_client_LDADD     = \
 	$(LIBS) $(top_builddir)/src/libvortex-1.1.la  \
+	$(top_builddir)/external/libvortex-external-1.1.la  \
 	$(top_builddir)/tunnel/libvortex-tunnel-1.1.la \
 	$(top_builddir)/http/libvortex-http-1.1.la \
 	$(top_builddir)/alive/libvortex-alive-1.1.la \

@@ -152,6 +152,12 @@ VortexConnection  * vortex_connection_new_empty_from_connection (VortexCtx      
 								 VortexConnection * __connection,
 								 VortexPeerRole     role);
 
+VortexConnection  * vortex_connection_new_empty_from_connection2         (VortexCtx        * ctx,
+									  VORTEX_SOCKET      socket, 
+									  VortexConnection * __connection,
+									  VortexPeerRole     role,
+									  axl_bool           skip_naming);
+
 axl_bool            vortex_connection_set_socket                (VortexConnection * conn,
 								 VORTEX_SOCKET      socket,
 								 const char       * real_host,

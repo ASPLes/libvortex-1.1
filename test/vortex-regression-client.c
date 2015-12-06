@@ -80,6 +80,9 @@
 #include <signal.h>
 #endif
 
+/* include external support */
+#include <vortex_external.h>
+
 /* disable time checks */
 axl_bool disable_time_checks = axl_false;
 
@@ -4851,6 +4854,7 @@ axl_bool  test_03_common (VortexConnection * connection) {
 	while (iterator < 20) {
 
 		/* send the hug message */
+		printf ("Test --: test_03_common, sending message (size=%d, iterator=%d)\n", TEST_03_MSGSIZE, iterator);
 		if (! vortex_channel_send_msg (channel, message, TEST_03_MSGSIZE, NULL)) {
 			printf ("Test 03: Unable to send large message");
 			axl_free (message);
@@ -4866,7 +4870,13 @@ axl_bool  test_03_common (VortexConnection * connection) {
 	while (iterator < 20) {
 
 		/* wait for the message */
-		frame = vortex_async_queue_pop (queue);
+		printf ("Test --: test_03_common, getting message reply (iterator=%d)\n", iterator);
+		frame = vortex_async_queue_timedpop (queue, 5000000);
+
+		if (frame == NULL) {
+			printf ("Test --: ERROR, expected to receive frame after 5 seconds but received NULL..\n");
+			return axl_false;
+		}
 		
 		/* check payload size */
 		if (vortex_frame_get_payload_size (frame) != TEST_03_MSGSIZE) {
@@ -14750,6 +14760,236 @@ axl_bool test_20 (void) {
 #endif	
 }
 
+int      test_21_send_pipe         (VortexConnection * connection,
+				    const char       * buffer,
+				    int                buffer_len)
+{
+
+	/* write operation */
+	int _session = vortex_connection_get_socket (connection);
+
+	int  result;
+
+	/* printf ("Test 21: calling write(_session=%d, buffer=%p, buffer_len=%d)\n", _session, buffer, buffer_len);  */
+	result =  write (_session, buffer, buffer_len);
+	/* printf ("          bytes written=%d, errno=%d\n", result, errno);
+	   printf ("%s\n", buffer); */
+	return result;
+}
+
+int      test_21_receive_pipe         (VortexConnection * connection,
+				       char             * buffer,
+				       int                buffer_len)
+{
+	int   result;
+
+	/* read operation */
+	int _session = vortex_connection_get_socket (connection);
+
+	/* printf ("Test 21: calling read(_session=%d, buffer=%p, buffer_len=%d)\n", _session, buffer, buffer_len);  */
+	result = read (_session, buffer, buffer_len);
+	/* printf ("          bytes read=%d, errno=%d\n", result, errno);  */
+	return result;
+}
+
+/* for the second connection, we will have to do it in a different thread */
+axl_bool __test_21_create_pipe_connection (VortexCtx * ctx, axlPointer user_data, axlPointer user_data2)
+{
+	VortexConnection     ** _aux = user_data;
+	VortexConnection     * conn  = (*_aux);
+	int                    _socket = PTR_TO_INT (user_data2);
+
+	/* create a connected session */
+	printf ("Test 21: creating listener conection..\n");
+	conn = vortex_external_connection_new (ctx, _socket, test_21_send_pipe, test_21_receive_pipe, NULL, NULL, NULL);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Test 21: failed to create connection (_fds[1]),..");
+		vortex_connection_close (conn);
+		return axl_true; /* remove this event */
+	} /* end if */
+
+	/* setup connection */
+	(*_aux) = conn;
+
+	return axl_true; /* remove this event */
+}
+
+void __test_21_frame_received (VortexChannel    * channel, 
+			       VortexConnection * connection,
+			       VortexFrame      * frame,
+			       axlPointer         user_data)
+{
+	printf ("Test 21: (*******) replying message received (conn-id=%d, channel=%d, conn=%p..\n",
+		vortex_connection_get_id (connection), vortex_channel_get_number (channel), connection);
+
+	if (vortex_channel_is_defined_received_handler (channel)) {
+		printf ("Test 21: invoked channel defined frame received (conn-id=%d, channel=%d, conn=%p..\n",
+			vortex_connection_get_id (connection), vortex_channel_get_number (channel), connection);
+
+		/* call to channel defined frame received */
+		vortex_frame_ref (frame);
+		vortex_channel_invoke_received_handler (connection, channel, frame);
+		return;
+	}
+
+	switch (vortex_frame_get_type (frame)) {
+	case VORTEX_FRAME_TYPE_MSG:
+		/* send reply */
+		vortex_channel_send_rpy (channel, 
+					 vortex_frame_get_payload (frame), vortex_frame_get_payload_size (frame), 
+					 vortex_frame_get_msgno (frame));
+		break;
+	case VORTEX_FRAME_TYPE_RPY:
+		/* queue reply */
+		vortex_frame_ref (frame);
+		vortex_async_queue_push (user_data, frame);
+		break;
+	default:
+		printf ("Test 21: ERRROR UNEXPECTED FRAME RECEIVED..\n");
+		break;
+	}
+
+	return;
+}
+
+axl_bool test_21 (void) {
+
+	VortexConnection  * conn = NULL, * conn2 = NULL;
+	VortexCtx         * ctx;
+	int                 _sockets[2];
+	VortexExternalSetup  * setup;
+
+	VortexChannel     * channel;
+	VortexAsyncQueue  * queue;
+	int                 iterator;
+	VortexFrame       * frame;
+
+	/* create new context */
+	ctx = vortex_ctx_new ();
+
+	/* init this context */
+	if (! vortex_init_ctx (ctx)) {
+		printf ("ERROR: expected proper initialization..\n");
+		return axl_false;
+	}
+
+	/* create a pipe out of the band to simulate a transport
+	   alraedy connected */
+	printf ("Test 21: creating pipe (for test)..\n");
+	
+	if (socketpair (PF_LOCAL, SOCK_STREAM, 0, _sockets) < 0) {
+		printf ("Test 21: failed to create socket-pais for vortex-external tests..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 21: _sockets[0] == %d\n", _sockets[0]);
+	printf ("Test 21: _sockets[1] == %d\n", _sockets[1]);
+
+	/* create setup */
+	setup = vortex_external_setup_new (ctx);
+	if (setup == NULL) {
+		printf ("Test 21: failed to create setup reference, unable to continue..\n");
+		return axl_false;
+	} /* end if */
+
+	/* for the second connection, we will have to do it in a different thread */
+	vortex_thread_pool_new_event (ctx, 1, __test_21_create_pipe_connection, &conn2, INT_TO_PTR(_sockets[1]));
+
+	/* create a connected session */
+	printf ("Test 21: creating client connection..\n");
+	conn = vortex_external_connection_new (ctx, PTR_TO_INT (_sockets[0]), test_21_send_pipe, test_21_receive_pipe, setup, NULL, NULL);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Test 21: failed to create connection (_fds[0]),..");
+		vortex_connection_close (conn);
+		return axl_false;
+	}
+
+	/* create queue */
+	queue   = vortex_async_queue_new ();
+
+	/* wait until both of them are ready */
+	while (conn == NULL && conn2 == NULL)
+		vortex_async_queue_timedpop (queue, 10000);
+
+	/* now run tests on both connections */
+	iterator = 0;
+	while (vortex_connection_channels_count (conn) != 1 ||  vortex_connection_channels_count (conn2) != 1) {
+
+		if (iterator > 10) {
+			printf ("Test 21: ..expected 1 channel in each connection..\n");
+			return axl_false;
+		}
+
+		iterator++;
+		vortex_async_queue_timedpop (queue, 10000);
+	}
+
+	/* create channel */
+	/* create the channel */
+	channel = vortex_channel_new (conn, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Test 21: failed to create channel, expecting to be able..\n");
+		return axl_false;
+	}
+
+	/* now run tests on both connections */
+	if (vortex_connection_channels_count (conn) != 2 ||  vortex_connection_channels_count (conn2) != 2) {
+		printf ("Test 21: ..expected 2 channel in each connection..\n");
+		return axl_false;
+	}
+
+	/* configure reply */
+	vortex_ctx_set_frame_received (ctx, __test_21_frame_received, queue);
+
+	if (! vortex_channel_send_msg (channel, "test message", 12, 0)) {
+		printf ("Test 21: failed to send small message, vortex_channel_send_msg() failed..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 21: waiting reply message..\n");
+	frame = vortex_async_queue_timedpop (queue, 15000000);
+	if (frame == NULL) {
+		printf ("Test 21: failed to receive frame, NULL frame was received after waiting (15 seconds)\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 21: reply received, content: %s\n", (char *) vortex_frame_get_payload (frame));
+	vortex_frame_unref (frame);
+
+	/* printf ("Test 21: calling test_03_common (conn)...\n"); */
+	if (! test_03_common (conn)) {
+		printf ("Test 21: failed test_03_common (conn)..\n");
+		return axl_false;
+	} /* end if */
+
+	/* printf ("Test 21: calling test_03_common (conn2)...\n"); */
+	if (! test_03_common (conn2)) {
+		printf ("Test 21: failed test_03_common (conn2)..\n");
+		return axl_false;
+	} /* end if */
+		
+	/* close connection */
+	vortex_connection_close (conn);
+	vortex_connection_close (conn2);
+
+	vortex_async_queue_unref (queue);
+
+	vortex_exit_ctx (ctx, axl_true);
+
+	/* close sockets */
+	vortex_close_socket (_sockets[0]);
+	vortex_close_socket (_sockets[1]);
+
+	return axl_true;
+}
+
 typedef int  (*VortexRegressionTest) (void);
   
  
@@ -14874,7 +15114,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_05d, ctest_06, test_06a, \n");
  	printf ("**                       test_07, test_08, test_09, test_10, test_11, test_12, test_13, test_14, \n");
  	printf ("**                       test_14a, test_14b, test_14c, test_14d, test_14e, test_14f, test_14g, test_15, test_15a, test_16\n");
- 	printf ("**                       test_17, test_18, test_19, test_20\n");
+ 	printf ("**                       test_17, test_18, test_19, test_20, test_21\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -15368,6 +15608,9 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_20"))
 			run_test (test_20, "Test 20", "Check Websocket transparent port sharing", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_21"))
+			run_test (test_21, "Test 21", "Check external connection support (client to direct)", -1, -1);
+
 		goto finish;
 	}
 
@@ -15609,6 +15852,8 @@ int main (int  argc, char ** argv)
 	run_test (test_19, "Test 19", "Check TLS Websocket (RFC 6455) more tests", -1, -1);
 
 	run_test (test_20, "Test 20", "Check Websocket transparent port sharing", -1, -1);
+
+	run_test (test_21, "Test 21", "Check external connection support (client to direct)", -1, -1);
 	
 #if defined(AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/**

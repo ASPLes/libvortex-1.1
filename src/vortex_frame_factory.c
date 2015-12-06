@@ -1440,7 +1440,7 @@ int  get_int_value (VortexCtx * ctx, VortexConnection * conn, char  * string, in
 
 	/* translate value */
 	result   = strtol (string, NULL, 10);
-	vortex_log (VORTEX_LEVEL_DEBUG, "Translated %s -> %d", string, result);
+	/* vortex_log (VORTEX_LEVEL_DEBUG, "Translated %s -> %d", string, result);*/
 
 	/* return the iterator position */
 	*position = (*position) + iterator + 1;
@@ -2013,8 +2013,8 @@ axl_bool             vortex_frame_send_raw     (VortexConnection * connection, c
 		}
 		error_msg = vortex_errno_get_last_error ();
 		__vortex_connection_shutdown_and_record_error (
-			connection, VortexError, "unable to write data to socket: %s",
-			error_msg ? error_msg : "");
+			connection, VortexError, "unable to write data to socket: %s, errno=%d (%s), socket=%d conn-id=%d, conn=%p",
+			error_msg ? error_msg : "", errno, vortex_errno_get_last_error (), connection->session, connection->id, connection);
 		goto end;
 	}
 
