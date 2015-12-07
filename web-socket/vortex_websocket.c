@@ -1098,8 +1098,7 @@ int __vortex_websocket_detect_and_prepare_transport (VortexCtx        * ctx,
  * allows receiving normal BEEP conections and BEEP over WebSocket
  * (with or without TLS), thus saving configurations. 
  *
- * @param ctx The context where the port sharing feature will be
- * enabled.
+ * @param ctx The context where the port sharing feature will be enabled.
  *
  * @param nopoll_ctx Reference to the noPoll context that should be
  * used by all noPollConn listeners. If you provide a NULL value, the
@@ -1112,9 +1111,6 @@ int __vortex_websocket_detect_and_prepare_transport (VortexCtx        * ctx,
  *
  * @param local_port The local port to limit the port sharing feature
  * or NULL to enable it over all listeners ports.
- *
- * @param enable axl_true to activate port sharing status or axl_false
- * to disable it.
  *
  * @return The function returns a handler of the port share
  * installed. This handler can later be used to remove this port share

@@ -1354,6 +1354,8 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * - \ref vortex_pull
  * - \ref vortex_http
  * - \ref vortex_alive
+ * - \ref vortex_websocket
+ * - \ref vortex_external
  *
  * </li>
  * <li><b>General library support, types, handlers, thread handling</b>
