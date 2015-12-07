@@ -1,7 +1,7 @@
 /* Hey emacs, show me this like 'c': -*- c -*-
  *
  * Test files for the xml-rpc-gen tool.
- * Copyright (C) 2013 Advanced Software Production Line, S.L.
+ * Copyright (C) 2015 Advanced Software Production Line, S.L.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as

@@ -1,6 +1,6 @@
 /* 
  *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
- *  Copyright (C) 2013 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2015 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
@@ -2113,6 +2113,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  *  - \ref vortex_manual_pull_api
  *  - \ref vortex_manual_alive_api
  *  - \ref vortex_manual_feeder_api
+ *  - \ref vortex_manual_external_api
  *
  *  <b>Section 5: </b>Securing and authenticating your BEEP sessions: TLS and SASL profiles
  * 
@@ -3910,6 +3911,160 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * disable complete frame delivery) so even if the message is
  * fragmented, you get all pieces notified at the frame received as
  * they come.
+ *
+ * \section vortex_manual_external_api 4.8 Creating a BEEP over unknown transport (vortex external module)
+ *
+ * In the case you are looking for creating a BEEP session over a
+ * transport that is not supported by the project but it has a socket
+ * like (watchable) API and provides connection oriented session, you
+ * can use "vortex external" module to create it easily.
+ *
+ * Here are some notes, on how to create a listener and a client for
+ * your particular transport which will be called: xtransport 
+ *
+ * To use the Vortex external module, you'll have to include the
+ * following header to use vortex external:
+ * 
+ * \code
+ * #include <vortex_external.h>
+ * \endcode
+ * 
+ * And also include the following linking flag:
+ * 
+ * \code
+ * -lvortex-external-1.1
+ * \endcode
+ *
+ * You can also use the following pkg-config instruction to get the linking flags:
+ *
+ * \code
+ * >> pkg-config --libs vortex-external-1.1
+ * \endcode
+ *
+ * <b>Creating a BEEP listener over an unknown transport (watchable, socket like API and connection oriented)</b>
+ *
+ * Now, the idea behind the new module is to use the new function \ref vortex_external_listener_new
+ * and to provide a set of handlers that will be used by the Vortex engine to accept
+ * and create new BEEP connections as they are received.
+ *
+ * You should use it as follows:
+ *
+ * <ol> <li>Create the xtransport listener as usual before creating
+ * the BEEP listener. That will imply to create the listener socket up
+ * to the listen (s, 1) call (or similar function). Let's
+ * _listener_session is the listener socket for xtransport in next steps.  </li>
+ * 
+ * <li>After that, you'll have to create the listener using something like this:
+ *
+ * \code
+ * listener = vortex_external_listener_new (ctx, _listener_session, 
+ *                                               __xtransport_io_send, 
+ *                                               __xtransport_io_receive,
+ *                                               NULL, // let's make setup to be NULL for now 
+ *                                               __xtransport_on_accept,  
+ *                                               NULL); // this pointer can be NULL for now 
+ * \endcode
+ * </li>
+ * <li> Now, the function __xtransport_io_send will have to implement writing bytes to the
+ * write for a given xtransport's socket. It has to follow the next indication:
+ *
+ * \code
+ * int __xtransport_io_send         (VortexConnection * connection,
+ *                                   const char       * buffer,
+ *                                   int                buffer_len)
+ * {
+ *        
+ *       // write operation 
+ *       int _session = vortex_connection_get_socket (connection);
+ *       int  result;
+ * 
+ *       // customize here write xtransport operation 
+ *       result =  write (_session, buffer, buffer_len);
+ *        
+ *       return result;
+ * }
+ * \endcode
+ * </li>
+ *        
+ * <li>In the case of __xtransport_io_receive, it will be pretty similar but reading bytes (in order):
+ *
+ * \code
+ * int __xtransport_io_receive         (VortexConnection * connection,
+ *                                      char             * buffer,
+ *                                      int                buffer_len)
+ * {
+ *      int   result;
+ *      // read operation 
+ *      int _session = vortex_connection_get_socket (connection);
+ *
+ *      // customize here read xtransport operation 
+ *      result = read (_session, buffer, buffer_len);
+ * 
+ *      return result;
+ * }
+ * \endcode
+ * </li>
+ * <li>...and in the case of __xtransport_on_accept, it has to implement something similar to (see \ref VortexExternalOnAccept for more information):
+ *
+ * \code
+ * VORTEX_SOCKET  __xtransport_on_accept (VortexCtx * ctx, VortexConnection * listener, 
+ *                                       VORTEX_SOCKET listener_socket, axlPointer on_accept_data)
+ *
+ * {
+ *      // customize here your accept function 
+ *      int result = accept (listener_socket);
+ *      printf ("INFO: accepting listener_socket=%d, result=%d\n", listener_socket, result);
+ *      return result;
+ * }
+ * \endcode
+ * </li>
+ * </ol>
+ *        
+ * With all this, Vortex engine will create a listener where a watch
+ * operation will be implemented over the provided _listener_session
+ * (see point 2) and once a connection is received, it will call your
+ * accept function (in this case __xtransport_on_accept -- \ref VortexExternalOnAccept).
+ * 
+ * With the socket returned, Vortex will configure everything,
+ * including the I/O handlers needed to read and write from that
+ * socket (__xtransport_io_send \ref VortexSendHandler and __xtransport_io_receive \ref VortexReceiveHandler), along with
+ * all greetings, etc.
+ *
+ * After that, you'll have valid VortexConnection * objects which are
+ * fully functional with the rest of the Vortex Library API.
+ *
+ * <b>Creating a BEEP client</b>
+ *
+ * Having a working listener it remains creating a client. This is done using the following code:
+ *
+ * <ol>
+ * <li>Create the xtransport connection to the listener as usual. Once
+ * you have the socket created you call to
+ * vortex_external_connection_new with something like (assuming
+ * conn_socket is your cliente socket):
+ * 
+ * \code
+ * conn = vortex_external_connection_new (ctx, PTR_TO_INT (conn_socket), __xtransport_io_send, __xtransport_io_receive, NULL, NULL, NULL);
+ * if (! vortex_connection_is_ok (conn, axl_false)) {
+ *      printf ("ERROR: failed to create connection,..");
+ *      vortex_connection_close (conn);
+ *      return axl_false;
+ * }
+ * \endcode
+ * </li>
+ *
+ * <li>As you can see, here you reuse __bluetooh_io_send and __bluetooh_io_receive because they
+ * work the same. 
+ * </li>
+ * </ol>
+ *
+ * Reached this point, you should have a working connection, connected to the BEEP listener over 
+ * xtransport,
+ *
+ * Inside regression test, you will find test_22 which includes a full example using this API (\ref vortex_external_connection_new and \ref vortex_external_listener_new):
+ *
+ * - https://raw.githubusercontent.com/ASPLes/libvortex-1.1/master/test/vortex-regression-client.c
+ *
  *
  * \section vortex_manual_securing_your_session 5.1 Securing a Vortex Connection (or How to use the TLS profile)
  * 

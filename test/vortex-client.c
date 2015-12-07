@@ -1,6 +1,6 @@
 /** 
  *  LibVortex:  A BEEP implementation for af-arch
- *  Copyright (C) 2013 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2015 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by

@@ -1,6 +1,6 @@
 /* 
  *  Lua Vortex:  Lua bindings for Vortex Library (SASL)
- *  Copyright (C) 2011 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2015 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
