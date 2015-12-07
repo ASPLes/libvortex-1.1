@@ -403,21 +403,108 @@ VortexConnection * vortex_external_connection_new (VortexCtx                 * c
 	return conn;
 }
 
+typedef struct _VortexExternalListenerData {
+
+	VORTEX_SOCKET               _session;
+	VortexConnection          * listener;
+	VortexExternalSetup       * setup;
+
+	/* on accept handlers */
+	VortexExternalOnAccept      on_accept_handler;
+	axlPointer                  on_accept_data;
+
+	/* send and received handler */
+	VortexSendHandler           _send_handler;
+	VortexReceiveHandler        _received_handler;
+
+} VortexExternalListenerData;
+
+void __vortex_external_listener_data_release (axlPointer _data)
+{
+	VortexExternalListenerData * data = _data;
+
+	/* release socket session and unref data */
+	vortex_close_socket (data->_session);
+	vortex_external_setup_unref (data->setup);
+
+	/* release data */
+	axl_free (data);
+
+	return;
+}
+
+void __vortex_external_listener_on_accept (VortexConnection * conn)
+{
+	VortexCtx                  * ctx        = CONN_CTX (conn);
+	VortexExternalListenerData * data       = vortex_connection_get_data (conn, "vo:ext:data");
+	VortexConnection           * new_conn   = NULL;
+	VORTEX_SOCKET                _new_socket;
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "Called pre-read handler over a BEEP over External listener id=%d (socket=%d), doing initial accept",
+		    vortex_connection_get_id (conn), data->_session);
+
+	/* ok, accept connection and register it */
+	_new_socket = data->on_accept_handler (ctx, conn, data->_session, data->on_accept_data);
+	if (_new_socket == -1 || _new_socket == VORTEX_INVALID_SOCKET) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Received -1 or invalid socket from external on_accept handler, skipping accept");
+		return;
+	} /* end if */
+
+	/* call for initial accept */
+	new_conn = __vortex_listener_initial_accept (
+		ctx, 
+		_new_socket,
+		conn,
+		/* don't register the connection */
+		axl_false);
+
+	/* setup here the mutex if indicated by setup */
+
+	/* configure I/O send and receive handlers */
+	vortex_connection_set_send_handler (new_conn, data->_send_handler);
+	vortex_connection_set_receive_handler (new_conn, data->_received_handler);
+
+	/* called to accept listener inthe next step now we have it configured */
+	vortex_listener_accept_connection (new_conn, axl_true);
+
+	/* check connection status just to drop a log */
+	if (vortex_connection_is_ok (new_conn, axl_false)) 
+		vortex_log (VORTEX_LEVEL_DEBUG, "Received new BEEP over External connection id=%d, still required to complete BEEP greetings", 
+			    vortex_connection_get_id (new_conn));
+	
+	return;
+}
+
+
 /** 
- * @brief Allows to create a new BEEP listener accepting connections over External.
+ * @brief Allows to create a new BEEP listener accepting connections
+ * over External/unknown transport.
  *
- * The function accepts the noPollConn reference of the External
- * listener already running through which BEEP clients will connect
- * using external as transport protocol.
+ * 
  *
  * @param ctx The context where the operation is taking place.
  *
- * @param listener The noPollConn listener on top this new BEEP listener is going to run. 
+ * @param _session Already created transport represented by a watchable socket. 
  *
- * @param on_ready_full The on ready function as defined by \ref vortex_listener_new_full.
+ * @param _send_handler The send/write handler that will be configured
+ * on any accepted connection. For more information see \ref
+ * VortexSendHandler, \ref vortex_connection_set_send_handler
  *
- * @param user_data User defined pointer to be passed in into
- * on_ready_full function when called.
+ * @param _received_handler The read/recv handler that will be
+ * configured on any accepted connection. For more information see
+ * \ref VortexReceiveHandler, \ref vortex_connection_set_receive_handler
+ *
+ * @param setup A reference (optional) to the setup object (\ref
+ * vortex_external_setup_new).
+ *
+ * @param on_accept_handler The handler that will be called every time
+ * an incoming connection is received on the provided master listener
+ * socket (_session). The function must return a newly created socket
+ * to allow Vortex Engine to create the BEEP session.
+ *
+ * @param on_accept_data A user defined pointer that will be passed to
+ * on_accept_handler
+ *
  *
  * @return The function returns a newly created BEEP listener (over
  * External) or NULL if the optional handler is provided
@@ -434,8 +521,70 @@ VortexConnection * vortex_external_listener_new   (VortexCtx                 * c
 						   axlPointer                  on_accept_data)
 {
 
-	/* do an async notification on the onready handler here and return NULL */
-	return NULL;
+	VortexConnection           * result;
+	VortexExternalListenerData * data;
+
+	if (_send_handler == NULL || _received_handler == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to create listener, send/receive handler is NULL");
+		return NULL;
+	} /* end if */
+
+	if (on_accept_handler == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to create listener, on accept handler is NULL");
+		return NULL;
+	} /* end if */
+
+	if (_session < 0 || _session == -1 || _session == VORTEX_INVALID_SOCKET) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to create listener, _session=%d doesn't have a valid value");
+		return NULL;
+	}
+
+
+	/* check if this is a blocking or async listener creation */
+	result = vortex_connection_new_empty_from_connection2 (ctx, _session, NULL, VortexRoleMasterListener, axl_true);
+
+	/* operation ok */
+	if (! vortex_connection_is_ok (result, axl_false)) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "EXTERNAL: failed to start listener, errno=%d, conn-id=%d, conn=%p, socket=%d",
+			    errno, vortex_connection_get_id (result), result, _session);
+		return result;
+	} /* end if */
+
+	data = axl_new (VortexExternalListenerData, 1);
+	if (data == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "EXTERNAL: failed to start listener, allocation failure for external data, errno=%d, conn-id=%d, conn=%p, socket=%d",
+			    errno, vortex_connection_get_id (result), result, _session);
+		vortex_connection_shutdown (result);
+		return result;
+	} /* end if */
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "EXTERNAL: starting listener id=%d, session=%d (refs: %d)",
+		    vortex_connection_get_id (result), _session);
+	
+	/* get setup */
+	data->_session = _session;
+
+	data->setup    = setup;
+	data->listener = result;
+	
+	data->on_accept_data    = on_accept_data;
+	data->on_accept_handler = on_accept_handler;
+
+	data->_send_handler     = _send_handler;
+	data->_received_handler = _received_handler;
+
+	/* now configure here the on accept function that
+	 * should be used to create new BEEP sessions on top
+	 * of WebSocket */
+	vortex_connection_set_preread_handler (result, __vortex_external_listener_on_accept);
+	
+	/* associate listener and context */
+	vortex_connection_set_data_full (result, "vo:ext:data", data, NULL, __vortex_external_listener_data_release);
+	
+	/* register into the reader */
+	vortex_reader_watch_listener (ctx, result);
+	
+	return result;
 }
 
 

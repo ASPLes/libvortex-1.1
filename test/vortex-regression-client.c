@@ -14819,11 +14819,11 @@ void __test_21_frame_received (VortexChannel    * channel,
 			       VortexFrame      * frame,
 			       axlPointer         user_data)
 {
-	printf ("Test 21: (*******) replying message received (conn-id=%d, channel=%d, conn=%p..\n",
+	printf ("Test --: (*******) replying message received (conn-id=%d, channel=%d, conn=%p..\n",
 		vortex_connection_get_id (connection), vortex_channel_get_number (channel), connection);
 
 	if (vortex_channel_is_defined_received_handler (channel)) {
-		printf ("Test 21: invoked channel defined frame received (conn-id=%d, channel=%d, conn=%p..\n",
+		printf ("Test --: invoked channel defined frame received (conn-id=%d, channel=%d, conn=%p..\n",
 			vortex_connection_get_id (connection), vortex_channel_get_number (channel), connection);
 
 		/* call to channel defined frame received */
@@ -14990,15 +14990,27 @@ axl_bool test_21 (void) {
 	return axl_true;
 }
 
+VORTEX_SOCKET  __test_22_on_accept (VortexCtx * ctx, VortexConnection * listener, VORTEX_SOCKET listener_socket, axlPointer on_accept_data)
+{
+
+	int result = vortex_listener_accept (listener_socket);
+	printf ("INFO: accepting listener_socket=%d, result=%d\n", listener_socket, result);
+	return result;
+}
+
 axl_bool test_22 (void) {
 
-	VortexConnection  * conn = NULL, * conn2 = NULL;
+	VortexConnection  * conn = NULL;
 	VortexCtx         * ctx;
-	int                 _sockets[2];
 
 	VortexChannel     * channel;
 	VortexAsyncQueue  * queue;
 	VortexFrame       * frame;
+	VORTEX_SOCKET       listener_socket;
+	VORTEX_SOCKET       conn_socket;
+	VortexConnection  * listener;
+
+	printf ("Test 22: calling to start context..\n");
 
 	/* create new context */
 	ctx = vortex_ctx_new ();
@@ -15009,49 +15021,99 @@ axl_bool test_22 (void) {
 		return axl_false;
 	}
 
-	
 
+	printf ("Test 22: creating listener (vortex_listener_sock_listen)\n");
+
+	/* create a listener with a socket that support an unknown
+	 * transport but it is watchable */
+	listener_socket = vortex_listener_sock_listen (ctx, "0.0.0.0", "54321", NULL);
+	if (listener_socket == -1 || listener_socket == VORTEX_INVALID_SOCKET) {
+		printf ("ERROR: failed to create listener socket...\n");
+		return axl_false;
+	}
+
+	/* create listener */
+	listener = vortex_external_listener_new (ctx, listener_socket, 
+						 test_21_send_pipe, test_21_receive_pipe, 
+						 NULL, 
+						 __test_22_on_accept, NULL);
+	/* check listener created */
+	if (! vortex_connection_is_ok (listener, axl_false)) {
+		printf ("ERROR: failed to create listener... vortex_connection_is_ok (listener, axl_false)..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 22: listener created..\n");
+
+	/* create client socket */
+	conn_socket = vortex_connection_sock_connect (ctx, "0.0.0.0", "54321", NULL, NULL);
+	if (conn_socket == -1 || conn_socket == VORTEX_INVALID_SOCKET) {
+		printf ("ERROR: conn_socket=%d, failed to connect ..\n", conn_socket);
+		return axl_false;
+	} /* end if */
+
+	/* now create a socket and connect to the listener.. */
+	conn = vortex_external_connection_new (ctx, PTR_TO_INT (conn_socket), test_21_send_pipe, test_21_receive_pipe, NULL, NULL, NULL);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("Test 21: failed to create connection (_fds[0]),..");
+		vortex_connection_close (conn);
+		return axl_false;
+	}
+
+
+	printf ("Test 22: created connection..\n");
+
+	/* create queue */
+	queue = vortex_async_queue_new ();
+	if (queue == NULL) {
+		printf ("ERROR: failed to create queue..\n");
+		return axl_false;
+	} /* end if */
+	
 	/* configure reply */
 	vortex_ctx_set_frame_received (ctx, __test_21_frame_received, queue);
+
+	/* create the channel */
+	channel = vortex_channel_new (conn, 0,
+				      REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame receive async handling */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Test 21: failed to create channel, expecting to be able..\n");
+		return axl_false;
+	}
 
 	if (! vortex_channel_send_msg (channel, "test message", 12, 0)) {
 		printf ("Test 21: failed to send small message, vortex_channel_send_msg() failed..\n");
 		return axl_false;
 	} /* end if */
 
-	printf ("Test 21: waiting reply message..\n");
+	printf ("Test 22: waiting reply message..\n");
 	frame = vortex_async_queue_timedpop (queue, 15000000);
 	if (frame == NULL) {
 		printf ("Test 21: failed to receive frame, NULL frame was received after waiting (15 seconds)\n");
 		return axl_false;
 	} /* end if */
 
-	printf ("Test 21: reply received, content: %s\n", (char *) vortex_frame_get_payload (frame));
+	printf ("Test 22: reply received, content: %s\n", (char *) vortex_frame_get_payload (frame));
 	vortex_frame_unref (frame);
 
-	/* printf ("Test 21: calling test_03_common (conn)...\n"); */
+	printf ("Test 22: calling test_03_common (conn)...\n"); 
 	if (! test_03_common (conn)) {
-		printf ("Test 21: failed test_03_common (conn)..\n");
+		printf ("Test 22: failed test_03_common (conn)..\n");
 		return axl_false;
 	} /* end if */
 
-	/* printf ("Test 21: calling test_03_common (conn2)...\n"); */
-	if (! test_03_common (conn2)) {
-		printf ("Test 21: failed test_03_common (conn2)..\n");
-		return axl_false;
-	} /* end if */
-		
 	/* close connection */
 	vortex_connection_close (conn);
-	vortex_connection_close (conn2);
 
 	vortex_async_queue_unref (queue);
 
 	vortex_exit_ctx (ctx, axl_true);
-
-	/* close sockets */
-	vortex_close_socket (_sockets[0]);
-	vortex_close_socket (_sockets[1]);
 
 	return axl_true;
 }

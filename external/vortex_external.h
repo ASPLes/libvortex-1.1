@@ -90,7 +90,7 @@ typedef void (*VortexExternalOnPrepare) (VortexCtx * ctx, VortexConnection * con
  * @return The function returns a working socket accepted otherwise
  * returns VORTEX_INVALID_SOCKET or -1.
  */
-typedef VORTEX_SOCKET (*VortexExternalOnAccept) (VortexCtx * ctx, VortexConnection * listener, axlPointer on_accept_data);
+typedef VORTEX_SOCKET (*VortexExternalOnAccept) (VortexCtx * ctx, VortexConnection * listener, VORTEX_SOCKET _listener_socket, axlPointer on_accept_data);
 
 /** 
  * @brief Configurations allowed to be set on \ref VortexExternalSetup.
