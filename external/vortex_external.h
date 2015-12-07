@@ -78,6 +78,21 @@ typedef struct _VortexExternalSetup VortexExternalSetup;
 typedef void (*VortexExternalOnPrepare) (VortexCtx * ctx, VortexConnection * conn, axlPointer user_data, axlPointer user_data2);
 
 /** 
+ * @brief Configures the handler that will be called to accept the
+ * incoming socket on the provided listener.
+ *
+ * @param ctx The context where the operation happens
+ *
+ * @param listener The listener where the connection was received
+ *
+ * @param on_accept_data User defined pointer configured at \ref vortex_external_listener_new
+ *
+ * @return The function returns a working socket accepted otherwise
+ * returns VORTEX_INVALID_SOCKET or -1.
+ */
+typedef VORTEX_SOCKET (*VortexExternalOnAccept) (VortexCtx * ctx, VortexConnection * listener, axlPointer on_accept_data);
+
+/** 
  * @brief Configurations allowed to be set on \ref VortexExternalSetup.
  */
 typedef enum {
@@ -168,8 +183,10 @@ VortexConnection * vortex_external_listener_new   (VortexCtx                 * c
 						   VortexSendHandler           _send_handler,
 						   VortexReceiveHandler        _received_handler,
 						   VortexExternalSetup       * setup,
-						   VortexListenerReadyFull     on_ready_full,
-						   axlPointer                  user_data);
+						   VortexExternalOnAccept      on_accept_handler,
+						   axlPointer                  on_accept_data);
+
+
 
 END_C_DECLS
 

@@ -430,14 +430,9 @@ VortexConnection * vortex_external_listener_new   (VortexCtx                 * c
 						   VortexSendHandler           _send_handler,
 						   VortexReceiveHandler        _received_handler,
 						   VortexExternalSetup       * setup,
-						   VortexListenerReadyFull     on_ready_full,
-						   axlPointer                  user_data)
+						   VortexExternalOnAccept      on_accept_handler,
+						   axlPointer                  on_accept_data)
 {
-	VortexConnection * result;
-
-
-	if (on_ready_full == NULL) 
-		return result;
 
 	/* do an async notification on the onready handler here and return NULL */
 	return NULL;

@@ -14990,6 +14990,72 @@ axl_bool test_21 (void) {
 	return axl_true;
 }
 
+axl_bool test_22 (void) {
+
+	VortexConnection  * conn = NULL, * conn2 = NULL;
+	VortexCtx         * ctx;
+	int                 _sockets[2];
+
+	VortexChannel     * channel;
+	VortexAsyncQueue  * queue;
+	VortexFrame       * frame;
+
+	/* create new context */
+	ctx = vortex_ctx_new ();
+
+	/* init this context */
+	if (! vortex_init_ctx (ctx)) {
+		printf ("ERROR: expected proper initialization..\n");
+		return axl_false;
+	}
+
+	
+
+	/* configure reply */
+	vortex_ctx_set_frame_received (ctx, __test_21_frame_received, queue);
+
+	if (! vortex_channel_send_msg (channel, "test message", 12, 0)) {
+		printf ("Test 21: failed to send small message, vortex_channel_send_msg() failed..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 21: waiting reply message..\n");
+	frame = vortex_async_queue_timedpop (queue, 15000000);
+	if (frame == NULL) {
+		printf ("Test 21: failed to receive frame, NULL frame was received after waiting (15 seconds)\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 21: reply received, content: %s\n", (char *) vortex_frame_get_payload (frame));
+	vortex_frame_unref (frame);
+
+	/* printf ("Test 21: calling test_03_common (conn)...\n"); */
+	if (! test_03_common (conn)) {
+		printf ("Test 21: failed test_03_common (conn)..\n");
+		return axl_false;
+	} /* end if */
+
+	/* printf ("Test 21: calling test_03_common (conn2)...\n"); */
+	if (! test_03_common (conn2)) {
+		printf ("Test 21: failed test_03_common (conn2)..\n");
+		return axl_false;
+	} /* end if */
+		
+	/* close connection */
+	vortex_connection_close (conn);
+	vortex_connection_close (conn2);
+
+	vortex_async_queue_unref (queue);
+
+	vortex_exit_ctx (ctx, axl_true);
+
+	/* close sockets */
+	vortex_close_socket (_sockets[0]);
+	vortex_close_socket (_sockets[1]);
+
+	return axl_true;
+}
+
 typedef int  (*VortexRegressionTest) (void);
   
  
@@ -15114,7 +15180,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_05d, ctest_06, test_06a, \n");
  	printf ("**                       test_07, test_08, test_09, test_10, test_11, test_12, test_13, test_14, \n");
  	printf ("**                       test_14a, test_14b, test_14c, test_14d, test_14e, test_14f, test_14g, test_15, test_15a, test_16\n");
- 	printf ("**                       test_17, test_18, test_19, test_20, test_21\n");
+ 	printf ("**                       test_17, test_18, test_19, test_20, test_21, test_22\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -15611,6 +15677,9 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_21"))
 			run_test (test_21, "Test 21", "Check external connection support (client to direct)", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_22"))
+			run_test (test_22, "Test 22", "Check external connection support (listener to client)", -1, -1);
+
 		goto finish;
 	}
 
@@ -15853,7 +15922,9 @@ int main (int  argc, char ** argv)
 
 	run_test (test_20, "Test 20", "Check Websocket transparent port sharing", -1, -1);
 
-	run_test (test_21, "Test 21", "Check external connection support (client to direct)", -1, -1);
+	run_test (test_21, "Test 21", "Check external connection support (client to client)", -1, -1);
+
+	run_test (test_22, "Test 22", "Check external connection support (listener to client)", -1, -1);
 	
 #if defined(AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/**
