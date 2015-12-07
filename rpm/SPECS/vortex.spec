@@ -316,6 +316,32 @@ This package contains BEEP over WebSocket support for Vortex Library.
    /usr/include/vortex-1.1/vortex_websocket.h
    /usr/lib64/pkgconfig/vortex-websocket-1.1.pc
 
+# libvortex-external-1.1 package
+%package -n libvortex-external-1.1
+Summary: BEEP over External support for Vortex Library
+Group: System Environment/Libraries
+Requires: libvortex-1.1
+Requires: libnopoll0
+%description  -n libvortex-external-1.1
+This package contains BEEP over External support for Vortex Library
+%files -n libvortex-external-1.1
+   /usr/lib64/libvortex-external-1.1.a
+   /usr/lib64/libvortex-external-1.1.so
+   /usr/lib64/libvortex-external-1.1.so.0
+   /usr/lib64/libvortex-external-1.1.so.0.0.0
+
+#  libvortex-external-1.1-dev package
+%package -n  libvortex-external-1.1-dev
+Summary: BEEP over External support for Vortex Library (headers)
+Group: System Environment/Libraries
+Requires: libvortex-external-1.1
+%description  -n  libvortex-external-1.1-dev
+This package contains BEEP over External support for Vortex Library.
+%files -n  libvortex-external-1.1-dev
+   /usr/include/vortex-1.1/vortex_external.h
+   /usr/lib64/pkgconfig/vortex-external-1.1.pc
+
+
 # vortex-xml-rpc-gen-1.1 package
 %package -n  vortex-xml-rpc-gen-1.1
 Summary: Tool to create support files to execute XML-RPC services
