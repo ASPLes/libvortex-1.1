@@ -3,11 +3,11 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: libvortex-websocket-1.1
-Description: Support to run BEEP over WebSocket (RFC 6455)
-  Allows to create VortexConnection objects runs on top of a WebSocket
-  connection and that are compatible with the core API.
-Requires: vortex-1.1 nopoll
+Name: libvortex-external-1.1
+Description: Support to run BEEP over External
+  Allows to create VortexConnection objects runs on top of an External
+  socket representing an unknown out of the band protocol
+Requires: vortex-1.1
 Version: @VORTEX_VERSION@
-Libs: -L${libdir} -lvortex-websocket-1.1
+Libs: -L${libdir} -lvortex-external-1.1
 Cflags: -I${includedir}/vortex-1.1
