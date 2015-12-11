@@ -39,7 +39,6 @@
 #define __VORTEX_EXTERNAL_H__
 
 #include <vortex.h>
-#include <nopoll.h>
 
 BEGIN_C_DECLS
 
