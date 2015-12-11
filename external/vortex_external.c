@@ -451,12 +451,14 @@ void __vortex_external_listener_on_accept (VortexConnection * conn)
 	} /* end if */
 
 	/* call for initial accept */
-	new_conn = __vortex_listener_initial_accept (
+	new_conn = __vortex_listener_initial_accept_full (
 		ctx, 
 		_new_socket,
 		conn,
 		/* don't register the connection */
-		axl_false);
+		axl_false,
+		/* skip naming since it may fail due to the transport */
+		axl_true);
 
 	/* setup here the mutex if indicated by setup */
 

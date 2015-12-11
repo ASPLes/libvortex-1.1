@@ -296,10 +296,24 @@ VortexConnection * __vortex_listener_initial_accept (VortexCtx            * ctx,
 						     VortexConnection     * listener,
 						     axl_bool               register_conn)
 {
+
+	return __vortex_listener_initial_accept_full (ctx, client_socket, listener, register_conn, axl_false);
+}
+
+/** 
+ * @internal Implementation extending __vortex_listener_initial_accept
+ * but allow to skip naming configuration.
+ */
+VortexConnection * __vortex_listener_initial_accept_full (VortexCtx            * ctx,
+							  VORTEX_SOCKET          client_socket, 
+							  VortexConnection     * listener,
+							  axl_bool               register_conn,
+							  axl_bool               skip_naming)
+{
 	VortexConnection     * connection = NULL;
 
 	/* before doing anything, we have to create a connection */
-	connection = vortex_connection_new_empty (ctx, client_socket, VortexRoleListener);
+	connection = vortex_connection_new_empty_from_connection2 (ctx, client_socket, NULL, VortexRoleListener, skip_naming);
 	vortex_log (VORTEX_LEVEL_DEBUG, "received connection from: %s:%s (conn-id=%d)", 
 		    vortex_connection_get_host (connection),
 		    vortex_connection_get_port (connection),

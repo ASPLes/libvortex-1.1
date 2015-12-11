@@ -144,6 +144,12 @@ VortexConnection * __vortex_listener_initial_accept (VortexCtx            * ctx,
 						     VortexConnection     * listener,
 						     axl_bool               dont_register);
 
+VortexConnection * __vortex_listener_initial_accept_full (VortexCtx            * ctx,
+							  VORTEX_SOCKET          client_socket, 
+							  VortexConnection     * listener,
+							  axl_bool               register_conn,
+							  axl_bool               skip_naming);
+
 axl_bool __vortex_listener_check_port_sharing (VortexCtx * ctx, VortexConnection * connection);
 
 
