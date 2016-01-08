@@ -176,11 +176,18 @@ Vortex Library 1.1 packages:</p>
 <table>
 <tr>
 <td>
-<img alt="[centos pkgs]" src="freebsd-logo.png">
+<img alt="[freebsd pkgs]" src="freebsd-logo.png">
 </td>
 <td>
 <pre>
- # FreeBSD 
+ # FreeBSD 10.X
+ ASPL: {
+   url: "pkg+http://www.aspl.es/freebsd/public/10/${ABI}",
+   mirror_type: "srv",
+   enabled: yes
+ }
+
+ # FreeBSD 9.X
  ASPL: {
    url: "pkg+http://www.aspl.es/freebsd/public/9/${ABI}",
    mirror_type: "srv",
