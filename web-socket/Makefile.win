@@ -1,3 +1,4 @@
+# -*- makefile -*- 
 OBJ  = vortex_websocket.o 
 
 ifdef enable_vortex_log
@@ -10,8 +11,8 @@ endif
 IMPORT_DLL = $(DLL).a
 STATIC_LIB = $(vortex_websocket_1_1_dll).a
 
-WEBSOCKET_LIBS = -L"../../../../nopoll/trunk/src/" -lnopoll
-WEBSOCKET_CFLAGS = -I"../../../../nopoll/trunk/src/"
+WEBSOCKET_LIBS = $(nopoll_libs) 
+WEBSOCKET_CFLAGS = $(nopoll_flags) -DENABLE_WEBSOCKET_SUPPORT
 
 #LIBS = -Wall $(enable_gcc_debug) -L"$(BASE_DIR)/lib" \
 #	-L"$(BASE_DIR)/bin" \

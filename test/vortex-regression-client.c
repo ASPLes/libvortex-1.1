@@ -14852,6 +14852,7 @@ void __test_21_frame_received (VortexChannel    * channel,
 	return;
 }
 
+#if !defined(AXL_OS_WIN32)
 axl_bool test_21 (void) {
 
 	VortexConnection  * conn = NULL, * conn2 = NULL;
@@ -14989,7 +14990,9 @@ axl_bool test_21 (void) {
 
 	return axl_true;
 }
+#endif
 
+#if !defined(AXL_OS_WIN32)
 VORTEX_SOCKET  __test_22_on_accept (VortexCtx * ctx, VortexConnection * listener, VORTEX_SOCKET listener_socket, axlPointer on_accept_data)
 {
 
@@ -14997,7 +15000,9 @@ VORTEX_SOCKET  __test_22_on_accept (VortexCtx * ctx, VortexConnection * listener
 	printf ("INFO: accepting listener_socket=%d, result=%d\n", listener_socket, result);
 	return result;
 }
+#endif
 
+#if !defined(AXL_OS_WIN32)
 axl_bool test_22 (void) {
 
 	VortexConnection  * conn = NULL;
@@ -15117,6 +15122,7 @@ axl_bool test_22 (void) {
 
 	return axl_true;
 }
+#endif
 
 typedef int  (*VortexRegressionTest) (void);
   
@@ -15736,11 +15742,13 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_20"))
 			run_test (test_20, "Test 20", "Check Websocket transparent port sharing", -1, -1);
 
+#if !defined(AXL_OS_WIN32)
 		if (check_and_run_test (run_test_name, "test_21"))
 			run_test (test_21, "Test 21", "Check external connection support (client to direct)", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_22"))
 			run_test (test_22, "Test 22", "Check external connection support (listener to client)", -1, -1);
+#endif
 
 		goto finish;
 	}
@@ -15984,9 +15992,11 @@ int main (int  argc, char ** argv)
 
 	run_test (test_20, "Test 20", "Check Websocket transparent port sharing", -1, -1);
 
+#if !defined(AXL_OS_WIN32)
 	run_test (test_21, "Test 21", "Check external connection support (client to client)", -1, -1);
 
 	run_test (test_22, "Test 22", "Check external connection support (listener to client)", -1, -1);
+#endif
 	
 #if defined(AXL_OS_UNIX) && defined (VORTEX_HAVE_POLL)
 	/**

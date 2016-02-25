@@ -1,3 +1,4 @@
+# Hey emacs this this -*- makefile -*- 
 OBJ  = vortex_external.o 
 
 ifdef enable_vortex_log
@@ -7,6 +8,7 @@ else
    DLL = $(vortex_external_1_1_dll).dll
    vortex_dll = -lvortex-1.1
 endif
+
 IMPORT_DLL = $(DLL).a
 STATIC_LIB = $(vortex_external_1_1_dll).a
 
