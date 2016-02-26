@@ -98,7 +98,7 @@ Section "LibAxl installation" SEC011
   SetOutPath "$INSTDIR\bin"
   SetOverwrite ifnewer
 
-  File "libaxl\src\libaxl.dll"
+  File "..\libaxl\src\libaxl.dll"
 SectionEnd
 
 Section "TLS extension library" SEC02
@@ -228,19 +228,19 @@ Section /o "Development Headers" SEC10
 ;  File "c:\gsasl\libgpg-error-1.6\src\gpg-error.h"
 
   SetOutPath "$INSTDIR\include\axl"
-  File "libaxl\src\axl.h"
-  File "libaxl\src\axl_decl.h"
-  File "libaxl\src\axl_doc.h"
-  File "libaxl\src\axl_dtd.h"
-  File "libaxl\src\axl_error.h"
-  File "libaxl\src\axl_list.h"
-  File "libaxl\src\axl_log.h"
-  File "libaxl\src\axl_node.h"
-  File "libaxl\src\axl_stack.h"
-  File "libaxl\src\axl_stream.h"
-  File "libaxl\src\axl_hash.h"
-  File "libaxl\src\axl_factory.h"
-  File "libaxl\src\axl_config.h"
+  File "..\libaxl\src\axl.h"
+  File "..\libaxl\src\axl_decl.h"
+  File "..\libaxl\src\axl_doc.h"
+  File "..\libaxl\src\axl_dtd.h"
+  File "..\libaxl\src\axl_error.h"
+  File "..\libaxl\src\axl_list.h"
+  File "..\libaxl\src\axl_log.h"
+  File "..\libaxl\src\axl_node.h"
+  File "..\libaxl\src\axl_stack.h"
+  File "..\libaxl\src\axl_stream.h"
+  File "..\libaxl\src\axl_hash.h"
+  File "..\libaxl\src\axl_factory.h"
+  File "..\libaxl\src\axl_config.h"
 
   SetOutPath "$INSTDIR\include\openssl"
   File /r "c:\OpenSSL\include\openssl"
@@ -298,10 +298,10 @@ Section /o "Developement libs" SEC11
   SetOutPath "$INSTDIR\lib"
   SetOverwrite ifnewer
   
-  File "libaxl\src\libaxl.dll.a"
-  File "libaxl\src\libaxl.def"
-  File "libaxl\src\libaxl.lib"
-  File "libaxl\src\libaxl.exp"
+  File "..\libaxl\src\libaxl.dll.a"
+  File "..\libaxl\src\libaxl.def"
+  File "..\libaxl\src\libaxl.lib"
+  File "..\libaxl\src\libaxl.exp"
 
   ; base library libvortex-1.1.dll
   File "release\libvortex-1.1.dll.a"
