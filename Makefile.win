@@ -6,11 +6,11 @@
 # 
 # 1) To compile the project run:
 #
-#    >> make -f Makefile.win build_vortex_1_1
+#    >> make -f Makefile.win build
 # 
 # 2) To clean the project run:
 # 
-#    >> make -f Makefile.win clean_vortex_1_1
+#    >> make -f Makefile.win clean
 #
 #  Requirements: mingw, msys, make and gcc
 # 
