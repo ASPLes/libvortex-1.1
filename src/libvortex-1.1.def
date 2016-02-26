@@ -309,6 +309,7 @@ vortex_connection_uncheck_ref
 vortex_connection_unlock_channel_pool
 vortex_connection_unref
 vortex_ctx_check_on_finish
+vortex_ctx_close_conn_on_write_timeout
 vortex_ctx_free
 vortex_ctx_free2
 vortex_ctx_get_data
@@ -333,6 +334,7 @@ vortex_ctx_set_idle_handler
 vortex_ctx_set_on_finish
 vortex_ctx_unref
 vortex_ctx_unref2
+vortex_ctx_write_timeout
 vortex_dtds_cleanup
 vortex_dtds_get_channel_dtd
 vortex_dtds_init
