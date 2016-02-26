@@ -66,7 +66,7 @@ Section "Core Binaries" SEC01
 
   SetOutPath "$INSTDIR\bin"
   SetOverwrite ifnewer
-  File "release\libvortex-1.1.dll"
+  File "release\libvortex-1.1\libvortex-1.1.dll"
 SectionEnd
 
 Section "Library with debug support enabled" SEC0112
@@ -75,23 +75,23 @@ Section "Library with debug support enabled" SEC0112
   SetOutPath "$INSTDIR\debug"
   SetOverwrite ifnewer
 
-  File "debug\libvortex-debug-1.1.dll"
-  File "debug\libvortex-tls-debug-1.1.dll"
-  File "debug\libvortex-sasl-debug-1.1.dll"
-  File "debug\libvortex-pull-debug-1.1.dll"
-  File "debug\libvortex-tunnel-debug-1.1.dll"
-  File "debug\libvortex-http-debug-1.1.dll"
-  File "debug\libvortex-xml-rpc-debug-1.1.dll"
-  File "debug\libvortex-alive-debug-1.1.dll"
+  File "debug\libvortex-1.1\libvortex-debug-1.1.dll"
+  File "debug\libvortex-1.1\libvortex-tls-debug-1.1.dll"
+  File "debug\libvortex-1.1\libvortex-sasl-debug-1.1.dll"
+  File "debug\libvortex-1.1\libvortex-pull-debug-1.1.dll"
+  File "debug\libvortex-1.1\libvortex-tunnel-debug-1.1.dll"
+  File "debug\libvortex-1.1\libvortex-http-debug-1.1.dll"
+  File "debug\libvortex-1.1\libvortex-xml-rpc-debug-1.1.dll"
+  File "debug\libvortex-1.1\libvortex-alive-debug-1.1.dll"
 
-  File "debug\libvortex-debug-1.1.lib"
-  File "debug\libvortex-tls-debug-1.1.lib"
-  File "debug\libvortex-sasl-debug-1.1.lib"
-  File "debug\libvortex-pull-debug-1.1.lib"
-  File "debug\libvortex-tunnel-debug-1.1.lib"
-  File "debug\libvortex-http-debug-1.1.lib"
-  File "debug\libvortex-xml-rpc-debug-1.1.lib"
-  File "debug\libvortex-alive-debug-1.1.lib"
+  File "debug\libvortex-1.1\libvortex-debug-1.1.lib"
+  File "debug\libvortex-1.1\libvortex-tls-debug-1.1.lib"
+  File "debug\libvortex-1.1\libvortex-sasl-debug-1.1.lib"
+  File "debug\libvortex-1.1\libvortex-pull-debug-1.1.lib"
+  File "debug\libvortex-1.1\libvortex-tunnel-debug-1.1.lib"
+  File "debug\libvortex-1.1\libvortex-http-debug-1.1.lib"
+  File "debug\libvortex-1.1\libvortex-xml-rpc-debug-1.1.lib"
+  File "debug\libvortex-1.1\libvortex-alive-debug-1.1.lib"
 SectionEnd
 
 Section "LibAxl installation" SEC011
@@ -104,7 +104,7 @@ SectionEnd
 Section "TLS extension library" SEC02
   SetOutPath "$INSTDIR\bin"
   SetOverwrite ifnewer
-  File "release\libvortex-tls-1.1.dll"
+  File "release\libvortex-1.1\libvortex-tls-1.1.dll"
 SectionEnd
 
 Section "OpenSSL installation" SEC021
@@ -118,7 +118,7 @@ SectionEnd
 Section "SASL extension library" SEC03
   SetOutPath "$INSTDIR\bin"
   SetOverwrite ifnewer
-  File "release\libvortex-sasl-1.1.dll"
+  File "release\libvortex-1.1\libvortex-sasl-1.1.dll"
 SectionEnd
 
 Section "Sasl Associated binaries" SEC031
@@ -142,37 +142,37 @@ SectionEnd
 Section "XML-RPC extension library" SEC04
   SetOutPath "$INSTDIR\bin"
   SetOverwrite ifnewer
-  File "release\libvortex-xml-rpc-1.1.dll"
+  File "release\libvortex-1.1\libvortex-xml-rpc-1.1.dll"
 SectionEnd
 
 Section "TUNNEL extension library" SEC05
   SetOutPath "$INSTDIR\bin"
   SetOverwrite ifnewer
-  File "release\libvortex-tunnel-1.1.dll"
+  File "release\libvortex-1.1\libvortex-tunnel-1.1.dll"
 SectionEnd
 
 Section "PULL API extension library" SEC06
   SetOutPath "$INSTDIR\bin"
   SetOverwrite ifnewer
-  File "release\libvortex-pull-1.1.dll"
+  File "release\libvortex-1.1\libvortex-pull-1.1.dll"
 SectionEnd
 
 Section "HTTP CONNECT extension library" SEC07
   SetOutPath "$INSTDIR\bin"
   SetOverwrite ifnewer
-  File "release\libvortex-http-1.1.dll"
+  File "release\libvortex-1.1\libvortex-http-1.1.dll"
 SectionEnd
 
 Section "ALIVE extension library" SEC12
   SetOutPath "$INSTDIR\bin"
   SetOverwrite ifnewer
-  File "release\libvortex-alive-1.1.dll"
+  File "release\libvortex-1.1\libvortex-alive-1.1.dll"
 SectionEnd
 
 Section "WebSocket extension library" SEC13
   SetOutPath "$INSTDIR\bin"
   SetOverwrite ifnewer
-  File "release\libvortex-websocket-1.1.dll"
+  File "release\libvortex-1.1\libvortex-websocket-1.1.dll"
 SectionEnd
 
 
@@ -304,103 +304,103 @@ Section /o "Developement libs" SEC11
   File "..\libaxl\src\libaxl.exp"
 
   ; base library libvortex-1.1.dll
-  File "release\libvortex-1.1.dll.a"
+  File "release\libvortex-1.1\libvortex-1.1.dll.a"
   File "src\libvortex-1.1.def"
-  File "release\libvortex-1.1.exp"
-  File "release\libvortex-1.1.lib"
+  File "release\libvortex-1.1\libvortex-1.1.exp"
+  File "release\libvortex-1.1\libvortex-1.1.lib"
 
   ; libvortex-tls-1.1.dll
-  File "release\libvortex-tls-1.1.dll.a"
+  File "release\libvortex-1.1\libvortex-tls-1.1.dll.a"
   File "tls\libvortex-tls-1.1.def"
-  File "release\libvortex-tls-1.1.exp"
-  File "release\libvortex-tls-1.1.lib"
+  File "release\libvortex-1.1\libvortex-tls-1.1.exp"
+  File "release\libvortex-1.1\libvortex-tls-1.1.lib"
 
   ; libvortex-sasl-1.1.dll
-  File "release\libvortex-sasl-1.1.dll.a"
+  File "release\libvortex-1.1\libvortex-sasl-1.1.dll.a"
   File "sasl\libvortex-sasl-1.1.def"
-  File "release\libvortex-sasl-1.1.exp"
-  File "release\libvortex-sasl-1.1.lib"
+  File "release\libvortex-1.1\libvortex-sasl-1.1.exp"
+  File "release\libvortex-1.1\libvortex-sasl-1.1.lib"
 
   ; libvortex-xml-rpc-1.1.dll
-  File "release\libvortex-xml-rpc-1.1.dll.a"
+  File "release\libvortex-1.1\libvortex-xml-rpc-1.1.dll.a"
   File "xml-rpc\libvortex-xml-rpc-1.1.def"
-  File "release\libvortex-xml-rpc-1.1.exp"
-  File "release\libvortex-xml-rpc-1.1.lib"
+  File "release\libvortex-1.1\libvortex-xml-rpc-1.1.exp"
+  File "release\libvortex-1.1\libvortex-xml-rpc-1.1.lib"
 
   ; libvortex-tunnel-1.1.dll
-  File "release\libvortex-tunnel-1.1.dll.a"
+  File "release\libvortex-1.1\libvortex-tunnel-1.1.dll.a"
   File "tunnel\libvortex-tunnel-1.1.def"
-  File "release\libvortex-tunnel-1.1.exp"
-  File "release\libvortex-tunnel-1.1.lib"
+  File "release\libvortex-1.1\libvortex-tunnel-1.1.exp"
+  File "release\libvortex-1.1\libvortex-tunnel-1.1.lib"
 
   ; libvortex-pull-1.1.dll
-  File "release\libvortex-pull-1.1.dll.a"
+  File "release\libvortex-1.1\libvortex-pull-1.1.dll.a"
   File "pull\libvortex-pull-1.1.def"
-  File "release\libvortex-pull-1.1.exp"
-  File "release\libvortex-pull-1.1.lib"
+  File "release\libvortex-1.1\libvortex-pull-1.1.exp"
+  File "release\libvortex-1.1\libvortex-pull-1.1.lib"
 
   ; libvortex-http-1.1.dll
-  File "release\libvortex-http-1.1.dll.a"
+  File "release\libvortex-1.1\libvortex-http-1.1.dll.a"
   File "http\libvortex-http-1.1.def"
-  File "release\libvortex-http-1.1.exp"
-  File "release\libvortex-http-1.1.lib"
+  File "release\libvortex-1.1\libvortex-http-1.1.exp"
+  File "release\libvortex-1.1\libvortex-http-1.1.lib"
 
   ; libvortex-alive-1.1.dll
-  File "release\libvortex-alive-1.1.dll.a"
+  File "release\libvortex-1.1\libvortex-alive-1.1.dll.a"
   File "alive\libvortex-alive-1.1.def"
-  File "release\libvortex-alive-1.1.exp"
-  File "release\libvortex-alive-1.1.lib"
+  File "release\libvortex-1.1\libvortex-alive-1.1.exp"
+  File "release\libvortex-1.1\libvortex-alive-1.1.lib"
 
   SetOutPath "$INSTDIR\lib\debug"
   SetOverwrite ifnewer
 
   ; (DEBUG) base library libvortex-1.1.dll
-  File "debug\libvortex-debug-1.1.dll.a"
-  File "debug\libvortex-debug-1.1.def"
-  File "debug\libvortex-debug-1.1.exp"
-  File "debug\libvortex-debug-1.1.lib"
+  File "debug\libvortex-1.1\libvortex-debug-1.1.dll.a"
+  File "debug\libvortex-1.1\libvortex-debug-1.1.def"
+  File "debug\libvortex-1.1\libvortex-debug-1.1.exp"
+  File "debug\libvortex-1.1\libvortex-debug-1.1.lib"
 
   ; (DEBUG) libvortex-tls-1.1.dll
-  File "debug\libvortex-tls-debug-1.1.dll.a"
-  File "debug\libvortex-tls-debug-1.1.def"
-  File "debug\libvortex-tls-debug-1.1.exp"
-  File "debug\libvortex-tls-debug-1.1.lib"
+  File "debug\libvortex-1.1\libvortex-tls-debug-1.1.dll.a"
+  File "debug\libvortex-1.1\libvortex-tls-debug-1.1.def"
+  File "debug\libvortex-1.1\libvortex-tls-debug-1.1.exp"
+  File "debug\libvortex-1.1\libvortex-tls-debug-1.1.lib"
 
   ; (DEBUG) libvortex-sasl-1.1.dll
-  File "debug\libvortex-sasl-debug-1.1.dll.a"
-  File "debug\libvortex-sasl-debug-1.1.def"
-  File "debug\libvortex-sasl-debug-1.1.exp"
-  File "debug\libvortex-sasl-debug-1.1.lib"
+  File "debug\libvortex-1.1\libvortex-sasl-debug-1.1.dll.a"
+  File "debug\libvortex-1.1\libvortex-sasl-debug-1.1.def"
+  File "debug\libvortex-1.1\libvortex-sasl-debug-1.1.exp"
+  File "debug\libvortex-1.1\libvortex-sasl-debug-1.1.lib"
 
   ; (DEBUG) libvortex-xml-rpc-1.1.dll
-  File "debug\libvortex-xml-rpc-debug-1.1.dll.a"
-  File "debug\libvortex-xml-rpc-debug-1.1.def"
-  File "debug\libvortex-xml-rpc-debug-1.1.exp"
-  File "debug\libvortex-xml-rpc-debug-1.1.lib"
+  File "debug\libvortex-1.1\libvortex-xml-rpc-debug-1.1.dll.a"
+  File "debug\libvortex-1.1\libvortex-xml-rpc-debug-1.1.def"
+  File "debug\libvortex-1.1\libvortex-xml-rpc-debug-1.1.exp"
+  File "debug\libvortex-1.1\libvortex-xml-rpc-debug-1.1.lib"
 
   ; (DEBUG) libvortex-tunnel-1.1.dll
-  File "debug\libvortex-tunnel-debug-1.1.dll.a"
-  File "debug\libvortex-tunnel-debug-1.1.def"
-  File "debug\libvortex-tunnel-debug-1.1.exp"
-  File "debug\libvortex-tunnel-debug-1.1.lib"
+  File "debug\libvortex-1.1\libvortex-tunnel-debug-1.1.dll.a"
+  File "debug\libvortex-1.1\libvortex-tunnel-debug-1.1.def"
+  File "debug\libvortex-1.1\libvortex-tunnel-debug-1.1.exp"
+  File "debug\libvortex-1.1\libvortex-tunnel-debug-1.1.lib"
 
   ; (DEBUG) libvortex-pull-1.1.dll
-  File "debug\libvortex-pull-debug-1.1.dll.a"
-  File "debug\libvortex-pull-debug-1.1.def"
-  File "debug\libvortex-pull-debug-1.1.exp"
-  File "debug\libvortex-pull-debug-1.1.lib"
+  File "debug\libvortex-1.1\libvortex-pull-debug-1.1.dll.a"
+  File "debug\libvortex-1.1\libvortex-pull-debug-1.1.def"
+  File "debug\libvortex-1.1\libvortex-pull-debug-1.1.exp"
+  File "debug\libvortex-1.1\libvortex-pull-debug-1.1.lib"
 
   ; (DEBUG) libvortex-http-1.1.dll
-  File "debug\libvortex-http-debug-1.1.dll.a"
-  File "debug\libvortex-http-debug-1.1.def"
-  File "debug\libvortex-http-debug-1.1.exp"
-  File "debug\libvortex-http-debug-1.1.lib"
+  File "debug\libvortex-1.1\libvortex-http-debug-1.1.dll.a"
+  File "debug\libvortex-1.1\libvortex-http-debug-1.1.def"
+  File "debug\libvortex-1.1\libvortex-http-debug-1.1.exp"
+  File "debug\libvortex-1.1\libvortex-http-debug-1.1.lib"
 
   ; (DEBUG) libvortex-alive-1.1.dll
-  File "debug\libvortex-alive-debug-1.1.dll.a"
-  File "debug\libvortex-alive-debug-1.1.def"
-  File "debug\libvortex-alive-debug-1.1.exp"
-  File "debug\libvortex-alive-debug-1.1.lib"
+  File "debug\libvortex-1.1\libvortex-alive-debug-1.1.dll.a"
+  File "debug\libvortex-1.1\libvortex-alive-debug-1.1.def"
+  File "debug\libvortex-1.1\libvortex-alive-debug-1.1.exp"
+  File "debug\libvortex-1.1\libvortex-alive-debug-1.1.lib"
 
 SectionEnd
 

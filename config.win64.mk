@@ -45,9 +45,13 @@ export readline_libs = c:/readline/readline-6.2/bin/libreadline6.dll
 export readline_flags = -Ic:/readline/readline-6.2/include 
 # export readline_libs = c:/af-arch-depends/bin/readline5.dll
 
-# Readline support
+# nopoll support
 export nopoll_libs = c:/Users/acinom/home/mingw-installer/home/acinom/nopoll/src/libnopoll.dll
 export nopoll_flags = -Ic:/Users/acinom/home/mingw-installer/home/acinom/nopoll/src/
+
+# nopoll support
+export AXL_LIBS = /home/acinom/libaxl/src/libaxl.dll
+export AXL_CFLAGS = -I/home/acinom/libaxl/src/
 
 
 # optional nsis installation
