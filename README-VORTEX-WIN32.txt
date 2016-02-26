@@ -10,8 +10,9 @@
    based programs and to test how Vortex Library works.
 
    This package have been tested to work on Microsoft Windows XP
-   platform, but it shouldn't be any problem on the following windows
-   platforms including 2000, 2003 and advance server editions.
+   platform, Windows 7 64 bits, Windows 8, but it shouldn't be any
+   problem on the following windows platforms including 2000, 2003 and
+   advance server editions.
 
    If you feel you have found something missing or something that
    could be improved, comments and suggestions, drop us an email:
@@ -24,7 +25,7 @@
 
    You'll find more information at:
 
-      http://vortex.aspl.es
+      http://www.aspl.es/vortex
 
    Enjoy the Vortex!
 
@@ -127,4 +128,4 @@ Alcalá de Henares (28802) Madrid, Spain
 
 Francis Brosnan Blázquez
 <francis@aspl.es>
-2008/07/01
+2016/02/26

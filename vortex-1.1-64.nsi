@@ -53,7 +53,7 @@
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
 OutFile "vortex-installer-${PRODUCT_VERSION}-w${PLATFORM_BITS}.exe"
-InstallDir "$PROGRAMFILES\VortexLibrary-1.1-W${PLATFORM_BITS}"
+; InstallDir "$PROGRAMFILES\VortexLibrary-1.1-W${PLATFORM_BITS}"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
 ShowUnInstDetails show
