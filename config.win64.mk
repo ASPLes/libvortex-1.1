@@ -6,6 +6,13 @@ export version_prefix    = -MinGW64
 # export platform_bits     = 32
 export platform_bits     = 64
 
+# link indication for .lib files
+# export link_machine      = "X86"
+export link_machine      = X64
+# /MACHINE:{ARM|EBC|IA64|MIPS|MIPS16|MIPSFPU|MIPSFPU16|          SH4|THUMB|X64|X86}
+# https://msdn.microsoft.com/en-us/library/5wy54dk2(v=vs.90).aspx
+
+
 # some options used at 32
 # export add_stdcall_alias = "--add-stdcall-alias "
 export add_stdcall_alias = 

@@ -45,7 +45,7 @@ $(DLL): $(OBJ)
 # -Wl,--out-implib,libvortex-1.1.lib
 	$(CC) -m$(MODE) -shared -Wl,--out-implib,$(IMPORT_DLL) $(export_all_symbols) \
 		  $(OBJ) -o $(DLL)        $(LIBS)
-	lib.exe /def:libvortex-websocket-1.1.def
+	lib.exe  /machine:$(link_machine)  /def:libvortex-websocket-1.1.def
 ifdef enable_vortex_log
 	cp libvortex-websocket-1.1.lib $(release_dir)/libvortex-websocket-debug-1.1.lib
 	cp libvortex-websocket-1.1.def $(release_dir)/libvortex-websocket-debug-1.1.def

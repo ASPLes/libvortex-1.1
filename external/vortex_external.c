@@ -223,9 +223,11 @@ int      __vortex_external_send_handler         (VortexConnection * connection,
 						 const char       * buffer,
 						 int                buffer_len)
 {
-	VortexCtx          * ctx  = CONN_CTX (connection);
 	VortexExternalData * data = vortex_connection_get_data (connection, "vo:ex:da");
 	int                  result;
+#if defined(ENABLE_VORTEX_LOG)
+	VortexCtx          * ctx  = CONN_CTX (connection);
+#endif
 
 	if (data == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to send data (__vortex_external_send_handler), failed to get status data");
@@ -255,7 +257,9 @@ int      __vortex_external_received_handler     (VortexConnection * connection,
 						 char             * buffer,
 						 int                buffer_len)
 {
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx          * ctx  = CONN_CTX (connection);
+#endif
 	VortexExternalData * data = vortex_connection_get_data (connection, "vo:ex:da");
 	int                  result;
 

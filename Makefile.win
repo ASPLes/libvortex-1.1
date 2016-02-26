@@ -18,7 +18,7 @@
 include config.mk
 
 # version
-vortex_1_1_version = 1.1.16.b2251
+export vortex_1_1_version=$(shell cat VERSION)
 
 # While especifiying directories do not append the trailing slash
 
@@ -41,16 +41,9 @@ export MODE        = windows
 # export OPENSSL_FLAGS = -DENABLE_TLS_SUPPORT -Ic:/openssl-098h/include
 # export OPENSSL_LIBS = c:/openssl-098h/bin/libeay32.dll c:/openssl-098h/bin/ssleay32.dll
 
-# Flags for readline (used by vortex-client)
-export READLINE_LIBS = c:/af-arch-depends/bin/readline5.dll
-
 #############################################
 # after this line lines shouldn't be edited #
 #############################################
-
-version_prefix           = -MinGW32
-export search_lib_path   = 
-export READLINE_BASEDIR  = `dirname $(READLINE_LIBS)`
 
 # vortex configuration
 vortex_1_1                     = src
@@ -152,8 +145,16 @@ clean_vortex_1_1:
 	cd $(vortex_1_1_xml_rpc_gen); make -f Makefile.win clean; cd -
 
 bundle: vortex_1_1_bundle
-vortex_1_1_bundle: prepare_vortex_
+vortex_1_1_bundle: prepare_vortex
 	@echo "generando fichero de instalación"
 	$(makensis) vortex-1.1-$(platform_bits).nsi
+
+bundle_prepare: vortex_1_1_bundle_prepare
+vortex_1_1_bundle_prepare: 
+	make -f Makefile.win clean_vortex_1_1 
+	make -f Makefile.win build_debug_vortex_1_1 
+	make -f Makefile.win clean_vortex_1_1 
+	make -f Makefile.win build_vortex_1_1 
+
 
 
