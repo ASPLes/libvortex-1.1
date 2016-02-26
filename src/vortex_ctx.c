@@ -255,6 +255,65 @@ axlPointer  vortex_ctx_get_data (VortexCtx       * ctx,
 }
 
 /** 
+ * @brief Allows to disable/enable write timeout operations for all
+ * connections running on the provided context.
+ *
+ * By default if a write timeout operation happens, it is retried
+ * several times by a default configurable period of 3 seconds (see
+ * \ref vortex_ctx_write_timeout).
+ *
+ * However, if that timeout is reached, the connection is closed.
+ *
+ * You can use this function to disable this behaviour. It is not
+ * recommended to be used at the server side because it can block all
+ * connections in the provided context.
+ *
+ * @param ctx The context to be configured.
+ *
+ * @param disable axl_true to disable closing the connection when a
+ * write timeout is reached, otherwise, enables this mechanism (which
+ * is the default).
+ */
+void        vortex_ctx_close_conn_on_write_timeout (VortexCtx      * ctx,
+						    axl_bool         disable)
+{
+	if (ctx == NULL)
+		return;
+
+	/* configure value */
+	ctx->disable_conn_close_on_write_timeout = disable;
+
+	return;
+}
+
+/** 
+ * @brief Allows to configure default write timeout to be used on the
+ * provided context.
+ *
+ * Please see \ref vortex_ctx_write_timeout for more information. Do
+ * not increase this value more than the default value for a server
+ * side application (a peer that is exposed to what connecting peer
+ * may do), unless you know what you are doing.
+ *
+ * @param ctx The context where the operation happens.
+ *
+ * @param timeout is seconds to configure. If you want to disable it please, see \ref vortex_ctx_close_conn_on_write_timeout
+ */
+void        vortex_ctx_write_timeout               (VortexCtx      * ctx,
+						    int              timeout)
+{
+
+	if (ctx == NULL)
+		return;
+
+	/* configure value */
+	ctx->conn_close_on_write_timeout = timeout;
+
+	return;
+}
+
+
+/** 
  * @brief Allows to configure a global frame received handler where
  * all frames are delivered, overriding first and second level
  * handlers. The frame handler is executed using the thread created

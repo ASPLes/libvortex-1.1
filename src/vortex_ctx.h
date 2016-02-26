@@ -58,6 +58,12 @@ void        vortex_ctx_set_data_full             (VortexCtx       * ctx,
 axlPointer  vortex_ctx_get_data                  (VortexCtx       * ctx,
 						  const char      * key);
 
+void        vortex_ctx_close_conn_on_write_timeout (VortexCtx      * ctx,
+						    axl_bool         disable);
+
+void        vortex_ctx_write_timeout               (VortexCtx      * ctx,
+						    int              timeout);
+
 /*** global event notificaitons ***/
 void        vortex_ctx_set_frame_received        (VortexCtx             * ctx,
 						  VortexOnFrameReceived   received,

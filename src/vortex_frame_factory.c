@@ -1943,7 +1943,10 @@ axl_bool             vortex_frame_send_raw     (VortexConnection * connection, c
 	char       * error_msg;
  	int          fds;
  	int          wait_result;
- 	int          tries    = 3;
+
+	/* get timeout or use 3 as default value */
+ 	int          tries    = (ctx->conn_close_on_write_timeout > 0) ? ctx->conn_close_on_write_timeout : 3 ;
+
  	axlPointer   on_write = NULL;
 
 	v_return_val_if_fail (connection, axl_false);
@@ -1987,6 +1990,10 @@ axl_bool             vortex_frame_send_raw     (VortexConnection * connection, c
  			case 0:  /* nothing changed which is a kind of timeout */
  				vortex_log (VORTEX_LEVEL_DEBUG, "found timeout while waiting to perform write operation (tries=%d)", tries);
  				tries --;
+
+				if (ctx->disable_conn_close_on_write_timeout)
+					goto again; /* connection close on write timeout is disabled, so try again */
+
  				if (tries == 0) {
 					__vortex_connection_shutdown_and_record_error (
 						connection, VortexError,

@@ -312,6 +312,10 @@ struct _VortexCtx {
 	
 	axlList               * port_share_handlers;
 	VortexMutex             port_share_mutex;
+
+	/* write timeout control */
+	int                     conn_close_on_write_timeout;
+	axl_bool                disable_conn_close_on_write_timeout;
 };
 
 #endif /* __VORTEX_CTX_PRIVATE_H__ */
