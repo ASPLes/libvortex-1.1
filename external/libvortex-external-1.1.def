@@ -1,0 +1,7 @@
+EXPORTS
+vortex_external_connection_new
+vortex_external_listener_new
+vortex_external_setup_conf
+vortex_external_setup_new
+vortex_external_setup_ref
+vortex_external_setup_unref

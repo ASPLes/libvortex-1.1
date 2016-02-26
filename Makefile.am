@@ -64,16 +64,17 @@ EXTRA_DIST = vortex-1.1.pc.in VERSION libvortex.sln get-python-config Makefile.w
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = vortex-1.1.pc vortex-external-1.1.pc $(PULL_PKGCONFIG) $(TUNNEL_PKGCONFIG) $(XML_RPC_PKGCONFIG) $(SASL_PKGCONFIG) $(TLS_PKGCONFIG) $(HTTP_PKGCONFIG) $(ALIVE_PKGCONFIG) $(WEBSOCKET_PKGCONFIG)
 
+# do no uncomment this, in creates problems under some autoconf configurations.
 # all-local: update-defs
-# 
-# update-defs: $(WEBSOCKET_DEFS)
-# 	cd src; make update-def; cd ..
-# 	cd tls; make update-def; cd ..
-# 	cd sasl; make update-def; cd ..
-# 	cd tunnel; make update-def; cd ..
-# 	cd xml-rpc; make update-def; cd ..
-# 	cd pull; make update-def; cd ..
-# 	cd alive; make update-def; cd ..
-# 
-# update-web-socket-defs:
-# 	cd web-socket; make update-def; cd ..
+update-defs: $(WEBSOCKET_DEFS)
+	cd src; make update-def; cd ..
+	cd tls; make update-def; cd ..
+	cd sasl; make update-def; cd ..
+	cd tunnel; make update-def; cd ..
+	cd xml-rpc; make update-def; cd ..
+	cd pull; make update-def; cd ..
+	cd alive; make update-def; cd ..
+	cd external; make update-def; cd ..
+
+update-web-socket-defs:
+	cd web-socket; make update-def; cd ..
