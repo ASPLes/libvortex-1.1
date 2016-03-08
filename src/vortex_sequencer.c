@@ -188,6 +188,41 @@ axl_bool vortex_sequencer_queue_data (VortexCtx * ctx, VortexSequencerData * dat
 	return axl_true;
 }
 
+/** 
+ * @brief Allows to get current number of pending channel operations.
+ *
+ * @param ctx The context where the operation is being requested.
+ *
+ * @return Return the number of channels with pending operations or 0
+ * if nothing is pending. If nothing is pending, it means vortex
+ * sequencer module has nothing to send at this point. Function
+ * returns -1 in the case or NULL pointer received.
+ */
+int      vortex_sequencer_channels_pending_ops     (VortexCtx           * ctx)
+{
+
+	VortexSequencerState * state;
+	int                    result;
+
+	if (ctx == NULL)
+		return -1;
+
+	/* get state reference */
+	state = ctx->sequencer_state;
+
+	/* lock */
+	vortex_mutex_lock (&state->mutex);
+
+	result = axl_hash_items (state->ready);
+
+	/* unlock */
+	vortex_mutex_unlock (&state->mutex);
+
+	/* report number of items */
+	return result;
+	
+}
+
 #define CHECK_AND_INCREASE_BUFFER(size_to_copy, buffer, buffer_size) \
 	do {								\
 		if ((size_to_copy + 100) > buffer_size) {		\

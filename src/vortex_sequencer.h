@@ -43,6 +43,8 @@
 axl_bool vortex_sequencer_queue_data               (VortexCtx           * ctx,
 						    VortexSequencerData * data);
 
+int      vortex_sequencer_channels_pending_ops     (VortexCtx           * ctx);
+
 axl_bool vortex_sequencer_run                      (VortexCtx * ctx);
 
 void     vortex_sequencer_stop                     (VortexCtx * ctx);
