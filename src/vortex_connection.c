@@ -5577,6 +5577,7 @@ void           __vortex_connection_set_not_connected (VortexConnection * connect
 	VortexCtx * ctx;
 #endif
 
+
 	/* check reference received */
 	if (connection == NULL || message == NULL)
 		return;
@@ -5590,6 +5591,8 @@ void           __vortex_connection_set_not_connected (VortexConnection * connect
 	vortex_mutex_lock (&connection->op_mutex);
 
 	if (connection->is_connected) {
+
+
 		/* acquire a reference to the connection during the
 		   shutdown to avoid race conditions with listener
 		   connections and the vortex reader loop */
@@ -6152,6 +6155,19 @@ void                vortex_connection_remove_channel_pool    (VortexConnection  
 	return;
 }
 
+axl_bool  __vortex_connection_get_pending_msgs (axlPointer key, axlPointer value, axlPointer user_data) {
+
+	VortexChannel * channel = value;
+	int           * messages = user_data;
+
+	/* count values */
+	(*messages) = (*messages) + vortex_channel_pending_messages (channel);
+
+	return axl_false; /* do not stop */
+}
+
+
+
 
 /** 
  * @brief Allows to get current frames waiting to be sent on the given connection.
@@ -6168,12 +6184,21 @@ void                vortex_connection_remove_channel_pool    (VortexConnection  
  * @param connection a connection to know how many message are pending
  * to be sent.
  * 
- * @return the number or message pending to be sent.
+ * @return The number of pending messages to be sent by all channels in this connection.
  */
 int                 vortex_connection_get_pending_msgs       (VortexConnection * connection)
 {
 	int  messages = 0;
 
+	/* check reference */
+	if (connection == NULL)
+		return -1;
+
+	/* get the first channel running the profile provided by
+	 * foreaching all items */
+	vortex_hash_foreach (connection->channels, __vortex_connection_get_pending_msgs, &messages);
+
+	/* return the channel found */
 	return messages;
 }
 
