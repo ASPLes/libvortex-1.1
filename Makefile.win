@@ -28,12 +28,15 @@ export enable_gcc_debug = -g
 # axl configuration (enable log: uncomment)
 # export enable_axl_log = -DSHOW_DEBUG_LOG 
 
+# force enable debug (for this to work you have to set MODE = console  (not windows)
+# export enable_vortex_log=-DENABLE_VORTEX_LOG
+
 # compilation mode to use: console, windows. If console is used the
 # output to the console will be allowed. Other wise, if windows
 # selected the console output will be disabled. On windows platforms
 # is prefered the windows mode. For debuging I recomend to use
 # console.
-export MODE        = windows
+export MODE        = console
 
 # Flags to compile OPENSSL
 # Uncomment the following lines, placing the libraries following the path

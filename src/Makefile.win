@@ -83,9 +83,13 @@ else
 	cp libvortex-1.1.lib $(release_dir)/
 	cp libvortex-1.1.def $(release_dir)/
 	cp libvortex-1.1.exp $(release_dir)/
+endif
+
+ifndef enable_gcc_debug
        # only strip if not debug
 	strip --strip-unneeded $(DLL)
 endif
+
 	cp $(DLL) $(release_dir)/
 	cp $(DLL).a $(release_dir)/
 
