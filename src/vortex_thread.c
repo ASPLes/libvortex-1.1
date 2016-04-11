@@ -435,7 +435,8 @@ axl_bool  vortex_mutex_create  (VortexMutex       * mutex_def)
 
 #if defined(AXL_OS_WIN32)
 	/* create the mutex, without a name */
-	(*mutex_def) = CreateMutex (NULL, FALSE, NULL);
+	/* (*mutex_def) = CreateMutex (NULL, FALSE, NULL); */
+	(*mutex_def) = CreateSemaphore (NULL, 1, 1, NULL);
 #elif defined(AXL_OS_UNIX)
 	/* init the mutex using default values */
 	if (pthread_mutex_init (mutex_def, NULL) != 0) {
@@ -532,7 +533,9 @@ void vortex_mutex_unlock  (VortexMutex       * mutex_def)
 
 #if defined(AXL_OS_WIN32)
 	/* unlock mutex */
-	ReleaseMutex (*mutex_def);
+	/* ReleaseMutex (*mutex_def); */
+	ReleaseSemaphore (*mutex_def, 1, NULL);
+	
 #elif defined(AXL_OS_UNIX)
 	/* unlock mutex */
 	if (pthread_mutex_unlock (mutex_def) != 0) {
