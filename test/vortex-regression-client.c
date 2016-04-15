@@ -1480,6 +1480,25 @@ axl_bool test_00e (void) {
 	return axl_true;
 }
 
+axl_bool test_00f (void) {
+
+	VortexMutex mutex;
+
+	vortex_mutex_create_full (&mutex, VORTEX_MUTEX_CONF_RECURSIVE);
+
+	printf ("Test 00-f: calling to lock for the first time..\n");
+	vortex_mutex_lock (&mutex);
+	printf ("Test 00-f: calling to lock for the second time (recursive..)\n");
+	vortex_mutex_lock (&mutex);
+	printf ("Test 00-f: ok\n");
+
+	vortex_mutex_unlock (&mutex);
+	vortex_mutex_destroy (&mutex);
+	
+	
+	return axl_true;
+}
+
 axl_bool call_enable_server_log (axl_bool enable_server_log) {
 	VortexConnection  * conn;
 	VortexChannel     * channel;
@@ -15237,7 +15256,7 @@ int main (int  argc, char ** argv)
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
 	printf ("**       Test available: test_00, test_001, test_00a, test_00b, test_00c, test_00c1, test_00c2,\n");
-	printf ("**                       test_00d, test_00e, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
+	printf ("**                       test_00d, test_00e, test_00f, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
 	printf ("**                       test_01f, test_01g, test_01g1, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o,\n");
 	printf ("**                       test_01p, test_01q, test_01r, test_01s, test_01s1, test_01t, test_01u, test_01w, test_01y, test_01x\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02a3, test_02a4, test_02b, test_02c, test_02d, test_02e, \n"); 
@@ -15438,6 +15457,9 @@ int main (int  argc, char ** argv)
 
 		if (check_and_run_test (run_test_name, "test_00e"))
 			run_test (test_00e, "Test 00-e", "Check skip thread waiting from pool", -1, -1); 
+
+		if (check_and_run_test (run_test_name, "test_00f"))
+			run_test (test_00f, "Test 00-f", "Check recursive mutexes", -1, -1); 
 
 		if (check_and_run_test (run_test_name, "test_01"))
 			run_test (test_01, "Test 01", "basic BEEP support", -1, -1);
@@ -15789,6 +15811,8 @@ int main (int  argc, char ** argv)
 	run_test (test_00d, "Test 00-d", "(unsigned) Int to string conversion", -1, -1); 
 
 	run_test (test_00e, "Test 00-e", "Check skip thread waiting from pool", -1, -1); 
+
+	run_test (test_00f, "Test 00-f", "Check recursive mutexes", -1, -1); 
 
  	run_test (test_01, "Test 01", "basic BEEP support", -1, -1);
   
