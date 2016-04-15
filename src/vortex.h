@@ -39,6 +39,13 @@
 #ifndef __VORTEX_H__
 #define __VORTEX_H__
 
+#if defined(__GNUC__) && !defined(_GNU_SOURCE)
+/** 
+ * Needed for extended pthread API for recursive functions.
+ */
+#  define _GNU_SOURCE 
+#endif
+
 /**
  * \addtogroup vortex
  * @{

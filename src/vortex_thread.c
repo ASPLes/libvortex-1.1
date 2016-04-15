@@ -409,8 +409,9 @@ void vortex_thread_set_destroy (VortexThreadDestroyFunc destroy_fn)
 }
 
 /** 
- * @brief Allows to create a new mutex to protect critical sections to
- * be executed by several threads at the same time.
+ * @brief Allows to create a new non-recursive mutex to protect
+ * critical sections to be executed by several threads at the same
+ * time.
  *
  * To create a mutex you must:
  * \code
@@ -431,17 +432,63 @@ void vortex_thread_set_destroy (VortexThreadDestroyFunc destroy_fn)
  */
 axl_bool  vortex_mutex_create  (VortexMutex       * mutex_def)
 {
+	return vortex_mutex_create_full (mutex_def, VORTEX_MUTEX_CONF_NONRECURSIVE);
+}
+
+
+/** 
+ * @brief Allows to create a new mutex to protect critical sections to
+ * be executed by several threads at the same time, with extended options.
+ *
+ * To create a mutex you must:
+ * \code
+ * // declare a mutex 
+ * VortexMutex mutex;
+ *
+ * // init it 
+ * if (! vortex_mutex_create_full (&mutex)) {
+ *    // failed to init mutex
+ * } 
+ * // mutex created
+ * \endcode
+ * 
+ * @param mutex_def A reference to the mutex to be initialized.
+ * 
+ * @param conf 
+ *
+ * @return axl_true if the function created the mutex, otherwise axl_false is
+ * returned.
+ */
+axl_bool           vortex_mutex_create_full (VortexMutex       * mutex_def, VortexMutexConf conf)
+{
+#if defined(AXL_OS_UNIX)
+	pthread_mutexattr_t attr;
+#endif
+
 	v_return_val_if_fail (mutex_def, axl_false);
 
 #if defined(AXL_OS_WIN32)
 	/* create the mutex, without a name */
-	/* (*mutex_def) = CreateMutex (NULL, FALSE, NULL); */
-	(*mutex_def) = CreateSemaphore (NULL, 1, 1, NULL);
+	if ((conf & VORTEX_MUTEX_CONF_RECURSIVE) == VORTEX_MUTEX_CONF_RECURSIVE)
+		(*mutex_def) = CreateMutex (NULL, FALSE, NULL); 
+	else if ((conf & VORTEX_MUTEX_CONF_NONRECURSIVE) == VORTEX_MUTEX_CONF_NONRECURSIVE)
+		(*mutex_def) = CreateSemaphore (NULL, 1, 1, NULL);
 #elif defined(AXL_OS_UNIX)
-	/* init the mutex using default values */
-	if (pthread_mutex_init (mutex_def, NULL) != 0) {
-		/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to create mutex (system call pthread_mutex_init have failed)"); */
-		return axl_false;
+	if ((conf & VORTEX_MUTEX_CONF_NONRECURSIVE) == VORTEX_MUTEX_CONF_NONRECURSIVE) {
+		/* init the mutex using default values */
+		if (pthread_mutex_init (mutex_def, NULL) != 0) {
+			/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to create mutex (system call pthread_mutex_init have failed)"); */
+			return axl_false;
+		} /* end if */
+	} else 	if ((conf & VORTEX_MUTEX_CONF_RECURSIVE) == VORTEX_MUTEX_CONF_RECURSIVE) {
+		pthread_mutexattr_init (&attr);
+		pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_RECURSIVE);
+
+		/* create recursive mutex */
+		if (pthread_mutex_init (mutex_def, &attr) != 0) {
+			/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to create mutex (system call pthread_mutex_init have failed)"); */
+			return axl_false;
+		} /* end if */
 	} /* end if */
 #endif
 	/* mutex created */
