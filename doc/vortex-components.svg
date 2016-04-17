@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
+
 <svg
    xmlns:dc="http://purl.org/dc/elements/1.1/"
    xmlns:cc="http://creativecommons.org/ns#"
@@ -8,14 +9,14 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="3792.0005"
-   height="1710.5875"
+   width="4677.0308"
+   height="1707.1204"
    id="svg2"
    sodipodi:version="0.32"
-   inkscape:version="0.46"
+   inkscape:version="0.91 r"
    sodipodi:docname="vortex-components.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   inkscape:export-filename="/home/acinom/af-arch/libvortex-1.1/doc/vortex-components.png"
+   inkscape:export-filename="/home/acinom/libvortex-1.1/doc/vortex-components.png"
    inkscape:export-xdpi="17.228661"
    inkscape:export-ydpi="17.228661"
    version="1.0">
@@ -36,18 +37,23 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.175"
-     inkscape:cx="1899.9591"
-     inkscape:cy="288.12059"
+     inkscape:zoom="0.12374369"
+     inkscape:cx="2276.3727"
+     inkscape:cy="641.90017"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      showguides="true"
      inkscape:guide-bbox="true"
-     inkscape:window-width="1280"
-     inkscape:window-height="953"
+     inkscape:window-width="1274"
+     inkscape:window-height="949"
      inkscape:window-x="0"
-     inkscape:window-y="23" />
+     inkscape:window-y="25"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     inkscape:window-maximized="0" />
   <metadata
      id="metadata7">
     <rdf:RDF>
@@ -56,6 +62,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -63,206 +70,239 @@
      inkscape:label="Capa 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(820.03479,503.82068)">
-    <rect
-       style="opacity:1;fill:#babdb6;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:15;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-       id="rect2383"
-       width="3792.0005"
-       height="1710.5875"
-       x="-820.03479"
-       y="-503.82068"
-       rx="96.974648"
-       ry="96.974648" />
-    <rect
-       style="fill:#3465a4;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:24.74880791;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-       id="rect2385"
-       width="3645.9846"
-       height="316.54489"
-       x="-759.23584"
-       y="797.19202" />
-    <text
-       xml:space="preserve"
-       style="font-size:74.61465454px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:FreeSans;-inkscape-font-specification:FreeSans"
-       x="1063.9186"
-       y="935.16925"
-       id="text3157"><tspan
-         sodipodi:role="line"
-         id="tspan3159"
-         x="1063.9186"
-         y="935.16925">Vortex Base libary: libvortex-1.1</tspan><tspan
-         sodipodi:role="line"
-         x="1063.9186"
-         y="1028.4376"
-         id="tspan3161">BEEP core function and common API</tspan></text>
-    <g
-       id="g3205"
-       transform="matrix(0.6293103,-0.7771541,0.7771541,0.6293103,-591.93694,-264.50174)">
-      <rect
-         y="387.18594"
-         x="-722.32794"
-         height="328.2811"
-         width="971.90454"
-         id="rect3163"
-         style="opacity:1;fill:#ef2929;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:13.01259708;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
-      <text
-         id="text3165"
-         y="524.49097"
-         x="-229.74464"
-         style="font-size:73.82543182px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:FreeSans;-inkscape-font-specification:FreeSans"
-         xml:space="preserve"><tspan
-           y="524.49097"
-           x="-229.74464"
-           id="tspan3167"
-           sodipodi:role="line">Vortex TLS: libvortex-tls-1.1</tspan><tspan
-           id="tspan3169"
-           y="616.77277"
-           x="-219.50713"
-           sodipodi:role="line">TLS profile </tspan></text>
-    </g>
-    <g
-       id="g3211"
-       transform="matrix(0.6293103,-0.7771541,0.7771541,0.6293103,-702.43916,519.07722)">
-      <rect
-         y="387.44409"
-         x="286.06238"
-         height="327.76489"
-         width="1052.2006"
-         id="rect3171"
-         style="opacity:1;fill:#4e9a06;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:13.52881336;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
-      <text
-         id="text3173"
-         y="524.49097"
-         x="810.44598"
-         style="font-size:73.82543182px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:FreeSans;-inkscape-font-specification:FreeSans"
-         xml:space="preserve"><tspan
-           y="524.49097"
-           x="810.44598"
-           id="tspan3175"
-           sodipodi:role="line">Vortex SASL: libvortex-sasl-1.1</tspan><tspan
-           id="tspan3177"
-           y="616.77277"
-           x="810.44598"
-           sodipodi:role="line">SASL profile support</tspan></text>
-    </g>
-    <g
-       id="g3217"
-       transform="matrix(0.6293103,-0.7771541,0.7771541,0.6293103,-867.82157,1370.3802)">
-      <rect
-         y="388.21896"
-         x="1381.8427"
-         height="326.21509"
-         width="1313.2904"
-         id="rect3179"
-         style="opacity:1;fill:#8f5902;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:15.07862091;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
-      <text
-         id="text3181"
-         y="524.49097"
-         x="2045.1189"
-         style="font-size:73.82543182px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:FreeSans;-inkscape-font-specification:FreeSans"
-         xml:space="preserve"><tspan
-           y="524.49097"
-           x="2045.1189"
-           id="tspan3183"
-           sodipodi:role="line">Vortex XML-RPC: libvortex-xml-rpc-1.1</tspan><tspan
-           id="tspan3185"
-           y="616.77277"
-           x="2045.1189"
-           sodipodi:role="line">XML-RPC profile support</tspan></text>
-    </g>
-    <g
-       id="g3223"
-       transform="matrix(0.6293103,-0.7771541,0.7771541,0.6293103,-1194.6647,2414.7971)">
-      <rect
-         y="391.54761"
-         x="2728.6743"
-         height="327.63907"
-         width="1072.2777"
-         id="rect3187"
-         style="opacity:1;fill:#75507b;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:13.65465355;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
-      <text
-         id="text3189"
-         y="528.08862"
-         x="3271.4441"
-         style="font-size:73.82543182px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:FreeSans;-inkscape-font-specification:FreeSans"
-         xml:space="preserve"><tspan
-           y="528.08862"
-           x="3271.4441"
-           id="tspan3191"
-           sodipodi:role="line">Vortex HTTP: libvortex-http-1.1</tspan><tspan
-           id="tspan3193"
-           y="620.37042"
-           x="3271.4441"
-           sodipodi:role="line">HTTP CONNECT support</tspan></text>
-    </g>
-    <g
-       id="g3229"
-       transform="matrix(0.6293103,-0.7771541,0.7771541,0.6293103,-1367.3605,3275.2053)">
-      <rect
-         y="391.54761"
-         x="3835.8013"
-         height="327.63907"
-         width="1072.2777"
-         id="rect3195"
-         style="opacity:1;fill:#c4a000;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:13.65465355;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
-      <text
-         id="text3197"
-         y="528.08862"
-         x="4378.5713"
-         style="font-size:73.82543182px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:FreeSans;-inkscape-font-specification:FreeSans"
-         xml:space="preserve"><tspan
-           y="528.08862"
-           x="4378.5713"
-           id="tspan3199"
-           sodipodi:role="line">Vortex PULL: libvortex-pull-1.1</tspan><tspan
-           id="tspan3203"
-           y="620.37042"
-           x="4378.5713"
-           sodipodi:role="line">Single threaded API</tspan><tspan
-           id="tspan3201"
-           y="712.65222"
-           x="4378.5713"
-           sodipodi:role="line" /></text>
-    </g>
+     transform="translate(1216.5062,539.76819)">
     <flowRoot
        xml:space="preserve"
        id="flowRoot3240"
-       style="font-size:22px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Impact"><flowRegion
+       style="font-style:normal;font-weight:normal;font-size:22px;font-family:Impact;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"><flowRegion
          id="flowRegion3242"><rect
            id="rect3244"
            width="1996.0614"
            height="3579.9807"
            x="-2286.9854"
            y="-1517.4659" /></flowRegion><flowPara
-         id="flowPara3246"></flowPara></flowRoot>    <g
-       id="g3291"
-       transform="matrix(0.6061386,-0.795359,0.795359,0.6061386,746.8176,1937.8647)">
+         id="flowPara3246" /></flowRoot>    <rect
+       style="fill:#ef2929;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:27.06503677;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect2385"
+       width="4649.9658"
+       height="296.83087"
+       x="-1202.9736"
+       y="856.98883" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:70.81109619px;font-family:FreeSans;-inkscape-font-specification:FreeSans;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="1273.8279"
+       y="975.29694"
+       id="text3157"><tspan
+         sodipodi:role="line"
+         id="tspan3159"
+         x="1273.8279"
+         y="975.29694">Vortex Base libary: libvortex-1.1</tspan><tspan
+         sodipodi:role="line"
+         x="1273.8279"
+         y="1063.8108"
+         id="tspan3161">BEEP core function and common API</tspan></text>
+    <rect
+       style="opacity:1;fill:#888a85;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:12.3492651;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect3163"
+       width="922.3606"
+       height="311.5466"
+       x="-1222.2373"
+       y="-557.80823"
+       transform="matrix(0.6293103,-0.77715413,0.77715413,0.6293103,0,0)" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:70.06209564px;font-family:FreeSans;-inkscape-font-specification:FreeSans;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="-757.86951"
+       y="-411.03223"
+       id="text3165"
+       transform="matrix(0.6293103,-0.77715413,0.77715413,0.6293103,0,0)"><tspan
+         sodipodi:role="line"
+         id="tspan3167"
+         x="-757.86951"
+         y="-411.03223">Vortex TLS: libvortex-tls-1.1</tspan><tspan
+         sodipodi:role="line"
+         x="-748.15387"
+         y="-323.45462"
+         id="tspan3169">TLS profile </tspan></text>
+    <rect
+       style="opacity:1;fill:#555753;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:12.83916664;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect3171"
+       width="998.56348"
+       height="311.0567"
+       x="-909.16528"
+       y="-171.08537"
+       transform="matrix(0.6293103,-0.77715413,0.77715413,0.6293103,0,0)" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:70.06209564px;font-family:FreeSans;-inkscape-font-specification:FreeSans;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="-411.5127"
+       y="-41.025558"
+       id="text3173"
+       transform="matrix(0.6293103,-0.77715413,0.77715413,0.6293103,0,0)"><tspan
+         sodipodi:role="line"
+         id="tspan3175"
+         x="-411.5127"
+         y="-41.025558">Vortex SASL: libvortex-sasl-1.1</tspan><tspan
+         sodipodi:role="line"
+         x="-411.5127"
+         y="46.552063"
+         id="tspan3177">SASL profile support</tspan></text>
+    <rect
+       style="opacity:1;fill:#2e3436;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:14.30997181;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect3179"
+       width="1246.3439"
+       height="309.58594"
+       x="-595.88318"
+       y="216.09761"
+       transform="matrix(0.6293103,-0.77715413,0.77715413,0.6293103,0,0)" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:70.06209564px;font-family:FreeSans;-inkscape-font-specification:FreeSans;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="33.581676"
+       y="345.4234"
+       id="text3181"
+       transform="matrix(0.6293103,-0.77715413,0.77715413,0.6293103,0,0)"><tspan
+         sodipodi:role="line"
+         id="tspan3183"
+         x="33.581699"
+         y="345.4234">Vortex XML-RPC: libvortex-xml-rpc-1.1</tspan><tspan
+         sodipodi:role="line"
+         x="33.581673"
+         y="433.00101"
+         id="tspan3185">XML-RPC profile support</tspan></text>
+    <rect
+       style="opacity:1;fill:#888a85;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:12.95859241;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect3187"
+       width="1017.6171"
+       height="310.93729"
+       x="-283.20544"
+       y="601.95502"
+       transform="matrix(0.6293103,-0.77715413,0.77715413,0.6293103,0,0)" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:70.06209564px;font-family:FreeSans;-inkscape-font-specification:FreeSans;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="231.89607"
+       y="731.53644"
+       id="text3189"
+       transform="matrix(0.6293103,-0.77715413,0.77715413,0.6293103,0,0)"><tspan
+         sodipodi:role="line"
+         id="tspan3191"
+         x="231.89607"
+         y="731.53644">Vortex HTTP: libvortex-http-1.1</tspan><tspan
+         sodipodi:role="line"
+         x="231.89607"
+         y="819.11407"
+         id="tspan3193">HTTP CONNECT support</tspan></text>
+    <rect
+       style="opacity:1;fill:#555753;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:12.95859241;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect3195"
+       width="1017.6171"
+       height="310.93729"
+       x="29.761549"
+       y="988.44781"
+       transform="matrix(0.6293103,-0.77715413,0.77715413,0.6293103,0,0)" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:70.06209564px;font-family:FreeSans;-inkscape-font-specification:FreeSans;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="544.86328"
+       y="1118.0275"
+       id="text3197"
+       transform="matrix(0.6293103,-0.77715413,0.77715413,0.6293103,0,0)"><tspan
+         sodipodi:role="line"
+         id="tspan3199"
+         x="544.86328"
+         y="1118.0275">Vortex PULL: libvortex-pull-1.1</tspan><tspan
+         sodipodi:role="line"
+         x="544.86328"
+         y="1205.6051"
+         id="tspan3203">Single threaded API</tspan><tspan
+         sodipodi:role="line"
+         x="544.86328"
+         y="1293.1827"
+         id="tspan3201" /></text>
+    <rect
+       style="fill:#2e3436;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:14.0921793;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect3276"
+       width="1207.7039"
+       height="309.84003"
+       x="312.99304"
+       y="1385.5594"
+       transform="matrix(0.61193,-0.79091192,0.78903815,0.6143442,0,0)" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:70.06210327px;font-family:FreeSans;-inkscape-font-specification:FreeSans;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="916.74377"
+       y="1513.3435"
+       id="text3278"
+       transform="matrix(0.61303258,-0.79005763,0.79005763,0.61303258,0,0)"><tspan
+         sodipodi:role="line"
+         id="tspan3280"
+         x="916.74377"
+         y="1513.3435">Vortex TUNNEL: libvortex-tunnel-1.1</tspan><tspan
+         sodipodi:role="line"
+         x="916.74377"
+         y="1600.9211"
+         id="tspan3282">TUNNEL profile support</tspan><tspan
+         sodipodi:role="line"
+         x="916.74377"
+         y="1688.4988"
+         id="tspan3284" /></text>
+    <g
+       transform="matrix(0.99863575,-0.10401664,-0.0324473,1.0340011,2558.4169,-29.22494)"
+       id="g4179-6"
+       style="fill:#555753">
       <rect
-         transform="matrix(0.9999733,7.3017843e-3,-1.0357706e-2,0.9999464,0,0)"
-         y="48.047897"
-         x="1782.4594"
-         height="326.48282"
-         width="1272.5748"
-         id="rect3276"
-         style="fill:#f57900;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:14.84913063;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
-      <text
-         transform="matrix(0.9999622,8.6965562e-3,-8.6965562e-3,0.9999622,0,0)"
-         id="text3278"
-         y="180.67192"
-         x="2420.9841"
-         style="font-size:73.82543182px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:FreeSans;-inkscape-font-specification:FreeSans"
-         xml:space="preserve"><tspan
-           y="180.67192"
-           x="2420.9841"
-           id="tspan3280"
-           sodipodi:role="line">Vortex TUNNEL: libvortex-tunnel-1.1</tspan><tspan
-           id="tspan3282"
-           y="272.9537"
-           x="2420.9841"
-           sodipodi:role="line">TUNNEL profile support</tspan><tspan
-           id="tspan3284"
-           y="365.2355"
-           x="2420.9841"
-           sodipodi:role="line" /></text>
+         transform="matrix(0.62931032,-0.77715412,0.77715412,0.62931032,0,0)"
+         y="-239.29398"
+         x="-889.28131"
+         height="328.2811"
+         width="971.90454"
+         id="rect3163-8"
+         style="opacity:1;fill:#555753;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:13.01259708;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
     </g>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:70.06210327px;font-family:FreeSans;-inkscape-font-specification:FreeSans;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="1119.3115"
+       y="1927.1195"
+       id="text3165-8"
+       transform="matrix(0.60157388,-0.79881717,0.79881717,0.60157388,0,0)"><tspan
+         sodipodi:role="line"
+         id="tspan3167-9"
+         x="1119.3115"
+         y="1927.1195">Vortex ALIVE: libvortex-alive-1.1</tspan><tspan
+         sodipodi:role="line"
+         x="1119.3115"
+         y="2014.6971"
+         id="tspan3169-5">ALIVE profile</tspan></text>
+    <g
+       transform="matrix(1.129471,-0.3033368,-0.19397033,1.263922,3276.2948,-300.45844)"
+       id="g4179-6-0"
+       style="fill:#888a85">
+      <rect
+         transform="matrix(0.62931032,-0.77715412,0.77715412,0.62931032,0,0)"
+         y="-239.29398"
+         x="-889.28131"
+         height="328.2811"
+         width="971.90454"
+         id="rect3163-8-8"
+         style="opacity:1;fill:#888a85;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:13.01259708;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:70.06209564px;font-family:FreeSans;-inkscape-font-specification:FreeSans;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="1606.0892"
+       y="2364.2041"
+       id="text3165-8-9"
+       transform="matrix(0.59317914,-0.8050705,0.8050705,0.59317914,0,0)"><tspan
+         sodipodi:role="line"
+         id="tspan3167-9-5"
+         x="1606.0892"
+         y="2364.2041">Vortex WebSocket: libvortex-websocket-1.1</tspan><tspan
+         sodipodi:role="line"
+         x="1606.0892"
+         y="2451.7817"
+         id="tspan3169-5-2">WebSocket support</tspan></text>
   </g>
 </svg>
