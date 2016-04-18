@@ -469,10 +469,17 @@ axl_bool           vortex_mutex_create_full (VortexMutex       * mutex_def, Vort
 
 #if defined(AXL_OS_WIN32)
 	/* create the mutex, without a name */
-	if ((conf & VORTEX_MUTEX_CONF_RECURSIVE) == VORTEX_MUTEX_CONF_RECURSIVE)
-		(*mutex_def) = CreateMutex (NULL, FALSE, NULL); 
-	else if ((conf & VORTEX_MUTEX_CONF_NONRECURSIVE) == VORTEX_MUTEX_CONF_NONRECURSIVE)
-		(*mutex_def) = CreateSemaphore (NULL, 1, 1, NULL);
+	if ((conf & VORTEX_MUTEX_CONF_RECURSIVE) == VORTEX_MUTEX_CONF_RECURSIVE) {
+		mutex_def->mutex     = CreateMutex (NULL, FALSE, NULL); 
+		mutex_def->recursive = axl_true;
+	} else if ((conf & VORTEX_MUTEX_CONF_NONRECURSIVE) == VORTEX_MUTEX_CONF_NONRECURSIVE) {
+		mutex_def->mutex     = CreateSemaphore (NULL, 1, 1, NULL);
+		mutex_def->recursive = axl_false;
+	}
+
+	/* record configuration */
+	mutex_def->conf      = conf;
+	
 #elif defined(AXL_OS_UNIX)
 	if ((conf & VORTEX_MUTEX_CONF_NONRECURSIVE) == VORTEX_MUTEX_CONF_NONRECURSIVE) {
 		/* init the mutex using default values */
@@ -511,8 +518,8 @@ axl_bool  vortex_mutex_destroy (VortexMutex       * mutex_def)
 
 #if defined(AXL_OS_WIN32)
 	/* close the mutex */
-	CloseHandle (*mutex_def);
-	(*mutex_def) = NULL;
+	CloseHandle (mutex_def->mutex);
+	mutex_def->mutex = NULL;
 #elif defined(AXL_OS_UNIX)
 	/* close the mutex */
 	if (pthread_mutex_destroy (mutex_def) != 0) {
@@ -553,7 +560,7 @@ void vortex_mutex_lock    (VortexMutex       * mutex_def)
 
 #if defined(AXL_OS_WIN32)
 	/* lock the mutex */
-	WaitForSingleObject (*mutex_def, INFINITE);
+	WaitForSingleObject (mutex_def->mutex, INFINITE);
 #elif defined(AXL_OS_UNIX)
 	/* lock the mutex */
 	if (pthread_mutex_lock (mutex_def) != 0) {
@@ -588,16 +595,10 @@ void vortex_mutex_unlock  (VortexMutex       * mutex_def)
 
 #if defined(AXL_OS_WIN32)
 	/* unlock mutex */
-	/* ReleaseMutex (*mutex_def); */
-	Status = NtQuerySemaphore (Semaphore, 0 /*SemaphoreBasicInformation*/, 
-				   &BasicInfo, sizeof (SEMAPHORE_BASIC_INFORMATION), NULL);
-	
-	/* according to the handle */
-	if (Status == ERROR_SUCCESS)
-		ReleaseSemaphore (*mutex_def, 1, NULL);
-	else
+	if (mutex_def->recursive)
 		ReleaseMutex (*mutex_def);
-
+	else
+		ReleaseSemaphore (*mutex_def, 1, NULL);
 	
 #elif defined(AXL_OS_UNIX)
 	/* unlock mutex */
