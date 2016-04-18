@@ -572,9 +572,6 @@ void vortex_mutex_lock    (VortexMutex       * mutex_def)
 	return;
 }
 
-#if defined(AXL_OS_WIN32)
-#endif
-
 /** 
  * @brief Unlocks the given mutex. The mutex is assumed to be locked
  * and owned by the calling thread on entrance to
@@ -585,20 +582,15 @@ void vortex_mutex_lock    (VortexMutex       * mutex_def)
  */
 void vortex_mutex_unlock  (VortexMutex       * mutex_def)
 {
-#if defined(AXL_OS_WIN32)
-	SEMAPHORE_BASIC_INFORMATION BasicInfo;
-	NTSTATUS Status;
-#endif
-
 	if (mutex_def == NULL)
 		return;
 
 #if defined(AXL_OS_WIN32)
 	/* unlock mutex */
 	if (mutex_def->recursive)
-		ReleaseMutex (*mutex_def);
+		ReleaseMutex (mutex_def->mutex);
 	else
-		ReleaseSemaphore (*mutex_def, 1, NULL);
+		ReleaseSemaphore (mutex_def->mutex, 1, NULL);
 	
 #elif defined(AXL_OS_UNIX)
 	/* unlock mutex */
@@ -779,9 +771,9 @@ axl_bool  __vortex_cond_common_wait_win32 (VortexCond * cond, VortexMutex * mute
 	 * semaphore until \ref vortex_cond_signal or \ref
 	 * vortex_cond_broadcast> are called by another thread. */
 	if (wait_infinite)
-		SignalObjectAndWait (*mutex, cond->sema_, INFINITE, FALSE);
+		SignalObjectAndWait (mutex->mutex, cond->sema_, INFINITE, FALSE);
 	else
-		SignalObjectAndWait (*mutex, cond->sema_, milliseconds, FALSE);
+		SignalObjectAndWait (mutex->mutex, cond->sema_, milliseconds, FALSE);
 
 
 	/* Reacquire lock to avoid race conditions. */
@@ -803,11 +795,11 @@ axl_bool  __vortex_cond_common_wait_win32 (VortexCond * cond, VortexMutex * mute
 		 * event and waits until it can acquire the
 		 * <mutex>.  This is required to ensure
 		 * fairness.  */
-		SignalObjectAndWait (cond->waiters_done_, *mutex, INFINITE, FALSE);
+		SignalObjectAndWait (cond->waiters_done_, mutex->mutex, INFINITE, FALSE);
 	} else {
 		/* Always regain the mutex since that's the guarantee we
 		 * give to our callers. */
-		WaitForSingleObject (*mutex, INFINITE);
+		WaitForSingleObject (mutex->mutex, INFINITE);
 	} /* end if */
 
 	return axl_true;

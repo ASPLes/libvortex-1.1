@@ -1483,6 +1483,7 @@ axl_bool test_00e (void) {
 axl_bool test_00f (void) {
 
 	VortexMutex mutex;
+	int         iterator;
 
 	vortex_mutex_create_full (&mutex, VORTEX_MUTEX_CONF_RECURSIVE);
 
@@ -1492,8 +1493,18 @@ axl_bool test_00f (void) {
 	vortex_mutex_lock (&mutex);
 	printf ("Test 00-f: ok\n");
 
+	printf ("Test 00-f: calling 100 times..\n");
+	iterator = 0;
+	while (iterator < 100) {
+		vortex_mutex_lock (&mutex);
+		iterator++;
+	}
+
+	printf ("Test 00-f: calling to unlock..\n");
 	vortex_mutex_unlock (&mutex);
 	vortex_mutex_destroy (&mutex);
+
+	printf ("Test 00-f: mutex closed/destroyed..\n");
 	
 	
 	return axl_true;

@@ -889,6 +889,24 @@ do {\
 }while(0)
 
 /** 
+ * @brief Configuration options available for \ref vortex_mutex_create_full function.
+ */ 
+typedef enum {
+	/** 
+	 * @brief Creates a non recursive mutex (calling twice to
+	 * vortex_mutex_lock will block).
+	 */
+	VORTEX_MUTEX_CONF_NONRECURSIVE = 1 << 0,
+
+	/** 
+	 * @brief Creates a recursive mutex (calling twice to
+	 * vortex_mutex_lock will not block).
+	 */
+	VORTEX_MUTEX_CONF_RECURSIVE    = 1 << 1,
+} VortexMutexConf;
+
+
+/** 
  * @internal Definitions to accomodate the underlaying thread
  * interface to the Vortex thread API.
  */
@@ -903,7 +921,7 @@ typedef struct _VortexWin32Mutex {
 } VortexWin32Mutex;
 
 #define __OS_THREAD_TYPE__ win32_thread_t
-#define __OS_MUTEX_TYPE__  VortexWin32Mutex;
+#define __OS_MUTEX_TYPE__  VortexWin32Mutex
 #define __OS_COND_TYPE__   win32_cond_t
 
 typedef struct _win32_thread_t {

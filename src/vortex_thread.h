@@ -47,23 +47,6 @@ BEGIN_C_DECLS
  * @{
  */
 
-/** 
- * @brief Configuration options available for \ref vortex_mutex_create_full function.
- */ 
-typedef enum {
-	/** 
-	 * @brief Creates a non recursive mutex (calling twice to
-	 * vortex_mutex_lock will block).
-	 */
-	VORTEX_MUTEX_CONF_NONRECURSIVE = 1 << 0,
-
-	/** 
-	 * @brief Creates a recursive mutex (calling twice to
-	 * vortex_mutex_lock will not block).
-	 */
-	VORTEX_MUTEX_CONF_RECURSIVE    = 1 << 1,
-} VortexMutexConf;
-
 axl_bool           vortex_thread_create   (VortexThread      * thread_def,
 					   VortexThreadFunc    func,
 					   axlPointer          user_data,
