@@ -565,6 +565,9 @@ void vortex_mutex_lock    (VortexMutex       * mutex_def)
 	return;
 }
 
+#if defined(AXL_OS_WIN32)
+#endif
+
 /** 
  * @brief Unlocks the given mutex. The mutex is assumed to be locked
  * and owned by the calling thread on entrance to
@@ -575,13 +578,26 @@ void vortex_mutex_lock    (VortexMutex       * mutex_def)
  */
 void vortex_mutex_unlock  (VortexMutex       * mutex_def)
 {
+#if defined(AXL_OS_WIN32)
+	SEMAPHORE_BASIC_INFORMATION BasicInfo;
+	NTSTATUS Status;
+#endif
+
 	if (mutex_def == NULL)
 		return;
 
 #if defined(AXL_OS_WIN32)
 	/* unlock mutex */
 	/* ReleaseMutex (*mutex_def); */
-	ReleaseSemaphore (*mutex_def, 1, NULL);
+	Status = NtQuerySemaphore (Semaphore, 0 /*SemaphoreBasicInformation*/, 
+				   &BasicInfo, sizeof (SEMAPHORE_BASIC_INFORMATION), NULL);
+	
+	/* according to the handle */
+	if (Status == ERROR_SUCCESS)
+		ReleaseSemaphore (*mutex_def, 1, NULL);
+	else
+		ReleaseMutex (*mutex_def);
+
 	
 #elif defined(AXL_OS_UNIX)
 	/* unlock mutex */
