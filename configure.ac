@@ -221,7 +221,7 @@ PKG_CHECK_MODULES(AXL, axl >= 0.7.0, [enable_axl_support=yes], [enable_axl_suppo
 if test "$enable_axl_support" = "no" ; then
    dnl Try to find by header
    AC_CHECK_HEADER(axl/axl.h,enable_axl_support=yes,enable_axl_support=no)
-   if test "$enable_websocket_support" = "yes" ; then
+   if test "$enable_axl_support" = "yes" ; then
        AXL_CFLAGS=
        AXL_LIBS=-laxl
    else
