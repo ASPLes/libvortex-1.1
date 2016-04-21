@@ -1510,6 +1510,30 @@ axl_bool test_00f (void) {
 	return axl_true;
 }
 
+axl_bool test_00g (void) {
+
+	char * result;
+
+	/* call digest */
+	result =  vortex_tls_get_digest (VORTEX_SHA1, "test");
+	if (! axl_cmp (result, "A9:4A:8F:E5:CC:B1:9B:A6:1C:4C:08:73:D3:91:E9:87:98:2F:BB:D3"))
+		return axl_false;
+
+	printf ("Test 00-g: digest %s\n", result);
+	axl_free (result);
+
+	/* call digest */
+	result =  vortex_tls_get_digest (VORTEX_MD5, "test");
+	if (! axl_cmp (result, "09:8F:6B:CD:46:21:D3:73:CA:DE:4E:83:26:27:B4:F6"))
+		return axl_false;
+
+	printf ("Test 00-g: digest %s\n", result);
+	axl_free (result);
+	
+	
+	return axl_true;
+}
+
 axl_bool call_enable_server_log (axl_bool enable_server_log) {
 	VortexConnection  * conn;
 	VortexChannel     * channel;
@@ -8827,6 +8851,7 @@ axl_bool  test_05 (void)
 	char             * message;
 	int                iterator;
 	VortexFrame      * frame;
+	char             * digest;
 
 	/* vortex connection */
 	VortexConnection * connection;
@@ -8932,6 +8957,16 @@ axl_bool  test_05 (void)
 
 	/* free the message */
 	axl_free (message);
+
+	printf ("Test 05: getting SSL/TLS digest from connection...\n");
+	digest = vortex_tls_get_peer_ssl_digest (connection, VORTEX_SHA1);
+	printf ("Test 05: digest (sha1): %s\n", digest);
+	axl_free (digest);
+
+	digest = vortex_tls_get_peer_ssl_digest (connection, VORTEX_MD5);
+	printf ("Test 05: digest (md5): %s\n", digest);
+	axl_free (digest);
+	
 
 	/* ok, close the channel */
 	if (! vortex_channel_close (channel, NULL))
@@ -15267,7 +15302,7 @@ int main (int  argc, char ** argv)
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
 	printf ("**       Test available: test_00, test_001, test_00a, test_00b, test_00c, test_00c1, test_00c2,\n");
-	printf ("**                       test_00d, test_00e, test_00f, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
+	printf ("**                       test_00d, test_00e, test_00f, test_00g, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
 	printf ("**                       test_01f, test_01g, test_01g1, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o,\n");
 	printf ("**                       test_01p, test_01q, test_01r, test_01s, test_01s1, test_01t, test_01u, test_01w, test_01y, test_01x\n");
 	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02a3, test_02a4, test_02b, test_02c, test_02d, test_02e, \n"); 
@@ -15471,6 +15506,9 @@ int main (int  argc, char ** argv)
 
 		if (check_and_run_test (run_test_name, "test_00f"))
 			run_test (test_00f, "Test 00-f", "Check recursive mutexes", -1, -1); 
+
+		if (check_and_run_test (run_test_name, "test_00g"))
+			run_test (test_00g, "Test 00-g", "Check digest API", -1, -1); 
 
 		if (check_and_run_test (run_test_name, "test_01"))
 			run_test (test_01, "Test 01", "basic BEEP support", -1, -1);
@@ -15824,6 +15862,8 @@ int main (int  argc, char ** argv)
 	run_test (test_00e, "Test 00-e", "Check skip thread waiting from pool", -1, -1); 
 
 	run_test (test_00f, "Test 00-f", "Check recursive mutexes", -1, -1); 
+
+	run_test (test_00g, "Test 00-g", "Check digest API", -1, -1); 
 
  	run_test (test_01, "Test 01", "basic BEEP support", -1, -1);
   

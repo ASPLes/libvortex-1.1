@@ -2261,10 +2261,8 @@ char             * vortex_tls_get_peer_ssl_digest        (VortexConnection   * c
 							  VortexDigestMethod   method)
 {
 	/* variable declaration */
-	int             iterator;
 	unsigned int    message_size;
 	unsigned char   message [EVP_MAX_MD_SIZE];
-	char          * result;
 	
 	/* ssl variables */
 	SSL          * ssl;
@@ -2300,23 +2298,8 @@ char             * vortex_tls_get_peer_ssl_digest        (VortexConnection   * c
 		return NULL;
 	} 
 
-	/* allocate enough memory for the result */
-	result = axl_new (char, (message_size * 3) + 1);
-
-	/* translate value returned into an octal representation */
-	for (iterator = 0; iterator < message_size; iterator++) {
-#if defined(AXL_OS_WIN32)  && ! defined(__GNUC__)
-		sprintf_s (result + (iterator * 3), (message_size * 3), "%02X%s", 
-			       message [iterator], 
-			       (iterator + 1 != message_size) ? ":" : "");
-#else
-		sprintf (result + (iterator * 3), "%02X%s", 
-			     message [iterator], 
-			     (iterator + 1 != message_size) ? ":" : "");
-#endif
-	}
-
-	return result;
+	/* call base implementation */
+	return vortex_tls_get_digest_sized (method, (const char *) message, message_size);
 }
 
 /** 
