@@ -1134,7 +1134,7 @@ axlDoc * xml_rpc_gen_translate_idl_to_xdl (const char  * selected, axlError ** e
 
 	/* we have already read the stream, now parse the document
 	 * header */
-	if (! axl_stream_inspect (stream, "xml-rpc", 7) > 0) {
+	if (! (axl_stream_inspect (stream, "xml-rpc", 7) > 0)) {
 		axl_error_new (-2, "Expected to find xml-rpc keyword at the begin of the interface definition", 
 			      stream, error);
 		axl_stream_free (stream);
@@ -1148,7 +1148,7 @@ axlDoc * xml_rpc_gen_translate_idl_to_xdl (const char  * selected, axlError ** e
 
 	/* we have already read the stream, now parse the document
 	 * header */
-	if (! axl_stream_inspect (stream, "interface", 9) > 0) {
+	if (! (axl_stream_inspect (stream, "interface", 9) > 0)) {
 		axl_error_new (-2, "Expected to find interface keyword at the begin of the interface definition", 
 			      stream, error);
 		axl_stream_free (stream);
@@ -1186,7 +1186,7 @@ axlDoc * xml_rpc_gen_translate_idl_to_xdl (const char  * selected, axlError ** e
 	XML_RPC_GEN_CONSUME_SPACES(stream, error);
 	
 	/* get the open brace */
-	if (! axl_stream_inspect (stream, "{", 1) > 0) {
+	if (! (axl_stream_inspect (stream, "{", 1) > 0)) {
 		axl_error_new (-2, "Expected to find an open brace, enclosing services definition", stream, error);
 		axl_stream_free (stream);
 		return NULL;	
@@ -1202,7 +1202,7 @@ axlDoc * xml_rpc_gen_translate_idl_to_xdl (const char  * selected, axlError ** e
 	XML_RPC_GEN_CONSUME_SPACES(stream, error);
 	
 	/* get the open brace */
-	if (! axl_stream_inspect (stream, "}", 1) > 0) {
+	if (! (axl_stream_inspect (stream, "}", 1) > 0)) {
 		axl_error_new (-2, "Expected to find a close brace, closing services definition", stream, error);
 		axl_stream_free (stream);
 		return NULL;	
