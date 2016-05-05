@@ -1,0 +1,198 @@
+      ###################################################
+      ##              Vortex Library 1.1.16            ##
+      ##             "Elephant in the Room"            ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce Vortex
+  Library 1.1.16 "Elephant in the Room" release availability: an open
+  source "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.aspl.es/vortex/downloads
+      [Vortex Library downloads, binaries w64 & w32]
+
+    - http://www.core-admin.com
+      [Featured product: Core-Admin]
+      
+    
+This release in short
+~~~~~~~~~~~~~~~~~~~~~
+
+  - Added Vortex External module to allow easily creating BEEP over
+    any connection oriented transport by providing a set of handlers
+    that implements the specific part of the protocol supported. Used
+    this new transport to support BEEP over BlueTooth (done by Arthur
+    Kristmann).
+
+  - Fixed mutex API to provide a consistent behaviour (recursive vs
+    non-recursive) and added new API to provide this support. Reported
+    by Ralf Konusch. 
+
+  - Fixed tls digest segfault (reported by Ralf Konusch).
+
+  - Removed wrong nopoll.h header from vortex_external.h (Arthur
+    Kristmann).
+
+  - Various stable improvements and new regression tests.
+
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+
+  None
+
+Thanks to..
+~~~~~~~~~~~
+
+  - Ralf Konusch
+
+
+Changes since 1.1.15
+~~~~~~~~~~~~~~~~~~~~
+
+* [fix] Updated vortex_websocket_connection_new to use a default
+  connect timeout of 60 seconds when it is not defined or it is
+  0. This fixes those connections that takes some time to finish the
+  initial WebSocket handshake to give then a chance to to the BEEP
+  greetings. Discovered by turbulence reg test (test_25) with a low
+  resources machine.
+
+* [new] Added new extension library (vortex external) that allows to
+  create BEEP connections over external created and unknown transports
+  provided they have a socket like watchable API and connection
+  oriented state.  API added:
+
+    - vortex_external_setup_new  
+    - vortex_external_setup_ref
+    - vortex_external_setup_unref
+    - vortex_external_setup_conf
+    - vortex_external_connection_new
+    - vortex_external_listener_new
+    - VORTEX_EXTERNAL_CONF_MUTEX_IO
+    - VORTEX_EXTERNAL_CONF_HOST
+    - VORTEX_EXTERNAL_CONF_PORT
+    - VORTEX_EXTERNAL_ON_PREPARE_HANDLER
+    - VORTEX_EXTERNAL_ON_PREPARE_USER_DATA
+    - VORTEX_EXTERNAL_ON_PREPARE_USER_DATA2
+
+  Added regression test (test_21) to check this new API that for now
+  uses socketpair to create a pair of connected BEEP connections that
+  works at the same time as initiators..
+
+  Updated Vortex Connection internal API to allow skipping naming
+  checking and session setup.
+
+* [fix] Added more code to implement vortex external listener
+  API. Added regression test_22. 
+
+* [fix] Added more updates to vortex_external_listener_new
+  (completed).  Added working regression test (test_22) to check
+  support added. Added additional documentation to explain how to use
+  this.
+
+* [fix] Adding and fixing documentation to include references to BEEP
+  over WebSocket and BEEP over external (like BlueTooth).
+
+* [fix] Adding more documentation updates explaining how to use vortex
+  external module..
+
+* [fix] Removed nopoll.h reference used by vortex_external.h, not
+  needed (reported by Arthur Kristmann)
+
+* [fix] Updated vortex_listener and vortex_external modules to skip
+  naming checking (getnameinfio) when accepting a connection using the
+  external interface.
+
+* [fix] Adding files to build FreeBSD amd64 10.X: 10-x86-64
+
+* [fix] Several updates to compile web-socket and external components
+  for windows build..
+
+* [fix] Several updates to include .def generation without linking it
+  into building process.
+
+* [fix] Several updates to make building process for win64 to produce
+  right .lib files. Simplified configuration...
+
+* [new] Updated vortex ctx API to allow controlling write timeout (to
+  disable it or to increase its default value):
+
+  - vortex_ctx_close_conn_on_write_timeout 
+  - vortex_ctx_write_timeout
+
+* [fix] Updated .def files to cover new apis for write timeout
+  control..
+
+* [new] Adding new API to check what are the number of channels with
+  pending operations at the vortex sequencer..
+
+* [fix] Fixed implementation of vortex_connection_get_pending_msgs..
+
+* [fix] Updated vortex_mutex_create to use CreateSemaphore with a a
+  initial value of 1 rather than CreateMutex to implement a non
+  recursive behaviour for vortex_mutex_lock and vortex_mutex_unlock
+  (Reported by Ralf Konusch).
+  
+* [new] Added support to configure and create recursive mutexes. API
+  added:
+  
+  - vortex_mutex_create_full
+  - VortexMutexConf
+
+* [fix] Updated vortex-regression-client.c to include additional
+  checks to ensure vortex_mutex_create_full with recursive option
+  works well..
+
+* [fix] Added additional code vortex vortex_mutex_unlock to detect if
+  we are working on windows with a mutex or semaphore..
+
+* [fix] Adding additional code to mutex handling (on windows) to be
+  able to differentiate between recursive and non-recursive mutexes and
+  how they are unlocked..
+
+* [fix] Several updates on mutex handling for windows (win32).  Now it
+  uses a internal structure (VortexWin32Mutex) that allows to hold
+  additional information about the kind of mutex (mutex or semaphore)
+  and configuration received.
+
+* [fix] Fixed vortex_tls_get_peer_ssl_digest to use
+  vortex_tls_get_digest (fixes error reported by Ralf Konusch). Added
+  regression test_00g to check vortex_tls_get_digest and updated
+  test_05 to check vortex_tls_get_peer_ssl_digest it is working..
+
+* [fix] Fixed various issues spotted by gcc (5.3.1) at the xml-rpc-gen
+  compiler
+
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organisations to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+04th May 2016, Madrid (Spain)
