@@ -11,7 +11,7 @@
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    id="svg4701"
    version="1.1"
-   inkscape:version="0.47 r22583"
+   inkscape:version="0.91 r"
    width="347.82129"
    height="347.82129"
    sodipodi:docname="vortex-logo.svg"
@@ -26,7 +26,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -78,14 +78,14 @@
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
      inkscape:window-width="1280"
-     inkscape:window-height="953"
+     inkscape:window-height="950"
      id="namedview4703"
      showgrid="false"
-     inkscape:zoom="1.0266448"
-     inkscape:cx="127.65046"
-     inkscape:cy="123.39517"
+     inkscape:zoom="1.451895"
+     inkscape:cx="198.88775"
+     inkscape:cy="154.38067"
      inkscape:window-x="0"
-     inkscape:window-y="23"
+     inkscape:window-y="25"
      inkscape:window-maximized="1"
      inkscape:current-layer="svg4701" />
   <rect
@@ -134,22 +134,13 @@
      sodipodi:nodetypes="cccc" />
   <text
      xml:space="preserve"
-     style="font-size:56.05378723px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;fill:#001b45;fill-opacity:1;stroke:none;font-family:Impact;-inkscape-font-specification:Impact Bold"
-     x="18.121828"
-     y="310.57556"
-     id="text5389"><tspan
-       sodipodi:role="line"
-       id="tspan5391"
-       x="18.121828"
-       y="310.57556">the</tspan></text>
-  <text
-     xml:space="preserve"
-     style="font-size:72.1207428px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Impact;-inkscape-font-specification:Impact Bold"
-     x="116.90926"
-     y="310.0351"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:57.5px;font-family:Impact;-inkscape-font-specification:'Impact Bold';fill:#ffffff;fill-opacity:1;stroke:none"
+     x="98.343285"
+     y="311.12729"
      id="text5389-9"><tspan
        sodipodi:role="line"
        id="tspan5391-6"
-       x="116.90926"
-       y="310.0351">VORTEX</tspan></text>
+       x="98.343285"
+       y="311.12729"
+       style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:57.5px;font-family:'ITC Lubalin Graph Std';-inkscape-font-specification:'ITC Lubalin Graph Std Semi-Bold'">VORTEX</tspan></text>
 </svg>
