@@ -921,7 +921,7 @@ typedef struct _VortexWin32Mutex {
 } VortexWin32Mutex;
 
 #define __OS_THREAD_TYPE__ win32_thread_t
-#define __OS_MUTEX_TYPE__  VortexWin32Mutex
+#define __OS_MUTEX_TYPE__  HANDLE
 #define __OS_COND_TYPE__   win32_cond_t
 
 typedef struct _win32_thread_t {
