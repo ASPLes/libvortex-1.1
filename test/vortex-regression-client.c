@@ -752,7 +752,7 @@ axl_bool test_00b (void) {
 	int                running_threads;
 	int                waiting_threads;
 	VortexCtx        * test_ctx;
-	int                tries = 10;
+	int                tries = 100;
 	VortexAsyncQueue * queue;
 
 	test_ctx = vortex_ctx_new ();
@@ -776,7 +776,7 @@ axl_bool test_00b (void) {
 
 		if (running_threads == 10 && waiting_threads == 10)
 			break;
-		vortex_async_queue_timedpop (queue, 1000);
+		vortex_async_queue_timedpop (queue, 100000);
 		tries--;
 	} /* end if */
 	vortex_async_queue_unref (queue);
@@ -4178,7 +4178,11 @@ axl_bool test_01s1 (void) {
 	while (iterator < 10) {
 		/* call to connection close */
 		conn = vortex_connection_new (ctx, listener_host, LISTENER_PORT, NULL, NULL);
-		if (!vortex_connection_is_ok (conn, axl_false)) {
+		if (! vortex_connection_is_ok (conn, axl_false)) {
+			/* report errors and call to show connection errors */
+			printf ("ERROR: vortex_connection_is_ok (conn, axl_false) reported failure when expected OK\n");
+			show_conn_errors (conn);
+
 			vortex_connection_close (conn);
 			return axl_false;
 		} /* end if */
@@ -4500,7 +4504,7 @@ axl_bool test_01y (void) {
 	printf ("Test 01-y: waiting for socket close to be detected....\n");
 
 	/* wait the library to detect the problem */
-	value = PTR_TO_INT (vortex_async_queue_pop (queue));
+	value = PTR_TO_INT (vortex_async_queue_timedpop (queue, 10000000));
 	printf ("Test 01-y: async queue pop reported: %d\n", value);
 	if (value != 4) {
 		printf ("Test 01-y: expected to receive 4 but found %d...\n", value);
@@ -6653,7 +6657,7 @@ axl_bool  test_02m (void) {
 		/* get a reply */
 		frame = vortex_channel_get_reply (channel, queue);
 		if (frame == NULL) {
-			printf ("ERROR: expected reply from remote side while running mixed replies tests..\n");
+			printf ("ERROR: expected reply from remote side while running mixed replies tests, vortex_channel_get_reply () reported NULL (1)..\n");
 			return axl_false;
 		}
 
@@ -6698,7 +6702,7 @@ axl_bool  test_02m (void) {
 	while (axl_true) {
 		frame = vortex_channel_get_reply (channel, queue);
 		if (frame == NULL) {
-			printf ("ERROR: expected reply from remote side while running mixed replies tests..\n");
+			printf ("WARNING: expected reply from remote side while running mixed replies tests (vortex_channel_get_reply) (2)..\n");
 			continue;
 		}
 		break;
