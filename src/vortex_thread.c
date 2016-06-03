@@ -474,6 +474,9 @@ axl_bool           vortex_mutex_create_full (VortexMutex       * mutex_def, Vort
 #if defined(AXL_OS_WIN32)
 	/* create the mutex, without a name */
 	mutexWin32_def = axl_new (VortexWin32Mutex, 1);
+	if (mutexWin32_def == NULL)
+		return axl_false; /* report failure on memory allocation */
+	
 	if ((conf & VORTEX_MUTEX_CONF_RECURSIVE) == VORTEX_MUTEX_CONF_RECURSIVE) {
 		mutexWin32_def->mutex     = CreateMutex (NULL, FALSE, NULL); 
 		mutexWin32_def->recursive = axl_true;
@@ -528,9 +531,13 @@ axl_bool  vortex_mutex_destroy (VortexMutex       * mutex_def)
 #if defined(AXL_OS_WIN32)
 	/* close the mutex */
 	mutexWin32_def = (VortexWin32Mutex*) *mutex_def;
+	if (mutexWin32_def == NULL)
+		return axl_false; /* skip working with nullified versions */
+	
 	CloseHandle (mutexWin32_def->mutex);
 	mutexWin32_def->mutex = NULL;
 	axl_free (mutexWin32_def);
+	
 #elif defined(AXL_OS_UNIX)
 	/* close the mutex */
 	if (pthread_mutex_destroy (mutex_def) != 0) {
