@@ -526,7 +526,6 @@ AC_SUBST(EXARG_FLAGS)
 
 AC_OUTPUT([
 Makefile
-Makefile.win
 src/Makefile
 tunnel/Makefile
 pull/Makefile
