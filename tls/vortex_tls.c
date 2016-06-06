@@ -2272,6 +2272,14 @@ axlPointer         vortex_tls_get_ssl_object             (VortexConnection * con
  *
  * Source code for this tool is located at: https://github.com/ASPLes/libvortex-1.1/tree/master/tls/vortex-digest-tool.c
  *
+ * To get the digest, it will be:
+ *
+ * \code
+ * > ./vortex-digest-tool -v -md5 ../test/test-certificate.pem
+ * INFO: using certificate ../test/test-certificate.pem as source
+ * 57:16:98:1B:71:F5:D3:6A:52:9F:74:F1:29:2E:D2:86
+ * \endcode
+ *
  *
  *
  */
