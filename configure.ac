@@ -262,6 +262,52 @@ if test x$enable_tls_support = xyes ; then
       TLS_LIBS="-lssl -lcrypto"
       AC_SUBST(TLS_LIBS)
    fi
+
+AC_CHECK_LIB(ssl,SSLv23_method,  ssl_sslv23_supported=yes, ssl_sslv23_supported=no)
+ssl_sslv23_header=""
+if test x$ssl_sslv23_supported = xyes; then
+   export ssl_sslv23_header="/**
+ * @brief Indicates where we have support for SSL v.3 support.
+ */
+#define VORTEX_HAVE_SSLv23_ENABLED (1)"
+fi
+
+AC_CHECK_LIB(ssl,TLSv1_method,   ssl_tlsv1_supported=yes,  ssl_tlsv1_supported=no)
+ssl_tlsv1_header=""
+if test x$ssl_tlsv1_supported = xyes; then
+   export ssl_tlsv1_header="/**
+ * @brief Indicates where we have support for TLSv1.0 support.
+ */
+#define VORTEX_HAVE_TLSv10_ENABLED (1)"
+fi
+
+AC_CHECK_LIB(ssl,TLSv1_1_method, ssl_tlsv11_supported=yes, ssl_tlsv11_supported=no)
+ssl_tlsv11_header=""
+if test x$ssl_tlsv11_supported = xyes; then
+   export ssl_tlsv11_header="/**
+ * @brief Indicates where we have support for TLSv1.1 support.
+ */
+#define VORTEX_HAVE_TLSv11_ENABLED (1)"
+fi
+
+AC_CHECK_LIB(ssl,TLSv1_2_method, ssl_tlsv12_supported=yes, ssl_tlsv12_supported=no)
+ssl_tlsv12_header=""
+if test x$ssl_tlsv12_supported = xyes; then
+   export ssl_tlsv12_header="/**
+ * @brief Indicates where we have support for TLSv1.2 support.
+ */
+#define VORTEX_HAVE_TLSv12_ENABLED (1)"
+fi
+
+AC_CHECK_LIB(ssl,TLS_client_method, ssl_tls_flexible_supported=yes, ssl_tls_flexible_supported=no)
+ssl_tls_flexible_header=""
+if test x$ssl_tls_flexible_supported = xyes; then
+   export ssl_tls_flexible_header="/**
+ * @brief Indicates where we have support for TLS flexible method where the highest TLS version will be negotiated.
+ */
+#define VORTEX_HAVE_TLS_FLEXIBLE_ENABLED (1)"
+fi
+
 fi
 AM_CONDITIONAL(ENABLE_TLS_SUPPORT, test "x$enable_tls_support" = "xyes")
 
@@ -577,6 +623,11 @@ echo "      epoll(2) support:            [$enable_cv_epoll]"
 echo "      default:                     [$default_platform]"
 echo "      debug log support:           [$enable_vortex_log]"
 echo "      release prefix:              [$enable_release_prefix]"
+echo "   OpenSSL TLS protocol versions detected:"
+echo "      SSLv23:  $ssl_sslv23_supported"
+echo "      TLSv1.0: $ssl_tlsv1_supported"
+echo "      TLSv1.1: $ssl_tlsv11_supported"
+echo "      TLSv1.2: $ssl_tlsv12_supported"
 echo "      pthread cflags: $PTHREAD_CFLAGS, libs=$PTHREAD_LIBS"
 echo "      additional libs: $ADDITIONAL_LIBS"
 echo "      axl flags: $AXL_CFLAGS"
