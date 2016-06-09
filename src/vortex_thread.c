@@ -502,9 +502,11 @@ axl_bool           vortex_mutex_create_full (VortexMutex       * mutex_def, Vort
 
 		/* create recursive mutex */
 		if (pthread_mutex_init (mutex_def, &attr) != 0) {
+			pthread_mutexattr_destroy (&attr);
 			/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to create mutex (system call pthread_mutex_init have failed)"); */
 			return axl_false;
 		} /* end if */
+		pthread_mutexattr_destroy (&attr);
 	} /* end if */
 #endif
 	/* mutex created */
