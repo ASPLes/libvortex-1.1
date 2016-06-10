@@ -1,3 +1,5 @@
+#include <vortex.h>
+
 #include <openssl/x509v3.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -26,7 +28,7 @@ int main (int argc, char ** argv) {
 	
 	char           * result;
 
-	VortexCtx      * ctx  = vortex_ctx_new ();
+	VortexCtx      * ctx     = vortex_ctx_new ();
 	axl_bool         verbose = axl_false;
 	/* axl_bool         md5     = axl_true; */
 	axl_bool         sha1    = axl_false;
@@ -35,8 +37,12 @@ int main (int argc, char ** argv) {
 	char           * arg_value;
 	const char     * file;
 
+	/* init vortex module */
+	if (! vortex_init_ctx (ctx)) {
+		printf ("ERROR: failed to init Vortex engine, vortex_init_ctx (ctx) failed\n");
+		exit (-1);
+	} /* end if */
 
-	
 	iterator = 0;
 	file     = NULL;
 	while (iterator < argc) {
@@ -97,10 +103,24 @@ int main (int argc, char ** argv) {
 	if (verbose)
 		printf ("INFO: using certificate %s as source\n", file);
 
+	printf ("INFO: using certificate %s (SSL_CTX_use_certificate_file)\n", file);
 	sslctx = SSL_CTX_new (TLSv1_server_method ());
-	SSL_CTX_use_certificate_file (sslctx, file, SSL_FILETYPE_PEM);
+	if (sslctx == NULL) {
+		printf ("ERROR: SSL_CTX_new () method failed, reported NULL pointer..\n");
+		exit (-1);
+	}
+
+	if (SSL_CTX_use_certificate_file (sslctx, file, SSL_FILETYPE_PEM) != 1) {
+		printf ("ERROR: SSL_CTX_use_certificate_file (failed), showing error stack\n");
+		exit (-1);
+	}
+
 	ssl    = SSL_new (sslctx);
-	crt    = SSL_get_certificate(ssl);	
+	if (ssl == NULL) {
+		printf ("ERROR: SSL_new (sslctx) failed, reporting ssl NULL reference..\n");
+		exit (-1);
+	}
+	crt    = SSL_get_certificate (ssl);	
 	
 	digest_method = EVP_md5 ();
 
@@ -119,6 +139,10 @@ int main (int argc, char ** argv) {
 	
 	/* call base implementation */
 	result = vortex_tls_get_digest_sized (sha1 ? VORTEX_SHA1 : VORTEX_MD5, (const char *) message, message_size);
+
+	/* finish vortex */
+	vortex_exit_ctx (ctx, axl_true);
+
 	if (result) {
 		printf ("%s\n", result);
 		axl_free (result);

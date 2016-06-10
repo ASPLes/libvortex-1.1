@@ -27,7 +27,7 @@ RM = rm -f
 
 .PHONY: all clean
 
-all: $(DLL)
+all: $(DLL) vortex-digest-tool.exe
 
 clean: 
 	${RM} $(OBJ) $(DLL) *.a *.dll.a *.lib *.dll
@@ -35,6 +35,9 @@ clean:
 install: all
 	test -d $(INSTALL_DIR) || exit -1
 	cp libvortex-tls-1.1.dll $(INSTALL_DIR)
+
+vortex-digest-tool.exe: vortex-digest-tool.c
+	$(CC) -m$(MODE) $(CFLAGS) $< -o $@ $(LIBS) libvortex-tls-1.1.dll
 
 $(DLL): $(OBJ)
 # add the following line to create an import library. At this point this step
