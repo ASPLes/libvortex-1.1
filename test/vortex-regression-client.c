@@ -9385,6 +9385,62 @@ axl_bool test_05_a1 (void)
 #endif	
 }
 
+axl_bool test_05_a2 (void) 
+{
+#if defined(ENABLE_TLS_SUPPORT)
+	/* vortex connection */
+	VortexConnection * connection;
+	VortexStatus       status;
+	char             * status_message = NULL;
+	char             * peer_certificate;
+
+	/* initialize and check if current vortex library supports TLS */
+	if (! vortex_tls_init (ctx)) {
+		printf ("--- WARNING: Unable to activate TLS, current vortex library has not TLS support activated. \n");
+		return axl_true;
+	}
+
+	/* connect to the remote side */
+	connection = vortex_connection_new (ctx, listener_host, LISTENER_PORT, NULL, NULL);
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		printf ("ERROR: expected to find connection reference error, but found it working..\n");
+		return axl_false;
+	}
+
+	/* get connection negotiation */
+	connection    = vortex_tls_start_negotiation_sync (connection, NULL, 
+							   &status,
+							   &status_message);
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		printf ("ERROR: expected to find connection reference..\n");
+		return axl_false;
+	}
+
+	printf ("Test 05-a2: connection ok with TLS enabled, get peer certificate..\n");
+
+	peer_certificate = vortex_tls_get_peer_ssl_digest (connection, VORTEX_MD5);
+	printf ("  - %s\n", peer_certificate);
+	
+	printf ("Test 05-a2: running vortex-digest-tool test-certificate.pem:\n");
+	printf ("            57:16:98:1B:71:F5:D3:6A:52:9F:74:F1:29:2E:D2:86\n");
+
+	if (! axl_cmp (peer_certificate, "57:16:98:1B:71:F5:D3:6A:52:9F:74:F1:29:2E:D2:86")) {
+		printf ("Certificate does not matches with value expected: %s\n", peer_certificate);
+		return axl_false;
+	} /* end if */
+
+	axl_free (peer_certificate);
+		
+	/* close the conenction */
+	vortex_connection_close (connection);
+
+	return axl_true;
+#else
+	printf ("--- WARNING: Current build does not have TLS support.\n");
+	return axl_true;
+#endif	
+}
+
 axl_bool test_05_b (void)
 {
 #if defined(ENABLE_TLS_SUPPORT)
@@ -15727,6 +15783,9 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_05a1"))
 			run_test (test_05_a1, "Test 05-a1", "Check auto-tls on forced failure in the middle (09/07/2012)", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_05a2"))
+			run_test (test_05_a2, "Test 05-a2", "Check vortex-digest-tool and vortex_tls_get_peer_ssl_digest ()", -1, -1);
+
 		if (check_and_run_test (run_test_name, "test_05b"))
 			run_test (test_05_b, "Test 05-b", "TLS client blocked during connection close (14/12/2009)", -1, -1);
 
@@ -16010,6 +16069,8 @@ int main (int  argc, char ** argv)
  	run_test (test_05_a, "Test 05-a", "Check auto-tls on fail fix (24/03/2008)", -1, -1);
 
  	run_test (test_05_a1, "Test 05-a1", "Check auto-tls on forced failure in the middle (09/07/2012)", -1, -1);
+
+	run_test (test_05_a2, "Test 05-a2", "Check vortex-digest-tool and vortex_tls_get_peer_ssl_digest ()", -1, -1);
 
 	run_test (test_05_b, "Test 05-b", "TLS client blocked during connection close (14/12/2009)", -1, -1);
 
