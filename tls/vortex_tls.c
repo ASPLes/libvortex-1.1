@@ -1974,7 +1974,38 @@ void __vortex_tls_start_negotiation_sync_process (VortexConnection * connection,
 	return;
 }
 
+/** 
+ * @internal Internal function to translate a string into an octal format
+ * 
+ * @param len length of string.
+ * @param buffer string.
+ * 
+ * @return octal string.
+ */
+char* __translateToOctal (unsigned int len, unsigned char* buffer)
+{
+	char*           result = NULL;
+	unsigned int   iterator;
 
+
+	/* translate it into a octal format, allocate enough memory
+	 * for the result */
+	result = axl_new (char, (len * 3) + 1);
+
+	/* translate value returned into an octal representation */
+	for (iterator = 0; iterator < len; iterator++) {
+#if defined(AXL_OS_WIN32) && ! defined(__GNUC__)
+		sprintf_s (result + (iterator * 3), (len - iterator) * 3, "%02X%s", 
+			   buffer [iterator], 
+			   (iterator + 1 != len) ? ":" : "");
+#else	
+		sprintf (result + (iterator * 3), "%02X%s", 
+			 buffer [iterator], 
+			 (iterator + 1 != len) ? ":" : "");
+#endif
+	}
+	return result;
+}
 
 /** 
  * @brief Allows to start a TLS profile negotiation in a synchronous
@@ -2325,7 +2356,59 @@ char             * vortex_tls_get_peer_ssl_digest        (VortexConnection   * c
 	} 
 
 	/* call base implementation */
-	return vortex_tls_get_digest_sized (method, (const char *) message, message_size);
+  return __translateToOctal(message_size, message);
+}
+
+/** 
+ * @brief Allows to return the certificate digest from a local stored
+ * certificate file (this is also called the certificate fingerprint).
+ * 
+ * @param path Treference to pathname of the certificate file.
+ * 
+ * @param method This is the digest method to use.
+ * 
+ * @return A newly allocated fingerprint or NULL if it fails. If NULL
+ * is returned there is a TLS error (certificate not provided), the 
+ * file don't exist or the system is out of memory.
+ */
+char* vortex_tls_get_ssl_digest (const char * path, VortexDigestMethod   method)
+{
+  const EVP_MD   * digest_method = NULL;
+  SSL_CTX        * sslctx;
+  SSL            * ssl;
+  X509           * crt;
+  unsigned int   message_size;
+  unsigned char  message [EVP_MAX_MD_SIZE];
+
+	/* configure method digest */
+	switch (method) {
+	case VORTEX_SHA1:
+		digest_method = EVP_sha1 ();
+		break;
+	case VORTEX_MD5:
+		digest_method = EVP_md5 ();
+		break;
+	case VORTEX_DIGEST_NUM:
+		/* do nothing */
+		return NULL;
+	}
+  sslctx = SSL_CTX_new (TLSv1_server_method ());
+  SSL_CTX_use_certificate_file (sslctx, path,  SSL_FILETYPE_PEM);
+  ssl    = SSL_new (sslctx);
+  crt    = SSL_get_certificate(ssl);	
+	
+  if (crt == NULL) {
+		printf ("ERROR: failed to get certificate from from SSL object..\n");
+    return NULL;
+  }
+		
+  /* get the message digest and check */
+  if (! X509_digest (crt, digest_method, message, &message_size)) {
+	  printf ("ERROR: failed to get digest out of certificate, X509_digest () failed..\n");
+    return NULL;
+  } /* end if */
+
+  return __translateToOctal(message_size, message);
 }
 
 /** 
@@ -2370,7 +2453,6 @@ char             * vortex_tls_get_digest_sized           (VortexDigestMethod   m
 	unsigned char   buffer[EVP_MAX_MD_SIZE];
 	EVP_MD_CTX      mdctx;
 	const EVP_MD  * md = NULL;
-	int             iterator;
 #ifdef __SSL_0_97__
 	unsigned int   md_len;
 #else
@@ -2409,23 +2491,7 @@ char             * vortex_tls_get_digest_sized           (VortexDigestMethod   m
 	EVP_DigestFinal (&mdctx, buffer, &md_len);
 #endif
 
-	/* translate it into a octal format, allocate enough memory
-	 * for the result */
-	result = axl_new (char, (md_len * 3) + 1);
-
-	/* translate value returned into an octal representation */
-	for (iterator = 0; iterator < md_len; iterator++) {
-#if defined(AXL_OS_WIN32) && ! defined(__GNUC__)
-		sprintf_s (result + (iterator * 3), (md_len - iterator) * 3, "%02X%s", 
-			   buffer [iterator], 
-			   (iterator + 1 != md_len) ? ":" : "");
-#else	
-		sprintf (result + (iterator * 3), "%02X%s", 
-			 buffer [iterator], 
-			 (iterator + 1 != md_len) ? ":" : "");
-#endif
-	}
-	
+	result = __translateToOctal(md_len, buffer);
 	/* return the digest */
 	return result;
 }

@@ -18,14 +18,6 @@ void show_help_message (int argc, char ** argv) {
 
 int main (int argc, char ** argv) {
 	const EVP_MD   * digest_method = NULL;
-	SSL_CTX        * sslctx;
-	SSL            * ssl;
-	X509           * crt;
-	
-	/* variable declaration */
-	unsigned int     message_size;
-	unsigned char    message [EVP_MAX_MD_SIZE];
-	
 	char           * result;
 
 	VortexCtx      * ctx     = vortex_ctx_new ();
@@ -103,42 +95,9 @@ int main (int argc, char ** argv) {
 	if (verbose)
 		printf ("INFO: using certificate %s as source\n", file);
 
-	printf ("INFO: using certificate %s (SSL_CTX_use_certificate_file)\n", file);
-	sslctx = SSL_CTX_new (TLSv1_server_method ());
-	if (sslctx == NULL) {
-		printf ("ERROR: SSL_CTX_new () method failed, reported NULL pointer..\n");
-		exit (-1);
-	}
 
-	if (SSL_CTX_use_certificate_file (sslctx, file, SSL_FILETYPE_PEM) != 1) {
-		printf ("ERROR: SSL_CTX_use_certificate_file (failed), showing error stack\n");
-		exit (-1);
-	}
-
-	ssl    = SSL_new (sslctx);
-	if (ssl == NULL) {
-		printf ("ERROR: SSL_new (sslctx) failed, reporting ssl NULL reference..\n");
-		exit (-1);
-	}
-	crt    = SSL_get_certificate (ssl);	
-	
-	digest_method = EVP_md5 ();
-
-	if (crt == NULL) {
-		if (verbose)
-			printf ("ERROR: failed to get certificate from from SSL object..\n");
-		exit (-1);
-	} /* end if */
-	
-	/* get the message digest and check */
-	if (! X509_digest (crt, digest_method, message, &message_size)) {
-		if (verbose)
-			printf ("ERROR: failed to get digest out of certificate, X509_digest () failed..\n");
-		return -1;
-	} /* end if */
-	
-	/* call base implementation */
-	result = vortex_tls_get_digest_sized (sha1 ? VORTEX_SHA1 : VORTEX_MD5, (const char *) message, message_size);
+  /* call base implementation */
+	result = vortex_tls_get_ssl_digest (file, sha1 ? VORTEX_SHA1 : VORTEX_MD5);
 
 	/* finish vortex */
 	vortex_exit_ctx (ctx, axl_true);
@@ -148,6 +107,10 @@ int main (int argc, char ** argv) {
 		axl_free (result);
 		return 0;
 	}
+  else{
+			printf ("ERROR: failed to get certificate from from SSL object..\n");
+      exit (-1);
+  }
 
 	if (verbose)
 		printf ("ERROR, failed to return digest\n");
