@@ -17,7 +17,6 @@ void show_help_message (int argc, char ** argv) {
 }
 
 int main (int argc, char ** argv) {
-	const EVP_MD   * digest_method = NULL;
 	char           * result;
 
 	VortexCtx      * ctx     = vortex_ctx_new ();
@@ -96,7 +95,7 @@ int main (int argc, char ** argv) {
 		printf ("INFO: using certificate %s as source\n", file);
 
 
-  /* call base implementation */
+	/* call base implementation */
 	result = vortex_tls_get_ssl_digest (file, sha1 ? VORTEX_SHA1 : VORTEX_MD5);
 
 	/* finish vortex */
@@ -106,11 +105,10 @@ int main (int argc, char ** argv) {
 		printf ("%s\n", result);
 		axl_free (result);
 		return 0;
+	} else {
+		printf ("ERROR: failed to get certificate from from SSL object..\n");
+		exit (-1);
 	}
-  else{
-			printf ("ERROR: failed to get certificate from from SSL object..\n");
-      exit (-1);
-  }
 
 	if (verbose)
 		printf ("ERROR, failed to return digest\n");
