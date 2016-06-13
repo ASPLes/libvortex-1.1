@@ -2256,6 +2256,32 @@ axlPointer         vortex_tls_get_ssl_object             (VortexConnection * con
  * @return A newly allocated fingerprint or NULL if it fails. If NULL
  * is returned there is a TLS error (certificate not provided) or the
  * system is out of memory.
+ *
+ * <b>About getting a digest that matches this function's result</b>
+ *
+ * This function returns the digest of X509_digest's result from the
+ * certificate. That way, the value reported by this function will not
+ * match the value reported by calling to openssl over the certificate used:
+ *
+ * \code
+ * >> openssl x509 -noout -in test-certificate.pem -fingerprint -md5
+ * \endcode
+ *
+ * If you want to get the digest that matches this function out of the
+ * file, use the tool and example provided for that: <b>vortex-digest-tool</b>
+ *
+ * Source code for this tool is located at: https://github.com/ASPLes/libvortex-1.1/tree/master/tls/vortex-digest-tool.c
+ *
+ * To get the digest, it will be:
+ *
+ * \code
+ * > ./vortex-digest-tool -v -md5 ../test/test-certificate.pem
+ * INFO: using certificate ../test/test-certificate.pem as source
+ * 57:16:98:1B:71:F5:D3:6A:52:9F:74:F1:29:2E:D2:86
+ * \endcode
+ *
+ *
+ *
  */
 char             * vortex_tls_get_peer_ssl_digest        (VortexConnection   * connection, 
 							  VortexDigestMethod   method)

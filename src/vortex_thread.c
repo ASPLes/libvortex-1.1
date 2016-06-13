@@ -461,6 +461,10 @@ axl_bool  vortex_mutex_create  (VortexMutex       * mutex_def)
  */
 axl_bool           vortex_mutex_create_full (VortexMutex       * mutex_def, VortexMutexConf conf)
 {
+#if defined(AXL_OS_WIN32)
+	VortexWin32Mutex* mutexWin32_def;
+#endif
+
 #if defined(AXL_OS_UNIX)
 	pthread_mutexattr_t attr;
 #endif
@@ -469,16 +473,21 @@ axl_bool           vortex_mutex_create_full (VortexMutex       * mutex_def, Vort
 
 #if defined(AXL_OS_WIN32)
 	/* create the mutex, without a name */
+	mutexWin32_def = axl_new (VortexWin32Mutex, 1);
+	if (mutexWin32_def == NULL)
+		return axl_false; /* report failure on memory allocation */
+	
 	if ((conf & VORTEX_MUTEX_CONF_RECURSIVE) == VORTEX_MUTEX_CONF_RECURSIVE) {
-		mutex_def->mutex     = CreateMutex (NULL, FALSE, NULL); 
-		mutex_def->recursive = axl_true;
+		mutexWin32_def->mutex     = CreateMutex (NULL, FALSE, NULL); 
+		mutexWin32_def->recursive = axl_true;
 	} else if ((conf & VORTEX_MUTEX_CONF_NONRECURSIVE) == VORTEX_MUTEX_CONF_NONRECURSIVE) {
-		mutex_def->mutex     = CreateSemaphore (NULL, 1, 1, NULL);
-		mutex_def->recursive = axl_false;
+		mutexWin32_def->mutex     = CreateSemaphore (NULL, 1, 1, NULL);
+		mutexWin32_def->recursive = axl_false;
 	}
 
 	/* record configuration */
-	mutex_def->conf      = conf;
+	mutexWin32_def->conf      = conf;
+	*mutex_def = mutexWin32_def;
 	
 #elif defined(AXL_OS_UNIX)
 	if ((conf & VORTEX_MUTEX_CONF_NONRECURSIVE) == VORTEX_MUTEX_CONF_NONRECURSIVE) {
@@ -493,9 +502,11 @@ axl_bool           vortex_mutex_create_full (VortexMutex       * mutex_def, Vort
 
 		/* create recursive mutex */
 		if (pthread_mutex_init (mutex_def, &attr) != 0) {
+			pthread_mutexattr_destroy (&attr);
 			/* vortex_log (VORTEX_LEVEL_CRITICAL, "unable to create mutex (system call pthread_mutex_init have failed)"); */
 			return axl_false;
 		} /* end if */
+		pthread_mutexattr_destroy (&attr);
 	} /* end if */
 #endif
 	/* mutex created */
@@ -514,12 +525,21 @@ axl_bool           vortex_mutex_create_full (VortexMutex       * mutex_def, Vort
  */
 axl_bool  vortex_mutex_destroy (VortexMutex       * mutex_def)
 {
+#if defined(AXL_OS_WIN32)
+	VortexWin32Mutex* mutexWin32_def;
+#endif
 	v_return_val_if_fail (mutex_def, axl_false);
 
 #if defined(AXL_OS_WIN32)
 	/* close the mutex */
-	CloseHandle (mutex_def->mutex);
-	mutex_def->mutex = NULL;
+	mutexWin32_def = (VortexWin32Mutex*) *mutex_def;
+	if (mutexWin32_def == NULL)
+		return axl_false; /* skip working with nullified versions */
+	
+	CloseHandle (mutexWin32_def->mutex);
+	mutexWin32_def->mutex = NULL;
+	axl_free (mutexWin32_def);
+	
 #elif defined(AXL_OS_UNIX)
 	/* close the mutex */
 	if (pthread_mutex_destroy (mutex_def) != 0) {
@@ -555,12 +575,16 @@ axl_bool  vortex_mutex_destroy (VortexMutex       * mutex_def)
  */
 void vortex_mutex_lock    (VortexMutex       * mutex_def)
 {
+#if defined(AXL_OS_WIN32)
+	VortexWin32Mutex* mutexWin32_def;
+#endif
 	if (mutex_def == NULL)
 		return;
 
 #if defined(AXL_OS_WIN32)
 	/* lock the mutex */
-	WaitForSingleObject (mutex_def->mutex, INFINITE);
+	mutexWin32_def = (VortexWin32Mutex*) *mutex_def;
+	WaitForSingleObject (mutexWin32_def->mutex, INFINITE);
 #elif defined(AXL_OS_UNIX)
 	/* lock the mutex */
 	if (pthread_mutex_lock (mutex_def) != 0) {
@@ -582,15 +606,19 @@ void vortex_mutex_lock    (VortexMutex       * mutex_def)
  */
 void vortex_mutex_unlock  (VortexMutex       * mutex_def)
 {
+#if defined(AXL_OS_WIN32)
+	VortexWin32Mutex* mutexWin32_def;
+#endif
 	if (mutex_def == NULL)
 		return;
 
 #if defined(AXL_OS_WIN32)
 	/* unlock mutex */
-	if (mutex_def->recursive)
-		ReleaseMutex (mutex_def->mutex);
+	mutexWin32_def = (VortexWin32Mutex*) *mutex_def;
+	if (mutexWin32_def->recursive)
+		ReleaseMutex (mutexWin32_def->mutex);
 	else
-		ReleaseSemaphore (mutex_def->mutex, 1, NULL);
+		ReleaseSemaphore (mutexWin32_def->mutex, 1, NULL);
 	
 #elif defined(AXL_OS_UNIX)
 	/* unlock mutex */
@@ -761,6 +789,8 @@ axl_bool  __vortex_cond_common_wait_win32 (VortexCond * cond, VortexMutex * mute
 					   int milliseconds, axl_bool  wait_infinite)
 {
 	axl_bool   last_waiter;
+	VortexWin32Mutex* mutexWin32_def;
+	mutexWin32_def = (VortexWin32Mutex*) *mutex;
 
 	/* Avoid race conditions. */
 	EnterCriticalSection (&cond->waiters_count_lock_);
@@ -771,9 +801,9 @@ axl_bool  __vortex_cond_common_wait_win32 (VortexCond * cond, VortexMutex * mute
 	 * semaphore until \ref vortex_cond_signal or \ref
 	 * vortex_cond_broadcast> are called by another thread. */
 	if (wait_infinite)
-		SignalObjectAndWait (mutex->mutex, cond->sema_, INFINITE, FALSE);
+		SignalObjectAndWait (mutexWin32_def->mutex, cond->sema_, INFINITE, FALSE);
 	else
-		SignalObjectAndWait (mutex->mutex, cond->sema_, milliseconds, FALSE);
+		SignalObjectAndWait (mutexWin32_def->mutex, cond->sema_, milliseconds, FALSE);
 
 
 	/* Reacquire lock to avoid race conditions. */
@@ -795,11 +825,11 @@ axl_bool  __vortex_cond_common_wait_win32 (VortexCond * cond, VortexMutex * mute
 		 * event and waits until it can acquire the
 		 * <mutex>.  This is required to ensure
 		 * fairness.  */
-		SignalObjectAndWait (cond->waiters_done_, mutex->mutex, INFINITE, FALSE);
+		SignalObjectAndWait (cond->waiters_done_, mutexWin32_def->mutex, INFINITE, FALSE);
 	} else {
 		/* Always regain the mutex since that's the guarantee we
 		 * give to our callers. */
-		WaitForSingleObject (mutex->mutex, INFINITE);
+		WaitForSingleObject (mutexWin32_def->mutex, INFINITE);
 	} /* end if */
 
 	return axl_true;

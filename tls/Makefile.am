@@ -4,6 +4,8 @@ if ENABLE_VORTEX_LOG
 INCLUDE_VORTEX_LOG=-DENABLE_VORTEX_LOG
 endif
 
+bin_PROGRAMS    = vortex-digest-tool
+
 INCLUDES = -I. -I$(top_srcdir)/src $(compiler_options) -I$(top_srcdir) -D__COMPILING_VORTEX__ -D__axl_disable_broken_bool_def__  \
 	$(AXL_CFLAGS) $(INCLUDE_VORTEX_LOG) $(PTHREAD_CFLAGS) $(TLS_CFLAGS) \
 	-DVERSION=\""$(VORTEX_VERSION)"\" \
@@ -20,7 +22,10 @@ libvortex_tls_1_1_include_HEADERS = vortex_tls.h vortex-tls.dtd.h
 libvortex_tls_1_1_la_LIBADD = \
 	$(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS) $(TLS_LIBS) $(top_builddir)/src/libvortex-1.1.la 
 
-libvortex_tls_1_1_la_LDFLAGS = -no-undefined -export-symbols-regex '^(vortex|__vortex|_vortex).*' 
+libvortex_tls_1_1_la_LDFLAGS = -no-undefined -export-symbols-regex '^(vortex|__vortex|_vortex).*'
+
+vortex_digest_tool_SOURCES          = vortex-digest-tool.c 
+vortex_digest_tool_LDADD            = $(AXL_LIBS) $(LIBS) $(top_builddir)/src/libvortex-1.1.la libvortex-tls-1.1.la $(TLS_LIBS)
 
 libvortex-tls-1.1.def: update-def
 
