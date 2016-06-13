@@ -2356,7 +2356,7 @@ char             * vortex_tls_get_peer_ssl_digest        (VortexConnection   * c
 	} 
 
 	/* call base implementation */
-	return __vortex_tls_translateToOctal(message_size, message);
+	return __vortex_tls_translateToOctal (message_size, message);
 }
 
 /** 
@@ -2418,7 +2418,7 @@ char* vortex_tls_get_ssl_digest (const char * path, VortexDigestMethod   method)
 	SSL_free (ssl);
 	SSL_CTX_free (sslctx);
 	
-	return __vortex_tls_translateToOctal(message_size, message);
+	return __vortex_tls_translateToOctal (message_size, message);
 }
 
 /** 
@@ -2501,7 +2501,7 @@ char             * vortex_tls_get_digest_sized           (VortexDigestMethod   m
 	EVP_DigestFinal (&mdctx, buffer, &md_len);
 #endif
 	
-	result = __vortex_tls_translateToOctal(md_len, buffer);
+	result = __vortex_tls_translateToOctal (md_len, buffer);
 	
 	/* return the digest */
 	return result;
