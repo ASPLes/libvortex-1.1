@@ -2356,7 +2356,7 @@ char             * vortex_tls_get_peer_ssl_digest        (VortexConnection   * c
 	} 
 
 	/* call base implementation */
-  return __vortex_tls_translateToOctal(message_size, message);
+	return __vortex_tls_translateToOctal(message_size, message);
 }
 
 /** 
@@ -2392,21 +2392,31 @@ char* vortex_tls_get_ssl_digest (const char * path, VortexDigestMethod   method)
 		/* do nothing */
 		return NULL;
 	}
+	
 	sslctx = SSL_CTX_new (TLSv1_server_method ());
 	SSL_CTX_use_certificate_file (sslctx, path,  SSL_FILETYPE_PEM);
 	ssl    = SSL_new (sslctx);
 	crt    = SSL_get_certificate(ssl);	
 	
 	if (crt == NULL) {
+		SSL_free (ssl);
+		SSL_CTX_free (sslctx);
 		printf ("ERROR: failed to get certificate from from SSL object..\n");
 		return NULL;
 	}
 	
 	/* get the message digest and check */
 	if (! X509_digest (crt, digest_method, message, &message_size)) {
+		X509_free (crt);
+		SSL_free (ssl);
+		SSL_CTX_free (sslctx);
 		printf ("ERROR: failed to get digest out of certificate, X509_digest () failed..\n");
 		return NULL;
 	} /* end if */
+
+	X509_free (crt);
+	SSL_free (ssl);
+	SSL_CTX_free (sslctx);
 	
 	return __vortex_tls_translateToOctal(message_size, message);
 }
