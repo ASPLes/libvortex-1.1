@@ -1982,7 +1982,7 @@ void __vortex_tls_start_negotiation_sync_process (VortexConnection * connection,
  * 
  * @return octal string.
  */
-char* __translateToOctal (unsigned int len, unsigned char* buffer)
+char* __vortex_tls_translateToOctal (unsigned int len, unsigned char* buffer)
 {
 	char*           result = NULL;
 	unsigned int   iterator;
@@ -2356,7 +2356,7 @@ char             * vortex_tls_get_peer_ssl_digest        (VortexConnection   * c
 	} 
 
 	/* call base implementation */
-  return __translateToOctal(message_size, message);
+	return __vortex_tls_translateToOctal (message_size, message);
 }
 
 /** 
@@ -2373,13 +2373,13 @@ char             * vortex_tls_get_peer_ssl_digest        (VortexConnection   * c
  */
 char* vortex_tls_get_ssl_digest (const char * path, VortexDigestMethod   method)
 {
-  const EVP_MD   * digest_method = NULL;
-  SSL_CTX        * sslctx;
-  SSL            * ssl;
-  X509           * crt;
-  unsigned int   message_size;
-  unsigned char  message [EVP_MAX_MD_SIZE];
-
+	const EVP_MD   * digest_method = NULL;
+	SSL_CTX        * sslctx;
+	SSL            * ssl;
+	X509           * crt;
+	unsigned int   message_size;
+	unsigned char  message [EVP_MAX_MD_SIZE];
+	
 	/* configure method digest */
 	switch (method) {
 	case VORTEX_SHA1:
@@ -2392,23 +2392,33 @@ char* vortex_tls_get_ssl_digest (const char * path, VortexDigestMethod   method)
 		/* do nothing */
 		return NULL;
 	}
-  sslctx = SSL_CTX_new (TLSv1_server_method ());
-  SSL_CTX_use_certificate_file (sslctx, path,  SSL_FILETYPE_PEM);
-  ssl    = SSL_new (sslctx);
-  crt    = SSL_get_certificate(ssl);	
 	
-  if (crt == NULL) {
+	sslctx = SSL_CTX_new (TLSv1_server_method ());
+	SSL_CTX_use_certificate_file (sslctx, path,  SSL_FILETYPE_PEM);
+	ssl    = SSL_new (sslctx);
+	crt    = SSL_get_certificate(ssl);	
+	
+	if (crt == NULL) {
+		SSL_free (ssl);
+		SSL_CTX_free (sslctx);
 		printf ("ERROR: failed to get certificate from from SSL object..\n");
-    return NULL;
-  }
-		
-  /* get the message digest and check */
-  if (! X509_digest (crt, digest_method, message, &message_size)) {
-	  printf ("ERROR: failed to get digest out of certificate, X509_digest () failed..\n");
-    return NULL;
-  } /* end if */
+		return NULL;
+	}
+	
+	/* get the message digest and check */
+	if (! X509_digest (crt, digest_method, message, &message_size)) {
+		X509_free (crt);
+		SSL_free (ssl);
+		SSL_CTX_free (sslctx);
+		printf ("ERROR: failed to get digest out of certificate, X509_digest () failed..\n");
+		return NULL;
+	} /* end if */
 
-  return __translateToOctal(message_size, message);
+	X509_free (crt);
+	SSL_free (ssl);
+	SSL_CTX_free (sslctx);
+	
+	return __vortex_tls_translateToOctal (message_size, message);
 }
 
 /** 
@@ -2458,10 +2468,10 @@ char             * vortex_tls_get_digest_sized           (VortexDigestMethod   m
 #else
 	unsigned int   md_len = EVP_MAX_MD_SIZE;
 #endif
-		
+	
 	if (content == NULL)
 		return NULL;
-
+	
 	/* create the digest method */
 	/* configure method digest */
 	switch (method) {
@@ -2478,7 +2488,7 @@ char             * vortex_tls_get_digest_sized           (VortexDigestMethod   m
 	
 	/* add all digest */
 	/* OpenSSL_add_all_digests(); */
-		
+	
 #ifdef __SSL_0_97__
 	EVP_MD_CTX_init(&mdctx);
 	EVP_DigestInit_ex(&mdctx, md, NULL);
@@ -2490,8 +2500,9 @@ char             * vortex_tls_get_digest_sized           (VortexDigestMethod   m
 	EVP_DigestUpdate (&mdctx, content, content_size);
 	EVP_DigestFinal (&mdctx, buffer, &md_len);
 #endif
-
-	result = __translateToOctal(md_len, buffer);
+	
+	result = __vortex_tls_translateToOctal (md_len, buffer);
+	
 	/* return the digest */
 	return result;
 }

@@ -2095,6 +2095,7 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  *  - \ref vortex_manual_printf_like
  *  - \ref vortex_manual_wait_reply
  *  - \ref vortex_manual_invocation_chain
+ *  - \ref vortex_manual_configuring_serverName
  * 
  *  <b>Section 3: </b>Doing Vortex Library to work like you expect:
  *  profiles, internal configuration and other useful information to
@@ -2794,6 +2795,62 @@ axl_bool vortex_is_exiting           (VortexCtx * ctx)
  * \ref vortex_channel_new which received the frame received handler.</li>
  *
  * </ul>
+ *
+ * \section vortex_manual_configuring_serverName 2.6 Controlling and configuring serverName value 
+ *
+ * BEEP provides support for serverName indication. This, like Host:
+ * header in HTTP and similar protocols allows a listener peer to
+ * provide different configurations, quotas, certificates and policies
+ * (to name some).
+ *
+ * Here is how the serverName value is communicated through BEEP
+ * channels to ensure both ends know what serverName to applying in
+ * all cases, for example, to select the right certificate, apply some
+ * policy, etc...
+ *
+ * Main points to consider about how serverName is handled with BEEP
+ * are:
+ *
+ * - serverName value applies globally to the entire BEEP
+ * session. This means you cannot have a set of channels running with
+ * a serverName and another set running with a different value.
+ *
+ * - serverName value is setup on the first successfully accepted
+ * channel created by any of the peers.
+ *
+ * This means that when you create a BEEP connection
+ * (\ref vortex_connection_new or similar) the serverName is still not
+ * configured.
+ *
+ * Once you are connected, the first channel opened will setup the
+ * serverName for that session.
+ *
+ * To control this and have a consistent value, you can use different methods:
+ *
+ * <ol>
+ * <li>Configure x-serverName header doing something like this:
+ * \code
+ *
+ *	conn = vortex_connection_new_full (peer_address, peer_port,
+ *				           CONN_OPTS (VORTEX_SERVERNAME_FEATURE, "the-server.name.youwant.com", VORTEX_OPTS_END),
+ *					   NULL, NULL);
+ * \endcode
+ * ...this ensure that this is the serverName value to use for any channel created
+ * inside this connection.
+ * </li>
+ *
+ * <li>You can also use \ref VORTEX_SERVERNAME_ACQUIRE to make the
+ * connection to do something similar like VORTEX_SERVERNAME_FEATURE
+ * but taking the serverName information from the host address use to
+ * create the \ref VortexConnection.</li>
+ *
+ * <li>Use serverName parameter at \ref vortex_channel_new_full to ensure the value
+ * is consistent across all channels. </li>
+ *
+ * <li>Again, the first channel opened inside the connection configuring the serverName
+ * will bind that connection to that serverName. Subsequent calls to configure a different
+ * serverName will be ignored (\ref vortex_channel_new_full). </li>
+ * </ol>
  * 
  * \section vortex_manual_profiles 3.1 Defining a profile inside Vortex (or How profiles concept confuse people)
  * 
