@@ -1362,7 +1362,10 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
  * @param serverName A server name value to be notified to the remote
  * peer so it could react in a different way depending on this
  * value. Function will perform a copy from the given value. You can
- * free the passed in value just after the function returns.
+ * free the passed in value just after the function returns. Keep in
+ * mind that this value will be ignored by remote BEEP peer in the
+ * case the serverName was already declared/setup by a previous
+ * channel opened in this BEEP connection (\ref VortexConnection).
  *
  * @param process_status A handler to be executed once the process
  * have finished, no matter its result. This handler is required. Note
