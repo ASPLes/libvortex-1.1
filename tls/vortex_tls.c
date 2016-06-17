@@ -2403,6 +2403,9 @@ char* vortex_tls_get_ssl_digest (const char * path, VortexDigestMethod   method)
 	sslctx = SSL_CTX_new (TLSv1_server_method ());
 	SSL_CTX_use_certificate_file (sslctx, path,  SSL_FILETYPE_PEM);
 	ssl    = SSL_new (sslctx);
+	// Note: SSL_get_certificate() is a getter method that returns a borrowed 
+	// reference to a X509 structure allocated in SSL_new(). It has not to be 
+	// freed explicit using X509_free(), it will be freed in SSL_free().
 	crt    = SSL_get_certificate(ssl);	
 	
 	if (crt == NULL) {
@@ -2414,14 +2417,12 @@ char* vortex_tls_get_ssl_digest (const char * path, VortexDigestMethod   method)
 	
 	/* get the message digest and check */
 	if (! X509_digest (crt, digest_method, message, &message_size)) {
-		X509_free (crt);
 		SSL_free (ssl);
 		SSL_CTX_free (sslctx);
 		printf ("ERROR: failed to get digest out of certificate, X509_digest () failed..\n");
 		return NULL;
 	} /* end if */
 
-	X509_free (crt);
 	SSL_free (ssl);
 	SSL_CTX_free (sslctx);
 	
