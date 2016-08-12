@@ -4614,14 +4614,22 @@ void                vortex_connection_set_host_and_port      (VortexConnection *
  */
 const char        * vortex_connection_get_host_ip            (VortexConnection * connection)
 {
-	struct sockaddr_in     sin;
+	struct sockaddr_in sin;
 #if defined(AXL_OS_WIN32)
 	/* windows flavors */
-	int                    sin_size     = sizeof (sin);
+	int                sin_size     = sizeof (sin);
 #else
 	/* unix flavors */
-	socklen_t              sin_size     = sizeof (sin);
+	socklen_t          sin_size     = sizeof (sin);
 #endif
+	VortexCtx        * ctx;
+
+	/* check input parameters */
+	if (connection == NULL)
+		return NULL;
+	/* setup context */
+	ctx = connection->ctx;
+	
 	/* acquire lock to check if host ip was defined previously */
 	vortex_mutex_lock (&connection->op_mutex);
 	if (connection->host_ip) {
@@ -4629,11 +4637,22 @@ const char        * vortex_connection_get_host_ip            (VortexConnection *
 		return connection->host_ip;
 	} /* end if */
 
-	/* get actual IP value */
-	if (getpeername (connection->session, (struct sockaddr *) &sin, &sin_size) < 0) {
-		vortex_mutex_unlock (&connection->op_mutex);
-		return NULL;
-	} /* end if */
+	if (connection->role == VortexRoleMasterListener) {
+		if (getsockname (connection->session, (struct sockaddr *) &sin, &sin_size) < 0) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "getsockname failed from socket=%d, errno=%d (%s)", 
+				    connection->session, errno, vortex_errno_get_error (errno));
+			vortex_mutex_unlock (&connection->op_mutex);
+			return NULL;
+		} /* end if */
+	} else {
+		/* get actual IP value */
+		if (getpeername (connection->session, (struct sockaddr *) &sin, &sin_size) < 0) {
+			vortex_log (VORTEX_LEVEL_CRITICAL, "getpeername failed from socket=%d, errno=%d (%s)", 
+				    connection->session, errno, vortex_errno_get_error (errno));
+			vortex_mutex_unlock (&connection->op_mutex);
+			return NULL;
+		} /* end if */
+	}
 
 	/* set local addr and local port */
 	connection->host_ip = vortex_support_inet_ntoa (connection->ctx, &sin);
