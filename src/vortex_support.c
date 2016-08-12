@@ -1006,20 +1006,28 @@ int      vortex_support_pipe                       (VortexCtx * ctx, int descf[2
 	/* call to bind */
 	bind_res = bind (listener_fd, (struct sockaddr *)&saddr,  sizeof (struct sockaddr_in));
 	if (bind_res == VORTEX_SOCKET_ERROR) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to bind address (port already in use or insufficient permissions). Closing socket: %d", listener_fd);
+		if (errno == EADDRNOTAVAIL) {
+			/* generic error */
+			vortex_log (VORTEX_LEVEL_CRITICAL, "vortex_support_pipe () failing: LOOPBACK interface is not working. Errno reported EADDRNOTAVAIL. Check your system configuration to have loopback device working. Error reported errno=%d (%s). Closing socket: %d",
+				    errno, vortex_errno_get_error (errno), listener_fd);
+		} else {
+			/* generic error */
+			vortex_log (VORTEX_LEVEL_CRITICAL, "vortex_support_pipe () failing: unable to bind address (port already in use or insufficient permissions). Error reported errno=%d (%s). Closing socket: %d",
+				    errno, vortex_errno_get_error (errno), listener_fd);
+		} /* end if */
 		vortex_close_socket (listener_fd);
 		return -1;
 	}
 	
 	if (listen (listener_fd, 1) == VORTEX_SOCKET_ERROR) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "an error have occur while executing listen");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "vortex_support_pipe () failing: an error have occur while executing listen");
 		vortex_close_socket (listener_fd);
 		return -1;
         } /* end if */
 
 	/* notify listener */
 	if (getsockname (listener_fd, (struct sockaddr *) &sin, &sin_size) < -1) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "an error have happen while executing getsockname");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "vortex_support_pipe () failing: an error have happen while executing getsockname");
 		vortex_close_socket (listener_fd);
 		return -1;
 	} /* end if */
@@ -1029,7 +1037,7 @@ int      vortex_support_pipe                       (VortexCtx * ctx, int descf[2
 	/* on now connect: read side */
 	descf[0]      = socket (AF_INET, SOCK_STREAM, 0);
 	if (descf[0] == VORTEX_INVALID_SOCKET) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to create socket required for pipe");
+		vortex_log (VORTEX_LEVEL_CRITICAL, "vortex_support_pipe () failing: Unable to create socket required for pipe");
 		vortex_close_socket (listener_fd);
 		return -1;
 	} /* end if */
