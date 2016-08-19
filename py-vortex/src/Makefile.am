@@ -43,7 +43,7 @@ libpy_vortex_11_la_SOURCES  = \
 libpy_vortex_11_la_LDFLAGS  = $(PYTHON_LIBS) $(top_srcdir)/src/libvortex-1.1.la $(AXL_LIBS)
 libpy_vortex_11_la_includedir = $(includedir)/py_vortex
 
-libpy_vortex_11_la_LIBADD = $(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
+# libpy_vortex_11_la_LIBADD = $(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
 
 if ENABLE_SASL_SUPPORT
 # libpy_vortex_sasl_11.la

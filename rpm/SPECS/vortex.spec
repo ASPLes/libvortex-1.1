@@ -376,6 +376,7 @@ Requires: python
 %description  -n  python-vortex
 Python bindings for Vortex Library (base library)
 %files -n  python-vortex
+%if 0%{?el6}
    /usr/lib/python2.6/site-packages/vortex/libpy_vortex_11.a
    /usr/lib/python2.6/site-packages/vortex/libpy_vortex_11.so
    /usr/lib/python2.6/site-packages/vortex/libpy_vortex_11.so.0
@@ -383,6 +384,16 @@ Python bindings for Vortex Library (base library)
    /usr/lib/python2.6/site-packages/vortex/__init__.py
    /usr/lib/python2.6/site-packages/vortex/__init__.pyc
    /usr/lib/python2.6/site-packages/vortex/__init__.pyo
+%endif
+%if 0%{?el7}
+   /usr/lib/python2.7/site-packages/vortex/libpy_vortex_11.a
+   /usr/lib/python2.7/site-packages/vortex/libpy_vortex_11.so
+   /usr/lib/python2.7/site-packages/vortex/libpy_vortex_11.so.0
+   /usr/lib/python2.7/site-packages/vortex/libpy_vortex_11.so.0.0.0
+   /usr/lib/python2.7/site-packages/vortex/__init__.py
+   /usr/lib/python2.7/site-packages/vortex/__init__.pyc
+   /usr/lib/python2.7/site-packages/vortex/__init__.pyo
+%endif
 
 
 # python-vortex-dev package
@@ -416,6 +427,7 @@ Requires: python-vortex
 %description  -n  python-vortex-tls
 Python bindings for Vortex Library TLS profile.
 %files -n  python-vortex-tls
+%if 0%{?el6}
    /usr/lib/python2.6/site-packages/vortex/libpy_vortex_tls_11.a
    /usr/lib/python2.6/site-packages/vortex/libpy_vortex_tls_11.so
    /usr/lib/python2.6/site-packages/vortex/libpy_vortex_tls_11.so.0
@@ -423,6 +435,16 @@ Python bindings for Vortex Library TLS profile.
    /usr/lib/python2.6/site-packages/vortex/tls.py
    /usr/lib/python2.6/site-packages/vortex/tls.pyc
    /usr/lib/python2.6/site-packages/vortex/tls.pyo
+%endif
+%if 0%{?el7}
+   /usr/lib/python2.7/site-packages/vortex/libpy_vortex_tls_11.a
+   /usr/lib/python2.7/site-packages/vortex/libpy_vortex_tls_11.so
+   /usr/lib/python2.7/site-packages/vortex/libpy_vortex_tls_11.so.0
+   /usr/lib/python2.7/site-packages/vortex/libpy_vortex_tls_11.so.0.0.0
+   /usr/lib/python2.7/site-packages/vortex/tls.py
+   /usr/lib/python2.7/site-packages/vortex/tls.pyc
+   /usr/lib/python2.7/site-packages/vortex/tls.pyo
+%endif
 
 
 # python-vortex-tls-dev package
@@ -450,6 +472,7 @@ Requires: python-vortex
 %description  -n  python-vortex-sasl
 Python bindings for Vortex Library SASL profile
 %files -n  python-vortex-sasl
+%if 0%{?el6}
    /usr/lib/python2.6/site-packages/vortex/libpy_vortex_sasl_11.a
    /usr/lib/python2.6/site-packages/vortex/libpy_vortex_sasl_11.so
    /usr/lib/python2.6/site-packages/vortex/libpy_vortex_sasl_11.so.0
@@ -457,6 +480,16 @@ Python bindings for Vortex Library SASL profile
    /usr/lib/python2.6/site-packages/vortex/sasl.py
    /usr/lib/python2.6/site-packages/vortex/sasl.pyc
    /usr/lib/python2.6/site-packages/vortex/sasl.pyo
+%endif
+%if 0%{?el7}
+   /usr/lib/python2.7/site-packages/vortex/libpy_vortex_sasl_11.a
+   /usr/lib/python2.7/site-packages/vortex/libpy_vortex_sasl_11.so
+   /usr/lib/python2.7/site-packages/vortex/libpy_vortex_sasl_11.so.0
+   /usr/lib/python2.7/site-packages/vortex/libpy_vortex_sasl_11.so.0.0.0
+   /usr/lib/python2.7/site-packages/vortex/sasl.py
+   /usr/lib/python2.7/site-packages/vortex/sasl.pyc
+   /usr/lib/python2.7/site-packages/vortex/sasl.pyo
+%endif
 
 
 # python-vortex-sasl-dev package
@@ -484,6 +517,7 @@ Requires: python-vortex
 %description  -n  python-vortex-alive
 Python bindings for Vortex Library ALIVE profile
 %files  -n  python-vortex-alive
+%if 0%{?el6}
    /usr/lib/python2.6/site-packages/vortex/alive.py
    /usr/lib/python2.6/site-packages/vortex/alive.pyc
    /usr/lib/python2.6/site-packages/vortex/alive.pyo
@@ -491,6 +525,16 @@ Python bindings for Vortex Library ALIVE profile
    /usr/lib/python2.6/site-packages/vortex/libpy_vortex_alive_11.so
    /usr/lib/python2.6/site-packages/vortex/libpy_vortex_alive_11.so.0
    /usr/lib/python2.6/site-packages/vortex/libpy_vortex_alive_11.so.0.0.0
+%endif
+%if 0%{?el7}
+   /usr/lib/python2.7/site-packages/vortex/alive.py
+   /usr/lib/python2.7/site-packages/vortex/alive.pyc
+   /usr/lib/python2.7/site-packages/vortex/alive.pyo
+   /usr/lib/python2.7/site-packages/vortex/libpy_vortex_alive_11.a
+   /usr/lib/python2.7/site-packages/vortex/libpy_vortex_alive_11.so
+   /usr/lib/python2.7/site-packages/vortex/libpy_vortex_alive_11.so.0
+   /usr/lib/python2.7/site-packages/vortex/libpy_vortex_alive_11.so.0.0.0
+%endif
 
 
 # python-vortex-alive-dev package
@@ -506,7 +550,6 @@ Requires: python-vortex-alive
 Python bindings for Vortex Library ALIVE profile (devel headers)
 %files -n  python-vortex-alive-dev
    /usr/include/py_vortex/py_vortex_alive.h
-
 
 
 %changelog
