@@ -365,6 +365,7 @@ This package contains vortex-client, a command line that allows
 to connect to and debug BEEP peers.
 %files -n  vortex-client-1.1
   /usr/bin/vortex-client
+  /usr/bin/vortex-digest-tool
 
 # python-vortex package
 %package -n  python-vortex
