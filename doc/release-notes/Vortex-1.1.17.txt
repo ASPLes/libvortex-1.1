@@ -1,0 +1,169 @@
+      ###################################################
+      ##              Vortex Library 1.1.16            ##
+      ##                 "Where it's at"               ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce Vortex
+  Library 1.1.17 "Where it's at" release availability: an open source
+  "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.aspl.es/vortex/downloads
+      [Vortex Library downloads, binaries w64 & w32]
+
+    - http://www.core-admin.com
+      [Featured product: Core-Admin]
+      
+    
+This release in short
+~~~~~~~~~~~~~~~~~~~~~
+
+  - Added official package support for Centos 7, Debian Jessie and
+    Ubuntu Xenial
+
+  - Several corrections at the TLS digest and mutex API
+
+Change notifications
+~~~~~~~~~~~~~~~~~~~~
+
+  None
+
+Thanks to..
+~~~~~~~~~~~
+
+  - Ralf Konusch (provided backward compatible support for
+    applications using old vortex mutex behaviour, also added various
+    corrections to make tls digest API to generate values that are
+    compatible out of the box with OpenSSL results).
+
+Changes since 1.1.16
+~~~~~~~~~~~~~~~~~~~~
+
+* [fix] Added support for Ubuntu 16.04 xenial xerus
+
+* [fix] Updated debian files for Jessie..
+
+* [fix] Change Vortex 1.1.16 mutex API extensions to be downward
+  compatible to applications compiled against older Vortex releases.
+
+* [fix] Updated vortex_mutex_create and vortex_mutex_destroy to check
+  internal references to avoid working with null pointers (on win32
+  implementation).
+
+* [fix] Several updates to make better report some errors detected at
+  vortex-regression-client.c on windows platform.
+
+* [fix] Removed Makefile.win.in file which is now handled manually
+
+* [fix] Added tool vortex-digest-tool to support reporting values that
+  matches vortex_tls_get_peer_ssl_digest. Updated documentation for
+  that function to explain why it will not match with openssl command
+  tool output and how to get that value using added
+  vortex-digest-tool.c
+
+* [fix] Updated vortex-digest-tool (.c) to allow configuring digest to
+  use and verbose operation
+
+* [fix] Updated configure.ac to detect openssl TLS protocols
+  available.
+
+* [fix] Added missing pthread_mutexattr_destroy calls after
+  pthread_mutex_init (linux impl).
+
+* [fix] Updated test_05_a2 to include a check to ensure the value
+  reported by vortex-digest-tool is the same as
+  vortex_tls_get_peer_ssl_digest
+
+* [Fix] Additional updates to make vortex-digest-tool.c compilable for
+  windows (also added additional code needed for this platform).
+  
+* [fix] Fixed Makefile.am to avoid having a reference to
+  Makefile.win.in..
+
+* [fix] added some notes about how to configure serverName
+
+* [fix] Vortex TLS digest API call modifications
+
+  - Correction of the vortex_tls_get_peer_ssl_digest() result
+  - new internal method __translateToOctal()
+  - new TLS API call vortex_tls_get_ssl_digest()
+
+* [fix] Vortex TLS digest API call modifications. Added
+  vortex_tls_get_ssl_digest () Updated vortex-digest-tool to use this
+  new API so now this tool, the API function and openssl digest md5
+  report the value value.
+  
+* [fix] Naming and syntax corrections last pull request. Updated
+  test_05_a2 reg test to pass.
+
+* [fix] Updated vortex_tls_get_ssl_digest to include additional calls
+  to release SSL objects..
+
+* [fix] Minor code corrections at vortex_tls.c module
+
+* [fix] Add new API "vortex_tls_get_ssl_digest" to Export Definition
+  File
+
+* [fix] Added missing API "vortex_tls_get_ssl_digest" to Export
+  Definition File (libvortex-tls-1.1.def)
+
+* [fix] Updated vortex_tls documentation to explain serverName
+  parameter indicating its relation with previous channels..
+
+* [fix] Updated vortex_tls.c module to include more information about
+  serverName parameter
+
+* [fix] Using Vortex-tls API vortex_tls_get_ssl_digest() causes a
+  segmentation fault by freeing a structure twice.
+
+* [fix] Fixed vortex_connection_get_host_ip to also support listener
+  connections (it was only supporting client connections).
+
+* [fix] Improved error reporting for vortex_support_pipe to detect and
+  better handle when the pipe was not created because loopback
+  interface errors..
+
+* [fix] Updated buildrpm.sh to check error code and stop failing
+  reporting that error..
+
+* [fix] Adding missing file to build rpm packages for Centos7
+
+* [fix] More updates to have Vortex packaged for Centos7
+
+* [fix] Several updates to vortex.spec to have support for Centos7
+  packages. Updated py-vortex/src/Makefile.am to avoid breaking rpm
+  build
+
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line provides GNU/Linux support and
+  consulting services to help organisations to introduce GNU/Linux
+  inside its process.
+
+  Contact us, using English or Spanish, to get commercial support
+  and/or BEEP based development services.
+
+  You can reach us:
+
+       http://www.aspl.es - info@aspl.es
+
+  Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - http://www.aspl.es
+30th Aug 2016, Madrid (Spain)

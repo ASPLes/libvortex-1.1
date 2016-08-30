@@ -769,7 +769,7 @@ if test x$enable_lua_vortex_support = xyes ; then
 else
    echo "   Build LuaVortex support:                   disabled"
    echo 
-   echo "     NOTE: To enable LuaVortex support you have to install luathon development headers and "
+   echo "     NOTE: To enable LuaVortex support you have to install liblua5.1-0-dev development headers and "
    echo "           use --enable-lua-vortex option."
 fi
 if test x$DOXYGEN = xyes ; then

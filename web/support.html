@@ -59,16 +59,6 @@ suggestions or you need help, find other Vortex users at the mailing list at:</p
 <p><i><b>NOTE:</b></i> To post messages to the list, it is required to
 sign up first.</p>
   
-<p>There is also a Nabble interface to the Vortex mailing list that
-  proxies all posts done:</p>
-  
-<p style="text-align: center;"><a href="http://n2.nabble.com/Vortex----Open-Source-BEEP-implementation-f1305372.html"><img alt="[doc ref]" src="documento-16x16.png">Nabble interface Vortex mailing list.</a>
-  
-<p>You can also report bugs and feature requests on the following
-address. Please, select the <i>"Vortex Library"</i> component: <p>
-
-<p style="text-align: center;"><a href="http://bugzilla.aspl.es"><img alt="[doc ref]" src="documento-16x16.png">Vortex bug tracking center.</a>
-
 <h3>Generating a patch</h3>
 
 <p>In the case you want to submit a patch, please, consider the following: </p>
@@ -78,41 +68,12 @@ address. Please, select the <i>"Vortex Library"</i> component: <p>
   <li>Try to follow coding rules you see around the file (8 space tab, curly braces following functions and control structures,...). </li>
 </ol>
 
-<p>Once you are ready, you can use the following to generate a patch according to the source type you are using.</p>
-
-<ul>
-  <li><b>Patches from subversion(RECOMMENDED)</b> you can use the following steps to produce a patch:
-  <pre>
-  1. Download an updated SVN copy. For people using subversion you can use:
-  >> svn co https://dolphin.aspl.es/svn/publico/af-arch/trunk/libvortex-1.1/
-
-  2. Now do desired modifications
-
-  3. Now generate a patch going to the root directory:
-  >> svn diff > modifications.patch
-  </pre>
-  </li>
-  <li><b>Patches from stable releases:</b> you can use the following steps to produce a patch:
-  <pre>
-  1. Copy the original file to .orig.
-  >> cp file.[hc] file.[hc].orig
-
-  2. Do modifications into the original file at its original location (file.[hc])
-
-  3. Now generate a patch using:
-  >> diff -u file.[hc] file.[hc].orig > modifications.patch
-  </pre>
-  </li>
-</ul>
+<p>Once you are ready, generate a pull request to <a href="https://github.com/asples/libvortex-1.1">https://github.com/asples/libvortex-1.1</a>
 
 <p>Note that it is important that your patch do not break current
 regression test. Please, use them to ensure your patch works and, if
 possible, add a regression test that reproduce the bug and test the
 fix. See next for instructions.</p>
-
-<p>Once you have a patch, you can either fill <a href="http://bugzilla.aspl.es">a bug report
-(RECOMMENDED, see above)</a> or send a message to the <a href="http://lists.aspl.es/cgi-bin/mailman/listinfo/vortex"> list with
-the patch</a>.</p>
 
 <h3>Running vortex regression tests to test your patches</h3>
 
@@ -178,7 +139,7 @@ supporting Vortex Library at: <a href="mailto:info@aspl.es">info@aspl.es</a>.
     <td class='dotted'>
       <h1>Linux servers</h1>
       <ul>
-	<li><a href="http://www.asplhosting.com/portal/servidores/servidores-vps">VPS linux servers with administration support</a></li>
+	<li><a href="http://www.asplhosting.com/portal/servidores/servidores-cloud">Cloud linux servers with administration support</a></li>
 	<li><a href="http://www.asplhosting.com/portal/servidores/servidores-dedicados">Dedicated linux servers with administration support</a></li>
 	<li><a href="http://www.aspl.es/portal/servicios/instalacion-de-servidores-linux">Linux server installation</a></li>
 	<li><a href="http://www.aspl.es/portal/servicios/instalacion-de-servidores-linux">Linux server administration</a></li>
