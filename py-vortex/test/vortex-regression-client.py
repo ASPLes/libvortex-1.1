@@ -222,6 +222,71 @@ def test_02():
 
     return True
 
+def test_02a_log_handler (ctx, file, line, log_level, message, user_data):
+    str_value = "%s:%d, log_level=%d : %s" % (file, line, log_level, message)
+    # print str_value
+    list_of_logs = user_data
+    list_of_logs.append (str_value)
+    
+    return
+
+def test_02a ():
+    # call to initialize a context 
+    ctx = vortex.Ctx ()
+
+    info ("Setting log handler...")
+    list_of_logs = []
+    ctx.set_log_handler (test_02a_log_handler, list_of_logs)
+
+    # call to init ctx 
+    if not ctx.init ():
+        error ("Failed to init Vortex context")
+        return False
+
+    # call to create a connection
+    conn = vortex.Connection (ctx, host, port)
+
+    # check connection status after if 
+    if not conn.is_ok ():
+        error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
+        return False
+
+    info ("BEEP connection created to: " + conn.host + ":" + conn.port) 
+    
+    # now close the connection
+    info ("Now closing the BEEP session..")
+    conn.close ()
+
+    ctx.exit ()
+
+    # finish ctx 
+    del ctx
+
+    if not list_of_logs:
+        print "ERROR: no log was recorded. Log handler was supposed to record logs..."
+        return False
+
+    if len (list_of_logs) < 200:
+        print "ERROR: expected 220 logs recorded but found %d.." % len (list_of_logs)
+        return False
+        
+    info ("Logs recorded: %d (showing 10 out of %d)" % (len (list_of_logs), len (list_of_logs)))
+    iterator = 0
+    for _log in list_of_logs:
+        items = _log.split ("\n")
+        for item in items:
+            print "  |  %s" % item
+            iterator += 1
+        # end for
+
+        if iterator == 10:
+            break
+        
+    # end for
+
+    return True
+
+
 # test connection shutdown before close.
 def test_03 ():
     # call to initialize a context 
@@ -2644,6 +2709,7 @@ tests = [
    (test_00_a, "Check PyVortex async queue wrapper"),
    (test_01,   "Check PyVortex context initialization"),
    (test_02,   "Check PyVortex basic BEEP connection"),
+   (test_02a,   "Check PyVortex log handler configuration"),
    (test_03,   "Check PyVortex basic BEEP connection (shutdown)"),
    (test_03_a, "Check PyVortex connection set data"),
    (test_04,   "Check PyVortex basic BEEP channel creation"),
