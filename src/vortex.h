@@ -406,6 +406,10 @@ void     vortex_log_acquire_mutex            (VortexCtx * ctx,
 void     vortex_log_set_handler      (VortexCtx         * ctx,
 				      VortexLogHandler    handler);
 
+void     vortex_log_set_handler_full (VortexCtx             * ctx,
+				      VortexLogHandlerFull    handler,
+				      axlPointer              user_data);
+
 void     vortex_log_set_prepare_log  (VortexCtx         * ctx,
 				      axl_bool            prepare_string);
 

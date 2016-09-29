@@ -635,7 +635,39 @@ void     vortex_log_set_handler      (VortexCtx        * ctx,
 	
 	/* configure status */
 	ctx->debug_handler = handler;
+	
+	return;
 }
+
+/** 
+ * @brief Allows to configure an application handler that will be
+ * called for each log produced by the vortex engine. This is the same
+ * version as \ref vortex_log_set_handler but this allows to configure
+ * a handler that will receive the user pointer reference provided
+ * here when called.
+ *
+ * @param ctx The context where the operation will be performed.
+ *
+ * @param handler A reference to the handler to configure or NULL to
+ * disable the notification.
+ *
+ * @param user_data A reference to user data that is passed to the
+ * handler.
+ */
+void     vortex_log_set_handler_full (VortexCtx             * ctx,
+				      VortexLogHandlerFull    handler,
+				      axlPointer              user_data)
+{
+	/* get current context */
+	v_return_if_fail (ctx);
+	
+	/* configure status */
+	ctx->debug_handler2 = handler;
+	ctx->debug_handler2_user_data = user_data;
+	
+	return;
+}
+
 
 /** 
  * @brief Allows to instruct vortex to send string logs already
@@ -730,15 +762,25 @@ void _vortex_log_common (VortexCtx        * ctx,
 	if (use_log_mutex) 
 		vortex_mutex_lock (&ctx->log_mutex);
 
-	if( ctx->debug_handler) {
+	if( ctx->debug_handler || ctx->debug_handler2) {
 		if (ctx->prepare_log_string) {
 			/* pass the string already prepared */
 			log_string = axl_strdup_printfv (message, args);
-			ctx->debug_handler (file, line, log_level, log_string, args);
+
+			/* debug handler (if defined) */
+			if (ctx->debug_handler)
+				ctx->debug_handler (file, line, log_level, log_string, args);
+			/* debug handler2 (if defined) */
+			if (ctx->debug_handler2)
+				ctx->debug_handler2 (file, line, log_level, log_string, ctx->debug_handler2_user_data, args);
+			
 			axl_free (log_string);
 		} else {
 			/* call a custom debug handler if one has been set */
-			ctx->debug_handler (file, line, log_level, message, args);
+			if (ctx->debug_handler)
+				ctx->debug_handler (file, line, log_level, message, args);
+			if (ctx->debug_handler2)
+				ctx->debug_handler2 (file, line, log_level, message, ctx->debug_handler2_user_data, args);
 		} /* end if */
 
 	} else {
@@ -1258,13 +1300,9 @@ void vortex_exit_ctx (VortexCtx * ctx, axl_bool  free_ctx)
  */
 axl_bool vortex_is_exiting           (VortexCtx * ctx)
 {
-	axl_bool result;
 	if (ctx == NULL)
 		return axl_false;
-	vortex_mutex_lock (&ctx->ref_mutex);
-	result = ctx->vortex_exit;
-	vortex_mutex_unlock (&ctx->ref_mutex);
-	return result;
+	return ctx->vortex_exit;
 }
 
 /* @} */
