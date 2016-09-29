@@ -3335,7 +3335,10 @@ void                __vortex_connection_shutdown_and_record_error (VortexConnect
 		va_end (args);
 
 		aux  = _msg;
-		_msg = axl_strdup_printf ("%s (socket=%d, conn-id=%d, remote-ip=%d)", aux, conn->session, conn->id, vortex_connection_get_host_ip (conn));
+		_msg = axl_strdup_printf ("%s (socket=%d, conn-id=%d, errno=%d, remote-ip=%s, serverName=%s, status=%d : %s)", 
+					  aux, conn->session, conn->id, errno, 
+					  vortex_connection_get_host_ip (conn), vortex_connection_get_server_name (conn), 
+					  status, message);
 		axl_free (aux);
 
 		vortex_log (VORTEX_LEVEL_CRITICAL, _msg);
