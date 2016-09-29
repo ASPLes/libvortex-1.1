@@ -666,6 +666,134 @@ static PyObject * py_vortex_ctx_new_event (PyObject * self, PyObject * args, PyO
 }
 
 /** 
+ * @internal bridge to help pass the message into the python engine..
+ */
+void __py_vortex_ctx_log_handler (const char       * file,
+				  int                line,
+				  VortexDebugLevel   log_level,
+				  const char       * message,
+				  axlPointer         user_data,
+				  va_list            __args_not_used)
+{
+
+	/* reference to the python channel */
+	PyObject           * args;
+	PyGILState_STATE     state;
+	PyObject           * result;
+	PyVortexEventData  * data    = user_data;
+	VortexCtx          * ctx     = py_vortex_ctx_get (data->ctx);
+
+	/* avoid reporting when ctx is exiting.. */
+	if (vortex_is_exiting (ctx))
+		return;
+
+	/* acquire the GIL */
+	/* py_vortex_log2 (PY_VORTEX_DEBUG, "bridging event id=%d into python code (getting GIL) vortex exiting=%d..", 
+	   data->id, vortex_is_exiting (ctx));   */
+	state = PyGILState_Ensure();
+
+	/* create a tuple to contain arguments */
+	args = PyTuple_New (6);
+
+	/* increase reference counting */
+	Py_INCREF (data->ctx);
+	PyTuple_SetItem (args, 0, data->ctx);
+
+	PyTuple_SetItem (args, 1, Py_BuildValue ("s", file));
+
+	PyTuple_SetItem (args, 2, Py_BuildValue ("i", line));
+
+	PyTuple_SetItem (args, 3, Py_BuildValue ("i", log_level));
+
+	PyTuple_SetItem (args, 4, Py_BuildValue ("s", message));
+
+	Py_INCREF (data->user_data);
+	PyTuple_SetItem (args, 5, data->user_data);
+
+	/* record handler */
+	START_HANDLER (data->handler);
+
+	/* now invoke */
+	result = PyObject_Call (data->handler, args, NULL);
+
+	/* unrecord handler */
+	CLOSE_HANDLER (data->handler);
+
+	/* py_vortex_log2 (PY_VORTEX_DEBUG, "event notification finished, checking for exceptions and result.."); */
+	py_vortex_handle_and_clear_exception (NULL);
+
+	/* release tuple and result returned (which may be null) */
+	Py_DECREF (args);
+	Py_XDECREF (result);
+
+	/* release the GIL */
+	PyGILState_Release (state);
+	
+	return;
+}
+
+
+
+/** 
+ * @brief Allows to register a log handler that is called to report
+ * all logs produced by the vortex engine. The vortex engine has to be
+ * built with debug enable.
+ */
+static PyObject * py_vortex_ctx_set_log_handler (PyObject * self, PyObject * args, PyObject * kwds)
+{
+	PyObject           * handler      = NULL;
+	PyObject           * user_data    = NULL;
+	PyVortexEventData  * data;
+
+	/* now parse arguments */
+	static char *kwlist[] = {"handler", "user_data", NULL};
+
+	/* parse and check result */
+	if (! PyArg_ParseTupleAndKeywords (args, kwds, "O|O", kwlist, 
+					   &handler, 
+					   &user_data))
+		return NULL;
+
+	py_vortex_log (PY_VORTEX_DEBUG, "received request to register new event");
+
+	/* check handlers defined */
+	if (handler != NULL && ! PyCallable_Check (handler)) {
+		py_vortex_log (PY_VORTEX_CRITICAL, "called to define a new event but provided a handler which is not callable");
+		return NULL;
+	} /* end if */
+
+	/* create data to hold all objects */
+	data = axl_new (PyVortexEventData, 1);
+	if (data == NULL) {
+		py_vortex_log (PY_VORTEX_CRITICAL, "failed to allocate memory for vortex event..");
+		return NULL;
+	} /* end if */
+
+	/* set references (this is like a = b but ensuring it has at
+	 * least Py_None) */
+	PY_VORTEX_SET_REF (data->user_data,  user_data);
+	PY_VORTEX_SET_REF (data->handler,    handler);
+	PY_VORTEX_SET_REF (data->ctx,        self);
+
+	/* ensure all logs received are already prepared into a single string */
+	vortex_log_set_prepare_log (py_vortex_ctx_get (self), axl_true);
+
+	/* enable debug */
+	vortex_log_enable (py_vortex_ctx_get (self), axl_true);
+	vortex_log2_enable (py_vortex_ctx_get (self), axl_true);
+
+	/* register the handler and get the id */
+	vortex_ctx_set_data_full (py_vortex_ctx_get (self), "py:vo:log-handler", data, NULL, (axlDestroyFunc) py_vortex_ctx_event_free);
+	vortex_log_set_handler_full (py_vortex_ctx_get (self), __py_vortex_ctx_log_handler, data);
+
+	/* reply work done */
+	py_vortex_log (PY_VORTEX_DEBUG, "event registered with id %d", data->id);
+	return Py_BuildValue ("i", data->id);
+}
+
+
+
+/** 
  * @brief Allows to register a new callable event.
  */
 static PyObject * py_vortex_ctx_remove_event (PyObject * self, PyObject * args, PyObject * kwds)
@@ -718,6 +846,9 @@ static PyMethodDef py_vortex_ctx_methods[] = {
 	/* enable_too_long_notify_to_file */
 	{"enable_too_long_notify_to_file", (PyCFunction) py_vortex_ctx_enable_too_long_notify_to_file, METH_VARARGS | METH_KEYWORDS,
 	 "Allows to activate a too long notification handler that will long into the provided file a notification every time is found a handler that is taking too long to finish."},
+	/* set_log_handler */
+	{"set_log_handler", (PyCFunction) py_vortex_ctx_set_log_handler, METH_VARARGS | METH_KEYWORDS,
+	 "Allows to configure a log handler that is called everytime vortex engine has something to notify/log. This handler can be used to report critical or error conditions into the python level."},
  	{NULL}  
 }; 
 
