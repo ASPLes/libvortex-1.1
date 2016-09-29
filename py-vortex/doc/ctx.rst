@@ -79,6 +79,20 @@ Module API
 
       :rtype: Returns True if the notifier was installed
 
+   .. method:: set_log_landler (log_handler [, user_data])
+
+      Allows to configure a log handler that is called everytime
+      vortex engine has something to notify/log. This handler can be
+      used to report critical or error conditions into the python
+      level.
+
+      The following is an example of handler (first parameter is vortex.Ctx)::
+
+            def log_handler (ctx, file, line, log_level, message, user_data):
+	        # do some error reporting, filtering, etc
+	  	return
+
+
    .. attribute:: log
 
       (Read/Write attribute) (True/False) returns or set current debug log. See vortex_log_is_enabled.
