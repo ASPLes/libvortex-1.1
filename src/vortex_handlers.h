@@ -1042,6 +1042,33 @@ typedef void (*VortexLogHandler) (const char       * file,
 				  va_list            args);
 
 /** 
+ * @brief Handler definition that allows a client to print log
+ * messages itself.
+ *
+ * This function is used by: 
+ * 
+ * - \ref vortex_log_set_handler_full
+ *
+ * @param file The file that produced the log.
+ *
+ * @param line The line where the log was produced.
+ *
+ * @param log_level The level of the log
+ *
+ * @param message The message being reported.
+ *
+ * @param user_data A reference to the user defined reference.
+ *
+ * @param args Arguments for the message.
+ */
+typedef void (*VortexLogHandlerFull) (const char       * file,
+				      int                line,
+				      VortexDebugLevel   log_level,
+				      const char       * message,
+				      axlPointer         user_data,
+				      va_list            args);
+
+/** 
  * @brief Handler definition used by \ref vortex_async_queue_foreach
  * to implement a foreach operation over all items inside the provided
  * queue, blocking its access during its process.
