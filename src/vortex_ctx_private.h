@@ -107,6 +107,8 @@ struct _VortexCtx {
 	axl_bool             debug_color;
 
 	VortexLogHandler     debug_handler;
+	VortexLogHandlerFull debug_handler2;
+	axlPointer           debug_handler2_user_data;
 
 	int                  debug_filter;
 	axl_bool             debug_filter_checked;
