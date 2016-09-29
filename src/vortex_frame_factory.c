@@ -1391,9 +1391,9 @@ int          vortex_frame_readline (VortexConnection * connection, char  * buffe
 			 * without logging a message */
 			if (vortex_connection_is_ok (connection, axl_false)) {
 				error_msg = vortex_errno_get_last_error ();
-				vortex_log (VORTEX_LEVEL_CRITICAL, "unable to read a line from conn-id=%d (socket %d, rc %d), error was: %s",
+				vortex_log (VORTEX_LEVEL_CRITICAL, "unable to read a line from conn-id=%d (socket %d, rc %d), error was: %s, remote IP %s",
 					    vortex_connection_get_id (connection), vortex_connection_get_socket (connection), rc,
-					    error_msg ? error_msg : "");
+					    error_msg ? error_msg : "", vortex_connection_get_host_ip (connection));
 			}
 #endif
 			return (-1);

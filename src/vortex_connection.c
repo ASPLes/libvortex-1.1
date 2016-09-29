@@ -3314,6 +3314,7 @@ void                __vortex_connection_shutdown_and_record_error (VortexConnect
 {
 	va_list     args;
 	char      * _msg;
+	char      * aux;
 #if defined(ENABLE_VORTEX_LOG)
 	VortexCtx * ctx;
 #endif
@@ -3332,6 +3333,10 @@ void                __vortex_connection_shutdown_and_record_error (VortexConnect
 		va_start (args, message);
 		_msg = axl_strdup_printfv (message, args);
 		va_end (args);
+
+		aux  = _msg;
+		_msg = axl_strdup_printf ("%s (socket=%d, conn-id=%d, remote-ip=%d)", aux, conn->session, conn->id, vortex_connection_get_host_ip (conn));
+		axl_free (aux);
 
 		vortex_log (VORTEX_LEVEL_CRITICAL, _msg);
 		
