@@ -1329,6 +1329,9 @@ def test_12():
     queue  = vortex.AsyncQueue ()
     queue2 = vortex.AsyncQueue ()
 
+    # wait for replies
+    queue2.push (queue)
+
     # configure on close
     queue_list = []
     conn.set_on_close (test_12_on_close_a, queue2)
@@ -1338,11 +1341,9 @@ def test_12():
     # now shutdown 
     conn.shutdown ()
 
-    # wait for replies
-    queue2.push (queue)
     value = queue.pop ()
     if value != 1:
-        error ("Expected to find 1 but found (0001): " + str (value))
+        error ("Test 12: Expected to find 1 but found (0001): " + str (value))
         return False
 
     # wait for replies
@@ -1367,6 +1368,9 @@ def test_12():
         error ("Expected to find proper connection result, but found error. Error code was: " + str(conn.status) + ", message: " + conn.error_msg)
         return False
 
+    # wait for replies
+    queue2.push (queue)
+
     # configure on close
     conn.set_on_close (test_12_on_close_a, queue2)
     conn.set_on_close (test_12_on_close_a, queue2)
@@ -1375,8 +1379,6 @@ def test_12():
     # now shutdown 
     conn.shutdown ()
 
-    # wait for replies
-    queue2.push (queue)
     value = queue.pop ()
     if value != 1:
         error ("Expected to find 1 but found (0004): " + str (value))
@@ -1673,6 +1675,7 @@ def test_13():
     iterator = 0
     while iterator < 4:
         # create a listener
+        info ("Test 13: creating listener iterator=%d" % iterator)
         listener = vortex.create_listener (ctx, "0.0.0.0", "0")
 
         # check listener status
@@ -1688,7 +1691,8 @@ def test_13():
             return False
 
         # check the role even knowning it is not working
-        if listener2.role != "master-listener":
+        info ("Test 13: checking role for listener, iterator=%d" % iterator)
+        if listener.role != "master-listener":
             error ("Expected to find master-listener role but found: " + listener2.role)
             return False
 
