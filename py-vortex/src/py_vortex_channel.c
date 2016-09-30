@@ -451,8 +451,14 @@ static PyObject * py_vortex_channel_send_msg (PyVortexChannel * self, PyObject *
 	if (size == -1)
 		size = strlen (content);
 
+	/* allow other threads to enter into the python space */
+	Py_BEGIN_ALLOW_THREADS
+
 	/* call to send the message */
 	result = vortex_channel_send_msg (self->channel, content, size, &msg_no);
+
+	/* restore thread state */
+	Py_END_ALLOW_THREADS
 
 	/* return none in the case of failure */
 	if (! result) {
@@ -480,8 +486,14 @@ static PyObject * py_vortex_channel_send_msg_more (PyVortexChannel * self, PyObj
 	if (size == -1)
 		size = strlen (content);
 
+	/* allow other threads to enter into the python space */
+	Py_BEGIN_ALLOW_THREADS
+
 	/* call to send the message */
 	result = vortex_channel_send_msg_more (self->channel, content, size, &msg_no);
+
+	/* restore thread state */
+	Py_END_ALLOW_THREADS
 
 	/* return none in the case of failure */
 	if (! result) {
@@ -513,8 +525,14 @@ PyObject * py_vortex_channel_send_rpy (PyVortexChannel * self, PyObject * args)
 	py_vortex_log (PY_VORTEX_DEBUG, "received request to send rpy, channel: %p (id: %d), content: %s, size: %d, msg_no: %d",
 		       self->channel, vortex_channel_get_number (self->channel), content, size, msg_no);
 
+	/* allow other threads to enter into the python space */
+	Py_BEGIN_ALLOW_THREADS
+	
 	/* call to send reply */
 	result = vortex_channel_send_rpy (self->channel, content, size, msg_no);
+
+	/* restore thread state */
+	Py_END_ALLOW_THREADS
 
 	py_vortex_log (PY_VORTEX_DEBUG, "after sending RPY frame, status found was: %d", result);
 
@@ -547,8 +565,14 @@ PyObject * py_vortex_channel_send_rpy_more (PyVortexChannel * self, PyObject * a
 	py_vortex_log (PY_VORTEX_DEBUG, "received request to send rpy, channel: %p (id: %d), content: %s, size: %d, msg_no: %d",
 		       self->channel, vortex_channel_get_number (self->channel), content, size, msg_no);
 
+	/* allow other threads to enter into the python space */
+	Py_BEGIN_ALLOW_THREADS
+	
 	/* call to send reply */
 	result = vortex_channel_send_rpy_more (self->channel, content, size, msg_no);
+
+	/* restore thread state */
+	Py_END_ALLOW_THREADS
 
 	py_vortex_log (PY_VORTEX_DEBUG, "after sending RPY frame, status found was: %d", result);
 
@@ -577,8 +601,14 @@ PyObject * py_vortex_channel_send_err (PyVortexChannel * self, PyObject * args)
 	if (size == -1)
 		size = strlen (content);
 
+	/* allow other threads to enter into the python space */
+	Py_BEGIN_ALLOW_THREADS
+
 	/* call to send reply */
 	result = vortex_channel_send_err (self->channel, content, size, msg_no);
+
+	/* restore thread state */
+	Py_END_ALLOW_THREADS
 
 	/* return none in the case of failure */
 	if (! result) {
@@ -605,8 +635,14 @@ PyObject * py_vortex_channel_send_err_more (PyVortexChannel * self, PyObject * a
 	if (size == -1)
 		size = strlen (content);
 
+	/* allow other threads to enter into the python space */
+	Py_BEGIN_ALLOW_THREADS
+
 	/* call to send reply */
 	result = vortex_channel_send_err_more (self->channel, content, size, msg_no);
+
+	/* restore thread state */
+	Py_END_ALLOW_THREADS
 
 	/* return none in the case of failure */
 	if (! result) {
@@ -633,8 +669,14 @@ PyObject * py_vortex_channel_send_ans (PyVortexChannel * self, PyObject * args)
 	if (size == -1)
 		size = strlen (content);
 
+	/* allow other threads to enter into the python space */
+	Py_BEGIN_ALLOW_THREADS
+
 	/* call to send ans reply */
 	result = vortex_channel_send_ans_rpy (self->channel, content, size, msg_no);
+
+	/* restore thread state */
+	Py_END_ALLOW_THREADS
 
 	/* return none in the case of failure */
 	if (! result) {
