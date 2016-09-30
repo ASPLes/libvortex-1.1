@@ -390,9 +390,16 @@ PyObject * py_vortex_ctx_exit (PyVortexCtx* self)
 {
 	if (self->exit_pending) {
 		py_vortex_log (PY_VORTEX_DEBUG, "finishing vortex.Ctx %p (self->ctx: %p)", self, self->ctx);
+
+		/* allow threads */
+		Py_BEGIN_ALLOW_THREADS
+		
 		/* call to finish context: do not dealloc ->ctx, this is
 		   already done by the type deallocator */
 		vortex_exit_ctx (self->ctx, axl_false);
+
+		/* end threads */
+		Py_END_ALLOW_THREADS
 
 		/* flag as exit done */
 		self->exit_pending = axl_false;
