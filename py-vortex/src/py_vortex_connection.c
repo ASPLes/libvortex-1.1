@@ -205,6 +205,9 @@ static void py_vortex_connection_dealloc (PyVortexConnection* self)
 	py_vortex_log (PY_VORTEX_DEBUG, "finishing PyVortexConnection id: %d (%p, VortexConnection %p, role: %s, close-ref: %d)", 
 		       conn_id, self, self->conn, __py_vortex_connection_stringify_role (self->conn), self->close_ref);
 
+	/* allow threads */
+	Py_BEGIN_ALLOW_THREADS
+
 	/* finish the connection in the case it is no longer referenced */
 	if (vortex_connection_is_ok (self->conn, axl_false) && self->close_ref) {
 		py_vortex_log (PY_VORTEX_DEBUG, "shutting down BEEP session associated at connection finalize id: %d (connection is ok, and close_ref is activated, refs: %d)", 
@@ -213,11 +216,7 @@ static void py_vortex_connection_dealloc (PyVortexConnection* self)
 
 		/* shutdown connection if itsn't flagged that way */
 		if (! self->skip_conn_close) {
-			/* allow threads */
-			Py_BEGIN_ALLOW_THREADS
 			vortex_connection_shutdown (self->conn);
-			/* end threads */
-			Py_END_ALLOW_THREADS
 		}
 
 		ref_count = vortex_connection_ref_count (self->conn);
@@ -228,6 +227,9 @@ static void py_vortex_connection_dealloc (PyVortexConnection* self)
 		/* only unref the connection */
 		vortex_connection_unref (self->conn, "py_vortex_connection_dealloc");
 	} /* end if */
+
+	/* end threads */
+	Py_END_ALLOW_THREADS
 
 	/* nullify */
 	self->conn = NULL;
