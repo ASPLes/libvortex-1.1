@@ -252,7 +252,7 @@ static PyObject * py_vortex_connection_is_ok (PyVortexConnection* self)
 	/* call to check connection and build the value with the
 	   result. Do not free the connection in the case of
 	   failure. */
-	_result = Py_BuildValue ("i", vortex_connection_is_ok (self->conn, axl_false));
+	_result = Py_BuildValue ("i", __unlocked_vortex_connection_is_ok (self->conn, axl_false));
 	
 	return _result;
 }
@@ -312,8 +312,7 @@ static PyObject * py_vortex_connection_close (PyVortexConnection* self)
 
 	/* according to the connection role and status, do a shutdown
 	 * or a close */
-	if (role == VortexRoleMasterListener &&
-	    (vortex_connection_is_ok (self->conn, axl_false))) {
+	if (role == VortexRoleMasterListener && __unlocked_vortex_connection_is_ok (self->conn, axl_false)) {
 		py_vortex_log (PY_VORTEX_DEBUG, "shutting down working master listener connection id=%d", 
 			       vortex_connection_get_id (self->conn));
 		result = axl_true;
@@ -337,8 +336,15 @@ static PyObject * py_vortex_connection_close (PyVortexConnection* self)
 	if (result) {
 		/* check if we have to unref the connection in the
 		 * case of a master listener */
-		if (role == VortexRoleMasterListener)
+		if (role == VortexRoleMasterListener) {
+			/* allow threads */
+			Py_BEGIN_ALLOW_THREADS
+				
 			vortex_connection_unref (self->conn, "py_vortex_connection_close (master-listener)");
+
+			/* end threads */
+			Py_END_ALLOW_THREADS
+		}
 
 		py_vortex_log (PY_VORTEX_DEBUG, "close ok, nullifying..");
 		self->conn = NULL; 
@@ -712,6 +718,29 @@ static PyObject * py_vortex_connection_get_pool (PyObject * self, PyObject *args
 	
 	/* return wrapped reference */
 	return py_vortex_channel_pool_find_reference (pool);
+}
+
+/** 
+ * @internal Unlocked version that allows threading to enter while
+ * this call (vortex_connection_is_ok) is happening to avoid having
+ * deadlocks betheen python gil and conn internal mutexes.
+ */
+axl_bool             __unlocked_vortex_connection_is_ok (VortexConnection * conn,
+							 axl_bool           free_on_fail)
+{
+	axl_bool status;
+	
+	/* allow threads */
+	Py_BEGIN_ALLOW_THREADS
+
+	/* get connection status */
+	status = vortex_connection_is_ok (conn, free_on_fail);
+		
+	/* end threads */
+	Py_END_ALLOW_THREADS
+
+	/* return results */
+	return status;
 }
 
 /** 

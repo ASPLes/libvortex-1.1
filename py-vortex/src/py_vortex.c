@@ -126,7 +126,7 @@ static PyObject * py_vortex_create_listener (PyObject * self, PyObject * args, P
 		host, port, NULL, NULL);
 
 	py_vortex_log (PY_VORTEX_DEBUG, "creating listener using: %s:%s (%p, status: %d)", host, port,
-		       listener, vortex_connection_is_ok (listener, axl_false));
+		       listener, __unlocked_vortex_connection_is_ok (listener, axl_false));
 
 	/* do not check if the connection is ok, to return a different
 	   value. Rather return a PyVortexConnection in all cases

@@ -77,6 +77,9 @@ PyObject           * py_vortex_connection_register_get (PyObject * py_conn,
 
 PyObject           * py_vortex_connection_find_reference (VortexConnection * conn);
 
+axl_bool             __unlocked_vortex_connection_is_ok (VortexConnection * conn,
+							 axl_bool           free_on_fail);
+
 #define PY_CONN_GET(py_obj) (((PyVortexConnection*)self)->conn)
 
 #endif
