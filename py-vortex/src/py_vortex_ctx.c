@@ -349,9 +349,15 @@ static void py_vortex_ctx_dealloc (PyVortexCtx* self)
 		Py_DECREF ( py_vortex_ctx_exit (self) );
 	} /* end if */
 
+	/* allow threads */
+	Py_BEGIN_ALLOW_THREADS
+
 	/* free ctx */
 	vortex_ctx_free (self->ctx);
 	self->ctx = NULL;
+
+	/* allow threads */
+	Py_END_ALLOW_THREADS
 
 	/* free the node it self */
 	self->ob_type->tp_free ((PyObject*)self);
