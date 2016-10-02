@@ -596,8 +596,14 @@ axl_bool py_vortex_ctx_bridge_event (VortexCtx * ctx, axlPointer user_data, axlP
 
 	remove_event:
 
+		/* allow threads */
+		Py_BEGIN_ALLOW_THREADS
+
 		/* call to remove event before returning */
 		vortex_thread_pool_remove_event (ctx, data->id);
+
+		/* end threads */
+		Py_END_ALLOW_THREADS
 
 		/* we have to remove the event, finish all data */
 		str = axl_strdup_printf ("py:vo:event:%d", data->id);
