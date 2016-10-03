@@ -224,17 +224,19 @@ void        py_vortex_ctx_start_handler_watcher (VortexCtx * ctx, int watching_p
 
 	VortexHash * hash;
 
+	/*** GIL ALREADY ACQUIRED REACHED THIS POINT ***/
+
 	/* check handler to be previously defined */
 	if (vortex_ctx_get_data (ctx, PY_VORTEX_WATCHER_HANDLER_HASH)) 
 		return;
 
 	/* init hash */
 	hash = vortex_hash_new (axl_hash_int, axl_hash_equal_int);
-	vortex_ctx_set_data_full (ctx, PY_VORTEX_WATCHER_HANDLER_HASH, hash, NULL, (axlDestroyFunc) vortex_hash_unref);
+	__unlocked_vortex_ctx_set_data_full (ctx, PY_VORTEX_WATCHER_HANDLER_HASH, hash, NULL, (axlDestroyFunc) vortex_hash_unref);
 
 	/* record notifier if defined */
-	vortex_ctx_set_data (ctx, PY_VORTEX_WATCHER_NOTIFIER, notifier);
-	vortex_ctx_set_data (ctx, PY_VORTEX_WATCHER_NOTIFIER_DATA, notifier_data);
+	__unlocked_vortex_ctx_set_data (ctx, PY_VORTEX_WATCHER_NOTIFIER, notifier);
+	__unlocked_vortex_ctx_set_data (ctx, PY_VORTEX_WATCHER_NOTIFIER_DATA, notifier_data);
 
 	/* start handler */
 	vortex_thread_pool_new_event (ctx, (watching_period + 1) * 1000000, 
@@ -285,6 +287,8 @@ axl_bool        py_vortex_ctx_log_too_long_notifications (VortexCtx * ctx, int w
 	time_t       rawtime;
 	const char * value;
 
+	/*** GIL ALREADY ACQUIRED REACHED THIS POINT ***/
+
 	/* open the file provided by the user */
 	fd = open (file, O_CREAT | O_APPEND | O_WRONLY, 0600);
 	if (fd < 0) {
@@ -304,7 +308,7 @@ axl_bool        py_vortex_ctx_log_too_long_notifications (VortexCtx * ctx, int w
 
 	/* record file into ctx */
 	file = strdup (file);
-	vortex_ctx_set_data_full (ctx, file, (axlPointer) file, NULL, axl_free);
+	__unlocked_vortex_ctx_set_data_full (ctx, file, (axlPointer) file, NULL, axl_free);
 
 	/* start handler watcher here */
 	py_vortex_ctx_start_handler_watcher (ctx, watching_period, py_vortex_ctx_too_long_notifier_to_file, (axlPointer) file);	
@@ -613,8 +617,9 @@ axl_bool py_vortex_ctx_bridge_event (VortexCtx * ctx, axlPointer user_data, axlP
 
 		/* we have to remove the event, finish all data */
 		str = axl_strdup_printf ("py:vo:event:%d", data->id);
-		vortex_ctx_set_data (ctx, str, NULL);
+		__unlocked_vortex_ctx_set_data (ctx, str, NULL);
 		axl_free (str);
+
 	} /* end if */
 
 	/* release the GIL */
@@ -677,7 +682,7 @@ static PyObject * py_vortex_ctx_new_event (PyObject * self, PyObject * args, PyO
 						 microseconds,
 						 py_vortex_ctx_bridge_event,
 						 data, INT_TO_PTR(data->id));
-	vortex_ctx_set_data_full (py_vortex_ctx_get (self), axl_strdup_printf ("py:vo:event:%d", data->id), data, axl_free, (axlDestroyFunc) py_vortex_ctx_event_free);
+	__unlocked_vortex_ctx_set_data_full (py_vortex_ctx_get (self), axl_strdup_printf ("py:vo:event:%d", data->id), data, axl_free, (axlDestroyFunc) py_vortex_ctx_event_free);
 
 	/* reply work done */
 	py_vortex_log (PY_VORTEX_DEBUG, "event registered with id %d", data->id);
@@ -802,7 +807,7 @@ static PyObject * py_vortex_ctx_set_log_handler (PyObject * self, PyObject * arg
 	vortex_log2_enable (py_vortex_ctx_get (self), axl_true);
 
 	/* register the handler and get the id */
-	vortex_ctx_set_data_full (py_vortex_ctx_get (self), "py:vo:log-handler", data, NULL, (axlDestroyFunc) py_vortex_ctx_event_free);
+	__unlocked_vortex_ctx_set_data_full (py_vortex_ctx_get (self), "py:vo:log-handler", data, NULL, (axlDestroyFunc) py_vortex_ctx_event_free);
 	vortex_log_set_handler_full (py_vortex_ctx_get (self), __py_vortex_ctx_log_handler, data);
 
 	/* reply work done */
@@ -974,7 +979,7 @@ void        py_vortex_ctx_register (VortexCtx  * ctx,
 
 	/* check to remove */
 	if (data == NULL) {
-		vortex_ctx_set_data (ctx, full_key, NULL);
+		__unlocked_vortex_ctx_set_data (ctx, full_key, NULL);
 		axl_free (full_key);
 		return;
 	} /* end if */
@@ -983,7 +988,7 @@ void        py_vortex_ctx_register (VortexCtx  * ctx,
 	py_vortex_log (PY_VORTEX_DEBUG, "registering key %s = %p on vortex.Ctx %p",
 		       full_key, data, ctx);
 	Py_INCREF (data);
-	vortex_ctx_set_data_full (ctx, full_key, data, axl_free, (axlDestroyFunc) py_vortex_decref);
+	__unlocked_vortex_ctx_set_data_full (ctx, full_key, data, axl_free, (axlDestroyFunc) py_vortex_decref);
 	return;
 }
 
@@ -1050,4 +1055,45 @@ void init_vortex_ctx (PyObject * module)
 	return;
 }
 
+/** 
+ * @internal call to release gil during vortex_ctx_set_data which can
+ * cause triggering user space functions.
+ */
+void        __unlocked_vortex_ctx_set_data                  (VortexCtx       * ctx, 
+							     const char      * key, 
+							     axlPointer        value)
+{
+	/* allow threads */
+	Py_BEGIN_ALLOW_THREADS
+
+	/* call function without having GIL acquired */	
+	vortex_ctx_set_data (ctx, key, value);
+		
+	/* allow threads */
+	Py_END_ALLOW_THREADS
+
+	return;
+}
+
+/** 
+ * @internal call to release gil during vortex_ctx_set_data_full which can
+ * cause triggering user space functions.
+ */
+void        __unlocked_vortex_ctx_set_data_full             (VortexCtx       * ctx, 
+							     const char      * key, 
+							     axlPointer        value,
+							     axlDestroyFunc    key_destroy,
+							     axlDestroyFunc    value_destroy)
+{
+	/* allow threads */
+	Py_BEGIN_ALLOW_THREADS
+
+	/* call function without having GIL acquired */	
+	vortex_ctx_set_data_full (ctx, key, value, key_destroy, value_destroy);
+		
+	/* allow threads */
+	Py_END_ALLOW_THREADS
+
+	return;
+}
 

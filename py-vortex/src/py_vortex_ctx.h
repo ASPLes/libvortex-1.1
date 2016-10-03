@@ -83,4 +83,14 @@ void        init_vortex_ctx      (PyObject * module);
 /** internal declaration **/
 PyObject  * py_vortex_ctx_exit   (PyVortexCtx* self);
 
+void        __unlocked_vortex_ctx_set_data                  (VortexCtx       * ctx, 
+							     const char      * key, 
+							     axlPointer        value);
+
+void        __unlocked_vortex_ctx_set_data_full             (VortexCtx       * ctx, 
+							     const char      * key, 
+							     axlPointer        value,
+							     axlDestroyFunc    key_destroy,
+							     axlDestroyFunc    value_destroy);
+
 #endif
