@@ -2943,9 +2943,9 @@ int                 vortex_connection_ref_count              (VortexConnection *
 		return -1;
 
 	/* return the reference count */
-	vortex_mutex_lock     (&(connection->ref_mutex));
+	/* vortex_mutex_lock     (&(connection->ref_mutex)); */
 	result = connection->ref_count;
-	vortex_mutex_unlock     (&(connection->ref_mutex));
+	/* vortex_mutex_unlock     (&(connection->ref_mutex)); */
 	return result;
 }
 
