@@ -85,6 +85,7 @@
 
 /* disable time checks */
 axl_bool disable_time_checks = axl_false;
+axl_bool skip_http_connect   = axl_false;
 
 /* listener location */
 char   * listener_host = NULL;
@@ -15345,7 +15346,7 @@ int main (int  argc, char ** argv)
 	printf ("**     >> libtool --mode=execute valgrind --leak-check=yes --error-limit=no ./vortex-regression-client --disable-time-checks\n**\n");
 	printf ("** Additional settings:\n");
 	printf ("**\n");
-	printf ("**     >> ./vortex-regression-client [--disable-time-checks] [--run-test=NAME] [--enable-server-log] [--disable-server-log] [--enable-websocket-debug] \n");
+	printf ("**     >> ./vortex-regression-client [--disable-time-checks] [--run-test=NAME] [--enable-server-log] [--disable-server-log] [--enable-websocket-debug] [--skip-http-connect] \n");
 	printf ("**                                   [listener-host [TUNNEL-proxy-host [proxy-host [proxy-port]]]]\n");
 	printf ("**\n");
 	printf ("**       If no listener-host value is provided, it is used \"localhost\". \n");
@@ -15384,7 +15385,6 @@ int main (int  argc, char ** argv)
 	signal (SIGSEGV, __block_test);
 	signal (SIGABRT, __block_test);
 #endif
-
 	/* create the context */
 	ctx = vortex_ctx_new ();
 
@@ -15399,6 +15399,18 @@ int main (int  argc, char ** argv)
 			iterator++;
 		} /* end while */
 	} /* end if */
+
+	/* skip-http-connect */
+	if (argc > 1 && axl_cmp (argv[1], "--skip-http-connect")) {
+		skip_http_connect   = axl_true;
+		iterator            = 1;
+		argc--;
+		printf ("INFO: disabling skip-http-connect\n");
+		while (iterator <= argc) {
+			argv[iterator] = argv[iterator+1];
+			iterator++;
+		} /* end while */
+	} /* end if */	
 
 	/* check for disable-time-checks */
 	if (argc > 1 && axl_memcmp (argv[1], "--run-test=", 11)) {
@@ -16120,9 +16132,12 @@ int main (int  argc, char ** argv)
 
 	run_test (test_15_a, "Test 15-a", "Check ALIVE profile (close and failure handler running at the same time)", -1, -1);
 
-	run_test (test_16, "Test 16", "Check HTTP CONNECT implementation", -1, -1);
-
-	run_test (test_16a, "Test 16-a", "Check HTTP CONNECT implementation (run tests under HTTP CONNECT)", -1, -1); 
+	/* skip http connect if indicated */
+	if (! skip_http_connect) {
+		run_test (test_16, "Test 16", "Check HTTP CONNECT implementation", -1, -1);
+		
+		run_test (test_16a, "Test 16-a", "Check HTTP CONNECT implementation (run tests under HTTP CONNECT)", -1, -1);
+	} /* end if */
 
 	run_test (test_17, "Test 17", "Check Websocket (RFC 6455) connect support through noPoll", -1, -1);
 
