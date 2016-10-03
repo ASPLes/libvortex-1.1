@@ -690,9 +690,9 @@ int         vortex_ctx_ref_count                 (VortexCtx  * ctx)
 		return -1;
 	
 	/* acquire the mutex */
-	vortex_mutex_lock (&ctx->ref_mutex); 
+	/* vortex_mutex_lock (&ctx->ref_mutex);  */
 	result = ctx->ref_count;
-	vortex_mutex_unlock (&ctx->ref_mutex); 
+	/* vortex_mutex_unlock (&ctx->ref_mutex); */
 
 	return result;
 }
