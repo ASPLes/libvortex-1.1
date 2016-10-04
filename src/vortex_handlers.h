@@ -1049,6 +1049,8 @@ typedef void (*VortexLogHandler) (const char       * file,
  * 
  * - \ref vortex_log_set_handler_full
  *
+ * @param ctx The context where the log is happening.
+ *
  * @param file The file that produced the log.
  *
  * @param line The line where the log was produced.
@@ -1061,7 +1063,8 @@ typedef void (*VortexLogHandler) (const char       * file,
  *
  * @param args Arguments for the message.
  */
-typedef void (*VortexLogHandlerFull) (const char       * file,
+typedef void (*VortexLogHandlerFull) (VortexCtx        * ctx,
+				      const char       * file,
 				      int                line,
 				      VortexDebugLevel   log_level,
 				      const char       * message,

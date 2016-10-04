@@ -772,7 +772,7 @@ void _vortex_log_common (VortexCtx        * ctx,
 				ctx->debug_handler (file, line, log_level, log_string, args);
 			/* debug handler2 (if defined) */
 			if (ctx->debug_handler2)
-				ctx->debug_handler2 (file, line, log_level, log_string, ctx->debug_handler2_user_data, args);
+				ctx->debug_handler2 (ctx, file, line, log_level, log_string, ctx->debug_handler2_user_data, args);
 			
 			axl_free (log_string);
 		} else {
@@ -780,7 +780,7 @@ void _vortex_log_common (VortexCtx        * ctx,
 			if (ctx->debug_handler)
 				ctx->debug_handler (file, line, log_level, message, args);
 			if (ctx->debug_handler2)
-				ctx->debug_handler2 (file, line, log_level, message, ctx->debug_handler2_user_data, args);
+				ctx->debug_handler2 (ctx, file, line, log_level, message, ctx->debug_handler2_user_data, args);
 		} /* end if */
 
 	} else {
