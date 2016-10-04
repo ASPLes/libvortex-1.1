@@ -224,20 +224,20 @@ void        py_vortex_ctx_start_handler_watcher (VortexCtx * ctx, int watching_p
 
 	VortexHash * hash;
 
-	/*** GIL ALREADY ACQUIRED REACHED THIS POINT ***/
-
 	/* check handler to be previously defined */
 	if (vortex_ctx_get_data (ctx, PY_VORTEX_WATCHER_HANDLER_HASH)) 
 		return;
 
 	/* init hash */
 	hash = vortex_hash_new (axl_hash_int, axl_hash_equal_int);
-	__unlocked_vortex_ctx_set_data_full (ctx, PY_VORTEX_WATCHER_HANDLER_HASH, hash, NULL, (axlDestroyFunc) vortex_hash_unref);
+	
+	/* set data full */
+	vortex_ctx_set_data_full (ctx, PY_VORTEX_WATCHER_HANDLER_HASH, hash, NULL, (axlDestroyFunc) vortex_hash_unref);
 
 	/* record notifier if defined */
-	__unlocked_vortex_ctx_set_data (ctx, PY_VORTEX_WATCHER_NOTIFIER, notifier);
-	__unlocked_vortex_ctx_set_data (ctx, PY_VORTEX_WATCHER_NOTIFIER_DATA, notifier_data);
-
+	vortex_ctx_set_data (ctx, PY_VORTEX_WATCHER_NOTIFIER, notifier);
+	vortex_ctx_set_data (ctx, PY_VORTEX_WATCHER_NOTIFIER_DATA, notifier_data);
+		
 	/* start handler */
 	vortex_thread_pool_new_event (ctx, (watching_period + 1) * 1000000, 
 				      py_vortex_ctx_handler_watcher, INT_TO_PTR (watching_period), NULL);
@@ -308,10 +308,10 @@ axl_bool        py_vortex_ctx_log_too_long_notifications (VortexCtx * ctx, int w
 
 	/* record file into ctx */
 	file = strdup (file);
-	__unlocked_vortex_ctx_set_data_full (ctx, file, (axlPointer) file, NULL, axl_free);
+	vortex_ctx_set_data_full (ctx, file, (axlPointer) file, NULL, axl_free);
 
 	/* start handler watcher here */
-	py_vortex_ctx_start_handler_watcher (ctx, watching_period, py_vortex_ctx_too_long_notifier_to_file, (axlPointer) file);	
+	py_vortex_ctx_start_handler_watcher (ctx, watching_period, py_vortex_ctx_too_long_notifier_to_file, (axlPointer) file);
 
 	return axl_true;
 }
@@ -353,15 +353,9 @@ static void py_vortex_ctx_dealloc (PyVortexCtx* self)
 		Py_DECREF ( py_vortex_ctx_exit (self) );
 	} /* end if */
 
-	/* allow threads */
-	Py_BEGIN_ALLOW_THREADS
-
 	/* free ctx */
 	vortex_ctx_free (self->ctx);
 	self->ctx = NULL;
-
-	/* allow threads */
-	Py_END_ALLOW_THREADS
 
 	/* free the node it self */
 	self->ob_type->tp_free ((PyObject*)self);
@@ -612,13 +606,13 @@ axl_bool py_vortex_ctx_bridge_event (VortexCtx * ctx, axlPointer user_data, axlP
 		/* call to remove event before returning */
 		vortex_thread_pool_remove_event (ctx, data->id);
 
-		/* end threads */
-		Py_END_ALLOW_THREADS
-
 		/* we have to remove the event, finish all data */
 		str = axl_strdup_printf ("py:vo:event:%d", data->id);
-		__unlocked_vortex_ctx_set_data (ctx, str, NULL);
+		vortex_ctx_set_data (ctx, str, NULL);
 		axl_free (str);
+
+		/* end threads */
+		Py_END_ALLOW_THREADS
 
 	} /* end if */
 
@@ -682,140 +676,12 @@ static PyObject * py_vortex_ctx_new_event (PyObject * self, PyObject * args, PyO
 						 microseconds,
 						 py_vortex_ctx_bridge_event,
 						 data, INT_TO_PTR(data->id));
-	__unlocked_vortex_ctx_set_data_full (py_vortex_ctx_get (self), axl_strdup_printf ("py:vo:event:%d", data->id), data, axl_free, (axlDestroyFunc) py_vortex_ctx_event_free);
+	vortex_ctx_set_data_full (py_vortex_ctx_get (self), axl_strdup_printf ("py:vo:event:%d", data->id), data, axl_free, (axlDestroyFunc) py_vortex_ctx_event_free);
 
 	/* reply work done */
 	py_vortex_log (PY_VORTEX_DEBUG, "event registered with id %d", data->id);
 	return Py_BuildValue ("i", data->id);
 }
-
-/** 
- * @internal bridge to help pass the message into the python engine..
- */
-void __py_vortex_ctx_log_handler (const char       * file,
-				  int                line,
-				  VortexDebugLevel   log_level,
-				  const char       * message,
-				  axlPointer         user_data,
-				  va_list            __args_not_used)
-{
-
-	/* reference to the python channel */
-	PyObject           * args;
-	PyGILState_STATE     state;
-	PyObject           * result;
-	PyVortexEventData  * data    = user_data;
-	VortexCtx          * ctx     = py_vortex_ctx_get (data->ctx);
-
-	/* avoid reporting when ctx is exiting.. */
-	if (vortex_is_exiting (ctx))
-		return;
-
-	/* acquire the GIL */
-	/* py_vortex_log2 (PY_VORTEX_DEBUG, "bridging event id=%d into python code (getting GIL) vortex exiting=%d..", 
-	   data->id, vortex_is_exiting (ctx));   */
-	state = PyGILState_Ensure();
-
-	/* create a tuple to contain arguments */
-	args = PyTuple_New (6);
-
-	/* increase reference counting */
-	Py_INCREF (data->ctx);
-	PyTuple_SetItem (args, 0, data->ctx);
-
-	PyTuple_SetItem (args, 1, Py_BuildValue ("s", file));
-
-	PyTuple_SetItem (args, 2, Py_BuildValue ("i", line));
-
-	PyTuple_SetItem (args, 3, Py_BuildValue ("i", log_level));
-
-	PyTuple_SetItem (args, 4, Py_BuildValue ("s", message));
-
-	Py_INCREF (data->user_data);
-	PyTuple_SetItem (args, 5, data->user_data);
-
-	/* record handler */
-	START_HANDLER (data->handler);
-
-	/* now invoke */
-	result = PyObject_Call (data->handler, args, NULL);
-
-	/* unrecord handler */
-	CLOSE_HANDLER (data->handler);
-
-	/* py_vortex_log2 (PY_VORTEX_DEBUG, "event notification finished, checking for exceptions and result.."); */
-	py_vortex_handle_and_clear_exception (NULL);
-
-	/* release tuple and result returned (which may be null) */
-	Py_DECREF (args);
-	Py_XDECREF (result);
-
-	/* release the GIL */
-	PyGILState_Release (state);
-	
-	return;
-}
-
-
-
-/** 
- * @brief Allows to register a log handler that is called to report
- * all logs produced by the vortex engine. The vortex engine has to be
- * built with debug enable.
- */
-static PyObject * py_vortex_ctx_set_log_handler (PyObject * self, PyObject * args, PyObject * kwds)
-{
-	PyObject           * handler      = NULL;
-	PyObject           * user_data    = NULL;
-	PyVortexEventData  * data;
-
-	/* now parse arguments */
-	static char *kwlist[] = {"handler", "user_data", NULL};
-
-	/* parse and check result */
-	if (! PyArg_ParseTupleAndKeywords (args, kwds, "O|O", kwlist, 
-					   &handler, 
-					   &user_data))
-		return NULL;
-
-	py_vortex_log (PY_VORTEX_DEBUG, "received request to register new event");
-
-	/* check handlers defined */
-	if (handler != NULL && ! PyCallable_Check (handler)) {
-		py_vortex_log (PY_VORTEX_CRITICAL, "called to define a new event but provided a handler which is not callable");
-		return NULL;
-	} /* end if */
-
-	/* create data to hold all objects */
-	data = axl_new (PyVortexEventData, 1);
-	if (data == NULL) {
-		py_vortex_log (PY_VORTEX_CRITICAL, "failed to allocate memory for vortex event..");
-		return NULL;
-	} /* end if */
-
-	/* set references (this is like a = b but ensuring it has at
-	 * least Py_None) */
-	PY_VORTEX_SET_REF (data->user_data,  user_data);
-	PY_VORTEX_SET_REF (data->handler,    handler);
-	PY_VORTEX_SET_REF (data->ctx,        self);
-
-	/* ensure all logs received are already prepared into a single string */
-	vortex_log_set_prepare_log (py_vortex_ctx_get (self), axl_true);
-
-	/* enable debug */
-	vortex_log_enable (py_vortex_ctx_get (self), axl_true);
-	vortex_log2_enable (py_vortex_ctx_get (self), axl_true);
-
-	/* register the handler and get the id */
-	__unlocked_vortex_ctx_set_data_full (py_vortex_ctx_get (self), "py:vo:log-handler", data, NULL, (axlDestroyFunc) py_vortex_ctx_event_free);
-	vortex_log_set_handler_full (py_vortex_ctx_get (self), __py_vortex_ctx_log_handler, data);
-
-	/* reply work done */
-	py_vortex_log (PY_VORTEX_DEBUG, "event registered with id %d", data->id);
-	return Py_BuildValue ("i", data->id);
-}
-
-
 
 /** 
  * @brief Allows to register a new callable event.
@@ -870,9 +736,6 @@ static PyMethodDef py_vortex_ctx_methods[] = {
 	/* enable_too_long_notify_to_file */
 	{"enable_too_long_notify_to_file", (PyCFunction) py_vortex_ctx_enable_too_long_notify_to_file, METH_VARARGS | METH_KEYWORDS,
 	 "Allows to activate a too long notification handler that will long into the provided file a notification every time is found a handler that is taking too long to finish."},
-	/* set_log_handler */
-	{"set_log_handler", (PyCFunction) py_vortex_ctx_set_log_handler, METH_VARARGS | METH_KEYWORDS,
-	 "Allows to configure a log handler that is called everytime vortex engine has something to notify/log. This handler can be used to report critical or error conditions into the python level."},
  	{NULL}  
 }; 
 
@@ -979,7 +842,7 @@ void        py_vortex_ctx_register (VortexCtx  * ctx,
 
 	/* check to remove */
 	if (data == NULL) {
-		__unlocked_vortex_ctx_set_data (ctx, full_key, NULL);
+		vortex_ctx_set_data (ctx, full_key, NULL);
 		axl_free (full_key);
 		return;
 	} /* end if */
@@ -988,7 +851,7 @@ void        py_vortex_ctx_register (VortexCtx  * ctx,
 	py_vortex_log (PY_VORTEX_DEBUG, "registering key %s = %p on vortex.Ctx %p",
 		       full_key, data, ctx);
 	Py_INCREF (data);
-	__unlocked_vortex_ctx_set_data_full (ctx, full_key, data, axl_free, (axlDestroyFunc) py_vortex_decref);
+	vortex_ctx_set_data_full (ctx, full_key, data, axl_free, (axlDestroyFunc) py_vortex_decref);
 	return;
 }
 
@@ -1051,48 +914,6 @@ void init_vortex_ctx (PyObject * module)
 	
 	Py_INCREF (&PyVortexCtxType);
 	PyModule_AddObject(module, "Ctx", (PyObject *)&PyVortexCtxType);
-
-	return;
-}
-
-/** 
- * @internal call to release gil during vortex_ctx_set_data which can
- * cause triggering user space functions.
- */
-void        __unlocked_vortex_ctx_set_data                  (VortexCtx       * ctx, 
-							     const char      * key, 
-							     axlPointer        value)
-{
-	/* allow threads */
-	Py_BEGIN_ALLOW_THREADS
-
-	/* call function without having GIL acquired */	
-	vortex_ctx_set_data (ctx, key, value);
-		
-	/* allow threads */
-	Py_END_ALLOW_THREADS
-
-	return;
-}
-
-/** 
- * @internal call to release gil during vortex_ctx_set_data_full which can
- * cause triggering user space functions.
- */
-void        __unlocked_vortex_ctx_set_data_full             (VortexCtx       * ctx, 
-							     const char      * key, 
-							     axlPointer        value,
-							     axlDestroyFunc    key_destroy,
-							     axlDestroyFunc    value_destroy)
-{
-	/* allow threads */
-	Py_BEGIN_ALLOW_THREADS
-
-	/* call function without having GIL acquired */	
-	vortex_ctx_set_data_full (ctx, key, value, key_destroy, value_destroy);
-		
-	/* allow threads */
-	Py_END_ALLOW_THREADS
 
 	return;
 }
