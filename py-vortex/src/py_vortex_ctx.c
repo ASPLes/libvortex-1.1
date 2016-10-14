@@ -145,14 +145,22 @@ void        py_vortex_ctx_record_start_handler (VortexCtx * ctx, PyObject * hand
 
 void        py_vortex_ctx_record_close_handler (VortexCtx * ctx, PyObject * handler)
 {
-	VortexHash * hash = vortex_ctx_get_data (ctx, PY_VORTEX_WATCHER_HANDLER_HASH);
+	VortexHash * hash;
+
+	/* allow other threads to enter into the python space */
+	Py_BEGIN_ALLOW_THREADS
 
 	/* no hash no record */
-	if (hash == NULL)
-		return;
+	hash = vortex_ctx_get_data (ctx, PY_VORTEX_WATCHER_HANDLER_HASH);
 
-	/* delete handler */
-	vortex_hash_remove (hash, handler);
+	if (hash) {
+		/* delete handler */
+		vortex_hash_remove (hash, handler);
+	} /* end if */
+
+	/* restore thread state */
+	Py_END_ALLOW_THREADS
+
 	return;
 }
 
