@@ -4630,14 +4630,17 @@ const char        * vortex_connection_get_host_ip            (VortexConnection *
 	/* unix flavors */
 	socklen_t          sin_size     = sizeof (sin);
 #endif
+#if defined(ENABLE_VORTEX_LOG)
 	VortexCtx        * ctx;
+
+	/* setup context */
+	ctx = connection->ctx;
+#endif
 
 	/* check input parameters */
 	if (connection == NULL)
 		return NULL;
-	/* setup context */
-	ctx = connection->ctx;
-	
+
 	/* acquire lock to check if host ip was defined previously */
 	vortex_mutex_lock (&connection->op_mutex);
 	if (connection->host_ip) {

@@ -135,6 +135,7 @@
 #define vortex_is_disconnected ((errno == WSAESHUTDOWN) || (errno == WSAECONNABORTED) || (errno == WSAECONNRESET))
 #define VORTEX_FILE_SEPARATOR "\\"
 #define inet_ntop vortex_win32_inet_ntop
+#define EADDRNOTAVAIL 125
 
 /* no link support windows */
 #define S_ISLNK(m) (0)
