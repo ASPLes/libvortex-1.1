@@ -25,7 +25,7 @@ libvortex_tls_1_1_la_LIBADD = \
 libvortex_tls_1_1_la_LDFLAGS = -no-undefined -export-symbols-regex '^(vortex|__vortex|_vortex).*'
 
 vortex_digest_tool_SOURCES          = vortex-digest-tool.c 
-vortex_digest_tool_LDADD            = $(AXL_LIBS) $(LIBS) $(top_builddir)/src/libvortex-1.1.la libvortex-tls-1.1.la $(TLS_LIBS)
+vortex_digest_tool_LDADD            = $(top_builddir)/src/libvortex-1.1.la libvortex-tls-1.1.la $(TLS_LIBS) $(AXL_LIBS) $(LIBS) .libs/libvortex-tls-1.1.so
 
 libvortex-tls-1.1.def: update-def
 
