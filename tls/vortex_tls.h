@@ -403,8 +403,8 @@ axlPointer         vortex_tls_get_ssl_object             (VortexConnection * con
 char             * vortex_tls_get_peer_ssl_digest        (VortexConnection   * connection, 
 							  VortexDigestMethod   method);
 
-char            * vortex_tls_get_ssl_digest (const char * path, VortexDigestMethod   method);
-
+char            * vortex_tls_get_ssl_digest              (const char         * path,
+							  VortexDigestMethod   method);
 
 char             * vortex_tls_get_digest                 (VortexDigestMethod   method,
 							  const char         * string);
