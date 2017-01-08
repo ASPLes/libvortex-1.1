@@ -620,7 +620,7 @@ axl_bool py_vortex_ctx_bridge_event (VortexCtx * ctx, axlPointer user_data, axlP
 
 		/* we have to remove the event, finish all data */
 		str = axl_strdup_printf ("py:vo:event:%d", data->id);
-		vortex_ctx_set_data (ctx, str, NULL);
+		vortex_ctx_set_data (ctx, str, NULL);  /* this calls py_vortex_ctx_event_free to release references */
 		axl_free (str);
 
 	} /* end if */
