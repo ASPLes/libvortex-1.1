@@ -348,7 +348,7 @@ axl_bool   vortex_hash_exists   (VortexHash *hash_table,
 
 /** 
  * @brief Allows to get the data pointed by the provided key and
- * removing it from the table in one step.
+ * removing it from the table in one step (without calling destroy functions!)
  * 
  * Return the value, if found, associated with the key.
  * 
@@ -373,7 +373,7 @@ axlPointer   vortex_hash_lookup_and_clear   (VortexHash   *hash_table,
 	data = axl_hash_get (hash_table->table, key);
 
 	/* remove the data */
-	was_removed = axl_hash_remove (hash_table->table, key);
+	was_removed = axl_hash_delete (hash_table->table, key);
 
 	/* unlock and return */
 	vortex_mutex_unlock (&hash_table->mutex);	
@@ -381,7 +381,7 @@ axlPointer   vortex_hash_lookup_and_clear   (VortexHash   *hash_table,
 	if (was_removed) {
 		/* notify change */
 		__vortex_hash_notify_change (hash_table);
-	}
+	} /* end if */
 
 	return data;
 }
@@ -457,21 +457,32 @@ axl_bool     vortex_hash_remove   (VortexHash *hash_table,
 {
 	axl_bool   was_removed;
 
+	/* reference to elements to dealloc */
+	axlPointer         orig_key;
+	axlDestroyFunc     destroy_key;
+	axlPointer         orig_data;
+	axlDestroyFunc     destroy_data;
+
 	/* check hash table reference */
 	if (hash_table == NULL)
 		return axl_false;
 
 	vortex_mutex_lock   (&hash_table->mutex);
 
- 	was_removed = axl_hash_remove (hash_table->table, key);
+ 	was_removed = axl_hash_remove_deferred (hash_table->table, key, &orig_key, &destroy_key, &orig_data, &destroy_data);
  	
 	vortex_mutex_unlock (&hash_table->mutex);
 
  	if (was_removed) {
  		/* notify change */
  		__vortex_hash_notify_change (hash_table);
- 	}
-	return axl_true;
+
+		/* call to cleanup references after unlocking */
+		axl_hash_deferred_cleanup (orig_key, destroy_key, orig_data, destroy_data);
+		
+	} /* end if */
+
+	return was_removed;
 }
 
 /** 
