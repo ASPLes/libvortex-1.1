@@ -202,7 +202,7 @@ def test_02():
         return False
 
     # call to create a connection
-    conn = vortex.Connection (ctx, host, port)
+    conn = vortex.Connection (ctx, host, port, timeout = 5000000)
 
     # check connection status after if 
     if not conn.is_ok ():
@@ -1234,14 +1234,17 @@ def test_11 ():
 def test_12_on_close_a (conn, queue2):
     queue = queue2.pop ()
     queue.push (1)
+    time.sleep (2)
 
 def test_12_on_close_b (conn, queue2):
     queue = queue2.pop ()
     queue.push (2)
+    time.sleep (2)
 
 def test_12_on_close_c (conn, queue2):
     queue = queue2.pop ()
     queue.push (3)
+    time.sleep (2)
 
 def test_12():
        # create a context
