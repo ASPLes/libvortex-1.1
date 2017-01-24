@@ -127,9 +127,10 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 	const char         * port       = NULL;
 	const char         * serverName = NULL;
 	PyObject           * py_vortex_ctx = NULL;
+	long                 timeout    = 60000000;
 
 	/* now parse arguments */
-	static char *kwlist[] = {"ctx", "host", "port", "serverName", NULL};
+	static char *kwlist[] = {"ctx", "host", "port", "serverName", "timeout", NULL};
 
 	/* create the object */
 	self = (PyVortexConnection *)type->tp_alloc(type, 0);
@@ -137,7 +138,7 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 	/* check args */
 	if (args != NULL) {
 		/* parse and check result */
-		if (! PyArg_ParseTupleAndKeywords(args, kwds, "|Ossz", kwlist, &py_vortex_ctx, &host, &port, &serverName)) 
+		if (! PyArg_ParseTupleAndKeywords(args, kwds, "|Osszi", kwlist, &py_vortex_ctx, &host, &port, &serverName, &timeout)) 
 			return NULL;
 
 		/* check for empty creation */
@@ -153,7 +154,7 @@ static PyObject * py_vortex_connection_new (PyTypeObject *type, PyObject *args, 
 		}
 
 		/* set default timeout */
-		vortex_connection_connect_timeout (py_vortex_ctx_get (py_vortex_ctx), 60000000);
+		vortex_connection_connect_timeout (py_vortex_ctx_get (py_vortex_ctx), timeout);
 
 		/* allow threads */
 		Py_BEGIN_ALLOW_THREADS
