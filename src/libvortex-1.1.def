@@ -497,6 +497,7 @@ vortex_log_get_handler
 vortex_log_is_enabled
 vortex_log_is_enabled_acquire_mutex
 vortex_log_set_handler
+vortex_log_set_handler_full
 vortex_log_set_prepare_log
 vortex_mutex_create
 vortex_mutex_create_full
