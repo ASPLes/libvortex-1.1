@@ -31,7 +31,7 @@ using :class:`vortex.Channel`.
 Module API
 ==========
 
-.. class:: Connection (ctx, host, port [, serverName])
+.. class:: Connection (ctx, host, port [, serverName][, timeout])
 
    :param ctx: Vortex context where the connection will be created.
    :param type: vortex.Ctx
@@ -44,6 +44,9 @@ Module API
 
    :param serverName: Optional serverName value to ask for this channel. This value will change automatic behaviour notifying the provided serverName on next channel start request. 
    :type serverName: String
+
+   :param timeout: Optional timeout configuration in microseconds (1 second = 1000000 microseconds), by default 60.000.000 is configured (60 seconds).
+   :type timeout: Integer (> 0) 
 
    .. method:: is_ok ()
 
