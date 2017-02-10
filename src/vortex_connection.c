@@ -3058,8 +3058,8 @@ void               vortex_connection_connect_timeout (VortexCtx * ctx,
  */
 long                vortex_connection_get_timeout (VortexCtx * ctx)
 {
-	/* get current context */
-	long       d_timeout   = ctx->connection_std_timeout;
+        
+        long       d_timeout;
 	
 	/* check reference */
 	if (ctx == NULL) {
@@ -3067,6 +3067,9 @@ long                vortex_connection_get_timeout (VortexCtx * ctx)
 		 * configured at vortex_connection_init. */
 		return (60000000);
 	} /* end if */
+
+	/* get current context */
+	d_timeout   = ctx->connection_std_timeout;
 
 	/* check if we have used the current environment variable */
 	vortex_mutex_lock  (&(ctx->ref_mutex));
