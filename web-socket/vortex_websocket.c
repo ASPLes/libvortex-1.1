@@ -399,6 +399,14 @@ int vortex_websocket_read (VortexConnection * conn,
 		nopoll_conn_set_socket (_conn, -1);
 		vortex_connection_shutdown (conn);
 	} /* end if */
+
+	/* flag we have pending bytes if it is the case */
+	if (nopoll_conn_read_pending (_conn) > 0) {
+	        /* flag we have pending bytes to be read so vortex frame factory can recover them */
+	        vortex_connection_set_data (conn, "try_read_pending", INT_TO_PTR (nopoll_conn_read_pending (_conn)));
+	} /* end if */
+	  
+	
 	return result;
 }
 
