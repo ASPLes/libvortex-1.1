@@ -726,8 +726,22 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 
 	if (ctx_creation == NULL) {
 		/* fall back into the default implementation */
-		ssl_ctx  = SSL_CTX_new (TLSv1_client_method ()); 
-		vortex_log (VORTEX_LEVEL_DEBUG, "ssl context SSL_CTX_new (TLSv1_client_method ()) returned = %p", ssl_ctx);
+#if defined(VORTEX_HAVE_TLS_FLEXIBLE_ENABLED)
+		ssl_ctx  = SSL_CTX_new (TLS_client_method ());
+#elif defined(VORTEX_HAVE_TLSv12_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+		ssl_ctx  = SSL_CTX_new (TLSv1_2_client_method ());
+#elif defined(VORTEX_HAVE_TLSv11_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+		ssl_ctx  = SSL_CTX_new (TLSv1_1_client_method ());
+#elif defined(VORTEX_HAVE_TLSv10_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+		ssl_ctx  = SSL_CTX_new (TLSv1_0_client_method ());
+#elif defined(VORTEX_HAVE_SSLv3_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+		ssl_ctx  = SSL_CTX_new (SSLv3_client_method ());
+#else
+#error "No SSL method was found. Unable to provide a valid compilation"
+		ssl_ctx  = NULL;
+#endif
+		if (ssl_ctx)
+		        vortex_log (VORTEX_LEVEL_DEBUG, "ssl context SSL_CTX_new (TLSv1_client_method ()) returned = %p", ssl_ctx);
 	} else {
 		/* call to the default handler to create the SSL_CTX */
 		ssl_ctx  = ctx_creation (connection, ctx_creation_data);
@@ -1616,7 +1630,22 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 	} /* end if */
 
 	if (ctx_creation == NULL) {
-		ssl_ctx  = SSL_CTX_new (TLSv1_server_method ());
+	  
+#if defined(VORTEX_HAVE_TLS_FLEXIBLE_ENABLED)
+		ssl_ctx  = SSL_CTX_new (TLS_server_method ());
+#elif defined(VORTEX_HAVE_TLSv12_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+		ssl_ctx  = SSL_CTX_new (TLSv1_2_server_method ());
+#elif defined(VORTEX_HAVE_TLSv11_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+		ssl_ctx  = SSL_CTX_new (TLSv1_1_server_method ());
+#elif defined(VORTEX_HAVE_TLSv10_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+		ssl_ctx  = SSL_CTX_new (TLSv1_0_server_method ());
+#elif defined(VORTEX_HAVE_SSLv3_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+		ssl_ctx  = SSL_CTX_new (SSLv3_server_method ());
+#else
+#error "No SSL method was found. Unable to provide a valid compilation"
+		ssl_ctx  = NULL;
+#endif
+		
 	} else {
 		/* call to the default handler to create the SSL_CTX */
 		ssl_ctx  = ctx_creation (connection, ctx_creation_data);
@@ -2400,7 +2429,26 @@ char* vortex_tls_get_ssl_digest (const char * path, VortexDigestMethod   method)
 		return NULL;
 	}
 	
-	sslctx = SSL_CTX_new (TLSv1_server_method ());
+#if defined(VORTEX_HAVE_TLS_FLEXIBLE_ENABLED)
+	sslctx  = SSL_CTX_new (TLS_server_method ());
+#elif defined(VORTEX_HAVE_TLSv12_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+	sslctx  = SSL_CTX_new (TLSv1_2_server_method ());
+#elif defined(VORTEX_HAVE_TLSv11_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+	sslctx  = SSL_CTX_new (TLSv1_1_server_method ());
+#elif defined(VORTEX_HAVE_TLSv10_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+	sslctx  = SSL_CTX_new (TLSv1_0_server_method ());
+#elif defined(VORTEX_HAVE_SSLv3_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+	sslctx  = SSL_CTX_new (SSLv3_server_method ());
+#else
+#error "No SSL method was found. Unable to provide a valid compilation"
+	sslctx  = NULL;
+#endif
+
+	if (sslctx == NULL) {
+	        printf ("ERROR:  failed to get ssl context, unable to produce digest, internal library error\n");
+	        return NULL;
+	} /* end if */
+	
 	SSL_CTX_use_certificate_file (sslctx, path,  SSL_FILETYPE_PEM);
 	ssl    = SSL_new (sslctx);
 	// Note: SSL_get_certificate() is a getter method that returns a borrowed 
@@ -2469,7 +2517,11 @@ char             * vortex_tls_get_digest_sized           (VortexDigestMethod   m
 {
 	char          * result = NULL;
 	unsigned char   buffer[EVP_MAX_MD_SIZE];
+#if OPENSSL_VERSION_NUMBER < 0x10100000L	
 	EVP_MD_CTX      mdctx;
+#else
+	EVP_MD_CTX    * mdctx;
+#endif
 	const EVP_MD  * md = NULL;
 #ifdef __SSL_0_97__
 	unsigned int   md_len;
@@ -2504,11 +2556,18 @@ char             * vortex_tls_get_digest_sized           (VortexDigestMethod   m
 	EVP_DigestFinal_ex(&mdctx, buffer, &md_len);
 	EVP_MD_CTX_cleanup(&mdctx);
 #else
+#  if OPENSSL_VERSION_NUMBER < 0x10100000L
 	EVP_DigestInit (&mdctx, md);
 	EVP_DigestUpdate (&mdctx, content, content_size);
 	EVP_DigestFinal (&mdctx, buffer, &md_len);
+#  else
+	mdctx = EVP_MD_CTX_create ();
+	EVP_DigestInit (mdctx, md);
+	EVP_DigestUpdate (mdctx, content, content_size);
+	EVP_DigestFinal (mdctx, buffer, &md_len);
+	EVP_MD_CTX_destroy (mdctx);
+#  endif
 #endif
-	
 	result = __vortex_tls_translateToOctal (md_len, buffer);
 	
 	/* return the digest */
