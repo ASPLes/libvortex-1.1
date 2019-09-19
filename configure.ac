@@ -266,8 +266,12 @@ if test x$enable_tls_support = xyes ; then
    AC_CHECK_LIB(ssl,SSLv23_method,  ssl_sslv23_supported=yes, ssl_sslv23_supported=no)
    AM_CONDITIONAL(VORTEX_HAVE_SSLv23_ENABLED, test "x$ssl_sslv23_supported" = "xyes")
 
-   AC_CHECK_LIB(ssl,TLSv1_method,   ssl_tlsv1_supported=yes,  ssl_tlsv1_supported=no)
-   AM_CONDITIONAL(VORTEX_HAVE_TLSv10_ENABLED, test "x$ssl_tlsv1_supported" = "xyes")
+   # TLSv1.0 as defined in the old days
+   AC_CHECK_LIB(ssl,TLSv1_0_method, ssl_tlsv10_supported=yes,  ssl_tlsv10_supported=no)
+   AM_CONDITIONAL(VORTEX_HAVE_TLSv10_ENABLED, test "x$ssl_tlsv10_supported" = "xyes")
+   # TLSv1.0 as defined nowdays
+   AC_CHECK_LIB(ssl,TLSv1_method, ssl_tlsv1_supported=yes,  ssl_tlsv1_supported=no)
+   AM_CONDITIONAL(VORTEX_HAVE_TLSv1_ENABLED, test "x$ssl_tlsv1_supported" = "xyes")
 
    AC_CHECK_LIB(ssl,TLSv1_1_method, ssl_tlsv11_supported=yes, ssl_tlsv11_supported=no)
    AM_CONDITIONAL(VORTEX_HAVE_TLSv11_ENABLED, test "x$ssl_tlsv11_supported" = "xyes")
@@ -595,7 +599,8 @@ echo "      debug log support:           [$enable_vortex_log]"
 echo "      release prefix:              [$enable_release_prefix]"
 echo "   OpenSSL TLS protocol versions detected:"
 echo "      SSLv23:  $ssl_sslv23_supported"
-echo "      TLSv1.0: $ssl_tlsv1_supported"
+echo "      TLSv1.0: $ssl_tlsv10_supported"
+echo "      TLSv1:   $ssl_tlsv1_supported"
 echo "      TLSv1.1: $ssl_tlsv11_supported"
 echo "      TLSv1.2: $ssl_tlsv12_supported"
 echo "      pthread cflags: $PTHREAD_CFLAGS, libs=$PTHREAD_LIBS"

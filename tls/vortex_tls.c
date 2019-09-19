@@ -732,6 +732,8 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 		ssl_ctx  = SSL_CTX_new (TLSv1_2_client_method ());
 #elif defined(VORTEX_HAVE_TLSv11_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
 		ssl_ctx  = SSL_CTX_new (TLSv1_1_client_method ());
+#elif defined(VORTEX_HAVE_TLSv1_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+		ssl_ctx  = SSL_CTX_new (TLSv1_client_method ());
 #elif defined(VORTEX_HAVE_TLSv10_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
 		ssl_ctx  = SSL_CTX_new (TLSv1_0_client_method ());
 #elif defined(VORTEX_HAVE_SSLv3_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
@@ -1639,6 +1641,8 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 		ssl_ctx  = SSL_CTX_new (TLSv1_1_server_method ());
 #elif defined(VORTEX_HAVE_TLSv10_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
 		ssl_ctx  = SSL_CTX_new (TLSv1_0_server_method ());
+#elif defined(VORTEX_HAVE_TLSv1_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+		ssl_ctx  = SSL_CTX_new (TLSv1_server_method ());
 #elif defined(VORTEX_HAVE_SSLv3_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
 		ssl_ctx  = SSL_CTX_new (SSLv3_server_method ());
 #else
@@ -2437,6 +2441,8 @@ char* vortex_tls_get_ssl_digest (const char * path, VortexDigestMethod   method)
 	sslctx  = SSL_CTX_new (TLSv1_1_server_method ());
 #elif defined(VORTEX_HAVE_TLSv10_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
 	sslctx  = SSL_CTX_new (TLSv1_0_server_method ());
+#elif defined(VORTEX_HAVE_TLSv1_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+	sslctx  = SSL_CTX_new (TLSv1_server_method ());
 #elif defined(VORTEX_HAVE_SSLv3_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
 	sslctx  = SSL_CTX_new (SSLv3_server_method ());
 #else
