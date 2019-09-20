@@ -49,6 +49,7 @@
 /* local include */
 #include <vortex_ctx_private.h>
 #include <vortex_payload_feeder_private.h>
+#include <vortex_connection_private.h>
 
 /** 
  * @internal
@@ -1875,7 +1876,7 @@ void            vortex_channel_set_received_handler (VortexChannel * channel,
  *
  * When using this function, you should consider using also this
  * function \ref vortex_channel_set_complete_frame_limit to place a
- * limit.
+ * limit (or \ref vortex_connection_set_complete_frame_limit).
  *
  * <b>Notes about MIME and how it applies to automatic vortex MIME processing:</b>
  *
@@ -1952,6 +1953,11 @@ void               vortex_channel_set_complete_flag            (VortexChannel * 
  * in background, and may allow an attacker to send a very large
  * message (never completes) until all BEEP peer memory is exhausted. 
  *
+ * Note you can also configure complete frame limit at connection
+ * level (\ref vortex_connection_set_complete_frame_limit). In case it
+ * is configured and bigger than channel limit, then that limit
+ * (connection level) is applied.
+ *
  *
  * @param channel The channel to be configured the complete frame limit.
  *
@@ -2024,7 +2030,8 @@ void               vortex_channel_store_previous_frame           (VortexCtx     
 								  VortexChannel * channel, 
 								  VortexFrame   * new_frame)
 {
-
+        int complete_frame_limit = -1;
+  
 	/* check reference */
 	if (channel == NULL || new_frame == NULL)
 		return; 
@@ -2035,14 +2042,21 @@ void               vortex_channel_store_previous_frame           (VortexCtx     
 	/* configure new previous frame */
 	axl_list_append (channel->previous_frame, new_frame);
 
+	/* setup complete frame limit from channel */
+	if (channel->complete_frame_limit > 0)
+	        complete_frame_limit = channel->complete_frame_limit;
+	/* take value from connection level if bigger and defined */
+	if (channel->connection && channel->connection->complete_frame_limit > complete_frame_limit)
+	        complete_frame_limit = channel->connection->complete_frame_limit;
+
 	/* check limit and close the connection if reached */
 	vortex_log (VORTEX_LEVEL_DEBUG, "Checking complete frame limit=%d (current bytes: %d) for channel=%d on conection id=%d",
-		    channel->complete_frame_limit, channel->complete_current_bytes, channel->channel_num, vortex_connection_get_id (channel->connection));
-	if (channel->complete_frame_limit > 0 && channel->complete_current_bytes > channel->complete_frame_limit) {
+		    complete_frame_limit, channel->complete_current_bytes, channel->channel_num, vortex_connection_get_id (channel->connection));
+	if (complete_frame_limit > 0 && channel->complete_current_bytes > complete_frame_limit) {
 		/* get a reference to the context */
 		__vortex_connection_shutdown_and_record_error (channel->connection, VortexError, 
 							       "Reached complete frame limit=%d for channel=%d, profile=%s, closing conection id=%d (from %s:%s)",
-							       channel->complete_frame_limit, 
+							       complete_frame_limit, 
 							       channel->channel_num, channel->profile, 
 							       vortex_connection_get_id (channel->connection),
 							       vortex_connection_get_host_ip (channel->connection),

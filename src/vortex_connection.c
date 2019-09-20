@@ -436,6 +436,39 @@ int  __vortex_connection_get_next_id (VortexCtx * ctx)
 	return result;
 }
 
+/** 
+ * @brief Allows to configure the max complete frame size that can be
+ * received having complete flag enabled.
+ *
+ * If you have complete flag enabled (\ref
+ * vortex_channel_set_complete_flag) to can call this function to
+ * stablish a limit. Although it is handy, having complete flag
+ * enabled may cause a security risk because is a mechanism that run
+ * in background, and may allow an attacker to send a very large
+ * message (never completes) until all BEEP peer memory is exhausted. 
+ *
+ * Note you can also configure complete frame limit at connection
+ * level (\ref vortex_connection_set_complete_frame_limit). In case it
+ * is configured and bigger than channel limit, then that limit
+ * (connection level) is applied.
+ *
+ *
+ * @param channel The channel to be configured the complete frame limit.
+ *
+ * @param max_payload_size The maximum payload this peer will accept
+ * for this channel until closing the connection if the limit is
+ * reached without having a complete message. Use 0 to disable the
+ * limit.
+ */
+void               vortex_connection_set_complete_frame_limit     (VortexConnection * conn,
+								   int                max_payload_size)
+{
+	if (conn == NULL)
+		return;
+	conn->complete_frame_limit = max_payload_size;
+	return;
+}
+
 
 /** 
  * @internal

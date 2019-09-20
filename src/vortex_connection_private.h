@@ -442,6 +442,11 @@ struct _VortexConnection {
 
 	/** reference to the transport used by the library */
 	VortexNetTransport           transport;
+
+        /** @internal used by \ref
+	 * vortex_connection_set_complete_frame_limit to limit at
+	 * global connection frame limits. */
+        int                          complete_frame_limit;
 };
 
 #endif /* __VORTEX_CONNECTION_PRIVATE_H__ */

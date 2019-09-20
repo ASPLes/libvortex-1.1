@@ -195,6 +195,9 @@ void                vortex_connection_free                   (VortexConnection *
 
 axlList           * vortex_connection_get_remote_profiles    (VortexConnection * connection);
 
+void                vortex_connection_set_complete_frame_limit     (VortexConnection * conn,
+								    int                max_payload_size);
+
 int                 vortex_connection_set_profile_mask       (VortexConnection      * connection,
 							      VortexProfileMaskFunc   mask,
 							      axlPointer              user_data);
