@@ -705,6 +705,7 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 	axlPointer             post_check_data;
 	int                    ssl_error;
 	VortexTlsCtx         * tls_ctx;
+	const char           * method_label;
 
 	/* check if the tls ctx was created */
 	tls_ctx = vortex_ctx_get_data (ctx, TLS_CTX);
@@ -727,23 +728,32 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 	if (ctx_creation == NULL) {
 		/* fall back into the default implementation */
 #if defined(VORTEX_HAVE_TLS_FLEXIBLE_ENABLED)
-		ssl_ctx  = SSL_CTX_new (TLS_client_method ());
+		ssl_ctx      = SSL_CTX_new (TLS_client_method ());
+		method_label = "TLS_client_method";
 #elif defined(VORTEX_HAVE_TLSv12_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
-		ssl_ctx  = SSL_CTX_new (TLSv1_2_client_method ());
+		ssl_ctx      = SSL_CTX_new (TLSv1_2_client_method ());
+		method_label = "TLSv1_2_client_method";
 #elif defined(VORTEX_HAVE_TLSv11_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
-		ssl_ctx  = SSL_CTX_new (TLSv1_1_client_method ());
+		ssl_ctx      = SSL_CTX_new (TLSv1_1_client_method ());
+		method_label = "TLSv1_1_client_method";
 #elif defined(VORTEX_HAVE_TLSv1_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
-		ssl_ctx  = SSL_CTX_new (TLSv1_client_method ());
+		ssl_ctx      = SSL_CTX_new (TLSv1_client_method ());
+		method_label = "TLSv1_client_method";
 #elif defined(VORTEX_HAVE_TLSv10_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
-		ssl_ctx  = SSL_CTX_new (TLSv1_0_client_method ());
+		ssl_ctx      = SSL_CTX_new (TLSv1_0_client_method ());
+		method_label = "TLSv1_0_client_method";
 #elif defined(VORTEX_HAVE_SSLv3_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
-		ssl_ctx  = SSL_CTX_new (SSLv3_client_method ());
+		ssl_ctx      = SSL_CTX_new (SSLv3_client_method ());
+		method_label = "SSLv3_client_method";
 #else
 #error "No SSL method was found. Unable to provide a valid compilation"
 		ssl_ctx  = NULL;
 #endif
-		if (ssl_ctx)
-		        vortex_log (VORTEX_LEVEL_DEBUG, "ssl context SSL_CTX_new (TLSv1_client_method ()) returned = %p", ssl_ctx);
+		if (ssl_ctx) {
+		        /* vortex_log (VORTEX_LEVEL_DEBUG, "Configuring SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION, for=%s", method_label);
+			SSL_CTX_set_options (ssl_ctx, SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION | SSL_OP_LEGACY_SERVER_CONNECT); */
+		        vortex_log (VORTEX_LEVEL_DEBUG, "ssl context SSL_CTX_new (%s ()) returned = %p, method=%s", method_label, ssl_ctx, method_label);
+		}
 	} else {
 		/* call to the default handler to create the SSL_CTX */
 		ssl_ctx  = ctx_creation (connection, ctx_creation_data);
@@ -1241,6 +1251,23 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 	}
 
 	return NULL;
+}
+
+/** 
+ * Allows to configure a preferred method to use before calling to
+ * activate SSL/TLS support. This method is used at client side to
+ * configure preferred SSL/TLS method before starting TLS negotiation.
+ *
+ * @param connection Connection that will be configured with preferred method.
+ */
+void               vortex_tls_use_method                 (VortexConnection     * connection,
+							  const char           * tls_method)
+{
+        if (connection && tls_method) {
+	        /* configure indication to be used when started SSL_CTX method */
+	        vortex_connection_set_data_full    (connection, "tls:method", axl_strdup (tls_method), NULL, axl_free);
+	} /* end if */
+        return;
 }
 
 /** 
