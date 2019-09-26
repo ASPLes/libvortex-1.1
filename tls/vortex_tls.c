@@ -695,9 +695,9 @@ void __vortex_tls_start_negotiation_close_and_notify (VortexTlsActivation   proc
 int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 {
 	/* get current context */
-	VortexCtx            * ctx = vortex_connection_get_ctx (connection);
-	SSL_CTX              * ssl_ctx;
-	SSL                  * ssl;
+	VortexCtx            * ctx     = vortex_connection_get_ctx (connection);
+	SSL_CTX              * ssl_ctx = NULL;
+	SSL                  * ssl     = NULL;
 	X509                 * server_cert;
 	VortexTlsCtxCreation   ctx_creation;
 	axlPointer             ctx_creation_data;
@@ -706,6 +706,7 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 	int                    ssl_error;
 	VortexTlsCtx         * tls_ctx;
 	const char           * method_label;
+	const char           * method_requested;
 
 	/* check if the tls ctx was created */
 	tls_ctx = vortex_ctx_get_data (ctx, TLS_CTX);
@@ -725,10 +726,52 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 		ctx_creation_data = tls_ctx->tls_default_ctx_creation_user_data;
 	} /* end if */
 
+	/* get method requeted by user (configured through
+	   vortex_tls_use_method) */
+	method_requested = vortex_connection_get_data (connection, "tls:method");
+
+	/* check ctx_creation is not defined to provide default method
+	   based on user preference or default Flexible method. */
 	if (ctx_creation == NULL) {
+	        /* First, select especific versions only if user requested
+		 * them. Otherwise, try first flexible method available
+		 * (NEW: TLS_client_method or OLD: SSLv23_client_method).
+		 */
+	  
+#if defined(VORTEX_HAVE_TLSv12_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+	        if (ssl_ctx == NULL && method_requested != NULL && axl_casecmp (method_requested, "tlsv1.2")) {
+		        ssl_ctx      = SSL_CTX_new (TLSv1_2_client_method ());
+			method_label = "TLSv1_2_client_method (TLSv1.2)";
+		}
+#endif
+#if defined(VORTEX_HAVE_TLSv11_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+	        if (ssl_ctx == NULL && method_requested != NULL && axl_casecmp (method_requested, "tlsv1.1")) {
+		        ssl_ctx      = SSL_CTX_new (TLSv1_1_client_method ());
+			method_label = "TLSv1_1_client_method (TLSv1.1)";
+		}
+#endif		
+#if defined(VORTEX_HAVE_TLSv1_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+	        if (ssl_ctx == NULL && method_requested != NULL && axl_casecmp (method_requested, "tlsv1")) {
+		        ssl_ctx      = SSL_CTX_new (TLSv1_client_method ());
+			method_label = "TLSv1_client_method (TLSv1)";
+		}
+#endif
+#if defined(VORTEX_HAVE_TLSv10_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+	        if (ssl_ctx == NULL && method_requested != NULL && axl_casecmp (method_requested, "tlsv1.0")) {
+		        ssl_ctx      = SSL_CTX_new (TLSv1_0_client_method ());
+			method_label = "TLSv1_0_client_method (TLSv1.0)";
+		}
+#endif
+#if defined(VORTEX_HAVE_SSLv3_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+	        if (ssl_ctx == NULL && method_requested != NULL && axl_casecmp (method_requested, "sslv3")) {
+		        ssl_ctx      = SSL_CTX_new (SSLv3_client_method ());
+			method_label = "SSLv3_client_method (SSLv3)";
+		}
+#endif		
+		
 		/* fall back into the default implementation */
 #if defined(VORTEX_HAVE_TLS_FLEXIBLE_ENABLED)
-	        /* TLS Flex method:
+	        /* TLS Flex method starting from OpenSSL 1.1.0
 		 *
 		 * https://www.openssl.org/docs/manmaster/man3/SSL_CTX_new.html
 		 * 
@@ -737,26 +780,29 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 		 * TLS_method(), TLS_server_method() and TLS_client_method()
 		 * functions were added in OpenSSL 1.1.0.	  
 		 */
-	        ssl_ctx      = SSL_CTX_new (TLS_client_method ());
-		method_label = "TLS_client_method (flex)";
-#elif defined(VORTEX_HAVE_TLSv12_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
-		ssl_ctx      = SSL_CTX_new (TLSv1_2_client_method ());
-		method_label = "TLSv1_2_client_method (TLSv1.2)";
-#elif defined(VORTEX_HAVE_TLSv11_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
-		ssl_ctx      = SSL_CTX_new (TLSv1_1_client_method ());
-		method_label = "TLSv1_1_client_method (TLSv1.1)";
-#elif defined(VORTEX_HAVE_TLSv1_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
-		ssl_ctx      = SSL_CTX_new (TLSv1_client_method ());
-		method_label = "TLSv1_client_method (TLSv1)";
-#elif defined(VORTEX_HAVE_TLSv10_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
-		ssl_ctx      = SSL_CTX_new (TLSv1_0_client_method ());
-		method_label = "TLSv1_0_client_method (TLSv1.0)";
-#elif defined(VORTEX_HAVE_SSLv3_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
-		ssl_ctx      = SSL_CTX_new (SSLv3_client_method ());
-		method_label = "SSLv3_client_method (SSLv3)";
-#else
-#error "No SSL method was found. Unable to provide a valid compilation"
-		ssl_ctx  = NULL;
+		if (ssl_ctx == NULL) {
+		        ssl_ctx      = SSL_CTX_new (TLS_client_method ());
+			method_label = "TLS_client_method (New Flex)";
+		}
+#elif defined(VORTEX_HAVE_SSLv23_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
+		/* TLS Flex method starting before OpenSSL 1.1.0 
+		 * 
+		 * https://www.openssl.org/docs/man1.0.2/man3/SSLv23_client_method.html
+		 *
+		 * These are the general-purpose version-flexible
+		 * SSL/TLS methods. The actual protocol version used
+		 * will be negotiated to the highest version mutually
+		 * supported by the client and the server. The
+		 * supported protocols are SSLv2, SSLv3, TLSv1,
+		 * TLSv1.1 and TLSv1.2. Most applications should use
+		 * these method, and avoid the version specific
+		 * methods described below.
+		 */
+		if (ssl_ctx == NULL) {
+		        /* use old flexible method */
+		        ssl_ctx      = SSL_CTX_new (SSLv23_client_method ());
+			method_label = "SSLv23_client_method (SSLv23 Old Flex)";
+		}
 #endif
 		if (ssl_ctx) {
 		        /* vortex_log (VORTEX_LEVEL_DEBUG, "Configuring SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION, for=%s", method_label);
@@ -1268,6 +1314,14 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
  * configure preferred SSL/TLS method before starting TLS negotiation.
  *
  * @param connection Connection that will be configured with preferred method.
+ *
+ * @param tls_method TLS methods strings supported are: tlsv1.2,
+ * tlsv1.1, tlsv1, tlsv1.0, sslv3
+ *
+ * In case you do not configure any method, TLS Flexible method will
+ * be used to negotiate the higher common TLS agreed by both parties.
+ *
+ * This is used for client/peer connections and server/listener
  */
 void               vortex_tls_use_method                 (VortexConnection     * connection,
 							  const char           * tls_method)
