@@ -263,8 +263,23 @@ if test x$enable_tls_support = xyes ; then
       AC_SUBST(TLS_LIBS)
    fi
 
+   # OLD TLS Flex method: (before OpenSSL 1.1.0)
+   #
+   # https://www.openssl.org/docs/man1.0.2/man3/SSLv23_client_method.html
+   #
+   # SSLv23_method(), SSLv23_server_method(), SSLv23_client_method()
+   # These are the general-purpose version-flexible SSL/TLS
+   # methods. The actual protocol version used will be negotiated to
+   # the highest version mutually supported by the client and the
+   # server. The supported protocols are SSLv2, SSLv3, TLSv1, TLSv1.1
+   # and TLSv1.2. Most applications should use these method, and avoid
+   # the version specific methods described below.
    AC_CHECK_LIB(ssl,SSLv23_method,  ssl_sslv23_supported=yes, ssl_sslv23_supported=no)
    AM_CONDITIONAL(VORTEX_HAVE_SSLv23_ENABLED, test "x$ssl_sslv23_supported" = "xyes")
+
+   # Support for SSLv3 
+   AC_CHECK_LIB(ssl,SSLv3_method,  ssl_sslv3_supported=yes, ssl_sslv3_supported=no)
+   AM_CONDITIONAL(VORTEX_HAVE_SSLv3_ENABLED, test "x$ssl_sslv3_supported" = "xyes")
 
    # TLSv1.0 as defined in the old days
    AC_CHECK_LIB(ssl,TLSv1_0_method, ssl_tlsv10_supported=yes,  ssl_tlsv10_supported=no)
@@ -279,7 +294,7 @@ if test x$enable_tls_support = xyes ; then
    AC_CHECK_LIB(ssl,TLSv1_2_method, ssl_tlsv12_supported=yes, ssl_tlsv12_supported=no)
    AM_CONDITIONAL(VORTEX_HAVE_TLSv12_ENABLED, test "x$ssl_tlsv12_supported" = "xyes")
 
-   # TLS Flex method:
+   # NEW TLS Flex method:
    #
    # https://www.openssl.org/docs/manmaster/man3/SSL_CTX_new.html
    # 
@@ -606,12 +621,15 @@ echo "      default:                     [$default_platform]"
 echo "      debug log support:           [$enable_vortex_log]"
 echo "      release prefix:              [$enable_release_prefix]"
 echo "   OpenSSL TLS protocol versions detected:"
-echo "      SSLv23:  $ssl_sslv23_supported"
-echo "      TLSv1.0: $ssl_tlsv10_supported"
-echo "      TLSv1:   $ssl_tlsv1_supported"
-echo "      TLSv1.1: $ssl_tlsv11_supported"
-echo "      TLSv1.2: $ssl_tlsv12_supported"
-echo "      TLSflex: $ssl_tls_flexible_supported"
+echo "      flexible methods: "
+echo "        SSLv23 (old flex):  $ssl_sslv23_supported"
+echo "        TLSflex (new flex): $ssl_tls_flexible_supported"
+echo "      fixed ssl/tls protocol: "
+echo "        SSLv3:              $ssl_sslv3_supported"
+echo "        TLSv1.0:            $ssl_tlsv10_supported"
+echo "        TLSv1:              $ssl_tlsv1_supported"
+echo "        TLSv1.1:            $ssl_tlsv11_supported"
+echo "        TLSv1.2:            $ssl_tlsv12_supported"
 echo "      pthread cflags: $PTHREAD_CFLAGS, libs=$PTHREAD_LIBS"
 echo "      additional libs: $ADDITIONAL_LIBS"
 echo "      axl flags: $AXL_CFLAGS"
