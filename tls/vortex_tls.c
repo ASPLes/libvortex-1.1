@@ -706,7 +706,9 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 	int                    ssl_error;
 	VortexTlsCtx         * tls_ctx;
 	const char           * method_label;
-	const char           * method_requested;
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+	const char           * method_requested = NULL;
+#endif	
 
 	/* check if the tls ctx was created */
 	tls_ctx = vortex_ctx_get_data (ctx, TLS_CTX);
@@ -726,9 +728,11 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 		ctx_creation_data = tls_ctx->tls_default_ctx_creation_user_data;
 	} /* end if */
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L	
 	/* get method requeted by user (configured through
 	   vortex_tls_use_method) */
 	method_requested = vortex_connection_get_data (connection, "tls:method");
+#endif
 
 	/* check ctx_creation is not defined to provide default method
 	   based on user preference or default Flexible method. */
@@ -1690,7 +1694,9 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 	VortexCtx            * ctx              = vortex_connection_get_ctx (connection);
 	SSL_CTX              * ssl_ctx          = NULL;
 	SSL                  * ssl              = NULL;
+#if OPENSSL_VERSION_NUMBER < 0x10100000L	
 	const char           * method_requested = NULL;
+#endif	
 	const char           * method_label     = NULL;
 	char                 * certificate_file;
 	char                 * private_file;
@@ -1722,9 +1728,11 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 		ctx_creation_data = tls_ctx->tls_default_ctx_creation_user_data;
 	} /* end if */
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L		
 	/* get method requeted by user (configured through
 	   vortex_tls_use_method) */
-	method_requested = vortex_connection_get_data (connection, "tls:method");	
+	method_requested = vortex_connection_get_data (connection, "tls:method");
+#endif	
 
 	if (ctx_creation == NULL) {
 
