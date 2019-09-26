@@ -51,7 +51,7 @@ libpy_vortex_sasl_11_la_include_HEADERS = \
 	py_vortex_sasl.h
 libpy_vortex_sasl_11_la_SOURCES = \
 	py_vortex_sasl.c
-libpy_vortex_sasl_11_la_LDFLAGS  = $(PYTHON_LIBS) $(top_srcdir)/src/libvortex-1.1.la $(top_srcdir)/sasl/libvortex-sasl-1.1.la $(AXL_LIBS) 
+libpy_vortex_sasl_11_la_LDFLAGS  = $(PYTHON_LIBS) $(top_srcdir)/src/libvortex-1.1.la $(top_srcdir)/py-vortex/src/libpy_vortex_11.la $(top_srcdir)/sasl/libvortex-sasl-1.1.la $(AXL_LIBS) 
 libpy_vortex_sasl_11_la_includedir = $(includedir)/py_vortex
 
 libpy_vortex_sasl_11_la_LIBADD = $(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
@@ -63,7 +63,7 @@ libpy_vortex_tls_11_la_include_HEADERS = \
 	py_vortex_tls.h
 libpy_vortex_tls_11_la_SOURCES = \
 	py_vortex_tls.c
-libpy_vortex_tls_11_la_LDFLAGS  = $(PYTHON_LIBS) $(top_srcdir)/src/libvortex-1.1.la $(top_srcdir)/tls/libvortex-tls-1.1.la $(AXL_LIBS) 
+libpy_vortex_tls_11_la_LDFLAGS  = $(PYTHON_LIBS) $(top_srcdir)/src/libvortex-1.1.la $(top_srcdir)/py-vortex/src/libpy_vortex_11.la $(top_srcdir)/tls/libvortex-tls-1.1.la $(AXL_LIBS) 
 libpy_vortex_tls_11_la_includedir = $(includedir)/py_vortex
 
 libpy_vortex_tls_11_la_LIBADD = $(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
@@ -74,7 +74,7 @@ libpy_vortex_alive_11_la_include_HEADERS = \
 	py_vortex_alive.h
 libpy_vortex_alive_11_la_SOURCES = \
 	py_vortex_alive.c
-libpy_vortex_alive_11_la_LDFLAGS  = $(PYTHON_LIBS) $(top_srcdir)/src/libvortex-1.1.la $(top_srcdir)/alive/libvortex-alive-1.1.la $(AXL_LIBS) 
+libpy_vortex_alive_11_la_LDFLAGS  = $(PYTHON_LIBS) $(top_srcdir)/src/libvortex-1.1.la $(top_srcdir)/py-vortex/src/libpy_vortex_11.la $(top_srcdir)/alive/libvortex-alive-1.1.la $(AXL_LIBS) 
 libpy_vortex_alive_11_la_includedir = $(includedir)/py_vortex
 
 libpy_vortex_alive_11_la_LIBADD = $(AXL_LIBS) $(PTHREAD_LIBS) $(ADDITIONAL_LIBS)
