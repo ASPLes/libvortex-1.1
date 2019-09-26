@@ -28,4 +28,5 @@ vortex_tls_ssl_read
 vortex_tls_ssl_write
 vortex_tls_start_negotiation
 vortex_tls_start_negotiation_sync
+vortex_tls_use_method
 vortex_tls_verify_cert
