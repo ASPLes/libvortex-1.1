@@ -728,23 +728,32 @@ int      vortex_tls_invoke_tls_activation (VortexConnection * connection)
 	if (ctx_creation == NULL) {
 		/* fall back into the default implementation */
 #if defined(VORTEX_HAVE_TLS_FLEXIBLE_ENABLED)
-		ssl_ctx      = SSL_CTX_new (TLS_client_method ());
-		method_label = "TLS_client_method";
+	        /* TLS Flex method:
+		 *
+		 * https://www.openssl.org/docs/manmaster/man3/SSL_CTX_new.html
+		 * 
+		 * SSLv23_method(), SSLv23_server_method() and
+		 * SSLv23_client_method() were deprecated and the preferred
+		 * TLS_method(), TLS_server_method() and TLS_client_method()
+		 * functions were added in OpenSSL 1.1.0.	  
+		 */
+	        ssl_ctx      = SSL_CTX_new (TLS_client_method ());
+		method_label = "TLS_client_method (flex)";
 #elif defined(VORTEX_HAVE_TLSv12_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
 		ssl_ctx      = SSL_CTX_new (TLSv1_2_client_method ());
-		method_label = "TLSv1_2_client_method";
+		method_label = "TLSv1_2_client_method (TLSv1.2)";
 #elif defined(VORTEX_HAVE_TLSv11_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
 		ssl_ctx      = SSL_CTX_new (TLSv1_1_client_method ());
-		method_label = "TLSv1_1_client_method";
+		method_label = "TLSv1_1_client_method (TLSv1.1)";
 #elif defined(VORTEX_HAVE_TLSv1_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
 		ssl_ctx      = SSL_CTX_new (TLSv1_client_method ());
-		method_label = "TLSv1_client_method";
+		method_label = "TLSv1_client_method (TLSv1)";
 #elif defined(VORTEX_HAVE_TLSv10_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
 		ssl_ctx      = SSL_CTX_new (TLSv1_0_client_method ());
-		method_label = "TLSv1_0_client_method";
+		method_label = "TLSv1_0_client_method (TLSv1.0)";
 #elif defined(VORTEX_HAVE_SSLv3_ENABLED) && OPENSSL_VERSION_NUMBER < 0x10100000L
 		ssl_ctx      = SSL_CTX_new (SSLv3_client_method ());
-		method_label = "SSLv3_client_method";
+		method_label = "SSLv3_client_method (SSLv3)";
 #else
 #error "No SSL method was found. Unable to provide a valid compilation"
 		ssl_ctx  = NULL;

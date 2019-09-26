@@ -279,6 +279,14 @@ if test x$enable_tls_support = xyes ; then
    AC_CHECK_LIB(ssl,TLSv1_2_method, ssl_tlsv12_supported=yes, ssl_tlsv12_supported=no)
    AM_CONDITIONAL(VORTEX_HAVE_TLSv12_ENABLED, test "x$ssl_tlsv12_supported" = "xyes")
 
+   # TLS Flex method:
+   #
+   # https://www.openssl.org/docs/manmaster/man3/SSL_CTX_new.html
+   # 
+   # SSLv23_method(), SSLv23_server_method() and
+   # SSLv23_client_method() were deprecated and the preferred
+   # TLS_method(), TLS_server_method() and TLS_client_method()
+   # functions were added in OpenSSL 1.1.0.
    AC_CHECK_LIB(ssl,TLS_client_method, ssl_tls_flexible_supported=yes, ssl_tls_flexible_supported=no)
    AM_CONDITIONAL(VORTEX_HAVE_TLS_FLEXIBLE_ENABLED, test "x$ssl_tls_flexible_supported" = "xyes")
 
