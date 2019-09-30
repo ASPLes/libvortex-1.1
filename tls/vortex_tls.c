@@ -1854,8 +1854,9 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 
 		if (status) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
-				    "there was an error while setting certificate file '%s' into the SSl context, unable to start TLS profile. Failure found at SSL_CTX_use_certificate_file function.",
-				    certificate_file);
+				    "there was an error while setting certificate file '%s' into the SSl context, unable to start TLS profile. Failure found at SSL_CTX_use_certificate_file (%s) function (running uid=%d, euid=%d)",
+				    certificate_file,
+				    certificate_file, getuid (), geteuid ());
 			vortex_tls_log_ssl (ctx);
 
 			/* dump error stack */
@@ -1885,7 +1886,8 @@ void vortex_tls_prepare_listener (VortexConnection * connection)
 
 		if (status) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, 
-				    "there was an error while setting private file into the SSl context, unable to start TLS profile. Failure found at SSL_CTX_use_PrivateKey_file function.");
+				    "there was an error while setting private file into the SSl context, unable to start TLS profile. Failure found at SSL_CTX_use_PrivateKey_file (%s) function (running uid=%d, euid=%d)",
+				    private_file, getuid (), geteuid ());
 			/* dump error stack */
 			vortex_tls_notify_failure_handler (ctx, connection, "there was an error while setting private file into the SSl context, unable to start TLS profile. Failure found at SSL_CTX_use_PrivateKey_file function.");
 			vortex_connection_set_close_socket (connection, axl_true);
