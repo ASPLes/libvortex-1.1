@@ -138,7 +138,8 @@ Development headers for BEEP TLS profile.
 Summary: BEEP SASL profiles support for Vortex Library
 Group: System Environment/Libraries
 Requires: libvortex-1.1
-Requires: libgsasl7
+# run command to get current system libgsasl package (centos6: libgsasl7, centos7: libgsasl)
+Requires: %(rpm -qa | grep gsasl | grep -v devel | cut -f1 -d'-' | head -n1)
 %description  -n libvortex-sasl-1.1
 This package contains the extension library to add support for SASL
 profiles to the core Vortex Library.
