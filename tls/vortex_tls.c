@@ -1220,7 +1220,7 @@ axlPointer __vortex_tls_start_negotiation (VortexTlsBeginData * data)
 		__vortex_tls_start_negotiation_close_and_notify (process_status,
 								 connection,
 								 NULL, 
-								 "TLS negotiation has failed, unable to procede with BEEP session tuning.", user_data);
+								 "TLS negotiation has failed, unable to proceed with BEEP session tuning.", user_data);
 		return NULL;
 	}
 
