@@ -1,6 +1,6 @@
 /*
  *  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
- *  Copyright (C) 2016 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2020 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
