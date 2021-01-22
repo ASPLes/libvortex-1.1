@@ -888,11 +888,19 @@ PyObject  * py_vortex_ctx_register_get (VortexCtx  * ctx,
 	va_start (args, key);
 	full_key = axl_strdup_printfv (key, args);
 	va_end   (args);
+
+	/* allow threads */
+	Py_BEGIN_ALLOW_THREADS
 	
 	/* now register the data received into the key created */
 	data = __PY_OBJECT (vortex_ctx_get_data (ctx, full_key));
 	py_vortex_log (PY_VORTEX_DEBUG, "returning key %s = %p on vortex.Ctx %p",
 		       full_key, data, ctx);
+
+	/* end threads: this declaration has to be here so
+	   next vortex_ctx_set_data runs with GIL acquired */
+	Py_END_ALLOW_THREADS
+	
 	axl_free (full_key);
 	return data;
 }
