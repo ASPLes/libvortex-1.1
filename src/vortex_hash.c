@@ -180,16 +180,28 @@ void         vortex_hash_insert   (VortexHash *hash_table,
 				   axlPointer key,
 				   axlPointer value)
 {
+	axlPointer     old_key = NULL;
+	axlDestroyFunc destroy_key = NULL;
+	
+	axlPointer     old_value = NULL;
+	axlDestroyFunc destroy_value = NULL;
+	
 	/* check hash table reference */
 	if (hash_table == NULL)
 		return;
 	vortex_mutex_lock   (&hash_table->mutex);
 
+	/* call to remove deferred (remove without calling delete functions but reporting them) */
+	axl_hash_remove_deferred (hash_table->table, key, &old_key, &destroy_key, &old_value, &destroy_value);	
+	
 	axl_hash_insert_full (hash_table->table, 
 			      key, hash_table->key_destroy, 
 			      value, hash_table->value_destroy);
 
 	vortex_mutex_unlock (&hash_table->mutex);
+
+	/* release before unlocking */
+	axl_hash_deferred_cleanup (old_key, destroy_key, old_value, destroy_value);
 
 	/* notify change */
 	__vortex_hash_notify_change (hash_table);
@@ -211,16 +223,29 @@ void         vortex_hash_replace  (VortexHash *hash_table,
 				   axlPointer key,
 				   axlPointer value)
 {
+	axlPointer     old_key = NULL;
+	axlDestroyFunc destroy_key = NULL;
+	
+	axlPointer     old_value = NULL;
+	axlDestroyFunc destroy_value = NULL;
+  
 	/* check hash table reference */
 	if (hash_table == NULL)
 		return;
 	vortex_mutex_lock   (&hash_table->mutex);
-	
+
+	/* call to remove deferred (remove without calling delete functions but reporting them) */
+	axl_hash_remove_deferred (hash_table->table, key, &old_key, &destroy_key, &old_value, &destroy_value);
+
+	/* call insert without causing a remove because we have actually removed that key from hash */
 	axl_hash_insert_full (hash_table->table, 
 			      key, hash_table->key_destroy, 
 			      value, hash_table->value_destroy);
 
 	vortex_mutex_unlock (&hash_table->mutex);
+
+	/* release before unlocking */
+	axl_hash_deferred_cleanup (old_key, destroy_key, old_value, destroy_value);
 
 	/* notify change */
 	__vortex_hash_notify_change (hash_table);
@@ -248,16 +273,28 @@ void         vortex_hash_replace_full  (VortexHash     * hash_table,
 					axlPointer       value,
 					axlDestroyFunc   value_destroy)
 {
+	axlPointer     old_key = NULL;
+	axlDestroyFunc destroy_key = NULL;
+	
+	axlPointer     old_value = NULL;
+	axlDestroyFunc destroy_value = NULL;
+	
 	/* check hash table reference */
 	if (hash_table == NULL)
 		return;
 	vortex_mutex_lock   (&hash_table->mutex);
+
+	/* call to remove deferred (remove without calling delete functions but reporting them) */
+	axl_hash_remove_deferred (hash_table->table, key, &old_key, &destroy_key, &old_value, &destroy_value);	
 	
 	axl_hash_insert_full (hash_table->table, 
 			      key, key_destroy,
 			      value, value_destroy);
 
 	vortex_mutex_unlock (&hash_table->mutex);
+
+	/* release before unlocking */
+	axl_hash_deferred_cleanup (old_key, destroy_key, old_value, destroy_value);	
 
 	/* notify change */
 	__vortex_hash_notify_change (hash_table);
