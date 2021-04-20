@@ -251,8 +251,9 @@ static PyObject * py_vortex_unlock_listeners (PyObject * self, PyObject * args, 
 
 void py_vortex_decref (PyObject * obj)
 {
-	Py_XDECREF (obj);
-	return;
+       if (obj != NULL)
+	 Py_XDECREF (obj);
+       return;
 }
 
 /** 

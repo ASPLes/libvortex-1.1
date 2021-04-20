@@ -83,11 +83,15 @@ void py_vortex_channel_set_frame_received_internal (VortexChannel * channel, PyO
 					      NULL, (axlDestroyFunc) py_vortex_decref);
 
 		/* acquire a reference to the data if defined */
-		if (data == NULL)
-			data = Py_None;
-		Py_INCREF (data);
-		vortex_channel_set_data_full (channel, "py:vo:ch:frd", data,
-					      NULL, (axlDestroyFunc) py_vortex_decref);
+		if (data == NULL) {
+		        /* do not grab references, avoid using set_data_full */
+			vortex_channel_set_data (channel, "py:vo:ch:frd", Py_None);
+		} else {
+		        /* increase data reference */
+		        Py_INCREF (data);
+			vortex_channel_set_data_full (channel, "py:vo:ch:frd", data,
+						      NULL, (axlDestroyFunc) py_vortex_decref);
+		}
 	} /* end if */
 	
 	return;
