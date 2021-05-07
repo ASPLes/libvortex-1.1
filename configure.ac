@@ -784,6 +784,9 @@ else
    echo "     configure process."
 fi
 echo
+echo "   To build without optimizer use: "
+echo "   >> make CFLAGS='-g -O0' CXXFLAGS='-g -O0' clean all"
+echo
 echo "------------------------------------------"
 echo "--            LET IT BEEP!              --"
 echo "--                                      --"
