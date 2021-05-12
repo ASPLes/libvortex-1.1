@@ -103,7 +103,6 @@ void py_vortex_tls_do_notify           (VortexConnection * connection,
 
 	/* nullify internal reference of the old connection */
 	py_vortex_connection_nullify (data->py_conn);
-	Py_DECREF (data->py_conn);
 
 	/* create a tuple to contain arguments */
 	args = PyTuple_New (4);
@@ -131,6 +130,7 @@ void py_vortex_tls_do_notify           (VortexConnection * connection,
 	 * tls_notify_data, this is already done by previous tuple
 	 * deallocation */
 	Py_DECREF (data->tls_notify);
+	Py_DECREF (data->py_conn);
 	axl_free (data);
 
 	/* release the GIL */

@@ -251,8 +251,18 @@ static PyObject * py_vortex_unlock_listeners (PyObject * self, PyObject * args, 
 
 void py_vortex_decref (PyObject * obj)
 {
-       if (obj != NULL)
-	 Py_XDECREF (obj);
+       PyGILState_STATE     state;
+  
+       if (obj != NULL) {
+	      /* acquire the GIL (ensure we always release with gil acquired) */
+	      state = PyGILState_Ensure();
+	 
+	      /* Py_XDECREF (obj); */
+	      Py_CLEAR(obj);
+
+	      /* release the GIL */
+	      PyGILState_Release (state);	      
+       }
        return;
 }
 
