@@ -177,7 +177,7 @@ Description: BEEP over External support for Vortex Library (dev headers)
 Package: vortex-xml-rpc-gen-1.1
 Section: net
 Architecture: any
-Depends: libreadline5, libaxl1 (>= 0.6.4), 
+Depends: libreadline8, libaxl1 (>= 0.6.4), 
   libvortex-1.1 (= ${binary:Version})
 Description: tool to create support files to execute XML-RPC services.
   This package contains the xml-rpc-gen tool which is used to create 
@@ -186,7 +186,7 @@ Description: tool to create support files to execute XML-RPC services.
 Package: vortex-client-1.1
 Section: net
 Architecture: any
-Depends: libreadline5, libvortex-1.1 (= ${binary:Version}),
+Depends: libreadline8, libvortex-1.1 (= ${binary:Version}),
   libvortex-xml-rpc-1.1 (= ${binary:Version}), 
   libvortex-sasl-1.1 (= ${binary:Version}),
   libvortex-tls-1.1 (=  ${binary:Version})
