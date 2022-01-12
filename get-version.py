@@ -21,10 +21,33 @@ if release_name in no_github_com_access:
     sys.exit (0)
 # end if
 
-(status, info) = command.run ("LANG=C svn update . | grep revision")
-if status:
-    print "ERROR: unable to get subversion version: %s" % info
-    sys.exit (-1)
+tries = 0
+while True:
+    # atttempt to download
+    (status, info) = command.run ("LANG=C svn update . | grep revision")
+    if status:
+        if "Too Many Requests" in info and tries < 10:
+            # increase attempts 
+            tries += 1
+            print "WARNING: tries=%d, found too many connections report: %s" % (tries, info)
+            print "WARNING: waiting a bit to retry..."
+            start = time.time ()
+            sleep (randint(1,20))
+            print "INFO: wait done (%d seconds waited).." % (time.time () - start)
+            continue
+        # end if
+    # end if
+    
+    if status:
+        print "ERROR: unable to get subversion version: %s" % info
+        sys.exit (-1)
+    # end if
+
+    print "INFO: svn update finished without error.."
+    for line in info.split ("\n"):
+        print "  | %s" % line
+    break
+# end while
 
 # get versision
 revision = info.split (" ")[2].replace (".", "").strip ()
