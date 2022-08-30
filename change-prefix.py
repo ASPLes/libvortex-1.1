@@ -2,7 +2,7 @@
 # coding: utf-8
 #  LibVortex:  A BEEP (RFC3080/RFC3081) implementation.
 #  change-prefix.py : a tool to change library prefix by updating Makefiles before compiling.
-#  Copyright (C) 2014 Advanced Software Production Line, S.L.
+#  Copyright (C) 2022 Advanced Software Production Line, S.L.
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public License
@@ -56,7 +56,7 @@ def replace_on_file (file_path, maps):
     return
 
 print "change-prefix.py : a tool to change library prefix by updating Makefiles before compiling."
-print "Copyright (C) 2014 Advanced Software Production Line, S.L."
+print "Copyright (C) 2022 Advanced Software Production Line, S.L."
 
 prefix = raw_input("Please, provide library prefix to configure (i.e.: 64, 32, lts): ")
 if prefix:
