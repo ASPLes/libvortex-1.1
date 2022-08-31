@@ -1,0 +1,172 @@
+      ###################################################
+      ##              Vortex Library 1.1.19            ##
+      ##                 "Black hole sun"              ##
+      ###################################################
+
+Release note
+~~~~~~~~~~~~
+
+  Advanced Software Production Line is proud to announce Vortex
+  Library 1.1.19 "Black hole sun" release availability: an open source
+  "BEEP Core" protocol implementation written in C, mapped onto
+  TCP/IP.
+
+  Vortex Library is a stable and robust application protocol
+  development toolkit, with active support for Microsoft Windows and
+  GNU/Linux platforms.
+
+  Check out the following links to get ready with Vortex Library:
+
+    - http://www.aspl.es/vortex
+      [Vortex Library homepage]
+
+    - http://www.aspl.es/vortex/downloads
+      [Vortex Library downloads, binaries w64 & w32]
+
+    - http://www.core-admin.com
+      [Featured product: Core-Admin]
+      
+    
+This release in short
+~~~~~~~~~~~~~~~~~~~~~
+
+  - New stable release with several corrections. 
+
+  - Added support for Debian BullsEye, Debian Buster and Ubuntu Focal
+
+Changes since 1.1.18
+~~~~~~~~~~~~~~~~~~~~
+
+* [fix] Updated files to avoid failing with github too many
+  connections.
+
+* [fix] Fixed race condition at py_vortex_decref where it is possible
+  to have that function called under pressure conditions (300 >
+  connections), without having the GIL acquired. Added code to ensure
+  state.
+
+* [fix] Updated configure.ac to include some debug indications
+
+* [fix] Added additional updates to avoid increasing/decreasing
+  references to Py_None when handling frame received notification.
+
+* [fix] Several updates to VortexHash module to use
+  axl_hash_remove_deferred to avoid deadlocks produced by internal
+  calls to destroy key and destroy value which are in turn calling to
+  reacquire references to the same hash.
+
+* [fix] Updated py_vortex_ctx_register_get to allow/end threads while
+  getting data to make sure dealloc methods do not call into python
+  getting GIL in that moment, causing a deadlock.
+
+* [fix] Updated get-python-config to support detecting 2.7 specific
+  version
+
+* [fix] Fix typo at tls module
+
+* [fix] Added code to vortex.spect to detect gsasl package according
+  to distribution (centos6+centos7 support).
+
+* [fix] Added additional debug to show certificate file and key file
+  that failed to be loaded but also to report uid and euid so
+  developer/administrator can better debug whats happening.
+
+* [fix] Restore back reference to libpy_vortex_11.la
+
+* [fix] Updated .def files to include new methods. Updated
+  LATEST-VERSION.  Updated Makefile.am to remove reference that seems
+  to cause problem.
+
+* [fix] Added additional code to avoid failing to compile TLS module
+  for OpenSSL 1.1.0 with tls10, 1.1 and 1.2 deprecated (seems only
+  flex method is now supported).
+
+* [fix] Updated server side support for TLS profile to use available
+  flexible method available before checking user defined tls method
+  (only in case it was defined). Restored support for SSLv3.
+
+* [fix] Applied several udpates to honour vortex_tls_use_method
+  configuration and to fallback to available TLS Flexible method for
+  client side. Added documentation to explain how flexible methods
+  work before and after openssl 1.1.0
+
+* [fix] Added documentation to configure.ac to explain flexible tls
+  methods detected and which one is used before openssl 1.1.0 and
+  after openssl 1.1.0 Restore detection of SSLv3 method
+
+* [fix] Updated configure.ac and tls/vortex_tls.c to explain when
+  appeared TLS_client_method and TLS_server_method.
+
+* [fix] Updated configure.ac to report TLS_client_method (flex method)
+  was detected.
+
+* [fix] Updated Vortex TLS API to provide vortex_tls_use_method to
+  force certain TLS mechanism.
+
+* [fix] Updated Vortex TLS client negotation to provide more
+  information about what method was used to initiate TLS negotiation.
+
+* [fix] Updated API, engine and documentation to include a new
+  function to allow configuring complete frame limit at connection
+  level:
+
+   - vortex_connection_set_complete_frame_limit
+ 
+  Updated engine to make limit configured at connection level to be applied only if
+  is defined and it is bigger than limit at channel.
+
+* [fix] Updated engine to restore TLSv1.0 support for old libssl0.9.8
+  installations (squeeze, lenny and centos6).
+
+* [fix] Applied several changes to add support to libopenssl 1.1 (new
+  versions provided by Debian Stretch Amd64). Added conditional code
+  to make the library keep on compiling on older versions.
+
+* [fix] Fixed vortex_connection_get_timeout to avoid it failing
+  (segfault) when passing a NULL ctx reference.
+
+* [fix] Fixed wrong variable used for error reporting at
+  __vortex_connection_shutdown_and_record_error
+
+* [fix] Updated PyVortex regression test to check new parameter
+  "timeout"..
+
+* [fix] Updated PyVortex API documentation to explain to how to use
+  new timeout parameter
+
+* [fix] Updated vortex.Connection () to support configuring a
+  connection timeout that defaults to 60 seconds.
+
+* [fix] Updated vortex_hash_remove to use use axl_hash_remove_deferred
+  to avoid releasing memory with mutex locked.
+
+* [fix] Updated web files..
+
+* [fix] Updated tls/Makefile.am to remove kludge added for FreeBSD. It
+  is causing Centos problems. We will have to find another way..
+
+* [fix] Added very dirty hack to allow compiling
+  tls/vortex-digest-tool on FreeBSD 9.3/i386...:-?
+
+* [fix] Minor vortex_tls.h header..
+
+About Us
+~~~~~~~~
+
+  Advanced Software Production Line (ASPL) provides Linux Cloud Services
+  through https://asplhosting.com, to enable organisation to introduce
+  GNU/Linux into their processes, making other platforms to properly
+  interact with it.
+
+  You can reach us:
+
+       https://www.asplhosting.com - info@aspl.es
+
+  Enjoy Vortex Library!  
+
+--
+Francis Brosnan Blázquez           - francis@aspl.es
+Advanced Software Production Line  - https://www.asplhosting.com
+                                   - https://www.aspl.es
+31th Aug 2022, Madrid (Spain)
+

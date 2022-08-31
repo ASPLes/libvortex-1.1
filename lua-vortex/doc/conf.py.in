@@ -36,7 +36,7 @@ master_doc = 'index'
 
 # General substitutions.
 project = 'LuaVortex'
-copyright = '2011, Advanced Software Production Line, S.L.'
+copyright = 'Copyright (C) 2022 Advanced Software Production Line, S.L.'
 
 # The default replacements for |version| and |release|, also used in various
 # other places throughout the built documents.
