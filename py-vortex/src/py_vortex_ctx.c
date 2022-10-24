@@ -99,7 +99,7 @@ void        py_vortex_ctx_record_start_handler (VortexCtx * ctx, PyObject * hand
 	PyObject                * obj;
 	struct timeval            stamp;
 	char                    * buffer;
-	Py_ssize_t                buffer_size;
+	Py_ssize_t                buffer_size = 0;
 	PyVortexHandlerWatcher  * watcher;
 	VortexHash              * hash = vortex_ctx_get_data (ctx, PY_VORTEX_WATCHER_HANDLER_HASH);
 
@@ -129,7 +129,10 @@ void        py_vortex_ctx_record_start_handler (VortexCtx * ctx, PyObject * hand
 	Py_DECREF (obj);
 
 	/* record handler started */
-	watcher->handler_string = axl_strdup (buffer);
+	if (buffer_size > 0)
+	        watcher->handler_string = axl_strdup (buffer);
+	else
+	        watcher->handler_string = axl_strdup ("None");
 
 	gettimeofday (&stamp, NULL);
 	watcher->stamp = (int) stamp.tv_sec;
