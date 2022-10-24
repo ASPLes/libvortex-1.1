@@ -126,7 +126,6 @@ void        py_vortex_ctx_record_start_handler (VortexCtx * ctx, PyObject * hand
 		vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to record handler started because it wasn't possible to build an string representation");
 		return;
 	} /* end if */
-	Py_DECREF (obj);
 
 	/* record handler started */
 	if (buffer_size > 0)
@@ -136,6 +135,7 @@ void        py_vortex_ctx_record_start_handler (VortexCtx * ctx, PyObject * hand
 
 	gettimeofday (&stamp, NULL);
 	watcher->stamp = (int) stamp.tv_sec;
+	Py_DECREF (obj);
 	
 	/* record value */
 	/* py_vortex_log (PY_VORTEX_DEBUG, "Started handler %s and stamp %d", watcher->handler_string, (int) watcher->stamp);  */
