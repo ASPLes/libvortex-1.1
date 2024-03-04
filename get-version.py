@@ -24,7 +24,7 @@ if release_name in no_github_com_access:
 tries = 0
 while True:
     # atttempt to download
-    (status, info) = command.run ("LANG=C svn update . | grep revision")
+    (status, info) = command.run ("""LANG=C git log | grep "^commit " | wc -l""")
     if status:
         if "Too Many Requests" in info and tries < 10:
             # increase attempts 
@@ -39,18 +39,19 @@ while True:
     # end if
     
     if status:
-        print "ERROR: unable to get subversion version: %s" % info
+        print "ERROR: unable to get git version: %s" % info
         sys.exit (-1)
     # end if
 
-    print "INFO: svn update finished without error.."
+    print "INFO: git finished without error.."
     for line in info.split ("\n"):
         print "  | %s" % line
     break
 # end while
 
 # get versision
-revision = info.split (" ")[2].replace (".", "").strip ()
+# revision = info.split (" ")[2].replace (".", "").strip ()
+revision = info.strip ()  
 print "INFO: Revision found: %s" % revision
 
 version = open ("VERSION").read ().split (".b")[0].strip ()
@@ -61,7 +62,8 @@ open ("VERSION", "w").write ("%s\n" % version)
 open ("LATEST-VERSION", "w").write ("%s\n" % version)
 
 # also update Changelog
-command.run ("svn log > Changelog")
+command.run ("./update-changelog.sh")
+
 
 
 
