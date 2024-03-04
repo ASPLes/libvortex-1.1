@@ -51,7 +51,7 @@ while True:
 
 # get versision
 # revision = info.split (" ")[2].replace (".", "").strip ()
-revision = info.strip ()  
+revision = int (info.strip ()) + 1
 print "INFO: Revision found: %s" % revision
 
 version = open ("VERSION").read ().split (".b")[0].strip ()

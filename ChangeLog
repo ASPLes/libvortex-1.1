@@ -1,3 +1,7 @@
+2024-03-04  Francis Brosnan Blázquez  <francis@aspl.es>
+
+	* [fix] Preparing files for official Ubuntu Jammy release. Removed   subversion references.
+
 2023-11-23  Francis Brosnan Blázquez  <francis@aspl.es>
 
 	* [fix] Updated control file dependencies for ubuntu jammy
