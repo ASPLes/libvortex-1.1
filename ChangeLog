@@ -1,3 +1,11 @@
+2024-03-06  Francis Brosnan Blázquez  <francis@aspl.es>
+
+	* [fix] Changed python interpreter for default python2.7 for jammy
+
+2024-03-05  Francis Brosnan Blázquez  <francis@aspl.es>
+
+	* [fix] Revision update for release
+
 2024-03-04  Francis Brosnan Blázquez  <francis@aspl.es>
 
 	* [fix] Minor changes to align release with revision log
