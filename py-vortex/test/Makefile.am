@@ -35,5 +35,5 @@ endif
 	@test -e vortex/alive.py      || cp ../src/alive.py vortex/
 	@diff vortex/alive.py ../src/alive.py || cp ../src/alive.py vortex/
 check:
-	python vortex-regression-client.py
+	@which python2.7 || python2.7 vortex-regression-client.py
 
