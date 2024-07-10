@@ -197,7 +197,7 @@ Description: BEEP core implemetation client.
 Package: python-vortex
 Section: libs
 Architecture: any
-Depends: libvortex-1.1 (= ${source:Version}), python, libpython2.7
+Depends: libvortex-1.1 (= ${source:Version}), python2.7, libpython2.7
 Description: Python bindings for Vortex Library
  Python bindings for Vortex Library (base library)
 
