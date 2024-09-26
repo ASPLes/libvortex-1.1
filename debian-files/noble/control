@@ -2,7 +2,7 @@ Source: libvortex-1.1
 Priority: extra
 Maintainer: Francis Brosnan <francis@aspl.es>
 Build-Depends: debhelper (>= 5), autotools-dev, pkg-config, 
-  libaxl-dev (>= 0.6.4), libreadline-gplv2-dev, libssl-dev,
+  libaxl-dev (>= 0.6.4), libreadline-dev, libssl-dev,
   libgsasl7-dev, python-axl-dev
 Standards-Version: 3.7.2
 Section: libs
