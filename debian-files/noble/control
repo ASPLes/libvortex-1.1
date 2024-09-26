@@ -3,7 +3,7 @@ Priority: extra
 Maintainer: Francis Brosnan <francis@aspl.es>
 Build-Depends: debhelper (>= 5), autotools-dev, pkg-config, 
   libaxl-dev (>= 0.6.4), libreadline-dev, libssl-dev,
-  libgsasl7-dev, python-axl-dev
+  libgsasl-dev, python-axl-dev
 Standards-Version: 3.7.2
 Section: libs
 
@@ -47,7 +47,7 @@ Package: libvortex-sasl-1.1
 Section: libs
 Architecture: any
 Depends: libc6, libaxl1 (>= 0.6.4), libvortex-1.1 (= ${binary:Version}),
-  libgsasl7
+  libgsasl18
 Description: BEEP SASL profiles support for Vortex Library
  This package contains the extension library to add support for SASL
  profiles to the core Vortex Library.
@@ -56,7 +56,7 @@ Package: libvortex-sasl-1.1-dev
 Section: libdevel
 Architecture: any
 Depends: libaxl-dev (>= 0.6.4), libvortex-1.1-dev (= ${binary:Version}),
- libgsasl7-dev, libvortex-sasl-1.1 (= ${binary:Version})
+ libgsasl-dev, libvortex-sasl-1.1 (= ${binary:Version})
 Description: BEEP SASL profiles support for Vortex Library (devel headers).
  Development headers for BEEP SASL profiles for Vortex Library.
 
