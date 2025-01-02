@@ -1,6 +1,6 @@
 /** 
  *  LibVortex:  A BEEP implementation for af-arch
- *  Copyright (C) 2022 Advanced Software Production Line, S.L.
+ *  Copyright (C) 2025 Advanced Software Production Line, S.L.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -94,7 +94,7 @@ void vortex_client_show_help (void) {
 void vortex_show_initial_greetings (void) 
 {
 	printf ("Vortex-client v.%s: a cmd tool to test vortex (and BEEP-enabled) peers\n", VERSION);
-	printf ("Copyright (c) 2022 Advanced Software Production Line, S.L.\n");
+	printf ("Copyright (c) 2025 Advanced Software Production Line, S.L.\n");
 }
 
 char  *  get_and_check_cancel (void) {
