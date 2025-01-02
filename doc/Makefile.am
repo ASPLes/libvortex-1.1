@@ -32,11 +32,12 @@ build_doc:
 	@echo "Generating module documentation..";
 	(cd $(top_builddir)/xml-rpc-gen; ./xml-rpc-gen-1.1 $(top_srcdir)/xml-rpc-gen/reg-test01.idl;)
 	doxygen vortex-doc.doxygen
-	cp $(top_srcdir)/doc/main-page-logo.png html
-	cp $(top_srcdir)/doc/aspl-logo-header.png html
-	cp $(top_srcdir)/doc/vortex.css html
-	cp $(top_srcdir)/doc/body_back.gif html
-	cp $(top_srcdir)/doc/hacha-100x171.png html
+	cp $(top_srcdir)/doc/main-page-logo.png html/
+	cp $(top_srcdir)/doc/aspl-logo-header.png html/
+	cp $(top_srcdir)/doc/vortex.css html/
+	cp $(top_srcdir)/doc/body_back.gif html/
+# cp $(top_srcdir)/doc/hacha-100x171.png html
+	cp $(top_srcdir)/web/logo-aspl-white-100.png html/
 
 xml_rpc_gen_draft:
 	xml2rfc xml-rpc-gen-doc.xml && a2ps -2 xml-rpc-gen-doc.txt -o draft-xdl-brosnan.ps
