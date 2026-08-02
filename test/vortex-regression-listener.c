@@ -1915,11 +1915,11 @@ int main (int  argc, char ** argv)
 		return -1;
 	}
 
-	/* run also on 443 port to allow receiving http connect
+	/* run also on 2443 port to allow receiving http connect
 	 * request */
-	listener = vortex_listener_new (ctx, "0.0.0.0", "443", NULL, NULL);
+	listener = vortex_listener_new (ctx, "0.0.0.0", "2443", NULL, NULL);
 	if (! vortex_connection_is_ok (listener, axl_false)) {
-		printf ("ERROR: failed to start listener at: 443, error found (code: %d): %s\n",
+		printf ("ERROR: failed to start listener at: 2443, error found (code: %d): %s\n",
 			vortex_connection_get_status (listener),
 			vortex_connection_get_message (listener));
 		return -1;

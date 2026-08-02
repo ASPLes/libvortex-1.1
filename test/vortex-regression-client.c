@@ -166,7 +166,7 @@ VortexConnection * connection_new (void)
 		vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_PORT, http_proxy_port);
 		
 		/* create a connection */
-		conn = vortex_http_connection_new (listener_host, "443", setup, NULL, NULL);
+		conn = vortex_http_connection_new (listener_host, "2443", setup, NULL, NULL);
 		
 		/* terminate setup */
 		vortex_http_setup_unref (setup);
@@ -13924,10 +13924,10 @@ axl_bool  test_16 (void)
 	vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_PORT, http_proxy_port);
 
 	/* create a connection */
-	conn = vortex_http_connection_new (listener_host, "443", setup, NULL, NULL);
+	conn = vortex_http_connection_new (listener_host, "2443", setup, NULL, NULL);
 
 	if (! vortex_connection_is_ok (conn, axl_false)) {
-		printf ("ERROR: unable to create connection to %s:443, error found (code: %d): %s",
+		printf ("ERROR: unable to create connection to %s:2443, error found (code: %d): %s",
 			listener_host,
 			vortex_connection_get_status (conn),
 			vortex_connection_get_message (conn));
