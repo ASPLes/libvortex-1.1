@@ -50,13 +50,9 @@ libtool --mode=execute valgrind --leak-check=yes --error-limit=no \
 
 ### Caveats worth knowing
 
-- **The banner list is out of date.** The list of test names printed at start-up does not
-  match the tests actually registered: it misses `test_01e1`, `test_01v` and `test_16a`,
-  contains a typo (`ctest_06`), and prints some names in a form that is not accepted. The
-  authoritative names are the strings passed to `check_and_run_test()`; they are the ones
-  listed in this document.
-- **CLI names differ from C function names for the `04`, `05`, `14` and `15` families.**
-  The function is `test_04_a` but the name accepted by `--run-test` is `test_04a`.
+- **An unknown test name is not reported.** `--run-test=test_typo` matches nothing, runs
+  no test at all and still finishes with `INFO: All test ok!`. When driving the suite from
+  a script, check that the expected tests actually appear in the output.
 - **The poll/epoll re-run does not currently happen.** `main()` is written to re-run the
   whole suite once per available I/O mechanism, but `poll_tested` and `epoll_tested` are
   initialised to `axl_true`, so the `if (! poll_tested)` / `if (! epoll_tested)` guards
@@ -67,7 +63,10 @@ libtool --mode=execute valgrind --leak-check=yes --error-limit=no \
   success. A green run therefore does not by itself prove those areas were covered — check
   the output for warnings.
 - `--run-test=` runs the selected tests and exits; the unfiltered path is a separate code
-  block, so the two lists must be kept in sync when adding a test.
+  block, so **three** places must be kept in sync when adding a test: the banner list, the
+  `check_and_run_test()` block and the unfiltered `run_test()` block. The names printed in
+  the banner are exactly the names accepted by `--run-test`, and both match the C function
+  names (`test_04a`, `test_14h`, …).
 
 ## Listener contract
 

@@ -5036,7 +5036,7 @@ char * test_04_read_file (const char * file, int * size)
 
 
 /** 
- * Common implementation for test_04_ab test
+ * Common implementation for test_04ab test
  */
 axl_bool  test_04_ab_common (VortexConnection * connection, int window_size, const char * prefix, int * amount_transferred, int times, axl_bool  change_mss) {
 
@@ -9151,7 +9151,7 @@ axl_bool  test_02l1 (void) {
  * 
  * @return axl_true if ok, otherwise, axl_false is returned.
  */
-axl_bool  test_05_a (void)
+axl_bool  test_05a (void)
 {
 #if defined(ENABLE_TLS_SUPPORT)
 	/* TLS status notification */
@@ -9344,7 +9344,7 @@ axl_bool test_05_a1_post_check (VortexConnection * conn, axlPointer user_data, a
 	return axl_false; /* always fails */
 }
 
-axl_bool test_05_a1 (void) 
+axl_bool test_05a1 (void) 
 {
 #if defined(ENABLE_TLS_SUPPORT)
 	/* vortex connection */
@@ -9386,7 +9386,7 @@ axl_bool test_05_a1 (void)
 #endif	
 }
 
-axl_bool test_05_a2 (void) 
+axl_bool test_05a2 (void) 
 {
 #if defined(ENABLE_TLS_SUPPORT)
 	/* vortex connection */
@@ -9442,7 +9442,7 @@ axl_bool test_05_a2 (void)
 #endif	
 }
 
-axl_bool test_05_b (void)
+axl_bool test_05b (void)
 {
 #if defined(ENABLE_TLS_SUPPORT)
 	/* TLS status notification */
@@ -9476,7 +9476,7 @@ axl_bool test_05_b (void)
 #endif
 }
 
-axl_bool test_05_c (void)
+axl_bool test_05c (void)
 {
 #if defined(ENABLE_TLS_SUPPORT)
 	/* TLS status notification */
@@ -9573,7 +9573,7 @@ axl_bool test_05_c (void)
 #endif
 }
 
-axl_bool test_05_d (void)
+axl_bool test_05d (void)
 {
 #if defined(ENABLE_TLS_SUPPORT)
 	/* TLS status notification */
@@ -9697,7 +9697,7 @@ char * test_05_e_private_handler (VortexConnection * connection,
 	
 }
 
-axl_bool test_05_e (void)
+axl_bool test_05e (void)
 {
 #if defined(ENABLE_TLS_SUPPORT)
 	/* TLS status notification */
@@ -10032,7 +10032,7 @@ axl_bool  test_04_a_common (int block_size, int num_blocks, int num_times) {
  * 
  * @return axl_true if the test is ok, otherwise axl_false is returned.
  */
-axl_bool  test_04_a (void) {
+axl_bool  test_04a (void) {
 	/* call to run default test: block=4096, block-num=4096 */
 	if (! test_04_a_common (4096, 4096, 1)) 
 		return axl_false;
@@ -10056,7 +10056,7 @@ axl_bool  test_04_a (void) {
  *
  * @return axl_true if the test is ok, otherwise axl_false is returned.
  */
-axl_bool  test_04_ab (void) {
+axl_bool  test_04ab (void) {
 
 	VortexConnection * connection;
 
@@ -10087,7 +10087,7 @@ axl_bool  test_04_ab (void) {
  *
  * @return axl_true if the test is ok, otherwise axl_false is returned.
  */
-axl_bool  test_04_c (void) {
+axl_bool  test_04c (void) {
 
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -10412,7 +10412,7 @@ axl_bool test_04_d_send_content_ans_2 (VortexConnection * connection, VortexChan
 }
 
 
-axl_bool test_04_d (void)
+axl_bool test_04d (void)
 {
 	VortexConnection * connection;
 	VortexChannel    * channel;
@@ -10631,7 +10631,7 @@ axl_bool test_04_e_save (VortexFrame * frame, const char * file, axl_bool append
 	return axl_true;
 }
 
-axl_bool test_04_e (void)
+axl_bool test_04e (void)
 {
 	VortexConnection    * connection;
 	VortexChannel       * channel;
@@ -10728,18 +10728,18 @@ get_reply_and_check:
 
 	/* print size */
 	printf ("Test 04-e: file size received: %d\n", vortex_frame_get_payload_size (frame));
-	if (! test_04_e_save (frame, "test_04_e.save", axl_false)) {
+	if (! test_04_e_save (frame, "test_04e.save", axl_false)) {
 		printf ("ERROR (7): expected proper save operation but a failure was found..\n");
 		return axl_false;
 	} /* end if */
 
-	printf ("Test 04-e: file test_04_e.save saved right..\n");
+	printf ("Test 04-e: file test_04e.save saved right..\n");
 
 	/* relaese frame */
 	vortex_frame_unref (frame);
 
 	/* now check both files */
-	if (! file_cmp ("vortex-regression-client.c", "test_04_e.save")) {
+	if (! file_cmp ("vortex-regression-client.c", "test_04e.save")) {
 		printf ("ERROR (7.1): found files differs..\n");
 		return axl_false;
 	} /* end if */
@@ -10869,7 +10869,7 @@ axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
 	vortex_async_queue_timedpop (wait, 20000);
 
 	/* remove file */
-	unlink ("test_04_e.save");
+	unlink ("test_04e.save");
 
 	/* get file size */
 	if (stat (file_to_send, &stats) != 0) {
@@ -10898,7 +10898,7 @@ axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
 			vortex_frame_get_payload_size (frame), vortex_frame_get_msgno (frame));
 
 		/* save content */
-		if (! test_04_e_save (frame, "test_04_e.save", axl_true)) {
+		if (! test_04_e_save (frame, "test_04e.save", axl_true)) {
 			printf ("ERROR (7): expected proper save operation but a failure was found..\n");
 			return axl_false;
 		} /* end if */
@@ -10906,14 +10906,14 @@ axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
 		/* reduce file size remaining */
 		file_size -= vortex_frame_get_payload_size (frame);
 
-		printf ("Test 04-f:   file test_04_e.save saved right..checking for more (pending %d) \n", file_size);
+		printf ("Test 04-f:   file test_04e.save saved right..checking for more (pending %d) \n", file_size);
 
 		/* relaese frame */
 		vortex_frame_unref (frame);
 	} 
 
 	/* now check if both files are equal */
-	if (! file_cmp (file_to_send, "test_04_e.save")) {
+	if (! file_cmp (file_to_send, "test_04e.save")) {
 		printf ("ERROR (8): found files differs..\n");
 		return axl_false;
 	} /* end if */
@@ -10944,7 +10944,7 @@ axl_bool test_04_f_send_pause_and_check (const char       * file_to_send,
 	return axl_true;
 }
 
-axl_bool test_04_f (void) {
+axl_bool test_04f (void) {
 
 	VortexConnection    * connection;
 	VortexChannel       * channel;
@@ -12467,7 +12467,7 @@ axl_bool  test_13 (void)
 	}
 
 	printf ("Test 13::");
-	if (test_04_a ()) {
+	if (test_04a ()) {
 		printf ("Test 04-a: Check ANS/NUL support, sending large content [   OK   ]\n");
 	} else {
 		printf ("Test 04-a: Check ANS/NUL support, sending large content [ FAILED ]\n");
@@ -12475,7 +12475,7 @@ axl_bool  test_13 (void)
 	}
 
 	printf ("Test 13::");
-	if (test_04_ab ()) {
+	if (test_04ab ()) {
 		printf ("Test 04-ab: Check ANS/NUL support, sending different files [   OK   ]\n");
 	} else {
 		printf ("Test 04-ab: Check ANS/NUL support, sending different files [ FAILED ]\n");
@@ -12576,7 +12576,7 @@ axl_bool test_14 (void)
  * @return axl_true if all tests are ok, otherwise axl_false is
  * returned.
  */ 
-axl_bool test_14_a (void)
+axl_bool test_14a (void)
 {
 	VortexCtx        * client_ctx;
 	VortexConnection * conn;
@@ -12771,7 +12771,7 @@ void test_14_b_closed_channel (int channel_num, axl_bool was_closed, const char 
  * @return axl_true if all tests are ok, otherwise axl_false is
  * returned.
  */ 
-axl_bool test_14_b (void)
+axl_bool test_14b (void)
 {
 	VortexCtx        * client_ctx;
 	VortexCtx        * listener_ctx;
@@ -12983,7 +12983,7 @@ axl_bool test_14_b (void)
  * @return axl_true if all tests are ok, otherwise axl_false is
  * returned.
  */ 
-axl_bool test_14_c (void)
+axl_bool test_14c (void)
 {
 	VortexCtx        * client_ctx;
 	VortexCtx        * listener_ctx;
@@ -13183,7 +13183,7 @@ axlPointer test_14_d_create_channel (axlPointer user_data)
  * @return axl_true if all tests are ok, otherwise axl_false is
  * returned.
  */ 
-axl_bool test_14_d (void)
+axl_bool test_14d (void)
 {
 	VortexCtx        * client_ctx;
 	VortexCtx        * listener_ctx;
@@ -13367,7 +13367,7 @@ axl_bool test_14_d (void)
  * @return axl_true if all tests are ok, otherwise axl_false is
  * returned.
  */ 
-axl_bool test_14_e (void)
+axl_bool test_14e (void)
 {
 	VortexCtx        * client_ctx;
 	VortexConnection * conn;
@@ -13428,7 +13428,7 @@ axlPointer test_14f_auth_handler (VortexConnection * conn,
  * @return axl_true if all tests are ok, otherwise axl_false is
  * returned.
  */ 
-axl_bool test_14_f (void)
+axl_bool test_14f (void)
 {
 #if defined(ENABLE_SASL_SUPPORT)
 	VortexCtx        * client_ctx;
@@ -13651,7 +13651,7 @@ axl_bool test_14_f (void)
  * @return axl_true if all tests are ok, otherwise axl_false is
  * returned.
  */ 
-axl_bool test_14_g (void)
+axl_bool test_14g (void)
 {
 #if defined(ENABLE_TLS_SUPPORT)
 	VortexCtx        * client_ctx;
@@ -13752,7 +13752,7 @@ axl_bool test_14_g (void)
  * @return axl_true if all tests are ok, otherwise axl_false is
  * returned.
  */ 
-axl_bool test_14_h (void)
+axl_bool test_14h (void)
 {
 #if defined(ENABLE_TLS_SUPPORT)
 	VortexCtx        * client_ctx;
@@ -14021,7 +14021,7 @@ axl_bool  test_16a (void)
 	}
 
 	printf ("Test 15-a::");
-	if (test_04_a ()) {
+	if (test_04a ()) {
 		printf ("Test 04-a: Check ANS/NUL support, sending large content [   OK   ]\n");
 	} else {
 		printf ("Test 04-a: Check ANS/NUL support, sending large content [ FAILED ]\n");
@@ -14029,7 +14029,7 @@ axl_bool  test_16a (void)
 	}
 
 	printf ("Test 15-a::");
-	if (test_04_ab ()) {
+	if (test_04ab ()) {
 		printf ("Test 04-ab: Check ANS/NUL support, sending different files [   OK   ]\n");
 	} else {
 		printf ("Test 04-ab: Check ANS/NUL support, sending different files [ FAILED ]\n");
@@ -14442,7 +14442,7 @@ void test_15_a_failure_handler_wait (VortexConnection * conn, long check_period,
 /** 
  * @brief Check alive profile support 
  */
-axl_bool  test_15_a (void)
+axl_bool  test_15a (void)
 {
 
 	VortexAsyncQueue * queue;
@@ -14594,7 +14594,7 @@ axl_bool test_17 (void) {
 	}
 
 	printf ("Test 17::");
-	if (test_04_a ()) {
+	if (test_04a ()) {
 		printf ("Test 04-a: Check ANS/NUL support, sending large content [   OK   ]\n");
 	} else {
 		printf ("Test 04-a: Check ANS/NUL support, sending large content [ FAILED ]\n");
@@ -14602,7 +14602,7 @@ axl_bool test_17 (void) {
 	}
 
 	printf ("Test 17::");
-	if (test_04_ab ()) {
+	if (test_04ab ()) {
 		printf ("Test 04-ab: Check ANS/NUL support, sending different files [   OK   ]\n");
 	} else {
 		printf ("Test 04-ab: Check ANS/NUL support, sending different files [ FAILED ]\n");
@@ -14723,7 +14723,7 @@ axl_bool test_19 (void) {
 	}
 
 	printf ("Test 19::");
-	if (test_04_a ()) {
+	if (test_04a ()) {
 		printf ("Test 04-a: Check ANS/NUL support, sending large content [   OK   ]\n");
 	} else {
 		printf ("Test 04-a: Check ANS/NUL support, sending large content [ FAILED ]\n");
@@ -14731,7 +14731,7 @@ axl_bool test_19 (void) {
 	}
 
 	printf ("Test 19::");
-	if (test_04_ab ()) {
+	if (test_04ab ()) {
 		printf ("Test 04-ab: Check ANS/NUL support, sending different files [   OK   ]\n");
 	} else {
 		printf ("Test 04-ab: Check ANS/NUL support, sending different files [ FAILED ]\n");
@@ -15362,19 +15362,30 @@ int main (int  argc, char ** argv)
         printf ("**       valgrind or similar tools.\n");
 	printf ("**\n");
 	printf ("**       Providing --run-test=NAME will run only the provided regression test.\n");
-	printf ("**       Test available: test_00, test_001, test_00a, test_00b, test_00c, test_00c1, test_00c2,\n");
-	printf ("**                       test_00d, test_00e, test_00f, test_00g, test_01d, test_01, test_01a, test_01b, test_01c, test_01d, test_01e,\n");
-	printf ("**                       test_01f, test_01g, test_01g1, test_01h, test_01i, test_01j, test_01k, test_01l, test_01o,\n");
-	printf ("**                       test_01p, test_01q, test_01r, test_01s, test_01s1, test_01t, test_01u, test_01w, test_01y, test_01x\n");
-	printf ("**                       test_02, test_02a, test_02a1, test_02a2, test_02a3, test_02a4, test_02b, test_02c, test_02d, test_02e, \n"); 
+	printf ("**       A comma separated list of tests is also accepted, for example:\n");
+	printf ("**\n");
+	printf ("**          >> ./vortex-regression-client --run-test=test_02a,test_02b,test_04e\n");
+	printf ("**\n");
+	printf ("**       Test available: test_00, test_001, test_00a, test_00b, test_00c, test_00c1,\n");
+	printf ("**                       test_00c2, test_00d, test_00e, test_00f, test_00g, test_01,\n");
+	printf ("**                       test_01a, test_01b, test_01c, test_01d, test_01e, test_01e1,\n");
+	printf ("**                       test_01f, test_01g, test_01g1, test_01h, test_01i, test_01j,\n");
+	printf ("**                       test_01k, test_01l, test_01o, test_01p, test_01q, test_01r,\n");
+	printf ("**                       test_01s, test_01s1, test_01t, test_01u, test_01v, test_01w,\n");
+	printf ("**                       test_01y, test_01x, test_02, test_02a, test_02a1, test_02a2,\n");
+	printf ("**                       test_02a3, test_02a4, test_02b, test_02c, test_02d, test_02e,\n");
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
- 	printf ("**                       test_02l, test_02l1, test_02m, test_02m1, test_02m2, test_02m3, test_02n, test_02o, test_02p, test_02q, test_02r\n");
- 	printf ("**                       test_03, test_03a, test_03b, test_03c, test_03d, test_03e, test_03f, test_04, test_04a, \n");
- 	printf ("**                       test_04b, test_04c, test_04d, test_04e, test_04f, test_05, test_05a, test_05a1, test_05b, test_05c, \n");
-	printf ("**                       test_05d, ctest_06, test_06a, \n");
- 	printf ("**                       test_07, test_08, test_09, test_10, test_11, test_12, test_13, test_14, \n");
- 	printf ("**                       test_14a, test_14b, test_14c, test_14d, test_14e, test_14f, test_14g, test_15, test_15a, test_16\n");
- 	printf ("**                       test_17, test_18, test_19, test_20, test_21, test_22\n");
+	printf ("**                       test_02l, test_02l1, test_02m, test_02m1, test_02m2, test_02m3,\n");
+	printf ("**                       test_02n, test_02o, test_02p, test_02q, test_02r, test_03,\n");
+	printf ("**                       test_03a, test_03b, test_03c, test_03d, test_03e, test_03f,\n");
+	printf ("**                       test_04, test_04a, test_04ab, test_04c, test_04d, test_04e,\n");
+	printf ("**                       test_04f, test_05, test_05a, test_05a1, test_05a2, test_05b,\n");
+	printf ("**                       test_05c, test_05d, test_05e, test_06, test_06a, test_07,\n");
+	printf ("**                       test_08, test_09, test_10, test_11, test_12, test_13,\n");
+	printf ("**                       test_14, test_14a, test_14b, test_14c, test_14d, test_14e,\n");
+	printf ("**                       test_14f, test_14g, test_14h, test_15, test_15a, test_16,\n");
+	printf ("**                       test_16a, test_17, test_18, test_19, test_20, test_21,\n");
+	printf ("**                       test_22\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
 	printf ("**     <vortex@lists.aspl.es> Vortex Mailing list\n**\n");
@@ -15769,46 +15780,46 @@ int main (int  argc, char ** argv)
 			run_test (test_04, "Test 04", "Handling many connections support", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_04a"))
-			run_test (test_04_a, "Test 04-a", "Check ANS/NUL support, sending large content", -1, -1);
+			run_test (test_04a, "Test 04-a", "Check ANS/NUL support, sending large content", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_04ab"))
-			run_test (test_04_ab, "Test 04-ab", "Check ANS/NUL support, sending different files", -1, -1);
+			run_test (test_04ab, "Test 04-ab", "Check ANS/NUL support, sending different files", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_04c"))
-			run_test (test_04_c, "Test 04-c", "check client adviced profiles", -1, -1);
+			run_test (test_04c, "Test 04-c", "check client adviced profiles", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_04d"))
-			run_test (test_04_d, "Test 04-d", "check channel window size reduction", -1, -1);
+			run_test (test_04d, "Test 04-d", "check channel window size reduction", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_04e"))
-			run_test (test_04_e, "Test 04-e", "check payload feeder support", -1, -1);
+			run_test (test_04e, "Test 04-e", "check payload feeder support", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_04f"))
-			run_test (test_04_f, "Test 04-f", "check payload feeder support (pause/cancel)", -1, -1);
+			run_test (test_04f, "Test 04-f", "check payload feeder support (pause/cancel)", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_05"))
 			run_test (test_05, "Test 05", "TLS profile support", -1, -1);
 		
 		if (check_and_run_test (run_test_name, "test_05a"))
-			run_test (test_05_a, "Test 05-a", "Check auto-tls on fail fix (24/03/2008)", -1, -1);
+			run_test (test_05a, "Test 05-a", "Check auto-tls on fail fix (24/03/2008)", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_05a1"))
-			run_test (test_05_a1, "Test 05-a1", "Check auto-tls on forced failure in the middle (09/07/2012)", -1, -1);
+			run_test (test_05a1, "Test 05-a1", "Check auto-tls on forced failure in the middle (09/07/2012)", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_05a2"))
-			run_test (test_05_a2, "Test 05-a2", "Check vortex-digest-tool and vortex_tls_get_peer_ssl_digest ()", -1, -1);
+			run_test (test_05a2, "Test 05-a2", "Check vortex-digest-tool and vortex_tls_get_peer_ssl_digest ()", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_05b"))
-			run_test (test_05_b, "Test 05-b", "TLS client blocked during connection close (14/12/2009)", -1, -1);
+			run_test (test_05b, "Test 05-b", "TLS client blocked during connection close (14/12/2009)", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_05c"))
-			run_test (test_05_c, "Test 05-c", "TLS client serverName after success (09/08/2010)", -1, -1);
+			run_test (test_05c, "Test 05-c", "TLS client serverName after success (09/08/2010)", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_05d"))
-			run_test (test_05_d, "Test 05-d", "TLS sync timeout (09/09/2010)", -1, -1);
+			run_test (test_05d, "Test 05-d", "TLS sync timeout (09/09/2010)", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_05e"))
-			run_test (test_05_e, "Test 05-e", "TLS check handlers reporting PEM certificates (instead of file paths)", -1, -1);
+			run_test (test_05e, "Test 05-e", "TLS check handlers reporting PEM certificates (instead of file paths)", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_06"))
 			run_test (test_06, "Test 06", "SASL profile support", -1, -1);
@@ -15841,34 +15852,34 @@ int main (int  argc, char ** argv)
 			run_test (test_14, "Test 14", "Check PULL API event masks", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_14a"))
-			run_test (test_14_a, "Test 14-a", "Check PULL API implementation (frame receieved event)", -1, -1);
+			run_test (test_14a, "Test 14-a", "Check PULL API implementation (frame receieved event)", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_14b"))
-			run_test (test_14_b, "Test 14-b", "Check PULL API implementation (close channel request event)", -1, -1);
+			run_test (test_14b, "Test 14-b", "Check PULL API implementation (close channel request event)", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_14c"))
-			run_test (test_14_c, "Test 14-c", "Check PULL API implementation (connection close/accepted)", -1, -1);
+			run_test (test_14c, "Test 14-c", "Check PULL API implementation (connection close/accepted)", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_14d"))
-			run_test (test_14_d, "Test 14-d", "Check PULL API implementation (channel start handling)", -1, -1);
+			run_test (test_14d, "Test 14-d", "Check PULL API implementation (channel start handling)", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_14e"))
-			run_test (test_14_e, "Test 14-e", "Check PULL API (check bug close close not masked, followed by end)", -1, -1);
+			run_test (test_14e, "Test 14-e", "Check PULL API (check bug close close not masked, followed by end)", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_14f"))
-			run_test (test_14_f, "Test 14-f", "Check PULL API with SASL", -1, -1);
+			run_test (test_14f, "Test 14-f", "Check PULL API with SASL", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_14g"))
-			run_test (test_14_g, "Test 14-g", "Check PULL API with TLS", -1, -1);
+			run_test (test_14g, "Test 14-g", "Check PULL API with TLS", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_14h"))
-			run_test (test_14_h, "Test 14-h", "Check connection close with PULL API with TLS", -1, -1);
+			run_test (test_14h, "Test 14-h", "Check connection close with PULL API with TLS", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_15"))
 			run_test (test_15, "Test 15", "Check ALIVE profile", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_15a"))
-			run_test (test_15_a, "Test 15-a", "Check ALIVE profile (close and failure handler running at the same time)", -1, -1);
+			run_test (test_15a, "Test 15-a", "Check ALIVE profile (close and failure handler running at the same time)", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_16"))
 			run_test (test_16, "Test 16", "Check HTTP CONNECT implementation", -1, -1);
@@ -16064,33 +16075,33 @@ int main (int  argc, char ** argv)
 
  	run_test (test_04, "Test 04", "Handling many connections support", -1, -1);
   
- 	run_test (test_04_a, "Test 04-a", "Check ANS/NUL support, sending large content", -1, -1);
+ 	run_test (test_04a, "Test 04-a", "Check ANS/NUL support, sending large content", -1, -1);
   
- 	run_test (test_04_ab, "Test 04-ab", "Check ANS/NUL support, sending different files", -1, -1);
+ 	run_test (test_04ab, "Test 04-ab", "Check ANS/NUL support, sending different files", -1, -1);
   
- 	run_test (test_04_c, "Test 04-c", "check client adviced profiles", -1, -1);
+ 	run_test (test_04c, "Test 04-c", "check client adviced profiles", -1, -1);
 
-	run_test (test_04_d, "Test 04-d", "check channel window size reduction", -1, -1);
+	run_test (test_04d, "Test 04-d", "check channel window size reduction", -1, -1);
 
-	run_test (test_04_e, "Test 04-e", "check payload feeder support", -1, -1);
+	run_test (test_04e, "Test 04-e", "check payload feeder support", -1, -1);
 
-	run_test (test_04_f, "Test 04-f", "check payload feeder support (pause/cancel)", -1, -1); 
+	run_test (test_04f, "Test 04-f", "check payload feeder support (pause/cancel)", -1, -1); 
 
  	run_test (test_05, "Test 05", "TLS profile support", -1, -1);
   	
- 	run_test (test_05_a, "Test 05-a", "Check auto-tls on fail fix (24/03/2008)", -1, -1);
+ 	run_test (test_05a, "Test 05-a", "Check auto-tls on fail fix (24/03/2008)", -1, -1);
 
- 	run_test (test_05_a1, "Test 05-a1", "Check auto-tls on forced failure in the middle (09/07/2012)", -1, -1);
+ 	run_test (test_05a1, "Test 05-a1", "Check auto-tls on forced failure in the middle (09/07/2012)", -1, -1);
 
-	run_test (test_05_a2, "Test 05-a2", "Check vortex-digest-tool and vortex_tls_get_peer_ssl_digest ()", -1, -1);
+	run_test (test_05a2, "Test 05-a2", "Check vortex-digest-tool and vortex_tls_get_peer_ssl_digest ()", -1, -1);
 
-	run_test (test_05_b, "Test 05-b", "TLS client blocked during connection close (14/12/2009)", -1, -1);
+	run_test (test_05b, "Test 05-b", "TLS client blocked during connection close (14/12/2009)", -1, -1);
 
-	run_test (test_05_c, "Test 05-c", "TLS client serverName after success (09/08/2010)", -1, -1);
+	run_test (test_05c, "Test 05-c", "TLS client serverName after success (09/08/2010)", -1, -1);
 
-	run_test (test_05_d, "Test 05-d", "TLS sync timeout (09/09/2010)", -1, -1);
+	run_test (test_05d, "Test 05-d", "TLS sync timeout (09/09/2010)", -1, -1);
 
-	run_test (test_05_e, "Test 05-e", "TLS check handlers reporting PEM certificates (instead of file paths)", -1, -1);
+	run_test (test_05e, "Test 05-e", "TLS check handlers reporting PEM certificates (instead of file paths)", -1, -1);
 
  	run_test (test_06, "Test 06", "SASL profile support", -1, -1);
 
@@ -16112,25 +16123,25 @@ int main (int  argc, char ** argv)
 
 	run_test (test_14, "Test 14", "Check PULL API event masks", -1, -1);
 
-	run_test (test_14_a, "Test 14-a", "Check PULL API implementation (frame received event)", -1, -1);
+	run_test (test_14a, "Test 14-a", "Check PULL API implementation (frame received event)", -1, -1);
 
-	run_test (test_14_b, "Test 14-b", "Check PULL API implementation (close channel request event)", -1, -1);
+	run_test (test_14b, "Test 14-b", "Check PULL API implementation (close channel request event)", -1, -1);
 
-	run_test (test_14_c, "Test 14-c", "Check PULL API implementation (connection close/accepted)", -1, -1);
+	run_test (test_14c, "Test 14-c", "Check PULL API implementation (connection close/accepted)", -1, -1);
 
-	run_test (test_14_d, "Test 14-d", "Check PULL API implementation (channel start handling)", -1, -1);
+	run_test (test_14d, "Test 14-d", "Check PULL API implementation (channel start handling)", -1, -1);
 
-	run_test (test_14_e, "Test 14-e", "Check PULL API (check bug close close not masked, followed by end)", -1, -1);
+	run_test (test_14e, "Test 14-e", "Check PULL API (check bug close close not masked, followed by end)", -1, -1);
 
-	run_test (test_14_f, "Test 14-f", "Check PULL API with SASL", -1, -1);
+	run_test (test_14f, "Test 14-f", "Check PULL API with SASL", -1, -1);
 
-	run_test (test_14_g, "Test 14-g", "Check PULL API with TLS", -1, -1);
+	run_test (test_14g, "Test 14-g", "Check PULL API with TLS", -1, -1);
 
-	run_test (test_14_h, "Test 14-h", "Check connection close with PULL API with TLS", -1, -1);
+	run_test (test_14h, "Test 14-h", "Check connection close with PULL API with TLS", -1, -1);
 
 	run_test (test_15, "Test 15", "Check ALIVE profile", -1, -1);
 
-	run_test (test_15_a, "Test 15-a", "Check ALIVE profile (close and failure handler running at the same time)", -1, -1);
+	run_test (test_15a, "Test 15-a", "Check ALIVE profile (close and failure handler running at the same time)", -1, -1);
 
 	/* skip http connect if indicated */
 	if (! skip_http_connect) {
