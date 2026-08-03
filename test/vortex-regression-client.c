@@ -15253,22 +15253,27 @@ axl_bool test_22 (void) {
 typedef int  (*VortexRegressionTest) (void);
   
  
-void run_test (VortexRegressionTest test, const char * test_name, const char * message, 
+void __run_test (VortexRegressionTest test, const char * test_id, const char * test_name, const char * message,
  	       long  limit_seconds, long  limit_microseconds) {
 
  	struct timeval      start;
  	struct timeval      stop;
  	struct timeval      result;
-  
+
+ 	/* announce the test about to run, identified by the very name accepted by
+ 	 * --run-test, and flush so the marker survives a crash inside the test */
+ 	printf ("INFO: [begin] %s\n", test_id);
+ 	fflush (stdout);
+
  	/* start test */
  	gettimeofday (&start, NULL);
  	if (test ()) {
  		/* stop test */
  		gettimeofday (&stop, NULL);
-		
+
  		/* get result */
  		vortex_timeval_substract (&stop, &start, &result);
-		
+
  		/* check timing results */
  		if ((! disable_time_checks) && limit_seconds >= 0 && limit_microseconds > 0) {
  			if (result.tv_sec >= limit_seconds && result.tv_usec > limit_microseconds) {
@@ -15276,19 +15281,37 @@ void run_test (VortexRegressionTest test, const char * test_name, const char * m
  					test_name, message);
  				printf ("***WARNING***: should finish in less than %ld secs, %ld microseconds\n",
  					limit_seconds, limit_microseconds);
- 				printf ("                          but finished in %ld secs, %ld microseconds\n", 
+ 				printf ("                          but finished in %ld secs, %ld microseconds\n",
  					(long) result.tv_sec, (long) result.tv_usec);
+ 				printf ("INFO: [failed] %s\n", test_id);
+ 				fflush (stdout);
  				exit (-1);
- 			} 
+ 			}
  		} /* end if */
-		
+
  		printf ("%s: %s [   OK   ] (finished in %ld secs, %ld microseconds)\n", test_name, message, (long) result.tv_sec, (long) result.tv_usec);
+ 		printf ("INFO: [end] %s\n", test_id);
+ 		fflush (stdout);
  	} else {
  		printf ("%s: %s [ FAILED ]\n", test_name, message);
+ 		printf ("INFO: [failed] %s\n", test_id);
+ 		fflush (stdout);
  		exit (-1);
  	}
  	return;
 }
+
+/**
+ * @internal Reports every test with the identifier --run-test accepts.
+ *
+ * The human readable label passed at each call site ("Test 01-g1") is not the name the
+ * suite is driven by ("test_01g1"), and the two are only related by convention, so a
+ * program consuming this output had no reliable way to tell which test actually ran: the
+ * banner echoes whatever was requested even when nothing matches. Stringifying the test
+ * function's own symbol gives an exact identifier without touching any of the 230 call
+ * sites, and \ref __run_test emits it as [begin]/[end]/[failed] markers.
+ */
+#define run_test(test, name, message, secs, usecs) __run_test (test, #test, name, message, secs, usecs)
 
 axl_bool check_and_run_test (const char * test_list, const char * test_name) 
 {

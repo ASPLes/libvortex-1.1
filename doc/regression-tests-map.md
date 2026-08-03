@@ -52,7 +52,26 @@ libtool --mode=execute valgrind --leak-check=yes --error-limit=no \
 
 - **An unknown test name is not reported.** `--run-test=test_typo` matches nothing, runs
   no test at all and still finishes with `INFO: All test ok!`. When driving the suite from
-  a script, check that the expected tests actually appear in the output.
+  a script, check the `INFO: [end]` markers described below rather than the exit status.
+
+  Note that checking whether the requested name *appears* in the output does not work
+  either: the client echoes whatever it was given in its `INFO: running test=...` and
+  `INFO: Checking to run test: ...` banner lines before matching anything.
+
+- **Machine readable markers.** Every test is bracketed with markers keyed by the exact
+  identifier `--run-test` accepts, and they are flushed so the `[begin]` marker survives a
+  crash inside the test:
+
+  ```text
+  INFO: [begin] test_01
+  Test 01: basic BEEP support [   OK   ] (finished in 0 secs, 2248 microseconds)
+  INFO: [end] test_01
+  ```
+
+  A failing test emits `INFO: [failed] <name>` before exiting. These are the reliable
+  signals for a script: `[end]` means the test ran and passed, and the human readable line
+  between them is labelled with the display name (`Test 02-b`), not the identifier
+  (`test_02b`), so it is not a good key to match on.
 - **The poll/epoll re-run does not currently happen.** `main()` is written to re-run the
   whole suite once per available I/O mechanism, but `poll_tested` and `epoll_tested` are
   initialised to `axl_true`, so the `if (! poll_tested)` / `if (! epoll_tested)` guards
