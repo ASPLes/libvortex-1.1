@@ -35,5 +35,5 @@ rm -rf debian/vortex-xml-rpc-gen-1.1
 
 # find all files that have copy right declaration associated to Aspl that don't have 
 # the following declaration year
-current_year="2025"
-LANG=C rgrep "Copyright" alive data debian-files doc external http logo lua-vortex pull py-vortex rpm sasl src test tls tunnel web web-socket xml-rpc xml-rpc-gen configure.ac 2>&1 | grep "Advanced" | grep -v "Permission denied" | grep -v '~:' | grep -v '/\.svn/' | grep -v "${current_year}"
+current_year="2026"
+LANG=C rgrep "Copyright" alive data debian-files doc external http logo lua-vortex pull py-vortex rpm sasl src test tls tunnel web web-socket xml-rpc xml-rpc-gen configure.ac autogen.sh change-prefix.py 2>&1 | grep "Advanced" | grep -v "Permission denied" | grep -v '~:' | grep -v '/\.svn/' | grep -v "${current_year}"
