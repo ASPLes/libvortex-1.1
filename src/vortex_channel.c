@@ -2243,10 +2243,12 @@ void vortex_channel_update_status (VortexChannel * channel, unsigned int  frame_
 	if (channel == NULL)
 		return;
 
-	/* update seqno */
+	/* update seqno: rotation is modulo 2^32 (MAX_SEQ_MOD) as required by
+	 * RFC3081, not modulo MAX_SEQ_NO, which would skip the value 4294967295
+	 * and leave the counter one octet behind a conformant peer */
 	if ((update & UPDATE_SEQ_NO) == UPDATE_SEQ_NO) {
 		vortex_mutex_lock (&channel->ref_mutex);
-		channel->last_seq_no = ((channel->last_seq_no + frame_size) % (MAX_SEQ_NO));
+		channel->last_seq_no = ((channel->last_seq_no + frame_size) % (MAX_SEQ_MOD));
 		vortex_mutex_unlock (&channel->ref_mutex);
 	}
 
@@ -2313,9 +2315,10 @@ void vortex_channel_update_status_received (VortexChannel * channel,
 		channel->last_message_received -= 1;
 	}
 
-	/* update expected seqno */
+	/* update expected seqno: rotation is modulo 2^32 (MAX_SEQ_MOD), see
+	 * the note at vortex_channel_update_status */
 	if ((update & UPDATE_SEQ_NO) == UPDATE_SEQ_NO) {
-		channel->last_seq_no_expected   = ((channel->last_seq_no_expected + frame_size) % (MAX_SEQ_NO));
+		channel->last_seq_no_expected   = ((channel->last_seq_no_expected + frame_size) % (MAX_SEQ_MOD));
 	}
 	
 	/* update expected ansno */
@@ -4113,9 +4116,11 @@ void vortex_channel_update_remote_incoming_buffer (VortexChannel * channel,
 	if (channel->remote_consumed_seq_no <= ackno) {
 		window_available = channel->remote_window - (ackno - channel->remote_consumed_seq_no);
 	} else {
-		window_available = channel->remote_window - (MAX_SEQ_NO - channel->remote_consumed_seq_no) - ackno;
+		/* ackno sits past the 4GB wrap: the distance consumed by the remote
+		 * peer is (2^32 - remote_consumed_seq_no) + ackno, hence MAX_SEQ_MOD */
+		window_available = channel->remote_window - (MAX_SEQ_MOD - channel->remote_consumed_seq_no) - ackno;
 	}
-	max_remote_seq_no = (channel->remote_consumed_seq_no + channel->remote_window - 1) % MAX_SEQ_NO;
+	max_remote_seq_no = (channel->remote_consumed_seq_no + channel->remote_window - 1) % MAX_SEQ_MOD;
 
 	/* check that current available bytes that could be sent is
 	 * smaller that the amount of bytes we could send with this
@@ -4258,11 +4263,14 @@ int                vortex_channel_get_next_frame_size         (VortexChannel * c
 		return ctx->next_frame_size (channel, next_seq_no, message_size, max_seq_no, ctx->next_frame_size_data);
 	} /* end if */
 
-	/* get max bytes available between next_seq_no and max_seq_no */
-	if (next_seq_no <= max_seq_no) 
+	/* get max bytes available between next_seq_no and max_seq_no: max_seq_no is
+	 * the last acceptable value, so the count is inclusive on both ends. Across
+	 * the 4GB wrap it spans (2^32 - next_seq_no) plus (max_seq_no + 1), hence
+	 * MAX_SEQ_MOD and not MAX_SEQ_NO */
+	if (next_seq_no <= max_seq_no)
 		remote_buffer_available = max_seq_no - next_seq_no + 1;
-	else 
-		remote_buffer_available = (MAX_SEQ_NO - next_seq_no) + max_seq_no + 1; 
+	else
+		remote_buffer_available = (MAX_SEQ_MOD - next_seq_no) + max_seq_no + 1;
 	
 	/* use default implementation */
 	return VORTEX_MIN (remote_buffer_available, VORTEX_MIN (channel->window_size, VORTEX_MIN (message_size, 4096)));
@@ -4330,7 +4338,9 @@ int vortex_channel_incoming_bytes_available (VortexChannel * channel, VortexFram
 	 */
 	
 	if (vortex_frame_get_seqno (frame) < channel->consumed_seqno)
-		return channel->seq_no_window - (MAX_SEQ_NO - channel->consumed_seqno) - vortex_frame_get_seqno (frame) - vortex_frame_get_content_size (frame);
+		/* case 1: the distance across the wrap is (2^32 - consumed_seqno) +
+		 * frame seqno, hence MAX_SEQ_MOD and not MAX_SEQ_NO */
+		return channel->seq_no_window - (MAX_SEQ_MOD - channel->consumed_seqno) - vortex_frame_get_seqno (frame) - vortex_frame_get_content_size (frame);
 	return channel->seq_no_window - (vortex_frame_get_seqno (frame) - channel->consumed_seqno)  - vortex_frame_get_content_size (frame);
 }
 
@@ -4411,7 +4421,7 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 
 	/* generate a new value for the seqno accepted */
 #if defined(ENABLE_VORTEX_LOG)
-	new_max_seq_no_accepted     = (consumed_seqno + window_size - 1) % (MAX_SEQ_NO);
+	new_max_seq_no_accepted     = (consumed_seqno + window_size - 1) % (MAX_SEQ_MOD);
 #endif
 	channel_max_seq_no_accepted = vortex_channel_get_max_seq_no_accepted (channel);
 
@@ -4468,7 +4478,7 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
  			channel->window_size    = window_size;
 
 #if defined(ENABLE_VORTEX_LOG)
- 			new_max_seq_no_accepted = (consumed_seqno + window_size - 1) % (MAX_SEQ_NO);
+ 			new_max_seq_no_accepted = (consumed_seqno + window_size - 1) % (MAX_SEQ_MOD);
 #endif
  		}
 
@@ -9325,9 +9335,13 @@ axl_bool            vortex_channel_check_incoming_seqno            (VortexChanne
 		   vortex_frame_get_seqno (frame), channel->consumed_seqno, vortex_frame_get_content_size (frame), channel->seq_no_window); */
 		return (vortex_frame_get_seqno (frame) - channel->consumed_seqno + vortex_frame_get_content_size (frame)) <= channel->seq_no_window;
 	}
-/*	vortex_log (VORTEX_LEVEL_DEBUG, "Checking MAX_SEQ_NO=4294967295 - channel->consumed_seqno=%u - 1 + vortex_frame_get_seqno (frame)=%u + vortex_frame_get_content_size (frame)=%d <= channel->seq_no_window=%d",
+	/* the frame sits past the 4GB wrap: the distance from consumed seqno to
+	 * the frame seqno is (2^32 - consumed_seqno) + frame seqno, that is
+	 * MAX_SEQ_MOD and not MAX_SEQ_NO, and without any additional unit
+	 * subtracted */
+/*	vortex_log (VORTEX_LEVEL_DEBUG, "Checking MAX_SEQ_MOD=4294967296 - channel->consumed_seqno=%u + vortex_frame_get_seqno (frame)=%u + vortex_frame_get_content_size (frame)=%d <= channel->seq_no_window=%d",
 	channel->consumed_seqno,  vortex_frame_get_seqno (frame), vortex_frame_get_content_size (frame), channel->seq_no_window); */
-	return (MAX_SEQ_NO - channel->consumed_seqno - 1) + vortex_frame_get_seqno (frame) + vortex_frame_get_content_size (frame) <= channel->seq_no_window;
+	return (MAX_SEQ_MOD - channel->consumed_seqno) + vortex_frame_get_seqno (frame) + vortex_frame_get_content_size (frame) <= channel->seq_no_window;
 }
 
 /** 

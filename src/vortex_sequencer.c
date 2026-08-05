@@ -490,8 +490,9 @@ void __vortex_sequencer_do_send_round (VortexCtx * ctx, VortexChannel * channel,
 		 * enabled to be sent again on the next SEQ
 		 * received. */
 		data->step          = data->step + size_to_copy;
-		/* make next seq no value to point to the next byte to send */
-		data->first_seq_no  = (data->first_seq_no + size_to_copy) % (MAX_SEQ_NO);
+		/* make next seq no value to point to the next byte to send:
+		 * rotation is modulo 2^32 (MAX_SEQ_MOD) as required by RFC3081 */
+		data->first_seq_no  = (data->first_seq_no + size_to_copy) % (MAX_SEQ_MOD);
 		/* make message size to be decreased the amount of bytes sent. */
 		data->message_size  = data->message_size - size_to_copy;
 

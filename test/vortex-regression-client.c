@@ -7399,6 +7399,9 @@ axl_bool  test_02o (void) {
 	char              * file_content;
 	int                 file_size;
 
+	/* NOTE: this test is disabled. Enabling it makes it fail in its first
+	 * phase, at the 2GB simulation, before reaching any 4GB handling. The
+	 * arithmetic at the 4GB boundary is covered by test_02o1 instead. */
 	return axl_true;
 
 
@@ -7693,6 +7696,156 @@ finish:
 
 	/* free queue */
 	vortex_async_queue_unref (queue);
+
+	return axl_true;
+}
+
+/**
+ * @brief Checks the arithmetic LibVortex uses at the 4GB sequence number
+ * boundary (MAX SEQ NO: 4294967295).
+ *
+ * BEEP numbers octets modulo 2^32 (RFC3081 section 3.1.3). Three places have to
+ * reason about that wrap by hand, and all three are checked here without
+ * actually transferring 4GB: the channel counters are positioned directly,
+ * which makes the test immediate and deterministic.
+ *
+ * 1) Counter rotation. The value 4294967295 is a legal sequence number and the
+ *    counter must be able to hold it, wrapping to 0 only on the octet after.
+ *
+ * 2) Incoming window. With the advertised window ending exactly on 4294967295,
+ *    a frame landing on that last octet is inside it and the next one, already
+ *    wrapped round to 0, is outside.
+ *
+ * 3) Segmentator. The count of octets available between a sequence number and a
+ *    maximum that lies past the wrap is inclusive at both ends.
+ *
+ * Everything checked is local to the channel, so no traffic is exchanged with
+ * the listener beyond creating the channel.
+ */
+axl_bool  test_02o1 (void) {
+	VortexConnection  * connection;
+	VortexChannel     * channel;
+	VortexFrame       * frame;
+	unsigned int        consumed;
+	unsigned int        result;
+	int                 content_size;
+	int                 available;
+	axl_bool            accepted;
+
+	/* creates a new connection against localhost:44010 */
+	connection = connection_new ();
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		printf ("Test 02-o1: unable to connect to the listener..\n");
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+
+	/* the default segmentator is checked below, so make sure no handler
+	 * installed by a previous test is standing in for it */
+	vortex_connection_set_default_next_frame_size_handler (ctx, NULL, NULL);
+
+	channel = vortex_channel_new (connection, 0, REGRESSION_URI,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* no frame received handling */
+				      NULL, NULL,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("Test 02-o1: unable to create the channel..\n");
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+
+	/*********************************************************
+	 *** 1) the counter must be able to reach 2^32 - 1     ***
+	 *********************************************************/
+	vortex_channel_set_next_seq_no (channel, ((unsigned int) MAX_SEQ_NO) - 100);
+	vortex_channel_update_status (channel, 100, 0, UPDATE_SEQ_NO);
+
+	result = vortex_channel_get_next_seq_no (channel);
+	if (result != ((unsigned int) MAX_SEQ_NO)) {
+		printf ("Test 02-o1: expected next seq no to be %u, the last value a channel may use, but found %u..\n",
+			((unsigned int) MAX_SEQ_NO), result);
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+
+	/* one octet further wraps round to zero */
+	vortex_channel_update_status (channel, 1, 0, UPDATE_SEQ_NO);
+	result = vortex_channel_get_next_seq_no (channel);
+	if (result != 0) {
+		printf ("Test 02-o1: expected next seq no to wrap round to 0 but found %u..\n", result);
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+	printf ("Test 02-o1: counter rotation across 2^32 ok..\n");
+
+	/*********************************************************
+	 *** 2) the incoming window ends where it advertises   ***
+	 *********************************************************/
+	/* a frame carrying a single octet of payload. Its size on the wire also
+	 * includes the MIME headers the frame carries, so the window is derived
+	 * from the frame rather than assumed */
+	frame = vortex_frame_create (ctx, VORTEX_FRAME_TYPE_MSG,
+				     vortex_channel_get_number (channel), 0, axl_false,
+				     ((unsigned int) MAX_SEQ_NO), 1, 0, "x");
+	if (frame == NULL) {
+		printf ("Test 02-o1: unable to create the test frame..\n");
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+	content_size = vortex_frame_get_content_size (frame);
+
+	/* place the window so that its last acceptable octet is exactly the
+	 * last sequence number a channel may use */
+	consumed = ((unsigned int) MAX_SEQ_NO) - 4095;
+	vortex_channel_set_max_seq_no_accepted (channel, consumed, 4095 + content_size);
+
+	/* the frame just built ends on that last octet, so it is inside */
+	accepted = vortex_channel_check_incoming_seqno (channel, frame);
+	vortex_frame_unref (frame);
+	if (! accepted) {
+		printf ("Test 02-o1: expected the frame at seq no %u to be accepted: it ends on the last octet advertised..\n",
+			((unsigned int) MAX_SEQ_NO));
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+
+	/* the following octet is 0, past the wrap and past the window */
+	frame = vortex_frame_create (ctx, VORTEX_FRAME_TYPE_MSG,
+				     vortex_channel_get_number (channel), 0, axl_false,
+				     0, 1, 0, "x");
+	if (frame == NULL) {
+		printf ("Test 02-o1: unable to create the wrapped test frame..\n");
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+	accepted = vortex_channel_check_incoming_seqno (channel, frame);
+	vortex_frame_unref (frame);
+	if (accepted) {
+		printf ("Test 02-o1: expected the frame at seq no 0 to be refused: it is one octet past the advertised window..\n");
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+	printf ("Test 02-o1: incoming window boundary across 2^32 ok..\n");
+
+	/*********************************************************
+	 *** 3) the segmentator counts the wrapped range well  ***
+	 *********************************************************/
+	/* between seq no 4294967295 and a maximum of 2 there are four octets
+	 * available: 4294967295, 0, 1 and 2 */
+	available = vortex_channel_get_next_frame_size (channel, ((unsigned int) MAX_SEQ_NO), 100, 2);
+	if (available != 4) {
+		printf ("Test 02-o1: expected 4 octets available between seq no %u and max seq no 2, but found %d..\n",
+			((unsigned int) MAX_SEQ_NO), available);
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+	printf ("Test 02-o1: segmentator count across 2^32 ok..\n");
+
+	/* close the connection */
+	vortex_connection_close (connection);
 
 	return axl_true;
 }
@@ -15399,7 +15552,8 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_02a3, test_02a4, test_02b, test_02c, test_02d, test_02e,\n");
 	printf ("**                       test_02f, test_02g, test_02h, test_02i, test_02j, test_02k,\n");
 	printf ("**                       test_02l, test_02l1, test_02m, test_02m1, test_02m2, test_02m3,\n");
-	printf ("**                       test_02n, test_02o, test_02p, test_02q, test_02r, test_03,\n");
+	printf ("**                       test_02n, test_02o, test_02o1, test_02p, test_02q, test_02r,\n");
+	printf ("**                       test_03,\n");
 	printf ("**                       test_03a, test_03b, test_03c, test_03d, test_03e, test_03f,\n");
 	printf ("**                       test_04, test_04a, test_04ab, test_04c, test_04d, test_04e,\n");
 	printf ("**                       test_04f, test_05, test_05a, test_05a1, test_05a2, test_05b,\n");
@@ -15769,6 +15923,9 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_02o"))
 			run_test (test_02o, "Test 02-o", "Checking support for seqno transfers over 4GB (MAX SEQ NO: 4294967295)", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_02o1"))
+			run_test (test_02o1, "Test 02-o1", "Checking seqno arithmetic at the 4GB boundary (MAX SEQ NO: 4294967295)", -1, -1);
+
 		if (check_and_run_test (run_test_name, "test_02p"))
 			run_test (test_02p, "Test 02-p", "Check empty RPY", -1, -1);
 
@@ -16075,6 +16232,8 @@ int main (int  argc, char ** argv)
  	run_test (test_02n, "Test 02-n", "Checking MSG number reusing", -1, -1);
 
  	run_test (test_02o, "Test 02-o", "Checking support for seqno transfers over 4GB (MAX SEQ NO: 4294967295)", -1, -1);
+
+ 	run_test (test_02o1, "Test 02-o1", "Checking seqno arithmetic at the 4GB boundary (MAX SEQ NO: 4294967295)", -1, -1);
 
 	run_test (test_02p, "Test 02-p", "Check empty RPY", -1, -1);
 
