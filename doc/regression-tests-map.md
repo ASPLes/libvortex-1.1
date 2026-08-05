@@ -222,7 +222,8 @@ runtime primitives, so these tests are **not** part of protocol conformance.
 | `test_02m2` | deallocation of pending queued replies on connection shutdown |
 | `test_02m3` | receiving frames while the connection is being closed; complete-flag handling |
 | `test_02n` | **msgno reuse**: sequences 0,1,2…; 1,2,3…; wrap at 2147483646, 2147483647, 0, 1; and 7,5,3,1 |
-| `test_02o` | **seqno beyond 4GB** (MAX SEQ NO 4294967295): simulated 2GB−4096 send, `set_next_seq_no`, remote buffer update |
+| `test_02o` | **disabled**. Opens with `return axl_true`, so its body never runs. Enabling it makes it fail in its first phase, at the 2GB simulation, before reaching any 4GB handling. Left as found; `test_02o1` covers the boundary instead |
+| `test_02o1` | **seqno arithmetic at the 4GB boundary** (MAX SEQ NO 4294967295), with the counters positioned directly rather than by transferring 4GB: the counter must be able to hold 4294967295 and wrap to 0 only on the octet after; a frame ending on that last octet is inside the advertised window while the next one, already wrapped to 0, is outside; and the segmentator counts the wrapped range inclusively at both ends |
 | `test_02p` | empty RPY |
 | `test_02q` | frame manipulation after the vortex context has been finalised |
 | `test_02r` | sending incomplete frames (`more` flag set to true) |
@@ -351,8 +352,10 @@ Suggested order, from cheapest to hardest:
    `test_10`, `test_11`. Greetings, channel start/close, MSG/RPY, window handling.
 2. **Reply models** — the ANS/NUL family (`test_02k`, `test_02l`, `test_02l1`, `test_02m`,
    `test_04a`, `test_04ab`, `test_03b`, `test_03c`) and out-of-order replies (`test_11`).
-3. **Numbering and limits** — `test_02n` (msgno reuse and wrap) and `test_02o` (seqno past
-   4GB). These are the classic sources of divergence between implementations.
+3. **Numbering and limits** — `test_02n` (msgno reuse and wrap) and `test_02o1` (arithmetic
+   at the 4GB seqno boundary). These are the classic sources of divergence between
+   implementations, and the reason `test_02o1` exists: the area went uncovered for a long
+   time because `test_02o`, the test that was meant to cover it, is disabled.
 4. **MIME** — `test_01d`, plus `test_02l1` for the MIME-disabled NUL case.
 5. **Robustness** — `test_01g1`, `test_01h`, `test_01w`, `test_01x`, `test_02a2`,
    `test_02j`. Malformed headers, floods, oversized frames, abrupt disconnects.
