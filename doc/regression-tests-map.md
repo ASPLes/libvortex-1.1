@@ -32,6 +32,7 @@ them can be given per run:
 
 | Option | Effect |
 |---|---|
+| `--offset-port=NUM` | add `NUM` to every port the suite binds, so several runs can share a host. Accepted by **both** programs and they must be given the same value. Must come first when combined with another option |
 | `--run-test=NAME` | run only the given test; accepts a **comma-separated list** (`--run-test=test_02a,test_02b`) |
 | `--disable-time-checks` | skip tests that can fail because of timing; use under valgrind |
 | `--skip-http-connect` | no local HTTP proxy available (test 16 family) |
@@ -105,6 +106,26 @@ A full run needs the listener to be reachable on these ports:
 
 Ports were deliberately moved off 443 to 2443 so the suite does not need root or a stopped
 local HTTPS service.
+
+### Running several suites at once
+
+Every port above is a *base*: `--offset-port=NUM` adds `NUM` to all of them, up to 20000 so
+that the highest (44110) stays inside the 16 bit range. Both programs take the option and
+both must be given the same value.
+
+```sh
+./vortex-regression-listener --offset-port=1500          # binds 45510, 45511, 45610, 3943, ...
+./vortex-regression-client   --offset-port=1500 --run-test=test_01
+```
+
+The HTTP proxy port is deliberately **not** shifted: it belongs to an external proxy server
+rather than to the suite, so moving it would only break the connection to it.
+
+This matters beyond convenience. Because the ports are fixed, a listener left behind by an
+earlier run — or one a colleague is using in another terminal — will happily answer for the
+one a script just started, which then dies on a bind error while every test runs against a
+process nobody is tracking, with whatever build of the library it loaded when it started.
+Giving each run its own offset makes that impossible rather than merely unlikely.
 
 ## Profiles
 

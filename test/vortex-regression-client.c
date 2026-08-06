@@ -89,12 +89,12 @@ axl_bool skip_http_connect   = axl_false;
 
 /* listener location */
 char   * listener_host = NULL;
-#define LISTENER_PORT              "44010"
-#define LISTENER_UNIFIED_SASL_PORT "44011"
+#define LISTENER_PORT              regression_port (REGRESSION_PORT_LISTENER)
+#define LISTENER_UNIFIED_SASL_PORT regression_port (REGRESSION_PORT_UNIFIED_SASL)
 
 /* listener proxy location */
 char   * listener_tunnel_host = NULL;
-#define LISTENER_PROXY_PORT "44110"
+#define LISTENER_PROXY_PORT regression_port (REGRESSION_PORT_TUNNEL_PROXY)
 
 /* HTTP proxy support */
 char   * http_proxy_host = NULL;
@@ -166,7 +166,7 @@ VortexConnection * connection_new (void)
 		vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_PORT, http_proxy_port);
 		
 		/* create a connection */
-		conn = vortex_http_connection_new (listener_host, "2443", setup, NULL, NULL);
+		conn = vortex_http_connection_new (listener_host, regression_port (REGRESSION_PORT_TLS), setup, NULL, NULL);
 		
 		/* terminate setup */
 		vortex_http_setup_unref (setup);
@@ -181,7 +181,7 @@ VortexConnection * connection_new (void)
 		        vortex_websocket_setup_conf (wss_setup, VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_DEBUG, INT_TO_PTR (axl_true));
 
 		/* create basic setup */
-		return vortex_websocket_connection_new (listener_host, "44013", wss_setup, NULL, NULL);
+		return vortex_websocket_connection_new (listener_host, regression_port (REGRESSION_PORT_WEBSOCKET), wss_setup, NULL, NULL);
 	} else if (enable_websocket_tls_support) {
 		/* create basic setup */
 		wss_setup = vortex_websocket_setup_new (ctx);
@@ -192,7 +192,7 @@ VortexConnection * connection_new (void)
 		        vortex_websocket_setup_conf (wss_setup, VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_DEBUG, INT_TO_PTR (axl_true));
 		
 		/* create connection */
-		return vortex_websocket_connection_new (listener_host, "44014", wss_setup, NULL, NULL);
+		return vortex_websocket_connection_new (listener_host, regression_port (REGRESSION_PORT_WEBSOCKET_TLS), wss_setup, NULL, NULL);
 #endif
 	} else {
 		/* create a direct connection */
@@ -5258,7 +5258,7 @@ axl_bool  test_02a3 (void) {
 
 	/* creates a new connection against localhost:44000 */
 	printf ("Test 02-a3: creating IPv6 connection against ::1 . 44016\n");
-	connection = vortex_connection_new (ctx , "::1", "44016", NULL, NULL);
+	connection = vortex_connection_new (ctx , "::1", regression_port (REGRESSION_PORT_IPV6), NULL, NULL);
 	if (!vortex_connection_is_ok (connection, axl_false)) {
 		printf ("ERROR: failed to create IPV6 connection..\n");
 		vortex_connection_close (connection);
@@ -5298,7 +5298,7 @@ axl_bool  test_02a4 (void) {
 
 	/* creates a new connection against localhost:44000 */
 	printf ("Test 02-a4: creating IPv6 connection against ::1 . 44016\n");
-	connection = vortex_connection_new6 (ctx , "::1", "44016", NULL, NULL);
+	connection = vortex_connection_new6 (ctx , "::1", regression_port (REGRESSION_PORT_IPV6), NULL, NULL);
 	if (!vortex_connection_is_ok (connection, axl_false)) {
 		printf ("ERROR: failed to create IPV6 connection..\n");
 		vortex_connection_close (connection);
@@ -5324,7 +5324,7 @@ axl_bool  test_02a4 (void) {
 
 	/* creates a new connection against localhost:44000 */
 	printf ("Test 02-a4: creating IPv6 connection against 127.0.0.1 : 44016 (it should fail)\n");
-	connection = vortex_connection_new6 (ctx , "127.0.0.1", "44016", NULL, NULL);
+	connection = vortex_connection_new6 (ctx , "127.0.0.1", regression_port (REGRESSION_PORT_IPV6), NULL, NULL);
 	if (vortex_connection_is_ok (connection, axl_false)) {
 		printf ("ERROR: it worked but it shouldn't! be possible to create a IPv6 connection with 127.0.0.1..\n");
 		vortex_connection_close (connection);
@@ -7943,7 +7943,7 @@ axl_bool  test_02q (void) {
 	}
 
 	/* creates a new connection against localhost:44000 */
-	connection = vortex_connection_new (ctx, "localhost", "44010", NULL, NULL);
+	connection = vortex_connection_new (ctx, "localhost", LISTENER_PORT, NULL, NULL);
 	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
 		return axl_false;
@@ -8123,7 +8123,7 @@ axl_bool  test_02r (void) {
 	}
 
 	/* creates a new connection against localhost:44000 */
-	connection = vortex_connection_new (ctx, "localhost", "44010", NULL, NULL);
+	connection = vortex_connection_new (ctx, "localhost", LISTENER_PORT, NULL, NULL);
 	if (!vortex_connection_is_ok (connection, axl_false)) {
 		vortex_connection_close (connection);
 		return axl_false;
@@ -12189,7 +12189,7 @@ axl_bool  test_12 (void) {
 	fflush (stdout);
 
 	/* try to connect to an unreachable host */
-	connection = vortex_connection_new (ctx, listener_host, "44012", NULL, NULL);
+	connection = vortex_connection_new (ctx, listener_host, regression_port (REGRESSION_PORT_FAKE_LISTENER), NULL, NULL);
 	stamp      = time (NULL);
 	if (vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 12 (7): failed, expected to NOT to connect to: %s:%s...reason: %s\n",
@@ -12262,10 +12262,10 @@ axl_bool  test_12 (void) {
 	printf ("...connect (wait 5 seconds)");
 	fflush (stdout);
 	stamp      = time (NULL);
-	connection = vortex_connection_new (ctx, listener_host, "44012", NULL, NULL);
+	connection = vortex_connection_new (ctx, listener_host, regression_port (REGRESSION_PORT_FAKE_LISTENER), NULL, NULL);
 	if (vortex_connection_is_ok (connection, axl_false)) {
 		printf ("\nTest 12 (9): failed to connect to: %s:%s...reason: %s\n",
-			listener_host, "44012", vortex_connection_get_message (connection));
+			listener_host, regression_port (REGRESSION_PORT_FAKE_LISTENER), vortex_connection_get_message (connection));
 		vortex_connection_close (connection);
 		return axl_false;
 	}
@@ -12302,7 +12302,7 @@ axl_bool  test_12 (void) {
 	/* CONNECT TO RESPONSE SERVER: now try to connect again */
 	printf ("..now connecting");
 	fflush (stdout);
-	connection = vortex_connection_new (ctx, listener_host, "44012", NULL, NULL);
+	connection = vortex_connection_new (ctx, listener_host, regression_port (REGRESSION_PORT_FAKE_LISTENER), NULL, NULL);
 	if (! vortex_connection_is_ok (connection, axl_false)) {
 		printf ("Test 12 (10): failed to connect to: %s:%s...reason: %s\n",
 			listener_host, LISTENER_PORT, vortex_connection_get_message (connection));
@@ -14077,7 +14077,7 @@ axl_bool  test_16 (void)
 	vortex_http_setup_conf (setup, VORTEX_HTTP_CONF_ITEM_PROXY_PORT, http_proxy_port);
 
 	/* create a connection */
-	conn = vortex_http_connection_new (listener_host, "2443", setup, NULL, NULL);
+	conn = vortex_http_connection_new (listener_host, regression_port (REGRESSION_PORT_TLS), setup, NULL, NULL);
 
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("ERROR: unable to create connection to %s:2443, error found (code: %d): %s",
@@ -14671,7 +14671,7 @@ axl_bool test_17 (void) {
 
 	/* create context */
 	printf ("Test 17: creating websocket connection over BEEP %s:44013..\n", listener_host);
-	conn = vortex_websocket_connection_new (listener_host, "44013", setup, NULL, NULL);
+	conn = vortex_websocket_connection_new (listener_host, regression_port (REGRESSION_PORT_WEBSOCKET), setup, NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("ERROR: failed to create BEEP session over WebSocket connection...\n");
 		return axl_false;
@@ -14785,7 +14785,7 @@ axl_bool test_18 (void) {
 
 	/* create context */
 	printf ("Test 18: creating websocket connection over BEEP %s:44014..\n", listener_host);
-	conn = vortex_websocket_connection_new (listener_host, "44014", setup, NULL, NULL);
+	conn = vortex_websocket_connection_new (listener_host, regression_port (REGRESSION_PORT_WEBSOCKET_TLS), setup, NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("ERROR: failed to create BEEP session over WebSocket connection...\n");
 		return axl_false;
@@ -14981,7 +14981,7 @@ axl_bool test_20 (void) {
 
 	/* create normal connection as usually done to the  */
 	printf ("Test 20: creating BEEP session with normal API..\n");
-	conn = vortex_connection_new (ctx, listener_host, "44015", NULL, NULL);
+	conn = vortex_connection_new (ctx, listener_host, regression_port (REGRESSION_PORT_SHARING), NULL, NULL);
 
 	if (! test_20_check (conn))
 		return axl_false;
@@ -14996,7 +14996,7 @@ axl_bool test_20 (void) {
 
 	/* BEEP over WEBSOCKET */
 	printf ("Test 20: creating BEEP session with WebSocket transport (no TLS)..\n");
-	conn = vortex_websocket_connection_new (listener_host, "44015", vortex_websocket_setup_new (ctx), NULL, NULL);
+	conn = vortex_websocket_connection_new (listener_host, regression_port (REGRESSION_PORT_SHARING), vortex_websocket_setup_new (ctx), NULL, NULL);
 
 	if (! test_20_check (conn))
 		return axl_false;
@@ -15016,7 +15016,7 @@ axl_bool test_20 (void) {
 	wss_setup = vortex_websocket_setup_new (ctx);
 	/* setup wss protocol */
 	vortex_websocket_setup_conf (wss_setup, VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_TLS, INT_TO_PTR (axl_true));
-	conn = vortex_websocket_connection_new (listener_host, "44015", wss_setup, NULL, NULL);
+	conn = vortex_websocket_connection_new (listener_host, regression_port (REGRESSION_PORT_SHARING), wss_setup, NULL, NULL);
 
 	if (! test_20_check (conn))
 		return axl_false;
@@ -15522,7 +15522,7 @@ int main (int  argc, char ** argv)
 	printf ("**     >> libtool --mode=execute valgrind --leak-check=yes --error-limit=no ./vortex-regression-client --disable-time-checks\n**\n");
 	printf ("** Additional settings:\n");
 	printf ("**\n");
-	printf ("**     >> ./vortex-regression-client [--disable-time-checks] [--run-test=NAME] [--enable-server-log] [--disable-server-log] [--enable-websocket-debug] [--skip-http-connect] \n");
+	printf ("**     >> ./vortex-regression-client [--offset-port=NUM] [--disable-time-checks] [--run-test=NAME] [--enable-server-log] [--disable-server-log] [--enable-websocket-debug] [--skip-http-connect] \n");
 	printf ("**                                   [listener-host [TUNNEL-proxy-host [proxy-host [proxy-port]]]]\n");
 	printf ("**\n");
 	printf ("**       If no listener-host value is provided, it is used \"localhost\". \n");
@@ -15532,6 +15532,16 @@ int main (int  argc, char ** argv)
 	printf ("**       Values for proxy-host and proxy-port defines the HTTP proxy server to use\n");
 	printf ("**       to check vortex-http implementation. If proxy-host is not provided \"localhost\"\n");
 	printf ("**       is used. If proxy-port is not provided, port 3128 is used.\n");
+	printf ("**\n");
+	printf ("**       Providing --offset-port=NUM adds NUM to every port the suite binds,\n");
+	printf ("**       so several runs can share a host without fighting over ports. The\n");
+	printf ("**       listener must be given the same value:\n");
+	printf ("**\n");
+	printf ("**          >> ./vortex-regression-listener --offset-port=1000\n");
+	printf ("**          >> ./vortex-regression-client --offset-port=1000 --run-test=test_01\n");
+	printf ("**\n");
+	printf ("**       Note the HTTP proxy port is not shifted: it belongs to an external proxy.\n");
+	printf ("**       Options are matched in the order shown in the usage line above.\n");
 	printf ("**\n");
 	printf ("**       Providing --disable-time-checks will make regression test to skip those\n");
 	printf ("**       tests that could fail due to timing issues. This is useful when using\n");
@@ -15575,6 +15585,27 @@ int main (int  argc, char ** argv)
 #endif
 	/* create the context */
 	ctx = vortex_ctx_new ();
+
+	/* check for offset-port: consumed first so it composes with the options
+	 * below, which are matched in the order they appear here */
+	if (argc > 1 && axl_memcmp (argv[1], "--offset-port=", 14)) {
+		if (! regression_port_offset_configure (argv[1] + 14)) {
+			printf ("ERROR: invalid --offset-port value '%s': expected a number between 0 and %d\n",
+				argv[1] + 14, REGRESSION_PORT_OFFSET_MAX);
+			return -1;
+		} /* end if */
+		iterator            = 1;
+		argc--;
+		printf ("INFO: using port offset=%d (main listener at %s)\n",
+			regression_port_offset (), regression_port (REGRESSION_PORT_LISTENER));
+		while (iterator <= argc) {
+			argv[iterator] = argv[iterator+1];
+			iterator++;
+		} /* end while */
+	} /* end if */
+
+	/* render every port with the offset configured, before any thread runs */
+	regression_port_init ();
 
 	/* check for disable-time-checks */
 	if (argc > 1 && axl_cmp (argv[1], "--disable-time-checks")) {

@@ -199,6 +199,41 @@ char * vortex_regression_common_read_file (const char * file, int * size);
 
 void vortex_regression_common_wait (long microseconds);
 
+/**
+ * Base port numbers bound by the regression suite.
+ *
+ * The value given to --offset-port is added to every one of them, which lets
+ * several runs of the suite share a host without fighting over ports. Both the
+ * client and the listener must be given the same offset.
+ *
+ * The HTTP proxy port is deliberately not part of this list: it belongs to an
+ * external proxy server, not to the suite, so shifting it would only break the
+ * connection to it.
+ */
+#define REGRESSION_PORT_LISTENER      44010
+#define REGRESSION_PORT_UNIFIED_SASL  44011
+#define REGRESSION_PORT_FAKE_LISTENER 44012
+#define REGRESSION_PORT_WEBSOCKET     44013
+#define REGRESSION_PORT_WEBSOCKET_TLS 44014
+#define REGRESSION_PORT_SHARING       44015
+#define REGRESSION_PORT_IPV6          44016
+#define REGRESSION_PORT_TUNNEL_PROXY  44110
+#define REGRESSION_PORT_TLS           2443
+
+/**
+ * Largest offset accepted, so that every base port stays inside the 16 bit
+ * range: the highest base is 44110 and 44110 + 20000 is still under 65536.
+ */
+#define REGRESSION_PORT_OFFSET_MAX 20000
+
+axl_bool     regression_port_offset_configure (const char * value);
+
+int          regression_port_offset           (void);
+
+void         regression_port_init             (void);
+
+const char * regression_port                  (int base);
+
 /* message size: 4096 */
 #define TEST_REGRESION_URI_4_MESSAGE "This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary content. This is a large file that contains arbitrary ."
 

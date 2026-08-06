@@ -87,7 +87,7 @@ void frame_received_fake_listeners  (VortexChannel    * channel,
 		/* printf ("RECEIVED: create-listener request..creating at 0.0.0.0:44012\n");*/
 
 		/* create the listener */
-		listener = vortex_listener_new (ctx, "0.0.0.0", "44012", NULL, NULL);
+		listener = vortex_listener_new (ctx, "0.0.0.0", regression_port (REGRESSION_PORT_FAKE_LISTENER), NULL, NULL);
 		if (! vortex_connection_is_ok (listener, axl_false)) {
 			/* printf ("Test 12 (8): failed to start fake listener..\n"); */
 			vortex_channel_send_err (channel, "failed to create listener", 25, vortex_frame_get_msgno (frame));
@@ -1621,6 +1621,22 @@ int main (int  argc, char ** argv)
 
 	vortex_mutex_create (&doing_exit_mutex);
 
+	/* check for offset-port before anything binds: every port the listener
+	 * opens is shifted by it, so several runs of the suite can share a host.
+	 * The client must be given the same value. */
+	if (argc > 1 && axl_memcmp (argv[1], "--offset-port=", 14)) {
+		if (! regression_port_offset_configure (argv[1] + 14)) {
+			printf ("ERROR: invalid --offset-port value '%s': expected a number between 0 and %d\n",
+				argv[1] + 14, REGRESSION_PORT_OFFSET_MAX);
+			return -1;
+		} /* end if */
+		printf ("INFO: using port offset=%d (main listener at %s)\n",
+			regression_port_offset (), regression_port (REGRESSION_PORT_LISTENER));
+	} /* end if */
+
+	/* render every port with the offset configured, before any thread runs */
+	regression_port_init ();
+
 	/* create the context */
 	ctx = vortex_ctx_new ();
 
@@ -1897,7 +1913,7 @@ int main (int  argc, char ** argv)
 				  
 	
 	/* create a vortex server */
-	listener = vortex_listener_new (ctx, "0.0.0.0", "44010", NULL, NULL);
+	listener = vortex_listener_new (ctx, "0.0.0.0", regression_port (REGRESSION_PORT_LISTENER), NULL, NULL);
 	if (! vortex_connection_is_ok (listener, axl_false)) {
 		printf ("ERROR: failed to start listener at: 44010, error found (code: %d): %s\n",
 			vortex_connection_get_status (listener),
@@ -1907,7 +1923,7 @@ int main (int  argc, char ** argv)
 
 	/* create a vortex server to check the tunnel profile
 	 * support */
-	listener = vortex_listener_new (ctx, "0.0.0.0", "44110", NULL, NULL);
+	listener = vortex_listener_new (ctx, "0.0.0.0", regression_port (REGRESSION_PORT_TUNNEL_PROXY), NULL, NULL);
 	if (! vortex_connection_is_ok (listener, axl_false)) {
 		printf ("ERROR: failed to start listener at: 44110, error found (code: %d): %s\n",
 			vortex_connection_get_status (listener),
@@ -1917,7 +1933,7 @@ int main (int  argc, char ** argv)
 
 	/* run also on 2443 port to allow receiving http connect
 	 * request */
-	listener = vortex_listener_new (ctx, "0.0.0.0", "2443", NULL, NULL);
+	listener = vortex_listener_new (ctx, "0.0.0.0", regression_port (REGRESSION_PORT_TLS), NULL, NULL);
 	if (! vortex_connection_is_ok (listener, axl_false)) {
 		printf ("ERROR: failed to start listener at: 2443, error found (code: %d): %s\n",
 			vortex_connection_get_status (listener),
@@ -1938,7 +1954,7 @@ int main (int  argc, char ** argv)
 		return -1;
 	} /* end if */
 
-	listener = vortex_listener_new (ctx2, "0.0.0.0", "44011", NULL, NULL);
+	listener = vortex_listener_new (ctx2, "0.0.0.0", regression_port (REGRESSION_PORT_UNIFIED_SASL), NULL, NULL);
 	if (! vortex_connection_is_ok (listener, axl_false)) {
 		printf ("ERROR: failed to start listener at: 44011, error found (code: %d): %s\n",
 			vortex_connection_get_status (listener),
@@ -1994,7 +2010,7 @@ int main (int  argc, char ** argv)
 	} /* end if */
 	
 	/* now create the listener */
-	npll_listener = nopoll_listener_new (npll_ctx, "0.0.0.0", "44013");
+	npll_listener = nopoll_listener_new (npll_ctx, "0.0.0.0", regression_port (REGRESSION_PORT_WEBSOCKET));
 	if (! nopoll_conn_is_ok (npll_listener)) {
 		printf ("ERROR: Expected to find proper WebSocket listener connection status, but found failure..\n");
 		return -1;
@@ -2008,7 +2024,7 @@ int main (int  argc, char ** argv)
 	} /* end if */
 
 	/* also create a WebSocket listener */
-	npll_listener = nopoll_listener_tls_new (npll_ctx, "0.0.0.0", "44014");
+	npll_listener = nopoll_listener_tls_new (npll_ctx, "0.0.0.0", regression_port (REGRESSION_PORT_WEBSOCKET_TLS));
 	if (! nopoll_conn_is_ok (npll_listener)) {
 		printf ("ERROR: Expected to find proper WebSocket listener connection status, but found failure..\n");
 		return -1;
@@ -2024,7 +2040,7 @@ int main (int  argc, char ** argv)
 
 	/* create a vortex server using normal BEEP declaration but
 	 * enabling port sharing on it  */
-	listener = vortex_listener_new (ctx, "0.0.0.0", "44015", NULL, NULL);
+	listener = vortex_listener_new (ctx, "0.0.0.0", regression_port (REGRESSION_PORT_SHARING), NULL, NULL);
 	if (! vortex_connection_is_ok (listener, axl_false)) {
 		printf ("ERROR: failed to start listener at: 44015, error found (code: %d): %s\n",
 			vortex_connection_get_status (listener),
@@ -2039,14 +2055,14 @@ int main (int  argc, char ** argv)
 		return -1;
 	}
 
-	vortex_websocket_listener_port_sharing (ctx, npll_ctx, "0.0.0.0", "44015");
+	vortex_websocket_listener_port_sharing (ctx, npll_ctx, "0.0.0.0", regression_port (REGRESSION_PORT_SHARING));
 
 #else
 	printf ("--- WARNING: Skipping WebSocket support API check, since Vortex isn't configured with that support\n");
 #endif
 
 	/* IPv6 support */
-	listener = vortex_listener_new6 (ctx, "::1", "44016", NULL, NULL);
+	listener = vortex_listener_new6 (ctx, "::1", regression_port (REGRESSION_PORT_IPV6), NULL, NULL);
 	if (! vortex_connection_is_ok (listener, axl_false)) {
 		printf ("ERROR: failed to start IPv6 listener at: 44016, error found (code: %d): %s\n",
 			vortex_connection_get_status (listener),
