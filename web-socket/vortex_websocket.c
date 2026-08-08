@@ -400,11 +400,15 @@ int vortex_websocket_read (VortexConnection * conn,
 		vortex_connection_shutdown (conn);
 	} /* end if */
 
-	/* flag we have pending bytes if it is the case */
-	if (nopoll_conn_read_pending (_conn) > 0) {
-	        /* flag we have pending bytes to be read so vortex frame factory can recover them */
-	        vortex_connection_set_data (conn, "try_read_pending", INT_TO_PTR (nopoll_conn_read_pending (_conn)));
-	} /* end if */
+	/* Flag how many octets noPoll is still holding for us, so the vortex
+	 * reader knows to come back rather than waiting on the socket: a single
+	 * websocket frame may carry more than one BEEP frame, and the remainder
+	 * lives in noPoll's buffer where select() cannot see it.
+	 *
+	 * Set unconditionally, including when nothing is pending, so the flag
+	 * always describes the transport right now instead of staying raised
+	 * from an earlier read. */
+	vortex_connection_set_data (conn, "try_read_pending", INT_TO_PTR (nopoll_conn_read_pending (_conn)));
 	  
 	
 	return result;

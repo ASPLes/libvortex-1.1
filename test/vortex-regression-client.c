@@ -14772,6 +14772,135 @@ axl_bool test_17 (void) {
 #endif	
 }
 
+/** 
+ * @brief Check that two BEEP frames packed into a single WebSocket frame are both processed.
+ *
+ * A WebSocket transport delivers messages, not octets, so one WebSocket frame may carry more
+ * than one BEEP frame. Everything beyond the frame currently being assembled then waits
+ * inside noPoll's own buffer, where the I/O waiting mechanism cannot see it: select(), poll()
+ * and epoll() watch the socket, and the socket is already empty. A reader that handles a
+ * single frame per readable event leaves those octets there for ever, and the session stalls
+ * with no error reported at either end.
+ *
+ * LibVortex never produces this against itself, because its sequencer calls the transport
+ * once per BEEP frame. Any peer that batches writes does, which is a perfectly ordinary thing
+ * to do over a byte stream, and is how the defect was found.
+ *
+ * The session here is driven with noPoll directly instead of with a VortexConnection: writing
+ * raw frames behind a connection's back would desynchronise its own sequence accounting, and
+ * what has to be exercised is the listener's reader, not this side.
+ */
+axl_bool test_17a (void) {
+#if defined(ENABLE_WEBSOCKET_SUPPORT)
+	noPollCtx  * np_ctx;
+	noPollConn * np_conn;
+	char       * greeting_frame;
+	char       * start_frame;
+	char       * packed;
+	char         reply[8192];
+	int          total    = 0;
+	int          bytes;
+	int          iterator = 0;
+	int          replies  = 0;
+	char       * position;
+
+	/* the greeting this side must send, and a start for a profile the listener serves */
+	const char * greeting_body = "Content-Type: application/beep+xml\r\n\r\n<greeting />\r\n";
+	const char * start_body    = "Content-Type: application/beep+xml\r\n\r\n<start number='1'>\r\n"
+		"<profile uri='" REGRESSION_URI "' />\r\n</start>\r\n";
+
+	printf ("Test 17-a: connecting to %s:%s to send two BEEP frames in one WebSocket frame..\n",
+		listener_host, regression_port (REGRESSION_PORT_WEBSOCKET));
+
+	np_ctx = nopoll_ctx_new ();
+	if (np_ctx == NULL) {
+		printf ("ERROR: unable to create noPoll context..\n");
+		return axl_false;
+	} /* end if */
+
+	np_conn = nopoll_conn_new (np_ctx, listener_host, regression_port (REGRESSION_PORT_WEBSOCKET),
+				   listener_host,
+				   /* get url */ NULL,
+				   /* protocols */ NULL,
+				   /* origin */ "http://localhost");
+	if (! nopoll_conn_wait_until_connection_ready (np_conn, 10)) {
+		printf ("ERROR: unable to complete WebSocket handshake with the listener..\n");
+		nopoll_conn_close (np_conn);
+		nopoll_ctx_unref (np_ctx);
+		return axl_false;
+	} /* end if */
+
+	/* Build both frames and put them into a single WebSocket frame. The second frame's
+	 * sequence number is the payload size of the first: on channel 0 the counter advances
+	 * by payload octets only. */
+	greeting_frame = axl_strdup_printf ("RPY 0 0 . 0 %d\r\n%sEND\r\n",
+					    (int) strlen (greeting_body), greeting_body);
+	start_frame    = axl_strdup_printf ("MSG 0 0 . %d %d\r\n%sEND\r\n",
+					    (int) strlen (greeting_body), (int) strlen (start_body), start_body);
+	packed         = axl_strdup_printf ("%s%s", greeting_frame, start_frame);
+
+	/* Binary rather than text: the payload is arbitrary octets, which is what RFC 6455 says
+	 * binary frames are for. The defect under test does not depend on the opcode. */
+	if (nopoll_conn_send_binary (np_conn, packed, strlen (packed)) != (int) strlen (packed)) {
+		printf ("ERROR: failed to send the packed WebSocket frame..\n");
+		axl_free (greeting_frame);
+		axl_free (start_frame);
+		axl_free (packed);
+		nopoll_conn_close (np_conn);
+		nopoll_ctx_unref (np_ctx);
+		return axl_false;
+	} /* end if */
+
+	axl_free (greeting_frame);
+	axl_free (start_frame);
+	axl_free (packed);
+
+	/* Read until both replies are in or we give up. Two are expected on channel 0: the
+	 * listener's own greeting, and the answer to the start. Before the fix only the greeting
+	 * ever arrived, because the start was still sitting in noPoll's buffer. */
+	while (iterator < 30 && total < ((int) sizeof (reply) - 1)) {
+		bytes = nopoll_conn_read (np_conn, reply + total, 512, nopoll_true, 300);
+		if (bytes > 0) {
+			total        += bytes;
+			reply[total]  = 0;
+
+			replies  = 0;
+			position = reply;
+			while ((position = strstr (position, "RPY 0 0")) != NULL) {
+				replies++;
+				position++;
+			} /* end while */
+
+			if (replies >= 2)
+				break;
+		} /* end if */
+
+		iterator++;
+	} /* end while */
+
+	nopoll_conn_close (np_conn);
+	nopoll_ctx_unref (np_ctx);
+
+	if (replies < 2) {
+		printf ("ERROR: the second BEEP frame inside the WebSocket frame was never processed:\n");
+		printf ("ERROR:   expected 2 replies on channel 0 (greeting + start), found %d in %d bytes\n",
+			replies, total);
+		return axl_false;
+	} /* end if */
+
+	if (strstr (reply, "<profile") == NULL) {
+		printf ("ERROR: replies received but none carried the <profile> answering the start..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 17-a: both frames processed (%d bytes received)..\n", total);
+	return axl_true;
+#else
+	printf ("Test 17-a: no support for WebSocket (noPoll support), doing nothing..\n");
+	return axl_true;
+#endif
+}
+
 axl_bool test_18 (void) {
 #if defined(ENABLE_WEBSOCKET_SUPPORT)
 	VortexConnection     * conn;
@@ -15571,7 +15700,8 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_08, test_09, test_10, test_11, test_12, test_13,\n");
 	printf ("**                       test_14, test_14a, test_14b, test_14c, test_14d, test_14e,\n");
 	printf ("**                       test_14f, test_14g, test_14h, test_15, test_15a, test_16,\n");
-	printf ("**                       test_16a, test_17, test_18, test_19, test_20, test_21,\n");
+	printf ("**                       test_16a, test_17, test_17a, test_18, test_19, test_20,\n");
+	printf ("**                       test_21,\n");
 	printf ("**                       test_22\n");
 	printf ("**\n");
 	printf ("** Report bugs to:\n**\n");
@@ -16101,6 +16231,9 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_17"))
 			run_test (test_17, "Test 17", "Check Websocket (RFC 6455) connect support through noPoll", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_17a"))
+			run_test (test_17a, "Test 17-a", "Check two BEEP frames packed into one WebSocket frame", -1, -1);
+
 		if (check_and_run_test (run_test_name, "test_18"))
 			run_test (test_18, "Test 18", "Check TLS Websocket (RFC 6455) connect support through noPoll", -1, -1);
 
@@ -16364,6 +16497,8 @@ int main (int  argc, char ** argv)
 	} /* end if */
 
 	run_test (test_17, "Test 17", "Check Websocket (RFC 6455) connect support through noPoll", -1, -1);
+
+	run_test (test_17a, "Test 17-a", "Check two BEEP frames packed into one WebSocket frame", -1, -1);
 
 	run_test (test_18, "Test 18", "Check TLS Websocket (RFC 6455) connect support through noPoll", -1, -1);
 

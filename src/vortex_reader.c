@@ -626,6 +626,46 @@ void __vortex_reader_process_socket (VortexCtx        * ctx,
 }
 
 /** 
+ * @internal Reads from a connection until its transport holds nothing back.
+ *
+ * \ref __vortex_reader_process_socket handles a single frame per call, which
+ * is right for a byte stream transport: whatever it did not consume is still
+ * in the socket, so the I/O waiting mechanism reports the connection again.
+ *
+ * That assumption breaks for a transport that delivers messages rather than
+ * octets. A WebSocket frame may carry more than one BEEP frame, and the
+ * transport hands vortex the whole thing at once; the octets beyond the frame
+ * being assembled are then buffered inside the transport, where select(),
+ * poll() and epoll() cannot see them, because the socket itself is empty. The
+ * connection would stall there for ever, with no error reported at either end.
+ *
+ * Transports able to buffer report how much they are holding through the
+ * "try_read_pending" connection key, so keep reading while that says there is
+ * something left. Nothing happens for transports that never set it.
+ */
+void __vortex_reader_process_socket_pending (VortexCtx        * ctx, 
+					     VortexConnection * connection)
+{
+	do {
+		__vortex_reader_process_socket (ctx, connection);
+
+		/* transports that cannot buffer never set this, so they pay
+		 * one hash lookup per readable event and nothing else */
+		if (PTR_TO_INT (vortex_connection_get_data (connection, "try_read_pending")) <= 0)
+			break;
+
+		/* clear it before going round again: the flag must be set
+		 * afresh by a read that actually happens, so that a connection
+		 * which stops reading (unwatched, or with a preread handler
+		 * taking over) cannot spin here */
+		vortex_connection_set_data (connection, "try_read_pending", NULL);
+
+	} while (vortex_connection_is_ok (connection, axl_false));
+
+	return;
+}
+
+/** 
  * @internal 
  *
  * @brief Classify vortex reader items to be managed, that is,
@@ -1081,7 +1121,7 @@ void __vortex_reader_check_connection_list (VortexCtx     * ctx,
 			/* call to process incoming data, activating
 			 * all invocation code (first and second level
 			 * handler) */
-			__vortex_reader_process_socket (ctx, connection);
+			__vortex_reader_process_socket_pending (ctx, connection);
 
 			/* update number of sockets checked */
 			checked++;
@@ -1237,7 +1277,7 @@ void __vortex_reader_dispatch_connection (int                  fds,
 	default:
 		/* call to process incoming data, activating all
 		 * invocation code (first and second level handler) */
-		__vortex_reader_process_socket (ctx, connection);
+		__vortex_reader_process_socket_pending (ctx, connection);
 		break;
 	} /* end if */
 	return;

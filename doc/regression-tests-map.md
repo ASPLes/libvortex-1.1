@@ -352,6 +352,7 @@ Requires an HTTP proxy at `localhost:3128`; skip with `--skip-http-connect`.
 | Test | Covers |
 |---|---|
 | `test_17` | WebSocket connect (44013) and then the basic BEEP test battery over it |
+| `test_17a` | **two BEEP frames packed into a single WebSocket frame** must both be processed. A WebSocket transport delivers messages, not octets, so the octets past the frame being assembled wait inside noPoll's buffer, where `select`/`poll`/`epoll` cannot see them: the socket is already empty. A reader handling one frame per readable event leaves them there and the session stalls with no error at either end. LibVortex never produces this against itself (its sequencer sends one BEEP frame per call), so the case went uncovered; any peer that batches writes hits it. Driven with noPoll directly rather than a `VortexConnection`, since raw frames would desynchronise a connection's own accounting |
 | `test_18` | WebSocket **with TLS** connect (44014); `vortex_websocket_connection_is_tls_running` |
 | `test_19` | further BEEP tests over TLS WebSocket |
 | `test_20` | transparent port sharing on 44015: plain BEEP, WebSocket and WebSocket/TLS accepted on the same port |
@@ -381,7 +382,9 @@ Suggested order, from cheapest to hardest:
 5. **Robustness** — `test_01g1`, `test_01h`, `test_01w`, `test_01x`, `test_02a2`,
    `test_02j`. Malformed headers, floods, oversized frames, abrupt disconnects.
 6. **Profiles on top** — TLS (`test_05*`), SASL (`test_06*`), TUNNEL (`test_13`),
-   ALIVE (`test_15*`), XML-RPC (`test_07`), WebSocket (`test_17`–`test_20`).
+   ALIVE (`test_15*`), XML-RPC (`test_07`), WebSocket (`test_17`–`test_20`), including
+   `test_17a` for a transport-framing assumption that only shows against a peer that batches
+   writes.
 
 The `test_00*` group is LibVortex-internal plumbing and can be ignored. `test_14*` (PULL)
 and `test_21`/`test_22` (external transport) describe LibVortex API shapes rather than wire
