@@ -469,6 +469,20 @@ int  vortex_tls_ssl_read (VortexConnection * connection, char  * buffer, int  bu
 	/* read data */
 	res = SSL_read (ssl, buffer, buffer_len);
 
+	/* Flag how many octets OpenSSL still holds decrypted for us, so the vortex reader
+	 * knows to come back rather than waiting on the socket.
+	 *
+	 * A TLS record may carry more than one BEEP frame, and SSL_read decrypts a whole
+	 * record at a time: whatever the caller did not ask for stays inside OpenSSL, where
+	 * select(), poll() and epoll() cannot see it because the socket itself is empty. The
+	 * connection would then stall with no error at either end.
+	 *
+	 * LibVortex does not produce this against itself, because its sequencer writes one
+	 * BEEP frame per SSL_write. Any peer that batches writes does, which is ordinary and
+	 * correct over a byte stream. Same shape as the WebSocket transport, which reports the
+	 * same thing through the same key. */
+	vortex_connection_set_data (connection, "try_read_pending", INT_TO_PTR (SSL_pending (ssl)));
+
 	/* unlock the mutex */
 	vortex_mutex_unlock (mutex);
 

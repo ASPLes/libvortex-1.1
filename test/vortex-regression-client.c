@@ -9576,9 +9576,9 @@ axl_bool test_05a2 (void)
 	printf ("  - %s\n", peer_certificate);
 	
 	printf ("Test 05-a2: running vortex-digest-tool test-certificate.pem:\n");
-	printf ("            91:59:49:7A:61:8A:DB:6F:F1:90:FB:0E:9B:4B:74:89\n");
+	printf ("            2D:F8:18:52:E3:47:DD:05:7A:58:CF:30:00:12:F4:21\n");
 
-	if (! axl_cmp (peer_certificate, "91:59:49:7A:61:8A:DB:6F:F1:90:FB:0E:9B:4B:74:89")) {
+	if (! axl_cmp (peer_certificate, "2D:F8:18:52:E3:47:DD:05:7A:58:CF:30:00:12:F4:21")) {
 		printf ("Certificate does not matches with value expected: %s\n", peer_certificate);
 		return axl_false;
 	} /* end if */
