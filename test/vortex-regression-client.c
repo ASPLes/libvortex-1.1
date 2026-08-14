@@ -51,6 +51,8 @@
 #if defined(ENABLE_TLS_SUPPORT)
 /* include tls support */
 #include <vortex_tls.h> 
+/* test_05f drives a TLS session by hand, so it needs OpenSSL directly */
+#include <openssl/ssl.h>
 #endif
 
 #if defined(ENABLE_WEBSOCKET_SUPPORT)
@@ -11177,6 +11179,195 @@ VortexConnection * test_06_enable_unified_api (void)
  * 
  * @return axl_true if ok, otherwise, axl_false is returned.
  */
+/** 
+ * @brief Check that two BEEP frames arriving inside a single TLS record are both processed.
+ *
+ * SSL_read decrypts a whole TLS record at a time, so a record carrying more than one BEEP
+ * frame leaves everything the caller did not ask for inside OpenSSL. Those octets are
+ * invisible to select(), poll() and epoll(), which watch the socket — and the socket is by
+ * then empty. A reader that does not ask OpenSSL what it is still holding never reads them,
+ * and the session stalls with no error reported at either end.
+ *
+ * LibVortex does not produce this against itself: its sequencer calls SSL_write once per BEEP
+ * frame. Any peer that batches writes does, which is ordinary and correct over a byte stream,
+ * and this is a case we support and check rather than one we merely happen to survive.
+ *
+ * Same shape as test_17a, which covers the identical defect in the WebSocket transport, and
+ * driven by hand for the same reason: writing raw frames behind a VortexConnection's back
+ * would desynchronise its own sequence accounting, and what has to be exercised is the
+ * listener's reader.
+ */
+axl_bool test_05f (void) {
+#if defined(ENABLE_TLS_SUPPORT)
+	VORTEX_SOCKET      session;
+	VortexAsyncQueue * wait;
+	SSL_CTX       * ssl_ctx  = NULL;
+	SSL           * ssl      = NULL;
+	axlError      * error    = NULL;
+	char          * frame;
+	char          * packed;
+	char            reply[8192];
+	int             total    = 0;
+	int             bytes;
+	int             iterator = 0;
+	int             replies  = 0;
+	char          * position;
+
+	const char * greeting_body = "Content-Type: application/beep+xml\r\n\r\n<greeting />\r\n";
+	const char * tls_body      = "Content-Type: application/beep+xml\r\n\r\n<start number='1'>\r\n"
+		"<profile uri='http://iana.org/beep/TLS'><![CDATA[<ready />]]></profile>\r\n</start>\r\n";
+	const char * start_body    = "Content-Type: application/beep+xml\r\n\r\n<start number='1'>\r\n"
+		"<profile uri='" REGRESSION_URI "' />\r\n</start>\r\n";
+
+	printf ("Test 05-f: connecting to %s:%s to send two BEEP frames in one TLS record..\n",
+		listener_host, regression_port (REGRESSION_PORT_LISTENER));
+
+	session = vortex_connection_sock_connect (ctx, listener_host,
+						  regression_port (REGRESSION_PORT_LISTENER),
+						  NULL, &error);
+	if (session == VORTEX_INVALID_SOCKET) {
+		printf ("ERROR: unable to connect to the listener: %s\n",
+			error ? axl_error_get (error) : "unknown");
+		axl_error_free (error);
+		return axl_false;
+	} /* end if */
+
+	/* 1. greet in the clear, and ask to tune. The listener's own greeting is read below
+	 * along with its answer; nothing here needs to look at it. */
+	frame = axl_strdup_printf ("RPY 0 0 . 0 %d\r\n%sEND\r\n",
+				   (int) strlen (greeting_body), greeting_body);
+	if (send (session, frame, strlen (frame), 0) != (int) strlen (frame)) {
+		printf ("ERROR: failed to send the greeting..\n");
+		axl_free (frame);
+		vortex_close_socket (session);
+		return axl_false;
+	} /* end if */
+	axl_free (frame);
+
+	frame = axl_strdup_printf ("MSG 0 0 . %d %d\r\n%sEND\r\n",
+				   (int) strlen (greeting_body), (int) strlen (tls_body), tls_body);
+	if (send (session, frame, strlen (frame), 0) != (int) strlen (frame)) {
+		printf ("ERROR: failed to ask for TLS..\n");
+		axl_free (frame);
+		vortex_close_socket (session);
+		return axl_false;
+	} /* end if */
+	axl_free (frame);
+
+	/* 2. wait for <proceed />, which is piggybacked on the acceptance */
+	while (iterator < 40 && total < ((int) sizeof (reply) - 1)) {
+		bytes = recv (session, reply + total, sizeof (reply) - total - 1, 0);
+		if (bytes <= 0)
+			break;
+		total       += bytes;
+		reply[total] = 0;
+		if (strstr (reply, "<proceed />") != NULL)
+			break;
+		iterator++;
+	} /* end while */
+
+	if (strstr (reply, "<proceed />") == NULL) {
+		printf ("ERROR: the listener did not agree to tune the session for TLS..\n");
+		vortex_close_socket (session);
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 05-f: listener agreed, running the TLS handshake..\n");
+
+	/* From here on the socket must not block. Without the listener's fix the second frame
+	 * is never processed, and a blocking SSL_read would wait for a reply that is never
+	 * coming — a regression test has to report that, not hang the suite waiting for it. */
+	wait = vortex_async_queue_new ();
+
+	/* 3. tune. No verification: the point here is the framing, not the certificate. */
+	ssl_ctx = SSL_CTX_new (TLS_client_method ());
+	if (ssl_ctx == NULL) {
+		printf ("ERROR: unable to create SSL context..\n");
+		vortex_close_socket (session);
+		return axl_false;
+	} /* end if */
+	SSL_CTX_set_verify (ssl_ctx, SSL_VERIFY_NONE, NULL);
+
+	ssl = SSL_new (ssl_ctx);
+	SSL_set_fd (ssl, session);
+	if (SSL_connect (ssl) != 1) {
+		vortex_async_queue_unref (wait);
+		printf ("ERROR: TLS handshake with the listener failed..\n");
+		SSL_free (ssl);
+		SSL_CTX_free (ssl_ctx);
+		vortex_close_socket (session);
+		return axl_false;
+	} /* end if */
+
+	/* 4. the session starts again: greeting and a channel start, both in ONE SSL_write so
+	 * they land in a single TLS record. */
+	frame  = axl_strdup_printf ("RPY 0 0 . 0 %d\r\n%sEND\r\n",
+				    (int) strlen (greeting_body), greeting_body);
+	packed = axl_strdup_printf ("%sMSG 0 0 . %d %d\r\n%sEND\r\n", frame,
+				    (int) strlen (greeting_body), (int) strlen (start_body), start_body);
+	axl_free (frame);
+
+	if (SSL_write (ssl, packed, strlen (packed)) != (int) strlen (packed)) {
+		printf ("ERROR: failed to write the packed TLS record..\n");
+		axl_free (packed);
+		SSL_free (ssl);
+		SSL_CTX_free (ssl_ctx);
+		vortex_close_socket (session);
+		return axl_false;
+	} /* end if */
+	axl_free (packed);
+
+	/* 5. two replies are expected on channel 0: the listener's greeting for the tuned
+	 * session, and its answer to the start. Without the fix only the greeting arrives,
+	 * because the start is still sitting inside OpenSSL. */
+	vortex_connection_set_sock_block (session, axl_false);
+
+	total    = 0;
+	iterator = 0;
+	while (iterator < 40 && total < ((int) sizeof (reply) - 1)) {
+		bytes = SSL_read (ssl, reply + total, 512);
+		if (bytes <= 0) {
+			/* nothing yet: wait a little and try again, up to about four seconds */
+			vortex_async_queue_timedpop (wait, 100000);
+			iterator++;
+			continue;
+		}
+
+		total       += bytes;
+		reply[total] = 0;
+
+		replies  = 0;
+		position = reply;
+		while ((position = strstr (position, "RPY 0 0")) != NULL) {
+			replies++;
+			position++;
+		} /* end while */
+
+		if (replies >= 2)
+			break;
+	} /* end while */
+
+	SSL_shutdown (ssl);
+	SSL_free (ssl);
+	SSL_CTX_free (ssl_ctx);
+	vortex_close_socket (session);
+	vortex_async_queue_unref (wait);
+
+	if (replies < 2) {
+		printf ("ERROR: the second BEEP frame inside the TLS record was never processed:\n");
+		printf ("ERROR:   expected 2 replies on channel 0 (greeting + start), found %d in %d bytes\n",
+			replies, total);
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 05-f: both frames processed (%d bytes received)..\n", total);
+	return axl_true;
+#else
+	printf ("Test 05-f: no TLS support in this build, doing nothing..\n");
+	return axl_true;
+#endif
+}
+
 axl_bool  test_06 (void)
 {
 #if defined(ENABLE_SASL_SUPPORT)
@@ -15696,7 +15887,8 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_03a, test_03b, test_03c, test_03d, test_03e, test_03f,\n");
 	printf ("**                       test_04, test_04a, test_04ab, test_04c, test_04d, test_04e,\n");
 	printf ("**                       test_04f, test_05, test_05a, test_05a1, test_05a2, test_05b,\n");
-	printf ("**                       test_05c, test_05d, test_05e, test_06, test_06a, test_07,\n");
+	printf ("**                       test_05c, test_05d, test_05e, test_05f, test_06, test_06a,\n");
+	printf ("**                       test_07,\n");
 	printf ("**                       test_08, test_09, test_10, test_11, test_12, test_13,\n");
 	printf ("**                       test_14, test_14a, test_14b, test_14c, test_14d, test_14e,\n");
 	printf ("**                       test_14f, test_14g, test_14h, test_15, test_15a, test_16,\n");
@@ -16162,6 +16354,9 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_05e"))
 			run_test (test_05e, "Test 05-e", "TLS check handlers reporting PEM certificates (instead of file paths)", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_05f"))
+			run_test (test_05f, "Test 05-f", "Check two BEEP frames packed into one TLS record", -1, -1);
+
 		if (check_and_run_test (run_test_name, "test_06"))
 			run_test (test_06, "Test 06", "SASL profile support", -1, -1);
 
@@ -16449,7 +16644,9 @@ int main (int  argc, char ** argv)
 
 	run_test (test_05e, "Test 05-e", "TLS check handlers reporting PEM certificates (instead of file paths)", -1, -1);
 
- 	run_test (test_06, "Test 06", "SASL profile support", -1, -1);
+ 	run_test (test_05f, "Test 05-f", "Check two BEEP frames packed into one TLS record", -1, -1);
+
+	run_test (test_06, "Test 06", "SASL profile support", -1, -1);
 
 	run_test (test_06a, "Test 06-a", "SASL profile support (common handler)", -1, -1);
   

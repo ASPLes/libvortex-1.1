@@ -77,7 +77,9 @@ endif
 
 if ENABLE_TLS_SUPPORT
 INCLUDE_TLS_SUPPORT = -DENABLE_TLS_SUPPORT -I$(top_srcdir)/tls
-TLS_SUPPORT_LIBS    = $(top_builddir)/tls/libvortex-tls-1.1.la 
+# test_05f calls OpenSSL directly to drive a TLS session by hand, so the regression client
+# links it explicitly rather than relying on what libvortex-tls happens to pull in.
+TLS_SUPPORT_LIBS    = $(top_builddir)/tls/libvortex-tls-1.1.la -lssl -lcrypto
 TLS_TESTS           = vortex-tls-listener
 endif
 
