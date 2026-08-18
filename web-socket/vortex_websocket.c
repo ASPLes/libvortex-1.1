@@ -392,8 +392,16 @@ int vortex_websocket_read (VortexConnection * conn,
 		if (nopoll_conn_is_ok (_conn))
 			return -2; 
 
-		vortex_log (VORTEX_LEVEL_CRITICAL, "Found noPollConn-id=%d (%p) read error vortex conn-id=%d (session: %d), errno=%d (shutting down)",
-			    nopoll_conn_get_id (_conn), _conn, vortex_connection_get_id (conn), vortex_connection_get_socket (conn), errno);
+		/* report also the websocket close status/reason reported by the
+		 * remote peer (when a close frame was received) so it is
+		 * possible to tell apart a clean close (1000/1001, peer went
+		 * away), a close without status (1005, usually an intermediary
+		 * proxy), a broken transport (1006, no close frame at all) and
+		 * a protocol failure (1002/1009) */
+		vortex_log (VORTEX_LEVEL_CRITICAL, "Found noPollConn-id=%d (%p) read error vortex conn-id=%d (session: %d), errno=%d, peer-close-status=%d, peer-close-reason=%s (shutting down)",
+			    nopoll_conn_get_id (_conn), _conn, vortex_connection_get_id (conn), vortex_connection_get_socket (conn), errno,
+			    nopoll_conn_get_close_status (_conn),
+			    nopoll_conn_get_close_reason (_conn) ? nopoll_conn_get_close_reason (_conn) : "");
 
 		/* shutdown connection */
 		nopoll_conn_set_socket (_conn, -1);
