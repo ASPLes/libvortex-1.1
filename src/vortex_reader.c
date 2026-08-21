@@ -762,6 +762,9 @@ VortexReaderData * __vortex_reader_change_io_mech (VortexCtx        * ctx,
 	/* initialize the read set */
 	vortex_log (VORTEX_LEVEL_DEBUG, "unlocked, creating new I/O mechanism used current API");
 	*on_reading = vortex_io_waiting_invoke_create_fd_group (ctx, READ_OPERATIONS);
+	if (*on_reading == NULL)
+		vortex_log (VORTEX_LEVEL_CRITICAL,
+			    "failed to create I/O waiting set after changing I/O mechanism, vortex reader will not be able to watch connections");
 
 	return result;
 }
@@ -1369,6 +1372,11 @@ axlPointer __vortex_reader_run (VortexCtx * ctx)
 	if (ctx->on_reading != NULL)
 		vortex_io_waiting_invoke_destroy_fd_group (ctx, ctx->on_reading);
 	ctx->on_reading  = vortex_io_waiting_invoke_create_fd_group (ctx, READ_OPERATIONS);
+	if (ctx->on_reading == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL,
+			    "failed to create I/O waiting set, unable to start vortex reader");
+		return NULL;
+	} /* end if */
 
 	/* create lists */
 	ctx->conn_list = axl_list_new (axl_list_always_return_1, __vortex_reader_close_connection);

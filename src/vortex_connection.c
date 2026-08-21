@@ -1441,12 +1441,16 @@ struct addrinfo * vortex_gethostbyname (VortexCtx           * ctx,
  *
  * @param wait_period How many seconds to wait for the connection.
  *
- * @param sock_error Optional reference where the socket level error
- * (SO_ERROR) is reported in the case it is found to be set. This is
- * needed because getsockopt(SO_ERROR) clears the pending error from
- * the socket, so the caller has no other way to know why the
- * operation failed (for example, to tell a connection refused from a
- * real timeout). It is set to 0 when no socket level error was found.
+ * @param sock_error Optional reference where the error (errno) that
+ * caused the operation to fail is reported: either the socket level
+ * error (SO_ERROR) when the wait finished with -6 or the error
+ * reported by the I/O waiting mechanism when it finished with -3.
+ *
+ * This is needed because both getsockopt(SO_ERROR) and the calls done
+ * before returning clear/overwrite the value, so the caller has no
+ * other way to know why the operation failed (for example, to tell a
+ * connection refused from a real timeout). It is set to 0 when no such
+ * error was found.
  *
  * @return The error code to return:
  *    -4: Add operation into the file set failed.
@@ -1489,6 +1493,11 @@ int __vortex_connection_wait_on (VortexCtx           * ctx,
 	/* create a waiting set using current selected I/O
 	 * waiting engine. */
 	wait_set     = vortex_io_waiting_invoke_create_fd_group (ctx, wait_for);
+	if (wait_set == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL,
+			    "failed to create I/O waiting set, unable to wait for socket=%d", session);
+		return -3;
+	} /* end if */
 
 	/* flag the starting time */
 	start_time   = time (NULL);
@@ -1525,9 +1534,33 @@ int __vortex_connection_wait_on (VortexCtx           * ctx,
 			return -3;
 		} /* end if */
 
-		if(err == -1 /* EINTR */ || err == -2 /* SSL */)
+		if (err == -2 /* SSL */)
 			continue;
-		else if (!err) 
+		else if (err == -1) {
+			/* the I/O waiting mechanism reports -1 both for
+			 * an interrupted call (EINTR), which must be
+			 * retried, and for a real failure of the
+			 * underlying select(2)/poll(2)/epoll_wait(2)
+			 * call, which will not fix itself: retrying it
+			 * busy loops until the whole timeout period is
+			 * consumed and then reports a misleading
+			 * timeout to the caller */
+			if (errno == VORTEX_EINTR || errno == VORTEX_EAGAIN)
+				continue;
+
+			vortex_log (VORTEX_LEVEL_CRITICAL,
+				    "I/O waiting mechanism failed while waiting on socket=%d, errno=%d (%s), aborting wait operation",
+				    session, errno, vortex_errno_get_error (errno) ? vortex_errno_get_error (errno) : "");
+
+			/* report the error found to the caller before
+			 * any other call overwrites errno */
+			if (sock_error)
+				(*sock_error) = errno;
+
+			/* destroy waiting set */
+			vortex_io_waiting_invoke_destroy_fd_group (ctx, wait_set);
+			return -3;
+		} else if (!err)
 			continue; /*select, poll, epoll timeout*/
 		else if (err > 0) {
 #if defined(AXL_OS_UNIX)
@@ -1815,14 +1848,18 @@ VORTEX_SOCKET vortex_connection_sock_connect_common (VortexCtx            * ctx,
 				return -1;
 			} /* end if */
 
-			/* general failure while waiting for the connect to finish */
+			/* general failure while waiting for the connect to
+			 * finish: this is not a connectivity problem but a
+			 * failure of the library itself (for example, the
+			 * I/O waiting mechanism failing), so report it as
+			 * such instead of blaming the remote host */
 			vortex_log (VORTEX_LEVEL_WARNING,
-				    "unable to connect to remote host %s:%s, wait operation failed, err=%d, errno=%d (%s)",
-				    host, port, err, errno, vortex_errno_get_error (errno) ? vortex_errno_get_error (errno) : "");
+				    "unable to connect to remote host %s:%s, I/O wait operation failed, err=%d, errno=%d (%s)",
+				    host, port, err, sock_error, vortex_errno_get_error (sock_error) ? vortex_errno_get_error (sock_error) : "");
 			axl_error_report (error, VortexConnectionError,
-					  "unable to connect to remote host %s:%s, wait operation failed (err=%d, errno=%d: %s)",
-					  host, port, err, errno,
-					  vortex_errno_get_error (errno) ? vortex_errno_get_error (errno) : "");
+					  "unable to complete connection to remote host %s:%s, the I/O waiting mechanism failed (err=%d, errno=%d: %s). This is not a connectivity failure: the TCP connect operation could not be watched",
+					  host, port, err, sock_error,
+					  vortex_errno_get_error (sock_error) ? vortex_errno_get_error (sock_error) : "");
 			return -1;
 		} /* end if */
 	} /* end if */

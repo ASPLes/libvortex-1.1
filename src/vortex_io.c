@@ -52,7 +52,59 @@
  */
 #define VORTEX_IO_IS(data,op) ((data & op) == op)
 
-/** 
+/**
+ * @internal Initial number of descriptors allocated by those I/O
+ * waiting mechanisms that need an array to hold the set being watched
+ * (poll(2) and epoll(2)).
+ *
+ * The set grows on demand (see the add_to implementations) up to the
+ * process hard socket limit, so this value only sets the starting
+ * point.
+ *
+ * It must NOT be initialized to the hard socket limit itself: that
+ * limit is reported by getrlimit (RLIMIT_NOFILE) and inside containers
+ * it is commonly 1073741816, which would require several GB of memory
+ * just to create a single wait set. When that allocation fails the set
+ * is left with a NULL array, making every epoll_wait(2)/poll(2) call
+ * fail with EFAULT.
+ */
+#define VORTEX_IO_WAIT_SET_INITIAL_SIZE (4096)
+
+/**
+ * @internal Computes the new size for a wait set that has to grow,
+ * doubling current size but never going beyond the hard socket limit
+ * provided and never overflowing the size computation.
+ *
+ * @param current The current size of the set.
+ *
+ * @param hard_limit The maximum size allowed for the set.
+ *
+ * @param item_size The size of each item stored in the set.
+ *
+ * @return The new size to use, or current if it cannot grow.
+ */
+int __vortex_io_waiting_next_size (int current, int hard_limit, size_t item_size)
+{
+	int new_size;
+
+	/* do not grow beyond what the caller allows */
+	if (current >= hard_limit)
+		return current;
+
+	/* double current size, checking for integer overflow */
+	new_size = (current > 0) ? current * 2 : VORTEX_IO_WAIT_SET_INITIAL_SIZE;
+	if (new_size <= current || new_size > hard_limit)
+		new_size = hard_limit;
+
+	/* ensure the resulting allocation can be expressed without
+	 * overflowing size_t on this platform */
+	if (((size_t) new_size) > (((size_t) -1) / item_size))
+		return current;
+
+	return new_size;
+}
+
+/**
  * \addtogroup vortex_io
  * @{
  */
@@ -261,15 +313,17 @@ axlPointer __vortex_io_waiting_poll_create (VortexCtx * ctx, VortexIoWaitingFor 
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "creating empty poll(2) set");
 
-	/* support up to 4096 connections */
+	/* get current max support: it is only used here as an upper
+	 * bound for the initial allocation, never as the allocation
+	 * itself (see VORTEX_IO_WAIT_SET_INITIAL_SIZE) */
 	if (! vortex_conf_get (ctx, VORTEX_HARD_SOCK_LIMIT, &max)) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get current max hard sock limit");
 		return NULL;
 	} /* end if */
 
 	/* check if max points to something not useful */
-	if (max <= 0)
-		max = 4096;
+	if (max <= 0 || max > VORTEX_IO_WAIT_SET_INITIAL_SIZE)
+		max = VORTEX_IO_WAIT_SET_INITIAL_SIZE;
 
 	poll              = axl_new (VortexPoll, 1);
 	poll->ctx         = ctx;
@@ -277,6 +331,18 @@ axlPointer __vortex_io_waiting_poll_create (VortexCtx * ctx, VortexIoWaitingFor 
 	poll->wait_to     = wait_to;
 	poll->set         = axl_new (struct pollfd, max);
 	poll->connections = axl_new (VortexConnection *, max);
+
+	/* check allocations: without this check the set would be
+	 * returned with NULL arrays, making every poll(2) call fail
+	 * with EFAULT (and the clear operation dereference NULL) */
+	if (poll->set == NULL || poll->connections == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL,
+			    "failed to allocate poll set (%d items), unable to create the I/O waiting set", max);
+		axl_free (poll->set);
+		axl_free (poll->connections);
+		axl_free (poll);
+		return NULL;
+	} /* end if */
 
 	return poll;
 }
@@ -311,9 +377,11 @@ void    __vortex_io_waiting_poll_clear (axlPointer __fd_group)
 {
 	VortexPoll * poll = (VortexPoll *) __fd_group;
 
-	/* do not clear nothing, try to reuse */
+	/* do not clear nothing, try to reuse: only the part of the set
+	 * that was really used needs to be cleared (the rest is
+	 * initialized by the add_to operation before being used) */
+	memset (poll->set, 0, sizeof (struct pollfd) * poll->length);
 	poll->length = 0;
-	memset (poll->set, 0, sizeof (struct pollfd) * poll->max);
 
 	/* nothing more to do */
 	return;
@@ -332,29 +400,53 @@ axl_bool  __vortex_io_waiting_poll_add_to (int                fds,
 					   VortexConnection * connection,
 					   axlPointer         __fd_set)
 {
-	VortexPoll * poll   = (VortexPoll *) __fd_set;
-	VortexCtx  * ctx    = poll->ctx;
-	int          max;
+	VortexPoll        *  poll   = (VortexPoll *) __fd_set;
+	VortexCtx         *  ctx    = poll->ctx;
+	int                  max;
+	int                  new_max;
+	struct pollfd     *  new_set;
+	VortexConnection  ** new_connections;
 
 	/* check if max size reached */
 	if (poll->length == poll->max) {
-		/* support up to 4096 connections */
+		/* get the hard sock limit: it is the maximum size
+		 * allowed for the set */
 		if (! vortex_conf_get (ctx, VORTEX_HARD_SOCK_LIMIT, &max)) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get current max hard sock limit, closing socket");
 			return axl_false;
 		} /* end if */
 
-		if (poll->max >= max) {
+		/* get the new size for the set: it grows doubling
+		 * current size instead of jumping directly to the hard
+		 * sock limit, which may be huge (1073741816 is the
+		 * usual value inside containers) */
+		new_max = __vortex_io_waiting_next_size (poll->max, max, sizeof (VortexConnection *));
+		if (new_max == poll->max) {
 			vortex_log (VORTEX_LEVEL_DEBUG, "unable to accept more sockets, max poll set reached.");
 			return axl_false;
 		} /* end if */
 
-		vortex_log (VORTEX_LEVEL_DEBUG, "max amount of file descriptors reached, expanding");
+		vortex_log (VORTEX_LEVEL_DEBUG, "max amount of file descriptors reached, expanding to %d", new_max);
 
-		/* limit reached */
-		poll->max          = max;
-		poll->set          = axl_realloc (poll->set,         sizeof (struct pollfd)      * poll->max);
-		poll->connections  = axl_realloc (poll->connections, sizeof (VortexConnection *) * poll->max);
+		/* expand both sets keeping current ones usable in the
+		 * case any of the allocations fails */
+		new_set = axl_realloc (poll->set, sizeof (struct pollfd) * new_max);
+		if (new_set == NULL) {
+			vortex_log (VORTEX_LEVEL_CRITICAL,
+				    "failed to expand poll set to %d items, unable to accept more sockets", new_max);
+			return axl_false;
+		} /* end if */
+		poll->set = new_set;
+
+		new_connections = axl_realloc (poll->connections, sizeof (VortexConnection *) * new_max);
+		if (new_connections == NULL) {
+			vortex_log (VORTEX_LEVEL_CRITICAL,
+				    "failed to expand poll connections set to %d items, unable to accept more sockets", new_max);
+			return axl_false;
+		} /* end if */
+		poll->connections = new_connections;
+
+		poll->max         = new_max;
 	} /* end if */
 
 	/* configure the socket to be watched */
@@ -512,15 +604,17 @@ axlPointer __vortex_io_waiting_epoll_create (VortexCtx * ctx, VortexIoWaitingFor
 	int           set;
 	VortexEPoll * epoll;
 
-	/* get current max support */
+	/* get current max support: it is only used here as an upper
+	 * bound for the initial allocation, never as the allocation
+	 * itself (see VORTEX_IO_WAIT_SET_INITIAL_SIZE) */
 	if (! vortex_conf_get (ctx, VORTEX_HARD_SOCK_LIMIT, &max)) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get current max hard sock limit");
 		return NULL;
 	} /* end if */
 
 	/* check if max points to something not useful */
-	if (max <= 0)
-		max = 4096;
+	if (max <= 0 || max > VORTEX_IO_WAIT_SET_INITIAL_SIZE)
+		max = VORTEX_IO_WAIT_SET_INITIAL_SIZE;
 
 	set = epoll_create (max);
 	if (set == -1) {
@@ -538,6 +632,18 @@ axlPointer __vortex_io_waiting_epoll_create (VortexCtx * ctx, VortexIoWaitingFor
 	epoll->wait_to     = wait_to;
 	epoll->set         = set;
 	epoll->events      = axl_new (struct epoll_event, max);
+
+	/* check the allocation: without this check the set would be
+	 * returned with a NULL events array, making every
+	 * epoll_wait(2) call fail with EFAULT */
+	if (epoll->events == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL,
+			    "failed to allocate epoll events array (%d items), unable to create the I/O waiting set",
+			    max);
+		close    (set);
+		axl_free (epoll);
+		return NULL;
+	} /* end if */
 
 	return epoll;
 }
@@ -600,26 +706,42 @@ axl_bool  __vortex_io_waiting_epoll_add_to (int                fds,
 	VortexEPoll *        epoll  = (VortexEPoll *) __fd_set;
 	VortexCtx   *        ctx    = epoll->ctx;
 	int                  max;
+	int                  new_max;
+	struct epoll_event * new_events;
 	struct epoll_event   ev;
 
 	/* check if max size reached */
 	if (epoll->length == epoll->max) {
-		/* support up to 4096 connections */
+		/* get the hard sock limit: it is the maximum size
+		 * allowed for the set */
 		if (! vortex_conf_get (ctx, VORTEX_HARD_SOCK_LIMIT, &max)) {
 			vortex_log (VORTEX_LEVEL_CRITICAL, "unable to get current max hard sock limit, closing socket");
 			return axl_false;
 		} /* end if */
 
-		if (epoll->max >= max) {
+		/* get the new size for the set: it grows doubling
+		 * current size instead of jumping directly to the hard
+		 * sock limit, which may be huge (1073741816 is the
+		 * usual value inside containers) */
+		new_max = __vortex_io_waiting_next_size (epoll->max, max, sizeof (struct epoll_event));
+		if (new_max == epoll->max) {
 			vortex_log (VORTEX_LEVEL_DEBUG, "unable to accept more sockets, max poll set reached (%d).", epoll->max);
 			return axl_false;
 		} /* end if */
 
-		vortex_log (VORTEX_LEVEL_DEBUG, "max amount of file descriptors reached, expanding");
+		vortex_log (VORTEX_LEVEL_DEBUG, "max amount of file descriptors reached, expanding to %d", new_max);
 
-		/* limit reached */
-		epoll->max          = max;
-		epoll->events       = axl_realloc (epoll->events, sizeof (struct epoll_event) * epoll->max);
+		/* expand the set keeping current one usable in the
+		 * case the allocation fails */
+		new_events = axl_realloc (epoll->events, sizeof (struct epoll_event) * new_max);
+		if (new_events == NULL) {
+			vortex_log (VORTEX_LEVEL_CRITICAL,
+				    "failed to expand epoll events array to %d items, unable to accept more sockets", new_max);
+			return axl_false;
+		} /* end if */
+
+		epoll->events       = new_events;
+		epoll->max          = new_max;
 	} /* end if */
 
 	/* clear data */
