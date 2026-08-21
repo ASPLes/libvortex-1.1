@@ -1440,25 +1440,39 @@ struct addrinfo * vortex_gethostbyname (VortexCtx           * ctx,
  * @param session The socket associated to the BEEP session.
  *
  * @param wait_period How many seconds to wait for the connection.
- * 
+ *
+ * @param sock_error Optional reference where the socket level error
+ * (SO_ERROR) is reported in the case it is found to be set. This is
+ * needed because getsockopt(SO_ERROR) clears the pending error from
+ * the socket, so the caller has no other way to know why the
+ * operation failed (for example, to tell a connection refused from a
+ * real timeout). It is set to 0 when no socket level error was found.
+ *
  * @return The error code to return:
  *    -4: Add operation into the file set failed.
  *     1: Wait operation finished.
  *    -2: Timeout
  *    -3: Fatal error found.
+ *    -5: Failed to get socket level error.
+ *    -6: Socket level error found (reported at sock_error).
  */
 int __vortex_connection_wait_on (VortexCtx           * ctx,
-				     VortexIoWaitingFor    wait_for, 
+				     VortexIoWaitingFor    wait_for,
 				     VORTEX_SOCKET         session,
-				     int                 * wait_period)
+				     int                 * wait_period,
+				     int                 * sock_error)
 {
 	int           err         = -2;
 	axlPointer    wait_set;
 	int           start_time;
 #if defined(AXL_OS_UNIX)
- 	int           sock_err = 0;       
+ 	int           sock_err = 0;
  	unsigned int  sock_err_len;
 #endif
+
+	/* clear socket level error reported (if defined) */
+	if (sock_error)
+		(*sock_error) = 0;
 
 	/* do not perform a wait operation if the wait period is zero
 	 * or less */
@@ -1525,7 +1539,14 @@ int __vortex_connection_wait_on (VortexCtx           * ctx,
 				vortex_log (VORTEX_LEVEL_WARNING, "failed to get error level on waiting socket");
 				err = -5;
 			} else if (sock_err) {
-				vortex_log (VORTEX_LEVEL_WARNING, "error level set on waiting socket");
+				vortex_log (VORTEX_LEVEL_WARNING, "error level set on waiting socket, sock_err=%d (%s)",
+					    sock_err, vortex_errno_get_error (sock_err) ? vortex_errno_get_error (sock_err) : "");
+				/* report the socket level error found to
+				 * the caller because getsockopt() call
+				 * above already cleared it from the
+				 * socket */
+				if (sock_error)
+					(*sock_error) = sock_err;
 				err = -6;
 			}
 #endif
@@ -1554,9 +1575,37 @@ int __vortex_connection_wait_on (VortexCtx           * ctx,
 	return err;
 }
 
-/** 
+/**
+ * @internal Returns a textual diagnostic that describes the kind of
+ * TCP connect failure reported by the socket level error provided
+ * (the value reported by SO_ERROR or by a failed connect () call).
+ *
+ * The idea is to tell apart the common cases so the application does
+ * not get a "timeout" diagnostic for every connection failure.
+ *
+ * @param sock_error The socket level error to describe.
+ *
+ * @return A static string describing the failure. The caller must not
+ * release the value returned.
+ */
+const char * __vortex_connection_sock_error_msg (int sock_error)
+{
+	if (sock_error == VORTEX_ECONNREFUSED)
+		return "TCP port reached but connection was refused: no application is listening on that port or it rejected the connection";
+	if (sock_error == VORTEX_ECONNRESET)
+		return "TCP connection was reset by the remote peer while connecting";
+	if (sock_error == VORTEX_EHOSTUNREACH)
+		return "remote host is not reachable";
+	if (sock_error == VORTEX_ENETUNREACH)
+		return "remote network is not reachable";
+	if (sock_error == VORTEX_ETIMEDOUT)
+		return "TCP connect operation timed out at the system level (no reply from remote host)";
+	return "TCP connect operation failed";
+}
+
+/**
  * @brief Allows to create a plain socket connection against the host
- * and port provided. 
+ * and port provided.
  *
  * @param ctx The context where the connection happens.
  *
@@ -1622,6 +1671,7 @@ VORTEX_SOCKET vortex_connection_sock_connect_common (VortexCtx            * ctx,
 
 	struct addrinfo    * res;
 	int		     err          = 0;
+	int                  sock_error   = 0;
 	VORTEX_SOCKET        session      = -1;
 
 	/* do resolution according to the transport */
@@ -1688,11 +1738,20 @@ VORTEX_SOCKET vortex_connection_sock_connect_common (VortexCtx            * ctx,
 
 	/* do a tcp connect */
         if (connect (session, res->ai_addr, res->ai_addrlen) < 0) {
-		if(timeout == 0 || (errno != VORTEX_EINPROGRESS && errno != VORTEX_EWOULDBLOCK)) { 
+		if(timeout == 0 || (errno != VORTEX_EINPROGRESS && errno != VORTEX_EWOULDBLOCK)) {
+			/* save errno before doing any additional call
+			 * that may overwrite it */
+			sock_error = errno;
+
 			shutdown (session, SHUT_RDWR);
 			vortex_close_socket (session);
-			vortex_log (VORTEX_LEVEL_WARNING, "unable to connect(), session=%d to remote host errno=%d (%s), timeout reached", session, errno, strerror (errno));
-			axl_error_report (error, VortexConnectionError, "unable to connect to remote host");
+			vortex_log (VORTEX_LEVEL_WARNING, "unable to connect(), session=%d to remote host %s:%s, errno=%d (%s): %s",
+				    session, host, port, sock_error, strerror (sock_error),
+				    __vortex_connection_sock_error_msg (sock_error));
+			axl_error_report (error, VortexConnectionError,
+					  "unable to connect to remote host %s:%s, %s (errno=%d: %s)",
+					  host, port, __vortex_connection_sock_error_msg (sock_error), sock_error,
+					  vortex_errno_get_error (sock_error) ? vortex_errno_get_error (sock_error) : "");
 			return -1;
 		} /* end if */
 	} /* end if */
@@ -1701,7 +1760,7 @@ VORTEX_SOCKET vortex_connection_sock_connect_common (VortexCtx            * ctx,
 	if (timeout && ((*timeout) > 0)) {
 		/* wait for write operation, signaling that the
 		 * connection is available */
-		err = __vortex_connection_wait_on (ctx, WRITE_OPERATIONS, session, timeout);
+		err = __vortex_connection_wait_on (ctx, WRITE_OPERATIONS, session, timeout, &sock_error);
 
 #if defined(AXL_OS_WIN32)
 		/* under windows we have to also we to be readable */
@@ -1721,11 +1780,49 @@ VORTEX_SOCKET vortex_connection_sock_connect_common (VortexCtx            * ctx,
 #endif
 		
 		if(err <= 0){
-			/* timeout reached while waiting for the connection to terminate */
+			/* connection wasn't completed: close the socket
+			 * and report the most accurate diagnostic we
+			 * have, telling apart a socket level error
+			 * (connection refused, host/net unreachable,
+			 * connection reset..) from a real timeout */
 			shutdown (session, SHUT_RDWR);
 			vortex_close_socket (session);
-			vortex_log (VORTEX_LEVEL_WARNING, "unable to connect to remote host (timeout)");
-			axl_error_report (error, VortexNameResolvFailure, "unable to connect to remote host (timeout)");
+
+			if (err == -6 && sock_error != 0) {
+				/* the TCP port was reached but the
+				 * connection wasn't established: the
+				 * remote peer (or something in the
+				 * middle) rejected it or the host is
+				 * not reachable */
+				vortex_log (VORTEX_LEVEL_WARNING,
+					    "unable to connect to remote host %s:%s, sock_error=%d (%s): %s",
+					    host, port, sock_error,
+					    vortex_errno_get_error (sock_error) ? vortex_errno_get_error (sock_error) : "",
+					    __vortex_connection_sock_error_msg (sock_error));
+				axl_error_report (error, VortexConnectionError,
+						  "unable to connect to remote host %s:%s, %s (sock_error=%d: %s)",
+						  host, port, __vortex_connection_sock_error_msg (sock_error), sock_error,
+						  vortex_errno_get_error (sock_error) ? vortex_errno_get_error (sock_error) : "");
+				return -1;
+			} /* end if */
+
+			if (err == -2) {
+				/* timeout period was consumed without
+				 * getting the connection completed */
+				vortex_log (VORTEX_LEVEL_WARNING, "unable to connect to remote host %s:%s (timeout)", host, port);
+				axl_error_report (error, VortexConnectionTimeoutError,
+						  "unable to connect to remote host %s:%s (timeout)", host, port);
+				return -1;
+			} /* end if */
+
+			/* general failure while waiting for the connect to finish */
+			vortex_log (VORTEX_LEVEL_WARNING,
+				    "unable to connect to remote host %s:%s, wait operation failed, err=%d, errno=%d (%s)",
+				    host, port, err, errno, vortex_errno_get_error (errno) ? vortex_errno_get_error (errno) : "");
+			axl_error_report (error, VortexConnectionError,
+					  "unable to connect to remote host %s:%s, wait operation failed (err=%d, errno=%d: %s)",
+					  host, port, err, errno,
+					  vortex_errno_get_error (errno) ? vortex_errno_get_error (errno) : "");
 			return -1;
 		} /* end if */
 	} /* end if */
@@ -1800,7 +1897,7 @@ axl_bool vortex_connection_do_greetings_exchange (VortexCtx             * ctx,
 				    connection->id, timeout);
 
 			/* try to perform a wait operation */
-			err = __vortex_connection_wait_on (ctx, READ_OPERATIONS, connection->session, &timeout);
+			err = __vortex_connection_wait_on (ctx, READ_OPERATIONS, connection->session, &timeout, NULL);
 			if (err <= 0 || timeout <= 0) {
 				/* timeout reached while waiting for the connection to terminate */
 				vortex_log (VORTEX_LEVEL_WARNING, 
