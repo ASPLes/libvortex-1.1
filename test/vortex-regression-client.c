@@ -1375,11 +1375,13 @@ axl_bool test_00c2 (void) {
 
 axl_bool test_00d_check (int value, int expected_value_size, const char * expected_str_value)
 {
-	char buffer[10];
-	
+	/* room for the biggest value vortex_support_itoa produces (10
+	 * digits) plus the trailing NUL written below */
+	char buffer[11];
+
 	/* do some conversions */
-	if (vortex_support_itoa (value, buffer, 10) != expected_value_size) {
-		printf ("Expected to return %d bytes written but found something different: %d\n", expected_value_size, vortex_support_itoa (value, buffer, 20));
+	if (vortex_support_itoa (value, buffer, 11) != expected_value_size) {
+		printf ("Expected to return %d bytes written but found something different: %d\n", expected_value_size, vortex_support_itoa (value, buffer, 11));
 		return axl_false;
 	}
 	buffer[expected_value_size] = 0;
@@ -3869,9 +3871,10 @@ axl_bool test_01p (void) {
 	socket = vortex_connection_sock_connect (ctx, listener_host, LISTENER_PORT, NULL, NULL);
 	printf ("Test 01-p: Socket created: %d\n", (int) socket);
 
-	/* injet content */
-	if (send (socket, "RPY 0 0 . 0 353\r\n", 19, 0) != 19) {
-		printf ("ERROR: expected to be able to send 19 bytes..\n");
+	/* inject content: send just the header bytes, without the
+	 * trailing NUL the string literal carries */
+	if (send (socket, "RPY 0 0 . 0 353\r\n", 17, 0) != 17) {
+		printf ("ERROR: expected to be able to send 17 bytes..\n");
 		return axl_false;
 	} /* end if */
 	printf ("Test 01-p: injected wrong header..sending content\n");
