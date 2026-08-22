@@ -1742,7 +1742,14 @@ int main (int  argc, char ** argv)
 
 	/* register a profile */
 	vortex_profiles_register (ctx, REGRESSION_URI_MIME,
-				  NULL, NULL, 
+				  NULL, NULL,
+				  NULL, NULL,
+				  frame_received_mime_support, NULL);
+
+	/* register a profile: echoes back the whole frame content so
+	 * the client can check the MIME headers it generated */
+	vortex_profiles_register (ctx, REGRESSION_URI_MIME_ENCODING,
+				  NULL, NULL,
 				  NULL, NULL,
 				  frame_received_mime_support, NULL);
 

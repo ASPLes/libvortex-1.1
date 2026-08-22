@@ -131,6 +131,15 @@
  */
 #define REGRESSION_URI_MIME "http://iana.org/beep/transient/vortex-regression/mime"
 
+/**
+ * Profile used to check automatic MIME header generation when the
+ * profile declares a Content-Transfer-Encoding different from the
+ * default "binary". The listener just echoes back the whole frame
+ * content (MIME headers included) so the client can check the headers
+ * it generated.
+ */
+#define REGRESSION_URI_MIME_ENCODING "http://iana.org/beep/transient/vortex-regression/mime-encoding"
+
 /** 
  * Profile use to identify the regression test client and server mime
  * support.

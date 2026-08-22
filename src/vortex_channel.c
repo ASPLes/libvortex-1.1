@@ -460,9 +460,19 @@ void vortex_channel_data_free (VortexChannelData * data)
  * Because mime is handled per profile and them per channel, next
  * sequence number to be calculated must consider the size of the mime
  * headers plus the size of the message being sent.
- * 
+ *
+ * The value returned by this function is the exact amount of bytes
+ * that \ref __vortex_channel_get_mime_headers will write into the
+ * buffer it receives, so both functions must be kept in sync.
+ *
+ * @param ctx The context where the MIME configuration is looked up
+ * when it is not defined at channel level.
+ *
  * @param channel The channel where the mime header size will be
  * reported.
+ *
+ * @return The amount of bytes required to hold the MIME headers, or 0
+ * if automatic MIME handling is disabled for the channel.
  */
 int  __vortex_channel_get_mime_headers_size (VortexCtx * ctx, VortexChannel * channel)
 {
@@ -547,15 +557,18 @@ int  __vortex_channel_get_mime_headers_size (VortexCtx * ctx, VortexChannel * ch
  * @internal
  *
  * Returns current mime headers that should be added to the message
- * being sent according to the channel that is goint to carry the
+ * being sent according to the channel that is going to carry the
  * data.
- * 
+ *
  * @param channel The channel where the mime header configuration will
  * be consulted to get current mime headers.
  *
  * @param buffer The buffer to use to report current mime header
- * configuration.
- * 
+ * configuration. The caller must have reserved at least the amount of
+ * bytes reported by \ref __vortex_channel_get_mime_headers_size for
+ * this same channel: this function writes exactly that many bytes and
+ * performs no bound checking of its own.
+ *
  */
 void __vortex_channel_get_mime_headers (VortexChannel * channel, char  * buffer)
 {
@@ -586,14 +599,14 @@ void __vortex_channel_get_mime_headers (VortexChannel * channel, char  * buffer)
 
 	/* check for the Content-Transfer-Encoding header configuration */
 	if (transfer_encoding != NULL && !axl_cmp (transfer_encoding, "binary")) {
-		/* add mime Content-Type: entity header */
+		/* add mime Content-Transfer-Encoding: entity header */
 		memcpy (buffer + size, "Content-Transfer-Encoding: ", 27);
-		
-		/* add mime type value */
-		memcpy (buffer + size + 27, mime_type, strlen (mime_type));
+
+		/* add transfer encoding value */
+		memcpy (buffer + size + 27, transfer_encoding, strlen (transfer_encoding));
 
 		/* add trailing \x0D\x0A value */
-		memcpy (buffer + size + 27 + strlen (mime_type), "\x0D\x0A", 2);
+		memcpy (buffer + size + 27 + strlen (transfer_encoding), "\x0D\x0A", 2);
 
 		size          += 29 + strlen (transfer_encoding);
 	}
@@ -655,6 +668,27 @@ void __vortex_channel_start_reply_free (VortexStartReplyCache * cache)
 
 } /* end __vortex_channel_start_reply_free */
 
+/**
+ * @internal
+ * @brief Validates the start channel reply received from the remote
+ * peer, checking the profile confirmed matches the one requested and
+ * configuring the piggyback content received (if any).
+ *
+ * The function takes ownership of the frame received: on failure it
+ * is released, on success it is stored inside the start reply cache
+ * held by the context.
+ *
+ * @param frame The start reply frame received.
+ *
+ * @param _profile The profile uri that was requested, and that the
+ * remote peer must confirm.
+ *
+ * @param channel The channel being created. It is removed from its
+ * connection if the validation fails.
+ *
+ * @return axl_true if the start reply was validated, otherwise
+ * axl_false is returned.
+ */
 axl_bool  __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _profile, VortexChannel * channel)
 {
 	VortexCtx   * ctx = vortex_channel_get_ctx (channel);
@@ -2050,12 +2084,12 @@ void               vortex_channel_store_previous_frame           (VortexCtx     
 	        complete_frame_limit = channel->connection->complete_frame_limit;
 
 	/* check limit and close the connection if reached */
-	vortex_log (VORTEX_LEVEL_DEBUG, "Checking complete frame limit=%d (current bytes: %d) for channel=%d on conection id=%d",
+	vortex_log (VORTEX_LEVEL_DEBUG, "Checking complete frame limit=%d (current bytes: %d) for channel=%d on connection id=%d",
 		    complete_frame_limit, channel->complete_current_bytes, channel->channel_num, vortex_connection_get_id (channel->connection));
 	if (complete_frame_limit > 0 && channel->complete_current_bytes > complete_frame_limit) {
 		/* get a reference to the context */
 		__vortex_connection_shutdown_and_record_error (channel->connection, VortexError, 
-							       "Reached complete frame limit=%d for channel=%d, profile=%s, closing conection id=%d (from %s:%s)",
+							       "Reached complete frame limit=%d for channel=%d, profile=%s, closing connection id=%d (from %s:%s)",
 							       complete_frame_limit, 
 							       channel->channel_num, channel->profile, 
 							       vortex_connection_get_id (channel->connection),
@@ -2230,6 +2264,8 @@ int             vortex_channel_get_number (VortexChannel * channel)
  *
  * @param channel    The channel to update internal status for next message to be sent
  * @param frame_size The frame size of the frame sent.
+ * @param msg_no     The message number written, used to update the
+ * last reply written when UPDATE_RPY_NO_WRITTEN is requested.
  * @param update     What values to update
  */
 void vortex_channel_update_status (VortexChannel * channel, unsigned int  frame_size, int msg_no, WhatUpdate update)
@@ -2287,8 +2323,10 @@ void vortex_channel_update_status (VortexChannel * channel, unsigned int  frame_
  * used by vortex_reader thread to check incoming messages.
  *
  * 
- * @param channel The channel to update internal status for next message to be received 
+ * @param channel The channel to update internal status for next message to be received
  * @param frame_size the frame size of the frame received
+ * @param msg_no the message number received, used to update the last
+ * message received when UPDATE_MSG_NO is requested.
  * @param update what parts of the channel status to update.
  */
 void vortex_channel_update_status_received (VortexChannel * channel, 
@@ -2342,7 +2380,7 @@ void vortex_channel_update_status_received (VortexChannel * channel,
 axl_bool vortex_channel_check_msg_no_find_item (VortexChannel * channel, int msg_no)
 {
 	if (axl_list_length (channel->incoming_msg) == 0) {
-		/* add directly */
+		/* nothing pending to be replied */
 		return axl_false;
 	} /* end if */
 
@@ -2364,19 +2402,19 @@ axl_bool vortex_channel_check_msg_no_find_item (VortexChannel * channel, int msg
 
 /**
  * @internal Function to check if a msg_no is found in the list of
- * incoming msg pending to be replied.
+ * outstanding msg sent that are still pending to be replied.
  */
 axl_bool vortex_channel_check_msg_no_find_item_outgoing (VortexCtx * ctx, VortexChannel * channel, int msg_no)
 {
 	if (axl_list_length (channel->outstanding_msg) == 0) {
-		/* add directly */
+		/* nothing outstanding */
 		return axl_false;
 	} /* end if */
 
 	/* reset cursor */
 	axl_list_cursor_first (channel->outstanding_msg_cursor);
 	while (axl_list_cursor_has_item (channel->outstanding_msg_cursor)) {
-		/* check if the message was already received but not replied */
+		/* check if the message was already sent but not replied */
 		if (msg_no == PTR_TO_INT (axl_list_cursor_get (channel->outstanding_msg_cursor))) {
 			/* item found */
 			return axl_true;
@@ -2415,7 +2453,7 @@ axl_bool vortex_channel_check_msg_no_find_item_outgoing (VortexCtx * ctx, Vortex
  * @param fixed_more Allows to signal if more flag should be enabled
  * on this send operation. Note that, unlike \ref
  * vortex_channel_send_rpy_more and \ref
- * vortex_channel_send_rpy_error, this function will make the next
+ * vortex_channel_send_err_more, this function will make the next
  * operation to close or continue the send operation (because the
  * function must reuse MSG numbers to put together all the content
  * into a single, though fragmented, content).
@@ -4126,13 +4164,13 @@ void vortex_channel_update_remote_incoming_buffer (VortexChannel * channel,
 	 * smaller that the amount of bytes we could send with this
 	 * notification, taking as a reference the ackno value, AND
 	 * that the next seq no expected is already inside of the
-	 * adviced window + 1 */
+	 * advised window + 1 */
 	if (! ((window_available >= 0) && (window > window_available))) {
 		/* shutdown connection */
 		__vortex_connection_shutdown_and_record_error (
 			channel->connection,
 			VortexProtocolError,
-			"Received a SEQ frame specifying a new seq no maximum value (%u = %u + %u) that is smaller than the max seq no stored (%u) or it is outside of the current adviced newton (ackno: %u <= max seq no stored + 1: %u), window available (window: %u > window_available: %u). Attempt to shrink window not allowed. Protocol violation",
+			"Received a SEQ frame specifying a new seq no maximum value (%u = %u + %u) that is smaller than the max seq no stored (%u) or it is outside of the current advised window (ackno: %u <= max seq no stored + 1: %u), window available (window: %u > window_available: %u). Attempt to shrink window not allowed. Protocol violation",
 			(ackno + window -1), ackno, window,
 			max_remote_seq_no, ackno, max_remote_seq_no + 1,
 			window, window_available);
@@ -4188,8 +4226,9 @@ void vortex_channel_update_remote_incoming_buffer (VortexChannel * channel,
  * be accepted by the remote side including the max seq no value.
  * 
  * @param channel The channel where the value is checked.
- * 
- * @return Current max sequence number to be accepted.
+ *
+ * @return Current max sequence number to be accepted, or
+ * ((unsigned int) -1) if the channel reference received is NULL.
  */
 unsigned int  vortex_channel_get_max_seq_no_remote_accepted (VortexChannel * channel)
 {
@@ -4395,7 +4434,7 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 
 	/* check if the channel is being close, is that is right, do
 	 * not generate more SEQ frames for the given channel. This is
-	 * to avoid generating a SEQ frame replaying to the <ok /> *
+	 * to avoid generating a SEQ frame replying to the <ok />
 	 * message that is received once the channel is accepted to be
 	 * closed.
 	 *
@@ -4467,7 +4506,7 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
 
 			/* check if, as a consequence of window size
 			   reduction, we are now inside the already
-			   adviced window */
+			   advised window */
 			if ((consumed_seqno + window_size - 1) < channel_max_seq_no_accepted) {
 				vortex_log (VORTEX_LEVEL_DEBUG, "SEQ FRAME: not updating because current advised max seqno %u is bigger than consumed seqno (%u) + new window size (%u)",
 					    channel_max_seq_no_accepted, consumed_seqno, window_size);
@@ -4958,8 +4997,8 @@ axlPointer         vortex_channel_get_data                        (VortexChannel
 
 /** 
  * @brief Allows to increase reference counting for the provided
- * channel. If the reference count for the channel provided reach 0,
- * the channel is deallocated.
+ * channel. Every call to this function must be matched with a call to
+ * \ref vortex_channel_unref.
  *
  * The function is thread-safe, internally protected with mutex.
  * 
@@ -4976,7 +5015,7 @@ axl_bool           vortex_channel_ref                             (VortexChannel
 
 /** 
  * @brief Decrease in one unit the reference count for the channel
- * provided. In the channel reference count reach 0 value, the channel
+ * provided. When the channel reference count reaches the 0 value, the channel
  * is deallocated, automatically calling to \ref vortex_channel_free.
  *
  * The function is thread-safe, internally protected with mutex.
@@ -4992,14 +5031,14 @@ void               vortex_channel_unref                           (VortexChannel
 
 /** 
  * @brief Allows to increase reference counting for the provided
- * channel. If the reference count for the channel provided reach 0,
- * the channel is deallocated.
+ * channel. Every call to this function must be matched with a call to
+ * \ref vortex_channel_unref.
  *
  * The function is thread-safe, internally protected with mutex.
  * 
  * @param channel The channel to increase its reference counting.
  *
- * @param label A label showed in console debug.
+ * @param label A label shown in console debug.
  * 
  * @return axl_true if the channel reference counting was increased,
  * otherwise axl_false is returned.
@@ -5038,14 +5077,14 @@ axl_bool            vortex_channel_ref2                             (VortexChann
 
 /** 
  * @brief Decrease in one unit the reference count for the channel
- * provided. In the channel reference count reach 0 value, the channel
+ * provided. When the channel reference count reaches the 0 value, the channel
  * is deallocated, automatically calling to \ref vortex_channel_free.
  *
  * The function is thread-safe, internally protected with mutex.
  * 
  * @param channel The channel to decrease its reference counting.
  *
- * @param label A label showed in console debug.
+ * @param label A label shown in console debug.
  */
 void               vortex_channel_unref2                           (VortexChannel * channel, const char * label)
 {
@@ -5325,10 +5364,15 @@ typedef struct {
  * @brief Validates err message received from remote peer.
  * 
  * @param frame The frame where the error message was received.
- * @param code  The error code inside the frame payload.
- * @param msg   The message code inside the frame payload.
+ * @param code  Reference where the error code found inside the frame
+ * payload is reported. It is a copy that must be deallocated by the
+ * caller.
  *
- * @return axl_true if the a error message as found, axl_false if not.
+ * @param msg   Reference where the error message found inside the
+ * frame payload is reported. It is a copy that must be deallocated by
+ * the caller.
+ *
+ * @return axl_true if an error message was found, axl_false if not.
  */
 axl_bool      vortex_channel_validate_err (VortexFrame * frame, 
 					   char  ** code, char  **msg)
@@ -6834,15 +6878,32 @@ int  __vortex_channel_0_frame_received_identify_type (VortexChannel * channel0, 
 }
 
 
-/** 
+/**
  * @internal
- * @brief Parses and validates the start message received.
- * 
- * @param frame The frame received
- * @param channel_num 
- * @param profile 
- * 
- * @return 
+ * @brief Parses the start message received, reporting the values found
+ * on the caller provided references.
+ *
+ * @param frame The frame received.
+ *
+ * @param channel_num Reference where the channel number requested by
+ * the remote peer is reported.
+ *
+ * @param profile Reference where the profile uri requested is
+ * reported. It is a copy that must be deallocated by the caller.
+ *
+ * @param profile_content Reference where the optional piggyback
+ * content found inside the profile element is reported (NULL if not
+ * defined). It is a copy that must be deallocated by the caller.
+ *
+ * @param serverName Reference where the optional serverName attribute
+ * is reported (NULL if not defined). It is a copy that must be
+ * deallocated by the caller.
+ *
+ * @param encoding Reference where the encoding declared by the
+ * profile element is reported.
+ *
+ * @return axl_true if the start message was parsed, otherwise
+ * axl_false is returned.
  */
 axl_bool      __vortex_channel_0_frame_received_get_start_param (VortexFrame    * frame,
 								 int            * channel_num,
@@ -6880,13 +6941,12 @@ axl_bool      __vortex_channel_0_frame_received_get_start_param (VortexFrame    
 	/* get serverName value from the start element property */
 	(* serverName)  = axl_node_get_attribute_value_copy (start, "serverName");
 
-	/* Get the position of the first child the start element has
-	 * and check if it is the profile element. This is done
-	 * because libxml handle the as a node all characters found
-	 * between the <start> and the next <profile> element.
-	 * Because the message could be built using either
-	 * <start><profile.. or <start>\x0D\x0Da<profile>, this must
-	 * be checked. */
+	/* Get the position of the first child the start element has,
+	 * which is expected to be the profile element. Note the
+	 * message could be built using either <start><profile.. or
+	 * <start>\x0D\x0A<profile>, so the parser must not treat the
+	 * characters found between the <start> and the next <profile>
+	 * element as a node of its own. */
 	profile_node    = axl_node_get_child_nth (start, 0);
 	
 	/* get profiles */
@@ -7161,11 +7221,10 @@ char *  __vortex_channel_0_handle_start_msg_reply (VortexCtx        * ctx,
 	if (serverName)
 		vortex_channel_set_data_full (new_channel, "_vo:ch:srvnm", axl_strdup (serverName), NULL, axl_free);
 
-	/* ask if channel can be created, (before this function it is
-	 * not needed to call any deallocation code for profile,
-	 * profile_content and serverName. This is already done by the
-	 * following function. profile variable is still needed to be
-	 * deallocated. */
+	/* ask if channel can be created. Note profile,
+	 * profile_content and serverName are owned by the caller: the
+	 * following function only reads them, so the caller is still
+	 * in charge of deallocating the three of them. */
 	status = vortex_profiles_invoke_start (profile, channel_num, connection,
 					       serverName, profile_content, 
 					       &profile_content_reply, encoding);
@@ -7214,7 +7273,7 @@ char *  __vortex_channel_0_handle_start_msg_reply (VortexCtx        * ctx,
 					      profile_content_reply,  
 					      msg_no, axl_true);
 
-	/* deallocate memory deallocated */
+	/* deallocate no longer used memory */
 	axl_free (profile_content_reply);
 	return NULL;
 }
@@ -7262,7 +7321,7 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 	/* check and fix serverName requests with value already
 	 * configured */
 	if (vortex_connection_get_server_name (connection) && serverName && ! axl_cmp (serverName, vortex_connection_get_server_name (connection))) {
-		vortex_log (VORTEX_LEVEL_WARNING, "Received serverName=%s request for a conection that already has that value configured=%s, ignoring request..",
+		vortex_log (VORTEX_LEVEL_WARNING, "Received serverName=%s request for a connection that already has that value configured=%s, ignoring request..",
 			    serverName, vortex_connection_get_server_name (connection));
 		/* fix request */
 		axl_free (serverName);
@@ -7386,14 +7445,22 @@ axl_bool vortex_channel_0_handle_start_msg_reply (VortexCtx        * ctx,
 }
 
 
-/** 
+/**
  * @internal
- * 
- * @param frame 
- * @param channel_num 
- * @param code 
- * 
- * @return 
+ * @brief Parses the close message received, reporting the values
+ * found on the caller provided references.
+ *
+ * @param frame The frame received.
+ *
+ * @param channel_num Reference where the channel number requested to
+ * be closed is reported.
+ *
+ * @param code Reference where the close code reported by the remote
+ * peer is returned. It is a copy that must be deallocated by the
+ * caller.
+ *
+ * @return axl_true if the close message was parsed, otherwise
+ * axl_false is returned.
  */
 axl_bool  __vortex_channel_0_frame_received_get_close_param (VortexFrame * frame,
 							     int  * channel_num,
@@ -7484,7 +7551,7 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 		
 		/* reply that we accept to close the channel */
 		vortex_log (VORTEX_LEVEL_WARNING, 
-			    "received a close channel=%d (conn=%d) request while waiting for an outstading close channel request (cross in transit close), accepting..",
+			    "received a close channel=%d (conn=%d) request while waiting for an outstanding close channel request (cross in transit close), accepting..",
 			    channel->channel_num,
 			    vortex_connection_get_id (channel->connection));
 
@@ -7496,7 +7563,7 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 		/* get the reference for the wait reply */
 		wait_reply = vortex_channel_get_data (channel, VORTEX_CHANNEL_WAIT_REPLY);
 		if (wait_reply != NULL && vortex_channel_wait_reply_ref (wait_reply)) {
-			vortex_log (VORTEX_LEVEL_DEBUG, "creating a fake ok reply (translated the incomming close request into close accept)");
+			vortex_log (VORTEX_LEVEL_DEBUG, "creating a fake ok reply (translated the incoming close request into close accept)");
 			ok_frame = vortex_frame_create (ctx, 
 							VORTEX_FRAME_TYPE_RPY, 
 							0, 
@@ -7838,7 +7905,7 @@ void vortex_channel_0_frame_received (VortexChannel    * channel0,
 		vortex_log (VORTEX_LEVEL_CRITICAL, "received unknown message type (format) on channel 0, closing connection");
 		__vortex_connection_shutdown_and_record_error (
 			connection, VortexProtocolError,
-			"unknown message type recevied on channel 0, closing connection");
+			"unknown message type received on channel 0, closing connection");
 		break;
 	} /* end switch */
 
@@ -8036,8 +8103,14 @@ void vortex_channel_free (VortexChannel * channel)
 
 /** 
  * @brief Allows to increase wait reply ref count.
- * 
+ *
  * @param wait_reply The wait reply to increase its ref count
+ *
+ * @return axl_true if the resulting reference count is greater than
+ * one, that is, the wait reply was still in use by someone else when
+ * the reference was acquired. axl_false is returned when the
+ * reference count was found to be 0, which means the wait reply was
+ * already being released and must not be used.
  */
 axl_bool vortex_channel_wait_reply_ref (WaitReplyData * wait_reply)
 {

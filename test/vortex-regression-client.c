@@ -2467,6 +2467,105 @@ axl_bool  test_01d_07 (void)
 	return axl_true;
 }
 
+/**
+ * Checks automatic MIME header generation for a profile that declares
+ * a Content-Transfer-Encoding different from the default "binary".
+ *
+ * The header is built by __vortex_channel_get_mime_headers, whose
+ * output size is reserved according to
+ * __vortex_channel_get_mime_headers_size. Sending a short message
+ * makes any mismatch between the two write past the buffer reserved
+ * at vortex_channel_send_msg_common, so this test must also be run
+ * under valgrind to be meaningful.
+ */
+axl_bool  test_01d_08 (void)
+{
+	VortexConnection  * connection;
+	VortexAsyncQueue  * queue;
+	VortexChannel     * channel;
+	VortexFrame       * frame;
+	axl_bool            result = axl_false;
+
+	printf ("Test 01-d: checking MIME generation with Content-Transfer-Encoding != binary..\n");
+
+	/* register the profile locally so the channel picks up the
+	 * MIME configuration, and declare an encoding shorter than
+	 * the default content type */
+	vortex_profiles_register (ctx, REGRESSION_URI_MIME_ENCODING,
+				  NULL, NULL,
+				  NULL, NULL,
+				  NULL, NULL);
+	if (! vortex_profiles_set_mime_type (ctx, REGRESSION_URI_MIME_ENCODING, NULL, "base64")) {
+		printf ("ERROR: failed to configure MIME type for %s..\n", REGRESSION_URI_MIME_ENCODING);
+		return axl_false;
+	} /* end if */
+
+	connection = connection_new ();
+	if (! vortex_connection_is_ok (connection, axl_false)) {
+		printf ("ERROR: failed to create connection to check MIME encoding..\n");
+		vortex_connection_close (connection);
+		return axl_false;
+	}
+
+	queue   = vortex_async_queue_new ();
+	channel = vortex_channel_new (connection, 0,
+				      REGRESSION_URI_MIME_ENCODING,
+				      /* no close handling */
+				      NULL, NULL,
+				      /* frame received */
+				      vortex_channel_queue_reply, queue,
+				      /* no async channel creation */
+				      NULL, NULL);
+	if (channel == NULL) {
+		printf ("ERROR: unable to create channel to check MIME encoding..\n");
+		vortex_async_queue_unref (queue);
+		vortex_connection_close (connection);
+		return axl_false;
+	} /* end if */
+
+	/* send a message short enough to make the reserved buffer
+	 * smaller than the headers written */
+	if (! vortex_channel_send_msg (channel, "test", 4, NULL)) {
+		printf ("ERROR: unable to send message to check MIME encoding..\n");
+		goto finish;
+	} /* end if */
+
+	/* the listener echoes back the whole content, MIME headers
+	 * included, so the headers checked here are the ones this
+	 * peer generated */
+	frame = vortex_channel_get_reply (channel, queue);
+	if (frame == NULL || vortex_frame_get_type (frame) != VORTEX_FRAME_TYPE_RPY) {
+		printf ("ERROR: expected to find rpy reply while checking MIME encoding..\n");
+		goto finish;
+	} /* end if */
+
+	printf ("Test 01-d: Content-Transfer-Encoding: %s..\n",
+		vortex_frame_get_transfer_encoding (frame));
+	if (! axl_cmp (vortex_frame_get_transfer_encoding (frame), "base64")) {
+		printf ("ERROR: expected to find MIME header \"Content-Transfer-Encoding\" equal to: %s, but found %s\n",
+			"base64", vortex_frame_get_transfer_encoding (frame));
+		vortex_frame_unref (frame);
+		goto finish;
+	} /* end if */
+
+	if (! axl_cmp (vortex_frame_get_payload (frame), "test")) {
+		printf ("ERROR: expected to find MIME body equal to: %s, but found %s\n",
+			"test", (const char *) vortex_frame_get_payload (frame));
+		vortex_frame_unref (frame);
+		goto finish;
+	} /* end if */
+
+	vortex_frame_unref (frame);
+	result = axl_true;
+
+ finish:
+	vortex_channel_close (channel, NULL);
+	vortex_async_queue_unref (queue);
+	vortex_connection_close (connection);
+
+	return result;
+}
+
 axl_bool  test_01d (void) {
 	VortexConnection  * connection;
 	VortexAsyncQueue  * queue;
@@ -2496,6 +2595,9 @@ axl_bool  test_01d (void) {
 		return axl_false;
 
 	if (! test_01d_07 ())
+		return axl_false;
+
+	if (! test_01d_08 ())
 		return axl_false;
 
 	/* creates a new connection against localhost:44000 */
