@@ -2589,9 +2589,12 @@ check_limit:
 		/* according to mime headers size */
 		if (mime_header_size > 0)
 			__vortex_channel_get_mime_headers (channel, data->message);
-	
-		/* copy message content */
-		memcpy (data->message + mime_header_size, message, message_size);
+
+		/* copy message content: guarded because message is
+		 * NULL for empty messages, and memcpy requires a
+		 * valid source even for a 0 size */
+		if (message_size > 0)
+			memcpy (data->message + mime_header_size, message, message_size);
 	} else {
 		/* feeder configured, set it */
 		data->feeder = feeder;
@@ -3171,8 +3174,11 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 		if (mime_header_size > 0)
 			__vortex_channel_get_mime_headers (channel, data->message);
 
-		/* copy application level message */
-		memcpy (data->message + mime_header_size, message, message_size);
+		/* copy application level message: guarded because
+		 * message is NULL for empty replies (NUL frames), and
+		 * memcpy requires a valid source even for a 0 size */
+		if (message_size > 0)
+			memcpy (data->message + mime_header_size, message, message_size);
 
 	} else if (feeder != NULL) {
 

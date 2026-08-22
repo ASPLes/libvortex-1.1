@@ -837,8 +837,11 @@ char  * vortex_frame_build_up_from_params_s_buffer (VortexFrameType   type,
 		VORTEX_CHECK_REF (value, NULL);
 	} /* end if */
 	
-	/* copy BEEP frame payload */
-	memcpy (value + header_length, payload, size);
+	/* copy BEEP frame payload: guarded because payload is NULL
+	 * for frames carrying no content (NUL frames), and memcpy
+	 * requires a valid source even for a 0 size */
+	if (size > 0)
+		memcpy (value + header_length, payload, size);
 
 	/* copy BEEP frame trailing */
 	memcpy (value + header_length + size, "END\x0D\x0A", 5);
