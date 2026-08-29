@@ -701,6 +701,9 @@ axl_bool  __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _p
 	/* application variables */
 	const char            * profile;
 	const char            * profile_content = NULL;
+	char                  * cached_content  = NULL;
+	char                  * cache_key       = NULL;
+	axl_bool                cache_hit       = axl_false;
 	axl_bool                result;
 	VortexStartReplyCache * cache = NULL;
 
@@ -708,26 +711,54 @@ axl_bool  __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _p
 	if (ctx == NULL)
 		return axl_false;
 
-	/* get the cache */
+	/* Build the cache key. What is cached is the outcome of comparing the
+	 * reply against the profile that was requested, so the key has to name
+	 * both: keyed on the reply alone, a verdict reached for one profile
+	 * would be handed back for a start done under a different one. */
+	cache_key = axl_strdup_printf ("%s\x01%s", _profile,
+				       (const char *) vortex_frame_get_payload (frame));
+	if (cache_key == NULL) {
+		vortex_connection_remove_channel (channel->connection, channel);
+		vortex_frame_unref (frame);
+		return axl_false;
+	} /* end if */
+
+	/* get the cache. The content is copied while the mutex is held: the
+	 * reference belongs to the cache entry, and another thread replacing
+	 * that key would release it under our feet. */
 	vortex_mutex_lock (&ctx->channel_start_reply_cache_mutex);
-	cache = axl_hash_get (ctx->channel_start_reply_cache, (axlPointer) vortex_frame_get_payload (frame));
+	cache = axl_hash_get (ctx->channel_start_reply_cache, (axlPointer) cache_key);
+	if (cache != NULL) {
+		cache_hit = axl_true;
+		if (cache->profile_content != NULL)
+			cached_content = axl_strdup (cache->profile_content);
+	} /* end if */
 	vortex_mutex_unlock (&ctx->channel_start_reply_cache_mutex);
 
 	/* try to match the start reply with the cache */
-	if (cache != NULL) {
+	if (cache_hit) {
 
 		/* cache hit!, notify piggyback and return */
-		result          = axl_true;
-		profile_content = cache->profile_content;
+		if (cached_content != NULL && strlen (cached_content) > 0) {
+			vortex_log (VORTEX_LEVEL_DEBUG, "received profile content (cached): '%s'", cached_content);
 
-		/* free the frame */
-		vortex_frame_free (frame);
+			/* set piggyback frame: the function builds a frame of
+			 * its own with the content, so the copy can go */
+			vortex_channel_set_piggyback (channel, cached_content);
+		} /* end if */
 
-		goto notify_start_validate_reply;
+		axl_free (cached_content);
+		axl_free (cache_key);
+
+		/* release the frame: unref rather than free, so a frame still
+		 * held elsewhere is not pulled from under its other owner */
+		vortex_frame_unref (frame);
+
+		return axl_true;
 
 	} /* end if */
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "doing validate for start reply msg: '%s'", 
+	vortex_log (VORTEX_LEVEL_DEBUG, "doing validate for start reply msg: '%s'",
 		    (const char *) vortex_frame_get_payload (frame));
 
 	/* parse xml document */
@@ -743,6 +774,7 @@ axl_bool  __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _p
 		/* free resources */
 		vortex_connection_remove_channel (channel->connection, channel);
 		vortex_frame_unref (frame);
+		axl_free (cache_key);
 		return axl_false;
 	}
 
@@ -767,19 +799,21 @@ axl_bool  __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _p
 		/* free resources */
 		vortex_connection_remove_channel (channel->connection, channel);
 		vortex_support_free (2, frame, vortex_frame_unref, doc, axl_doc_free);
+		axl_free (cache_key);
 		return axl_false;
 	}
-	
+
 	/* get the root element ( profile element ) */
 	node = axl_doc_get_root (doc);
 	if (! NODE_CMP_NAME (node, "profile")) {
-		
+
 		/* remove the channel */
 		vortex_connection_remove_channel (channel->connection, channel);
 
 		/* free resources */
 		vortex_support_free (2, frame, vortex_frame_unref,
 				     doc, axl_doc_free);
+		axl_free (cache_key);
 		return axl_false;
 	}
 	/* check profile requested */
@@ -796,24 +830,23 @@ axl_bool  __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _p
 		/* check for piggyback received */
 		profile_content      = axl_node_get_content (node, NULL);
 
-	notify_start_validate_reply:
 		if (profile_content != NULL && strlen (profile_content) > 0) {
 			/* log the profile received */
 			vortex_log (VORTEX_LEVEL_DEBUG, "received profile content: '%s'", profile_content);
-			
+
 			/* set piggyback frame */
 			vortex_channel_set_piggyback (channel, profile_content);
-			
+
 			/* it is not required to make a deallocation
 			 * for the profile_content, because the
 			 * reference received is not a copy */
 		} /* end if */
-	} /* end if */
 
-	/* store the result in the case */
-	if (cache == NULL) {
+		/* Store the verdict, and only a positive one: a refusal placed
+		 * in the cache is read back as an acceptance by the next
+		 * caller, which is the opposite of what was decided here. */
 		vortex_mutex_lock (&ctx->channel_start_reply_cache_mutex);
-		
+
 		/* the cache */
 		cache        = axl_new (VortexStartReplyCache, 1);
 		/* check alloc result */
@@ -823,16 +856,20 @@ axl_bool  __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _p
 				cache->profile_content = axl_strdup (profile_content);
 			else
 				cache->profile_content = NULL;
-			
+
 			/* store the frame */
 			cache->frame = frame;
 
-			/* store using as index the frame content */
+			/* store using as index the requested profile plus the
+			 * reply content */
 			axl_hash_insert_full (ctx->channel_start_reply_cache,
 					      /* pointer to the key and its destroy function */
-					      (axlPointer) vortex_frame_get_payload (frame), NULL,
+					      (axlPointer) cache_key, axl_free,
 					      /* the value and its destroy function */
 					      cache, (axlDestroyFunc) __vortex_channel_start_reply_free);
+
+			/* the hash owns both from this point on */
+			cache_key = NULL;
 		} /* end if */
 
 		vortex_mutex_unlock (&ctx->channel_start_reply_cache_mutex);
@@ -840,11 +877,17 @@ axl_bool  __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _p
 
 	/* free document */
 	axl_doc_free (doc);
-	
+	axl_free (cache_key);
+
 	if (!result) {
 		/* remove the channel in the case something went wrong */
 		vortex_connection_remove_channel (channel->connection, channel);
 	}
+
+	/* the frame is only kept when it was handed to the cache */
+	if (cache == NULL)
+		vortex_frame_unref (frame);
+
 	return result;
 }
 

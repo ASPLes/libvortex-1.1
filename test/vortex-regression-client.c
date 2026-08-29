@@ -3793,6 +3793,95 @@ axl_bool test_01m (void) {
 	return axl_true;
 }
 
+/* internal, not published in vortex_channel.h: the start reply validation the
+ * initiator runs on the answer to its start message */
+axl_bool __vortex_channel_validate_start_reply (VortexFrame * frame, char * _profile, VortexChannel * channel);
+
+/**
+ * @internal Hands a start reply confirming the wrong profile to the validation
+ * function and reports what it decided. The channel and the frame are consumed
+ * by the call when it refuses them.
+ */
+axl_bool test_01n_validate (VortexConnection * conn, const char * wrong_reply)
+{
+	VortexChannel * channel;
+	VortexFrame   * frame;
+
+	channel = vortex_channel_new (conn, 0, REGRESSION_URI,
+				      NULL, NULL, NULL, NULL, NULL, NULL);
+	if (channel == NULL) {
+		printf ("ERROR: unable to create the channel used to check start reply validation..\n");
+		return axl_true; /* report as accepted so the caller fails */
+	} /* end if */
+
+	frame = vortex_frame_create (ctx, VORTEX_FRAME_TYPE_RPY,
+				     0, 0, axl_false, 0,
+				     (int) strlen (wrong_reply), 0, wrong_reply);
+
+	/* ask it to confirm REGRESSION_URI while the reply names another profile */
+	return __vortex_channel_validate_start_reply (frame, (char *) REGRESSION_URI, channel);
+}
+
+/**
+ * @brief Checks a start reply confirming a profile other than the one
+ * requested is refused every time, and not just the first time.
+ *
+ * The validation result is cached on the reply payload alone, so a refusal
+ * that gets stored is handed back as an acceptance to the next caller.
+ */
+axl_bool test_01n (void) {
+
+	VortexConnection * conn;
+	VortexChannel    * channel;
+	axl_bool           first;
+	axl_bool           second;
+
+	/* a well formed start reply, confirming a profile that is not the one
+	 * asked for below */
+	const char * wrong_reply = "<profile uri='" REGRESSION_URI_NOTHING "' />";
+
+	printf ("Test 01-n: checking start replies confirming the wrong profile are refused..\n");
+
+	conn = connection_new ();
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: unable to create connection to check start reply validation..\n");
+		vortex_connection_close (conn);
+		return axl_false;
+	} /* end if */
+
+	first  = test_01n_validate (conn, wrong_reply);
+	second = test_01n_validate (conn, wrong_reply);
+
+	printf ("Test 01-n: first attempt accepted=%d, second attempt accepted=%d\n", first, second);
+
+	if (first) {
+		printf ("ERROR: a start reply confirming %s was accepted while %s was requested\n",
+			REGRESSION_URI_NOTHING, REGRESSION_URI);
+		vortex_connection_close (conn);
+		return axl_false;
+	} /* end if */
+
+	if (second) {
+		printf ("ERROR: the same start reply was refused once and then accepted: the cached\n");
+		printf ("ERROR: verdict is keyed on the reply alone, so it ignores which profile was requested\n");
+		vortex_connection_close (conn);
+		return axl_false;
+	} /* end if */
+
+	/* the profile actually requested must still be accepted */
+	channel = vortex_channel_new (conn, 0, REGRESSION_URI,
+				      NULL, NULL, NULL, NULL, NULL, NULL);
+	if (channel == NULL) {
+		printf ("ERROR: refusing wrong replies broke the ordinary channel start..\n");
+		vortex_connection_close (conn);
+		return axl_false;
+	} /* end if */
+
+	vortex_channel_close (channel, NULL);
+	vortex_connection_close (conn);
+	return axl_true;
+}
+
 /**
  * @brief Checks memory consuption for channel pool
  */
@@ -16139,7 +16228,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_00c2, test_00d, test_00e, test_00f, test_00g, test_01,\n");
 	printf ("**                       test_01a, test_01b, test_01c, test_01d, test_01e, test_01e1,\n");
 	printf ("**                       test_01f, test_01g, test_01g1, test_01h, test_01i, test_01j,\n");
-	printf ("**                       test_01k, test_01l, test_01m, test_01o, test_01p, test_01q, test_01r,\n");
+	printf ("**                       test_01k, test_01l, test_01m, test_01n, test_01o, test_01p, test_01q, test_01r,\n");
 	printf ("**                       test_01s, test_01s1, test_01t, test_01u, test_01v, test_01w,\n");
 	printf ("**                       test_01y, test_01x, test_02, test_02a, test_02a1, test_02a2,\n");
 	printf ("**                       test_02a3, test_02a4, test_02b, test_02c, test_02d, test_02e,\n");
@@ -16433,6 +16522,9 @@ int main (int  argc, char ** argv)
 
 		if (check_and_run_test (run_test_name, "test_01m"))
 			run_test (test_01m, "Test 01-m", "channel 0 management messages missing required attributes", -1, -1);
+
+		if (check_and_run_test (run_test_name, "test_01n"))
+			run_test (test_01n, "Test 01-n", "start reply confirming a profile other than the one requested", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_01o"))
 			run_test (test_01o, "Test 01-o", "Memory consuption with channel pool acquire/release API", -1, -1);
@@ -16786,6 +16878,8 @@ int main (int  argc, char ** argv)
 
 	run_test (test_01l, "Test 01-l", "Memory consuption with channel serialize", -1, -1);
 	run_test (test_01m, "Test 01-m", "channel 0 management messages missing required attributes", -1, -1);
+
+	run_test (test_01n, "Test 01-n", "start reply confirming a profile other than the one requested", -1, -1);
 
 	run_test (test_01o, "Test 01-o", "Memory consuption with channel pool acquire/release API", -1, -1);
 
