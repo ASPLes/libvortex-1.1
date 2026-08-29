@@ -6742,78 +6742,6 @@ axl_bool            vortex_channel_invoke_close_handler     (VortexChannel  * ch
 			       channel->close_user_data);
 }
 
-/** 
- * @internal
- * @brief Internal Vortex Library function to validate received frames on channel 0.
- * 
- * @param channel0 the channel 0 itself
- * @param frame the frame received
- * 
- * @return axl_true if validated was ok or axl_false if it fails.
- */
-axl_bool      __vortex_channel_0_frame_received_validate (VortexChannel * channel0, VortexFrame * frame)
-{
-	axlDtd      * channel_dtd;
-	axlDoc      * doc;
-	axlError    * error;
-	char        * error_msg;
-	VortexCtx   * ctx     = vortex_channel_get_ctx (channel0);
-
-	/* get channel management DTD */
-	if ((channel_dtd = vortex_dtds_get_channel_dtd (ctx)) == NULL) {
-		vortex_log (VORTEX_LEVEL_DEBUG, "unable to load dtd file, cannot validate incoming message, returning error frame");
-		error_msg = vortex_frame_get_error_message ("421", 
-							    "service not available, unable to load dtd file, cannot validate incoming message",
-							    NULL);
-		vortex_channel_send_err (channel0, 
-					 error_msg,
-					 strlen (error_msg),
-					 vortex_frame_get_msgno (frame));
-		axl_free (error_msg);
-		return axl_false;
-	}
-
-	/* parser xml document */
-	doc = axl_doc_parse (vortex_frame_get_payload (frame), 
-			     vortex_frame_get_payload_size (frame), &error);
-	if (!doc) {
-		/* report an error to the remote peer */
-		error_msg = vortex_frame_get_error_message ("500", "general syntax error: xml parse error", NULL);
-		vortex_channel_send_err (channel0, error_msg, strlen (error_msg), vortex_frame_get_msgno (frame));
-		axl_free (error_msg);
-
-		/* close connection flag an error */
-		__vortex_connection_shutdown_and_record_error (
-			channel0->connection, VortexProtocolError,
-			"received message on channel 0 with xml parse error, closing connection: %s",
-			axl_error_get (error));
-		axl_error_free (error);
-		return axl_false;		 
-	}
-	
-	/* validate document */
-	if (! axl_dtd_validate (doc, channel_dtd, &error)) {
-		/* Validation failed */
-		error_msg = vortex_frame_get_error_message ("501", "syntax error in parameters: non-valid XML", NULL);
-		vortex_channel_send_err (channel0, error_msg, strlen (error_msg), vortex_frame_get_msgno (frame));
-		axl_free (error_msg);
-
-		/* set the channel to be not connected */
-		__vortex_connection_shutdown_and_record_error (
-			channel0->connection, VortexProtocolError, 
-			"received message on channel 0 with syntax error in parameters: non-valid XML: %s",
-			axl_error_get (error));
-		axl_error_free (error);
-
-		/* release the document read */
-		axl_doc_free (doc);
-		return axl_false;		 
-	}
-	
-	/* release the document read */
-	axl_doc_free (doc);
-	return axl_true;
-}
 
 enum {START_MSG, CLOSE_MSG, ERROR_MSG, OK_MSG, UNKNOWN_MSG};
 
@@ -6940,8 +6868,20 @@ axl_bool      __vortex_channel_0_frame_received_get_start_param (VortexFrame    
 
 	/* get channel number from the start element property: the
 	 * function return a reference so it is not necessary to
-	 * deallocate it */
+	 * deallocate it.
+	 *
+	 * The channel management DTD declares number as #REQUIRED, so
+	 * a start without it is a protocol violation. It has to be
+	 * checked here: the value reaches atoi, which does not accept
+	 * a NULL, and the document is not DTD validated before this
+	 * point. */
 	channel         = axl_node_get_attribute_value (start, "number");
+	if (channel == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL,
+			    "received start message without the required 'number' attribute, discarding");
+		axl_doc_free (doc);
+		return axl_false;
+	} /* end if */
 	(* channel_num) = atoi (channel);
 
 	/* get serverName value from the start element property */
@@ -6954,9 +6894,34 @@ axl_bool      __vortex_channel_0_frame_received_get_start_param (VortexFrame    
 	 * characters found between the <start> and the next <profile>
 	 * element as a node of its own. */
 	profile_node    = axl_node_get_child_nth (start, 0);
-	
+
+	/* the content model for start is (profile)+, so a start
+	 * carrying no profile element is a protocol violation */
+	if (profile_node == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL,
+			    "received start message for channel %d without any profile element, discarding",
+			    (* channel_num));
+		axl_free ((* serverName));
+		(* serverName) = NULL;
+		axl_doc_free (doc);
+		return axl_false;
+	} /* end if */
+
 	/* get profiles */
 	(* profile)     = axl_node_get_attribute_value_copy (profile_node, "uri");
+
+	/* uri is declared #REQUIRED for the profile element, and the
+	 * value is used from this point on to look up the profile
+	 * registry, which does not accept a NULL either */
+	if ((* profile) == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL,
+			    "received start message for channel %d with a profile element without 'uri', discarding",
+			    (* channel_num));
+		axl_free ((* serverName));
+		(* serverName) = NULL;
+		axl_doc_free (doc);
+		return axl_false;
+	} /* end if */
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "profile received %s", (* profile));
 
@@ -7485,7 +7450,13 @@ axl_bool  __vortex_channel_0_frame_received_get_close_param (VortexFrame * frame
 	/* Get the root element (close element) */
 	close           = axl_doc_get_root (doc);
 	channel         = axl_node_get_attribute_value (close, "number");
-	(* channel_num) = atoi (channel);
+
+	/* Unlike start, the channel management DTD gives close's number
+	 * attribute a default value of "0", so a close without it is
+	 * conformant and asks to close channel 0. Apply that default here:
+	 * the document is not DTD validated before this point, so nothing
+	 * else supplies it, and atoi does not accept a NULL. */
+	(* channel_num) = (channel != NULL) ? atoi (channel) : 0;
 
 	(* code )       = axl_node_get_attribute_value_copy (close, "code");
 	
@@ -7884,10 +7855,14 @@ void vortex_channel_0_frame_received (VortexChannel    * channel0,
 		    vortex_frame_get_content_size (frame),
 		    (const char *) vortex_frame_get_payload (frame));
 
-	/* validate message */
-	/* if (!__vortex_channel_0_frame_received_validate (channel0,
-	   frame)) return; */
-	
+	/* Note the message is not validated against the channel
+	 * management DTD here: doing so would parse and validate every
+	 * channel 0 frame twice, since the handlers below parse it
+	 * again to read their parameters. The constraints the DTD
+	 * declares are checked where those parameters are read, at
+	 * __vortex_channel_0_frame_received_get_start_param and
+	 * __vortex_channel_0_frame_received_get_close_param. */
+
 	/* dispatch the frame received over the channel 0 to the
 	 * appropriate place */
 	switch (__vortex_channel_0_frame_received_identify_type (channel0, frame)) {

@@ -3635,7 +3635,165 @@ axl_bool test_01l (void) {
 	return axl_true;
 }
 
-/** 
+/**
+ * @internal Counts BEEP frames addressed to channel 0 inside the buffer
+ * received, whatever their type.
+ */
+int test_01m_count_frames (const char * buffer)
+{
+	int          frames   = 0;
+	const char * position = buffer;
+	const char * types[]  = {"RPY 0 ", "ERR 0 ", "MSG 0 ", "ANS 0 ", "NUL 0 "};
+	int          iterator;
+
+	for (iterator = 0; iterator < 5; iterator++) {
+		position = buffer;
+		while ((position = strstr (position, types[iterator])) != NULL) {
+			frames++;
+			position++;
+		} /* end while */
+	} /* end for */
+
+	return frames;
+}
+
+/**
+ * @internal Opens a session by hand, greets, and sends a single channel 0
+ * management message, reporting if the listener answered.
+ *
+ * Driven by hand for the same reason as test_05f: what has to be exercised is
+ * the listener's channel 0 parsing, and writing raw frames behind a
+ * VortexConnection's back would desynchronise its sequence accounting. On
+ * channel 0 the sequence counter advances by payload octets only, so the
+ * management message starts at the greeting's payload size.
+ */
+axl_bool test_01m_exchange (const char * label, const char * management_body)
+{
+	VORTEX_SOCKET   session;
+	axlError      * error    = NULL;
+	char          * frame;
+	char            reply[8192];
+	int             total    = 0;
+	int             bytes;
+	int             iterator = 0;
+	struct timeval  timeout;
+
+	const char * greeting_body = "Content-Type: application/beep+xml\r\n\r\n<greeting />\r\n";
+
+	printf ("Test 01-m: sending %s..\n", label);
+
+	session = vortex_connection_sock_connect (ctx, listener_host,
+						  regression_port (REGRESSION_PORT_LISTENER),
+						  NULL, &error);
+	if (session == VORTEX_INVALID_SOCKET) {
+		printf ("ERROR: unable to connect to the listener: %s\n",
+			error ? axl_error_get (error) : "unknown");
+		axl_error_free (error);
+		return axl_false;
+	} /* end if */
+
+	/* A peer that dies parsing the message sends nothing at all, so reads must
+	 * time out: a regression test has to report that, not hang the suite
+	 * waiting for a reply that is never coming. */
+	timeout.tv_sec  = 3;
+	timeout.tv_usec = 0;
+	setsockopt (session, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof (timeout));
+
+	/* greet */
+	frame = axl_strdup_printf ("RPY 0 0 . 0 %d\r\n%sEND\r\n",
+				   (int) strlen (greeting_body), greeting_body);
+	if (send (session, frame, strlen (frame), 0) != (int) strlen (frame)) {
+		printf ("ERROR: failed to send the greeting for %s..\n", label);
+		axl_free (frame);
+		vortex_close_socket (session);
+		return axl_false;
+	} /* end if */
+	axl_free (frame);
+
+	/* send the management message under test */
+	frame = axl_strdup_printf ("MSG 0 0 . %d %d\r\n%sEND\r\n",
+				   (int) strlen (greeting_body),
+				   (int) strlen (management_body), management_body);
+	if (send (session, frame, strlen (frame), 0) != (int) strlen (frame)) {
+		printf ("ERROR: failed to send %s..\n", label);
+		axl_free (frame);
+		vortex_close_socket (session);
+		return axl_false;
+	} /* end if */
+	axl_free (frame);
+
+	/* Read until two frames are in. Two are expected on channel 0: the listener's
+	 * own greeting, and the answer to the message just sent. Counting frames
+	 * rather than looking for an element keeps the greeting, which carries
+	 * <profile> elements of its own, from being mistaken for the answer. */
+	while (iterator < 40 && total < ((int) sizeof (reply) - 1)) {
+		bytes = recv (session, reply + total, sizeof (reply) - total - 1, 0);
+		if (bytes <= 0)
+			break;
+		total       += bytes;
+		reply[total] = 0;
+
+		if (test_01m_count_frames (reply) >= 2)
+			break;
+		iterator++;
+	} /* end while */
+
+	vortex_close_socket (session);
+
+	if (test_01m_count_frames (reply) < 2) {
+		printf ("ERROR: no answer to %s: the listener must reply, not stop answering\n", label);
+		printf ("ERROR:   expected 2 frames on channel 0 (greeting + answer), found %d in %d bytes\n",
+			test_01m_count_frames (reply), total);
+		if (total > 0)
+			printf ("ERROR:   received: %s\n", reply);
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 01-m:   ..answered as expected\n");
+	return axl_true;
+}
+
+/**
+ * @brief Checks channel 0 management messages that are well formed XML but
+ * lack attributes the channel management DTD declares as required. They must
+ * be refused, not crash the peer parsing them.
+ */
+axl_bool test_01m (void) {
+
+	/* control first: a well formed start must be answered, so a silent peer
+	 * below is the defect under test and not a broken exchange here */
+	if (! test_01m_exchange ("a well formed <start> (control)",
+				 "Content-Type: application/beep+xml\r\n\r\n<start number='1'>\r\n"
+				 "<profile uri='" REGRESSION_URI "' />\r\n</start>\r\n")) {
+		printf ("ERROR: the control exchange failed, so this test cannot tell anything about the rest\n");
+		return axl_false;
+	} /* end if */
+
+	/* <start> declares number as #REQUIRED and its content model is (profile)+,
+	 * and <profile> declares uri as #REQUIRED */
+	if (! test_01m_exchange ("<start /> with no number attribute",
+				 "Content-Type: application/beep+xml\r\n\r\n<start />\r\n"))
+		return axl_false;
+
+	if (! test_01m_exchange ("<start> with no profile element",
+				 "Content-Type: application/beep+xml\r\n\r\n<start number='9' />\r\n"))
+		return axl_false;
+
+	if (! test_01m_exchange ("<profile> with no uri attribute",
+				 "Content-Type: application/beep+xml\r\n\r\n<start number='9'>\r\n"
+				 "<profile />\r\n</start>\r\n"))
+		return axl_false;
+
+	/* <close> declares number with a default of "0", so omitting it is legal and
+	 * must be read as channel 0 rather than crashing */
+	if (! test_01m_exchange ("<close /> relying on the number default",
+				 "Content-Type: application/beep+xml\r\n\r\n<close code='200' />\r\n"))
+		return axl_false;
+
+	return axl_true;
+}
+
+/**
  * @brief Checks memory consuption for channel pool
  */
 axl_bool test_01o (void) {
@@ -15981,7 +16139,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_00c2, test_00d, test_00e, test_00f, test_00g, test_01,\n");
 	printf ("**                       test_01a, test_01b, test_01c, test_01d, test_01e, test_01e1,\n");
 	printf ("**                       test_01f, test_01g, test_01g1, test_01h, test_01i, test_01j,\n");
-	printf ("**                       test_01k, test_01l, test_01o, test_01p, test_01q, test_01r,\n");
+	printf ("**                       test_01k, test_01l, test_01m, test_01o, test_01p, test_01q, test_01r,\n");
 	printf ("**                       test_01s, test_01s1, test_01t, test_01u, test_01v, test_01w,\n");
 	printf ("**                       test_01y, test_01x, test_02, test_02a, test_02a1, test_02a2,\n");
 	printf ("**                       test_02a3, test_02a4, test_02b, test_02c, test_02d, test_02e,\n");
@@ -16272,6 +16430,9 @@ int main (int  argc, char ** argv)
 
 		if (check_and_run_test (run_test_name, "test_01l"))
 			run_test (test_01l, "Test 01-l", "Memory consuption with channel serialize", -1, -1);
+
+		if (check_and_run_test (run_test_name, "test_01m"))
+			run_test (test_01m, "Test 01-m", "channel 0 management messages missing required attributes", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_01o"))
 			run_test (test_01o, "Test 01-o", "Memory consuption with channel pool acquire/release API", -1, -1);
@@ -16624,6 +16785,7 @@ int main (int  argc, char ** argv)
 	run_test (test_01k, "Test 01-k", "Limitting channel send operations (memory consuption)", -1, -1);
 
 	run_test (test_01l, "Test 01-l", "Memory consuption with channel serialize", -1, -1);
+	run_test (test_01m, "Test 01-m", "channel 0 management messages missing required attributes", -1, -1);
 
 	run_test (test_01o, "Test 01-o", "Memory consuption with channel pool acquire/release API", -1, -1);
 
