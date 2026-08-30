@@ -1073,6 +1073,15 @@ int __vortex_websocket_detect_and_prepare_transport (VortexCtx        * ctx,
 
 		/* create the listener */
 		nopoll_listener = nopoll_listener_from_socket (nopoll_ctx, vortex_connection_get_socket (listener));
+		if (nopoll_listener == NULL) {
+			/* without it there is nothing to complete the
+			 * accept with: nopoll_conn_accept_complete ()
+			 * takes it as the listener the connection was
+			 * accepted at and reads its options */
+			vortex_log (VORTEX_LEVEL_CRITICAL, "Unable to create noPollConn master listener object for listener %p (socket=%d), noPollCtx=%p",
+				    listener, vortex_connection_get_socket (listener), nopoll_ctx);
+			return -1;
+		} /* end if */
 
 		/* associate it to the connection */
 		vortex_connection_set_data_full (listener, "nopoll-conn", nopoll_listener, NULL, __vortex_websocket_conn_close);
