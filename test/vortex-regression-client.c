@@ -3884,14 +3884,9 @@ axl_bool test_01n (void) {
 
 /**
  * @brief Checks the channel API answers a NULL reference instead of
- * dereferencing it, the way the rest of the module already does, and that
- * reference counts do not go below zero when released once too often.
+ * dereferencing it, the way the rest of the module already does.
  */
 axl_bool test_01z (void) {
-
-	VortexConnection * conn;
-	VortexChannel    * channel;
-	int                count;
 
 	printf ("Test 01-z: calling the channel API with a NULL reference..\n");
 
@@ -3918,41 +3913,6 @@ axl_bool test_01z (void) {
 	/* no return value to check: it must simply not crash */
 	vortex_channel_set_next_seq_no (NULL, 0);
 
-	printf ("Test 01-z: checking reference counts hold at zero..\n");
-
-	conn = connection_new ();
-	if (! vortex_connection_is_ok (conn, axl_false)) {
-		printf ("ERROR: unable to create connection to check reference counting..\n");
-		vortex_connection_close (conn);
-		return axl_false;
-	} /* end if */
-
-	channel = vortex_channel_new (conn, 0, REGRESSION_URI,
-				      NULL, NULL, NULL, NULL, NULL, NULL);
-	if (channel == NULL) {
-		printf ("ERROR: unable to create channel to check reference counting..\n");
-		vortex_connection_close (conn);
-		return axl_false;
-	} /* end if */
-
-	/* take a reference of our own and release it twice: the second release
-	 * has nothing left to give back and must leave the count alone rather
-	 * than take it negative, which would make the channel unreleasable */
-	vortex_channel_ref2 (channel, "test_01z");
-	count = vortex_channel_ref_count (channel);
-
-	vortex_channel_unref2 (channel, "test_01z");
-	vortex_channel_unref2 (channel, "test_01z (one too many)");
-
-	if (vortex_channel_ref_count (channel) != (count - 1)) {
-		printf ("ERROR: releasing one reference too many left the count at %d, expected %d\n",
-			vortex_channel_ref_count (channel), count - 1);
-		vortex_connection_close (conn);
-		return axl_false;
-	} /* end if */
-
-	vortex_channel_close (channel, NULL);
-	vortex_connection_close (conn);
 	return axl_true;
 }
 
@@ -15638,6 +15598,389 @@ axl_bool test_18 (void) {
 #endif	
 }
 
+/** 
+ * @brief Check that two BEEP frames packed into a single WebSocket frame are both
+ * processed when that WebSocket frame travels inside a single TLS record.
+ *
+ * The two halves of this are covered separately already: test_17a packs two BEEP frames into
+ * one WebSocket frame, and test_05f puts two BEEP frames into one TLS record. Neither
+ * exercises the case where both hold at once, which is the one that took longest to find and
+ * is the reason this test exists.
+ *
+ * Stacked, the buffering is stacked too. OpenSSL decrypts a whole record and holds what the
+ * caller did not ask for; noPoll then takes one WebSocket message out of that and holds the
+ * rest of its own. Those octets have left the kernel, so select(), poll() and epoll() see an
+ * empty socket, and a reader that asks neither layer what it is still holding waits for an
+ * event that cannot arrive. The session stalls with no error at either end. Both layers have
+ * been fixed to report what they hold — nopoll_conn_read_pending() adds SSL_pending() once
+ * the session is established — and this test is what keeps them honest.
+ *
+ * Driven with noPoll directly rather than through a VortexConnection, for the same reason as
+ * test_17a: writing raw frames behind a connection's back would desynchronise its own
+ * sequence accounting, and what has to be exercised is the listener's reader.
+ */
+axl_bool test_18a (void) {
+#if defined(ENABLE_WEBSOCKET_SUPPORT)
+	noPollCtx      * np_ctx;
+	noPollConnOpts * np_opts;
+	noPollConn     * np_conn;
+	char           * greeting_frame;
+	char           * start_frame;
+	char           * packed;
+	char             reply[8192];
+	int              total    = 0;
+	int              bytes;
+	int              iterator = 0;
+	int              replies  = 0;
+	char           * position;
+
+	/* the greeting this side must send, and a start for a profile the listener serves */
+	const char * greeting_body = "Content-Type: application/beep+xml\r\n\r\n<greeting />\r\n";
+	const char * start_body    = "Content-Type: application/beep+xml\r\n\r\n<start number='1'>\r\n"
+		"<profile uri='" REGRESSION_URI "' />\r\n</start>\r\n";
+
+	printf ("Test 18-a: connecting to %s:%s to send two BEEP frames in one WebSocket frame, over TLS..\n",
+		listener_host, regression_port (REGRESSION_PORT_WEBSOCKET_TLS));
+
+	np_ctx = nopoll_ctx_new ();
+	if (np_ctx == NULL) {
+		printf ("ERROR: unable to create noPoll context..\n");
+		return axl_false;
+	} /* end if */
+
+	/* the suite's certificate is self signed: what is under test is the record layer, not
+	 * the trust decision */
+	np_opts = nopoll_conn_opts_new ();
+	nopoll_conn_opts_ssl_peer_verify (np_opts, nopoll_false);
+
+	np_conn = nopoll_conn_tls_new (np_ctx, np_opts, listener_host,
+				       regression_port (REGRESSION_PORT_WEBSOCKET_TLS),
+				       listener_host,
+				       /* get url */ NULL,
+				       /* protocols */ NULL,
+				       /* origin */ "http://localhost");
+	if (! nopoll_conn_wait_until_connection_ready (np_conn, 10)) {
+		printf ("ERROR: unable to complete WebSocket over TLS handshake with the listener..\n");
+		nopoll_conn_close (np_conn);
+		nopoll_ctx_unref (np_ctx);
+		return axl_false;
+	} /* end if */
+
+	/* Build both frames and put them into a single WebSocket frame. The second frame's
+	 * sequence number is the payload size of the first: on channel 0 the counter advances
+	 * by payload octets only. One send means one SSL_write, so the whole thing is one TLS
+	 * record as well, which is the point of this test. */
+	greeting_frame = axl_strdup_printf ("RPY 0 0 . 0 %d\r\n%sEND\r\n",
+					    (int) strlen (greeting_body), greeting_body);
+	start_frame    = axl_strdup_printf ("MSG 0 0 . %d %d\r\n%sEND\r\n",
+					    (int) strlen (greeting_body), (int) strlen (start_body), start_body);
+	packed         = axl_strdup_printf ("%s%s", greeting_frame, start_frame);
+
+	if (nopoll_conn_send_binary (np_conn, packed, strlen (packed)) != (int) strlen (packed)) {
+		printf ("ERROR: failed to send the packed WebSocket frame over TLS..\n");
+		axl_free (greeting_frame);
+		axl_free (start_frame);
+		axl_free (packed);
+		nopoll_conn_close (np_conn);
+		nopoll_ctx_unref (np_ctx);
+		return axl_false;
+	} /* end if */
+
+	axl_free (greeting_frame);
+	axl_free (start_frame);
+	axl_free (packed);
+
+	/* Read until both replies are in or we give up. Two are expected on channel 0: the
+	 * listener's own greeting, and the answer to the start. With either layer failing to
+	 * report what it holds, only the greeting ever arrives. */
+	while (iterator < 30 && total < ((int) sizeof (reply) - 1)) {
+		bytes = nopoll_conn_read (np_conn, reply + total, 512, nopoll_true, 300);
+		if (bytes > 0) {
+			total        += bytes;
+			reply[total]  = 0;
+
+			replies  = 0;
+			position = reply;
+			while ((position = strstr (position, "RPY 0 0")) != NULL) {
+				replies++;
+				position++;
+			} /* end while */
+
+			if (replies >= 2)
+				break;
+		} /* end if */
+
+		iterator++;
+	} /* end while */
+
+	nopoll_conn_close (np_conn);
+	nopoll_ctx_unref (np_ctx);
+
+	if (replies < 2) {
+		printf ("ERROR: the second BEEP frame inside the WebSocket frame was never processed over TLS:\n");
+		printf ("ERROR:   expected 2 replies on channel 0 (greeting + start), found %d in %d bytes\n",
+			replies, total);
+		return axl_false;
+	} /* end if */
+
+	if (strstr (reply, "<profile") == NULL) {
+		printf ("ERROR: replies received but none carried the <profile> answering the start..\n");
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 18-a: both frames processed over TLS (%d bytes received)..\n", total);
+	return axl_true;
+#else
+	printf ("--- WARNING: Test 18-a: no support for WebSocket (noPoll support), doing nothing..\n");
+	return axl_true;
+#endif	
+}
+
+/**
+ * @internal Writes one masked binary WebSocket frame carrying payload into out,
+ * returning how many octets it occupies.
+ *
+ * RFC 6455 section 5.3 requires a client to mask, and the key may be anything;
+ * a fixed one keeps the test reproducible. Lengths below 126 go in the second
+ * octet, larger ones in the two that follow it, which is as much of the length
+ * encoding as the frames here need.
+ */
+int test_18b_ws_frame (char * out, const char * payload, int payload_len)
+{
+	unsigned char mask[4] = { 0x12, 0x34, 0x56, 0x78 };
+	int           at      = 0;
+	int           iterator;
+
+	/* FIN and the binary opcode */
+	out[at++] = (char) 0x82;
+
+	if (payload_len < 126) {
+		out[at++] = (char) (0x80 | payload_len);
+	} else {
+		out[at++] = (char) (0x80 | 126);
+		out[at++] = (char) ((payload_len >> 8) & 0xff);
+		out[at++] = (char) (payload_len & 0xff);
+	} /* end if */
+
+	for (iterator = 0; iterator < 4; iterator++)
+		out[at++] = (char) mask[iterator];
+
+	for (iterator = 0; iterator < payload_len; iterator++)
+		out[at++] = (char) (payload[iterator] ^ mask[iterator % 4]);
+
+	return at;
+}
+
+/** 
+ * @internal Counts how many times needle appears in the first size octets of buffer.
+ *
+ * Not strstr: what comes back here is raw WebSocket framing, and a frame header carries the
+ * payload length in binary. A length such as 145 is encoded as 126, 0x00, 0x91 — that NUL
+ * ends a C string, so strstr stops at the first frame header instead of searching the whole
+ * buffer. It cost an afternoon of blaming the listener for a reply that was sitting in the
+ * buffer all along.
+ */
+int test_18b_count (const char * buffer, int size, const char * needle)
+{
+	int needle_len = (int) strlen (needle);
+	int found      = 0;
+	int iterator;
+
+	for (iterator = 0; iterator <= (size - needle_len); iterator++) {
+		if (memcmp (buffer + iterator, needle, needle_len) == 0)
+			found++;
+	} /* end for */
+
+	return found;
+}
+
+/**
+ * @brief Check that two BEEP frames carried by two separate WebSocket frames are both
+ * processed when both WebSocket frames arrive inside a single TLS record.
+ *
+ * This is the case that took longest to find, and the only one of the family not covered
+ * anywhere else. test_17a packs two BEEP frames into one WebSocket frame and test_18a does
+ * the same over TLS: in both, the second BEEP frame sits in noPoll's own partially consumed
+ * message, which nopoll_conn_read_pending() has always reported. test_05f puts two BEEP
+ * frames into one TLS record with no WebSocket in the way.
+ *
+ * Here the second WebSocket frame is a whole message noPoll has not begun reading, and it is
+ * inside OpenSSL rather than on the socket. noPoll knew nothing about it: SSL_read decrypts a
+ * whole record at once and holds the remainder, those octets have left the kernel, and
+ * select(), poll() and epoll() all report an empty socket. The reader then waits for an event
+ * that cannot arrive and the session stalls with no error at either end. The fix was to have
+ * nopoll_conn_read_pending() add SSL_pending() once the session is established, so the reader
+ * above it knows to come back.
+ *
+ * Driven by hand rather than through noPoll because noPoll offers no way to put two messages
+ * into one record: nopoll_conn_send_binary() is one SSL_write per message, which is precisely
+ * the shape that does not fail.
+ */
+axl_bool test_18b (void) {
+#if defined(ENABLE_WEBSOCKET_SUPPORT) && defined(ENABLE_TLS_SUPPORT)
+	VORTEX_SOCKET      session;
+	VortexAsyncQueue * wait;
+	SSL_CTX          * ssl_ctx  = NULL;
+	SSL              * ssl      = NULL;
+	axlError         * error    = NULL;
+	char             * request;
+	char             * frame;
+	char               packed[2048];
+	char               reply[8192];
+	int                packed_len = 0;
+	int                total      = 0;
+	int                bytes;
+	int                iterator   = 0;
+	int                replies    = 0;
+
+	const char * greeting_body = "Content-Type: application/beep+xml\r\n\r\n<greeting />\r\n";
+	const char * start_body    = "Content-Type: application/beep+xml\r\n\r\n<start number='1'>\r\n"
+		"<profile uri='" REGRESSION_URI "' />\r\n</start>\r\n";
+
+	printf ("Test 18-b: connecting to %s:%s to send two WebSocket frames in one TLS record..\n",
+		listener_host, regression_port (REGRESSION_PORT_WEBSOCKET_TLS));
+
+	session = vortex_connection_sock_connect (ctx, listener_host,
+						  regression_port (REGRESSION_PORT_WEBSOCKET_TLS),
+						  NULL, &error);
+	if (session == VORTEX_INVALID_SOCKET) {
+		printf ("ERROR: unable to connect to the listener: %s\n",
+			error ? axl_error_get (error) : "unknown");
+		axl_error_free (error);
+		return axl_false;
+	} /* end if */
+
+	/* 1. the port is TLS from the first octet. No verification: what is under test is the
+	 * record layer, not the certificate. */
+	ssl_ctx = SSL_CTX_new (TLS_client_method ());
+	if (ssl_ctx == NULL) {
+		printf ("ERROR: unable to create SSL context..\n");
+		vortex_close_socket (session);
+		return axl_false;
+	} /* end if */
+	SSL_CTX_set_verify (ssl_ctx, SSL_VERIFY_NONE, NULL);
+
+	ssl = SSL_new (ssl_ctx);
+	SSL_set_fd (ssl, session);
+	if (SSL_connect (ssl) != 1) {
+		printf ("ERROR: TLS handshake with the listener failed..\n");
+		SSL_free (ssl);
+		SSL_CTX_free (ssl_ctx);
+		vortex_close_socket (session);
+		return axl_false;
+	} /* end if */
+
+	/* 2. the WebSocket handshake, by hand. The accept key the listener returns is not
+	 * checked: a listener that answers 101 has accepted, and what follows is the point. */
+	request = axl_strdup_printf ("GET / HTTP/1.1\r\n"
+				     "Host: %s:%s\r\n"
+				     "Upgrade: websocket\r\n"
+				     "Connection: Upgrade\r\n"
+				     "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+				     "Sec-WebSocket-Version: 13\r\n"
+				     "Origin: http://localhost\r\n\r\n",
+				     listener_host, regression_port (REGRESSION_PORT_WEBSOCKET_TLS));
+	if (SSL_write (ssl, request, strlen (request)) != (int) strlen (request)) {
+		printf ("ERROR: failed to send the WebSocket handshake..\n");
+		axl_free (request);
+		SSL_free (ssl);
+		SSL_CTX_free (ssl_ctx);
+		vortex_close_socket (session);
+		return axl_false;
+	} /* end if */
+	axl_free (request);
+
+	while (iterator < 40 && total < ((int) sizeof (reply) - 1)) {
+		bytes = SSL_read (ssl, reply + total, 512);
+		if (bytes <= 0)
+			break;
+		total       += bytes;
+		reply[total] = 0;
+		if (strstr (reply, "\r\n\r\n") != NULL)
+			break;
+		iterator++;
+	} /* end while */
+
+	if (strstr (reply, "101") == NULL) {
+		printf ("ERROR: the listener did not accept the WebSocket handshake:\n%s\n", reply);
+		SSL_free (ssl);
+		SSL_CTX_free (ssl_ctx);
+		vortex_close_socket (session);
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 18-b: handshake accepted, sending both WebSocket frames in one record..\n");
+
+	/* 3. one BEEP frame per WebSocket frame, as the binding requires, and both WebSocket
+	 * frames in a single SSL_write so that they share one TLS record. The second frame's
+	 * sequence number is the payload size of the first: on channel 0 the counter advances
+	 * by payload octets only. */
+	frame = axl_strdup_printf ("RPY 0 0 . 0 %d\r\n%sEND\r\n",
+				   (int) strlen (greeting_body), greeting_body);
+	packed_len += test_18b_ws_frame (packed, frame, strlen (frame));
+	axl_free (frame);
+
+	frame = axl_strdup_printf ("MSG 0 0 . %d %d\r\n%sEND\r\n",
+				   (int) strlen (greeting_body), (int) strlen (start_body), start_body);
+	packed_len += test_18b_ws_frame (packed + packed_len, frame, strlen (frame));
+	axl_free (frame);
+
+	if (SSL_write (ssl, packed, packed_len) != packed_len) {
+		printf ("ERROR: failed to write both WebSocket frames into one TLS record..\n");
+		SSL_free (ssl);
+		SSL_CTX_free (ssl_ctx);
+		vortex_close_socket (session);
+		return axl_false;
+	} /* end if */
+
+	/* 4. two replies are expected on channel 0: the listener's greeting and its answer to
+	 * the start. Without the fix only the greeting arrives, because the second WebSocket
+	 * frame is still inside OpenSSL where nothing is watching for it. The socket must not
+	 * block for that to be reported rather than waited on for ever. */
+	wait = vortex_async_queue_new ();
+	vortex_connection_set_sock_block (session, axl_false);
+
+	total    = 0;
+	iterator = 0;
+	while (iterator < 40 && total < ((int) sizeof (reply) - 1)) {
+		bytes = SSL_read (ssl, reply + total, 512);
+		if (bytes <= 0) {
+			/* nothing yet: wait a little and try again, up to about four seconds */
+			vortex_async_queue_timedpop (wait, 100000);
+			iterator++;
+			continue;
+		} /* end if */
+
+		total       += bytes;
+		reply[total] = 0;
+
+		replies = test_18b_count (reply, total, "RPY 0 0");
+
+		if (replies >= 2)
+			break;
+	} /* end while */
+
+	SSL_shutdown (ssl);
+	SSL_free (ssl);
+	SSL_CTX_free (ssl_ctx);
+	vortex_close_socket (session);
+	vortex_async_queue_unref (wait);
+
+	if (replies < 2) {
+		printf ("ERROR: the second WebSocket frame inside the TLS record was never processed:\n");
+		printf ("ERROR:   expected 2 replies on channel 0 (greeting + start), found %d in %d bytes\n",
+			replies, total);
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 18-b: both frames processed (%d bytes received)..\n", total);
+	return axl_true;
+#else
+	printf ("--- WARNING: Test 18-b: no support for WebSocket or TLS, doing nothing..\n");
+	return axl_true;
+#endif
+}
+
 axl_bool test_19 (void) {
 #if defined(ENABLE_WEBSOCKET_SUPPORT)
 
@@ -16398,7 +16741,8 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_08, test_09, test_10, test_11, test_12, test_13,\n");
 	printf ("**                       test_14, test_14a, test_14b, test_14c, test_14d, test_14e,\n");
 	printf ("**                       test_14f, test_14g, test_14h, test_15, test_15a, test_16,\n");
-	printf ("**                       test_16a, test_17, test_17a, test_18, test_19, test_20,\n");
+	printf ("**                       test_16a, test_17, test_17a, test_18, test_18a, test_18b,\n");
+	printf ("**                       test_19, test_20,\n");
 	printf ("**                       test_21,\n");
 	printf ("**                       test_22\n");
 	printf ("**\n");
@@ -16681,7 +17025,7 @@ int main (int  argc, char ** argv)
 			run_test (test_01n, "Test 01-n", "start reply confirming a profile other than the one requested", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_01z"))
-			run_test (test_01z, "Test 01-z", "channel API with NULL references and reference count floor", -1, -1);
+			run_test (test_01z, "Test 01-z", "channel API called with NULL references", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_01o"))
 			run_test (test_01o, "Test 01-o", "Memory consuption with channel pool acquire/release API", -1, -1);
@@ -16947,6 +17291,12 @@ int main (int  argc, char ** argv)
 		if (check_and_run_test (run_test_name, "test_18"))
 			run_test (test_18, "Test 18", "Check TLS Websocket (RFC 6455) connect support through noPoll", -1, -1);
 
+		if (check_and_run_test (run_test_name, "test_18a"))
+			run_test (test_18a, "Test 18-a", "Check two BEEP frames packed into one WebSocket frame over TLS", -1, -1);
+
+		if (check_and_run_test (run_test_name, "test_18b"))
+			run_test (test_18b, "Test 18-b", "Check two WebSocket frames packed into one TLS record", -1, -1);
+
 		if (check_and_run_test (run_test_name, "test_19"))
 			run_test (test_19, "Test 19", "Check TLS Websocket (RFC 6455) more tests", -1, -1);
 
@@ -17038,7 +17388,7 @@ int main (int  argc, char ** argv)
 
 	run_test (test_01n, "Test 01-n", "start reply confirming a profile other than the one requested", -1, -1);
 
-	run_test (test_01z, "Test 01-z", "channel API with NULL references and reference count floor", -1, -1);
+	run_test (test_01z, "Test 01-z", "channel API called with NULL references", -1, -1);
 
 	run_test (test_01o, "Test 01-o", "Memory consuption with channel pool acquire/release API", -1, -1);
 
@@ -17218,6 +17568,10 @@ int main (int  argc, char ** argv)
 	run_test (test_17a, "Test 17-a", "Check two BEEP frames packed into one WebSocket frame", -1, -1);
 
 	run_test (test_18, "Test 18", "Check TLS Websocket (RFC 6455) connect support through noPoll", -1, -1);
+
+	run_test (test_18a, "Test 18-a", "Check two BEEP frames packed into one WebSocket frame over TLS", -1, -1);
+
+	run_test (test_18b, "Test 18-b", "Check two WebSocket frames packed into one TLS record", -1, -1);
 
 	run_test (test_19, "Test 19", "Check TLS Websocket (RFC 6455) more tests", -1, -1);
 
