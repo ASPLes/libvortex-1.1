@@ -4004,6 +4004,10 @@ unsigned int      vortex_channel_get_next_seq_no (VortexChannel * channel)
 void              vortex_channel_set_next_seq_no (VortexChannel * channel, 
 						  unsigned int    next_seq_no)
 {
+	/* check reference */
+	if (channel == NULL)
+		return;
+
 	channel->last_seq_no = next_seq_no;
 	return;
 }
@@ -4604,6 +4608,10 @@ axl_bool      vortex_channel_update_incoming_buffer (VortexChannel * channel,
  */
 unsigned int  vortex_channel_get_max_seq_no_accepted (VortexChannel * channel)
 {
+	/* check reference */
+	if (channel == NULL)
+		return -1;
+
 	return (channel->consumed_seqno + channel->seq_no_window - 1);
 }
 
@@ -5147,14 +5155,26 @@ void               vortex_channel_unref2                           (VortexChanne
 	/* lock the channel */
 	vortex_mutex_lock (&channel->ref_mutex);
 
-	/* decrease the channel */
-	channel->ref_count--;
-
 #if defined(ENABLE_VORTEX_LOG)
 	ctx = vortex_channel_get_ctx (channel);
 #endif
 
-	vortex_log (VORTEX_LEVEL_DEBUG, "VortexChannel=%d (%p) unref called %s, ref count status after calling=%d", 
+	/* A release with nothing left to give back is a bug in the
+	 * caller. Report it and leave the count alone: taking it below
+	 * zero would make the check further down never match again,
+	 * turning a loud failure into a channel that is never released. */
+	if (channel->ref_count <= 0) {
+		vortex_log (VORTEX_LEVEL_CRITICAL,
+			    "VortexChannel=%d (%p) unref called %s with reference count already at %d, ignoring",
+			    channel->channel_num, channel, label, channel->ref_count);
+		vortex_mutex_unlock (&channel->ref_mutex);
+		return;
+	} /* end if */
+
+	/* decrease the channel */
+	channel->ref_count--;
+
+	vortex_log (VORTEX_LEVEL_DEBUG, "VortexChannel=%d (%p) unref called %s, ref count status after calling=%d",
 		    channel->channel_num, channel, label, channel->ref_count);
 
 	/* check reference counting */
@@ -5587,6 +5607,10 @@ axl_bool      __vortex_channel_block_until_replies_are_received (VortexChannel *
 	VortexCtx        * ctx    = vortex_channel_get_ctx (channel);
 	int                result = axl_true;
 
+	/* check reference */
+	if (channel == NULL)
+		return axl_false;
+
 	/* flag the channel to be in close situation */
 	channel->being_closed = axl_true;
 	vortex_mutex_lock (&channel->close_mutex);
@@ -5687,6 +5711,10 @@ axl_bool      vortex_channel_block_until_replies_are_sent (VortexChannel * chann
 {
 	VortexCtx     * ctx     = vortex_channel_get_ctx (channel);
 	int             result  = axl_true;
+
+	/* check reference */
+	if (channel == NULL)
+		return axl_false;
 
 	/* normalize the value received */
 	if (microseconds_to_wait < 0)
@@ -8140,6 +8168,10 @@ axl_bool vortex_channel_wait_reply_ref (WaitReplyData * wait_reply)
 {
 	axl_bool result;
 
+	/* check reference */
+	if (wait_reply == NULL)
+		return axl_false;
+
 	/* lock */
 	vortex_mutex_lock (&wait_reply->mutex);
 
@@ -8171,6 +8203,15 @@ void     vortex_channel_free_wait_reply (WaitReplyData * wait_reply)
 
 	/* lock */
 	vortex_mutex_lock (&wait_reply->mutex);
+
+	/* a release with nothing left to give back would take the count
+	 * below zero, and the check below would never match again: the
+	 * wait reply would then never be released. See the same guard at
+	 * vortex_channel_unref2 */
+	if (wait_reply->refcount <= 0) {
+		vortex_mutex_unlock (&wait_reply->mutex);
+		return;
+	} /* end if */
 
 	/* decrease ref count */
 	wait_reply->refcount--;
@@ -9455,6 +9496,10 @@ axl_bool            vortex_channel_check_incoming_seqno            (VortexChanne
 axl_bool            vortex_channel_is_stalled                      (VortexChannel  * channel)
 {
 	axl_bool result;
+
+	/* check reference */
+	if (channel == NULL)
+		return axl_false;
 
 	/* get consistent value */
 	vortex_mutex_lock (&channel->ref_mutex);

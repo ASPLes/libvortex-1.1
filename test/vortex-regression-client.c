@@ -3883,6 +3883,80 @@ axl_bool test_01n (void) {
 }
 
 /**
+ * @brief Checks the channel API answers a NULL reference instead of
+ * dereferencing it, the way the rest of the module already does, and that
+ * reference counts do not go below zero when released once too often.
+ */
+axl_bool test_01z (void) {
+
+	VortexConnection * conn;
+	VortexChannel    * channel;
+	int                count;
+
+	printf ("Test 01-z: calling the channel API with a NULL reference..\n");
+
+	if (vortex_channel_is_stalled (NULL)) {
+		printf ("ERROR: vortex_channel_is_stalled (NULL) reported a stalled channel\n");
+		return axl_false;
+	} /* end if */
+
+	if (vortex_channel_block_until_replies_are_sent (NULL, 1)) {
+		printf ("ERROR: vortex_channel_block_until_replies_are_sent (NULL) reported success\n");
+		return axl_false;
+	} /* end if */
+
+	if (vortex_channel_get_max_seq_no_accepted (NULL) != (unsigned int) -1) {
+		printf ("ERROR: vortex_channel_get_max_seq_no_accepted (NULL) did not report failure\n");
+		return axl_false;
+	} /* end if */
+
+	if (vortex_channel_wait_reply_ref (NULL)) {
+		printf ("ERROR: vortex_channel_wait_reply_ref (NULL) acquired a reference\n");
+		return axl_false;
+	} /* end if */
+
+	/* no return value to check: it must simply not crash */
+	vortex_channel_set_next_seq_no (NULL, 0);
+
+	printf ("Test 01-z: checking reference counts hold at zero..\n");
+
+	conn = connection_new ();
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: unable to create connection to check reference counting..\n");
+		vortex_connection_close (conn);
+		return axl_false;
+	} /* end if */
+
+	channel = vortex_channel_new (conn, 0, REGRESSION_URI,
+				      NULL, NULL, NULL, NULL, NULL, NULL);
+	if (channel == NULL) {
+		printf ("ERROR: unable to create channel to check reference counting..\n");
+		vortex_connection_close (conn);
+		return axl_false;
+	} /* end if */
+
+	/* take a reference of our own and release it twice: the second release
+	 * has nothing left to give back and must leave the count alone rather
+	 * than take it negative, which would make the channel unreleasable */
+	vortex_channel_ref2 (channel, "test_01z");
+	count = vortex_channel_ref_count (channel);
+
+	vortex_channel_unref2 (channel, "test_01z");
+	vortex_channel_unref2 (channel, "test_01z (one too many)");
+
+	if (vortex_channel_ref_count (channel) != (count - 1)) {
+		printf ("ERROR: releasing one reference too many left the count at %d, expected %d\n",
+			vortex_channel_ref_count (channel), count - 1);
+		vortex_connection_close (conn);
+		return axl_false;
+	} /* end if */
+
+	vortex_channel_close (channel, NULL);
+	vortex_connection_close (conn);
+	return axl_true;
+}
+
+/**
  * @brief Checks memory consuption for channel pool
  */
 axl_bool test_01o (void) {
@@ -10319,6 +10393,64 @@ void test_04_a_frame_received (VortexChannel    * channel,
 	return;
 }
 
+/** 
+ * @internal Reports whatever the channel still had to deliver after a NUL that
+ * arrived with fewer answers than expected.
+ *
+ * A short count at the NUL has two causes that look identical at that point,
+ * and telling them apart is the whole difficulty: either an answer was lost, or
+ * an answer is still on its way and the NUL overtook it. The second is possible
+ * because frames are delivered by independent thread pool tasks unless the
+ * channel is serialized with vortex_channel_set_serialize, which this test does
+ * not do.
+ *
+ * Draining the queue for a second answers it, and answers it the first time the
+ * failure appears. That matters: the failure this was written for shows up
+ * about once in two hundred and fifty runs, so comparing failure rates between
+ * builds is not a practical way to diagnose it, while one occurrence with this
+ * in place is conclusive.
+ */
+void test_04_a_report_late_frames (VortexAsyncQueue * queue)
+{
+	VortexFrame * frame;
+	int           late = 0;
+	const char  * type;
+
+	while (axl_true) {
+		/* one second is far longer than a delivery that is merely
+		 * late: anything still missing after it is missing */
+		frame = vortex_async_queue_timedpop (queue, 1000000);
+		if (frame == NULL || PTR_TO_INT (frame) == -4)
+			break;
+
+		switch (vortex_frame_get_type (frame)) {
+		case VORTEX_FRAME_TYPE_ANS:
+			type = "ANS";
+			break;
+		case VORTEX_FRAME_TYPE_NUL:
+			type = "NUL";
+			break;
+		default:
+			type = "other";
+			break;
+		} /* end switch */
+
+		late++;
+		printf ("Test 04-a:     late frame after the NUL: %s ansno=%d seqno=%u size=%d\n",
+			type, vortex_frame_get_ansno (frame), vortex_frame_get_seqno (frame),
+			vortex_frame_get_content_size (frame));
+		vortex_frame_unref (frame);
+	} /* end while */
+
+	if (late == 0) {
+		printf ("Test 04-a:     nothing arrived in the second after the NUL: the answer was lost, it was not overtaken\n");
+	} else {
+		printf ("Test 04-a:     %d frame(s) arrived after the NUL: delivery was reordered and nothing was lost\n", late);
+	} /* end if */
+
+	return;
+}
+
 axl_bool  test_04_a_common (int block_size, int num_blocks, int num_times) {
 
 	VortexConnection * connection;
@@ -10330,6 +10462,8 @@ axl_bool  test_04_a_common (int block_size, int num_blocks, int num_times) {
 	char             * message;
 	int                total_bytes = 0;
 	int                blocks_received;
+	int                expected_ansno;
+	int                first_gap;
 	
 #if defined(AXL_OS_UNIX)
 	struct timeval      start;
@@ -10381,8 +10515,13 @@ axl_bool  test_04_a_common (int block_size, int num_blocks, int num_times) {
 		axl_free (message);
 		
 		/* wait for all replies */
-		iterator    = 0;
-		total_bytes = 0;
+		iterator       = 0;
+		total_bytes    = 0;
+		/* answer numbers run from zero: tracking them says *which*
+		 * answer is missing if the count comes up short, which is what
+		 * tells a loss apart from a delivery that was overtaken */
+		expected_ansno = 0;
+		first_gap      = -1;
 		printf ("Test 04-a:     waiting replies\n");
 		while (axl_true) {
 			/* get the next message, blocking at this call. */
@@ -10405,6 +10544,16 @@ axl_bool  test_04_a_common (int block_size, int num_blocks, int num_times) {
 				if ((blocks_received - 1) != num_blocks) {
 					printf ("ERROR: Expected to find %d blocks but received %d..\n",
 						num_blocks, (blocks_received - 1));
+					if (first_gap >= 0) {
+						printf ("Test 04-a:     first answer number missing from the sequence: %d (of %d)\n",
+							first_gap, num_blocks);
+					} else {
+						printf ("Test 04-a:     the answers received are numbered without a gap, so what is missing is the last one (ansno %d)\n",
+							expected_ansno);
+					} /* end if */
+					/* say which of the two things happened
+					 * before giving up */
+					test_04_a_report_late_frames (queue);
 					return axl_false;
 				}
 
@@ -10439,6 +10588,11 @@ axl_bool  test_04_a_common (int block_size, int num_blocks, int num_times) {
 					iterator, block_size, vortex_frame_get_payload_size (frame));
 				return axl_false;
 			}
+
+			/* note the first answer number that never arrived */
+			if (first_gap == -1 && vortex_frame_get_ansno (frame) != expected_ansno)
+				first_gap = expected_ansno;
+			expected_ansno = vortex_frame_get_ansno (frame) + 1;
 			
 			/* deallocate the frame received */
 			vortex_frame_unref (frame);
@@ -11715,7 +11869,7 @@ axl_bool test_05f (void) {
 	printf ("Test 05-f: both frames processed (%d bytes received)..\n", total);
 	return axl_true;
 #else
-	printf ("Test 05-f: no TLS support in this build, doing nothing..\n");
+	printf ("--- WARNING: Test 05-f: no TLS support in this build, doing nothing..\n");
 	return axl_true;
 #endif
 }
@@ -14336,7 +14490,7 @@ axl_bool test_14f (void)
 
 	return axl_true;
 #else
-	printf ("Test 14-f: no SASL support, doing nothing..\n");
+	printf ("--- WARNING: Test 14-f: no SASL support, doing nothing..\n");
 	return axl_true;
 #endif /* ENABLE_SASL_SUPPORT */
 }
@@ -14437,7 +14591,7 @@ axl_bool test_14g (void)
 
 	return axl_true;
 #else 
-	printf ("Test 14-g: no support for TLS, doing nothing..\n");
+	printf ("--- WARNING: Test 14-g: no support for TLS, doing nothing..\n");
 	return axl_true;
 #endif /* ENABLE_TLS_SUPPORT */
 }
@@ -14595,7 +14749,7 @@ axl_bool test_14h (void)
 
 	return axl_true;
 #else 
-	printf ("Test 14-h: no support for TLS, doing nothing..\n");
+	printf ("--- WARNING: Test 14-h: no support for TLS, doing nothing..\n");
 	return axl_true;
 #endif /* ENABLE_TLS_SUPPORT */
 }
@@ -15310,7 +15464,7 @@ axl_bool test_17 (void) {
 
 	return axl_true;
 #else
-	printf ("Test 17: no support for WebSocket (noPoll support), doing nothing..\n");
+	printf ("--- WARNING: Test 17: no support for WebSocket (noPoll support), doing nothing..\n");
 	return axl_true;
 #endif	
 }
@@ -15439,7 +15593,7 @@ axl_bool test_17a (void) {
 	printf ("Test 17-a: both frames processed (%d bytes received)..\n", total);
 	return axl_true;
 #else
-	printf ("Test 17-a: no support for WebSocket (noPoll support), doing nothing..\n");
+	printf ("--- WARNING: Test 17-a: no support for WebSocket (noPoll support), doing nothing..\n");
 	return axl_true;
 #endif
 }
@@ -15479,7 +15633,7 @@ axl_bool test_18 (void) {
 
 	return axl_true;
 #else
-	printf ("Test 18: no support for TLS WebSocket (noPoll support), doing nothing..\n");
+	printf ("--- WARNING: Test 18: no support for TLS WebSocket (noPoll support), doing nothing..\n");
 	return axl_true;
 #endif	
 }
@@ -15568,7 +15722,7 @@ axl_bool test_19 (void) {
 
 	return axl_true;
 #else
-	printf ("Test 17: no support for WebSocket (noPoll support), doing nothing..\n");
+	printf ("--- WARNING: Test 19: no support for WebSocket (noPoll support), doing nothing..\n");
 	return axl_true;
 #endif	
 }
@@ -16228,7 +16382,7 @@ int main (int  argc, char ** argv)
 	printf ("**                       test_00c2, test_00d, test_00e, test_00f, test_00g, test_01,\n");
 	printf ("**                       test_01a, test_01b, test_01c, test_01d, test_01e, test_01e1,\n");
 	printf ("**                       test_01f, test_01g, test_01g1, test_01h, test_01i, test_01j,\n");
-	printf ("**                       test_01k, test_01l, test_01m, test_01n, test_01o, test_01p, test_01q, test_01r,\n");
+	printf ("**                       test_01k, test_01l, test_01m, test_01n, test_01o, test_01z, test_01p, test_01q, test_01r,\n");
 	printf ("**                       test_01s, test_01s1, test_01t, test_01u, test_01v, test_01w,\n");
 	printf ("**                       test_01y, test_01x, test_02, test_02a, test_02a1, test_02a2,\n");
 	printf ("**                       test_02a3, test_02a4, test_02b, test_02c, test_02d, test_02e,\n");
@@ -16525,6 +16679,9 @@ int main (int  argc, char ** argv)
 
 		if (check_and_run_test (run_test_name, "test_01n"))
 			run_test (test_01n, "Test 01-n", "start reply confirming a profile other than the one requested", -1, -1);
+
+		if (check_and_run_test (run_test_name, "test_01z"))
+			run_test (test_01z, "Test 01-z", "channel API with NULL references and reference count floor", -1, -1);
 
 		if (check_and_run_test (run_test_name, "test_01o"))
 			run_test (test_01o, "Test 01-o", "Memory consuption with channel pool acquire/release API", -1, -1);
@@ -16880,6 +17037,8 @@ int main (int  argc, char ** argv)
 	run_test (test_01m, "Test 01-m", "channel 0 management messages missing required attributes", -1, -1);
 
 	run_test (test_01n, "Test 01-n", "start reply confirming a profile other than the one requested", -1, -1);
+
+	run_test (test_01z, "Test 01-z", "channel API with NULL references and reference count floor", -1, -1);
 
 	run_test (test_01o, "Test 01-o", "Memory consuption with channel pool acquire/release API", -1, -1);
 
