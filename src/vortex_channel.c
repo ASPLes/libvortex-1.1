@@ -5159,13 +5159,16 @@ void               vortex_channel_unref2                           (VortexChanne
 	ctx = vortex_channel_get_ctx (channel);
 #endif
 
-	/* A release with nothing left to give back is a bug in the
-	 * caller. Report it and leave the count alone: taking it below
-	 * zero would make the check further down never match again,
-	 * turning a loud failure into a channel that is never released. */
+	/* Reaching zero releases the channel right below, so a count
+	 * already at zero here means this call is releasing a channel
+	 * that is gone: the caller unreferenced it once too often. That
+	 * read is already undefined, and this check cannot make it
+	 * defined. What it does buy, while the freed memory still holds
+	 * what it held, is a log naming the caller and no second call to
+	 * vortex_channel_free. */
 	if (channel->ref_count <= 0) {
 		vortex_log (VORTEX_LEVEL_CRITICAL,
-			    "VortexChannel=%d (%p) unref called %s with reference count already at %d, ignoring",
+			    "VortexChannel=%d (%p) unref called %s with reference count already at %d: the channel was released once too often",
 			    channel->channel_num, channel, label, channel->ref_count);
 		vortex_mutex_unlock (&channel->ref_mutex);
 		return;
@@ -8204,10 +8207,9 @@ void     vortex_channel_free_wait_reply (WaitReplyData * wait_reply)
 	/* lock */
 	vortex_mutex_lock (&wait_reply->mutex);
 
-	/* a release with nothing left to give back would take the count
-	 * below zero, and the check below would never match again: the
-	 * wait reply would then never be released. See the same guard at
-	 * vortex_channel_unref2 */
+	/* a count already at zero means this wait reply was released
+	 * once too often and is already gone. See the same check, and
+	 * what it can and cannot do, at vortex_channel_unref2 */
 	if (wait_reply->refcount <= 0) {
 		vortex_mutex_unlock (&wait_reply->mutex);
 		return;
