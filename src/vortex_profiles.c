@@ -1099,11 +1099,15 @@ axl_bool      vortex_profiles_invoke_frame_received (const char       * uri,
 		return axl_false;
 	}
 
-	/* update channel reference */
-	channel = vortex_connection_get_channel (connection, channel_num);
-	if (! vortex_channel_ref2 (channel, "first level handler")) {
-		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to acquire reference to channel (%p) over connection id=%d, skipping frame delivery",
-			    channel, vortex_connection_get_id (connection));
+	/* Update channel reference, acquired while the channel table is
+	 * still locked. Looking it up and referencing it afterwards left
+	 * a window: checking the result of vortex_channel_ref2 () does
+	 * not close it, because producing that result already required
+	 * locking the channel that another thread may have released */
+	channel = __vortex_connection_get_channel_and_ref (connection, channel_num, "first level handler");
+	if (channel == NULL) {
+		vortex_log (VORTEX_LEVEL_CRITICAL, "failed to acquire reference to channel=%d over connection id=%d, skipping frame delivery",
+			    channel_num, vortex_connection_get_id (connection));
 		/* release profile */
 		__vortex_profiles_unref (profile, "frame_received");
 		axl_free (data);

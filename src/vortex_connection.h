@@ -469,9 +469,13 @@ void                vortex_connection_remove_channel_pool    (VortexConnection  
 axl_bool            __vortex_connection_parse_greetings      (VortexConnection * connection, 
 							      VortexFrame * frame);
 
-void                __vortex_connection_check_and_notify     (VortexConnection * connection, 
-							      VortexChannel    * channel, 
+void                __vortex_connection_check_and_notify     (VortexConnection * connection,
+							      VortexChannel    * channel,
 							      axl_bool           is_added);
+
+VortexChannel     * __vortex_connection_get_channel_and_ref  (VortexConnection * connection,
+							      int                channel_num,
+							      const char       * label);
 
 int                 vortex_connection_get_mss                (VortexConnection * connection);
 

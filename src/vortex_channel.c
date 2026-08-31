@@ -7590,9 +7590,19 @@ void __vortex_channel_0_frame_received_close_msg (VortexChannel * channel0,
 		return;
 	}
 	
-	/* get channel to remove */
-	channel = vortex_connection_get_channel (connection, channel_num);
-	vortex_channel_ref2 (channel, "close msg");
+	/* Get channel to remove, acquiring the reference while the
+	 * channel table is still locked: looking it up and referencing
+	 * it afterwards leaves a window where the peer closing that same
+	 * channel releases the last reference in between */
+	channel = __vortex_connection_get_channel_and_ref (connection, channel_num, "close msg");
+	if (channel == NULL) {
+		vortex_log (VORTEX_LEVEL_WARNING, "received a request to close a channel=%d that went away while handling it",
+			    channel_num);
+		error_msg = vortex_frame_get_error_message ("554", "transaction failed: channel requested to close doesn't exists", NULL);
+		vortex_channel_send_err (channel0, error_msg, strlen (error_msg), vortex_frame_get_msgno (frame));
+		axl_free (error_msg);
+		return;
+	} /* end if */
 
 	/* check if the channel is in process of being closed */
 	vortex_mutex_lock (&channel->close_mutex);

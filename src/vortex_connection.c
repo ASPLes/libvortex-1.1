@@ -4282,7 +4282,60 @@ VortexChannel    * vortex_connection_get_channel          (VortexConnection * co
 	return channel;
 }
 
-/** 
+/**
+ * @internal Same as \ref vortex_connection_get_channel but acquiring a
+ * reference to the channel before the channel table is unlocked.
+ *
+ * \ref vortex_connection_get_channel returns a borrowed pointer: the
+ * table lock is released before returning, so between the lookup and
+ * the caller acquiring its own reference another thread closing that
+ * channel can drop the last one and release it. The caller is then
+ * referencing memory that is gone, and checking the result of \ref
+ * vortex_channel_ref does not help, because reaching that result
+ * already required locking the channel that is being released.
+ *
+ * Taking the reference while the table is still locked closes the
+ * window: releasing a channel requires removing it from this same
+ * table first, so as long as the channel is found here it still holds
+ * the reference the table itself owns.
+ *
+ * @param connection The connection where the channel is looked up.
+ *
+ * @param channel_num The channel number to look for.
+ *
+ * @param label Label reported to the reference counting log, as taken
+ * by \ref vortex_channel_ref2.
+ *
+ * @return The channel with one reference acquired on behalf of the
+ * caller, which must release it with \ref vortex_channel_unref2, or
+ * NULL if the channel is not there.
+ */
+VortexChannel    * __vortex_connection_get_channel_and_ref (VortexConnection * connection,
+							    int                channel_num,
+							    const char       * label)
+{
+	VortexChannel * channel;
+
+	/* check values received */
+	if (connection == NULL || ! connection->is_connected ||
+	    channel_num < 0   || connection->channels == NULL)
+		return NULL;
+
+	vortex_mutex_lock (&connection->channels->mutex);
+
+	channel = axl_hash_get (connection->channels->table, INT_TO_PTR (channel_num));
+	if (channel != NULL && ! vortex_channel_ref2 (channel, label)) {
+		/* cannot happen while the table holds its own reference,
+		 * but do not hand back a channel that is being released */
+		channel = NULL;
+	} /* end if */
+
+	vortex_mutex_unlock (&connection->channels->mutex);
+
+	return channel;
+}
+
+/**
  * @internal Function supporting vortex_connection_get_channel_by_uri.
  */
 axl_bool  __vortex_connection_get_by_uri_foreach (axlPointer key, axlPointer data, axlPointer user_data, axlPointer user_data2)
