@@ -987,8 +987,13 @@ axl_bool               vortex_tls_verify_cert                (VortexConnection  
 		return axl_false;
 	} /* end if */
 
-	/* get certificate announced common name */
+	/* get certificate announced common name: the name is copied
+	 * into peer_common_name, so the certificate reference returned
+	 * by SSL_get_peer_certificate () can be released right away.
+	 * That reference belongs to the caller and is not the one
+	 * SSL_free () releases */
 	X509_NAME_get_text_by_NID (X509_get_subject_name (peer), NID_commonName, peer_common_name, 512);
+	X509_free (peer);
 
 	if (! axl_cmp (peer_common_name, vortex_connection_get_server_name (connection))) {
 		vortex_log (VORTEX_LEVEL_DEBUG, "Certificate common name %s == serverName %s MISMATCH",
@@ -2549,7 +2554,8 @@ char             * vortex_tls_get_peer_ssl_digest        (VortexConnection   * c
 	if (ssl == NULL)
 		return NULL;
 
-	/* get remote peer */
+	/* get remote peer: the reference returned belongs to the caller
+	 * and must be released with X509_free () on every exit below */
 	peer_cert = SSL_get_peer_certificate (ssl);
 	if (peer_cert == NULL) {
 		return NULL;
@@ -2565,13 +2571,19 @@ char             * vortex_tls_get_peer_ssl_digest        (VortexConnection   * c
 		break;
 	case VORTEX_DIGEST_NUM:
 		/* do nothing */
+		X509_free (peer_cert);
 		return NULL;
 	}
-	
+
 	/* get the message digest and check */
 	if (! X509_digest (peer_cert, digest_method, message, &message_size)) {
+		X509_free (peer_cert);
 		return NULL;
-	} 
+	}
+
+	/* the digest is already copied into message, so the certificate
+	 * reference is no longer needed */
+	X509_free (peer_cert);
 
 	/* call base implementation */
 	return __vortex_tls_translateToOctal (message_size, message);
@@ -2637,10 +2649,14 @@ char* vortex_tls_get_ssl_digest (const char * path, VortexDigestMethod   method)
 	
 	SSL_CTX_use_certificate_file (sslctx, path,  SSL_FILETYPE_PEM);
 	ssl    = SSL_new (sslctx);
-	// Note: SSL_get_certificate() is a getter method that returns a borrowed 
-	// reference to a X509 structure allocated in SSL_new(). It has not to be 
-	// freed explicit using X509_free(), it will be freed in SSL_free().
-	crt    = SSL_get_certificate(ssl);	
+	/* Note: SSL_get_certificate () returns a borrowed reference to the
+	 * X509 structure allocated in SSL_new (). It must NOT be released
+	 * with X509_free (): SSL_free () does it.
+	 *
+	 * Do not confuse it with SSL_get_peer_certificate (), used elsewhere
+	 * in this module, which does increase the reference count and whose
+	 * result the caller must release. */
+	crt    = SSL_get_certificate(ssl);
 	
 	if (crt == NULL) {
 		SSL_free (ssl);
