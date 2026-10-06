@@ -121,6 +121,24 @@ axl_bool vortex_sequencer_add_channel (VortexCtx * ctx, VortexSequencerData * da
 
 		/* add channel */
 		axl_hash_insert_full (state->ready, data->channel, (axlDestroyFunc) __vortex_sequencer_channel_unref, INT_TO_PTR (1), NULL);
+
+		/* axl_hash_insert_full () reports nothing and takes no
+		 * ownership when it cannot store the item, which would
+		 * leave the reference acquired above never released and the
+		 * message queued on a channel the sequencer never visits */
+		if (axl_hash_get (state->ready, data->channel) == NULL) {
+			/* release the reference acquired above */
+			__vortex_sequencer_channel_unref (data->channel);
+
+			/* release data */
+			vortex_payload_feeder_unref (data->feeder);
+			axl_free (data->message);
+			axl_free (data);
+
+			vortex_log (VORTEX_LEVEL_CRITICAL, "Failed to queue channel into sequencer, unable to store it into the ready hash");
+			vortex_mutex_unlock (&state->mutex);
+			return axl_false;
+		} /* end if */
 	} /* end if */
 
 	/* queue message into the channel's pending structure */
@@ -874,6 +892,18 @@ void     vortex_sequencer_signal_update        (VortexChannel       * channel,
 
 			/* insert hash */
 			axl_hash_insert_full (state->ready, channel, (axlDestroyFunc) __vortex_sequencer_channel_unref, INT_TO_PTR (1), NULL);
+
+			/* the insert reports nothing and takes no
+			 * ownership on failure: release the reference
+			 * acquired above rather than losing it */
+			if (axl_hash_get (state->ready, channel) == NULL) {
+				__vortex_sequencer_channel_unref (channel);
+
+				vortex_log (VORTEX_LEVEL_CRITICAL, "unable to store channel %p into the sequencer ready hash, failed to signal sequencer for SEQ frame update",
+					    channel);
+				vortex_mutex_unlock (&state->mutex);
+				return;
+			} /* end if */
 		} /* end if */
 		/* signal */
 		vortex_cond_signal (&state->cond);
