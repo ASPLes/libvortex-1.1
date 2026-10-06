@@ -1547,6 +1547,20 @@ int  vortex_frame_get_header_data (VortexCtx * ctx, VortexConnection * connectio
 
 		frame->size       = get_int_value          (ctx, connection, beep_header + position, &position);
 		CHECK_INDEX_AND_RETURN (frame->size);
+
+		/* get_int_value () rejects non digits but never the range,
+		 * and truncating a value above INT_MAX to int is only caught
+		 * by accident when it lands on the -1 or -2 sentinels. A
+		 * negative window is carried as a huge unsigned into
+		 * vortex_channel_update_remote_incoming_buffer () and ends up
+		 * as a negative frame size at the sequencer */
+		if (frame->size < 0) {
+			__vortex_connection_shutdown_and_record_error (
+				connection, VortexProtocolError,
+				"received a SEQ frame announcing a window size out of range (%d), closing session",
+				frame->size);
+			return -1;
+		} /* end if */
 		break;
 	default:
 		/* where all cases matches: "%d %d %c %d %d\x0D\x0A"
