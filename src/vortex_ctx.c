@@ -812,6 +812,17 @@ void        vortex_ctx_free2 (VortexCtx * ctx, const char * who)
 
 	vortex_log (VORTEX_LEVEL_DEBUG, "about.to.free VortexCtx %p", ctx);
 
+	/* release the connection caches: vortex_connection_cleanup ()
+	 * already released and nullified them on a context that was
+	 * finished with vortex_exit_ctx (), but vortex_gethostbyname () and
+	 * the greetings cache create them on demand, so a context used
+	 * without vortex_init_ctx () reaches this point with them set */
+	axl_hash_free (ctx->connection_hostname);
+	ctx->connection_hostname = NULL;
+
+	axl_hash_free (ctx->connection_xml_cache);
+	ctx->connection_xml_cache = NULL;
+
 	/* free the context */
 	axl_free (ctx);
 	

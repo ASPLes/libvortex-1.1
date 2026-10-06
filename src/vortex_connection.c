@@ -660,12 +660,19 @@ VortexConnectionGreetingsCache * __vortex_connection_create_greetings_cache (Vor
 	axlNode                        * node;
 	axlNode                        * child;
 	char                           * uri;
+	char                           * key;
 
 	/* Get the root element (greetings element) */
 	node = axl_doc_get_root (doc);
 
 	cache           = axl_new (VortexConnectionGreetingsCache, 1);
-	VORTEX_CHECK_REF (cache, NULL);
+	if (cache == NULL) {
+		/* the caller delegates the document to this function, so
+		 * it has to be released here too when the cache cannot be
+		 * created */
+		axl_doc_free (doc);
+		return NULL;
+	} /* end if */
 
 	cache->features = axl_node_get_attribute_value_copy (node, "features");
 	cache->localize = axl_node_get_attribute_value_copy (node, "localize");
@@ -688,12 +695,30 @@ VortexConnectionGreetingsCache * __vortex_connection_create_greetings_cache (Vor
 	/* free the document */
 	axl_doc_free (doc);
 
+	/* create the cache on demand: like ctx->connection_hostname, this
+	 * hash is created by vortex_connection_init () and left at NULL by
+	 * vortex_connection_cleanup () */
+	if (ctx->connection_xml_cache == NULL)
+		ctx->connection_xml_cache = axl_hash_new (axl_hash_string, axl_hash_equal_string);
+
 	/* store cache settings */
-	axl_hash_insert_full (ctx->connection_xml_cache, 
+	key = axl_strdup (index);
+	axl_hash_insert_full (ctx->connection_xml_cache,
 			      /* store the key and no destroy function */
-			      (axlPointer) axl_strdup (index), axl_free, 
+			      (axlPointer) key, axl_free,
 			      /* store the doc and its destroy function */
 			      cache, (axlDestroyFunc) __vortex_connection_free_greetings_cache);
+
+	/* same contract as vortex_gethostbyname (): axl_hash_insert_full ()
+	 * reports nothing and takes no ownership when it cannot store the
+	 * item. The caller publishes pointers into this cache on the
+	 * connection (features, localize and the profiles list), so an
+	 * entry nobody owns cannot be handed out */
+	if (axl_hash_get (ctx->connection_xml_cache, (axlPointer) key) != cache) {
+		axl_free (key);
+		__vortex_connection_free_greetings_cache (cache);
+		return NULL;
+	} /* end if */
 
 	/* return the cache settings */
 	return cache;
@@ -782,6 +807,21 @@ axl_bool      __vortex_connection_parse_greetings (VortexConnection * connection
 			 * following function already free the axlDoc
 			 * reference) */
 			cache = __vortex_connection_create_greetings_cache (ctx, vortex_frame_get_payload (frame), doc);
+
+			/* the function above owns the document in every
+			 * exit, so there is nothing to release here: but
+			 * the connection is about to publish pointers
+			 * into the cache, so it cannot continue without
+			 * it */
+			if (cache == NULL) {
+				/* unlock the cache */
+				vortex_mutex_unlock (&ctx->connection_xml_cache_mutex);
+
+				__vortex_connection_shutdown_and_record_error (
+					connection, VortexError,
+					"unable to store greetings cache, memory failure found");
+				return axl_false;
+			} /* end if */
 		} /* end if */
 
 		/* unlock the cache */
@@ -1373,6 +1413,15 @@ struct addrinfo * vortex_gethostbyname (VortexCtx           * ctx,
 	/* lock and resolv */
 	vortex_mutex_lock (&ctx->connection_hostname_mutex);
 
+	/* the cache is created by vortex_connection_init () and released,
+	 * and set to NULL, by vortex_connection_cleanup (). Create it on
+	 * demand so a context used without vortex_init_ctx (), or one
+	 * already shut down, still gets a cache that owns what is stored
+	 * into it: see the insert check below, and note that without a
+	 * cache every single resolution hits getaddrinfo () */
+	if (ctx->connection_hostname == NULL)
+		ctx->connection_hostname  = axl_hash_new (axl_hash_string, axl_hash_equal_string);
+
 	/* resolv using the hash */
 	key = axl_strdup_printf ("%s:%s", hostname, port);
 	res = axl_hash_get (ctx->connection_hostname, (axlPointer) key);
@@ -1413,20 +1462,36 @@ struct addrinfo * vortex_gethostbyname (VortexCtx           * ctx,
 	}
 
 	/* now store the result */
-	axl_hash_insert_full (ctx->connection_hostname, 
+	axl_hash_insert_full (ctx->connection_hostname,
 			      /* the hostname */
 			      key, axl_free,
 			      /* the address */
 			      res, (axlDestroyFunc) __free_addr_info);
 
+	/* axl_hash_insert_full () has no return value and takes no
+	 * ownership when it cannot store the item (memory failure), so
+	 * looking the key up again is the only way to know what it did.
+	 * Without this check both key and res are leaked and the reference
+	 * returned to the caller is owned by nobody */
+	if (axl_hash_get (ctx->connection_hostname, (axlPointer) key) != res) {
+		axl_free (key);
+		freeaddrinfo (res);
+
+		vortex_mutex_unlock (&ctx->connection_hostname_mutex);
+		vortex_log (VORTEX_LEVEL_CRITICAL, "unable to store (%s:%s) resolution into the hostname cache, failing resolution",
+			    hostname, port);
+		return NULL;
+	} /* end if */
+
 	/* unlock and return the result */
 	vortex_mutex_unlock (&ctx->connection_hostname_mutex);
 
-	/* no need to release key here: this will be done once
-	 * ctx->connection_hostname hash is fihished */
+	/* no need to release key here: it is owned by the
+	 * ctx->connection_hostname hash and released once that hash is
+	 * finished, and so is the addrinfo result returned */
 
 	return res;
-	
+
 }
 
 /** 
