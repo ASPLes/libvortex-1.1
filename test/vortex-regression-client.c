@@ -3667,7 +3667,7 @@ int test_01m_count_frames (const char * buffer)
  * channel 0 the sequence counter advances by payload octets only, so the
  * management message starts at the greeting's payload size.
  */
-axl_bool test_01m_exchange (const char * label, const char * management_body)
+axl_bool test_01m_exchange (const char * label, const char * management_body, axl_bool expect_error)
 {
 	VORTEX_SOCKET   session;
 	axlError      * error    = NULL;
@@ -3749,7 +3749,22 @@ axl_bool test_01m_exchange (const char * label, const char * management_body)
 		return axl_false;
 	} /* end if */
 
-	printf ("Test 01-m:   ..answered as expected\n");
+	/* Counting frames says the peer answered; it does not say what it
+	 * answered. A message the DTD makes invalid must come back refused,
+	 * not accepted, so look at the content too */
+	if (expect_error && strstr (reply, "<error") == NULL) {
+		printf ("ERROR: %s was answered but not refused: no <error> in the reply\n", label);
+		printf ("ERROR:   received: %s\n", reply);
+		return axl_false;
+	} /* end if */
+
+	if (! expect_error && strstr (reply, "<error") != NULL) {
+		printf ("ERROR: %s was refused, and it should have been accepted\n", label);
+		printf ("ERROR:   received: %s\n", reply);
+		return axl_false;
+	} /* end if */
+
+	printf ("Test 01-m:   ..%s as expected\n", expect_error ? "refused" : "accepted");
 	return axl_true;
 }
 
@@ -3764,7 +3779,8 @@ axl_bool test_01m (void) {
 	 * below is the defect under test and not a broken exchange here */
 	if (! test_01m_exchange ("a well formed <start> (control)",
 				 "Content-Type: application/beep+xml\r\n\r\n<start number='1'>\r\n"
-				 "<profile uri='" REGRESSION_URI "' />\r\n</start>\r\n")) {
+				 "<profile uri='" REGRESSION_URI "' />\r\n</start>\r\n",
+				 axl_false)) {
 		printf ("ERROR: the control exchange failed, so this test cannot tell anything about the rest\n");
 		return axl_false;
 	} /* end if */
@@ -3772,22 +3788,40 @@ axl_bool test_01m (void) {
 	/* <start> declares number as #REQUIRED and its content model is (profile)+,
 	 * and <profile> declares uri as #REQUIRED */
 	if (! test_01m_exchange ("<start /> with no number attribute",
-				 "Content-Type: application/beep+xml\r\n\r\n<start />\r\n"))
+				 "Content-Type: application/beep+xml\r\n\r\n<start />\r\n",
+				 axl_true))
 		return axl_false;
 
 	if (! test_01m_exchange ("<start> with no profile element",
-				 "Content-Type: application/beep+xml\r\n\r\n<start number='9' />\r\n"))
+				 "Content-Type: application/beep+xml\r\n\r\n<start number='9' />\r\n",
+				 axl_true))
 		return axl_false;
 
 	if (! test_01m_exchange ("<profile> with no uri attribute",
 				 "Content-Type: application/beep+xml\r\n\r\n<start number='9'>\r\n"
-				 "<profile />\r\n</start>\r\n"))
+				 "<profile />\r\n</start>\r\n",
+				 axl_true))
+		return axl_false;
+
+	/* RFC3080 numbers channels from 1, but the DTD types number as CDATA, so
+	 * anything the peer writes there reaches atoi () */
+	if (! test_01m_exchange ("<start> asking for a negative channel number",
+				 "Content-Type: application/beep+xml\r\n\r\n<start number='-5'>\r\n"
+				 "<profile uri='" REGRESSION_URI "' />\r\n</start>\r\n",
+				 axl_true))
+		return axl_false;
+
+	if (! test_01m_exchange ("<start> asking for channel 0",
+				 "Content-Type: application/beep+xml\r\n\r\n<start number='0'>\r\n"
+				 "<profile uri='" REGRESSION_URI "' />\r\n</start>\r\n",
+				 axl_true))
 		return axl_false;
 
 	/* <close> declares number with a default of "0", so omitting it is legal and
 	 * must be read as channel 0 rather than crashing */
 	if (! test_01m_exchange ("<close /> relying on the number default",
-				 "Content-Type: application/beep+xml\r\n\r\n<close code='200' />\r\n"))
+				 "Content-Type: application/beep+xml\r\n\r\n<close code='200' />\r\n",
+				 axl_false))
 		return axl_false;
 
 	return axl_true;

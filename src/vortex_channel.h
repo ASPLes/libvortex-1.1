@@ -229,11 +229,6 @@ axl_bool           vortex_channel_is_running_profile           (VortexChannel * 
 
 VortexConnection * vortex_channel_get_connection               (VortexChannel * channel);
 
-axl_bool           vortex_channel_queue_frame                     (VortexChannel * channel, 
-								   VortexWriterData * data);
-
-VortexWriterData * vortex_channel_queue_next_msg                  (VortexChannel * channel);
-
 void               vortex_channel_set_serialize                   (VortexChannel * channel,
 								   axl_bool        serialize);
 
@@ -497,12 +492,6 @@ axl_bool           vortex_channel_0_handle_start_msg_reply         (VortexCtx   
 								    VortexEncoding     encoding,
 								    const char       * serverName,
 								    VortexFrame      * frame);
-
-void              __vortex_channel_set_state                       (VortexChannel    * channel,
-					                            int                next_reply_no,
-								    int                last_seq_no,
-								    int                last_seq_no_expected,
-								    int                last_reply_received);
 
 #endif
 
