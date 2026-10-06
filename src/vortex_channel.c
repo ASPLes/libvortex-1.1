@@ -868,8 +868,22 @@ axl_bool  __vortex_channel_validate_start_reply (VortexFrame * frame, char  * _p
 					      /* the value and its destroy function */
 					      cache, (axlDestroyFunc) __vortex_channel_start_reply_free);
 
-			/* the hash owns both from this point on */
-			cache_key = NULL;
+			/* axl_hash_insert_full () reports nothing and takes
+			 * no ownership when it cannot store the item, so ask
+			 * it what it did: otherwise the key, the cache and
+			 * the frame inside it are leaked */
+			if (axl_hash_get (ctx->channel_start_reply_cache, (axlPointer) cache_key) != cache) {
+				/* drop the cache but leave the frame to the
+				 * unref below and cache_key to the
+				 * axl_free () below, which is what a NULL
+				 * cache means to both */
+				axl_free (cache->profile_content);
+				axl_free (cache);
+				cache = NULL;
+			} else {
+				/* the hash owns both from this point on */
+				cache_key = NULL;
+			} /* end if */
 		} /* end if */
 
 		vortex_mutex_unlock (&ctx->channel_start_reply_cache_mutex);
@@ -2186,9 +2200,12 @@ VortexFrame      * vortex_channel_build_single_pending_frame   (VortexChannel * 
 
 	/* now we have the size to build */
 	payload = axl_new (unsigned char, size + 1);
-	/* check alloc operation */
-	if (payload == NULL)
+	/* check alloc operation: this is the only exit that does not
+	 * reach the axl_list_cursor_free () below, so release it here */
+	if (payload == NULL) {
+		axl_list_cursor_free (cursor);
 		return NULL;
+	} /* end if */
 	size    = 0;
 
 	/* reset to the first position of the cursor */
@@ -3368,12 +3385,30 @@ axl_bool  __vortex_channel_common_rpy (VortexChannel       * channel,
 		} /* end if */
 
 		/* store */
-		axl_hash_insert_full (channel->stored_replies, 
+		axl_hash_insert_full (channel->stored_replies,
 				      /* store the reply (key and destroy function) */
-				      INT_TO_PTR (msg_no_rpy), 
-				      NULL, 
+				      INT_TO_PTR (msg_no_rpy),
+				      NULL,
 				      /* data value (and the destroy function) */
 				      data, (axlPointer) __vortex_channel_free_sequencer_data);
+
+		/* axl_hash_insert_full () reports nothing and takes no
+		 * ownership when it cannot store the item: without this
+		 * check the reply is leaked and the caller is told it was
+		 * stored for a later deliver that never happens */
+		if (axl_hash_get (channel->stored_replies, INT_TO_PTR (msg_no_rpy)) != data) {
+			vortex_log (VORTEX_LEVEL_CRITICAL,
+				    "unable to store reply for message %d on channel=%d for later deliver, dropping it",
+				    msg_no_rpy, channel->channel_num);
+			__vortex_channel_free_sequencer_data (data);
+
+			vortex_mutex_unlock (&channel->send_mutex);
+
+			/* release channel */
+			vortex_channel_unref2 (channel, "send-rpy");
+
+			return axl_false;
+		} /* end if */
 
 		/* unlock */
 		vortex_mutex_unlock (&channel->send_mutex);
@@ -6475,9 +6510,22 @@ axl_bool  vortex_channel_check_serialize (VortexCtx        * ctx,
 			    channel->channel_num, frame,  vortex_frame_get_seqno (frame), channel->serialize_next_seqno, axl_hash_items (channel->serialize_hash));
 		axl_hash_insert_full (channel->serialize_hash,
 				      /* key */
-				      INT_TO_PTR (vortex_frame_get_seqno (frame)), NULL, 
+				      INT_TO_PTR (vortex_frame_get_seqno (frame)), NULL,
 				      /* value */
 				      frame, (axlDestroyFunc) vortex_frame_unref);
+
+		/* axl_hash_insert_full () reports nothing and takes no
+		 * ownership when it cannot store the item, so reporting the
+		 * frame as stored would lose it and leak its reference.
+		 * Returning axl_false hands it back to the caller, which
+		 * delivers it now: out of order, but not lost */
+		if (axl_hash_get (channel->serialize_hash, INT_TO_PTR (vortex_frame_get_seqno (frame))) != frame) {
+			vortex_log (VORTEX_LEVEL_CRITICAL,
+				    "unable to store frame %p with seqno %u on channel %d for ordered deliver, delivering it out of order",
+				    frame, vortex_frame_get_seqno (frame), channel->channel_num);
+			vortex_mutex_unlock (&channel->serialize_mutex);
+			return axl_false;
+		} /* end if */
 
 		/* unlock and retun frame stored */
 		vortex_mutex_unlock (&channel->serialize_mutex);
@@ -6750,7 +6798,7 @@ axl_bool      vortex_channel_invoke_received_handler (VortexConnection * connect
 	}
 
 	/* prepare data to be passed in to thread */
-	data              = malloc (sizeof (ReceivedInvokeData));
+	data              = axl_new (ReceivedInvokeData, 1);
 	if (data == NULL) {
 		vortex_log (VORTEX_LEVEL_CRITICAL, "Allocation failed, unable to deliver frame");
 		/* do not dealloc frame: this is done by the caller */
@@ -7362,6 +7410,25 @@ void __vortex_channel_0_frame_received_start_msg (VortexChannel * channel0, Vort
 		    vortex_connection_get_server_name (connection) ? " already conf" : "",
 		    (profile_content != NULL) ? profile_content : "",
 		    (encoding == EncodingNone) ? "none" : "base64");
+
+	/* RFC3080 numbers channels from 1: channel 0 always exists and
+	 * cannot be started, and the attribute is CDATA in the DTD, so
+	 * atoi () above accepts anything the peer wrote there. The other
+	 * entry point to the same handling, vortex_channel_0_handle_start_msg_reply,
+	 * already refuses these */
+	if (channel_num <= 0) {
+		vortex_log (VORTEX_LEVEL_WARNING, "received a start request for channel=%d, which is not a valid channel number",
+			    channel_num);
+		error_msg = vortex_frame_get_error_message ("501", "syntax error in parameters: requested channel number is not valid", NULL);
+		vortex_channel_send_err (channel0, error_msg, strlen (error_msg), vortex_frame_get_msgno (frame));
+
+		/* deallocate unused memory */
+		vortex_support_free (4, error_msg,    axl_free,
+				     profile,         axl_free,
+				     serverName,      axl_free,
+				     profile_content, axl_free);
+		return;
+	} /* end if */
 
 	/* check and fix serverName requests with value already
 	 * configured */
@@ -9539,25 +9606,5 @@ void               __vortex_channel_nullify_conn                  (VortexChannel
 	}
 	return;
 }
-
-/** 
- * @internal Function used to modify channel status artificially.
- */
-void              __vortex_channel_set_state (VortexChannel * channel,
-					      int             next_reply_no,
-					      int             last_seq_no,
-					      int             last_seq_no_expected,
-					      int             last_reply_received)
-{
-/* 	vortex_mutex_lock (&channel->incoming_msg_mutex);
-	axl_list_append (channel->incoming_msg, INT_TO_PTR (next_reply_no));
-	vortex_mutex_unlock (&channel->incoming_msg_mutex); */
-
-	/* update seq no */
-	channel->last_seq_no          = last_seq_no;
-	channel->last_seq_no_expected = last_seq_no_expected;
-	return;
-}
-					      
 
 /* @} */
