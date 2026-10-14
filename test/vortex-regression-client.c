@@ -5679,7 +5679,7 @@ axl_bool  test_02a3 (void) {
 	VortexConnection * connection;
 
 	/* creates a new connection against localhost:44000 */
-	printf ("Test 02-a3: creating IPv6 connection against ::1 . 44016\n");
+	printf ("Test 02-a3: creating IPv6 connection against ::1 . %s\n", regression_port (REGRESSION_PORT_IPV6));
 	connection = vortex_connection_new (ctx , "::1", regression_port (REGRESSION_PORT_IPV6), NULL, NULL);
 	if (!vortex_connection_is_ok (connection, axl_false)) {
 		printf ("ERROR: failed to create IPV6 connection..\n");
@@ -5719,7 +5719,7 @@ axl_bool  test_02a4 (void) {
 	VortexConnection * connection;
 
 	/* creates a new connection against localhost:44000 */
-	printf ("Test 02-a4: creating IPv6 connection against ::1 . 44016\n");
+	printf ("Test 02-a4: creating IPv6 connection against ::1 . %s\n", regression_port (REGRESSION_PORT_IPV6));
 	connection = vortex_connection_new6 (ctx , "::1", regression_port (REGRESSION_PORT_IPV6), NULL, NULL);
 	if (!vortex_connection_is_ok (connection, axl_false)) {
 		printf ("ERROR: failed to create IPV6 connection..\n");
@@ -5745,7 +5745,8 @@ axl_bool  test_02a4 (void) {
 	} /* end if */
 
 	/* creates a new connection against localhost:44000 */
-	printf ("Test 02-a4: creating IPv6 connection against 127.0.0.1 : 44016 (it should fail)\n");
+	printf ("Test 02-a4: creating IPv6 connection against 127.0.0.1 : %s (it should fail)\n",
+		regression_port (REGRESSION_PORT_IPV6));
 	connection = vortex_connection_new6 (ctx , "127.0.0.1", regression_port (REGRESSION_PORT_IPV6), NULL, NULL);
 	if (vortex_connection_is_ok (connection, axl_false)) {
 		printf ("ERROR: it worked but it shouldn't! be possible to create a IPv6 connection with 127.0.0.1..\n");
@@ -15361,7 +15362,8 @@ axl_bool test_17 (void) {
 	setup = vortex_websocket_setup_new (ctx);
 
 	/* create context */
-	printf ("Test 17: creating websocket connection over BEEP %s:44013..\n", listener_host);
+	printf ("Test 17: creating websocket connection over BEEP %s:%s..\n", listener_host,
+		regression_port (REGRESSION_PORT_WEBSOCKET));
 	conn = vortex_websocket_connection_new (listener_host, regression_port (REGRESSION_PORT_WEBSOCKET), setup, NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("ERROR: failed to create BEEP session over WebSocket connection...\n");
@@ -15604,7 +15606,8 @@ axl_bool test_18 (void) {
 	vortex_websocket_setup_conf (setup, VORTEX_WEBSOCKET_CONF_ITEM_ENABLE_TLS, INT_TO_PTR (axl_true));
 
 	/* create context */
-	printf ("Test 18: creating websocket connection over BEEP %s:44014..\n", listener_host);
+	printf ("Test 18: creating websocket connection over BEEP %s:%s..\n", listener_host,
+		regression_port (REGRESSION_PORT_WEBSOCKET_TLS));
 	conn = vortex_websocket_connection_new (listener_host, regression_port (REGRESSION_PORT_WEBSOCKET_TLS), setup, NULL, NULL);
 	if (! vortex_connection_is_ok (conn, axl_false)) {
 		printf ("ERROR: failed to create BEEP session over WebSocket connection...\n");
@@ -16698,6 +16701,42 @@ axl_bool check_and_run_test (const char * test_list, const char * test_name)
 	return axl_cmp (test_list, test_name);
 }
 
+/**
+ * @internal Checks the listener is reachable before running anything.
+ *
+ * test_00c1 is the first test of the battery that opens a connection: test_00,
+ * test_00-1, test_00a, test_00b and test_00c are all local. That makes an
+ * absent listener surface six tests in, and it surfaces under the name
+ * "Thread pool automatic resize [ FAILED ]", which points at the thread pool
+ * and sends the reader looking for a regression that is not there. Checking
+ * here makes the failure name itself.
+ *
+ * @return axl_true if a BEEP session could be established with the listener.
+ */
+axl_bool test_listener_is_reachable (void)
+{
+	VortexConnection * conn;
+
+	conn = vortex_connection_new (ctx, listener_host, LISTENER_PORT, NULL, NULL);
+	if (! vortex_connection_is_ok (conn, axl_false)) {
+		printf ("ERROR: no listener reachable at %s:%s\n", listener_host, LISTENER_PORT);
+		printf ("ERROR:   start it with:  ./vortex-regression-listener");
+		if (regression_port_offset () > 0)
+			printf (" --offset-port=%d", regression_port_offset ());
+		printf ("\n");
+		printf ("ERROR:   note the listener must be given the same --offset-port as this client,\n");
+		printf ("ERROR:   and that it is terminated by a signal, so a Ctrl-C or a closed terminal\n");
+		printf ("ERROR:   leaves nothing listening. A listener that crashed instead stays alive\n");
+		printf ("ERROR:   with the port still bound, printing a 'Received a signal' banner.\n");
+
+		vortex_connection_close (conn);
+		return axl_false;
+	} /* end if */
+
+	vortex_connection_close (conn);
+	return axl_true;
+}
+
 int main (int  argc, char ** argv)
 {
 	int    iterator;
@@ -16830,7 +16869,7 @@ int main (int  argc, char ** argv)
 		skip_http_connect   = axl_true;
 		iterator            = 1;
 		argc--;
-		printf ("INFO: disabling skip-http-connect\n");
+		printf ("INFO: skipping HTTP CONNECT tests (test_16, test_16a): no local HTTP proxy required\n");
 		while (iterator <= argc) {
 			argv[iterator] = argv[iterator+1];
 			iterator++;
@@ -16970,6 +17009,21 @@ int main (int  argc, char ** argv)
 
 	/* change to select if it is not the default */
 	vortex_io_waiting_use (ctx, VORTEX_IO_WAIT_SELECT);
+
+	/* check the listener answers before running anything. A full battery
+	 * cannot do anything useful without it, so that case stops here. With
+	 * --run-test the check only warns: test_00, test_00-1, test_00a,
+	 * test_00b and test_00c are local and must stay runnable on their own,
+	 * which is exactly what someone debugging the thread pool needs */
+	if (! test_listener_is_reachable ()) {
+		if (! run_test_name) {
+			vortex_exit_ctx (ctx, axl_true);
+			return -1;
+		} /* end if */
+
+		printf ("INFO: continuing anyway because --run-test was given: only tests that do not\n");
+		printf ("INFO:   reach the listener can pass from this point on\n");
+	} /* end if */
 
 	if (run_test_name) {
 		printf ("INFO: Checking to run test: %s..\n", run_test_name);

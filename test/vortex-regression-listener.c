@@ -1922,7 +1922,8 @@ int main (int  argc, char ** argv)
 	/* create a vortex server */
 	listener = vortex_listener_new (ctx, "0.0.0.0", regression_port (REGRESSION_PORT_LISTENER), NULL, NULL);
 	if (! vortex_connection_is_ok (listener, axl_false)) {
-		printf ("ERROR: failed to start listener at: 44010, error found (code: %d): %s\n",
+		printf ("ERROR: failed to start listener at: %s, error found (code: %d): %s\n",
+			regression_port (REGRESSION_PORT_LISTENER),
 			vortex_connection_get_status (listener),
 			vortex_connection_get_message (listener));
 		return -1;
@@ -1932,7 +1933,8 @@ int main (int  argc, char ** argv)
 	 * support */
 	listener = vortex_listener_new (ctx, "0.0.0.0", regression_port (REGRESSION_PORT_TUNNEL_PROXY), NULL, NULL);
 	if (! vortex_connection_is_ok (listener, axl_false)) {
-		printf ("ERROR: failed to start listener at: 44110, error found (code: %d): %s\n",
+		printf ("ERROR: failed to start listener at: %s, error found (code: %d): %s\n",
+			regression_port (REGRESSION_PORT_TUNNEL_PROXY),
 			vortex_connection_get_status (listener),
 			vortex_connection_get_message (listener));
 		return -1;
@@ -1942,7 +1944,8 @@ int main (int  argc, char ** argv)
 	 * request */
 	listener = vortex_listener_new (ctx, "0.0.0.0", regression_port (REGRESSION_PORT_TLS), NULL, NULL);
 	if (! vortex_connection_is_ok (listener, axl_false)) {
-		printf ("ERROR: failed to start listener at: 2443, error found (code: %d): %s\n",
+		printf ("ERROR: failed to start listener at: %s, error found (code: %d): %s\n",
+			regression_port (REGRESSION_PORT_TLS),
 			vortex_connection_get_status (listener),
 			vortex_connection_get_message (listener));
 		return -1;
@@ -1963,7 +1966,8 @@ int main (int  argc, char ** argv)
 
 	listener = vortex_listener_new (ctx2, "0.0.0.0", regression_port (REGRESSION_PORT_UNIFIED_SASL), NULL, NULL);
 	if (! vortex_connection_is_ok (listener, axl_false)) {
-		printf ("ERROR: failed to start listener at: 44011, error found (code: %d): %s\n",
+		printf ("ERROR: failed to start listener at: %s, error found (code: %d): %s\n",
+			regression_port (REGRESSION_PORT_UNIFIED_SASL),
 			vortex_connection_get_status (listener),
 			vortex_connection_get_message (listener));
 		return -1;
@@ -2049,7 +2053,8 @@ int main (int  argc, char ** argv)
 	 * enabling port sharing on it  */
 	listener = vortex_listener_new (ctx, "0.0.0.0", regression_port (REGRESSION_PORT_SHARING), NULL, NULL);
 	if (! vortex_connection_is_ok (listener, axl_false)) {
-		printf ("ERROR: failed to start listener at: 44015, error found (code: %d): %s\n",
+		printf ("ERROR: failed to start listener at: %s, error found (code: %d): %s\n",
+			regression_port (REGRESSION_PORT_SHARING),
 			vortex_connection_get_status (listener),
 			vortex_connection_get_message (listener));
 		return -1;
@@ -2071,7 +2076,8 @@ int main (int  argc, char ** argv)
 	/* IPv6 support */
 	listener = vortex_listener_new6 (ctx, "::1", regression_port (REGRESSION_PORT_IPV6), NULL, NULL);
 	if (! vortex_connection_is_ok (listener, axl_false)) {
-		printf ("ERROR: failed to start IPv6 listener at: 44016, error found (code: %d): %s\n",
+		printf ("ERROR: failed to start IPv6 listener at: %s, error found (code: %d): %s\n",
+			regression_port (REGRESSION_PORT_IPV6),
 			vortex_connection_get_status (listener),
 			vortex_connection_get_message (listener));
 		return -1;

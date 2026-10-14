@@ -6479,7 +6479,11 @@ axl_bool  vortex_channel_check_serialize_pending (VortexCtx          * ctx,
  * 
  * @return axl_true if the function is signaling that the frame was stored
  * for later delivery, ortherwise axl_false is returned and delivery
- * continue.
+ * continue. Note axl_true also covers the case where the frame could not
+ * be stored (memory failure): the frame is released and the session is
+ * closed, because neither delivering it out of order nor discarding it
+ * silently is acceptable, but in both cases the caller must not deliver
+ * the frame nor release it.
  */
 axl_bool  vortex_channel_check_serialize (VortexCtx        * ctx,
 					  VortexConnection * connection, 
@@ -6516,15 +6520,35 @@ axl_bool  vortex_channel_check_serialize (VortexCtx        * ctx,
 
 		/* axl_hash_insert_full () reports nothing and takes no
 		 * ownership when it cannot store the item, so reporting the
-		 * frame as stored would lose it and leak its reference.
-		 * Returning axl_false hands it back to the caller, which
-		 * delivers it now: out of order, but not lost */
+		 * frame as stored would lose it and leak its reference */
 		if (axl_hash_get (channel->serialize_hash, INT_TO_PTR (vortex_frame_get_seqno (frame))) != frame) {
-			vortex_log (VORTEX_LEVEL_CRITICAL,
-				    "unable to store frame %p with seqno %u on channel %d for ordered deliver, delivering it out of order",
-				    frame, vortex_frame_get_seqno (frame), channel->channel_num);
 			vortex_mutex_unlock (&channel->serialize_mutex);
-			return axl_false;
+
+			/* Neither local outcome is acceptable here.
+			 * Delivering the frame now breaks the ordered
+			 * deliver this channel asked for, which is the whole
+			 * point of serialize. Discarding it silently is
+			 * worse: the remote peer already considers the frame
+			 * delivered, so both ends would go on holding
+			 * inconsistent state with no way of noticing. The
+			 * session is closed instead, which makes the loss
+			 * visible to both peers */
+			vortex_log (VORTEX_LEVEL_CRITICAL,
+				    "unable to store frame %p with seqno %u on channel %d for ordered deliver (memory failure) while serialize is enabled: delivering it now would break ordered deliver, and discarding it would leave this peer inconsistent with the sender, which considers the frame delivered, so the session is closed",
+				    frame, vortex_frame_get_seqno (frame), channel->channel_num);
+
+			__vortex_connection_shutdown_and_record_error (
+				connection, VortexError,
+				"unable to store frame with seqno %u on channel %d for ordered deliver, closing session rather than discarding the frame or breaking ordered deliver",
+				vortex_frame_get_seqno (frame), channel->channel_num);
+
+			/* the frame is owned by nobody now: the caller does
+			 * not touch it when axl_true is returned, so that
+			 * return both stops the delivery and leaves the
+			 * release here */
+			vortex_frame_unref (frame);
+
+			return axl_true;
 		} /* end if */
 
 		/* unlock and retun frame stored */

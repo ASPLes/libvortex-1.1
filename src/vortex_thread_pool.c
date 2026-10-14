@@ -458,7 +458,7 @@ void __vortex_thread_pool_terminate_thread (axlPointer _thread)
 int  __vortex_thread_pool_soon_events_first (axlPointer a, axlPointer b)
 {
 	VortexThreadPoolEvent * event_a = a;
-	VortexThreadPoolEvent * event_b = a;
+	VortexThreadPoolEvent * event_b = b;
 
 	/* first a if microseconds is sort */
 	if (event_a->delay < event_b->delay)
